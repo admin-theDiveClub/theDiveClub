@@ -1,0 +1,10 @@
+:root {
+    --color_p: #292929;
+    --color_h: #797979;
+    --color_h_bg: #cfcfcf;
+    --color_shadows: #000000;
+}
+
+body {
+    background-color: var(--color_h_bg);
+}
