@@ -25,7 +25,13 @@ async function GetUserDetails ()
         }
     } else 
     {
-        console.log('No access token found. Please sign in.');
+        if (document.getElementById('txt_signInStatus'))
+        {
+            document.getElementById('txt_signInStatus').textContent = 'No access token found. Please sign in.';
+        } else 
+        {
+            console.log('No access token found. Please sign in.');
+        }
     }
 }
 
