@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SANDBOX</title>
+    <!-- Import Supabase resources via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    
+    <!-- Bootstrap CSS -->     
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="jumbotron text-center" style="margin-bottom:0">
+        <h1>Welcome to the Dive Club</h1>
+    </div>    
+
+    <script src="../theDiveClub/supaBase_client.js"></script>
+
+    <!-- Sign In: e-mail -->
+    <div class="card rounded">
+        <div class="card-header">Sign In with e-mail</div>
+        <div class="card-body">
+            <form id="form_signIn_email">
+                <div class="form-group">
+                    <label for="inp_signIn_email">E-mail address:</label>
+                    <input type="email" class="form-control" id="inp_signIn_email" name="email" autocomplete="username">
+                    <label for="inp_signIn_password">Password:</label>
+                    <input type="password" class="form-control" id="inp_signIn_password" name="password" autocomplete="current-password">
+                </div>
+                <button type="button" class="btn btn-primary" id="btn_signIn_email">Sign In</button>
+                <p id="txt_signIn_response">Waiting for input...</p>
+            </form>                    
+        </div>
+    </div>
+    <script src="../_theDiveClub/scripts/signIn_email.js"></script> 
+    
+    <!-- Bootstrap JS (Optional) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
