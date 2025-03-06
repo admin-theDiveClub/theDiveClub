@@ -1,2 +1,0 @@
-# theDiveClub
-Master Repository
