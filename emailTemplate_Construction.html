@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Welcome to The Dive Club</title>
+  </head>
+  <body style="font-family: Arial, sans-serif; color: black; background-color: rgb(42,42,42); padding: 20px;">
+    <div style="background-color: rgb(204,56,85); border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); padding: 20px; max-width: 600px; margin: auto;">
+        <!-- Optional image banner -->
+        <img src="https://thediveclub.org/resources/icon_theDiveClub_Transparent.png" alt="Welcome Banner" style="width: 100%; max-width: 600px; height: auto; display: block; margin-bottom: 20px;">
+        
+        <p style="text-align: center; font-weight: 900;">Welcome to</p>
+        <h1 style="color: black; text-align: center; font-weight: 100;">The Dive Club</h1>
+        <h2>Confirm your signup</h2>
+        
+        <p>
+          Please follow <a href="{{ .ConfirmationURL }}" style="color: #007BFF; text-decoration: none;">this</a> link to verify your account 
+          or copy and paste the following link into your preferred browser:
+        </p>
+        <p>
+          <a href="{{ .ConfirmationURL }}" style="color: #007BFF; text-decoration: underline;">{{ .ConfirmationURL }}</a>
+        </p>
+    </div>
+  </body>
+</html>
