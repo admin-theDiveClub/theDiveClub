@@ -1,19 +1,14 @@
-document.getElementById('btn_submitEntry').addEventListener('click', () => 
-{
-    const credentials = 
-    { 
-        tournamentID: localStorage.getItem('tournamentID'),
-        email: localStorage.getItem('username'), 
-    };
-
-    var response = SubmitEntry(credentials);
-});
-//adjust for anon entry
-
 Start ();
 
 async function Start ()
 {
+    if (localStorage.getItem('username') && localStorage.getItem('tournamentID'))
+    {
+        document.getElementById('card_signIn_email').remove();
+        document.getElementById('card_signIn_google').remove();
+        document.getElementById('card_entry_anonymous').remove();
+    }
+
     var tournamentID = getTournamentIDFromURL();
     var tournamentData = await getTournamentData(tournamentID);
     PopulateTournamentData(tournamentData[0]);
@@ -22,7 +17,70 @@ async function Start ()
     PopulateTournamentEntries(tournamentEntries);
 }
 
+document.getElementById('btn_submitEntry').addEventListener('click', () => 
+{
+    EnterTournament();
+});
 
+async function EnterTournament ()
+{
+    //Credentials are fetched based on login status
+    if (await inputsValid())
+    {
+        SubmitEntry();
+    } else 
+    {
+        document.getElementById('txt_T_entry_response').textContent = 'Error: Please login or fill in all fields before submitting.';
+    }
+}
+
+async function inputsValid ()
+{
+    var username = localStorage.getItem('username');
+    var userProfile = await getUserProfile(username);
+    if (username && userProfile)
+    {
+        return true;
+    } else 
+    {
+        if (document.getElementById('inp_T_entry_email').value == '' ||
+            document.getElementById('inp_T_entry_name').value == '' ||
+            document.getElementById('inp_T_entry_contact').value == '')
+        {
+            return false;
+        } else
+        {
+            return true;
+        }
+    }
+}
+
+async function duplicateSubmition (_credentials)
+{
+    //Check if the email already exists in the entries list
+    var duplicate = false;
+    var entries = null;
+
+    //Get Entries
+    const response_Entries = await supabase.from('tbl_entries').select('email').eq('tournamentID', _credentials.tournamentID);
+    if (response_Entries.error)
+    {
+        console.error('Error fetching entries:', response_Entries.error);
+    } else 
+    {
+        entries = response_Entries.data;
+        for (var i = 0; i < entries.length; i++)
+        {
+            if (entries[i].email == _credentials.email)
+            {
+                duplicate = true;
+                break;
+            }
+        }
+    }    
+
+    return duplicate;
+}
 
 function getTournamentIDFromURL ()
 {
@@ -56,37 +114,89 @@ async function PopulateTournamentData (_data)
     document.getElementById('txt_T_maxEntries').textContent = "Max Entries: " +  _data.maxEntries;
     document.getElementById('txt_T_format').textContent = "Format: " +  _data.format;
 
-    var coordinatorName = await getCoordinatorName(_data.coordinatorID);
-    document.getElementById('txt_T_coordinatorName').textContent = "Coordinator Contact: " +  coordinatorName;
+    const coordinatorUsernameResponse = await supabase.from('tbl_players').select('username').eq('id', _data.coordinatorID);
+    var cUsername = coordinatorUsernameResponse.data[0].username;
+    var cP = await getUserProfile(cUsername);
+    document.getElementById('txt_T_coordinatorName').textContent = "Coordinator Contact: " +  cP.name + " " + cP.surname + " (" + cP.contact + ")";
 
     document.getElementById('txt_T_description').textContent = "Description: " +  _data.description;    
     document.getElementById('txt_T_id').textContent = _data.id;
 }
 
-async function getCoordinatorName (_playerId)
+async function SubmitEntry ()
 {
-    const response = await supabase.from('tbl_players').select('*').eq('id', _playerId);
-    var playerName = response.data[0].name + " " + response.data[0].surname + " (" + response.data[0].contact + ")";
-    return playerName;
-}
+    var credentials;
 
-async function SubmitEntry (_credentials)
-{
-    const response = await supabase.from('tbl_entries').insert(_credentials).select();
-    if (response.error) 
+    var username = localStorage.getItem('username');
+    var userProfile = await getUserProfile(username);
+    if (username && userProfile)
+    { 
+        credentials =
+        { 
+            tournamentID: localStorage.getItem('tournamentID'),
+            playerID: userProfile.id,
+            email: userProfile.username,
+            name: userProfile.name + " " + userProfile.surname + " ('" + userProfile.nickname + "')",
+            contact: userProfile.contact 
+        }; 
+    } else 
     {
-        console.error('Error inserting new entry:', response.error);
+        credentials =
+        { 
+            tournamentID: localStorage.getItem('tournamentID'),
+            email: document.getElementById('inp_T_entry_email').value,
+            name: document.getElementById('inp_T_entry_name').value,
+            contact: document.getElementById('inp_T_entry_contact').value 
+        };
+    }
+
+    var duplicate = await duplicateSubmition(credentials);
+
+    if (duplicate)
+    {
+        document.getElementById('txt_T_entry_response').textContent = 'Error: You are already signed up with this email address.';
         return null;
     } else 
     {
-        console.log('New entry created', response.data);
-        return response
+        const response = await supabase.from('tbl_entries').insert(credentials).select();
+
+        if (response.error) 
+        {
+            document.getElementById('txt_T_entry_response').textContent = 'Error inserting new entry: ' + response.error.message;
+            return null;
+        } else 
+        {
+            console.log('New entry created', response.data);
+
+            var output = "Entry submitted under: " + response.data[0].email + ". Please quote this email address for future reference.";
+            
+            if (userProfile)
+            {
+                output += " Player Profile Found: " + userProfile.name + " " + userProfile.surname + " ('" + userProfile.nickname + "')";
+            }
+            document.getElementById('txt_T_entry_response').textContent = output;
+            //window.location.reload();
+            return response
+        }
+    }    
+}
+
+async function getUserProfile (_username)
+{
+    const response = await supabase.from('tbl_players').select('*').eq('username', _username);
+    var userProfile = null;
+
+    if (response && !response.error)
+    {
+        userProfile = response.data[0];
     }
+
+    return userProfile;
 }
 
 async function getTournamentEntries (_id)
 {
-    const response = await supabase.from('tbl_entries').select('*').eq('tournamentID', _id);
+    const response = await supabase.from('tbl_entries').select('*').eq('tournamentID', _id).order('created_at', { ascending: true });
 
     return response.data;
 }

@@ -51,7 +51,7 @@
     </div>
 
     <!-- Sign In: access token -->
-    <div class="card rounded">
+    <div class="card rounded" id="card_signIn">
         <div class="card-header">Sign In with Access Token</div>
         <div class="card-body">
             <p id="txt_signInStatus">Loading...</p>                    
@@ -59,7 +59,7 @@
     </div>
 
     <!-- Sign In: e-mail -->
-    <div class="card rounded">
+    <div class="card rounded" id="card_signIn_email">
         <div class="card-header">Sign In with e-mail</div>
         <div class="card-body">
             <form id="form_signIn_email">
@@ -76,7 +76,7 @@
     </div>
 
     <!-- Sign In: Google -->
-    <div class="card rounded">
+    <div class="card rounded" id="card_signIn_google">
         <div class="card-header">Sign In with google</div>
         <div class="card-body">
             <button type="button" class="btn btn-primary" id="btn_signIn_google">Sign In with Google</button>                    
@@ -84,12 +84,16 @@
     </div>
 
     <!-- Entry: Anonymous -->
-    <div class="card rounded">
-        <div class="card-header">Enter with email</div>
+    <div class="card rounded" id="card_entry_anonymous">
+        <div class="card-header">Anonymous Entry</div>
         <div class="card-body">
             <div class="form-group">
-                <label for="inp_signIn_email">E-mail address:</label>
+                <label for="inp_T_entry_name">Name:</label>
+                <input type="text" class="form-control" id="inp_T_entry_name" name="name" autocomplete="name">
+                <label for="inp_T_entry_email">E-mail address:</label>
                 <input type="email" class="form-control" id="inp_T_entry_email" name="email" autocomplete="username">
+                <label for="inp_T_entry_contact">Contact Number:</label>
+                <input type="tel" class="form-control" id="inp_T_entry_contact" name="contact" autocomplete="tel">
             </div>                    
         </div>
     </div>
@@ -98,6 +102,7 @@
     <div class="card rounded">
         <div class="card-body text-center">
             <button type="button" class="btn btn-primary" id="btn_submitEntry">Submit Entry</button>
+            <p id="txt_T_entry_response">Waiting for input...</p>
         </div>
     </div>
 
