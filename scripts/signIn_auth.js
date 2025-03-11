@@ -1,4 +1,7 @@
 GetUserDetails();
+CleanUpURL();
+
+GetRefreshToken();
 
 async function GetUserDetails ()
 {
@@ -41,7 +44,6 @@ function GetAccessTokenFromURL ()
     if (accessToken)
     {
         localStorage.setItem('access_token', accessToken);
-        window.history.replaceState({}, document.title, window.location.pathname);
         return accessToken;
     } else 
     {
@@ -60,5 +62,34 @@ async function SignInWithAccessToken (_accessToken)
     {
         username = supabaseAuthResponse.data.user.email;
         return username;
+    }
+}
+
+async function GetRefreshToken ()
+{
+    const response = await supabase.auth.getSession();
+    const refreshToken = response.data.session.refresh_token;
+    if (refreshToken)
+    {
+        localStorage.setItem('refresh_token', refreshToken);
+        setInterval(RefreshSession, 1000 * 60 * 45);
+    }
+}
+
+function CleanUpURL ()
+{
+    window.history.replaceState({}, document.title, window.location.pathname);
+}
+
+async function RefreshSession ()
+{
+    const refreshToken = localStorage.getItem('refresh_token');
+    const response = await supabase.auth.refreshSession({refresh_token: refreshToken});
+    if (response.error)
+    {
+        console.error('Error refreshing session:', response.error);
+    } else 
+    {
+        const newSession = response.data.session;
     }
 }

@@ -7,4 +7,3 @@ function getTournamentID() {
 const tournamentID = getTournamentID();
 console.log(tournamentID);
 localStorage.setItem('tournamentID', tournamentID);
-

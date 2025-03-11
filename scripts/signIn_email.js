@@ -23,6 +23,7 @@ document.getElementById('btn_signIn_email').addEventListener('click', () =>
 //Sign in using email and password (credentials)
 async function SignIn(_credentials)
 {
+    console.log(_credentials);
     //Sign in using email and password
     const signInResponse = await supabase.auth.signInWithPassword(_credentials);
 
