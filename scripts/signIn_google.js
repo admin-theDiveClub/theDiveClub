@@ -11,7 +11,7 @@ async function SignInWithGoogle()
         provider: 'google',
         options: 
         {
-            redirectTo: `../index.html`,
+            redirectTo: `../tournaments/index.html`,
         }
     });
 }
