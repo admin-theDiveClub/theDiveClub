@@ -68,12 +68,24 @@ async function SignInWithAccessToken (_accessToken)
 async function GetRefreshToken ()
 {
     const response = await supabase.auth.getSession();
-    const refreshToken = response.data.session.refresh_token;
-    if (refreshToken)
+    if (response.error)
     {
-        localStorage.setItem('refresh_token', refreshToken);
-        setInterval(RefreshSession, 1000 * 60 * 45);
-    }
+        console.error('Error getting session:', response.error);
+    } else
+    {
+        if (response.data.session)
+        {
+            const refreshToken = response.data.session.refresh_token;
+            if (refreshToken)
+            {
+                localStorage.setItem('refresh_token', refreshToken);
+                setInterval(RefreshSession, 1000 * 60 * 45);
+            }
+        } else 
+        {
+            console.warn('No session found');
+        }        
+    }    
 }
 
 function CleanUpURL ()

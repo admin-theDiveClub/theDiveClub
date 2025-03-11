@@ -49,6 +49,9 @@ async function SignIn(_credentials)
 
         //Save access token to local storage
         localStorage.setItem('access_token', session.access_token);
+
+        // Refresh the page
+        window.location.reload();
     }
 
     //Display output

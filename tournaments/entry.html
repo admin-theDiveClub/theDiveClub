@@ -20,15 +20,33 @@
         <h1>Welcome to the Dive Club</h1>
     </div>
 
-    
-    <!-- Supabase Client -->
-    <script src="../scripts/supaBase_client.js"></script>
-
     <!-- Tournament info -->
     <div class="card rounded">
         <div class="card-header">Tournament Information</div>
         <div class="card-body">
-            <p>Current tournament: <span id="txt_tournament_name">Loading...</span></p>                
+            <p id="txt_T_name">Tournament Name</p>
+            <p id="txt_T_date">Date</p>
+            <p id="txt_T_time">Time</p>
+            <p id="txt_T_location">Location</p>
+            <p id="txt_T_maxEntries">Max Entries</p>
+            <p id="txt_T_format">Format</p>
+            <p id="txt_T_coordinatorName">Coordinator Name</p>
+            <p id="txt_T_description">Description</p>
+        </div>
+        <div class="card-footer">
+            <p id="txt_T_id">Tournament ID</p>
+        </div>
+    </div>
+
+    <!-- Existing Entries -->
+    <div class="card rounded">
+        <div class="card-header">Existing Entries</div>
+        <div class="card-body">
+            <ul class="list-group" id="list_existingEntries">
+                <li class="list-group-item" id="li_entry_0">
+                    <button type="button" class="btn btn-secondary">Dummy Entry</button>
+                </li>
+            </ul>
         </div>
     </div>
 
@@ -39,7 +57,6 @@
             <p id="txt_signInStatus">Loading...</p>                    
         </div>
     </div>
-    <script src="../scripts/signIn_auth.js"></script>
 
     <!-- Sign In: e-mail -->
     <div class="card rounded">
@@ -57,7 +74,6 @@
             </form>                    
         </div>
     </div>
-    <script src="../scripts/signIn_email.js"></script> 
 
     <!-- Sign In: Google -->
     <div class="card rounded">
@@ -66,7 +82,6 @@
             <button type="button" class="btn btn-primary" id="btn_signIn_google">Sign In with Google</button>                    
         </div>
     </div>
-    <script src="../scripts/signIn_google.js"></script>
 
     <!-- Entry: Anonymous -->
     <div class="card rounded">
@@ -79,8 +94,20 @@
         </div>
     </div>
     
-    <script src="../scripts/tournament_entry.js"></script>
+    <!-- Submit Entry Button -->
+    <div class="card rounded">
+        <div class="card-body text-center">
+            <button type="button" class="btn btn-primary" id="btn_submitEntry">Submit Entry</button>
+        </div>
+    </div>
+
     
+    <!-- Supabase Client -->
+    <script src="../scripts/supaBase_client.js"></script>
+    <script src="../scripts/tournament_entry.js"></script>
+    <script src="../scripts/signIn_auth.js"></script>
+    <script src="../scripts/signIn_email.js"></script>
+    <script src="../scripts/signIn_google.js"></script> 
 
     <!-- Bootstrap JS (Optional) -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
