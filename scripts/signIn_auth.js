@@ -58,6 +58,12 @@ async function SignInWithAccessToken (_accessToken)
     if (supabaseAuthResponse.error) 
     {
         console.error('Access Token found. Error fetching user details:', supabaseAuthResponse.error);
+        Object.keys(localStorage).forEach(key => {
+            if (key !== 'tournamentID') {
+            localStorage.removeItem(key);
+            }
+        });
+        location.reload();
     } else 
     {
         username = supabaseAuthResponse.data.user.email;

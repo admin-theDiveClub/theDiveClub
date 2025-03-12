@@ -7,6 +7,7 @@ async function Start ()
         document.getElementById('card_signIn_email').remove();
         document.getElementById('card_signIn_google').remove();
         document.getElementById('card_entry_anonymous').remove();
+        //Add in a new card for host submition
     }
 
     var tournamentID = getTournamentIDFromURL();
@@ -71,7 +72,7 @@ async function duplicateSubmition (_credentials)
         entries = response_Entries.data;
         for (var i = 0; i < entries.length; i++)
         {
-            if (entries[i].email == _credentials.email)
+            if ((entries[i].email == _credentials.email) && (entries[i].name == _credentials.name))
             {
                 duplicate = true;
                 break;
@@ -129,6 +130,7 @@ async function SubmitEntry ()
 
     var username = localStorage.getItem('username');
     var userProfile = await getUserProfile(username);
+
     if (username && userProfile)
     { 
         credentials =
@@ -148,6 +150,21 @@ async function SubmitEntry ()
             name: document.getElementById('inp_T_entry_name').value,
             contact: document.getElementById('inp_T_entry_contact').value 
         };
+
+        var uP = await getUserProfile(document.getElementById('inp_T_entry_email').value);
+
+        
+        if (uP.id)
+        {
+            if (uP.username == credentials.email)
+            {
+                credentials.playerID = uP.id;
+                credentials.name += "->" + uP.name + " " + uP.surname + " ('" + uP.nickname + "')";
+            } else 
+            {
+                credentials.host = uP.id;
+            }
+        }
     }
 
     var duplicate = await duplicateSubmition(credentials);

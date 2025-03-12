@@ -5,7 +5,7 @@ document.getElementById('btn_signOut').addEventListener('click', () =>
 
 async function SignOut() 
 {
-    const { error } = await supabase.auth.signOut()
+    const { error } = await supabase.auth.signOut();
     if (error) 
     {
         console.error('Error signing out:', error.message);
@@ -13,5 +13,6 @@ async function SignOut()
     {
         console.log('Successfully signed out');
         localStorage.clear();
+        window.location.reload();
     }
 }
