@@ -83,6 +83,23 @@
         </div>
     </div>
 
+    <!-- Entry: Host -->
+    <div class="card rounded" id="card_entry_anonymous">
+        <div class="card-header">Host Entry</div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="inp_T_entry_host">Host Name:</label>
+                <input type="text" class="form-control" id="inp_T_entry_host" name="host" autocomplete="name">
+                <label for="inp_T_entry_guestName">Guest Name:</label>
+                <input type="text" class="form-control" id="inp_T_entry_guestName" name="guestName" autocomplete="name">
+            </div>                    
+        </div>
+        <div class="card-footer">
+            <button type="button" class="btn btn-primary" id="btn_submitHostEntry">Sign Up Guest</button>
+            <p id="txt_T_entry_host_response">Waiting for input...</p>
+        </div>
+    </div>
+
     <!-- Entry: Anonymous -->
     <div class="card rounded" id="card_entry_anonymous">
         <div class="card-header">Anonymous Entry</div>
@@ -101,7 +118,7 @@
     <!-- Submit Entry Button -->
     <div class="card rounded">
         <div class="card-body text-center">
-            <button type="button" class="btn btn-primary" id="btn_submitEntry">Submit Entry</button>
+            <button type="button" class="btn btn-primary" id="btn_submitPersonalEntry">Sign Me up</button>
             <p id="txt_T_entry_response">Waiting for input...</p>
         </div>
     </div>
@@ -109,6 +126,7 @@
     
     <!-- Supabase Client -->
     <script src="../scripts/supaBase_client.js"></script>
+    <script src="../scripts/tournament_entry_getInfo.js"></script>
     <script src="../scripts/tournament_entry.js"></script>
     <script src="../scripts/signIn_auth.js"></script>
     <script src="../scripts/signIn_email.js"></script>
