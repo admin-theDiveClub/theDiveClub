@@ -143,7 +143,8 @@ async function SubscribeToScoreCard (_scorecardID)
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'tbl_scorecards', filter: `id=eq.${_scorecardID}` },
         (payload) => {
-        //console.log('Change received!', payload.new);        
+        //console.log('Change received!', payload.new);
+        credentials_scoreCard = payload.new;        
         UpdateUI(credentials_scoreCard);
         }
     )
