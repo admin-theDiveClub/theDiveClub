@@ -27,18 +27,16 @@
         </div>
     </div>
 
-    <!-- Supabase Client -->
-    <script src="../scripts/supaBase_client.js"></script>
 
     <!-- New Match -->
     <div class="card rounded" id="card_newMatch">
         <div class="card-header">Create a new Match</div>
         <div class="card-body">
             <div class="form-group">
-                <label for="inp_T_entry_player_H">Player H:</label>
-                <input type="text" class="form-control" id="inp_T_entry_player_H" name="player_H" autocomplete="name">
-                <label for="inp_T_entry_player_A">Player A:</label>
-                <input type="text" class="form-control" id="inp_T_entry_player_A" name="player_A" autocomplete="name">
+                <label for="inp_player_H">Player H:</label>
+                <input type="text" class="form-control" id="inp_player_H" name="player_H" autocomplete="username">
+                <label for="inp_player_A">Player A:</label>
+                <input type="text" class="form-control" id="inp_player_A" name="player_A" autocomplete="username">
             </div>                    
         </div>
         <div class="card-footer">
@@ -47,7 +45,7 @@
         </div>
     </div>
 
-    <!-- New Match -->
+    <!-- Score Cards -->
     <div class="card rounded" id="card_scoreCard">
         <div class="card-header">Score Card</div>
         <div class="card-body">
@@ -55,7 +53,7 @@
                 <div class="col-1"></div>
                 <div class="col-5" id="col_scoreCard_player_H">
                     <div class="card rounded" id="card_scoreCard_H">
-                        <div class="card-header text-center">Home Player</div>
+                        <div class="card-header text-center" id="player_H_name">Home Player</div>
                         <div class="card-body">
 
                             <div class="card rounded">
@@ -77,7 +75,7 @@
                 </div>
                 <div class="col-5" id="col_scoreCard_player_A">
                     <div class="card rounded" id="card_scoreCard_A">
-                        <div class="card-header text-center">Away Player</div>
+                        <div class="card-header text-center" id="player_A_name">Away Player</div>
                         <div class="card-body">
 
                             <div class="card rounded">
@@ -103,24 +101,24 @@
         <div class="card-footer">
             <table class="table table-bordered">
                 <thead>
-                    <tr>
+                    <tr id="scoreCard_header">
                         <th>Player</th>
                         <th>Frame 0</th>
                         <th>Frame n
-                            <button type="button" class="btn btn-danger">-</button>
+                            <button type="button" class="btn btn-danger" id="btn_removeLastScore">-</button>
                         </th>
                         <th>Scores</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td id="player_H">Player H</td>
+                    <tr id="scoreCard_row_H">
+                        <td id="scoreCard_player_H">Player H</td>
                         <td id="frameScore_0_H">0</td>
                         <td id="frameScore_n_H">0</td>
                         <td id="score_H">0</td>
                     </tr>
-                    <tr>
-                        <td id="player_A">Player A</td>
+                    <tr id="scoreCard_row_A">
+                        <td id="scoreCard_player_A">Player A</td>
                         <td id="frameScore_0_A">0</td>
                         <td id="frameScore_n_A">0</td>
                         <td id="score_A">0</td>
@@ -130,6 +128,10 @@
         </div>
     </div>
     
+    
+    <!-- Supabase Client -->
+    <script src="../scripts/supaBase_client.js"></script>
+    <script src="../scripts/match_creation.js"></script>
     
     <!-- Bootstrap JS (Optional) -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
