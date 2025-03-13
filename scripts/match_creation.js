@@ -143,7 +143,7 @@ async function SubscribeToScoreCard (_scorecardID)
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'tbl_scorecards', filter: `id=eq.${_scorecardID}` },
         (payload) => {
-        console.log('Change received!', payload.new);        
+        //console.log('Change received!', payload.new);        
         UpdateUI(credentials_scoreCard);
         }
     )
@@ -249,10 +249,38 @@ async function RemoveLastScore ()
     }
 }
 
-function UpdateUI (_credentials)
+async function GetPlayerName(_id)
 {
-    document.getElementById('player_H_name').textContent = _credentials.player_H;
-    document.getElementById('player_A_name').textContent = _credentials.player_A;
+    if (!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(_id)) {
+        return null;
+    }
+    const response = await supabase.from('tbl_players').select('name, surname').eq('id', _id);
+    if (response.error)
+    {
+        return null;
+    } else 
+    {
+        return response.data[0].name + " " + response.data[0].surname;
+    }
+}
+
+async function UpdateUI (_credentials)
+{
+    var playerName_H = await GetPlayerName(_credentials.player_H);
+    var playerName_A = await GetPlayerName(_credentials.player_A);
+
+    if (playerName_H == null)
+    {
+        playerName_H = _credentials.player_H;
+    }
+
+    if (playerName_A == null)
+    {
+        playerName_A = _credentials.player_A;
+    }
+
+    document.getElementById('player_H_name').textContent = playerName_H;
+    document.getElementById('player_A_name').textContent = playerName_A;
 
     var scorecard_H = _credentials.scorecard_H;
     var score_H = 0;
@@ -260,18 +288,22 @@ function UpdateUI (_credentials)
     var scorecard_A = _credentials.scorecard_A;
     var score_A = 0;
 
-    for (var i = 0; i < scorecard_H.length; i++)
+    if (scorecard_H != null)
     {
-        if (scorecard_H[i] == "1" || scorecard_H[i] == "A")
+        for (var i = 0; i < scorecard_H.length; i++)
         {
-            score_H++;
-        }
-
-        if (scorecard_A[i] == "1" || scorecard_A[i] == "A")
-        {
-            score_A++;
+            if (scorecard_H[i] == "1" || scorecard_H[i] == "A")
+            {
+                score_H++;
+            }
+    
+            if (scorecard_A[i] == "1" || scorecard_A[i] == "A")
+            {
+                score_A++;
+            }
         }
     }
+    
 
     document.getElementById('txt_score_H').textContent = score_H;
     document.getElementById('txt_score_A').textContent = score_A;
@@ -284,12 +316,15 @@ function UpdateUI (_credentials)
     th.textContent = 'Players';
     tr.appendChild(th);
 
-    for (var i = 0; i < scorecard_H.length; i++)
+    if (scorecard_H != null)
     {
-        th = document.createElement('th');
-        th.textContent = "Frame " + (i + 1);
-        tr.appendChild(th);
-    }
+        for (var i = 0; i < scorecard_H.length; i++)
+        {
+            th = document.createElement('th');
+            th.textContent = "Frame " + (i + 1);
+            tr.appendChild(th);
+        }
+    }    
 
     var tr = document.getElementById('scoreCard_header');
     var th = document.createElement('th');
@@ -316,35 +351,42 @@ function UpdateUI (_credentials)
     tr = document.getElementById('scoreCard_row_H');
     tr.innerHTML = '';
     var td = document.createElement('td');
-    td.textContent = _credentials.player_H;
+    td.textContent = playerName_H;
     tr.appendChild(td);
 
-    for (var i = 0; i < scorecard_H.length; i++)
+    
+    if (scorecard_H != null)
     {
-        td = document.createElement('td');
-        td.textContent = scorecard_H[i];
-        if (scorecard_H[i] == "A") {
-            td.style.backgroundColor = 'gold';
+        for (var i = 0; i < scorecard_H.length; i++)
+        {
+            td = document.createElement('td');
+            td.textContent = scorecard_H[i];
+            if (scorecard_H[i] == "A") {
+                td.style.backgroundColor = 'gold';
+            }
+            tr.appendChild(td);
         }
-        tr.appendChild(td);
-    }
+    }      
 
     // Away Player
     tr = document.getElementById('scoreCard_row_A');
     tr.innerHTML = '';
     td = document.createElement('td');
-    td.textContent = _credentials.player_A;
+    td.textContent = playerName_A;
     tr.appendChild(td);
 
-    for (var i = 0; i < scorecard_A.length; i++)
+    if (scorecard_H != null)
     {
-        td = document.createElement('td');
-        td.textContent = scorecard_A[i];
-        if (scorecard_A[i] == "A") {
-            td.style.backgroundColor = 'gold';
+        for (var i = 0; i < scorecard_A.length; i++)
+        {
+            td = document.createElement('td');
+            td.textContent = scorecard_A[i];
+            if (scorecard_A[i] == "A") {
+                td.style.backgroundColor = 'gold';
+            }
+            tr.appendChild(td);
         }
-        tr.appendChild(td);
-    }
+    }    
 
     // Scores
     tr = document.getElementById('scoreCard_row_H');
@@ -357,3 +399,52 @@ function UpdateUI (_credentials)
     td.textContent = score_A;
     tr.appendChild(td);
 }
+
+document.getElementById('player_search').addEventListener('input', async (event) => {
+    const searchValue = event.target.value;
+    const response = await supabase.from('tbl_players').select('*').or(`name.ilike.%${searchValue}%,surname.ilike.%${searchValue}%,username.ilike.%${searchValue}%`);
+    
+    if (response.error) {
+        console.error('Error fetching players:', response.error);
+        return;
+    }
+
+    const players = response.data;
+    const playersList = document.getElementById('players_list');
+    playersList.innerHTML = '';
+
+    players.forEach(player => {
+        const button = document.createElement('button');
+        button.textContent = `${player.name}` + " " + `${player.surname}`;
+        button.className = 'list-group-item list-group-item-action';
+        button.addEventListener('click', async () => 
+        {
+            // Handle button click event
+            console.log(`Player selected: ${player.name} ${player.surname}`);
+            playersList.innerHTML = '';
+            // Fetch player scorecards
+            const r_playerScorecards = await supabase.from('tbl_scorecards').select('*').or(`player_H.eq.${player.id},player_A.eq.${player.id}`);
+            if (r_playerScorecards.error) {
+                console.error('Error fetching player scorecards:', r_playerScorecards.error);
+                return;
+            }
+
+            const scorecardList_Player = document.getElementById('scorecardList_Player');
+            scorecardList_Player.innerHTML = '';
+
+            r_playerScorecards.data.forEach(scorecard => {
+                const scorecardButton = document.createElement('button');
+                scorecardButton.textContent = `Scorecard ID: ${scorecard.id}`;
+                scorecardButton.className = 'list-group-item list-group-item-action';
+                scorecardButton.addEventListener('click', () => {
+                    // Handle scorecard button click event
+                    console.log(`Scorecard selected: ${scorecard.id}`);
+                    window.location.href = `${window.location.pathname}?scorecardID=${scorecard.id}`;
+                    // You can add more actions here if needed
+                });
+                scorecardList_Player.appendChild(scorecardButton);
+            });
+        });
+        playersList.appendChild(button);
+    });
+});
