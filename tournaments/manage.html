@@ -32,8 +32,8 @@
             Tournament Management
         </div>
         <div class="card-body">
-            <h5 class="card-title">Manage Your Tournaments</h5>
-            <p class="card-text">Use the tools below to create, update, and delete tournaments.</p>
+            <h5 class="card-title">Manage Your Tournament</h5>
+            <p id="txt_tournamentData">Use the tools below to create, update, and delete tournaments.</p>
             <a href="#" class="btn btn-primary">Create Tournament</a>
             <a href="#" class="btn btn-secondary">Update Tournament</a>
             <a href="#" class="btn btn-danger">Delete Tournament</a>
@@ -46,15 +46,19 @@
                             <div class="card rounded">
                                 <div class="card-header">Add new Entry</div>
                                 <div class="card-body">
-                                    <h5 class="card-title">ENTRIES</h5>
+                                    <div class="form-group">
+                                        <label for="txt_entryName" class="form-label">Name / Username</label>
+                                        <input type="text" class="form-control" id="txt_entryName" placeholder="Enter name or username">
+                                    </div>
+                                    <button class="btn btn-primary" id="btn_addEntry">Add Entry</button>
                                 </div>
                             </div>
                         </div>
                         <div class="col-4">
                             <div class="card rounded">
-                                <div class="card-header">Manage Entries</div>
+                                <div class="card-header">All Entries</div>
                                 <div class="card-body">
-                                    <ul class="list-group">
+                                    <ul class="list-group" id="lg_entries">
                                         <li class="list-group-item">
                                             <button class="btn btn-secondary">Dummy Button</button>
                                         </li>
@@ -64,12 +68,13 @@
                         </div>
                         <div class="col-4">
                             <div class="card rounded">
-                                <div class="card-header">Approved Players</div>
+                                <div class="card-header">Approved Entries</div>
                                 <div class="card-body">
-                                    <h5 class="card-title">ENTRIES</h5>
-                                </div>
-                                <div class="card-footer">
-                                    <a class="btn btn-success">Approve Players</a>
+                                    <ul class="list-group" id="lg_approvedEntries">
+                                        <li class="list-group-item">
+                                            <button class="btn btn-danger">Dummy Button</button>
+                                        </li>
+                                    </ul>
                                 </div>
                             </div>
                         </div>
@@ -78,20 +83,59 @@
             </div>
 
             <div class="card rounded">
-                <div class="card-header">Approved Entries</div>
-                <div class="card-body">
-                    <ul class="list-group"></ul>
-                        <li class="list-group-item"><button class="btn btn-dark">Dummy Button</button></li>
-                    </ul>
+                <div class="card-header">Lobby</div>
+                <div class="card-body" id="card_lobby">
+                    <button class="btn btn-dark">Dummy Button</button>
                 </div>
             </div>
 
-            <div class="card rounded">
-                <div class="card-header">Round 0</div>
-                <div class="card-body">
-                    
+            <div class="row">
+                <div class="col-4">
+                    <div class="card rounded">
+                        <div class="card-header">Round 0</div>
+                        <div class="card-body">
+                            <div class="card rounded">
+                                <div class="card-header">Match_0_0</div>
+                                <div class="card-body">
+                                    
+                                </div>
+                            </div>
+                            <div class="card rounded">
+                                <div class="card-header">Match_0_1</div>
+                                <div class="card-body">
+                                    
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+                <div class="col-4">
+                    <div class="card rounded">
+                        <div class="card-header">Round 1</div>
+                        <div class="card-body">
+                            <div class="card rounded">
+                                <div class="card-header">Match_1_0</div>
+                                <div class="card-body">
+                                    
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card rounded">
+                        <div class="card-header">WINNER</div>
+                        <div class="card-body">
+                            <div class="card rounded">
+                                <div class="card-header">Player Name</div>
+                                <div class="card-body">
+                                    <p>Tournament Stats</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>          
 
         </div>
     </div>
@@ -101,6 +145,7 @@
     
     <!-- Supabase Client -->
     <script src="../scripts/supaBase_client.js"></script>
+    <script src="../scripts/tournament_manage.js"></script>
     
     <!-- Bootstrap JS (Optional) -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
