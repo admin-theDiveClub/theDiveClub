@@ -37,6 +37,44 @@
                 <input type="text" class="form-control" id="inp_player_H" name="player_H" autocomplete="username">
                 <label for="inp_player_A">Player A:</label>
                 <input type="text" class="form-control" id="inp_player_A" name="player_A" autocomplete="username">
+
+                <div class="row">
+                    <div class="col-6">
+                        <div class="card rounded">
+                            <div class="card-body">
+                                <label for="lag">First Break:</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="lag" id="lag_home" value="home" checked>
+                                    <label class="form-check-label" for="lag_home">Home</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="lag" id="lag_away" value="away">
+                                    <label class="form-check-label" for="lag_away">Away</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card rounded">
+                            <div class="card-body">
+                                <label for="format">Format:</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="format" id="format_race" value="race" checked>
+                                    <label class="form-check-label" for="format_race">Race</label>
+                                    <div class="form-group">
+                                        <label for="inp_framesCountRace">Race To:</label>
+                                        <input type="number" class="form-control" id="inp_framesCountRace" name="framesCountRace" min="1" step="1">
+                                    </div>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="format" id="format_free_play" value="free_play">
+                                    <label class="form-check-label" for="format_free_play">Free Play</label>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div> 
             </div>                    
         </div>
         <div class="card-footer">
@@ -126,21 +164,6 @@
                 </tbody>
             </table>
         </div>
-
-        <div class="card rounded">
-            <div class="card-body">
-                <div class="form-group">
-                    <label for="player_search">Search Match:</label>
-                    <input type="text" class="form-control" id="player_search" name="player_search" autocomplete="off">
-                </div>
-                <div id="players_list">
-                </div>
-                <div id="scorecardList_Player">
-                </div>
-            </div>
-        </div>
-
-
     </div>
     
     

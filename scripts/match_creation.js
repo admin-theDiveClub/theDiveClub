@@ -43,40 +43,55 @@ var credentials_scoreCard;
 
 document.getElementById('btn_createNewMatch').addEventListener('click', () => 
 {
-    TEST();
+    var player_H = document.getElementById('inp_player_H').value;
+    var player_A = document.getElementById('inp_player_A').value;
+    if (player_H != "" && player_A != "")
+    {
+        CreateNewMatch(player_H, player_A);
+    }
 });
 
-document.getElementById('btn_addScore_H').addEventListener('click', () => 
+document.getElementById('btn_addScore_H').addEventListener('click', async () => 
 {
-    Trigger_ScoreUpdate("1");
+    if (_scorecardID != null)
+    {
+        credentials_scoreCard = await UpdateScore_Home(_scorecardID, "1");
+    }
 });
 
-document.getElementById('btn_addScore_A').addEventListener('click', () => 
+document.getElementById('btn_addScore_A').addEventListener('click', async () => 
 {
-    Trigger_ScoreUpdate("0");
+    if (_scorecardID != null)
+    {
+        credentials_scoreCard = await UpdateScore_Home(_scorecardID, "0");
+    }
 });
 
-document.getElementById('btn_addApple_H').addEventListener('click', () => 
+document.getElementById('btn_addApple_H').addEventListener('click', async () => 
 {
-    Trigger_ScoreUpdate("A");
+    if (_scorecardID != null)
+    {
+        credentials_scoreCard = await UpdateScore_Home(_scorecardID, "A");
+    }
 });
 
-document.getElementById('btn_addApple_A').addEventListener('click', () => 
+document.getElementById('btn_addApple_A').addEventListener('click', async () => 
 {
-    Trigger_ScoreUpdate("Z");
+    if (_scorecardID != null)
+    {
+        credentials_scoreCard = await UpdateScore_Home(_scorecardID, "Z");
+    }
 });
 
-document.getElementById('btn_removeLastScore').addEventListener('click', () =>
+document.getElementById('btn_removeLastScore').addEventListener('click', async () =>
 {
-    RemoveLastScore();
+    if (_scorecardID != null)
+    {
+        credentials_scoreCard = await RemoveLastScore();
+    }
 });
 
 start();
-
-async function Trigger_ScoreUpdate (_score)
-{
-    credentials_scoreCard = await UpdateScore_Home(_scorecardID, _score);
-}
 
 async function start ()
 {
@@ -84,7 +99,6 @@ async function start ()
     
     if (_scorecardID)
     {
-        document.getElementById('card_newMatch').innerHTML = '';
         SubscribeToScoreCard(_scorecardID);
         var r_credentials = await supabase.from('tbl_scorecards').select('*').eq('id', _scorecardID);
         credentials_scoreCard = r_credentials.data[0];
@@ -109,25 +123,22 @@ function getScorecardIDFromURL ()
     return null;
 }
 
-async function TEST ()
+async function CreateNewMatch (_player_H, _player_A)
 {
-    var playerH = document.getElementById('inp_player_H').value;
-    var playerHProfile = await GetPlayerProfile(playerH);
-
-    var playerA = document.getElementById('inp_player_A').value;
-    var playerAProfile = await GetPlayerProfile(playerA);
+    var playerHProfile = await GetPlayerProfile(_player_H);
+    var playerAProfile = await GetPlayerProfile(_player_A);
 
     if (playerHProfile)
     {
-        playerH = playerHProfile.id;
+        _player_H = playerHProfile.id;
     }
 
     if (playerAProfile)
     {
-        playerA = playerAProfile.id;
+        _player_A = playerAProfile.id;
     }
 
-    var newScorecard = await CreateNewScorecardInDB(playerH, playerA);
+    var newScorecard = await CreateNewScorecardInDB(_player_H, _player_A);
     _scorecardID = newScorecard.id;
     localStorage.setItem('scorecardID', _scorecardID);
 
@@ -244,7 +255,6 @@ async function RemoveLastScore ()
         return null;
     } else 
     {
-        credentials_scoreCard = response.data[0];
         UpdateUI(response.data[0]);
         return response.data[0];
     }
@@ -267,6 +277,8 @@ async function GetPlayerName(_id)
 
 async function UpdateUI (_credentials)
 {
+    document.getElementById('txt_newMatch_response').textContent = _scorecardID;
+
     var playerName_H = await GetPlayerName(_credentials.player_H);
     var playerName_A = await GetPlayerName(_credentials.player_A);
 
@@ -400,52 +412,77 @@ async function UpdateUI (_credentials)
     td.textContent = score_A;
     tr.appendChild(td);
 }
+/*
+document.getElementById('player_search').addEventListener('input', handlePlayerSearch);
 
-document.getElementById('player_search').addEventListener('input', async (event) => {
+async function handlePlayerSearch(event) {
     const searchValue = event.target.value;
+    const players = await fetchPlayers(searchValue);
+    if (!players) return;
+    updateUIWithPlayers(players);
+}
+
+async function fetchPlayers(searchValue) {
     const response = await supabase.from('tbl_players').select('*').or(`name.ilike.%${searchValue}%,surname.ilike.%${searchValue}%,username.ilike.%${searchValue}%`);
-    
     if (response.error) {
         console.error('Error fetching players:', response.error);
-        return;
+        return null;
     }
+    return response.data;
+}
 
-    const players = response.data;
+function updateUIWithPlayers(players) {
     const playersList = document.getElementById('players_list');
     playersList.innerHTML = '';
-
     players.forEach(player => {
-        const button = document.createElement('button');
-        button.textContent = `${player.name}` + " " + `${player.surname}`;
-        button.className = 'list-group-item list-group-item-action';
-        button.addEventListener('click', async () => 
-        {
-            // Handle button click event
-            console.log(`Player selected: ${player.name} ${player.surname}`);
-            playersList.innerHTML = '';
-            // Fetch player scorecards
-            const r_playerScorecards = await supabase.from('tbl_scorecards').select('*').or(`player_H.eq.${player.id},player_A.eq.${player.id}`);
-            if (r_playerScorecards.error) {
-                console.error('Error fetching player scorecards:', r_playerScorecards.error);
-                return;
-            }
-
-            const scorecardList_Player = document.getElementById('scorecardList_Player');
-            scorecardList_Player.innerHTML = '';
-
-            r_playerScorecards.data.forEach(scorecard => {
-                const scorecardButton = document.createElement('button');
-                scorecardButton.textContent = `Scorecard ID: ${scorecard.id}`;
-                scorecardButton.className = 'list-group-item list-group-item-action';
-                scorecardButton.addEventListener('click', () => {
-                    // Handle scorecard button click event
-                    console.log(`Scorecard selected: ${scorecard.id}`);
-                    window.location.href = `${window.location.pathname}?scorecardID=${scorecard.id}`;
-                    // You can add more actions here if needed
-                });
-                scorecardList_Player.appendChild(scorecardButton);
-            });
-        });
+        const button = createPlayerButton(player);
         playersList.appendChild(button);
     });
-});
+}
+
+function createPlayerButton(player) {
+    const button = document.createElement('button');
+    button.textContent = `${player.name} ${player.surname}`;
+    button.className = 'list-group-item list-group-item-action';
+    button.addEventListener('click', () => handlePlayerSelection(player));
+    return button;
+}
+
+async function handlePlayerSelection(player) {
+    console.log(`Player selected: ${player.name} ${player.surname}`);
+    document.getElementById('players_list').innerHTML = '';
+    const scorecards = await fetchPlayerScorecards(player.id);
+    if (!scorecards) return;
+    updateUIWithScorecards(scorecards);
+}
+
+async function fetchPlayerScorecards(playerId) {
+    const response = await supabase.from('tbl_scorecards').select('*').or(`player_H.eq.${playerId},player_A.eq.${playerId}`);
+    if (response.error) {
+        console.error('Error fetching player scorecards:', response.error);
+        return null;
+    }
+    return response.data;
+}
+
+function updateUIWithScorecards(scorecards) {
+    const scorecardList_Player = document.getElementById('scorecardList_Player');
+    scorecardList_Player.innerHTML = '';
+    scorecards.forEach(scorecard => {
+        const scorecardButton = createScorecardButton(scorecard);
+        scorecardList_Player.appendChild(scorecardButton);
+    });
+}
+
+function createScorecardButton(scorecard) {
+    const button = document.createElement('button');
+    button.textContent = `Scorecard ID: ${scorecard.id}`;
+    button.className = 'list-group-item list-group-item-action';
+    button.addEventListener('click', () => handleScorecardSelection(scorecard.id));
+    return button;
+}
+
+function handleScorecardSelection(scorecardId) {
+    console.log(`Scorecard selected: ${scorecardId}`);
+    window.location.href = `${window.location.pathname}?scorecardID=${scorecardId}`;
+}*/
