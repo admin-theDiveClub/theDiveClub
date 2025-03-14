@@ -9,3 +9,20 @@ body {
     background-color: var(--color_h_bg);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+
+.drop-slot {
+    border: 2px dashed #ccc;
+    padding: 20px;
+    margin: 10px;
+    text-align: center;
+}
+
+.container_tournamentRound
+{
+    margin: 5%;
+}
+
+.container_tournamentMatch
+{
+    width: 20%;
+}

@@ -37,7 +37,6 @@ async function Start ()
     UpdateUI_TournamentData(tournamentData);
     
     entries = await GetEntries(tournamentID);
-    console.log(entries);
     UpdateUI_Entries(entries);
 }
 
@@ -150,9 +149,9 @@ async function UpdateApproval (_entryID)
 async function UpdateUI_Entries (_entries)
 {
     var lg_entries = document.getElementById('lg_entries');
-    var lg_approvedEntries = document.getElementById('lg_approvedEntries');
+    var card_approvedEntries = document.getElementById('card_approvedEntries');
     lg_entries.innerHTML = '';
-    lg_approvedEntries.innerHTML = '';
+    card_approvedEntries.innerHTML = '';
 
     for (let i = 0; i < _entries.length; i++)
     {
@@ -160,6 +159,7 @@ async function UpdateUI_Entries (_entries)
         li.className = 'list-group-item';
         var button = document.createElement('button');
         button.innerText = _entries[i].name;        
+        button.draggable = true; // Add draggable property
         button.onclick = async function() 
         { 
             await UpdateApproval(_entries[i].id); 
@@ -168,40 +168,14 @@ async function UpdateUI_Entries (_entries)
         if (_entries[i].approved)
         {
             button.className = 'btn btn-danger';
-            li.appendChild(button);
-            lg_approvedEntries.appendChild(li);
+            card_approvedEntries.appendChild(button);
         } else 
         {
             button.className = 'btn btn-secondary';
             li.appendChild(button);
             lg_entries.appendChild(li);
         }
-    }
-
-    var card_lobby = document.getElementById('card_lobby');
-    card_lobby.innerHTML = '';
-    
-    for (let i = 0; i < _entries.length; i++)
-    {
-        if (entries[i].approved)
-        {
-            var button = document.createElement('button');
-            button.style.margin = '1%';
-            button.innerText = _entries[i].name;
-
-            button.onclick = async function() 
-            { 
-                //Move to Round 1 
-            };
-
-            if (_entries[i].approved)
-            {
-                button.className = 'btn btn-dark';
-                card_lobby.appendChild(button);
-            }
-        }
-        
-    }    
+    }  
 }
 
 async function AddEntry (_tournamentID, _name)
@@ -226,3 +200,6 @@ document.getElementById('btn_addEntry').onclick = async function()
         UpdateUI_Entries(entries);
     }
 };
+
+
+
