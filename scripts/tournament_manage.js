@@ -201,5 +201,48 @@ document.getElementById('btn_addEntry').onclick = async function()
     }
 };
 
+document.addEventListener('DOMContentLoaded', (event) => {
+    // Example elements to connect
+    const element1 = document.querySelector('.container_tournamentMatch:nth-child(1)');
+    const element2 = document.querySelector('.container_tournamentMatch:nth-child(2)');
+    const element3 = document.querySelector('.container_tournamentMatch:nth-child(3)');
 
+    // Create lines between elements
+    new LeaderLine(element1, element2, {
+        color: 'blue',
+        size: 4,
+        path: 'fluid',
+        startPlug: 'behind',
+        endPlug: 'arrow3',
+        startSocket: 'bottom',
+        endSocket: 'top'
+    });
 
+    new LeaderLine(element2, element3, {
+        color: 'green',
+        size: 4,
+        path: 'fluid',
+        startPlug: 'behind',
+        endPlug: 'arrow3',
+        startSocket: 'bottom',
+        endSocket: 'top'
+    });
+});
+
+/*
+Start: Final = n = 1
+Semifinal: n = 2
+Quarterfinal: n^2 = 4
+Round of 16: n^3 = 8
+Round of 32: n^4 = 16
+Round of 64: n^5 = 32
+
+CreateFinalmatch ();
+var tournamentRounds = 1;
+
+CreateLeadingMatches (_existingMatch, _upDown)
+{
+    
+}
+
+*/
