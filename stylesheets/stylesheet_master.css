@@ -1,13 +1,14 @@
 :root {
     --color_p: #292929;
-    --color_h: #797979;
-    --color_h_bg: #cfcfcf;
+    --color_h: rgb(255, 255, 255);
+    --color_h_bg: #3f3f3f;
     --color_shadows: #000000;
 }
 
 body {
     background-color: var(--color_h_bg);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    
 }
 
 .drop-slot {
@@ -25,4 +26,73 @@ body {
 .container_tournamentMatch
 {
     width: 20%;
+}
+
+.logoHome 
+{
+    width: 25vw;
+    height: auto;
+}
+
+.nav-item
+{
+    background-color: var(--color_p);
+    border-radius: 5px;
+}
+
+.nav-link
+{
+    color: white;
+    min-width: 15vw;
+    margin: 1%;
+}
+
+.inputLabel
+{
+    font-size: small;
+    margin: 1cap;
+}
+
+.inputField
+{
+    background-color: rgb(221, 221, 221);
+    border: 0;
+    padding: 1cap;
+    margin: 1cap;
+}
+
+.inputText
+{
+    background-color: rgb(221, 221, 221);
+    border: 0;
+    padding: 1cap;
+    font-size: large;
+}
+
+.btn-primary
+{
+    width: 100%; 
+    padding: 2cap;
+    background-color: rgb(0, 153, 255);
+    border: none;
+}
+
+.btnHolder
+{
+    padding: 1cap; 
+    width: 100%;
+}
+
+.hud-banner {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    background-color: #ffcc00; /* Yellow background */
+    color: #000; /* Black text */
+    text-align: center;
+    padding: 10px;
+    z-index: 1000; /* High z-index to sit above other elements */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Optional: Add a shadow for better visibility */
 }

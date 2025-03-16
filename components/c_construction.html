@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <title>The Dive Club</title>
+    <title>CONSTRUCTION</title>
 
     <!-- Import Supabase resources via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
@@ -14,14 +13,33 @@
 
     <!-- Custom CSS -->
     <link href="../stylesheets/stylesheet_master.css" rel="stylesheet">
+
+    <!-- Google icons -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     
     <!-- Component Loader-->
     <script src="../scripts/componentLoader.js"></script>    
 </head>
 
 <body>
+    <div id="hud-banner" class="hud-banner">
+        <p>Construction in Progress</p>
+    </div>
     
-    <load-component src="../components/c_header.html"></load-component>
+    <load-component src="../components/c_header.html"></load-component>    
+    <load-component src="../components/c_nav.html"></load-component>
+
+    <div class="row">
+        <div class="col-lg-3 col-xl-4"></div>
+        <div class="col-lg-6 col-xl-4">
+            <div class="card rounded" style="padding: 2%; margin-top: 4vh;">
+                <load-component src="../components/c_header.html"></load-component> 
+                <h2 style="margin: 1cap; text-align: center;">Log in</h2>
+                <load-component src="../components/c_login.html"></load-component>
+            </div>
+        </div>
+        <div class="col-lg-3 col-xl-4"></div>
+    </div>
     
     <!-- Bootstrap JS (Optional) -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
