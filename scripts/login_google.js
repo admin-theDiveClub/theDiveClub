@@ -1,4 +1,4 @@
-document.getElementById('btn_signIn_google').addEventListener('click', () => 
+document.getElementById('btn_login_google').addEventListener('click', () => 
 {
     SignInWithGoogle();
 });
@@ -11,7 +11,7 @@ async function SignInWithGoogle()
         provider: 'google',
         options: 
         {
-            redirectTo: `../tournaments/index.html`,
+            redirectTo: `../index.html`
         }
     });
 }

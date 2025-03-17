@@ -1,82 +1,90 @@
+const debugging = true;
+
 document.getElementById('btn_signUp').addEventListener('click', () => 
 {
     SignUp();
 });
     
-//Sign Up (credentials)
 async function SignUp()
 {
-    //Sign in using email and password
-    const credentials = 
-    { 
-        email: document.getElementById('inp_signUp_email').value,
-        password: document.getElementById('inp_signUp_password').value, 
-        name: document.getElementById('inp_signUp_name').value,
-        surname: document.getElementById('inp_signUp_surname').value,
-        nickname: document.getElementById('inp_signUp_nickname').value        
-    };
+    const credentials_db = 
+    {
+        email: document.getElementById('inp_username').value,
+        password: document.getElementById('inp_password').value,
+    }
 
-    SubmitSignUp(credentials);
+    var confirmedPassword = document.getElementById('inp_confirmPassword').value;
+    
+    var newUser = await Register_DB(credentials_db);
+    if (debugging)
+    {
+        console.log(newUser);
+    }    
+
+    if (newUser.user)
+    {
+        const credentials_player = 
+        { 
+            username: document.getElementById('inp_username').value,
+            name: document.getElementById('inp_name').value,
+            surname: document.getElementById('inp_surname').value,
+            nickname: document.getElementById('inp_nickname').value        
+        };
+        var newPlayer = await CreatePlayer(credentials_player);
+        if (debugging)
+        {
+            console.log(newPlayer);
+        }
+
+        Output_SignUpResponse(true, 'User created successfully! Your username is: ' + newUser.user.email + '. And your player ID is: ' + newPlayer.id);    
+    }
 }
 
-async function SubmitSignUp(_credentials)
+function matchPasswords(_p0, _p1)
 {
-    //Sign in using email and password
-    var credentials = 
+    if (_p0 === _p1)
     {
-        email: _credentials.email,
-        password: _credentials.password
-    }
-    console.log("SIGNING UP");
-    const signUpResponse = await supabase.auth.signUp(credentials);
-    console.log(signUpResponse);
-
-    //Compose output
-    var response = "";
-    if (signUpResponse.error)
-    {
-        //Failed to sign up
-        response = "ERROR: " + signUpResponse.error.message + ". Please try again.";
+        return true;
     } else 
     {
-        //Signed up successfully
-        var user = signUpResponse.data.user;
-        var session = signUpResponse.data.session;
-
-        //Compose output
-        response = "Signed up as: " + user.email + "\n";
-        response += "Please sign in to continue.";
+        return false;
     }
+}
 
-    //Display output
-    if (document.getElementById('txt_signUp_response'))
+async function Register_DB (_credentials)
+{
+    const response = await supabase.auth.signUp(_credentials);
+    if (response.error)
     {
-        document.getElementById('txt_signUp_response').textContent = response;
+        Output_SignUpResponse(false, response.error.message);
+        return response.error.message;
     } else 
     {
-        console.warn(response);
-    }
-
-    if (signUpResponse.error)
-    {
-        console.error('Failed to sign up:', signUpResponse.error);
-    } else 
-    {
-        console.log('Signed up successfully:', signUpResponse.data.user.email);
-        CreatePlayer(_credentials);
+        return response.data;
     }
 }
 
 async function CreatePlayer(_credentials)
-{
-    var playerCredentials = 
+{    
+    const response = await supabase.from('tbl_players').insert(_credentials).select();
+    if (response.error)
     {
-        username: _credentials.email,
-        name: _credentials.name,
-        surname: _credentials.surname,
-        nickname: _credentials.nickname
+        Output_SignUpResponse(false, response.error.message);
+        return response.error.message;
+    } else 
+    {
+        return response.data[0];
     }
-    
-    const newPlayerResponse = await supabase.from('tbl_players').insert(playerCredentials).select();
-    console.log(newPlayerResponse.data.user.id);
+}
+
+function Output_SignUpResponse (_success, _message)
+{
+    if (_success)
+    {
+        document.getElementById('grp_inputs').style.display = 'none';
+        document.getElementById('grp_buttons').style.display = 'none';
+        document.getElementById('btn_Home').style.display = 'block';
+    }
+    document.getElementById('grp_output').style.display = 'block';
+    document.getElementById('outputMessage').textContent = _message;
 }

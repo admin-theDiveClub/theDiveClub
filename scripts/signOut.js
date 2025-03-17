@@ -11,8 +11,8 @@ async function SignOut()
         console.error('Error signing out:', error.message);
     } else 
     {
-        console.log('Successfully signed out');
         localStorage.clear();
+        sessionStorage.clear();
         window.location.reload();
     }
 }
