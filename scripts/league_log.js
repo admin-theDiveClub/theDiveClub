@@ -8,8 +8,7 @@
 //log: [players]
 var log = [];
 
-    BuildLog();
-DrawGraph();
+BuildLog();
 
 async function BuildLog ()
 {
@@ -71,21 +70,15 @@ async function CreateLogObjects (_playerIDs)
 
 async function GetPlayerName (_playerID)
 {
-    const response = await supabase.from('tbl_players').select('name', 'surname').eq('id', _playerID);
-    return response.data[0];
-}
-
-async function GetPlayerName (_playerID)
-{
-    const response = await supabase.from('tbl_players').select('name', 'surname').eq('id', _playerID);
+    const response = await supabase.from('tbl_players').select('name, surname').eq('id', _playerID);
     var fullName = '';
     if (response.data[0].name)
     {
         fullName += response.data[0].name;
     }
-    if (response.data[0].surname = "")
+    if (response.data[0].surname)
     {
-        fullName += response.data[0].surname;
+        fullName += " " + response.data[0].surname;
     } else 
     {
         fullName += ' *';

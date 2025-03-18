@@ -69,11 +69,10 @@ body {
     font-size: large;
 }
 
-.btn-primary
+.btn
 {
     width: 100%; 
     padding: 2cap;
-    background-color: rgb(0, 153, 255);
     border: none;
 }
 

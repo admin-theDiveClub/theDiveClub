@@ -93,49 +93,62 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>1</td>
-                                    <td>John Doe</td>
-                                    <td>10</td>
-                                    <td>8</td>
-                                    <td>2</td>
-                                    <td>15</td>
-                                    <td>24</td>
-                                </tr>
+                                <td>
+                                    <p>LOADING...</p>
+                                </td>
                             </tbody>
                         </table>
                     </div>
 
-                    <div class="card rounded">
-                        <div class="card-body">
-                            <label for="leagueSlider" class="form-label">League Progress</label>
-                            <input type="range" class="form-range" id="leagueSlider" min="1" max="14" step="1" value="1">
-                            <div class="d-flex justify-content-between">
-                                <span>1</span>
-                                <span>2</span>
-                                <span>3</span>
-                                <span>4</span>
-                                <span>5</span>
-                                <span>6</span>
-                                <span>7</span>
-                                <span>8</span>
-                                <span>9</span>
-                                <span>10</span>
-                                <span>11</span>
-                                <span>12</span>
-                                <span>13</span>
-                                <span>14</span>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Rounds -->
-                    <div class="card rounded">
-                        <canvas id="myChart"></canvas>
+
+                        <div class="accordion" id="roundsAccordion_1">
+                            <div class="accordion-item">
+
+                                <h2 class="accordion-header" id="headingOne_1"></h2>
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne_1" aria-expanded="true" aria-controls="collapseOne_1">
+                                        Round 2
+                                    </button>
+                                </h2>
+
+                                <div id="collapseOne_1" class="accordion-collapse collapse show" aria-labelledby="headingOne_1" data-bs-parent="#roundsAccordion_1">
+                                    <div class="accordion-body">
+                                        <table class="table table-striped text-center">
+                                            <thead>
+                                                <tr>
+                                                    <th>Home</th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th>Away</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>Test_H</td>
+                                                    <td style="text-align: right; font-weight: bold;">9</td>
+                                                    <td>:</td>
+                                                    <td style="text-align: left">1</td>
+                                                    <td>Test_A</td>                                                    
+                                                </tr>
+                                                <tr>
+                                                    <td>Test_H</td>
+                                                    <td style="text-align: right;">** 9</td>
+                                                    <td>:</td>
+                                                    <td style="text-align: left">6</td>
+                                                    <td>Test_A</td>
+                                                </tr>
+                                                <!-- Add more rows as needed -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Add more accordion items for additional rounds -->
+                        </div>
+
+
                     </div>
-
-
-                    <p>Matches</p>
                 </div>
             </div>
         </div>
@@ -146,8 +159,7 @@
     <script src="../scripts/league_log.js"></script>
     
     <!-- Bootstrap JS (Optional) -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
 </body>
 </html>
