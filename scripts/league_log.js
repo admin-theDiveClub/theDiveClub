@@ -8,7 +8,7 @@
 //log: [players]
 var log = [];
 
-BuildLog();
+    BuildLog();
 DrawGraph();
 
 async function BuildLog ()
