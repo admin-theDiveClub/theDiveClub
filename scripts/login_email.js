@@ -7,7 +7,7 @@ document.getElementById('btn_login').addEventListener('click', () =>
     };
 
     var sessionPersistance = document.getElementById('rememberMe').checked;
-    Login(credentials, sessionPersistance);
+    var login = Login(credentials, sessionPersistance);
 });
 
 async function Login (_credentials, _persistance)
@@ -16,6 +16,7 @@ async function Login (_credentials, _persistance)
     if (response.error)
     {
         console.log(response.error.message);
+        Output_LoginResponse(response.error.message);
         return response.error.message;
     } else 
     {
@@ -32,4 +33,10 @@ async function Login (_credentials, _persistance)
             window.location.href = '../index.html';
         }
     }
+}
+
+function Output_LoginResponse (_message)
+{    
+    document.getElementById('grp_output').style.display = 'block';
+    document.getElementById('outputMessage').textContent = _message.charAt(0).toUpperCase() + _message.slice(1) + ". Please try again.";
 }

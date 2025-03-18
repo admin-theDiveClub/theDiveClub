@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONSTRUCTION</title>
+    <title>TDC: Leagues</title>
 
     <!-- Import Supabase resources via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
@@ -13,14 +13,13 @@
 
     <!-- Custom CSS -->
     <link href="../stylesheets/stylesheet_master.css" rel="stylesheet">
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
      
 </head>
 
-<body>
-    <div id="hud-banner" class="hud-banner">
-        <p>Construction in Progress</p>
-    </div>    
-    
+<body>    
     <div class="row">
         <div class="col-2"></div>
         <div class="col-8">
@@ -69,62 +68,82 @@
     </div>
 
     <div class="row">
-        <div class="col-lg-3 col-xl-4"></div>
-        <div class="col-lg-6 col-xl-4">
-            <div class="card rounded" style="padding: 2%; margin-top: 4vh;">
-                <div class="row">
-                    <div class="col-2"></div>
-                    <div class="col-8">
-                        <div class="row">
-                            <div class="col-4">
-                                <img src="../resources/icon_theDiveClub_Transparent.png" alt="Logo Home" style="display: block; margin-left: auto; margin-right: auto; max-width: 100%; max-height: 100%;">
-                            </div>
-                            <div class="col-8">
-                                <div style="display: flex; align-items: center; justify-content: center; height: 100%; ">
-                                    <img src="../resources/drawing_logo_theDiveClub_textOnly.png" alt="Logo Home" style="max-width: 100%; max-height: 100%;">
-                                </div> 
+        <div class="col-1"></div>
+        <div class="col-10">
+            <div class="card">
+                <div class="card-header">
+                    <h3>League Name</h3>
+                </div>
+                <div class="card-body">
+                    <p>League Information</p>
+                    
+                    
+                    <!-- Log -->
+                    <div class="card rounded">
+                        <table class="table table-striped" style="border-radius: 10px; overflow: hidden;">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Player</th>
+                                    <th>Played</th>
+                                    <th>Won</th>
+                                    <th>Lost</th>
+                                    <th>Apples</th>
+                                    <th>Pts</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td>John Doe</td>
+                                    <td>10</td>
+                                    <td>8</td>
+                                    <td>2</td>
+                                    <td>15</td>
+                                    <td>24</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="card rounded">
+                        <div class="card-body">
+                            <label for="leagueSlider" class="form-label">League Progress</label>
+                            <input type="range" class="form-range" id="leagueSlider" min="1" max="14" step="1" value="1">
+                            <div class="d-flex justify-content-between">
+                                <span>1</span>
+                                <span>2</span>
+                                <span>3</span>
+                                <span>4</span>
+                                <span>5</span>
+                                <span>6</span>
+                                <span>7</span>
+                                <span>8</span>
+                                <span>9</span>
+                                <span>10</span>
+                                <span>11</span>
+                                <span>12</span>
+                                <span>13</span>
+                                <span>14</span>
                             </div>
                         </div>
                     </div>
-                    <div class="col-2"></div>
-                </div> 
-                <h2 style="margin: 1cap; text-align: center;">Log in</h2>
-                <div class="card rounded inputField">
-                    <p class="inputLabel">Username</p>    
-                    <input type="text" class="form-control border-0 inputText" id="username" name="username" placeholder="Enter username">
-                </div>
-                
-                <div class="card rounded inputField">
-                    <p class="inputLabel">Password</p>    
-                    <input type="password" class="form-control border-0 inputText" id="password" name="password" placeholder="Enter password">
-                </div>
-                
-                <div class="card rounded inputField">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" value="" id="rememberMe">
-                        <label class="form-check-label" for="rememberMe">Remember me</label>
+
+                    <!-- Rounds -->
+                    <div class="card rounded">
+                        <canvas id="myChart"></canvas>
                     </div>
+
+
+                    <p>Matches</p>
                 </div>
-                
-                <div class="btnHolder">
-                    <button type="submit" class="btn btn-primary">Login</button>
-                </div>
-                
-                <p class="inputLabel">Log in with:</p>
-                <div class="btnHolder">
-                    <button type="button btnHolder" class="btn btn-primary">
-                        Google
-                        <img src="../resources/icon_google.svg" alt="">
-                    </button>
-                </div>
-                
-                
             </div>
         </div>
-        <div class="col-lg-3 col-xl-4"></div>
+        <div class="col-1"></div>
     </div>
 
-
+    <script src="../scripts/supaBase_client.js"></script>
+    <script src="../scripts/league_log.js"></script>
     
     <!-- Bootstrap JS (Optional) -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>

@@ -12,42 +12,100 @@ async function SignUp()
         email: document.getElementById('inp_username').value,
         password: document.getElementById('inp_password').value,
     }
-
+    const credentials_player = 
+    { 
+        username: document.getElementById('inp_username').value,
+        name: document.getElementById('inp_name').value,
+        surname: document.getElementById('inp_surname').value,
+        nickname: document.getElementById('inp_nickname').value
+    };
     var confirmedPassword = document.getElementById('inp_confirmPassword').value;
-    
-    var newUser = await Register_DB(credentials_db);
-    if (debugging)
-    {
-        console.log(newUser);
-    }    
+    var valid = dataValid(credentials_db, confirmedPassword, credentials_player);
 
-    if (newUser.user)
+    if (valid != true)
     {
-        const credentials_player = 
-        { 
-            username: document.getElementById('inp_username').value,
-            name: document.getElementById('inp_name').value,
-            surname: document.getElementById('inp_surname').value,
-            nickname: document.getElementById('inp_nickname').value        
-        };
-        var newPlayer = await CreatePlayer(credentials_player);
+        Output_SignUpResponse(false, valid);
+        return;
+    } else
+    {
+        var newUser = await Register_DB(credentials_db);
         if (debugging)
         {
-            console.log(newPlayer);
-        }
+            console.log(newUser);
+        }    
 
-        Output_SignUpResponse(true, 'User created successfully! Your username is: ' + newUser.user.email + '. And your player ID is: ' + newPlayer.id);    
-    }
+        if (newUser.user)
+        {
+            
+            var newPlayer = await CreatePlayer(credentials_player);
+            if (debugging)
+            {
+                console.log(newPlayer);
+            }
+
+            Output_SignUpResponse(true, 'User created successfully! Your username is: ' + newUser.user.email + '. And your player ID is: ' + newPlayer.id);    
+        }
+    }  
 }
 
-function matchPasswords(_p0, _p1)
+function dataValid (_creds_db, _confirmedPassword, _creds_player)
 {
-    if (_p0 === _p1)
+    // Remove all red borders before validation
+    document.querySelectorAll('.inputField').forEach(field => {
+        field.style.border = 'none';
+    });
+
+    var errorMessage = "";
+    var valid = true;
+    if (_creds_db.password != _confirmedPassword)
+    {
+        valid = false;
+        errorMessage += "Passwords do not match.\n";
+        document.getElementById('inp_password').closest('.inputField').style.border = '1px solid red';
+        document.getElementById('inp_confirmPassword').closest('.inputField').style.border = '1px solid red';
+    }
+
+    if (_creds_db.email == "")
+    {
+        valid = false;
+        errorMessage += "Email field is empty.\n";
+        document.getElementById('inp_username').closest('.inputField').style.border = '1px solid red';
+    }
+
+    if (_creds_db.password == "")
+    {
+        valid = false;
+        errorMessage += "Password field is empty.\n";
+        document.getElementById('inp_password').closest('.inputField').style.border = '1px solid red';
+    }
+
+    if (_creds_player.username == "")
+    {
+        valid = false;
+        errorMessage += "Username field is empty.\n";
+        document.getElementById('inp_username').closest('.inputField').style.border = '1px solid red';
+    }
+
+    if (_creds_player.name == "")
+    {
+        valid = false;
+        errorMessage += "Name field is empty.\n";
+        document.getElementById('inp_name').closest('.inputField').style.border = '1px solid red';
+    }
+
+    if (_creds_player.surname == "")
+    {
+        valid = false;
+        errorMessage += "Surname field is empty.\n";
+        document.getElementById('inp_surname').closest('.inputField').style.border = '1px solid red';
+    }
+
+    if (valid)
     {
         return true;
     } else 
     {
-        return false;
+        return errorMessage;
     }
 }
 
