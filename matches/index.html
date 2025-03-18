@@ -39,6 +39,29 @@
         <div class="col-1"></div>
         <div class="col-10">
 
+            <div class="card rounded">
+                <div class="card-header">Match Control</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-1">
+                            <button class="btn btn-danger">X</button>
+                        </div>
+                        <div class="col-3">
+                            <button class="btn btn-success">Start Match</button>
+                        </div>
+                        <div class="col-4">
+                            <div class="card rounded d-flex align-items-center justify-content-center" style="height: 100%; text-align: center;">
+                                <p style = "font-size: 2vw; font-weight: bold;">Match Started At: 00:00</p>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <button class="btn btn-warning">Pause Match</button>
+                        </div>
+                        <div class="col-1"></div>
+                    </div>
+                </div>
+            </div>
+
             <div class="card rounded text-center">
                 <div class="card-header">Match</div>
                 <div class="card-body">
@@ -158,6 +181,11 @@
         </div>
         <div class="col-1"></div>
     </div>
+
+    
+    <script src="../scripts/supaBase_client.js"></script>
+    <script src="../scripts/session_restore.js"></script>
+    <script src="../scripts/match_manage.js"></script>
     
     <!-- Bootstrap JS (Optional) -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
