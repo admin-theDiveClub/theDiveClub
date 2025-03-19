@@ -21,31 +21,30 @@
         <div class="col-lg-3 col-xl-4"></div>
         <div class="col-lg-6 col-xl-4">
             <div class="card rounded" style="padding: 2%; margin-top: 4vh;">
+                
                 <div class="row">
-                    <div class="col-2"></div>
-                    <div class="col-8">
-                        <div class="row">
-                            <div class="col-4">
-                                <img src="../resources/icon_theDiveClub_Transparent.png" alt="Logo Home" style="display: block; margin-left: auto; margin-right: auto; max-width: 100%; max-height: 100%;">
-                            </div>
-                            <div class="col-8">
-                                <div style="display: flex; align-items: center; justify-content: center; height: 100%; ">
-                                    <img src="../resources/drawing_logo_theDiveClub_textOnly.png" alt="Logo Home" style="max-width: 100%; max-height: 100%;">
+                    <div class="col-sm-2"></div>
+                    <div class="col-sm-8">
+                        <div class="row justify-content-center">
+                            <div class="col-md-8">
+                                <div style="display: flex; align-items: center; justify-content: center; height: 100%;">
+                                    <img src="../resources/drawing_logo_theDiveClub.png" alt="Logo Home" style="max-width: 100%; max-height: 100%;">
                                 </div> 
                             </div>
                         </div>
                     </div>
-                    <div class="col-2"></div>
-                </div> 
+                    <div class="col-sm-2"></div>
+                </div>
+
                 <h2 style="margin: 1cap; text-align: center;">Log in</h2>
                 <div class="card rounded inputField">
                     <p class="inputLabel">Username</p>    
-                    <input type="text" class="form-control border-0 inputText" id="username" name="username" placeholder="Enter username">
+                    <input type="text" class="form-control border-0 inputText" id="username" name="username" placeholder="Enter username" autocomplete="username">
                 </div>
                 
                 <div class="card rounded inputField">
                     <p class="inputLabel">Password</p>    
-                    <input type="password" class="form-control border-0 inputText" id="password" name="password" placeholder="Enter password">
+                    <input type="password" class="form-control border-0 inputText" id="password" name="password" placeholder="Enter password" autocomplete="current-password">
                 </div>
                 
                 <div class="card rounded inputField">
@@ -65,6 +64,8 @@
                 <div class="btnHolder">
                     <button type="submit" class="btn btn-primary" id="btn_login">Login</button>
                 </div>
+                <p style="text-align: center;">Don't have account?</p>
+                <a href="../accounts/signUp.html" class="link" style="text-align: center;">Sign Up now.</a>
                 
                 <p class="inputLabel">Log in with:</p>
                 <div class="btnHolder">
@@ -88,3 +89,4 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
+

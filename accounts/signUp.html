@@ -24,40 +24,37 @@
             <div class="card rounded" style="padding: 2%; margin-top: 4vh;">
 
                 <div class="row">
-                    <div class="col-2"></div>
-                    <div class="col-8">
-                        <div class="row">
-                            <div class="col-4">
-                                <img src="../resources/icon_theDiveClub_Transparent.png" alt="Logo Home" style="display: block; margin-left: auto; margin-right: auto; max-width: 100%; max-height: 100%;">
-                            </div>
-                            <div class="col-8">
-                                <div style="display: flex; align-items: center; justify-content: center; height: 100%; ">
-                                    <img src="../resources/drawing_logo_theDiveClub_textOnly.png" alt="Logo Home" style="max-width: 100%; max-height: 100%;">
+                    <div class="col-sm-2"></div>
+                    <div class="col-sm-8">
+                        <div class="row justify-content-center">
+                            <div class="col-md-8">
+                                <div style="display: flex; align-items: center; justify-content: center; height: 100%;">
+                                    <img src="../resources/drawing_logo_theDiveClub.png" alt="Logo Home" style="max-width: 100%; max-height: 100%;">
                                 </div> 
                             </div>
                         </div>
                     </div>
-                    <div class="col-2"></div>
-                </div> 
+                    <div class="col-sm-2"></div>
+                </div>
 
                 <h2 style="margin: 1cap; text-align: center;">Sign Up</h2>
 
                 <div id="grp_inputs">
                     <div class="card rounded inputField">
                         <p class="inputLabel">Email Address</p>    
-                        <input type="email" class="form-control border-0 inputText" id="inp_username" name="username" placeholder="Enter Email Address" required>
+                        <input type="email" class="form-control border-0 inputText" id="inp_username" name="username" placeholder="Enter Email Address" required autocomplete="email">
                     </div>
                     
                     <div class="card rounded inputField">
                         <p class="inputLabel">Password</p>    
-                        <input type="password" class="form-control border-0 inputText" id="inp_password" name="password" placeholder="Enter password">
+                        <input type="password" class="form-control border-0 inputText" id="inp_password" name="password" placeholder="Enter password" autocomplete="new-password">
                         <p class="inputLabel">Repeat Password</p>    
-                        <input type="password" class="form-control border-0 inputText" id="inp_confirmPassword" name="password" placeholder="Re-enter your password">
+                        <input type="password" class="form-control border-0 inputText" id="inp_confirmPassword" name="password" placeholder="Re-enter your password" autocomplete="new-password">
                     </div>
 
                     <div class="card rounded inputField">
                         <p class="inputLabel">Name</p>    
-                        <input type="text" class="form-control border-0 inputText" id="inp_name" name="name" placeholder="Enter name">
+                        <input type="text" class="form-control border-0 inputText" id="inp_name" name="name" placeholder="Enter name" autocomplete="name">
                     </div>
 
                     <div class="card rounded inputField">
@@ -82,6 +79,9 @@
                     <div class="btnHolder">
                         <button type="submit" class="btn btn-primary" id="btn_signUp">Sign Up</button>
                     </div>
+                    
+                    <p style="text-align: center;">Already have an account?</p>
+                    <a href="../accounts/login.html" class="link" style="display: block; text-align: center;">Login.</a>
                 
                     <p class="inputLabel">Log in with:</p>
                     <div class="btnHolder">

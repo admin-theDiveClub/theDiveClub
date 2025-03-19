@@ -132,6 +132,13 @@ async function GetCredentials (_mode)
                     };
                 } else if (_mode == 1)
                 {
+                    var guestName = document.getElementById('guestName').value;
+                    if (!guestName) {
+                        document.getElementById('guestName').parentElement.style.border = '2px solid red';
+                        return null;
+                    } else {
+                        document.getElementById('guestName').parentElement.style.border = '';
+                    }
                     credentials =
                     {
                         tournamentID: tournamentID,
