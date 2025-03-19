@@ -30,7 +30,13 @@ async function InitializeUI ()
         var player = await GetPlayer(user.email);
         if (player)
         {
-            document.getElementById('loginStatus').innerText = "You are logged in as: " + player.name + " " + player.surname + " (" + player.username + ")";
+            var fullName = player.name;
+            if (player.surname)
+            {
+                fullName += " " + player.surname;
+            }
+            fullName += " (" + player.username + ")";
+            document.getElementById('loginStatus').innerText = "You are logged in as: " + fullName;
         } else 
         {
             console.log("Player not found.");
