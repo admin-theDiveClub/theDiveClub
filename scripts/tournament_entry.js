@@ -31,7 +31,13 @@ async function InitializeUI ()
         document.getElementById('card_goToLogin').style.display = 'none';
 
         var player = await GetPlayer(user.email);
-        document.getElementById('loginStatus').innerText = "You are logged in as: " + player.name + " " + player.surname + " (" + player.username + ")";
+        if (player)
+        {
+            document.getElementById('loginStatus').innerText = "You are logged in as: " + player.name + " " + player.surname + " (" + player.username + ")";
+        } else 
+        {
+            console.log("Player not found.");
+        }
     } else 
     {
         document.getElementById('card_goToLogin').style.display = 'block';
