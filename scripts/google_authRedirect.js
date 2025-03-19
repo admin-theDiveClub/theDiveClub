@@ -7,7 +7,7 @@ async function Start ()
     if (accessToken)
     {
         var response = await supabase.auth.setSession(accessToken);
-        console.log("Session:", response);
+        console.log("Session: ", response);
     }
 
     if (sessionStorage.getItem('tournamentID') || localStorage.getItem('tournamentID'))
