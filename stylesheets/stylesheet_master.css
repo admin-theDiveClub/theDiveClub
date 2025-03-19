@@ -74,6 +74,21 @@ body {
     width: 100%; 
     padding: 2cap;
     border: none;
+    margin: 0.5cap;
+}
+
+.btn-entry 
+{
+    width: auto;
+    margin: 0.25cap;
+    padding: 0.8cap;
+}
+
+.btn-compact
+{
+    width: auto;
+    padding: 0.8cap;
+    margin: 0.25cap;
 }
 
 .btnHolder

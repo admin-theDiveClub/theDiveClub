@@ -1,87 +1,122 @@
-PopulateTournamentInfo();
+//Get Tournament ID
+//Get Tournament
+//Get Entries
+//Populate UI
 
-async function PopulateTournamentInfo ()
+Start();
+
+async function Start ()
 {
-    var tournamentID = getTournamentIDFromURL();
-    var tournamentData = await getTournamentData(tournamentID);
-    PopulateTournamentData(tournamentData);
-
-    var tournamentEntries = await getTournamentEntries(tournamentID);
-    PopulateTournamentEntries(tournamentEntries);
+    var tournamentID = await GetTournamentID();
+    console.log("Tournament ID:", tournamentID);
+    var tournament = await GetTournament(tournamentID);
+    console.log("Tournament:", tournament);
+    var entries = await GetEntries(tournamentID);
+    console.log("Entries:", entries);
+    var tournamentCoordinator = await GetPlayerName(tournament.coordinatorID);
+    console.log("Tournament Coordinator:", tournamentCoordinator);
+    PopulateUI(tournament, tournamentCoordinator, entries);
 }
 
-function getTournamentIDFromURL ()
+async function GetTournamentID ()
 {
-    const urlParams = new URLSearchParams(window.location.search);
-    var tournamentID = urlParams.get('tournamentID');
+    var tournamentID = new URLSearchParams(window.location.search).get('tournamentID');
+    if (!tournamentID) 
+    {
+        tournamentID = localStorage.getItem('tournamentID')||sessionStorage.getItem('tournamentID');
+    }
     if (tournamentID)
     {
         localStorage.setItem('tournamentID', tournamentID);
-    } else if (localStorage.getItem('tournamentID'))
+        sessionStorage.setItem('tournamentID', tournamentID);
+        return tournamentID;
+    } else 
     {
-        tournamentID = localStorage.getItem('tournamentID');
+        return null;
     }
-
-    return tournamentID;
 }
 
-async function getTournamentData (_id)
+async function GetTournament (_tournamentID)
 {
-    const response = await supabase.from('tbl_tournaments').select('*').eq('id', _id);
-
-    return response.data[0];
-}
-
-async function PopulateTournamentData (_data)
-{
-    document.getElementById('txt_T_name').textContent = _data.name;
-
-    document.getElementById('txt_T_date').textContent = "Date: " + _data.date;
-    document.getElementById('txt_T_time').textContent = "Time: " + _data.time;
-    document.getElementById('txt_T_location').textContent = "Location: " +  _data.location;
-    document.getElementById('txt_T_maxEntries').textContent = "Max Entries: " +  _data.maxEntries;
-    document.getElementById('txt_T_format').textContent = "Format: " +  _data.format;
-
-    const r_coordinatorProfile = await supabase.from('tbl_players').select('*').eq('id', _data.coordinatorID);
-    var coordinatorProfile = r_coordinatorProfile.data[0];
-    document.getElementById('txt_T_coordinatorName').textContent = "Coordinator Contact: " +  coordinatorProfile.name + " " + coordinatorProfile.surname + " (" + coordinatorProfile.contact + ")";
-
-    document.getElementById('txt_T_description').textContent = "Description: " +  _data.description;    
-    document.getElementById('txt_T_id').textContent = _data.id;
-}
-
-async function getTournamentEntries (_id)
-{
-    const response = await supabase.from('tbl_entries').select('*').eq('tournamentID', _id).order('created_at', { ascending: true });
-
-    return response.data;
-}
-
-async function PopulateTournamentEntries (_data)
-{
-    var entriesList = document.getElementById('list_existingEntries');
-    entriesList.innerHTML = '';
-    for (var i = 0; i < _data.length; i++)
+    const response = await supabase.from('tbl_tournaments').select('*').eq('id', _tournamentID);
+    if (response.error)
     {
-        var entry = _data[i];
-        var listItem = document.createElement('li');
-        listItem.className = 'list-group-item';
-        listItem.id = 'li_entry_' + i;
+        return response.error.message;
+    } else
+    {
+        return response.data[0];
+    }
+}
 
-        var button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'btn btn-secondary';
+async function GetEntries (_tournamentID)
+{
+    const response = await supabase.from('tbl_entries').select('*').eq('tournamentID', _tournamentID);
+    if (response.error)
+    {
+        return response.error.message;
+    } else
+    {
+        return response.data;
+    }
+}
 
-        var buttonLabel = (i + 1) + ": " + entry.name;
-        if (entry.host)
-        {
-            var response_host = await supabase.from('tbl_players').select('name, surname').eq('id', entry.host);
-            var hostName = response_host.data[0].name + " " + response_host.data[0].surname;
-            buttonLabel += " (Host: " + hostName + ")";
+async function GetPlayerName (_playerID)
+{
+    const response = await supabase.from('tbl_players').select('name, surname').eq('id', _playerID);
+    if (response.error)
+    {
+        return response.error.message;
+    } else
+    {
+        return response.data[0].name + " " + response.data[0].surname;
+    }
+}
+
+function PopulateUI (_tournament, _coordinator, _entries)
+{
+    const tournamentDetailsDiv = document.getElementById('tournamentDetails');
+    for (const [key, value] of Object.entries(_tournament)) {
+        if (value !== null && key !== 'id' && key !== 'coordinatorID') {
+            const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            const textElement = document.createElement('p');
+            textElement.textContent = `${formattedKey}: ${value}`;
+            tournamentDetailsDiv.appendChild(textElement);
         }
-        button.textContent = buttonLabel;
-
-        listItem.appendChild(button);
-        entriesList.appendChild(listItem);
     }
+    const coordinatorElement = document.createElement('p');
+    coordinatorElement.textContent = `Co-ordinator: ${_coordinator}`;
+    tournamentDetailsDiv.appendChild(coordinatorElement);
+
+    // Populate tournamentShareCode with _tournament.id
+    const shareLinkElement = document.getElementById('tournamentShareLink');
+    shareLinkElement.textContent = `Share Link (Copy to clipboard): https://thediveclub.org/tournaments/entry.html?tournamentID=${_tournament.id}`;
+
+    const shareCodeElement = document.getElementById('tournamentShareCode');
+    shareCodeElement.textContent = `Share Link (Copy to clipboard): ${_tournament.id}`;
+
+    // Copy the tournament ID to the clipboard
+    shareLinkElement.addEventListener('click', () => {
+        navigator.clipboard.writeText("https://thediveclub.org/tournaments/entry.html?tournamentID=" + _tournament.id).then(() => 
+        {
+            shareLinkElement.classList.remove('btn-dark');
+            shareLinkElement.classList.add('btn-success');
+            shareLinkElement.textContent = `Share Code (Copied to clipboard): https://thediveclub.org/tournaments/entry.html?tournamentID=${_tournament.id}`;
+
+            shareCodeElement.classList.remove('btn-success');
+            shareCodeElement.classList.add('btn-dark');
+        });
+    });    
+
+    // Copy the tournament ID to the clipboard
+    shareCodeElement.addEventListener('click', () => {
+        navigator.clipboard.writeText(_tournament.id).then(() => 
+        {
+            shareCodeElement.classList.remove('btn-dark');
+            shareCodeElement.classList.add('btn-success');
+            shareCodeElement.textContent = `Share Code (Copied to clipboard): ${_tournament.id}`;
+
+            shareLinkElement.classList.remove('btn-success');
+            shareLinkElement.classList.add('btn-dark');
+        });
+    });
 }
