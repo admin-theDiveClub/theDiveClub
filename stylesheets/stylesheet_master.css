@@ -18,6 +18,11 @@ body {
     text-align: center;
 }
 
+.card
+{
+    margin: 1cap;
+}
+
 .container_tournamentRound
 {
     margin: 5%;

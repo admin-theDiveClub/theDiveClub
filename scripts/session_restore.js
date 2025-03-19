@@ -7,7 +7,7 @@ async function RestoreSession ()
     {
         await supabase.auth.setSession(session.access_token);
         var response = await supabase.auth.getSession();
-        console.log(response);
+        console.log("Session:", response);
     } else 
     {
         console.log('No session found');

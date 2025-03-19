@@ -37,6 +37,7 @@
     <div class="row">
         <div class="col-md-2 col-0"></div>
         <div class="col-md-8 col-12">
+
             <div class="card rounded">
                 <div class="card-header"><p>Tournament Name</p></div>
                 <div class="card-body">
@@ -45,80 +46,84 @@
                     <div class="btn btn-dark btn-compact" id="tournamentShareCode">XXX-XXX-XXX-XXX</div>
                     <div class="card rounded">
                         <div class="card-header"><p>Tournament Entries</p></div>
-                        <div class="card-body">
+                        <div class="card-body" id="card_entries">
                             <div class="btn btn-dark btn-entry">Yuvan Naidoo</div>
                             <div class="btn btn-dark btn-entry">Rick Schoenlank</div>
                             <div class="btn btn-dark btn-entry">Linton Paul</div>
                             <div class="btn btn-dark btn-entry">Player_A</div>
                             <div class="btn btn-dark btn-entry">Player_A</div>
+                            <hr>
                             <div class="btn btn-dark btn-entry">Player_A</div>
                             <div class="btn btn-dark btn-entry">Player_A</div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <div class="card rounded" id="card_tournamentSignUp">
+                <div class="card-header"><p>Tournament Sign Up</p></div>
+                <div class="card-body">
+        
+                    <div class="card rounded" id="card_goToLogin">
+                        <div class="card-body"> 
+                            <p>You are not logged in. Please log in to sign up guests under your account or use the anonymous sign up below.</p>                   
+                            <a href="../accounts/login.html" class="btn btn-primary mt-3">Go to log in</a>
+                        </div>
+                    </div>
+        
+                    <div class="card rounded" id="card_userSignUp">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <p class="mb-0" id="loginStatus">You are logged in as: Yuvan Naidoo (yuvannaidoo@gmail.com)</p>
+                                <div class="btn btn-danger btn-compact">Sign Out</div>
+                            </div>
+                            <div class="btn btn-primary mt-3" id="btn_signMeUp">Sign Me Up</div>
+                        </div>
+                    </div>
+        
+                    <div class="card rounded" id="card_hostSignUp">
+                        <div class="card-body"> 
+                            <h4>Guest Sign Up</h4>
+                            <div class="card rounded inputField">
+                                <p class="inputLabel">Guest Name</p>    
+                                <input type="text" class="form-control border-0 inputText" id="guestName" name="guestName" placeholder="Enter Guest Name">
+                            </div>                   
+                            <div class="btn btn-primary mt-3" id="btn_signUpHost">Submit Guest</div>
+                        </div>
+                    </div>
+        
+                    <div class="card rounded" id="card_anonymousSignUp">
+                        <div class="card-body"> 
+                            <h4>Anonymous Sign Up</h4>
+                            <div class="card rounded inputField">
+                                <p class="inputLabel">Name</p>    
+                                <input type="text" class="form-control border-0 inputText" id="name_anon" name="name_anon" placeholder="Enter Name">
+                            </div>
+                            <div class="card rounded inputField">
+                                <p class="inputLabel">Phone Number</p>    
+                                <input type="tel" class="form-control border-0 inputText" id="phone_anon" name="phone_anon" placeholder="Enter Phone Number">
+                            </div>
+                            <div class="card rounded inputField">
+                                <p class="inputLabel">Email</p>    
+                                <input type="email" class="form-control border-0 inputText" id="email_anon" name="email_anon" placeholder="Enter Email">
+                            </div>
+                            <div class="btn btn-primary mt-3" id="btn_signUpAnonymous">Submit Entry</div>
+                        </div>
+                    </div>
+        
+                </div>
+            </div>
+
         </div>
         <div class="col-md-2 col-0"></div>
     </div>
     
-    <div class="card rounded" id="card_tournamentSignUp">
-        <div class="card-header"><p>Tournament Sign Up</p></div>
-        <div class="card-body">
-
-            <div class="card rounded" id="card_goToLogin">
-                <div class="card-body"> 
-                    <p>You are not logged in. Please log in to sign up guests under your account or use the anonymous sign up below.</p>                   
-                    <div class="btn btn-primary mt-3">Go to log in</div>
-                </div>
-            </div>
-
-            <div class="card rounded" id="card_userSignUp">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <p class="mb-0">You are logged in as: Yuvan Naidoo (yuvannaidoo@gmail.com)</p>
-                        <div class="btn btn-danger btn-compact">Sign Out</div>
-                    </div>
-                    <div class="btn btn-primary mt-3">Sign Me Up</div>
-                </div>
-            </div>
-
-            <div class="card rounded" id="card_hostSignUp">
-                <div class="card-body"> 
-                    <h4>Guest Sign Up</h4>
-                    <div class="card rounded inputField">
-                        <p class="inputLabel">Guest Name</p>    
-                        <input type="text" class="form-control border-0 inputText" id="guestName" name="guestName" placeholder="Enter Guest Name">
-                    </div>                   
-                    <div class="btn btn-primary mt-3">Submit Guest</div>
-                </div>
-            </div>
-
-            <div class="card rounded" id="card_anonymousSignUp">
-                <div class="card-body"> 
-                    <h4>Anonymous Sign Up</h4>
-                    <div class="card rounded inputField">
-                        <p class="inputLabel">Name</p>    
-                        <input type="text" class="form-control border-0 inputText" id="name_anon" name="name_anon" placeholder="Enter Name">
-                    </div>
-                    <div class="card rounded inputField">
-                        <p class="inputLabel">Email</p>    
-                        <input type="email" class="form-control border-0 inputText" id="email_anon" name="email_anon" placeholder="Enter Email">
-                    </div>
-                    <div class="card rounded inputField">
-                        <p class="inputLabel">Phone Number</p>    
-                        <input type="tel" class="form-control border-0 inputText" id="phone_anon" name="phone_anon" placeholder="Enter Phone Number">
-                    </div>
-                    <div class="btn btn-primary mt-3">Submit Entry</div>
-                </div>
-            </div>
-
-        </div>
-    </div>
+    
 
     <div class="row">
         <div class="col-md-4 col-1"></div>
         <div class="col-md-4 col-10">
-            <div class="btn btn-success">Go To Live Tournament Page</div>
+            <div class="btn btn-success" style="display: none;">Go To Live Tournament Page</div>
         </div>
         <div class="col-md-4 col-1"></div>
     </div>
@@ -126,6 +131,7 @@
     <script src="../scripts/supaBase_client.js"></script>
     <script src="../scripts/session_restore.js"></script>
     <script src="../scripts/tournament_entry_getInfo.js"></script>
+    <script src="../scripts/tournament_entry.js"></script>
 
     <!-- Bootstrap JS (Optional) -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
