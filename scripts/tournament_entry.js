@@ -73,6 +73,8 @@ async function SubmitEntry (_mode)
         {
             PushCredentials(credentials);
             localStorage.setItem('entry', JSON.stringify(credentials));
+            //RELOAD PAGE & CHECK LOCAL STORAGE FOR LAST ENTRY, Notify User
+            //Or just replace the above with an alert and then reload
         } else 
         {
             console.log(isDuplicate);

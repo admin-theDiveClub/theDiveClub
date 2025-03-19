@@ -9,9 +9,21 @@ async function Start ()
     {
         console.log("Access Token:", accessToken);
         var response = await supabase.auth.setSession(accessToken);
-        console.log("Session: ", response);
-        //Create Player Profile if none exists
-        var newPlayer = await CreatePlayerProfile(response.user);
+
+        if (response.error)
+        {
+            response = await supabase.auth.signInWithIdToken({provider: 'google', token: accessToken});
+        }
+
+        if (response.error)
+        {
+            console.log(response.error.message);
+        } else 
+        {
+            console.log("Session: ", response);
+            //Create Player Profile if none exists
+            var newPlayer = await CreatePlayerProfile(response.user);
+        }  
     }
 
     if (sessionStorage.getItem('tournamentID') || localStorage.getItem('tournamentID'))
