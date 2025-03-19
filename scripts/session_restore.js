@@ -30,7 +30,7 @@ async function RestoreSession ()
                 console.log("Session: ", response);
             }
         }
-    }   
+    }
 }
 
 async function CreatePlayerProfile (_user)

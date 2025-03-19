@@ -13,6 +13,8 @@ async function Start ()
     {
         response = await supabase.auth.getSession();
         console.log("Session: ", response);
+        sessionStorage.setItem("session", JSON.stringify(response.data.session));
+        localStorage.setItem("session", JSON.stringify(response.data.session));
     }
 
     if (sessionStorage.getItem('tournamentID') || localStorage.getItem('tournamentID'))
