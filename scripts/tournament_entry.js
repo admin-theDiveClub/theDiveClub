@@ -75,12 +75,19 @@ async function SubmitEntry (_mode)
         if (!isDuplicate)
         {
             response = await PushCredentials(credentials);
-            console.log("Entry:", response.name);
-            localStorage.setItem('entry', JSON.stringify(credentials));
-            //RELOAD PAGE & CHECK LOCAL STORAGE FOR LAST ENTRY, Notify User
-            //Or just replace the above with an alert and then reload
-            alert("Entry submitted successfully: " + response.name);
-            location.reload();
+            if (response.name)
+            {
+                console.log("Entry:", response.name);
+                localStorage.setItem('entry', JSON.stringify(credentials));
+                //RELOAD PAGE & CHECK LOCAL STORAGE FOR LAST ENTRY, Notify User
+                //Or just replace the above with an alert and then reload
+                alert("Entry submitted successfully: " + response.name);
+                location.reload();
+            } else 
+            {
+                console.log("Entry:", response);
+            }
+            
         } else 
         {
             console.log(isDuplicate);
