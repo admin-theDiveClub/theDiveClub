@@ -7,23 +7,8 @@ async function Start ()
     var accessToken = new URLSearchParams(window.location.hash.substring(1)).get('access_token');
     if (accessToken)
     {
-        console.log("Access Token:", accessToken);
         var response = await supabase.auth.setSession(accessToken);
-
-        if (response.error)
-        {
-            response = await supabase.auth.signInWithIdToken({provider: 'google', token: accessToken});
-        }
-
-        if (response.error)
-        {
-            console.log(response.error.message);
-        } else 
-        {
-            console.log("Session: ", response);
-            //Create Player Profile if none exists
-            var newPlayer = await CreatePlayerProfile(response.user);
-        }  
+        console.log("Session: ", response);
     }
 
     if (sessionStorage.getItem('tournamentID') || localStorage.getItem('tournamentID'))
@@ -32,38 +17,3 @@ async function Start ()
     }
 }
 
-async function CreatePlayerProfile (_user)
-{
-    var player = await GetPlayer(_user.email);
-    if (!player)
-    {
-        var newPlayer = 
-        {
-            username: _user.email,
-            name: _user.user_metadata.full_name,
-        };
-        const response = await supabase.from('tbl_players').insert(newPlayer).select();
-        if (response.error)
-        {
-            console.log("Error Creating Player Profile:", response.error.message);
-        } else 
-        {
-            console.log("Player Profile Created:", response.data);
-        }
-    } else 
-    {
-        console.log("Player Profile Exists:", player);
-    }
-}
-
-async function GetPlayer(_username)
-{
-    const response = await supabase.from('tbl_players').select('*').eq('username', _username);
-    if (response.error)
-    {
-        return null;
-    } else 
-    {
-        return response.data[0];
-    }
-}
