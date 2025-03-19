@@ -9,6 +9,10 @@ async function Start ()
     {
         var response = await supabase.auth.setSession(accessToken);
         console.log("Session: ", response);
+    } else
+    {
+        response = await supabase.auth.getSession();
+        console.log("Session: ", response);
     }
 
     if (sessionStorage.getItem('tournamentID') || localStorage.getItem('tournamentID'))
