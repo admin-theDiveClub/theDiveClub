@@ -1,9 +1,10 @@
-var accessToken = new URLSearchParams(window.location.hash.substring(1)).get('access_token');
+
 
 Start();
 
 async function Start ()
 {
+    var accessToken = new URLSearchParams(window.location.hash.substring(1)).get('access_token');
     if (accessToken)
     {
         var response = await supabase.auth.setSession(accessToken);

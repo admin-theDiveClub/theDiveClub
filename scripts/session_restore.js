@@ -6,9 +6,9 @@ async function RestoreSession ()
     var session = response.data.session;
     if (session)
     {
-        localStorage.setItem("session", JSON.stringify(response));
-        sessionStorage.setItem("session", JSON.stringify(response));
-        console.log("Session:", response);
+        localStorage.setItem("session", JSON.stringify(session));
+        sessionStorage.setItem("session", JSON.stringify(session));
+        console.log("Session:", session);
     } else 
     {
         session = JSON.parse(localStorage.getItem('session')) || JSON.parse(sessionStorage.getItem('session'));
