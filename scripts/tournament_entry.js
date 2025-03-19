@@ -78,6 +78,8 @@ async function SubmitEntry (_mode)
             localStorage.setItem('entry', JSON.stringify(credentials));
             //RELOAD PAGE & CHECK LOCAL STORAGE FOR LAST ENTRY, Notify User
             //Or just replace the above with an alert and then reload
+            alert("Entry submitted successfully.");
+            location.reload();
         } else 
         {
             console.log(isDuplicate);
@@ -244,12 +246,14 @@ function IsDuplicate (_credentials, _entries)
         {
             if (entry.playerID == _credentials.playerID)
             {
+                alert("You are already registered for this tournament.");
                 return "You are already registered for this tournament.";
             }
         }
 
         if (entry.name == _credentials.name)
         {
+            alert("Name is already registered for this tournament");
             return "Name is already registered for this tournament.";
         }
     }
