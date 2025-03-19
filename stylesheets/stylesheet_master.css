@@ -20,7 +20,7 @@ body {
 
 .card
 {
-    margin: 1cap;
+    margin-top: 1cap;
 }
 
 .container_tournamentRound
@@ -62,8 +62,8 @@ body {
 {
     background-color: rgb(221, 221, 221);
     border: 0;
-    padding: 1cap;
-    margin: 1cap;
+    padding: 0.25cap;
+    margin: 0.25cap;
 }
 
 .inputText
@@ -77,7 +77,7 @@ body {
 .btn
 {
     width: 100%; 
-    padding: 2cap;
+    padding: 1cap;
     border: none;
     margin: 0.5cap;
 }
@@ -114,4 +114,10 @@ body {
     padding: 10px;
     z-index: 1000; /* High z-index to sit above other elements */
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Optional: Add a shadow for better visibility */
+}
+
+.tournamentDetails
+{
+    padding-right: 1cap;
+    padding-top: 0.5cap;
 }

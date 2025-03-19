@@ -60,7 +60,17 @@ async function SubmitEntry (_mode)
     var credentials = await GetCredentials(_mode);
     if (credentials)
     {
-        PushCredentials(credentials);
+        var tournamentID = GetTournamentID();
+        var entries = await GetEntries(tournamentID);
+        var isDuplicate = IsDuplicate(credentials, entries);
+        if (!isDuplicate)
+        {
+            PushCredentials(credentials);
+            localStorage.setItem('entry', JSON.stringify(credentials));
+        } else 
+        {
+            console.log(isDuplicate);
+        }
     }
 }
 
@@ -97,6 +107,7 @@ async function GetCredentials (_mode)
                         name: user.name + ' ' + user.surname,
                         contact: user.contact,
                         email: user.username,
+                        entryType: 'user'
                     };
                 } else if (_mode == 1)
                 {
@@ -104,9 +115,10 @@ async function GetCredentials (_mode)
                     {
                         tournamentID: tournamentID,
                         host: user.name + " " + user.surname + " (" + user.username + ")",
-                        name: "(G)" + document.getElementById('guestName').value,
+                        name: document.getElementById('guestName').value,
                         contact: user.contact,
                         email: user.username,
+                        entryType: 'host'
                     };
                 }
             }
@@ -135,9 +147,10 @@ async function GetCredentials (_mode)
             if (isValid) {
                 credentials = {
                     tournamentID: tournamentID,
-                    name: "(A)" + nameAnon.value,
+                    name: nameAnon.value,
                     contact: phoneAnon.value,
                     email: emailAnon.value,
+                    entryType: 'anonymous'
                 };
             }
         }
@@ -196,4 +209,38 @@ async function PushCredentials (_credentials)
         console.log("SUBMITTION:", response.data[0]);
     }
     return response.data[0];
+}
+
+async function GetEntries (_tournamentID)
+{
+    const response = await supabase.from('tbl_entries').select('playerID, name').eq('tournamentID', _tournamentID).order('createdAt', { ascending: true });
+    if (response.error)
+    {
+        return response.error.message;
+    } else
+    {
+        return response.data;
+    }
+}
+
+function IsDuplicate (_credentials, _entries)
+{
+    for (var i = 0; i < _entries.length; i++)
+    {
+        var entry = _entries[i];
+
+        if (entry.playerID && _credentials.playerID)
+        {
+            if (entry.playerID == _credentials.playerID)
+            {
+                return "You are already registered for this tournament.";
+            }
+        }
+
+        if (entry.name == _credentials.name)
+        {
+            return "Name is already registered for this tournament.";
+        }
+    }
+    return false;
 }

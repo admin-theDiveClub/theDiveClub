@@ -81,24 +81,47 @@ function PopulateUI (_tournament, _coordinator, _entries)
 {
     //Tournament Details
     const tournamentDetailsDiv = document.getElementById('tournamentDetails');
+    const table = document.createElement('table');
     for (const [key, value] of Object.entries(_tournament)) {
         if (value !== null && key !== 'id' && key !== 'coordinatorID') {
             const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-            const textElement = document.createElement('p');
-            textElement.textContent = `${formattedKey}: ${value}`;
-            tournamentDetailsDiv.appendChild(textElement);
+            const row = document.createElement('tr');
+            
+            const keyCell = document.createElement('td');
+            keyCell.textContent = formattedKey + ": ";
+            keyCell.className = 'tournamentDetails';
+            row.appendChild(keyCell);
+            
+            const valueCell = document.createElement('td');
+            valueCell.textContent = value;
+            row.appendChild(valueCell);
+            valueCell.className = 'tournamentDetails';
+            
+            table.appendChild(row);
         }
     }
-    const coordinatorElement = document.createElement('p');
-    coordinatorElement.textContent = `Co-ordinator: ${_coordinator}`;
-    tournamentDetailsDiv.appendChild(coordinatorElement);
+    tournamentDetailsDiv.appendChild(table);
+    const coordinatorRow = document.createElement('tr');
+    coordinatorRow.className = 'tournamentDetails';
+    
+    const coordinatorKeyCell = document.createElement('td');
+    coordinatorKeyCell.textContent = 'Co-ordinator:';
+    coordinatorKeyCell.className = 'tournamentDetails';
+    coordinatorRow.appendChild(coordinatorKeyCell);
+    
+    const coordinatorValueCell = document.createElement('td');
+    coordinatorValueCell.textContent = _coordinator;
+    coordinatorValueCell.className = 'tournamentDetails';
+    coordinatorRow.appendChild(coordinatorValueCell);
+    
+    table.appendChild(coordinatorRow);
 
     //Share Codes
     const shareLinkElement = document.getElementById('tournamentShareLink');
     shareLinkElement.textContent = `Share Link (Copy to clipboard): https://thediveclub.org/tournaments/entry.html?tournamentID=${_tournament.id}`;
 
     const shareCodeElement = document.getElementById('tournamentShareCode');
-    shareCodeElement.textContent = `Share Link (Copy to clipboard): ${_tournament.id}`;
+    shareCodeElement.textContent = `Share Code (Copy to clipboard): ${_tournament.id}`;
 
     // Copy the tournament ID to the clipboard
     shareLinkElement.addEventListener('click', () => {
@@ -106,7 +129,7 @@ function PopulateUI (_tournament, _coordinator, _entries)
         {
             shareLinkElement.classList.remove('btn-dark');
             shareLinkElement.classList.add('btn-success');
-            shareLinkElement.textContent = `Share Code (Copied to clipboard): https://thediveclub.org/tournaments/entry.html?tournamentID=${_tournament.id}`;
+            shareLinkElement.textContent = `Share Link (Copied to clipboard): https://thediveclub.org/tournaments/entry.html?tournamentID=${_tournament.id}`;
 
             shareCodeElement.classList.remove('btn-success');
             shareCodeElement.classList.add('btn-dark');
