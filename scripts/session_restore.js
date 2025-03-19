@@ -31,6 +31,7 @@ async function RestoreSession ()
 
 async function CreatePlayerProfile (_user)
 {
+    console.log(_user);
     var player = await GetPlayer(_user.email);
     if (!player)
     {
