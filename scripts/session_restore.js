@@ -20,7 +20,7 @@ async function RestoreSession ()
         session = JSON.parse(localStorage.getItem('session')) || JSON.parse(sessionStorage.getItem('session'));
         if (session)
         {
-            var response = await supabase.auth.setSession(session.access_token);
+            var response = await supabase.auth.refreshSession();
             if (response.error)
             {
                 console.log("Session: ", response.error.message);
