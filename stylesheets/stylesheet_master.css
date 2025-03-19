@@ -101,6 +101,7 @@ body {
     width: auto;
     margin: 0.25cap;
     padding: 0.8cap;
+    font-weight: lighter;
 }
 
 .btn-compact
