@@ -1,7 +1,7 @@
 :root {
-    --color_p: #292929;
+    --color_p: #222222;
     --color_h: rgb(255, 255, 255);
-    --color_h_bg: #3f3f3f;
+    --color_h_bg: #555555;
     --color_shadows: #000000;
 }
 
@@ -21,6 +21,16 @@ body {
 .card
 {
     margin-top: 1cap;
+    box-shadow: 0 0px 10px 3px rgba(0, 0, 0, 0.25);    
+}
+
+.card-header
+{
+    background-color: var(--color_p);
+    color: var(--color_h);
+    font-weight: lighter;
+    font-size: x-large;
+    padding: 1cap;
 }
 
 .container_tournamentRound
@@ -60,15 +70,16 @@ body {
 
 .inputField
 {
-    background-color: rgb(221, 221, 221);
+    background-color: rgb(226, 226, 226);
+    color: black;
     border: 0;
-    padding: 0.25cap;
+    padding: 1cap;
     margin: 0.25cap;
 }
 
 .inputText
 {
-    background-color: rgb(221, 221, 221);
+    background-color: rgb(226, 226, 226);
     border: 0;
     padding: 1cap;
     font-size: large;
@@ -80,6 +91,9 @@ body {
     padding: 1cap;
     border: none;
     margin: 0.5cap;
+    font-weight: bold;
+    color: white;
+    box-shadow: 0 0px 10px 3px rgba(0, 0, 0, 0.25);
 }
 
 .btn-entry 
@@ -120,4 +134,25 @@ body {
 {
     padding-right: 1cap;
     padding-top: 0.5cap;
+}
+
+p
+{
+    margin: 0;
+}
+
+.btn-primary
+{
+    background-color: rgb(255, 0, 119);
+}
+
+.link
+{
+    color: rgb(255, 0, 119);
+}
+
+.form-check-input
+{
+    background-color: rgb(255, 0, 119) !important;
+    border: 0;
 }
