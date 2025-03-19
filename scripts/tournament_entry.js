@@ -182,7 +182,7 @@ function GetTournamentID ()
 
 async function GetUser ()
 {
-    var session = JSON.parse(localStorage.getItem('supabase_session')) || JSON.parse(sessionStorage.getItem('supabase_session'));
+    var session = JSON.parse(localStorage.getItem('session')) || JSON.parse(sessionStorage.getItem('session'));
     if (session)
     {
         return session.user;
