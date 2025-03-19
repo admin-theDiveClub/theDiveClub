@@ -95,3 +95,5 @@ async function OnPayloadReceived (payload)
     console.log('Change received!', payload.new);
     //CODE
 }
+
+//Remember: Check tournament status and update match status accordingly. If tournament is not live, match should not be live.
