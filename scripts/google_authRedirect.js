@@ -37,6 +37,10 @@ async function CreatePlayerProfile (_user)
         {
             console.log("Player Profile Created:", response.data);
         }
+    } else 
+    {
+        console.log("Player Profile Exists:", player);
+
     }
 }
 
