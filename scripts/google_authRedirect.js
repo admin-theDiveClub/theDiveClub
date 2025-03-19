@@ -7,10 +7,11 @@ async function Start ()
     var accessToken = new URLSearchParams(window.location.hash.substring(1)).get('access_token');
     if (accessToken)
     {
+        console.log("Access Token:", accessToken);
         var response = await supabase.auth.setSession(accessToken);
         console.log("Session: ", response);
         //Create Player Profile if none exists
-        CreatePlayerProfile(response.user);
+        var newPlayer = await CreatePlayerProfile(response.user);
     }
 
     if (sessionStorage.getItem('tournamentID') || localStorage.getItem('tournamentID'))
@@ -40,7 +41,6 @@ async function CreatePlayerProfile (_user)
     } else 
     {
         console.log("Player Profile Exists:", player);
-
     }
 }
 
