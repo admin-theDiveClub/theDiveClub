@@ -16,9 +16,9 @@
     Get Tournament ID
     Get User ID + Full Name + username + contact
 */
-document.addEventListener('DOMContentLoaded', (event) => {
+window.onload = function() {
     InitializeUI();
-});
+};
 
 async function InitializeUI ()
 {
@@ -212,14 +212,23 @@ function GetTournamentID ()
 
 async function GetUser ()
 {
-    var session = JSON.parse(localStorage.getItem('session')) || JSON.parse(sessionStorage.getItem('session'));
+    var response = await supabase.auth.getSession();
+    var session = response.data.session;
     if (session)
     {
+        console.log("Session (Auth):", session);
         return session.user;
-    } else
+    } else 
     {
-        return null;
-    }    
+        var session = JSON.parse(localStorage.getItem('session')) || JSON.parse(sessionStorage.getItem('session'));
+        if (session)
+        {
+            console.log("Session (Storage):", session);
+            return session.user;
+        }
+    }
+
+    return null;
 }
 
 async function GetPlayer (_username)
