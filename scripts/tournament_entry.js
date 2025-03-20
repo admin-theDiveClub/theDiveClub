@@ -16,7 +16,9 @@
     Get Tournament ID
     Get User ID + Full Name + username + contact
 */
-InitializeUI();
+document.addEventListener('DOMContentLoaded', (event) => {
+    InitializeUI();
+});
 
 async function InitializeUI ()
 {
