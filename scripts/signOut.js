@@ -16,4 +16,7 @@ async function SignOut()
         sessionStorage.clear();
         window.location.reload();
     }
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.reload();
 }
