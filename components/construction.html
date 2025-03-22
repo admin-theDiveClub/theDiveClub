@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Dive Club</title>
+
+    <!-- Import Supabase resources via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    
+    <!-- Bootstrap CSS -->     
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="../components/styles.css" rel="stylesheet">
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <!-- Header -->
+    <div class="row" id="header">
+        <div class="col-md-4"></div>
+        <div class="col-md-4">
+            <img src="../resources/drawing_logo_theDiveClub.svg" alt="The Dive Club Logo" class="header-logo">
+        </div>
+        <div class="col-md-4"></div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="row hud-nav">
+        <div class="col-md-2 col-1"></div>
+        <div class="col-md-8 col-10">
+            <div class="card rounded card-nav">
+                <div class="btn-group btn-group-lg d-flex justify-content-center" role="group">
+                    <button type="button" class="btn btn-nav active">
+                        <i class="bi bi-house"></i>
+                        <span class="d-none d-md-inline">Home</span>
+                    </button>
+                    <button type="button" class="btn btn-nav">
+                        <i class="bi bi-person"></i>
+                        <span class="d-none d-md-inline">Profile</span>
+                    </button>
+                    <button type="button" class="btn btn-nav">
+                        <i class="bi bi-trophy"></i>
+                        <span class="d-none d-md-inline">Scorecard</span>
+                    </button>
+                    <div class="btn-group dropup" role="group">
+                        <button type="button" class="btn btn-nav dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-three-dots"></i>
+                            <span class="d-none d-md-inline">Competitions</span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><button class="dropdown-item btn-nav active" type="button"><i class="bi bi-trophy" style="margin: 1cap;"></i> Leagues</button></li>
+                            <li><button class="dropdown-item btn-nav" type="button"><i class="bi bi-calendar-event" style="margin: 1cap;"></i> Tournaments</button></li>
+                            <li><button class="dropdown-item btn-nav" type="button"><i class="bi bi-flag" style="margin: 1cap;"></i> Matches</button></li>
+                        </ul>
+                    </div>
+                </div>                
+            </div>
+        </div>
+        <div class="col-md-2 col-1"></div>
+    </div>
+
+    <!-- Card_Temp -->    
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8">
+            <div class="card rounded">
+                <div class="card-header">
+                    Featured
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Special title treatment</h5>
+                    <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+                    <a href="#" class="btn btn-primary">Go somewhere</a>
+                    <h5 class="card-title">Special title treatment</h5>
+                    <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+                    <a href="#" class="btn btn-primary">Go somewhere</a>
+                    <h5 class="card-title">Special title treatment</h5>
+                    <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+                    <a href="#" class="btn btn-primary">Go somewhere</a>
+                    <h5 class="card-title">Special title treatment</h5>
+                    <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+                    <a href="#" class="btn btn-primary">Go somewhere</a>
+                    <h5 class="card-title">Special title treatment</h5>
+                    <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+                    <a href="#" class="btn btn-primary">Go somewhere</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2"></div>
+    </div>
+
+    <!-- Bootstrap JS (Optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+</body>
+</html>
