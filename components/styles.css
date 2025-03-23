@@ -1,6 +1,7 @@
 :root {
     --color-base-light: rgba(232, 232, 232, 1);
     --color-base-dark: rgba(69, 69, 69, 1);
+    --color-base-darkest: rgb(37, 37, 37);
     --color-primary: rgba(234, 0, 121, 1);
     --color-secondary: rgba(0, 53, 97, 1);
     --color-base-med: rgba(135, 135, 135, 1);
@@ -12,8 +13,15 @@
 body
 {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--color-base-dark);
-    scrollbar-width: 100px;
+    background: radial-gradient(circle at -100% -100%, var(--color-base-dark) 0%, var(--color-base-darkest) 80%, var(--color-primary) 200%);
+    background-size: cover;
+    background-attachment: fixed;
+    margin-bottom: 10vh;
+}
+
+p
+{
+    margin: 0%;
 }
 
 .header-logo
@@ -41,6 +49,13 @@ body
     box-shadow: 0 0px 24px 0px rgba(0, 0, 0, 75);
     background-color: var(--color-secondary);
     color: var(--color-base-light);
+}
+
+.btn
+{
+    border-radius: 20vw !important;
+    min-height: 4cap;
+    margin: 1cap;
 }
 
 .btn-nav
@@ -71,7 +86,63 @@ body
     border: none;
 }
 
-.card
+.btn-icon
 {
-    box-shadow: 0 0px 8px 1px rgba(0, 0, 0, 75);
+    border-radius: 50%; 
+    background-color: rgb(0,0,0,0.5); 
+    padding: 1cap;
+}
+
+.card-component
+{
+    backdrop-filter: blur(20px);
+    background-color: rgb(0,0,0,0.1);
+    color: var(--color-base-light);
+    box-shadow: 0 0px 24px 4px rgba(0, 0, 0, 75);
+    padding: 1cap;
+    margin: 0.5cap;
+}
+
+.btn-primary
+{
+    background-color: var(--color-base-darkest);
+    border-color: var(--color-primary);
+}
+
+.form-control
+{
+    background-color: transparent !important;
+    color: var(--color-base-light) !important;
+    border: 0.1cap solid var(--color-base-dark);
+    padding: 1cap !important;
+    margin-bottom: 1cap !important;
+}
+
+.form-control::placeholder 
+{
+    color: var(--color-base-light) !important;
+}
+
+p, .form-check-label
+{
+    padding: 1cap !important;
+    padding-left: 0% !important;
+}
+
+.form-check-input
+{
+    margin: 1cap !important;
+    padding: 1cap !important;
+}
+
+h2
+{
+    text-align: center;
+}
+
+.card-message
+{
+    background-color: var(--color-base-darkest) !important;
+    color: var(--color-base-light);
+    border-color: var(--color-highlight);
 }
