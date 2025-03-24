@@ -14,7 +14,7 @@ body
 {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: radial-gradient(circle at -100% -100%, var(--color-base-dark) 0%, var(--color-base-darkest) 80%, var(--color-primary) 200%);
-    background-size: cover;
+    background-size: 100vw 100vh;
     background-attachment: fixed;
     margin-bottom: 10vh;
 }
@@ -146,4 +146,30 @@ h2
     background-color: var(--color-base-darkest) !important;
     color: var(--color-base-light);
     border-color: var(--color-highlight);
+}
+
+th, td
+{
+    border-color: var(--color-base-dark);
+    background-color: transparent !important;
+    color: var(--color-base-light) !important;
+}
+
+#cell-score-final
+{
+    border-color: var(--color-primary);
+}
+
+#btn-correction
+{
+    margin: 0cap !important;
+    margin-left: 1cap !important;
+    padding: 1cap !important;
+    min-height: 0cap !important;
+}
+
+#cell-apples-final
+{
+    border-color: var(--color-highlight);
+    font-size: small;
 }

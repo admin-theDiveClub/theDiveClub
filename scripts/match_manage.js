@@ -207,6 +207,19 @@ document.getElementById('btn-score-A-A').addEventListener('click', function()
     UpdateData();
 });
 
+document.getElementById('btn-correction').addEventListener('click', function() 
+{
+    // Logic to correct the last score entry for both players
+    if (data.scorecard.H.length > 0) {
+        data.scorecard.H.pop();
+    }
+    if (data.scorecard.A.length > 0) {
+        data.scorecard.A.pop();
+    }
+    
+    UpdateData();
+});
+
 function UpdateData ()
 {
     data.score = GetCurrentScore(data.scorecard);
@@ -253,9 +266,11 @@ function UpdateUI()
 {
     // Update player names and scores in the UI
     document.querySelectorAll('[id^="lbl-H-name"]').forEach(el => el.textContent = data.player_H);
-    document.querySelectorAll('[id^="lbl-H-score"]').forEach(el => el.textContent = data.score.H);
+    document.querySelectorAll('[id^="lbl-H-score"]').forEach(el => el.innerHTML = `${data.score.H}`);
     document.querySelectorAll('[id^="lbl-A-name"]').forEach(el => el.textContent = data.player_A);
-    document.querySelectorAll('[id^="lbl-A-score"]').forEach(el => el.textContent = data.score.A);
+    document.querySelectorAll('[id^="lbl-A-score"]').forEach(el => el.innerHTML = `${data.score.A}`);
+    document.querySelectorAll('[id^="lbl-H-apples"]').forEach(el => el.innerHTML = `<i class="bi bi-apple"></i>: ${data.score.H_Apples}`);
+    document.querySelectorAll('[id^="lbl-A-apples"]').forEach(el => el.innerHTML = `<i class="bi bi-apple"></i>: ${data.score.A_Apples}`);
 
     // Determine the maximum number of frames between both players
     const maxFrames = Math.max(data.scorecard.H.length, data.scorecard.A.length);
@@ -311,14 +326,23 @@ function UpdateUI()
 
         for (let i = 0; i < maxFrames; i++) {
             const bodyRow = document.createElement('tr');
-            bodyRow.innerHTML = `<td>${i + 1}</td><td>${data.scorecard.H[i]}</td><td>${data.scorecard.A[i]}</td>`;
+            if (i === maxFrames - 1) {
+            bodyRow.innerHTML = `<td id="cell-score-final">${i + 1}</td><td id="cell-score-final">${data.scorecard.H[i] || '-'}</td><td id="cell-score-final">${data.scorecard.A[i] || '-'}</td>`;
+            } else {
+            bodyRow.innerHTML = `<td>${i + 1}</td><td>${data.scorecard.H[i] || '-'}</td><td>${data.scorecard.A[i] || '-'}</td>`;
+            }
             tableBody.appendChild(bodyRow);
         }
 
         // Add row for score at the end
         const scoreRow = document.createElement('tr');
-        scoreRow.innerHTML = `<td><b>Score</b></td><td style="font-weight: bold;">${data.score.H}</td><td style="font-weight: bold;">${data.score.A}</td>`;
+        scoreRow.innerHTML = `<td id="cell-score-final"><b>Score</b></td><td style="font-weight: bold"; id="cell-score-final">${data.score.H}</td><td style="font-weight: bold;" id="cell-score-final">${data.score.A}</td>`;
         tableBody.appendChild(scoreRow);
+
+        // Add row for apples at the end
+        const applesRow = document.createElement('tr');
+        applesRow.innerHTML = `<td id="cell-apples-final"><b>Apples</b></td><td style="font-weight: bold"; id="cell-apples-final">${data.score.H_Apples}</td><td style="font-weight: bold;" id="cell-apples-final">${data.score.A_Apples}</td>`;
+        tableBody.appendChild(applesRow);
 
         table.appendChild(tableBody);
     }
