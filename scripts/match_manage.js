@@ -261,6 +261,12 @@ async function PushResults (_results)
     }
 }
 
+document.getElementById('btn-scorecard-view').addEventListener('click', function() 
+{
+    data.scorecardView = data.scorecardView === 0 ? 1 : 0;
+    UpdateUI();
+});
+
 //Update UI
 function UpdateUI() 
 {
@@ -289,7 +295,7 @@ function UpdateUI()
         for (let i = 1; i <= maxFrames; i++) {
             headRow.innerHTML += `<th>${i}</th>`;
         }
-        headRow.innerHTML += '<th>Score:</th>'; // Add Score column
+        headRow.innerHTML += '<th>Score:</th><th>Apples:</th>'; // Add Score and Apples columns
         tableHead.appendChild(headRow);
         table.appendChild(tableHead);
 
@@ -302,13 +308,15 @@ function UpdateUI()
         bodyRowA.innerHTML = `<td id="lbl-A-name">${data.player_A}</td>`;
 
         for (let i = 0; i < maxFrames; i++) {
-            bodyRowH.innerHTML += `<td>${data.scorecard.H[i]}</td>`;
-            bodyRowA.innerHTML += `<td>${data.scorecard.A[i]}</td>`;
+            const scoreH = data.scorecard.H[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.H[i]}</span>` : data.scorecard.H[i] || '-';
+            const scoreA = data.scorecard.A[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.A[i]}</span>` : data.scorecard.A[i] || '-';
+            bodyRowH.innerHTML += `<td>${scoreH}</td>`;
+            bodyRowA.innerHTML += `<td>${scoreA}</td>`;
         }
 
-        // Add scores to the new column
-        bodyRowH.innerHTML += `<td style="font-weight: bold;">${data.score.H}</td>`;
-        bodyRowA.innerHTML += `<td style="font-weight: bold;">${data.score.A}</td>`;
+        // Add scores and apples to the new columns
+        bodyRowH.innerHTML += `<td style="font-weight: bold;">${data.score.H}</td><td>${data.score.H_Apples}</td>`;
+        bodyRowA.innerHTML += `<td style="font-weight: bold;">${data.score.A}</td><td>${data.score.A_Apples}</td>`;
 
         tableBody.appendChild(bodyRowH);
         tableBody.appendChild(bodyRowA);
@@ -327,13 +335,13 @@ function UpdateUI()
         for (let i = 0; i < maxFrames; i++) {
             const bodyRow = document.createElement('tr');
             if (i === maxFrames - 1) {
-            const scoreH = data.scorecard.H[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.H[i]}</span>` : data.scorecard.H[i] || '-';
-            const scoreA = data.scorecard.A[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.A[i]}</span>` : data.scorecard.A[i] || '-';
-            bodyRow.innerHTML = `<td id="cell-score-final">${i + 1}</td><td id="cell-score-final">${scoreH}</td><td id="cell-score-final">${scoreA}</td>`;
+                const scoreH = data.scorecard.H[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.H[i]}</span>` : data.scorecard.H[i] || '-';
+                const scoreA = data.scorecard.A[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.A[i]}</span>` : data.scorecard.A[i] || '-';
+                bodyRow.innerHTML = `<td id="cell-score-final">${i + 1}</td><td id="cell-score-final">${scoreH}</td><td id="cell-score-final">${scoreA}</td>`;
             } else {
-            const scoreH = data.scorecard.H[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.H[i]}</span>` : data.scorecard.H[i] || '-';
-            const scoreA = data.scorecard.A[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.A[i]}</span>` : data.scorecard.A[i] || '-';
-            bodyRow.innerHTML = `<td>${i + 1}</td><td>${scoreH}</td><td>${scoreA}</td>`;
+                const scoreH = data.scorecard.H[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.H[i]}</span>` : data.scorecard.H[i] || '-';
+                const scoreA = data.scorecard.A[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.A[i]}</span>` : data.scorecard.A[i] || '-';
+                bodyRow.innerHTML = `<td>${i + 1}</td><td>${scoreH}</td><td>${scoreA}</td>`;
             }
             tableBody.appendChild(bodyRow);
         }

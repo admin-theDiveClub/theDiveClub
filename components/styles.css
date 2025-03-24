@@ -13,7 +13,7 @@
 body
 {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: radial-gradient(circle at -100% -100%, var(--color-secondary-lighter) -100%, var(--color-base-darkest) 60%, var(--color-base-darkest) 80%, var(--color-primary) 200%);
+    background: radial-gradient(circle at -100% -100%, var(--color-secondary-lighter) 0%, var(--color-base-darkest) 80%, var(--color-primary) 200%);
     background-size: fill;
     background-attachment: fixed;
     margin-bottom: 10vh;
@@ -160,7 +160,7 @@ th, td
     border-color: var(--color-primary);
 }
 
-#btn-correction
+#btn-correction, #btn-scorecard-view
 {
     margin: 0cap !important;
     margin-left: 1cap !important;

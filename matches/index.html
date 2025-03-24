@@ -58,7 +58,7 @@
             <div class="row">
                 <div class="col-sm-6">
                     <div class="card rounded text-center card-component">
-                        <div class="card-header" id="lbl-H-name">Player_H</div>
+                        <div class="card-header" id="lbl-H-name" style="font-size: x-large; font-weight: bold;">Player_H</div>
                         <div class="card-body">
                             <p style="font-size: 10vw; font-weight: bold; padding: 0.5cap !important;" id="lbl-H-score">000</p>
                             <p style="font-size: 5vw; font-weight: bold; padding: 0.25cap !important;" id="lbl-H-apples"><i class="bi bi-apple"></i>: 0</p>
@@ -72,7 +72,7 @@
 
                 <div class="col-sm-6">
                     <div class="card rounded text-center card-component">
-                        <div class="card-header" id="lbl-A-name">Player_H</div>
+                        <div class="card-header" id="lbl-A-name" style="font-size: x-large; font-weight: bold;">Player_H</div>
                         <div class="card-body">
                             <p style="font-size: 10vw; font-weight: bold; padding: 0.5cap !important;" id="lbl-A-score">000</p>
                             <p style="font-size: 5vw; font-weight: bold; padding: 0.25cap !important;" id="lbl-A-apples"><i class="bi bi-apple"></i>: 0</p>
@@ -87,6 +87,9 @@
 
             <div class="card rounded text-center card-component">
                 <div class="card-header">
+                    <div class="btn btn-primary" id="btn-scorecard-view" style="float: left;">
+                        <i class="bi bi-shuffle"></i>
+                    </div>
                     Scorecard
                     <div class="btn btn-danger" id="btn-correction">
                         <i class="bi bi-arrow-left"></i>                        
@@ -106,6 +109,7 @@
     <script src="../scripts/supaBase_client.js"></script>
     <script src="../scripts/session_restore.js"></script>
     <script src="../scripts/match_manage.js"></script>
+    <script src="../scripts/ui_backgroundRandomization.js"></script>
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
