@@ -19,28 +19,20 @@
 
 <body>
     
-    <div class="row">
-        <div class="col-sm-2"></div>
-        <div class="col-sm-8">
-            <div class="row">
-                <div class="col-4">
-                    <img src="../resources/icon_theDiveClub_Transparent.png" alt="Logo Home" style="display: block; margin-left: auto; margin-right: auto; max-width: 100%; max-height: 100%;">
-                </div>
-                <div class="col-8">
-                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; ">
-                        <img src="../resources/drawing_logo_theDiveClub_textOnly.png" alt="Logo Home" style="max-width: 100%; max-height: 100%;">
-                    </div> 
-                </div>
-            </div>
+    <!-- Header -->
+    <div class="row" id="header">
+        <div class="col-md-4"></div>
+        <div class="col-md-4">
+            <img src="../resources/drawing_logo_theDiveClub.svg" alt="The Dive Club Logo" class="header-logo">
         </div>
-        <div class="col-sm-2"></div>
+        <div class="col-md-4"></div>
     </div>
 
     <div class="row">
         <div class="col-sm-1"></div>
         <div class="col-sm-10">
 
-            <div class="card rounded card-component">
+            <div class="card rounded card-component" style="display: none;">
                 <div class="card-header">Match Control</div>
                 <div class="card-body">
                     <div class="row">
@@ -79,7 +71,7 @@
                 </div>
 
                 <div class="col-sm-6">
-                    <div class="card rounded text-center  card-component">
+                    <div class="card rounded text-center card-component">
                         <div class="card-header" id="lbl-A-name">Player_H</div>
                         <div class="card-body">
                             <p style="font-size: 10vw; font-weight: bold; padding: 0.5cap !important;" id="lbl-A-score">000</p>
@@ -100,7 +92,7 @@
                         <i class="bi bi-arrow-left"></i>                        
                     </div>
                 </div>
-                <div class="card-body" style="overflow-x: auto;">
+                <div class="card-body" style="overflow-x: auto; font-size: 1.25cap;">
                     <table class="table" id="tbl-scorecard">                        
                     </table>
                 </div>

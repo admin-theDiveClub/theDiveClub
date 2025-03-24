@@ -327,9 +327,13 @@ function UpdateUI()
         for (let i = 0; i < maxFrames; i++) {
             const bodyRow = document.createElement('tr');
             if (i === maxFrames - 1) {
-            bodyRow.innerHTML = `<td id="cell-score-final">${i + 1}</td><td id="cell-score-final">${data.scorecard.H[i] || '-'}</td><td id="cell-score-final">${data.scorecard.A[i] || '-'}</td>`;
+            const scoreH = data.scorecard.H[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.H[i]}</span>` : data.scorecard.H[i] || '-';
+            const scoreA = data.scorecard.A[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.A[i]}</span>` : data.scorecard.A[i] || '-';
+            bodyRow.innerHTML = `<td id="cell-score-final">${i + 1}</td><td id="cell-score-final">${scoreH}</td><td id="cell-score-final">${scoreA}</td>`;
             } else {
-            bodyRow.innerHTML = `<td>${i + 1}</td><td>${data.scorecard.H[i] || '-'}</td><td>${data.scorecard.A[i] || '-'}</td>`;
+            const scoreH = data.scorecard.H[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.H[i]}</span>` : data.scorecard.H[i] || '-';
+            const scoreA = data.scorecard.A[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.A[i]}</span>` : data.scorecard.A[i] || '-';
+            bodyRow.innerHTML = `<td>${i + 1}</td><td>${scoreH}</td><td>${scoreA}</td>`;
             }
             tableBody.appendChild(bodyRow);
         }
@@ -341,7 +345,7 @@ function UpdateUI()
 
         // Add row for apples at the end
         const applesRow = document.createElement('tr');
-        applesRow.innerHTML = `<td id="cell-apples-final"><b>Apples</b></td><td style="font-weight: bold"; id="cell-apples-final">${data.score.H_Apples}</td><td style="font-weight: bold;" id="cell-apples-final">${data.score.A_Apples}</td>`;
+        applesRow.innerHTML = `<td id="cell-apples-final">Apples</td><td id="cell-apples-final">${data.score.H_Apples}</td><td id="cell-apples-final">${data.score.A_Apples}</td>`;
         tableBody.appendChild(applesRow);
 
         table.appendChild(tableBody);
