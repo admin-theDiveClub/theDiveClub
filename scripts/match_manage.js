@@ -36,8 +36,19 @@ async function PopulateData ()
             var subResponse = await SubscribeToUpdates(data.id);
             console.log("Subscribing to Updates:", subResponse);
 
-            data.player_H = await GetPlayerName(data.match.player_H);
-            data.player_A = await GetPlayerName(data.match.player_A);
+            if (data.match.player_H && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(data.match.player_H)) {
+                data.player_H = await GetPlayerName(data.match.player_H);
+            } else 
+            {
+                data.player_H = data.match.player_H;
+            }
+            
+            if (data.match.player_A && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(data.match.player_A)) {
+                data.player_A = await GetPlayerName(data.match.player_A);
+            } else 
+            {
+                data.player_A = data.match.player_A;
+            }
 
             data.scorecard = data.match.scorecard;
             data.score = GetCurrentScore(data.scorecard);
