@@ -8,12 +8,12 @@ async function RestoreSession ()
     {
         localStorage.setItem("session", JSON.stringify(session));
         sessionStorage.setItem("session", JSON.stringify(session));
-        console.log("Session:", session);
+        //console.log("Session:", session);
         //Create Player Profile if none exists
         var newPlayer = await CreatePlayerProfile(session.user);
         if (newPlayer)
         {
-            console.log("Player:", newPlayer);
+            //console.log("Player:", newPlayer);
         }
     } else 
     {
@@ -23,11 +23,11 @@ async function RestoreSession ()
             var response = await supabase.auth.refreshSession();
             if (response.error)
             {
-                console.log("Session: ", response.error.message);
+                //console.log("Session: ", response.error.message);
             }
             else
             {
-                console.log("Session: ", response);
+                //console.log("Session: ", response);
             }
         }
     }
@@ -35,7 +35,7 @@ async function RestoreSession ()
 
 async function CreatePlayerProfile (_user)
 {
-    console.log(_user);
+    //console.log(_user);
     var player = await GetPlayer(_user.email);
     if (!player)
     {
@@ -47,14 +47,14 @@ async function CreatePlayerProfile (_user)
         const response = await supabase.from('tbl_players').insert(newPlayer).select();
         if (response.error)
         {
-            console.log("Error Creating Player Profile:", response.error.message);
+            //console.log("Error Creating Player Profile:", response.error.message);
         } else 
         {
-            console.log("Player Profile Created:", response.data);
+            //console.log("Player Profile Created:", response.data);
         }
     } else 
     {
-        console.log("Player Profile Exists:", player);
+        //console.log("Player Profile Exists:", player);
 
     }
 }

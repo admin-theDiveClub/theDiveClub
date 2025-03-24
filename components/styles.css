@@ -133,6 +133,7 @@ p, .form-check-label
 {
     margin: 1cap !important;
     padding: 1cap !important;
+    background-color: var(--color-base-darkest) !important;
 }
 
 h2
