@@ -119,7 +119,7 @@ async function OnPayloadReceived (payload)
     data.match = payload.new;
     data.scorecard = data.match.scorecard;
     data.score = GetCurrentScore(data.scorecard);
-    console.log("Match Updated, new Scorecard:", data.scorecard);
+    console.log("Match Updated, new Data:", data);
     UpdateUI();
     //CODE
 }
@@ -241,7 +241,8 @@ function UpdateData ()
         result_A: data.score.A,
         apples_H: data.score.H_Apples,
         apples_A: data.score.A_Apples,
-        scorecard: data.scorecard
+        scorecard: data.scorecard,
+        lag: data.match.lag
     };
 
     PushResults(results);
@@ -259,7 +260,8 @@ async function PushResults (_results)
         'result_A': _results.result_A,
         'result_H': _results.result_H,
         'apples_A': _results.apples_A,
-        'apples_H': _results.apples_H
+        'apples_H': _results.apples_H,
+        'lag': _results.lag
     }).eq('id', data.id).select();
 
     if (response.error)
@@ -282,9 +284,9 @@ document.getElementById('btn-scorecard-view').addEventListener('click', function
 function UpdateUI() 
 {
     // Update player names and scores in the UI
-    document.querySelectorAll('[id^="lbl-H-name"]').forEach(el => el.textContent = data.player_H);
+    document.querySelectorAll('[id^="lbl-H-name"]').forEach(el => el.textContent = data.player_H + (data.match.lag === "Home" ? " *" : ""));
+    document.querySelectorAll('[id^="lbl-A-name"]').forEach(el => el.textContent = data.player_A + (data.match.lag === "Away" ? " *" : ""));
     document.querySelectorAll('[id^="lbl-H-score"]').forEach(el => el.innerHTML = `${data.score.H}`);
-    document.querySelectorAll('[id^="lbl-A-name"]').forEach(el => el.textContent = data.player_A);
     document.querySelectorAll('[id^="lbl-A-score"]').forEach(el => el.innerHTML = `${data.score.A}`);
     document.querySelectorAll('[id^="lbl-H-apples"]').forEach(el => el.innerHTML = `<i class="bi bi-apple"></i>: ${data.score.H_Apples}`);
     document.querySelectorAll('[id^="lbl-A-apples"]').forEach(el => el.innerHTML = `<i class="bi bi-apple"></i>: ${data.score.A_Apples}`);
@@ -315,8 +317,8 @@ function UpdateUI()
         const bodyRowH = document.createElement('tr');
         const bodyRowA = document.createElement('tr');
 
-        bodyRowH.innerHTML = `<td id="lbl-H-name">${data.player_H}</td>`;
-        bodyRowA.innerHTML = `<td id="lbl-A-name">${data.player_A}</td>`;
+        bodyRowH.innerHTML = `<td id="lbl-H-name">${data.player_H + (data.match.lag === "Home" ? " *" : "")}</td>`;
+        bodyRowA.innerHTML = `<td id="lbl-A-name">${data.player_A + (data.match.lag === "Away" ? " *" : "")}</td>`;
 
         for (let i = 0; i < maxFrames; i++) {
             const scoreH = data.scorecard.H[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.H[i]}</span>` : data.scorecard.H[i] || '-';
@@ -336,7 +338,7 @@ function UpdateUI()
         // Create table head
         const tableHead = document.createElement('thead');
         const headRow = document.createElement('tr');
-        headRow.innerHTML = '<th>Frame:</th><th id="lbl-H-name">' + data.player_H + '</th><th id="lbl-A-name">' + data.player_A + '</th>';
+        headRow.innerHTML = '<th>Frame:</th><th id="lbl-H-name">' + data.player_H + (data.match.lag === "Home" ? " *" : "") + '</th><th id="lbl-A-name">' + data.player_A + (data.match.lag === "Away" ? " *" : "") + '</th>';
         tableHead.appendChild(headRow);
         table.appendChild(tableHead);
 
@@ -369,5 +371,30 @@ function UpdateUI()
 
         table.appendChild(tableBody);
     }
-    
+
+    // Populate select-lag with player options
+    const selectLag = document.getElementById('select-lag');
+    selectLag.innerHTML = `
+        <option value="0" ${data.match.lag === "Home" ? "selected" : ""}>${data.player_H}</option>
+        <option value="1" ${data.match.lag === "Away" ? "selected" : ""}>${data.player_A}</option>
+    `;
+
+    // Show break indicator based on lag and scorecard length
+    document.querySelectorAll('[id^="lbl-break-indicator-H"]').forEach(el => {
+        el.style.display = (data.match.lag === "Home" && data.scorecard.H.length % 2 === 0) || (data.match.lag === "Away" && data.scorecard.A.length % 2 !== 0) ? 'block' : 'none';
+    });
+    document.querySelectorAll('[id^="lbl-break-indicator-A"]').forEach(el => {
+        el.style.display = (data.match.lag === "Away" && data.scorecard.A.length % 2 === 0) || (data.match.lag === "Home" && data.scorecard.H.length % 2 !== 0) ? 'block' : 'none';
+    });
 }
+
+document.getElementById('select-lag').addEventListener('change', function(event) 
+{
+    if (event.target.value == "0") {
+        data.match.lag = "Home";
+    } else  if (event.target.value == "1") {
+        data.match.lag = "Away";
+    }
+    UpdateData();
+    console.log("Lag updated:", data.match.lag);
+});
