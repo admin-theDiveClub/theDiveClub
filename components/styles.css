@@ -134,6 +134,15 @@ p, .form-check-label
     margin: 1cap !important;
     padding: 1cap !important;
     background-color: var(--color-base-darkest) !important;
+    color: var(--color-base-light) !important;
+}
+
+#select-lag
+{
+    padding: 1cap !important;
+    background-color: var(--color-base-darkest) !important;
+    color: var(--color-base-light) !important;
+    border-color: var(--color-primary) !important;
 }
 
 h2
@@ -172,4 +181,19 @@ th, td
 {
     border-color: var(--color-highlight);
     font-size: small;
+}
+
+#lbl-break-indicator-H, #lbl-break-indicator-A
+{
+    padding: 1cap !important;
+    margin: 0cap !important;
+    border-color: var(--color-secondary-light);
+    background-color: var(--color-base-darkest) !important;
+    color: var(--color-base-light) !important;
+}
+
+.btn-secondary
+{
+    background-color: var(--color-base-dark) !important;
+    border-color: var(--color-secondary-light) !important;
 }
