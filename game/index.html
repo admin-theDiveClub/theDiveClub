@@ -18,6 +18,7 @@
 
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="../game/game_styles_killers.css" rel="stylesheet">
 </head>
 
 <body>
@@ -117,16 +118,24 @@
                 </table>
             </div>
         </div>
-        <div class="card-footer" style="display: none;">
+        <div class="card-footer">
             <div class="row">
                 <div class="col-sm-4">
                     <div class="card rounded text-center card-component">
                         <div class="card-header">Round 1</div>
                         <div class="card-body">
                             <p>Winner:</p>
-                            <input type="range" class="form-range" min="1" max="3" step="1">
+                            <div class="d-flex flex-wrap justify-content-center" id="players">
+                                <button class="btn btn-primary">Shane</button>
+                                <button class="btn btn-primary">Draw</button>
+                                <button class="btn btn-primary">Wade</button>                
+                            </div>
                             <p>8-Ball:</p>
-                            <input type="range" class="form-range" min="1" max="3" step="1">
+                            <div class="d-flex flex-wrap justify-content-center" id="players">
+                                <button class="btn btn-primary">Shane</button>
+                                <button class="btn btn-primary">Draw</button>
+                                <button class="btn btn-primary">Wade</button>                
+                            </div>
                             <p>Last Ball: <label for="lastBallRange" id="lastBallLabel">8</label></p>
                             <input type="range" class="form-range" min="1" max="15" step="1" id="lastBallRange" oninput="updateLabel(this.value)">                    
                             <script>
@@ -142,12 +151,20 @@
         
                 <div class="col-sm-4">
                     <div class="card rounded text-center card-component">
-                        <div class="card-header">Round 2</div>
+                        <div class="card-header">Round 1</div>
                         <div class="card-body">
                             <p>Winner:</p>
-                            <input type="range" class="form-range" min="1" max="3" step="1">
+                            <div class="d-flex flex-wrap justify-content-center" id="players">
+                                <button class="btn btn-primary">Shane</button>
+                                <button class="btn btn-primary">Draw</button>
+                                <button class="btn btn-primary">Wade</button>                
+                            </div>
                             <p>8-Ball:</p>
-                            <input type="range" class="form-range" min="1" max="3" step="1">
+                            <div class="d-flex flex-wrap justify-content-center" id="players">
+                                <button class="btn btn-primary">Shane</button>
+                                <button class="btn btn-primary">Draw</button>
+                                <button class="btn btn-primary">Wade</button>                
+                            </div>
                             <p>Last Ball: <label for="lastBallRange" id="lastBallLabel">8</label></p>
                             <input type="range" class="form-range" min="1" max="15" step="1" id="lastBallRange" oninput="updateLabel(this.value)">                    
                             <script>
@@ -163,12 +180,20 @@
         
                 <div class="col-sm-4">
                     <div class="card rounded text-center card-component">
-                        <div class="card-header">Round 3</div>
+                        <div class="card-header">Round 1</div>
                         <div class="card-body">
                             <p>Winner:</p>
-                            <input type="range" class="form-range" min="1" max="3" step="1">
+                            <div class="d-flex flex-wrap justify-content-center" id="players">
+                                <button class="btn btn-primary">Shane</button>
+                                <button class="btn btn-primary">Draw</button>
+                                <button class="btn btn-primary">Wade</button>                
+                            </div>
                             <p>8-Ball:</p>
-                            <input type="range" class="form-range" min="1" max="3" step="1">
+                            <div class="d-flex flex-wrap justify-content-center" id="players">
+                                <button class="btn btn-primary">Shane</button>
+                                <button class="btn btn-primary">Draw</button>
+                                <button class="btn btn-primary">Wade</button>                
+                            </div>
                             <p>Last Ball: <label for="lastBallRange" id="lastBallLabel">8</label></p>
                             <input type="range" class="form-range" min="1" max="15" step="1" id="lastBallRange" oninput="updateLabel(this.value)">                    
                             <script>

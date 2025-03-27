@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Dive Club</title>
+
+    <!-- Import Supabase resources via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    
+    <!-- Bootstrap CSS -->     
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="../components/styles.css" rel="stylesheet">
+</head>
+
+<body>
+    
+    <!-- Header -->
+    <div class="row" id="header">
+        <div class="col-md-4"></div>
+        <div class="col-md-4">
+            <img src="../resources/drawing_logo_theDiveClub.svg" alt="The Dive Club Logo" class="header-logo">
+        </div>
+        <div class="col-md-4"></div>
+    </div>
+
+    <div class="card rounded text-center card-component">
+        <div class="card-header" id="lbl-H-name" style="font-size: x-large; font-weight: bold;">Alive:</div>
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-center" id="players">
+
+                <div class="card rounded text-center card-component killers-card-player">
+                    <div class="card-header killers-character-header" id="lbl-P_0-name">Player_0</div>
+                    <div class="card-body">
+                        <p class="killers-character-score" id="lbl-P_0-score">000</p>
+                        <div class="btn btn-secondary" id="turn-indicator">TURN</div>
+                    </div>
+                </div>
+
+                <div class="card rounded text-center card-component killers-card-player">
+                    <div class="card-header" id="lbl-P_0-name">Player_0</div>
+                    <div class="card-body">
+                        <p id="lbl-P_0-score">000</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="card rounded text-center card-component">
+        <div class="card-body" style="overflow-x: auto; font-size: 1.25cap;">
+
+            <div class="d-flex flex-wrap justify-content-center" id="scorecard-balls"></div> 
+        </div>
+    </div>
+
+    
+
+    <div class="card rounded text-center card-component">
+        <div class="card-header">
+            Scorecard
+        </div>
+        <div class="card-body" style="overflow-x: auto; font-size: 1.25cap;">
+
+            <div class="d-flex flex-wrap justify-content-center" id="scorecard-balls">
+            </div> 
+
+            <table class="table" id="tbl-scorecard">
+                <thead class="table-light" style="position: sticky; top: 0; z-index: 1;"></thead>
+                    
+                </thead>
+                <tbody>
+                    
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    
+    <script src="../scripts/supaBase_client.js"></script>
+    <script src="../scripts/session_restore.js"></script>
+    <script src="../scripts/ui_backgroundRandomization.js"></script>
+    <script src="../game/scoreboard.js"></script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+</body>
+</html>

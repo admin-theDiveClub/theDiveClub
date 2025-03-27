@@ -1,9 +1,3 @@
-//Mark game instance as active
-//Controls
-//When complete, a single function to update all submittions for this round with correct results
-//Compile leaderboard and store in game data
-    //then update main leaderboard in game
-
 var data = 
 {
     gameID: "",
@@ -44,9 +38,10 @@ async function Initialize ()
                 users: gameUsers
             }
             console.log("All Data", data);
-            
-            await UpdateCalculatedFields();
             InitializeUI();
+
+            //Subscribe to updates
+            await SubscribeToUpdates(game.id, data.round);
         }
     }
 }
@@ -107,21 +102,6 @@ async function GetUsers (_gameID, _round)
     }
 }
 
-
-///////////////////
-
-async function UpdateCalculatedFields() 
-{
-    await UpdateCharacterNames();
-    UpdateScores();
-    UpdateRanking();
-    CalculatePlayerTurn();
-
-    //TEMP
-    InitializeUI();
-    RemoveBallsAvailable(data.gameData.results.order);
-}
-
 async function UpdateCharacterNames() 
 {
     data.characterNames = [];
@@ -153,6 +133,27 @@ async function UpdateCharacterNames()
             data.characterNames.push(fullName);
         }        
     }
+}
+
+async function InitializeUI ()
+{
+    await UpdateCharacterNames();
+
+    PopulateCharacters(data.characterNames);
+    RemoveDeadCharacterCards();
+    PopulateScorecard();
+    UpdateBallsDown();
+}
+
+function UpdateUI ()
+{
+    UpdateScores();
+    UpdateRanking();
+    CalculatePlayerTurn();
+    PopulateCharacters(data.characterNames);
+    RemoveDeadCharacterCards();
+    PopulateScorecard();
+    UpdateBallsDown();
 }
 
 function UpdateScores() 
@@ -190,21 +191,6 @@ function UpdateRanking()
         .sort((a, b) => b.score - a.score)
         .map(item => item.character);
     data.gameData.results.ranking = ranking;
-}
-
-document.getElementById("btn-push").addEventListener("click", async function() 
-{
-    await SaveResults();
-});
-
-async function SaveResults() 
-{    
-    await UpdateCalculatedFields();
-    var response = await supabase.from('tbl_game_data').update({'results': data.gameData.results }).eq('gameID', data.gameID).eq('round', data.round).select();
-
-    console.log("Save Result:", response);
-    document.getElementById("push-que").innerHTML = "";
-    document.getElementById("push-result").textContent = JSON.stringify(response.data[0].results, null, 2);
 }
 
 function CalculatePlayerTurn() 
@@ -248,165 +234,6 @@ function CalculatePlayerTurn()
 
     data.playerTurn = playerTurn;
     console.warn("Turn:", data.characterNames[data.playerTurn]);
-}
-
-async function UpdateHistory(_playerIndex, _score, _balls)
-{
-    data.gameData.results.history[_playerIndex].push(_score);
-
-    if (!data.gameData.results.order) 
-    {
-        data.gameData.results.order = [];
-    }
-    data.gameData.results.order.push(...ballsSelected);
-
-    console.log("Updated Results: ", data.characterNames[_playerIndex], _score, _balls);
-    const pushQueElement = document.getElementById("push-que");
-    const updateElement = document.createElement("p");
-    updateElement.textContent = 
-        "Update: " + data.characterNames[_playerIndex] + ": " + _score + " (" + _balls + ")";
-    pushQueElement.appendChild(updateElement);
-
-    RemoveBallsAvailable(ballsSelected);
-    ballsSelected = [];
-
-
-    //TEMP
-    
-    CalculatePlayerTurn();
-    console.log("Updated (Waiting for Push):", data);   
-    
-    PopulateCharacters(data.characterNames);
-    PopulateScorecard();
-    RemoveDeadCharacterCards();
-}
-
-function RemoveBallsAvailable (_balls)
-{
-    for (let i = 0; i < _balls.length; i++) 
-    {
-        const index = ballsAvailable.indexOf(_balls[i]);
-        if (index !== -1) {
-            ballsAvailable.splice(index, 1);
-        }
-        const ballElement = document.getElementById(`b${_balls[i]}`);
-        if (ballElement) {
-            ballElement.style.display = "none";
-        }
-    }
-}
-
-var ballsSelected = [];
-var ballsAvailable = Array.from({ length: 15 }, (_, i) => i + 1);
-
-function AttachBallEventListeners() 
-{
-    const buttons = document.querySelectorAll(".btn.icon-ball");
-    buttons.forEach(button => {
-        const ballNumber = parseInt(button.id.replace("b", ""));
-        if (!ballsAvailable.includes(ballNumber)) {
-            button.style.display = "none";
-        } else {
-            button.addEventListener("click", function () {
-                if (!ballsSelected.includes(ballNumber)) {
-                    ballsSelected.push(ballNumber);
-                    button.classList.remove("btn-primary");
-                    button.classList.add("btn-warning");
-                    //console.log("Balls selected:", ballsSelected);
-                }
-            });
-        }
-    });
-}
-
-AttachBallEventListeners();
-
-document.getElementById("btn-score-0").addEventListener("click", async function() 
-{
-    if (ballsSelected.length == 1)
-    {
-        if (ballsSelected[0] == 8)
-        {
-            await UpdateHistory(data.playerTurn, "*", ballsSelected);
-        } else
-        {
-            await UpdateHistory(data.playerTurn, 0, ballsSelected);
-        }
-    } else if (ballsSelected.length < 1)
-    {
-        console.log("No balls selected.");
-    } else if (ballsSelected.length > 1)
-    {
-        console.log("Too many balls selected.");
-    }
-});
-
-document.getElementById("btn-score--1").addEventListener("click", async function() {
-    var bTemp = ballsSelected;
-    ballsSelected = [];
-    await UpdateHistory(data.playerTurn, -1, []);
-    ballsSelected = bTemp;
-});
-
-document.getElementById("btn-score-Foul").addEventListener("click", async function() {
-    await UpdateHistory(data.playerTurn, -2, ballsSelected);
-});
-
-document.getElementById("btn-extra-lives").addEventListener("click", async function() {
-    const extraLivesInput = document.getElementById("extra-lives-input");
-    const extraLives = parseInt(extraLivesInput.value, 10);
-
-    if (!isNaN(extraLives) && extraLives > 0) {
-        if (ballsSelected.includes(8)) 
-        {
-            var lives = extraLives + "*";
-            await UpdateHistory(data.playerTurn, lives, ballsSelected);
-        } else {
-            await UpdateHistory(data.playerTurn, extraLives, ballsSelected);
-        }
-        extraLivesInput.value = "1"; // Clear the input field after processing
-    } else {
-        console.log("Invalid input for extra lives.");
-    }
-});
-
-document.getElementById("btn-score-RR").addEventListener("click", function() {
-    for (var i = 0; i < data.gameData.results.order.length; i++) {
-        var ballId = "b" + data.gameData.results.order[i];
-        var ballElement = document.getElementById(ballId);
-        if (ballElement) {
-            ballElement.style.display = "block";
-        }
-    }
-
-    const ballElements = document.querySelectorAll(".btn.icon-ball");
-    ballElements.forEach(ball => {
-        ball.classList.remove("btn-warning");
-        ball.classList.add("btn-primary");
-    });
-});
-
-document.getElementById("btn-correction").addEventListener("click", function() {
-    ballsSelected = [];
-    const ballElements = document.querySelectorAll(".btn.icon-ball");
-    ballElements.forEach(ball => {
-        ball.classList.remove("btn-warning");
-        ball.classList.add("btn-primary");
-    });
-    console.log("Balls selected cleared:", ballsSelected);
-});
-
-/*UI*/
-function InitializeUI ()
-{
-    PopulateCharacters(data.characterNames);
-    RemoveDeadCharacterCards();
-    PopulateScorecard();
-}
-
-function UpdateUI ()
-{
-
 }
 
 async function PopulateCharacters (_characters)
@@ -560,6 +387,7 @@ function PopulateScorecard ()
             }
             if (totalScore < 1) 
             {
+                turnText = "X";
                 cell.style.cssText = "color: red !important;";
             }
 
@@ -599,5 +427,42 @@ function RemoveDeadCharacterCards ()
         {
             card.style.display = "none";
         }
+    }
+}
+
+async function SubscribeToUpdates (_gameID, _round)
+{
+    const channels = supabase.channel('custom-update-channel')
+    .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'tbl_game_data', filter: `gameID=eq.${_gameID}` },
+        (payload) => {
+        //console.log('Change received!', payload);
+        OnPayloadReceived(payload);
+        }
+    )
+    .subscribe();
+    console.log("Subscribed to updates", channels);
+    return channels;
+}
+
+function OnPayloadReceived (_payload)
+{
+    console.log("Payload Received", _payload);
+    data.gameData = _payload.new;
+    UpdateUI();
+}
+
+function UpdateBallsDown ()
+{
+    var ballsContainer = document.getElementById("scorecard-balls");
+    ballsContainer.innerHTML = ""; // Clear existing buttons
+
+    for (let i = 0; i < data.gameData.results.order.length; i++) {
+        let ballButton = document.createElement("button");
+        ballButton.className = "btn btn-primary icon-ball";
+        ballButton.id = `b${i + 1}`;
+        ballButton.textContent = data.gameData.results.order[i];
+        ballsContainer.appendChild(ballButton);
     }
 }
