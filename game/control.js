@@ -110,7 +110,6 @@ async function UpdateCalculatedFields()
     await UpdateCharacterNames();
     UpdateScores();
     UpdateRanking();
-    await SaveResults();
     CalculatePlayerTurn();
 
     //TEMP
@@ -119,12 +118,14 @@ async function UpdateCalculatedFields()
 
 async function UpdateCharacterNames() 
 {
+    data.characterNames = [];
     for (var i = 0; i < data.gameData.characters.length; i++) 
     {
         const response = await supabase.from('tbl_players').select('name, surname, nickname').eq('id', data.gameData.characters[i]);
         if (response.error) 
         {
             console.log(response.error.message);
+            data.characterNames.push(data.gameData.characters[i]);
         } 
         else 
         {
@@ -151,13 +152,14 @@ function UpdateScores()
         var score = data.gameData.startLives;
         for (var j = 0; j < data.gameData.results.history[i].length; j++) 
         {
-            if (data.gameData.results.history[i][j] === "*") 
+            if (typeof data.gameData.results.history[i][j] === "string" && data.gameData.results.history[i][j].includes("*")) 
             {
+                let value = data.gameData.results.history[i][j].replace("*", "");
+                score += parseInt(value, 10) || 0;
                 score++;
-            } 
-            else 
+            } else 
             {
-                score += data.gameData.results.history[i][j];
+                score += parseInt(data.gameData.results.history[i][j], 10) || 0;
             }
         }
         scores.push(score);
@@ -178,12 +180,13 @@ function UpdateRanking()
 document.getElementById("btn-push").addEventListener("click", async function() 
 {
     await SaveResults();
-    console.log("Results saved successfully.");
 });
 
 async function SaveResults() 
 {
-    await supabase.from('tbl_game_data').update({'results': data.gameData.results }).eq('gameID', data.gameID).eq('round', data.round).select();
+    var response = await supabase.from('tbl_game_data').update({'results': data.gameData.results }).eq('gameID', data.gameID).eq('round', data.round).select();
+    console.log("Save Result:", response);
+    document.getElementById("push-result").textContent = JSON.stringify(response.data[0].results, null, 2);
 }
 
 function CalculatePlayerTurn() 
@@ -204,25 +207,94 @@ function CalculatePlayerTurn()
     console.log("Turn:", data.characterNames[data.playerTurn]);
 }
 
-async function UpdateHistory(_playerIndex, _score)
+async function UpdateHistory(_playerIndex, _score, _balls)
 {
     data.gameData.results.history[_playerIndex].push(_score);
 
+    if (!data.gameData.results.order) 
+    {
+        data.gameData.results.order = [];
+    }
+    data.gameData.results.order.push(...ballsSelected);
+
+    console.log("Updated Results: ", data.characterNames[_playerIndex], _score, _balls);
+    const pushQueElement = document.getElementById("push-que");
+    const updateElement = document.createElement("p");
+    updateElement.textContent = 
+        "Update: " + data.characterNames[_playerIndex] + " - " + _score + " (" + _balls + ")";
+    pushQueElement.appendChild(updateElement);
+
+    ballsSelected = [];
+
     //TEMP
     await UpdateCalculatedFields();
-    console.log(data.gameData.results);    
+    PopulateScorecard();
+    console.log("Updated (Waiting for Push):", data);    
 }
 
-document.getElementById("btn-score-0").addEventListener("click", async function() {
-    await UpdateHistory(data.playerTurn, 0);
+var ballsSelected = [];
+
+function AttachBallEventListeners() 
+{
+    const buttons = document.querySelectorAll(".btn.icon-ball");
+    buttons.forEach(button => {
+        button.addEventListener("click", function () {
+            const ballNumber = parseInt(this.id.replace("b", ""));
+            if (!ballsSelected.includes(ballNumber)) {
+                ballsSelected.push(ballNumber);
+                console.log("Ball selected:", ballNumber);
+                console.log("Balls selected:", ballsSelected);
+            }
+        });
+    });
+}
+
+AttachBallEventListeners();
+
+document.getElementById("btn-score-0").addEventListener("click", async function() 
+{
+    if (ballsSelected.length == 1)
+    {
+        if (ballsSelected[0] == 8)
+        {
+            await UpdateHistory(data.playerTurn, "*", ballsSelected);
+        } else
+        {
+            await UpdateHistory(data.playerTurn, 0, ballsSelected);
+        }
+    } else if (ballsSelected.length < 1)
+    {
+        console.log("No balls selected.");
+    } else if (ballsSelected.length > 1)
+    {
+        console.log("Too many balls selected.");
+    }
 });
 
 document.getElementById("btn-score--1").addEventListener("click", async function() {
-    await UpdateHistory(data.playerTurn, -1);
+    await UpdateHistory(data.playerTurn, -1, []);
 });
 
-document.getElementById("btn-score-8").addEventListener("click", async function() {
-    await UpdateHistory(data.playerTurn, "*");
+document.getElementById("btn-score-Foul").addEventListener("click", async function() {
+    await UpdateHistory(data.playerTurn, -2, ballsSelected);
+});
+
+document.getElementById("btn-extra-lives").addEventListener("click", async function() {
+    const extraLivesInput = document.getElementById("extra-lives-input");
+    const extraLives = parseInt(extraLivesInput.value, 10);
+
+    if (!isNaN(extraLives) && extraLives > 0) {
+        if (ballsSelected.includes(8)) 
+        {
+            var lives = extraLives + "*";
+            await UpdateHistory(data.playerTurn, lives, ballsSelected);
+        } else {
+            await UpdateHistory(data.playerTurn, extraLives, ballsSelected);
+        }
+        extraLivesInput.value = ""; // Clear the input field after processing
+    } else {
+        console.log("Invalid input for extra lives.");
+    }
 });
 
 document.getElementById("btn-score-RR").addEventListener("click", function() {
@@ -233,10 +305,16 @@ document.getElementById("btn-score-RR").addEventListener("click", function() {
     }
 });
 
+document.getElementById("btn-correction").addEventListener("click", function() {
+    ballsSelected = [];
+    console.log("Balls selected cleared:", ballsSelected);
+});
+
 /*UI*/
 function InitializeUI ()
 {
     PopulateCharacters(data.characterNames);
+    PopulateScorecard();
 }
 
 function UpdateUI ()
@@ -247,35 +325,7 @@ function UpdateUI ()
 async function PopulateCharacters (_characters)
 {
     var parentElement = document.getElementById("players");
-    parentElement.innerHTML = "";
-
-    var scorecardTable = document.getElementById("tbl-scorecard").getElementsByTagName('tbody')[0];
-    scorecardTable.innerHTML = ""; // Clear the contents of the body before adding new rows    
-
-    
-    // Create header row
-    var headerRow = scorecardTable.insertRow();
-    var cellTurnsHeader = headerRow.insertCell(0);
-    cellTurnsHeader.textContent = "Turns";
-
-    for (var k = 0; k < _characters.length; k++) 
-    {
-        var cellPlayerHeader = headerRow.insertCell(k + 1);
-        cellPlayerHeader.textContent = data.characterNames[k];
-    }
-
-    // Create start row
-    var startRow = scorecardTable.insertRow();
-    var cellStartLabel = startRow.insertCell(0);
-    cellStartLabel.textContent = "Start";
-
-    for (var k = 0; k < _characters.length; k++) 
-    {
-        var cellStartValue = startRow.insertCell(k + 1);
-        cellStartValue.textContent = data.gameData.startLives;
-    }
-
-    
+    parentElement.innerHTML = ""; 
 
     for (var i = 0; i < _characters.length; i++)
     { 
@@ -290,63 +340,145 @@ async function PopulateCharacters (_characters)
         
         var cardBody = document.createElement("div");
         cardBody.className = "card-body";
+        cardHeader.classList.add("killers-character-header");
         
         var score = document.createElement("p");
         score.id = `lbl-P_${i}-score`;
         score.textContent = data.gameData.results.scores[i];
+        score.classList.add("killers-character-score");
         
         cardBody.appendChild(score);
         card.appendChild(cardHeader);
         card.appendChild(cardBody);
         parentElement.appendChild(card);
 
-        // Create Scorecard Entry
-                
+        if (i == data.playerTurn) {
+            var turnIndicator = document.createElement("div");
+            turnIndicator.className = "btn btn-secondary";
+            turnIndicator.id = "turn-indicator";
+            turnIndicator.textContent = "TURN";
+            cardBody.appendChild(turnIndicator);
+        }
+    }
+}
+
+function PopulateScorecard ()
+{
+    var table = document.getElementById("tbl-scorecard");
+    var thead = table.querySelector("thead");
+    var tbody = table.querySelector("tbody");
+
+    // Clear existing content
+    thead.innerHTML = "";
+    tbody.innerHTML = "";
+
+    // Create headers
+    var headerRow = document.createElement("tr");
+    var turnHeader = document.createElement("th");
+    turnHeader.textContent = "Turn";
+    headerRow.appendChild(turnHeader);
+
+    for (var i = 0; i < data.characterNames.length; i++) 
+    {
+        var characterHeader = document.createElement("th");
+        characterHeader.textContent = data.characterNames[i];
+        headerRow.appendChild(characterHeader);
     }
 
-    // Create turn rows
-    // Clear existing turn rows before adding new ones
-    while (scorecardTable.rows.length > 2) {
-        scorecardTable.deleteRow(2);
+    thead.appendChild(headerRow);
+
+    // Create rows
+    var startRow = document.createElement("tr");
+    var startTurnCell = document.createElement("td");
+    startTurnCell.textContent = "Start";
+    startRow.appendChild(startTurnCell);
+
+    for (var i = 0; i < data.gameData.characters.length; i++) 
+    {
+        var startCell = document.createElement("td");
+        startCell.textContent = data.gameData.startLives;
+        startRow.appendChild(startCell);
     }
 
-    var maxTurns = Math.max(...data.gameData.results.history.map(history => history.length));
-    for (var j = 0; j < maxTurns; j++) {
-        var turnRow = scorecardTable.insertRow();
-        var cellTurnLabel = turnRow.insertCell(0);
-        cellTurnLabel.textContent = `Turn ${j + 1}`;
+    tbody.appendChild(startRow);
 
-        for (var k = 0; k < _characters.length; k++) {
-            var cellTurnValue = turnRow.insertCell(k + 1);
-            if (data.gameData.results.history[k] && data.gameData.results.history[k][j] !== undefined) {
-                if (data.gameData.results.history[k][j] == "*") {
-                    cellTurnValue.textContent = "8-Ball";
-                } else if (data.gameData.results.history[k][j] == 0) {
-                    cellTurnValue.textContent = "Survived";
-                } else if (data.gameData.results.history[k][j] == -1) {
-                    cellTurnValue.textContent = "Lost Life";
-                } else {
-                    cellTurnValue.textContent = "+" + data.gameData.results.history[k][j];
-                }
-            } else {
-                cellTurnValue.textContent = "Turn";
-            }
+    var mostTurns = 0;
+    for (var i = 0; i < data.gameData.results.history.length; i++) 
+    {
+        if (data.gameData.results.history[i].length > mostTurns) 
+        {
+            mostTurns = data.gameData.results.history[i].length;
         }
     }
 
-    for (var i = 0; i < data.gameData.results.order.length; i++) 
+    for (var turn = 0; turn < mostTurns; turn++) 
     {
-        var ballId = "b" + data.gameData.results.order[i];
-        var ballElement = document.getElementById(ballId);
-        document.getElementById("scorecard-balls").appendChild(ballElement);
+        var row = document.createElement("tr");
+        var turnCell = document.createElement("td");
+        turnCell.textContent = turn + 1;
+        row.appendChild(turnCell);        
+
+        for (var i = 0; i < data.gameData.results.history.length; i++) 
+        {
+            var cell = document.createElement("td");
+
+            var turnText = "Turn";
+            var h = data.gameData.results.history[i][turn];
+            if (typeof h === "string" && h.includes("*")) 
+            {
+                h = h.replace("*", "");
+                const remainingText = parseInt(h, 10) || "";
+                if (remainingText != "")
+                {
+                    turnText = "8-Ball (+" + remainingText + ")";
+                } else 
+                {
+                    turnText = "8-Ball";
+                }
+                
+            }
+            else if (h == 0) 
+            {
+                turnText = "Survived";
+            } 
+            else if (h == -1) 
+            {
+                turnText = "Miss";
+            } 
+            else if (h == -2) 
+            {
+                turnText = "Foul";
+            } 
+            else if (h > 0) 
+            {
+                turnText = "+" + h;
+            } else 
+            {
+                cell.textContent = turnText;
+                row.appendChild(cell);
+                break;
+            }
+
+            cell.textContent = turnText;
+            row.appendChild(cell);
+        }
+
+        tbody.appendChild(row);
     }
 
-    var newRow = scorecardTable.insertRow();
-    var cellLives = newRow.insertCell(0);
-    cellLives.textContent = "Lives";
+    // Create Lives row
+    var livesRow = document.createElement("tr");
+    var livesHeaderCell = document.createElement("td");
+    livesHeaderCell.textContent = "Lives:";
+    livesRow.appendChild(livesHeaderCell);
 
-    for (var i = 0; i < data.gameData.results.scores.length; i++) {
-        var cell = newRow.insertCell(i + 1);
-        cell.textContent = data.gameData.results.scores[i];
+    for (var i = 0; i < data.gameData.results.scores.length; i++) 
+    {
+        var livesCell = document.createElement("td");
+        livesCell.textContent = data.gameData.results.scores[i];
+        livesRow.appendChild(livesCell);
     }
+
+    tbody.appendChild(livesRow);
 }
+

@@ -43,9 +43,10 @@
                     <div class="d-flex flex-wrap justify-content-center" id="players">
 
                         <div class="card rounded text-center card-component killers-card-player">
-                            <div class="card-header" id="lbl-P_0-name">Player_0</div>
+                            <div class="card-header killers-character-header" id="lbl-P_0-name">Player_0</div>
                             <div class="card-body">
-                                <p id="lbl-P_0-score">000</p>
+                                <p class="killers-character-score" id="lbl-P_0-score">000</p>
+                                <div class="btn btn-secondary" id="turn-indicator">TURN</div>
                             </div>
                         </div>
 
@@ -60,9 +61,13 @@
                 </div>
                 <div class="card-footer">
                     <button class="btn btn-primary" id="btn-score-0" style="width: 40%;">0</button>
-                    <button class="btn btn-primary" id="btn-score--1" style="width: 40%;">-1</button>
-                    <button class="btn btn-primary" id="btn-score-8" style="width: 40%;">8-Ball</button>
+                    <button class="btn btn-primary" id="btn-score--1" style="width: 40%;">-1 (Miss)</button>
+                    <button class="btn btn-primary" id="btn-score-Foul" style="width: 40%;">-2 (Foul)</button>
                     <button class="btn btn-primary" id="btn-score-RR" style="width: 40%;">Re-Rack</button>
+                    <div class="input-group mt-3" style="width: 40%;">
+                        <input type="number" class="form-control" id="extra-lives-input" placeholder=1 min=1 step=1>
+                        <button class="btn btn-success" id="btn-extra-lives">Add</button>
+                    </div>
                     <div class="d-flex flex-wrap justify-content-center" id="available-balls">
                         <button class="btn btn-primary icon-ball" id="b1">1</button>
                         <button class="btn btn-primary icon-ball" id="b2">2</button>
@@ -81,12 +86,12 @@
                         <button class="btn btn-primary icon-ball" id="b15">15</button>
                     </div>
 
-                    <p>DATA FOR PUSH:</p>
+                    <p id="push-que">DATA FOR PUSH:</p>
                     
                     <button class="btn btn-primary" id="btn-push">Push</button>
                     <button class="btn btn-danger" id="btn-correction">Correction</button>
 
-                    <p>PUSH RESULT</p>
+                    <p id="push-result">PUSH RESULT</p>
 
                 </div>
             </div>
