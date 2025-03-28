@@ -1,0 +1,25 @@
+:root {
+    --color-base-light: rgba(232, 232, 232, 1);
+    --color-base-dark: rgba(69, 69, 69, 1);
+    --color-base-darkest: rgb(37, 37, 37);
+    --color-primary: rgba(234, 0, 121, 1);
+    --color-secondary: rgba(0, 53, 97, 1);
+    --color-base-med: rgba(135, 135, 135, 1);
+    --color-highlight: rgba(230, 161, 0, 1);
+    --color-secondary-light: rgba(1, 110, 194, 1);
+    --color-secondary-lighter: rgba(0, 186, 245, 1);
+}
+
+body
+{
+    background-color: var(--color-base-darkest);
+}
+
+canvas
+{
+    background: var(--color-base-dark);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -1000;
+}
