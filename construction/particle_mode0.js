@@ -22,7 +22,7 @@ const ctx = canvas.getContext('2d');
 // -------------------------------
 
 var pairs = [];
-const pairSpawnRate = 5 * 1000;
+const pairSpawnRate = 30 * 1000;
 const singlePairFrequency = 7 / 10;
 const white = 'rgb(232, 232, 232)';
 const colors = [
