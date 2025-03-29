@@ -1,11 +1,11 @@
 export class Particle 
 {
-    constructor(x, y, color) {
+    constructor(x, y, color, radius) {
         this.x = x;
         this.y = y;
         this.color = color;
         this.opacity = 0;
-        this.radius = 5;
+        this.radius = radius;
     
         this.vx = 0;
         this.vy = 0;

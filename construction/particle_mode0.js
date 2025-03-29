@@ -22,14 +22,17 @@ const ctx = canvas.getContext('2d');
 // -------------------------------
 
 var pairs = [];
-const pairSpawnRate = 30 * 1000;
+const pairSpawnRate = 5 * 1000;
 const singlePairFrequency = 7 / 10;
 const white = 'rgb(232, 232, 232)';
 const colors = [
-    'rgb(0, 186, 245)',
-    'rgb(234, 0, 121)',
-    'rgb(37, 37, 37)',
-    'rgb(230, 161, 0)'
+    'rgb(37, 37, 37)',        // --color-base-darkest
+    'rgba(234, 0, 121, 1)',   // --color-primary
+    'rgba(0, 53, 97, 1)',     // --color-secondary
+    'rgba(135, 135, 135, 1)', // --color-base-med
+    'rgba(230, 161, 0, 1)',   // --color-highlight
+    'rgba(1, 110, 194, 1)',   // --color-secondary-light
+    'rgba(0, 186, 245, 1)'    // --color-secondary-lighter
 ];
 
 // -------------------------------
@@ -133,22 +136,24 @@ function spawnParticlePair()
 {
     const whiteX = Math.random() * canvas.width;
     const whiteY = Math.random() * canvas.height;
-    const w = new Particle(whiteX, whiteY, white);
+    var longestSide = Math.max(canvas.width, canvas.height);
+    const w = new Particle(whiteX, whiteY, white, longestSide / 1000);
 
     const c = [new Particle(
         Math.random() * canvas.width,
         Math.random() * canvas.height,
-        GetRandomColor()
+        GetRandomColor(),
+        longestSide / 1000
     )];
 
-    if (Math.random() > singlePairFrequency) 
+    /*if (Math.random() > singlePairFrequency) 
     {
         c.push(new Particle(
             Math.random() * canvas.width,
             Math.random() * canvas.height,
             GetRandomColor()
         ));
-    }
+    }*/
 
     const newPair = new ParticlePairs(w, c);
     pairs.push(newPair);

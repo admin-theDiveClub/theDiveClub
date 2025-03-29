@@ -131,7 +131,7 @@ export function handleBallCollision(white, target)
     const dx = target.x - white.x;
     const dy = target.y - white.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    const minDist = (white.radius + target.radius) * 2;
+    const minDist = (white.radius + target.radius) * 4;
 
     if (distance > minDist) return;
 
