@@ -7,13 +7,13 @@ const cushionBounceDamping = 0.75;
 const ballBounceDamping = 0.95;
 
 const accelerationMin = 1.2;
-const accelerationMax = 4;
+const accelerationMax = 6;
 
 const spinStrengthMin = 0.05;
 const spinStrengthMax = 0.3;
 
 const forwardSpinMin = 0.05;
-const forwardSpinMax = 0.12;
+const forwardSpinMax = 0.2;
 
 const accelerationDecayRate = 0.95;
 const sideSpinDecayRate = 0.95;

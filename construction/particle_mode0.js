@@ -137,13 +137,13 @@ function spawnParticlePair()
     const whiteX = Math.random() * canvas.width;
     const whiteY = Math.random() * canvas.height;
     var longestSide = Math.max(canvas.width, canvas.height);
-    const w = new Particle(whiteX, whiteY, white, longestSide / 1000);
+    const w = new Particle(whiteX, whiteY, white, longestSide / 800);
 
     const c = [new Particle(
         Math.random() * canvas.width,
         Math.random() * canvas.height,
         GetRandomColor(),
-        longestSide / 1000
+        longestSide / 800
     )];
 
     /*if (Math.random() > singlePairFrequency) 
