@@ -12,7 +12,10 @@ function lerp(a, b, t) {
 }
 
 function updateBackground() {
-    document.body.style.background = `radial-gradient(circle at ${currentX}% ${currentY}%, var(--color-secondary-lighter) 0%, var(--color-base-darkest) ${current}%, var(--color-primary) 200%)`;
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+        canvas.style.background = `radial-gradient(circle at ${currentX}% ${currentY}%, var(--color-secondary-lighter) 0%, var(--color-base-darkest) ${current}%, var(--color-primary) 200%)`;
+    }
 }
 
 function animate() {

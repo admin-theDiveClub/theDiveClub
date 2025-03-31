@@ -11,11 +11,13 @@
     
     <!-- Bootstrap CSS -->     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
     <!-- Custom CSS -->
      <!-- <link href="../stylesheets/stylesheet_master.css" rel="stylesheet"> -->
     
-    <link href="../stylesheets/stylesheet_new.css" rel="stylesheet">
+    <link href="../components/styles.css" rel="stylesheet">
 
 </head>
 
@@ -34,30 +36,60 @@
         <div class="col-sm-2"></div>
     </div>
 
-    <!-- User Profile Icon -->
-    <div class="card rounded profile-icon-card">
-        <div class="card-body">
+    <!-- Login -->    
+    <div class="row">
+        <div class="col-lg-3 col-xl-4"></div>
+        <div class="col-lg-6 col-xl-4">
+            <div class="card rounded card-component">     
+                <h2>Log in</h2>
 
-            
-            
+                <p class="form-check-label">Username</p>    
+                <input type="text" class="form-control" id="username" name="username" placeholder="Enter username" autocomplete="username">
 
-            <div class="row">
-                <div class="card rounded profile-icon-controls">
-                    <p class="profile-icon-nickname">"Yuvan UV Naidoo"</p>
+                <p class="form-check-label">Password</p>    
+                <input type="password" class="form-control" id="password" name="password" placeholder="Enter password" autocomplete="current-password">
+
+                <div class="form-check form-control">
+                    <input class="form-check-input" type="checkbox" value="" id="rememberMe" checked>
+                    <label class="form-check-label" for="rememberMe">Keep me signed in</label>
                 </div>
-                <div class="btn btn-danger btn-sign-out">Sign Out</div>
-                <div class="col-3">
-                    <img src="../resources/img_pp_test.jpeg" alt="Circular Logo" class="profile-icon-image"></img>
+
+                <div id="grp_output">
+                    <div class="card rounded card-message">
+                        <p id="outputMessage" style="text-align: center;">Message</p>
+                    </div>
                 </div>
-                <div class="col-9">
-                    <p class="card-title profile-icon-name">Yuvan UV Naidoo</p>
-                </div>
+                
+                <button type="submit" class="btn btn-primary" id="btn_login">Login</button>
+                
+                <button type="button" class="btn btn-primary d-flex align-items-center" id="btn_login_google">
+                    <img src="../resources/icon_google.svg" alt="" style="float: left; margin: 0.5cap;"></img>
+                    Continue with Google
+                    <div class="ms-auto btn-icon">
+                        <i class="bi bi-arrow-right" style="padding: 0.5cap;"></i>
+                    </div>
+                </button>
+                
+                <p>Don't have account?</p>
+                <a href="../accounts/signUp.html" class="link">Sign Up now.</a>
             </div>
-            
         </div>
+        <div class="col-lg-3 col-xl-4"></div>
     </div>
     
-    
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Example usage of particle modes -->
+    <script type="module">
+        import { matchMode, persistentTrailMode, glowTrailMode } from '../resources/particleEffects/particle_modes.js';
+
+        // Uncomment the mode you want to use:
+        
+        matchMode();           // Match Mode: Basic particle mode for match/player background
+        //persistentTrailMode(); // Persistent Trail Mode: Trails persist (fade slowly)
+        //glowTrailMode();       // Glow Trail Mode: Clean glow effect for home page background
+    </script>
+    <script src="../resources/ui_backgroundRandomization.js"></script>
 
     <!-- Bootstrap JS (Optional) -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>

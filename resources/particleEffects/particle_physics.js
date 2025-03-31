@@ -5,19 +5,19 @@
 // -------------------------------
 const dampingRate = 0.98;
 const cushionBounceDamping = 0.75;
-const ballBounceDamping = 0.9;
+const ballBounceDamping = 0.85;
 
-const accelerationMin = 0.25;
+const accelerationMin = 1;
 const accelerationMax = 3;
 
 const spinStrengthMin = 0.01;
-const spinStrengthMax = 0.28;
+const spinStrengthMax = 0.4;
 
 const forwardSpinMin = 0.05;
-const forwardSpinMax = 0.4;
+const forwardSpinMax = 0.75;
 
-const accelerationDecayRate = 0.98;
-const sideSpinDecayRate = 0.95;
+const accelerationDecayRate = 0.95;
+const sideSpinDecayRate = 0.92;
 const forwardSpinDecayRate = 0.95;
 
 const motionScale = 0.75;
@@ -62,12 +62,12 @@ export function applyWallBounce(particle, canvas) {
   if (particle.x - r <= 0 || particle.x + r >= canvas.width) {
     particle.vx *= -1 * cushionBounceDamping;
     particle.x = Math.max(r, Math.min(particle.x, canvas.width - r));
-    particle.vy += particle.spinForce * 3;
+    particle.vy += particle.spinForce * 5;
   }
   if (particle.y - r <= 0 || particle.y + r >= canvas.height) {
     particle.vy *= -1 * cushionBounceDamping;
     particle.y = Math.max(r, Math.min(particle.y, canvas.height - r));
-    particle.vx -= particle.spinForce * 3;
+    particle.vx -= particle.spinForce * 5;
   }
 }
 
@@ -116,7 +116,7 @@ export function handleBallCollision(white, target, canvas) {
   white.spinForce = spinDir * spinMag;
   const forwardDir = Math.random() < 0.5 ? -1 : 1;
   const forwardMag = getRandom(forwardSpinMin * scale, forwardSpinMax * scale);
-  white.forwardSpin = forwardDir * forwardMag;
+  white.forwardSpin = forwardDir * forwardMag * 1.5;
 }
 
 function getRandom(min, max) {

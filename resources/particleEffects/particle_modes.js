@@ -7,18 +7,20 @@ import { applyMotion, applyWallBounce, giveInitialVelocity, handleBallCollision 
   Match Mode: Basic particle mode for match/player background 
   (particles are drawn without any trail effect)
 */
+var _white = 'rgba(232, 232, 232, 0.5)';
+
 export function matchMode() {
   const canvas = document.getElementById('bg-canvas');
   const ctx = canvas.getContext('2d');
 
   let pairs = [];
   const pairSpawnRate = 20 * 1000;
-  const white = 'rgb(232, 232, 232)';
+  const white = _white;
   const colors = [
-    'rgb(37, 37, 37)',
-    'rgba(234, 0, 121, 1)',
-    'rgba(0, 53, 97, 1)',
-    'rgba(230, 161, 0, 1)',
+    'rgba(37, 37, 37, 0.5)',
+    'rgba(234, 0, 121, 0.75)',
+    'rgba(0, 53, 97, 0.75)',
+    'rgba(230, 161, 0, 0.75)',
     'rgba(1, 110, 194, 1)',
     'rgba(0, 186, 245, 1)'
   ];
@@ -121,12 +123,12 @@ export function persistentTrailMode() {
   
     let pairs = [];
     const pairSpawnRate = 5000;
-    const white = 'rgb(232, 232, 232)';
+    const white = _white;
     const colors = [
-      'rgb(37, 37, 37)',
-      'rgba(234, 0, 121, 1)',
-      'rgba(0, 53, 97, 1)',
-      'rgba(230, 161, 0, 1)',
+      'rgba(37, 37, 37, 0.5)',
+      'rgba(234, 0, 121, 0.75)',
+      'rgba(0, 53, 97, 0.75)',
+      'rgba(230, 161, 0, 0.75)',
       'rgba(1, 110, 194, 1)',
       'rgba(0, 186, 245, 1)'
     ];
@@ -165,7 +167,7 @@ export function persistentTrailMode() {
       }
   
       draw(ctx) {
-        // Draw persistent trails without any background overlay.
+        // Draw persistent trails using the glow drawing method.
         this.whiteP.drawTrail(ctx);
         this.particles.forEach(p => p.drawTrail(ctx));
       }
@@ -178,7 +180,7 @@ export function persistentTrailMode() {
   
     function animate() {
       requestAnimationFrame(animate);
-      // Removed the black overlay to avoid any background tint.
+      // No overlay – trails remain persistent.
       pairs.forEach(pair => {
         pair.update();
         pair.draw(ctx);
@@ -187,14 +189,14 @@ export function persistentTrailMode() {
   
     function spawnParticlePair() {
       const longestSide = Math.max(canvas.width, canvas.height);
-      const whiteParticle = new TrailParticle(
+      const whiteParticle = new GlowTrailParticle(
         Math.random() * canvas.width,
         Math.random() * canvas.height,
         white,
         longestSide / 800
       );
       const randomColor = colors[Math.floor(Math.random() * colors.length)];
-      const coloredParticle = new TrailParticle(
+      const coloredParticle = new GlowTrailParticle(
         Math.random() * canvas.width,
         Math.random() * canvas.height,
         randomColor,
@@ -217,6 +219,7 @@ export function persistentTrailMode() {
     animate();
   }
   
+  
 
 /* 
   Glow Trail Mode: Uses glow trail particles for a glowing effect.
@@ -227,13 +230,13 @@ export function glowTrailMode() {
   const ctx = canvas.getContext('2d');
 
   let pairs = [];
-  const pairSpawnRate = 50;
-  const white = 'rgb(232, 232, 232)';
+  const pairSpawnRate = 2000;
+  const white = _white;
   const colors = [
-    'rgb(37, 37, 37)',
-    'rgba(234, 0, 121, 1)',
-    'rgba(0, 53, 97, 1)',
-    'rgba(230, 161, 0, 1)',
+    'rgba(37, 37, 37, 0.5)',
+    'rgba(234, 0, 121, 0.75)',
+    'rgba(0, 53, 97, 0.75)',
+    'rgba(230, 161, 0, 0.75)',
     'rgba(1, 110, 194, 1)',
     'rgba(0, 186, 245, 1)'
   ];
@@ -311,7 +314,7 @@ export function glowTrailMode() {
   }
 
   function startSpawningParticles() {
-    const delay = Math.random() * pairSpawnRate + 10000;
+    const delay = Math.random() * pairSpawnRate + 2000;
     setTimeout(() => {
       spawnParticlePair();
       startSpawningParticles();
