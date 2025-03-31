@@ -29,7 +29,7 @@ canvas
 
 .card-component
 {
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(2cap);
     background-color: rgb(0,0,0,0.1);
     color: var(--color-base-light);
     box-shadow: 0 0px 24px 4px rgba(0, 0, 0, 75);
