@@ -19,7 +19,7 @@ export class Particle
     
     update() 
     {
-        if (this.opacity < 1) this.opacity += 0.01;
+        if (this.opacity < 1) this.opacity += 0.005;
     }
 
     draw(ctx) 

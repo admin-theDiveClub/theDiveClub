@@ -3,21 +3,21 @@
 // -------------------------------
 
 const dampingRate = 0.98;
-const cushionBounceDamping = 0.85;
-const ballBounceDamping = 0.98;
+const cushionBounceDamping = 0.75;
+const ballBounceDamping = 0.9;
 
-const accelerationMin = 1.2;
-const accelerationMax = 4;
+const accelerationMin = 0.25;
+const accelerationMax = 3;
 
 const spinStrengthMin = 0.01;
-const spinStrengthMax = 0.4;
+const spinStrengthMax = 0.28;
 
 const forwardSpinMin = 0.05;
-const forwardSpinMax = 0.5;
+const forwardSpinMax = 0.4;
 
 const accelerationDecayRate = 0.98;
 const sideSpinDecayRate = 0.95;
-const forwardSpinDecayRate = 0.98;
+const forwardSpinDecayRate = 0.95;
 
 const motionScale = 0.75;
 

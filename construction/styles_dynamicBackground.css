@@ -12,14 +12,27 @@
 
 body
 {
-    background-color: var(--color-base-dark);
+    background: radial-gradient(circle at -100% -100%, var(--color-secondary-lighter) 0%, var(--color-base-darkest) 80%, var(--color-primary) 200%);
+    background-size: fill;
+    background-attachment: fixed;
+    min-height: 99.6vh;
 }
 
 canvas
 {
-    background: var(--color-base-dark);
+    background: transparent;
     position: fixed;
     top: 0;
     left: 0;
     z-index: -1000;
+}
+
+.card-component
+{
+    backdrop-filter: blur(10px);
+    background-color: rgb(0,0,0,0.1);
+    color: var(--color-base-light);
+    box-shadow: 0 0px 24px 4px rgba(0, 0, 0, 75);
+    padding: 1cap;
+    margin: 0.5cap;
 }
