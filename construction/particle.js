@@ -12,14 +12,14 @@ export class Particle
         this.ax = 0;
         this.ay = 0;
         this.spinForce = 0;
+        this.forwardSpin = 0;
     
         this.hasCollided = false;
     }
     
-
     update() 
     {
-        if (this.opacity < 1) this.opacity += 0.001;
+        if (this.opacity < 1) this.opacity += 0.01;
     }
 
     draw(ctx) 

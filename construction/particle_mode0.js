@@ -1,4 +1,4 @@
-// -------------------------------
+// ------------------------------- 
 // Imports
 // -------------------------------
 
@@ -6,9 +6,9 @@ import { Particle } from './particle.js';
 import {
     applyMotion,
     applyWallBounce,
-    giveInitialVelocity, // ✅ correct name
+    giveInitialVelocity,
     handleBallCollision
-  } from './particle_physics.js';
+} from './particle_physics.js';
 
 // -------------------------------
 // Elements
@@ -22,17 +22,16 @@ const ctx = canvas.getContext('2d');
 // -------------------------------
 
 var pairs = [];
-const pairSpawnRate = 30 * 1000;
+const pairSpawnRate = 5 * 1000;
 const singlePairFrequency = 7 / 10;
 const white = 'rgb(232, 232, 232)';
 const colors = [
-    'rgb(37, 37, 37)',        // --color-base-darkest
-    'rgba(234, 0, 121, 1)',   // --color-primary
-    'rgba(0, 53, 97, 1)',     // --color-secondary
-    'rgba(135, 135, 135, 1)', // --color-base-med
-    'rgba(230, 161, 0, 1)',   // --color-highlight
-    'rgba(1, 110, 194, 1)',   // --color-secondary-light
-    'rgba(0, 186, 245, 1)'    // --color-secondary-lighter
+    'rgb(37, 37, 37)',
+    'rgba(234, 0, 121, 1)',
+    'rgba(0, 53, 97, 1)',
+    'rgba(230, 161, 0, 1)',
+    'rgba(1, 110, 194, 1)',
+    'rgba(0, 186, 245, 1)'
 ];
 
 // -------------------------------
@@ -60,13 +59,13 @@ class ParticlePairs
 
         if (!this.started && this.whiteP.opacity >= 1)
         {
-            giveInitialVelocity(this.whiteP, this.target);
+            giveInitialVelocity(this.whiteP, this.target, canvas);
             this.started = true;
         }
 
         if (this.started && !this.hasHit)
         {
-            handleBallCollision(this.whiteP, this.target);
+            handleBallCollision(this.whiteP, this.target, canvas);
             if (this.whiteP.hasCollided)
             {
                 this.hasHit = true;
@@ -145,15 +144,6 @@ function spawnParticlePair()
         GetRandomColor(),
         longestSide / 800
     )];
-
-    /*if (Math.random() > singlePairFrequency) 
-    {
-        c.push(new Particle(
-            Math.random() * canvas.width,
-            Math.random() * canvas.height,
-            GetRandomColor()
-        ));
-    }*/
 
     const newPair = new ParticlePairs(w, c);
     pairs.push(newPair);
