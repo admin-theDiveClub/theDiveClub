@@ -25,7 +25,7 @@ function animate() {
     updateBackground();
 
     if (Math.abs(current - target) < 0.1) {
-        target = Math.random() * 60 + 60; // Generate new target
+        target = Math.random() * 60 + 30; // Generate new target
     }
     if (Math.abs(currentX - targetX) < 0.1) {
         targetX = Math.random() * 200 - 100; // Generate new targetX

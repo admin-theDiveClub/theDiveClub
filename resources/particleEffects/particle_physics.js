@@ -5,16 +5,16 @@
 // -------------------------------
 const dampingRate = 0.98;
 const cushionBounceDamping = 0.75;
-const ballBounceDamping = 0.85;
+const ballBounceDamping = 0.8;
 
 const accelerationMin = 1;
-const accelerationMax = 3;
+const accelerationMax = 5;
 
-const spinStrengthMin = 0.01;
-const spinStrengthMax = 0.4;
+const spinStrengthMin = 0.1;
+const spinStrengthMax = 0.5;
 
-const forwardSpinMin = 0.05;
-const forwardSpinMax = 0.75;
+const forwardSpinMin = 0.1;
+const forwardSpinMax = 0.25;
 
 const accelerationDecayRate = 0.95;
 const sideSpinDecayRate = 0.92;
@@ -82,7 +82,7 @@ export function giveInitialVelocity(particle, target, canvas) {
   angle += deviation;
   const dirX = Math.cos(angle);
   const dirY = Math.sin(angle);
-  const scale = Math.max(canvas.width, canvas.height) / 1920;
+  const scale = Math.max(canvas.width, canvas.height) / 1000;
   const baseAcceleration = getRandom(accelerationMin * scale, accelerationMax * scale);
   particle.vx = dirX * baseAcceleration;
   particle.vy = dirY * baseAcceleration;
@@ -95,7 +95,7 @@ export function handleBallCollision(white, target, canvas) {
   const dx = target.x - white.x;
   const dy = target.y - white.y;
   const distance = Math.sqrt(dx * dx + dy * dy);
-  const minDist = (white.radius + target.radius) * 4;
+  const minDist = (white.radius + target.radius) * 8;
   if (distance > minDist) return;
   white.hasCollided = true;
   target.hasCollided = true;
@@ -110,7 +110,7 @@ export function handleBallCollision(white, target, canvas) {
   white.vy *= dampingRate;
   white.ax = 0;
   white.ay = 0;
-  const scale = Math.max(canvas.width, canvas.height) / 1920;
+  const scale = Math.max(canvas.width, canvas.height) / 1000;
   const spinDir = Math.random() < 0.5 ? -1 : 1;
   const spinMag = getRandom(spinStrengthMin * scale, spinStrengthMax * scale);
   white.spinForce = spinDir * spinMag;

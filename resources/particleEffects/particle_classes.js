@@ -50,7 +50,7 @@ export class BasicParticle {
       this.forwardSpin = 0;
       this.hasCollided = false;
       this.history = [];
-      this.maxTrailLength = 20;
+      this.maxTrailLength = 400;
     }
   
     update() {
@@ -63,7 +63,7 @@ export class BasicParticle {
     }
   
     drawTrail(ctx) {
-      if (this.history.length < 2) return;
+      if (this.history.length < 8) return;
       ctx.save();
       ctx.beginPath();
       ctx.moveTo(this.history[0].x, this.history[0].y);
@@ -75,7 +75,7 @@ export class BasicParticle {
         ctx.strokeStyle = this.color;
         ctx.shadowBlur = 4;
         ctx.shadowColor = this.color;
-        ctx.lineWidth = this.radius * 1.5;
+        ctx.lineWidth = this.radius;
         ctx.globalAlpha = this.opacity * glowAlpha;
       }
       ctx.stroke();
@@ -85,58 +85,6 @@ export class BasicParticle {
   
     // draw() is intentionally left blank since we use drawTrail for visual output.
     draw(ctx) {}
-  }
-  
-  // Particle with a trail (used in mode1)
-export class TrailParticle {
-    constructor(x, y, color, radius) {
-        this.x = x;
-        this.y = y;
-        this.color = color;
-        this.opacity = 0;
-        this.radius = radius;
-        this.vx = 0;
-        this.vy = 0;
-        this.ax = 0;
-        this.ay = 0;
-        this.spinForce = 0;
-        this.forwardSpin = 0;
-        this.hasCollided = false;
-        this.history = [];
-        this.maxTrailLength = 20;
-    }
-
-    update() {
-        if (this.opacity < 1) this.opacity += 0.01;
-        const speed = Math.sqrt(this.vx ** 2 + this.vy ** 2);
-        this.history.push({ x: this.x, y: this.y, speed });
-        if (this.history.length > this.maxTrailLength) {
-            this.history.shift();
-        }
-    }
-
-    drawTrail(ctx) {
-        if (this.history.length < 2) return;
-        const p1 = this.history[0];
-        ctx.save();
-        ctx.lineJoin = 'round';
-        ctx.lineCap = 'butt'; // Prevent end caps from building into star shapes
-        ctx.strokeStyle = this.color;
-        ctx.lineWidth = this.radius / 4;
-        ctx.beginPath();
-        ctx.moveTo(p1.x, p1.y);
-        for (let i = 1; i < this.history.length; i++) {
-            const p2 = this.history[i];
-            const glowAlpha = Math.max(0.001, 1 - p2.speed * 2);
-            ctx.globalAlpha = this.opacity * glowAlpha;
-            ctx.lineTo(p2.x, p2.y);
-        }
-        ctx.stroke();
-        ctx.restore();
-        ctx.globalAlpha = 1;
-    }
-
-    // draw() is intentionally left blank since we use drawTrail for visual output.
-    draw(ctx) {}
 }
+
   

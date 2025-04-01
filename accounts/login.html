@@ -10,9 +10,11 @@
     
     <!-- Bootstrap CSS -->     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link href="../stylesheets/stylesheet_master.css" rel="stylesheet">
+    <link href="../stylesheets/styles_master.css" rel="stylesheet">
 </head>
 
 <body>
@@ -20,60 +22,53 @@
     <div class="row">
         <div class="col-lg-3 col-xl-4"></div>
         <div class="col-lg-6 col-xl-4">
-            <div class="card rounded" style="padding: 2%; margin-top: 4vh;">
+            <div class="card rounded card-component">
                 
                 <div class="row">
-                    <div class="col-sm-2"></div>
-                    <div class="col-sm-8">
-                        <div class="row justify-content-center">
-                            <div class="col-md-8">
-                                <div style="display: flex; align-items: center; justify-content: center; height: 100%;">
-                                    <img src="../resources/drawing_logo_theDiveClub.png" alt="Logo Home" style="max-width: 100%; max-height: 100%;">
-                                </div> 
-                            </div>
-                        </div>
+                    <div class="col-2"></div>
+                    <div class="col-8">
+                        <img src="../resources/drawing_logo_theDiveClub.png" alt="Logo Home" class="header-logo"></img>
                     </div>
-                    <div class="col-sm-2"></div>
+                    <div class="col-2"></div>
                 </div>
 
-                <h2 style="margin: 1cap; text-align: center;">Log in</h2>
-                <div class="card rounded inputField">
+                <h2>Log in</h2>
+                <div class="card rounded input-field">
                     <p class="inputLabel">Username</p>    
                     <input type="text" class="form-control border-0 inputText" id="username" name="username" placeholder="Enter username" autocomplete="username">
                 </div>
                 
-                <div class="card rounded inputField">
+                <div class="card rounded input-field">
                     <p class="inputLabel">Password</p>    
                     <input type="password" class="form-control border-0 inputText" id="password" name="password" placeholder="Enter password" autocomplete="current-password">
                 </div>
                 
-                <div class="card rounded inputField">
+                <div class="card rounded input-field">
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="" id="rememberMe" checked>
-                        <label class="form-check-label" for="rememberMe">Keep me signed in</label>
+                        <label class="form-check-label ms-2" for="rememberMe">Keep me signed in</label>
                     </div>
                 </div>
 
-                <div id="grp_output" style="display: none; padding: 1cap; margin: 1cap;">
-                    <div class="card rounded inputField">
+                <div id="grp-output" style="display: none;">
+                    <div class="card rounded card-message">
                         <p id="outputMessage" class="inputText" style="text-align: center;">Message</p>
                         <a href="../index.html" id="btn_Home" class="btn btn-primary" style="display: none;">Go to The Dive Club</a>
                     </div>
                 </div>
                 
-                <div class="btnHolder">
-                    <button type="submit" class="btn btn-primary" id="btn_login">Login</button>
-                </div>
+                <button type="submit" class="btn btn-primary" id="btn_login">Login</button>
+
+                
+                
+                <p class="inputLabel" style="text-align: center;">Log in with:</p>
+                <button type="button btnHolder" class="btn btn-primary" id="btn_login_google">
+                    Google
+                    <img src="../resources/icon_google.svg" alt="">
+                </button>
+                
                 <p style="text-align: center;">Don't have account?</p>
                 <a href="../accounts/signUp.html" class="link" style="text-align: center;">Sign Up now.</a>
-                
-                <p class="inputLabel">Log in with:</p>
-                <div class="btnHolder">
-                    <button type="button btnHolder" class="btn btn-primary" id="btn_login_google">
-                        Google
-                        <img src="../resources/icon_google.svg" alt="">
-                    </button>
-                </div>               
             </div>
         </div>
         <div class="col-lg-3 col-xl-4"></div>
@@ -83,10 +78,22 @@
     <script src="../scripts/login_email.js"></script>
     <script src="../scripts/login_google.js"></script>
 
+    <canvas id="bg-canvas"></canvas>
+
+    <script type="module">
+        import { matchMode, persistentTrailMode, glowTrailMode } from '../resources/particleEffects/particle_modes.js';
+
+        // Uncomment the mode you want to use:
+        
+        matchMode();           // Match Mode: Basic particle mode for match/player background
+        //persistentTrailMode(); // Persistent Trail Mode: Trails persist (fade slowly)
+        //glowTrailMode();       // Glow Trail Mode: Clean glow effect for home page background
+    </script>
+    <script src="../resources/ui_backgroundRandomization.js"></script>
+
     <!-- Bootstrap JS (Optional) -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
 </body>
 </html>
 

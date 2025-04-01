@@ -51,7 +51,7 @@ async function SignUp()
 function dataValid (_creds_db, _confirmedPassword, _creds_player)
 {
     // Remove all red borders before validation
-    document.querySelectorAll('.inputField').forEach(field => {
+    document.querySelectorAll('.input-field').forEach(field => {
         field.style.border = 'none';
     });
 
@@ -61,43 +61,43 @@ function dataValid (_creds_db, _confirmedPassword, _creds_player)
     {
         valid = false;
         errorMessage += "Passwords do not match.\n";
-        document.getElementById('inp_password').closest('.inputField').style.border = '1px solid red';
-        document.getElementById('inp_confirmPassword').closest('.inputField').style.border = '1px solid red';
+        document.getElementById('inp_password').closest('.input-field').style.border = '1px solid red';
+        document.getElementById('inp_confirmPassword').closest('.input-field').style.border = '1px solid red';
     }
 
     if (_creds_db.email == "")
     {
         valid = false;
         errorMessage += "Email field is empty.\n";
-        document.getElementById('inp_username').closest('.inputField').style.border = '1px solid red';
+        document.getElementById('inp_username').closest('.input-field').style.border = '1px solid red';
     }
 
     if (_creds_db.password == "")
     {
         valid = false;
         errorMessage += "Password field is empty.\n";
-        document.getElementById('inp_password').closest('.inputField').style.border = '1px solid red';
+        document.getElementById('inp_password').closest('.input-field').style.border = '1px solid red';
     }
 
     if (_creds_player.username == "")
     {
         valid = false;
         errorMessage += "Username field is empty.\n";
-        document.getElementById('inp_username').closest('.inputField').style.border = '1px solid red';
+        document.getElementById('inp_username').closest('.input-field').style.border = '1px solid red';
     }
 
     if (_creds_player.name == "")
     {
         valid = false;
         errorMessage += "Name field is empty.\n";
-        document.getElementById('inp_name').closest('.inputField').style.border = '1px solid red';
+        document.getElementById('inp_name').closest('.input-field').style.border = '1px solid red';
     }
 
     if (_creds_player.surname == "")
     {
         valid = false;
         errorMessage += "Surname field is empty.\n";
-        document.getElementById('inp_surname').closest('.inputField').style.border = '1px solid red';
+        document.getElementById('inp_surname').closest('.input-field').style.border = '1px solid red';
     }
 
     if (valid)
@@ -140,9 +140,9 @@ function Output_SignUpResponse (_success, _message)
     if (_success)
     {
         document.getElementById('grp_inputs').style.display = 'none';
-        document.getElementById('grp_buttons').style.display = 'none';
+        document.getElementById('btn_signUp').style.display = 'none';
         document.getElementById('btn_Home').style.display = 'block';
     }
-    document.getElementById('grp_output').style.display = 'block';
+    document.getElementById('grp-output').style.display = 'block';
     document.getElementById('outputMessage').textContent = _message;
 }

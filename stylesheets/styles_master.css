@@ -102,7 +102,7 @@ p
 
 .card-component
 {
-    backdrop-filter: blur(1cap);
+    backdrop-filter: blur(2cap);
     background-color: rgb(0,0,0,0.1);
     color: var(--color-base-light);
     box-shadow: 0 0px 24px 4px rgba(0, 0, 0, 75);
@@ -115,6 +115,21 @@ p
     background-color: var(--color-base-darkest);
     border-color: var(--color-primary);
 }
+
+.btn-primary:hover
+{
+    background-color: var(--color-primary);
+    color: var(--color-base-darkest);
+}
+
+.input-field
+{
+    background-color: transparent;
+    color: var(--color-base-light) !important;
+    padding: 1cap;
+    margin: 0.5cap;
+}
+
 .form-control
 {
     background-color: transparent !important;
@@ -138,10 +153,23 @@ p
     color: var(--color-base-light) !important;
 }
 
+.form-check
+{
+    padding: 0cap;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 p, .form-check-label
 {
     padding: 1cap !important;
     padding-left: 0% !important;
+}
+
+#rememberMe
+{
+    border: 0.1cap solid var(--color-primary);
 }
 
 .form-check-input
@@ -211,4 +239,9 @@ th, td
 {
     background-color: var(--color-base-dark) !important;
     border-color: var(--color-secondary-light) !important;
+}
+
+.link
+{
+    color: var(--color-primary) !important;
 }

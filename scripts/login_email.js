@@ -44,6 +44,6 @@ async function Login (_credentials, _persistance)
 
 function Output_LoginResponse (_message)
 {    
-    document.getElementById('grp_output').style.display = 'block';
+    document.getElementById('grp-output').style.display = 'block';
     document.getElementById('outputMessage').textContent = _message.charAt(0).toUpperCase() + _message.slice(1) + ". Please try again.";
 }
