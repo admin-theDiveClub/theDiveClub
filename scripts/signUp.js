@@ -4,6 +4,12 @@ document.getElementById('btn_signUp').addEventListener('click', () =>
 {
     SignUp();
 });
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+        SignUp();
+    }
+});
     
 async function SignUp()
 {

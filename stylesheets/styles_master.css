@@ -13,7 +13,7 @@
 body
 {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: radial-gradient(circle at -100% -100%, var(--color-secondary-lighter) 0%, var(--color-base-darkest) 80%, var(--color-primary) 200%);
+    background: var(--color-base-darkest);
     background-attachment: fixed;
     overflow-x: hidden;
 }
@@ -31,9 +31,16 @@ p
     margin: 0%;
 }
 
+.inputText
+{
+    color: var(--color-base-med) !important;
+}
+
 .header-logo
 {
-    width: 100%;
+    width: auto;
+    max-width: 100%;
+    height: auto;
     max-height: 50vh;
 }
 
@@ -53,7 +60,7 @@ p
 {
     border: 0;
     border-radius: 20vw !important;
-    box-shadow: 0 0px 24px 0px rgba(0, 0, 0, 75);
+    box-shadow: 0 0px 24px 0px rgba(0, 0, 0, 0.75);
     background-color: var(--color-secondary);
     color: var(--color-base-light);
 }
@@ -61,8 +68,13 @@ p
 .btn
 {
     border-radius: 20vw !important;
-    min-height: 4cap;
-    margin: 1cap;
+    color: var(--color-base-light);
+    border-color: var(--color-base-dark);
+}
+
+.btn:focus
+{
+    background-color: var(--color-highlight) !important;
 }
 
 .btn-nav
@@ -89,8 +101,17 @@ p
 
 .dropdown-menu
 {
-    background-color: transparent;
-    border: none;
+    background-color: var(--color-base-dark);
+    border: 0.1cap solid var(--color-highlight);
+    padding: 0.5cap;
+}
+
+.dropdown-item
+{
+    background-color: var(--color-base-darkest);
+    color: var(--color-base-light);
+    border-radius: 1cap;
+    margin-top: 0.25cap;
 }
 
 .btn-icon
@@ -244,4 +265,60 @@ th, td
 .link
 {
     color: var(--color-primary) !important;
+}
+
+
+
+
+
+
+
+
+
+.btn-match
+{
+    padding: 4cap;
+    width: fit-content;    
+}
+
+.score-input
+{
+    background-color: transparent !important;
+    color: var(--color-base-light) !important;
+    border: 0.1cap solid var(--color-base-dark);
+    caret-color: var(--color-primary) !important;
+    width: 50%;
+    text-align: center;
+    border-radius: 20vw;
+}
+
+.btn-warning
+{
+    color: var(--color-base-darkest);
+}
+
+.card-profile
+{
+    margin: 2cap;
+    border-radius: 4cap !important;
+    background-color: transparent;
+    border: transparent;
+}
+
+.profile-pic
+{ 
+    object-fit: cover !important;
+    border: 0.2cap solid var(--color-primary);
+    box-shadow: 0 0px 24px 0px rgba(0, 0, 0, 0.75);
+    padding: 0cap;
+    border-radius: 100vw;
+    width: 30%;
+}
+
+#profile-name
+{
+    font-size: 6cap; 
+    display: flex; 
+    justify-content: center; 
+    color: var(--color-base-light);
 }

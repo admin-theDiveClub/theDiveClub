@@ -6,8 +6,9 @@ import { applyMotion, applyWallBounce, giveInitialVelocity, handleBallCollision 
 const canvas = document.getElementById('bg-canvas');
 const ctx = canvas.getContext('2d');
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+const parent = canvas.parentElement;
+canvas.width = parent.clientWidth;
+canvas.height = parent.clientHeight;
 
 // Shared variables
 let pairs = [];
@@ -101,9 +102,23 @@ function spawnParticlePair(config) {
         longestSide / 800
     );
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    const maxRadius = longestSide / 2; // Define a maximum radius
+    const angle = Math.random() * 2 * Math.PI; // Random angle
+    const distance = Math.random() * maxRadius; // Random distance within the radius
+    const x = whiteParticle.x + distance * Math.cos(angle); // Calculate x position
+    const y = whiteParticle.y + distance * Math.sin(angle); // Calculate y position
+    let adjustedX = x;
+    let adjustedY = y;
+
+    // Ensure the particle stays within canvas bounds
+    if (x < 0) adjustedX = 0;
+    if (x > canvas.width) adjustedX = canvas.width;
+    if (y < 0) adjustedY = 0;
+    if (y > canvas.height) adjustedY = canvas.height;
+
     const coloredParticle = new config.particleType(
-        Math.random() * canvas.width,
-        Math.random() * canvas.height,
+        adjustedX,
+        adjustedY,
         randomColor,
         longestSide / 800
     );
@@ -125,7 +140,7 @@ const modes = {
     trail: false,
     clearCanvas: false,
     overlay: false,
-    pairSpawnRate: 10000,
+    pairSpawnRate: 20000,
     minSpawnDelay: 10000,
   },
   persistentTrailMode: {
@@ -133,7 +148,7 @@ const modes = {
     trail: true,
     clearCanvas: false,
     overlay: false, // Removed overlay
-    pairSpawnRate: 5000,
+    pairSpawnRate: 20000,
     minSpawnDelay: 10000,
   },
   glowTrailMode: {

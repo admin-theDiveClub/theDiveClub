@@ -10,6 +10,20 @@ document.getElementById('btn_login').addEventListener('click', () =>
     var login = Login(credentials, sessionPersistance);
 });
 
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+        const credentials = 
+        { 
+            email: document.getElementById('username').value, 
+            password: document.getElementById('password').value 
+        };
+
+        var sessionPersistance = document.getElementById('rememberMe').checked;
+        Login(credentials, sessionPersistance);
+    }
+});
+
 async function Login (_credentials, _persistance)
 {
     const response = await supabase.auth.signInWithPassword(_credentials);

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up: TDC</title>
+
+    <!-- Import Supabase resources via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    
+    <!-- Bootstrap CSS -->     
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="../stylesheets/styles_master.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="row">
+        <div class="col-sm-2"></div>
+        <div class="col-sm-8 d-flex justify-content-center align-items-center">
+            <img src="../resources/drawing_logo_theDiveClub.png" alt="Logo Home" class="header-logo"></img>
+        </div>
+        <div class="col-sm-2"></div>
+    </div>
+
+    <script src="../scripts/supaBase_client.js"></script>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <script type="module">
+        import { matchMode, persistentTrailMode, glowTrailMode } from '../resources/particleEffects/particle_modes.js';
+
+        // Uncomment the mode you want to use:
+        
+        matchMode();           // Match Mode: Basic particle mode for match/player background
+        //persistentTrailMode(); // Persistent Trail Mode: Trails persist (fade slowly)
+        //glowTrailMode();       // Glow Trail Mode: Clean glow effect for home page background
+    </script>
+    <script src="../resources/ui_backgroundRandomization.js"></script>
+
+    <!-- Bootstrap JS (Optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+</body>
+</html>

@@ -3,22 +3,22 @@
 // -------------------------------
 // Physics Constants
 // -------------------------------
-const dampingRate = 0.98;
-const cushionBounceDamping = 0.75;
+const dampingRate = 0.99;
+const cushionBounceDamping = 0.9;
 const ballBounceDamping = 0.8;
 
-const accelerationMin = 1;
-const accelerationMax = 5;
+const accelerationMin = 0.7;
+const accelerationMax = 2;
 
-const spinStrengthMin = 0.1;
-const spinStrengthMax = 0.5;
+const spinStrengthMin = 0.15;
+const spinStrengthMax = 0.25;
 
-const forwardSpinMin = 0.1;
+const forwardSpinMin = 0.15;
 const forwardSpinMax = 0.25;
 
-const accelerationDecayRate = 0.95;
+const accelerationDecayRate = 0.9;
 const sideSpinDecayRate = 0.92;
-const forwardSpinDecayRate = 0.95;
+const forwardSpinDecayRate = 0.92;
 
 const motionScale = 0.75;
 
@@ -78,7 +78,7 @@ export function giveInitialVelocity(particle, target, canvas) {
   if (distance === 0) return;
   let angle = Math.atan2(dy, dx);
   const maxDeviation = Math.atan(target.radius / distance);
-  const deviation = (Math.random() * 2 - 1) * (maxDeviation * 2);
+  const deviation = (Math.random() * 2 - 1) * (maxDeviation * 16);
   angle += deviation;
   const dirX = Math.cos(angle);
   const dirY = Math.sin(angle);
@@ -115,7 +115,10 @@ export function handleBallCollision(white, target, canvas) {
   const spinMag = getRandom(spinStrengthMin * scale, spinStrengthMax * scale);
   white.spinForce = spinDir * spinMag;
   const forwardDir = Math.random() < 0.5 ? -1 : 1;
-  const forwardMag = getRandom(forwardSpinMin * scale, forwardSpinMax * scale);
+  const forwardMag = Math.min(
+    getRandom(forwardSpinMin * scale, forwardSpinMax * scale),
+    Math.sqrt(white.vx * white.vx + white.vy * white.vy)
+  );
   white.forwardSpin = forwardDir * forwardMag * 1.5;
 }
 
