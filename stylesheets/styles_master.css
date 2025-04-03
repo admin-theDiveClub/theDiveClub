@@ -16,6 +16,7 @@ body
     background: var(--color-base-darkest);
     background-attachment: fixed;
     overflow-x: hidden;
+    margin-bottom: 10vh;
 }
 
 canvas
@@ -53,7 +54,7 @@ p
     padding: 0%;
     left: 50%;
     transform: translateX(-50%);
-    width: 100%;
+    width: 100vw;
 }
 
 .card-nav
@@ -101,14 +102,14 @@ p
 
 .dropdown-menu
 {
-    background-color: var(--color-base-dark);
-    border: 0.1cap solid var(--color-highlight);
+    background-color: transparent;
+    border: none;
     padding: 0.5cap;
 }
 
 .dropdown-item
 {
-    background-color: var(--color-base-darkest);
+    background-color: var(--color-base-dark);
     color: var(--color-base-light);
     border-radius: 1cap;
     margin-top: 0.25cap;
@@ -149,6 +150,11 @@ p
     color: var(--color-base-light) !important;
     padding: 1cap;
     margin: 0.5cap;
+}
+
+.input-label
+{
+    color: var(--color-base-med) !important;
 }
 
 .form-control
@@ -269,12 +275,6 @@ th, td
 
 
 
-
-
-
-
-
-
 .btn-match
 {
     padding: 4cap;
@@ -297,28 +297,34 @@ th, td
     color: var(--color-base-darkest);
 }
 
-.card-profile
+.card-profile, .tab-pane
 {
-    margin: 2cap;
     border-radius: 4cap !important;
-    background-color: transparent;
+    background-color: transparent !important;
     border: transparent;
+    color: var(--color-base-med);
+    margin: 1cap;
 }
 
 .profile-pic
 { 
     object-fit: cover !important;
-    border: 0.2cap solid var(--color-primary);
+    border: 0.2cap solid var(--color-secondary-light);
     box-shadow: 0 0px 24px 0px rgba(0, 0, 0, 0.75);
     padding: 0cap;
     border-radius: 100vw;
-    width: 30%;
+    max-width: 30vw;
+    max-height: 30vh;
+    margin: 1cap;
 }
 
-#profile-name
+#profile-nickname
 {
     font-size: 6cap; 
-    display: flex; 
-    justify-content: center; 
     color: var(--color-base-light);
+}
+
+.tab-pane
+{
+    margin: 0cap !important;
 }

@@ -19,33 +19,145 @@
 
 <body>
 
-    <div class="row">
+    <div class="row" style="margin: 1cap;">
         <div class="col-sm-2"></div>
-        <div class="col-sm-8 d-flex justify-content-center align-items-center" style="height: 50vh;">            
+        <div class="col-sm-8 d-flex justify-content-center align-items-center" style="height: 30vh;">            
             <canvas id="bg-canvas" style="position: relative; border-radius: 20vw; box-shadow: inset 0 0 2cap 1cap rgba(0, 0, 0, 0.5);"></canvas>
-            <img src="../resources/drawing_logo_theDiveClub.png" alt="Logo Home" class="header-logo" style="position: absolute;"></img>
+            <img src="../resources/drawing_logo_theDiveClub.png" alt="Logo Home" class="header-logo" style="position: absolute; max-height: 30vh;"></img>
         </div>
         <div class="col-sm-2"></div>
     </div>
 
+    <!-- Navigation -->
+    <div class="row hud-nav">
+        <div class="col-md-2 col-1"></div>
+        <div class="col-md-8 col-10">
+            <div class="card rounded card-nav">
+                <div class="btn-group btn-group-lg d-flex justify-content-center" role="group">
+                    <button type="button" class="btn btn-nav">
+                        <i class="bi bi-house"></i>
+                        <span class="d-none d-md-inline">Home</span>
+                    </button>
+                    <button type="button" class="btn btn-nav active">
+                        <i class="bi bi-person"></i>
+                        <span class="d-none d-md-inline">Profile</span>
+                    </button>
+                    <button type="button" class="btn btn-nav">
+                        <i class="bi bi-trophy"></i>
+                        <span class="d-none d-md-inline">Scorecard</span>
+                    </button>
+                    <div class="btn-group dropup" role="group">
+                        <button type="button" class="btn btn-nav dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-three-dots"></i>
+                            <span class="d-none d-md-inline">Competitions</span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><button class="dropdown-item btn-nav active" type="button"><i class="bi bi-trophy" style="margin: 1cap;"></i> Leagues</button></li>
+                            <li><button class="dropdown-item btn-nav" type="button"><i class="bi bi-calendar-event" style="margin: 1cap;"></i> Tournaments</button></li>
+                            <li><button class="dropdown-item btn-nav" type="button"><i class="bi bi-flag" style="margin: 1cap;"></i> Matches</button></li>
+                        </ul>
+                    </div>
+                </div>                
+            </div>
+        </div>
+        <div class="col-md-2 col-1"></div>
+    </div>
+
     <div class="row">
-        <div class="col-sm-2"></div>
-        <div class="col-sm-8">
+        <div class="col-md-2"></div>
+        <div class="col-md-8">
             <div class="card rounded card-profile">
                 <div class="card-body">
                     <div class="row">
                         <div class="d-flex justify-content-center">
                             <img src="../resources/img_pp_test.jpeg" alt="Profile Picture" class="profile-pic">
+                            <div class="card rounded card-profile">
+                                <h1 id="profile-nickname">UV</h1>
+                                <p id="profile-name">Yuvan Naidoo</p>
+                                <p id="profile-username">yuvannaidoo@gmail.com</p>
+                                <p id="profile-contact">+27 82 766 4905</p>
+                                <p id="profile-playerID">XXXX-XXXX-XXXX-XXXX-XXXX</p>
+                            </div>
+                        </div>
+                    </div>                    
+                </div>
+            </div>
+
+            <div class="card rounded card-component">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs d-flex justify-content-center" id="profileTabs" role="tablist" style="flex-wrap: nowrap;">
+                        <li class="tab-link flex-fill text-center" role="presentation">
+                            <button class="nav-link active w-100" id="tab1-tab" data-bs-toggle="tab" data-bs-target="#tab1" type="button" role="tab" aria-controls="tab1" aria-selected="true">
+                                <i class="bi bi-bar-chart-line" style="font-size: 4cap;"></i>
+                            </button>
+                        </li>
+                        <li class="tab-link flex-fill text-center" role="presentation">
+                            <button class="nav-link w-100" id="tab2-tab" data-bs-toggle="tab" data-bs-target="#tab2" type="button" role="tab" aria-controls="tab2" aria-selected="false">
+                                <i class="bi bi-trophy" style="font-size: 4cap;"></i>
+                            </button>
+                        </li>
+                        <li class="tab-link flex-fill text-center" role="presentation">
+                            <button class="nav-link w-100" id="tab3-tab" data-bs-toggle="tab" data-bs-target="#tab3" type="button" role="tab" aria-controls="tab3" aria-selected="false">
+                                <i class="bi bi-person-circle" style="font-size: 4cap;"></i>
+                            </button>
+                        </li>
+                    </ul>
+                        
+                </div>
+                <div class="card-body tab-pane">
+                    <div class="tab-content" id="profileTabsContent">
+                        <div class="tab-pane fade show active" id="tab1" role="tabpanel" aria-labelledby="tab1-tab">
+                            <h5>Tab 1 Content</h5>
+                            <p>This is the content for Tab 1.</p>
+                        </div>
+                        <div class="tab-pane fade" id="tab2" role="tabpanel" aria-labelledby="tab2-tab">
+                            <h5>Tab 2 Content</h5>
+                            <p>This is the content for Tab 2.</p>
+                        </div>
+                        <div class="tab-pane fade" id="tab3" role="tabpanel" aria-labelledby="tab3-tab">
+                            <h5>Tab 3 Content</h5>
+                            <div id="grp_inputs">
+                                
+                                <div class="card rounded input-field">
+                                    <p class="input-label">Email & Password</p>    
+                                    <a href="#" class="btn btn-link inputLabel">Change Password or Email</a>
+                                </div>
+            
+                                <div class="card rounded input-field">
+                                    <p class="input-label">Name</p>    
+                                    <input type="text" class="form-control border-0 inputText" id="inp_name" name="name" placeholder="Enter new name" autocomplete="name">
+                                </div>
+            
+                                <div class="card rounded input-field">
+                                    <p class="input-label">Surname</p>    
+                                    <input type="text" class="form-control border-0 inputText" id="inp_surname" name="surname" placeholder="Enter new surname">
+                                </div>
+            
+                                <div class="card rounded input-field">
+                                    <p class="input-label">Nickname (Optional)</p>    
+                                    <input type="text" class="form-control border-0 inputText" id="inp_nickname" name="nickname" placeholder="Enter new nickname">
+                                </div>                    
+
+                                <div class="card rounded input-field">
+                                    <p class="input-label">Contact</p>    
+                                    <input type="text" class="form-control border-0 inputText" id="inp_contact" name="contact" placeholder="Enter new contact number">
+                                </div>                    
+                            </div>
+            
+                            <div id="grp-output" style="display: none;">
+                                <div class="card rounded card-message">
+                                    <p id="outputMessage" class="inputText" style="text-align: center;">Message</p>
+                                    <a href="../index.html" id="btn_Home" class="btn btn-primary" style="display: none;">Go to The Dive Club</a>
+                                </div>
+                            </div>
+            
+                            <button type="submit" class="btn btn-primary" id="btn_updateDetails" style="width: 100%;">Update Details</button>
                         </div>
                     </div>
-                    <div class="row">
-                        <h1 id="profile-name">Yuvan Naidoo</h1>
-                    </div>
-                    
                 </div>
             </div>
         </div>
-        <div class="col-sm-2"></div>
+        <div class="col-md-2"></div>
     </div>
 
 

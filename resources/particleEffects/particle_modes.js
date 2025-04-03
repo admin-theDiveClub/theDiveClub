@@ -73,8 +73,8 @@ class ParticlePairs {
 
 // Shared functions
 function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width = parent.clientWidth;
+    canvas.height = parent.clientHeight;
 }
 
 function animate(config) {
@@ -177,8 +177,8 @@ export function glowTrailMode() {
 // Initialize a mode
 function initializeMode(config) {
     pairs = []; // Reset pairs
-    //resizeCanvas();
-    //window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
     startSpawningParticles(config);
     animate(config);
 }
