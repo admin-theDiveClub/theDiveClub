@@ -375,6 +375,7 @@ function UpdateUI()
     // Populate select-lag with player options
     const selectLag = document.getElementById('select-lag');
     selectLag.innerHTML = `
+        <option value="" disabled ${!data.match.lag ? "selected" : ""}>Select Lag</option>
         <option value="0" ${data.match.lag === "Home" ? "selected" : ""}>${data.player_H}</option>
         <option value="1" ${data.match.lag === "Away" ? "selected" : ""}>${data.player_A}</option>
     `;

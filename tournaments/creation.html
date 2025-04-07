@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournaments</title>
+
+    <!-- Import Supabase resources via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    
+    <!-- Bootstrap CSS -->     
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="../stylesheets/stylesheet_master.css" rel="stylesheet">
+    
+</head>
+<body>
+
+    <div class="row">
+        <div class="col-sm-2"></div>
+        <div class="col-sm-8">
+            <div class="card rounded" id="card_newTournament">
+                <div class="card-header p">Create a Tournament</div>
+
+                <div class="card-body p">
+                    <h5 class="card-title">
+                        <div class="row">
+                            <div class="col-4">
+                                <label for="txt_nT_name" class="form-label d-flex align-items-center" style="height: 100%;">Tournament Name:</label>
+                            </div>
+                            <div class="col-8">
+                                <input type="text" class="form-control" id="txt_nT_name" placeholder="Tournament Name">
+                            </div>
+                        </div>
+                    </h5>
+                    <div class="row">
+                        <div class="col-4">
+                            <label for="txt_nT_date" class="form-label d-flex align-items-center" style="height: 100%;">Date:</label>
+                        </div>
+                        <div class="col-8">
+                            <input type="date" class="form-control" id="txt_nT_date" placeholder="Tournament Date">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            <label for="txt_nT_time" class="form-label d-flex align-items-center" style="height: 100%;">Time:</label>
+                        </div>
+                        <div class="col-8">
+                            <input type="time" class="form-control" id="txt_nT_time" placeholder="Tournament Time">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            <label for="txt_nT_location" class="form-label d-flex align-items-center" style="height: 100%;">Location:</label>
+                        </div>
+                        <div class="col-8">
+                            <input type="text" class="form-control" id="txt_nT_location" placeholder="Tournament Location">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            <label for="search_bar" class="form-label d-flex align-items-center" style="height: 100%;">Tournament Co-ordinator:</label>
+                        </div>
+                        <div class="col-8">
+                            <div class="card rounded">  
+                                <div class="card-body">
+                                    <p id="txt_nT_coordinatorName">"Name"</p>
+                                </div>
+                                
+                                <div class="card-footer">
+                                    <p id="txt_nT_coordinatorID" style="font-size: x-small;">ID: XXX-XXX-XXX-XXX-XXX</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            <label for="txt_nT_maxEntries" class="form-label d-flex align-items-center" style="height: 100%;">Max. Entries:</label>
+                        </div>
+                        <div class="col-8">
+                            <input type="number" class="form-control" id="txt_nT_maxEntries" placeholder="Max. Entries">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            <label for="txt_nT_description" class="form-label d-flex align-items-center" style="height: 100%;">Description, Info, Special Rules, etc.:</label>
+                        </div>
+                        <div class="col-8">
+                            <textarea class="form-control" id="txt_nT_description" rows="3" placeholder="Tournament Description"></textarea>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <a href="#" class="btn btn-primary" id="btn_submit_newTournament">Register New Tournament</a>
+                    </div>
+
+                    <div class="card rounded">
+                        <div class="card-header p">New Tournament Details</div>                        
+                        <div class="card-body p">
+                            <p id="txt_nT_id">ID: </p>
+                            <p id="txt_nT_link">Link: </p>
+                        </div>
+                    </div>                 
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-2"></div>
+    </div>
+
+
+    <script src="../scripts/supaBase_client.js"></script>
+    <script src="../scripts/signIn_auth.js"></script>    
+    <script src="../scripts/signIn_email.js"></script>     
+    <script src="../scripts/signIn_google.js"></script>
+    <script src="../scripts/signOut.js"></script>
+    <script src="../scripts/tournament_creation.js"></script>
+    
+    
+    <!-- Bootstrap JS (Optional) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

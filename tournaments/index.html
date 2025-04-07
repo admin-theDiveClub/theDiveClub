@@ -3,165 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tournaments</title>
+    <title>Tournament - Round Robin</title>
 
     <!-- Import Supabase resources via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     
     <!-- Bootstrap CSS -->     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link href="../stylesheets/stylesheet_master.css" rel="stylesheet">
-    
+    <link href="../stylesheets/styles_master.css" rel="stylesheet">
 </head>
+
 <body>
-    <div class="jumbotron text-center" style="padding: 4%;">
-        <h1>Welcome to the Dive Club</h1>
-    </div>
-    
-    <!-- Navigation -->
-    <div class="row">
-        <div class="col text-center">
-            <a href="../index.html" class="btn btn-primary">Home</a>
-            <a href="../tournaments/index.html" class="btn btn-primary">Tournaments Portal</a>
-        </div>
-    </div>
 
     <div class="row">
         <div class="col-sm-2"></div>
-        <div class="col-sm-8">
-            <div class="card rounded">
-                <div class="card-header">Tournament Co-ordinator (You)</div>
-                <div class="card-body">
-                    <p id="txt_signInStatus">Loading...</p>
-                    <div class="card rounded" id="card_signIn">
-                        <div class="card-header">Sign In</div>
-                        <div class="card-body">
-                            <form id="form_signIn_email">
-                                <div class="form-group">
-                                    <label for="inp_signIn_email">E-mail address:</label>
-                                    <input type="email" class="form-control" id="inp_signIn_email" name="email" autocomplete="username">
-                                    <label for="inp_signIn_password">Password:</label>
-                                    <input type="password" class="form-control" id="inp_signIn_password" name="password" autocomplete="current-password">
-                                </div>
-                                <button type="button" class="btn btn-primary" id="btn_signIn_email">Sign In</button>
-                                <p id="txt_signIn_response">Waiting for input...</p>
-                            </form>                    
-                        </div>
-                    </div>
+        <div class="col-sm-8 d-flex justify-content-center align-items-center">
+            <img src="../resources/drawing_logo_theDiveClub.png" alt="Logo Home" class="header-logo"></img>
+        </div>
+        <div class="col-sm-2"></div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-1"></div>
+        <div class="col-md-10">
+
+            <div class="card rounded card-component">
+                <div class="card-header text-center" data-bs-toggle="collapse" data-bs-target="#round1CardBody" style="cursor: pointer;">
+                    <h5>League Information</h5>
                 </div>
-                <div class="card-footer">
-                    <button type="button" class="btn btn-primary" id="btn_signIn_google">Sign In with Google</button>
-                    <button type="button" class="btn btn-primary float-end" id="btn_signOut">Sign Out</button>
+                <div id="round1CardBody" class="collapse">
+                    <div class="card-body">
+                        <p><strong>League Name:</strong> <span id="leagueName">Example League</span></p>
+                        <p><strong>Duration:</strong> <span id="startDate">01 Jan 2025</span> - <span id="endDate">31 Dec 2025</span></p>
+                        <p><strong>Format:</strong> <span id="leagueFormat">Round Robin</span></p>
+                        <p><strong>League Coordinator:</strong> <span id="leagueCoordinator">John Doe</span></p>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-sm-2"></div>
-    </div>
 
-    <div class="row">
-        <div class="col-sm-2"></div>
-        <div class="col-sm-8">
-            <div class="card rounded" id="card_newTournament">
-                <div class="card-header p">Create a Tournament</div>
+            <div class="card rounded card-component">
+                <div class="card-header text-center" data-bs-toggle="collapse" data-bs-target="#round0CardBody" style="cursor: pointer;">
+                    <h5>Round 0 Name : 13 April 2025</h5>
+                </div>                
 
-                <div class="card-body p">
-                    <h5 class="card-title">
-                        <div class="row">
-                            <div class="col-4">
-                                <label for="txt_nT_name" class="form-label d-flex align-items-center" style="height: 100%;">Tournament Name:</label>
-                            </div>
-                            <div class="col-8">
-                                <input type="text" class="form-control" id="txt_nT_name" placeholder="Tournament Name">
-                            </div>
-                        </div>
-                    </h5>
-                    <div class="row">
-                        <div class="col-4">
-                            <label for="txt_nT_date" class="form-label d-flex align-items-center" style="height: 100%;">Date:</label>
-                        </div>
-                        <div class="col-8">
-                            <input type="date" class="form-control" id="txt_nT_date" placeholder="Tournament Date">
-                        </div>
+                <div id="round0CardBody" class="collapse show">
+                    <div class="card-body">
+                        <table class="table text-center" id="tbl-matches">
+                            <thead>
+                                <tr>
+                                    <th>Home</th>
+                                    <th>Scorecard</th>
+                                    <th>Away</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr id="m_0">
+                                    <td><p id="m_0-playerH">Yuvan</p></td>
+                                    <td>
+                                        <a href="#" class="btn btn-primary" id="m_0-scorecard">Scorecard</a>
+                                    </td>
+                                    <td><p id="m_0-playerA">Admin TDC</p></td>
+                                </tr>                                
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="row">
-                        <div class="col-4">
-                            <label for="txt_nT_time" class="form-label d-flex align-items-center" style="height: 100%;">Time:</label>
-                        </div>
-                        <div class="col-8">
-                            <input type="time" class="form-control" id="txt_nT_time" placeholder="Tournament Time">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-4">
-                            <label for="txt_nT_location" class="form-label d-flex align-items-center" style="height: 100%;">Location:</label>
-                        </div>
-                        <div class="col-8">
-                            <input type="text" class="form-control" id="txt_nT_location" placeholder="Tournament Location">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-4">
-                            <label for="search_bar" class="form-label d-flex align-items-center" style="height: 100%;">Tournament Co-ordinator:</label>
-                        </div>
-                        <div class="col-8">
-                            <div class="card rounded">  
-                                <div class="card-body">
-                                    <p id="txt_nT_coordinatorName">"Name"</p>
-                                </div>
-                                
-                                <div class="card-footer">
-                                    <p id="txt_nT_coordinatorID" style="font-size: x-small;">ID: XXX-XXX-XXX-XXX-XXX</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-4">
-                            <label for="txt_nT_maxEntries" class="form-label d-flex align-items-center" style="height: 100%;">Max. Entries:</label>
-                        </div>
-                        <div class="col-8">
-                            <input type="number" class="form-control" id="txt_nT_maxEntries" placeholder="Max. Entries">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-4">
-                            <label for="txt_nT_description" class="form-label d-flex align-items-center" style="height: 100%;">Description, Info, Special Rules, etc.:</label>
-                        </div>
-                        <div class="col-8">
-                            <textarea class="form-control" id="txt_nT_description" rows="3" placeholder="Tournament Description"></textarea>
-                        </div>
-                    </div>
-                    <div class="text-center">
-                        <a href="#" class="btn btn-primary" id="btn_submit_newTournament">Register New Tournament</a>
-                    </div>
-
-                    <div class="card rounded">
-                        <div class="card-header p">New Tournament Details</div>                        
-                        <div class="card-body p">
-                            <p id="txt_nT_id">ID: </p>
-                            <p id="txt_nT_link">Link: </p>
-                        </div>
-                    </div>                 
                 </div>
             </div>
+
+            
         </div>
-        <div class="col-sm-2"></div>
+        <div class="col-md-1"></div>
     </div>
 
+    <script src="../scripts/supaBase_client.js"></script>    
+    <script src="../tournaments/tournament_matchLinks.js"></script>
 
-    <script src="../scripts/supaBase_client.js"></script>
-    <script src="../scripts/signIn_auth.js"></script>    
-    <script src="../scripts/signIn_email.js"></script>     
-    <script src="../scripts/signIn_google.js"></script>
-    <script src="../scripts/signOut.js"></script>
-    <script src="../scripts/tournament_creation.js"></script>
-    
-    
+    <canvas id="bg-canvas" style="height: 100vh; width: 100vw;"></canvas>
+
+    <script type="module">
+        import { matchMode, persistentTrailMode, glowTrailMode } from '../resources/particleEffects/particle_modes.js';
+
+        // Uncomment the mode you want to use:
+        
+        //matchMode();           // Match Mode: Basic particle mode for match/player background
+        //persistentTrailMode(); // Persistent Trail Mode: Trails persist (fade slowly)
+        glowTrailMode();       // Glow Trail Mode: Clean glow effect for home page background
+    </script>
+    <script src="../resources/ui_backgroundRandomization.js"></script>
+
     <!-- Bootstrap JS (Optional) -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
 </body>
 </html>

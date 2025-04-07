@@ -73,8 +73,8 @@ class ParticlePairs {
 
 // Shared functions
 function resizeCanvas() {
-    canvas.width = parent.clientWidth;
-    canvas.height = parent.clientHeight;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 }
 
 function animate(config) {
