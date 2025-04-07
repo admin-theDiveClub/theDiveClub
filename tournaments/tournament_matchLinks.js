@@ -63,7 +63,7 @@ async function PopulateLeagueDetails(_tournament)
     document.getElementById("endDate").textContent = league.date_end || "N/A";
     document.getElementById("leagueFormat").textContent = league.format || "N/A";
     const response_co = await supabase.from('tbl_players').select('*').eq('id', league.coordinatorID);
-    document.getElementById("leagueCoordinator").textContent = response_co.data[0].name + response_co.data[0].surname;
+    document.getElementById("leagueCoordinator").textContent = response_co.data[0].name + " " + response_co.data[0].surname;
 
     // Update the round name element with the tournament name and date
     const time = _tournament.time ? _tournament.time.slice(0, 5) : "N/A"; // Extract only hour and minutes
