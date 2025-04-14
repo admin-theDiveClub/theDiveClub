@@ -21,7 +21,9 @@ var data =
     player_A: "",
     scorecard: {},
     score: {},
-    scorecardView: 1
+    scorecardView: 1,
+    frameStartTime: sessionStorage.getItem('frameStartTime') || 0,
+    timing: [],
 };
 PopulateData();
 
@@ -36,14 +38,16 @@ async function PopulateData ()
             var subResponse = await SubscribeToUpdates(data.id);
             console.log("Subscribing to Updates:", subResponse);
 
-            if (data.match.player_H && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(data.match.player_H)) {
+            if (data.match.player_H && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(data.match.player_H)) 
+            {
                 data.player_H = await GetPlayerName(data.match.player_H);
             } else 
             {
                 data.player_H = data.match.player_H;
             }
             
-            if (data.match.player_A && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(data.match.player_A)) {
+            if (data.match.player_A && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(data.match.player_A)) 
+            {
                 data.player_A = await GetPlayerName(data.match.player_A);
             } else 
             {
@@ -52,6 +56,7 @@ async function PopulateData ()
 
             data.scorecard = data.match.scorecard;
             data.score = GetCurrentScore(data.scorecard);
+            data.timing = data.match.timing || [];
         }
     }    
 
@@ -191,6 +196,8 @@ document.getElementById('btn-score-H-1').addEventListener('click', function()
     UpdateScorecard(data.scorecard.H, 1);
     UpdateScorecard(data.scorecard.A, 0);
     
+    UpdateTimeStamps(Date.now());
+
     UpdateData();
 });
 
@@ -199,6 +206,8 @@ document.getElementById('btn-score-H-A').addEventListener('click', function()
     UpdateScorecard(data.scorecard.H, "A");
     UpdateScorecard(data.scorecard.A, 0);
     
+    UpdateTimeStamps(Date.now());
+
     UpdateData();
 });
 
@@ -207,6 +216,8 @@ document.getElementById('btn-score-A-1').addEventListener('click', function()
     UpdateScorecard(data.scorecard.A, 1);
     UpdateScorecard(data.scorecard.H, 0);
     
+    UpdateTimeStamps(Date.now());
+    
     UpdateData();
 });
 
@@ -214,6 +225,8 @@ document.getElementById('btn-score-A-A').addEventListener('click', function()
 {
     UpdateScorecard(data.scorecard.A, "A");
     UpdateScorecard(data.scorecard.H, 0);
+    
+    UpdateTimeStamps(Date.now());
     
     UpdateData();
 });
@@ -227,12 +240,47 @@ document.getElementById('btn-correction').addEventListener('click', function()
     if (data.scorecard.A.length > 0) {
         data.scorecard.A.pop();
     }
+
+    UpdateTimeStamps(null);
     
     UpdateData();
 });
 
-function UpdateData ()
+document.getElementById('btn-timer-start').addEventListener('click', function() 
 {
+    data.frameStartTime = Date.now();
+    sessionStorage.setItem('frameStartTime', data.frameStartTime);
+    console.log("Timer started at:", new Date(data.frameStartTime).toLocaleTimeString());
+    UpdateUI();
+});
+
+document.getElementById('btn-timer-stop').addEventListener('click', function() 
+{
+    data.frameStartTime = 0;
+    sessionStorage.setItem('frameStartTime', 0);
+    console.log("Timer stopped");
+    UpdateUI();
+});
+
+function UpdateTimeStamps (_new)
+{
+    if (data.frameStartTime != 0)
+    {
+        if (_new)
+        {
+            var frameTime = Math.round((_new - data.frameStartTime) / 1000);
+            data.timing.push(frameTime);
+            data.frameStartTime = _new;
+            sessionStorage.setItem('frameStartTime', data.frameStartTime);
+        } else 
+        {
+            data.timing.pop();
+        }
+    }    
+}
+
+function UpdateData ()
+{    
     data.score = GetCurrentScore(data.scorecard);
 
     var results = 
@@ -242,7 +290,8 @@ function UpdateData ()
         apples_H: data.score.H_Apples,
         apples_A: data.score.A_Apples,
         scorecard: data.scorecard,
-        lag: data.match.lag
+        lag: data.match.lag,
+        timing: data.timing
     };
 
     PushResults(results);
@@ -261,7 +310,8 @@ async function PushResults (_results)
         'result_H': _results.result_H,
         'apples_A': _results.apples_A,
         'apples_H': _results.apples_H,
-        'lag': _results.lag
+        'lag': _results.lag,
+        'timing': _results.timing
     }).eq('id', data.id).select();
 
     if (response.error)
@@ -291,6 +341,36 @@ function UpdateUI()
     document.querySelectorAll('[id^="lbl-H-apples"]').forEach(el => el.innerHTML = `<i class="bi bi-apple"></i>: ${data.score.H_Apples}`);
     document.querySelectorAll('[id^="lbl-A-apples"]').forEach(el => el.innerHTML = `<i class="bi bi-apple"></i>: ${data.score.A_Apples}`);
 
+    //Update Timers
+    const timeFrameStartElement = document.getElementById('time-frame-start');
+    if (timeFrameStartElement) 
+    {
+        if (data.frameStartTime == 0)
+        {
+            timeFrameStartElement.textContent = "Timer Off";
+        } else 
+        {
+            timeFrameStartElement.textContent = "Frame Started at: " + new Date(Number(data.frameStartTime)).toLocaleTimeString();
+            const btnTimerStart = document.getElementById('btn-timer-start');
+            if (btnTimerStart) {
+                btnTimerStart.textContent = "Re-start Frame Timer";
+                btnTimerStart.classList.remove('btn-success');
+                btnTimerStart.classList.add('btn-warning');
+            }
+        }        
+    }
+
+    const timeFrameLastElement = document.getElementById('time-frame-last');
+    if (timeFrameLastElement) {
+        const lastTiming = data.timing.length > 0 ? data.timing[data.timing.length - 1] : "No Times";
+        if (typeof lastTiming === "number" && lastTiming > 60) {
+            const minutes = Math.ceil(lastTiming / 60);
+            timeFrameLastElement.textContent = `Last Frame: ${minutes} min`;
+        } else {
+            timeFrameLastElement.textContent = `Last Frame: ${lastTiming}`;
+        }
+    }
+
     // Determine the maximum number of frames between both players
     const maxFrames = Math.max(data.scorecard.H.length, data.scorecard.A.length);
     
@@ -308,7 +388,7 @@ function UpdateUI()
         for (let i = 1; i <= maxFrames; i++) {
             headRow.innerHTML += `<th>${i}</th>`;
         }
-        headRow.innerHTML += '<th>Score:</th><th>Apples:</th>'; // Add Score and Apples columns
+        headRow.innerHTML += '<th>Score:</th><th>Apples:</th>'; // Add Time column
         tableHead.appendChild(headRow);
         table.appendChild(tableHead);
 
@@ -316,23 +396,29 @@ function UpdateUI()
         const tableBody = document.createElement('tbody');
         const bodyRowH = document.createElement('tr');
         const bodyRowA = document.createElement('tr');
+        const bodyRowTime = document.createElement('tr'); // Row for time
 
         bodyRowH.innerHTML = `<td id="lbl-H-name">${data.player_H + (data.match.lag === "Home" ? " *" : "")}</td>`;
         bodyRowA.innerHTML = `<td id="lbl-A-name">${data.player_A + (data.match.lag === "Away" ? " *" : "")}</td>`;
+        bodyRowTime.innerHTML = '<td>Time:</td>'; // Label for time row
 
         for (let i = 0; i < maxFrames; i++) {
             const scoreH = data.scorecard.H[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.H[i]}</span>` : data.scorecard.H[i] || '-';
             const scoreA = data.scorecard.A[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.A[i]}</span>` : data.scorecard.A[i] || '-';
+            const time = data.timing[i] ? `${data.timing[i]}s` : '-'; // Time for each frame
+
             bodyRowH.innerHTML += `<td>${scoreH}</td>`;
             bodyRowA.innerHTML += `<td>${scoreA}</td>`;
+            bodyRowTime.innerHTML += `<td>${time}</td>`;
         }
 
-        // Add scores and apples to the new columns
+        // Add scores, apples, and time to the new columns
         bodyRowH.innerHTML += `<td style="font-weight: bold;">${data.score.H}</td><td>${data.score.H_Apples}</td>`;
         bodyRowA.innerHTML += `<td style="font-weight: bold;">${data.score.A}</td><td>${data.score.A_Apples}</td>`;
 
         tableBody.appendChild(bodyRowH);
         tableBody.appendChild(bodyRowA);
+        tableBody.appendChild(bodyRowTime);
         table.appendChild(tableBody);
     } else {
         // Create table head
@@ -347,26 +433,22 @@ function UpdateUI()
 
         for (let i = 0; i < maxFrames; i++) {
             const bodyRow = document.createElement('tr');
-            if (i === maxFrames - 1) {
-                const scoreH = data.scorecard.H[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.H[i]}</span>` : data.scorecard.H[i] || '-';
-                const scoreA = data.scorecard.A[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.A[i]}</span>` : data.scorecard.A[i] || '-';
-                bodyRow.innerHTML = `<td id="cell-score-final">${i + 1}</td><td id="cell-score-final">${scoreH}</td><td id="cell-score-final">${scoreA}</td>`;
-            } else {
-                const scoreH = data.scorecard.H[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.H[i]}</span>` : data.scorecard.H[i] || '-';
-                const scoreA = data.scorecard.A[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.A[i]}</span>` : data.scorecard.A[i] || '-';
-                bodyRow.innerHTML = `<td>${i + 1}</td><td>${scoreH}</td><td>${scoreA}</td>`;
-            }
+            const scoreH = data.scorecard.H[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.H[i]}</span>` : data.scorecard.H[i] || '-';
+            const scoreA = data.scorecard.A[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.A[i]}</span>` : data.scorecard.A[i] || '-';
+            const time = data.timing[i] ? `${data.timing[i]}s` : '-'; // Time for each frame
+
+            bodyRow.innerHTML = `<td>${i + 1}</td><td>${scoreH}</td><td>${scoreA}</td><td>${time}</td>`;
             tableBody.appendChild(bodyRow);
         }
 
         // Add row for score at the end
         const scoreRow = document.createElement('tr');
-        scoreRow.innerHTML = `<td id="cell-score-final"><b>Score</b></td><td style="font-weight: bold"; id="cell-score-final">${data.score.H}</td><td style="font-weight: bold;" id="cell-score-final">${data.score.A}</td>`;
+        scoreRow.innerHTML = `<td id="cell-score-final"><b>Score</b></td><td style="font-weight: bold" id="cell-score-final">${data.score.H}</td><td style="font-weight: bold;" id="cell-score-final">${data.score.A}</td><td>-</td>`;
         tableBody.appendChild(scoreRow);
 
         // Add row for apples at the end
         const applesRow = document.createElement('tr');
-        applesRow.innerHTML = `<td id="cell-apples-final">Apples</td><td id="cell-apples-final">${data.score.H_Apples}</td><td id="cell-apples-final">${data.score.A_Apples}</td>`;
+        applesRow.innerHTML = `<td id="cell-apples-final">Apples</td><td id="cell-apples-final">${data.score.H_Apples}</td><td id="cell-apples-final">${data.score.A_Apples}</td><td>-</td>`;
         tableBody.appendChild(applesRow);
 
         table.appendChild(tableBody);

@@ -129,45 +129,26 @@
             </div>
 
             <div class="card rounded card-component">
-                <div class="card-header">Match Timer</div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-sm-1">
-                            <button class="btn btn-danger">X</button>
-                        </div>
-                        <div class="col-sm-3">
-                            <button class="btn btn-success">Start Timer</button>
-                            <button class="btn btn-warning">Pause Timer</button>
-                        </div>
-                        <div class="col-sm-4">
-                            <div class="card rounded d-flex align-items-center justify-content-center" style="height: 100%; text-align: center;">
-                                <p style = "font-size: 2vw; font-weight: bold;">Match Started At: 00:00</p>
-                            </div>
-                        </div>
-                        <div class="col-sm-1"></div>
-                    </div>
+                <div class="card-header" data-bs-toggle="collapse" data-bs-target="#collapseMatchTimer" aria-expanded="true" aria-controls="collapseMatchTimer" style="cursor: pointer;">
+                    Match Timer
                 </div>
-            </div>
-
-            <div class="card rounded card-component" style="display: none;">
-                <div class="card-header">Match Control</div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-sm-1">
-                            <button class="btn btn-danger">X</button>
-                        </div>
-                        <div class="col-sm-3">
-                            <button class="btn btn-success">Start Match</button>
-                        </div>
-                        <div class="col-sm-4">
-                            <div class="card rounded d-flex align-items-center justify-content-center" style="height: 100%; text-align: center;">
-                                <p style = "font-size: 2vw; font-weight: bold;">Match Started At: 00:00</p>
+                <div id="collapseMatchTimer" class="collapse">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-1">
+                                <button class="btn btn-danger" id="btn-timer-stop">Stop Session</button>
                             </div>
+                            <div class="col-sm-3">
+                                <button class="btn btn-success" id="btn-timer-start">Start Frame Timer</button>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="card rounded d-flex align-items-center justify-content-center" style="height: 100%; text-align: center;">
+                                    <p style="font-size: 2vw; font-weight: bold;" id="time-frame-start">Frame Started At: 00:00.</p>
+                                    <p style="font-size: 2vw; font-weight: bold;" id="time-frame-last">Last Frame: 00 minutes.</p>
+                                </div>
+                            </div>
+                            <div class="col-sm-1"></div>
                         </div>
-                        <div class="col-sm-3">
-                            <button class="btn btn-warning">Pause Match</button>
-                        </div>
-                        <div class="col-sm-1"></div>
                     </div>
                 </div>
             </div>
