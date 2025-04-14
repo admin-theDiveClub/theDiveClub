@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Dive Club</title>
+    <title>Scorecard</title>
 
     <!-- Import Supabase resources via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
@@ -28,28 +28,116 @@
         <div class="col-sm-2"></div>
     </div>
 
+    <!-- Navigation -->
+    <div class="row hud-nav">
+        <div class="col-md-2 col-1"></div>
+        <div class="col-md-8 col-10">
+            <div class="card rounded card-nav">
+                <div class="btn-group btn-group-lg d-flex justify-content-center" role="group">
+                    <button type="button" class="btn btn-nav active">
+                        <i class="bi bi-house"></i>
+                        <span class="d-none d-md-inline">Home</span>
+                    </button>
+                    <button type="button" class="btn btn-nav">
+                        <i class="bi bi-person"></i>
+                        <span class="d-none d-md-inline">Profile</span>
+                    </button>
+                    <button type="button" class="btn btn-nav" onclick="location.href='../matches/index.html'">
+                        <i class="bi bi-trophy"></i>
+                        <span class="d-none d-md-inline">Scorecard</span>
+                    </button>
+                    <div class="btn-group dropup" role="group">
+                        <button type="button" class="btn btn-nav dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-three-dots"></i>
+                            <span class="d-none d-md-inline">Competitions</span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><button class="dropdown-item btn-nav active" type="button"><i class="bi bi-trophy" style="margin: 1cap;"></i> Leagues</button></li>
+                            <li><button class="dropdown-item btn-nav" type="button"><i class="bi bi-calendar-event" style="margin: 1cap;"></i> Tournaments</button></li>
+                            <li><button class="dropdown-item btn-nav" type="button"><i class="bi bi-flag" style="margin: 1cap;"></i> Matches</button></li>
+                        </ul>
+                    </div>
+                </div>                
+            </div>
+        </div>
+        <div class="col-md-2 col-1"></div>
+    </div>
+
     <div class="row">
         <div class="col-sm-1"></div>
         <div class="col-sm-10">
 
-            <!--
             <div class="card rounded card-component">
-                <div class="card-header">Match Control</div>
+                <div class="card-header" style="font-size: large; font-weight: bold;">
+                    <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#collapseMatchControl" aria-expanded="true" aria-controls="collapseMatchControl">
+                        Match Control
+                    </button>
+                </div>
+                <div id="collapseMatchControl" class="collapse">
+                    <div class="card-body">
+
+                        <p class="input-label">Match Type:</p>                        
+        
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="matchType" id="freePlay" value="freePlay" checked>
+                                <label class="form-check-label" for="freePlay">
+                                    Free Play
+                                </label>
+                            </div>
+                            
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="matchType" id="raceToBestOf" value="raceToBestOf">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="d-flex flex-wrap align-items-center">
+                                            <label class="form-check-label me-2" for="raceToBestOf">
+                                                Race To:
+                                            </label>
+                                            <input type="number" class="form-control d-inline-block w-auto mb-2 me-2" id="raceToValue" name="raceToValue" placeholder="Race To" oninput="document.getElementById('bestOfValue').value = this.value">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="d-flex flex-wrap align-items-center">
+                                            <label class="form-check-label me-2" for="raceToBestOf">
+                                                Best Of:
+                                            </label>
+                                            <input type="number" class="form-control d-inline-block w-auto mb-2" id="bestOfValue" name="bestOfValue" placeholder="Best Of" oninput="document.getElementById('raceToValue').value = this.value">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+        
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="matchType" id="fixedFrameCount" value="fixedFrameCount">
+                                <div class="d-flex flex-wrap align-items-center">
+                                    <label class="form-check-label me-2" for="fixedFrameCount">
+                                        Fixed Frame Count:
+                                    </label>
+                                    <input type="number" class="form-control d-inline-block w-auto mb-2" id="frameCountValue" name="frameCountValue" placeholder="Enter Frame Count">
+                                </div>
+                            </div>
+
+                        <div class="row">
+                            <p>Lag:</p>
+                            <select class="form-select" aria-label="Home" id="select-lag">
+                                <option value="0">Option 1</option>
+                                <option value="1">Option 2</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card rounded card-component">
+                <div class="card-header">Match Timer</div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-sm-1">
                             <button class="btn btn-danger">X</button>
                         </div>
                         <div class="col-sm-3">
-                            <button class="btn btn-success">Start Match</button>
-                            <button class="btn btn-warning">Pause Match</button>
-                        </div>
-                        <div class="col-sm-3">
-                            <p>Lag:</p>
-                            <select class="form-select" aria-label="Home" id="select-lag">
-                                <option value="0" selected>Option 1</option>
-                                <option value="1">Option 2</option>
-                            </select>
+                            <button class="btn btn-success">Start Timer</button>
+                            <button class="btn btn-warning">Pause Timer</button>
                         </div>
                         <div class="col-sm-4">
                             <div class="card rounded d-flex align-items-center justify-content-center" style="height: 100%; text-align: center;">
@@ -57,29 +145,6 @@
                             </div>
                         </div>
                         <div class="col-sm-1"></div>
-                    </div>
-                </div>
-            </div>
-            -->
-
-            <div class="card rounded card-component">
-                <div class="card-header" data-bs-toggle="collapse" data-bs-target="#collapseMatchControl" aria-expanded="false" aria-controls="collapseMatchControl" style="cursor: pointer; font-size: large; font-weight: bold;">
-                    Match Control
-                </div>
-                <div id="collapseMatchControl" class="collapse show">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-sm-1">
-                            </div>
-                            <div class="col-sm-10">
-                                <p>Lag:</p>
-                                <select class="form-select" aria-label="Home" id="select-lag">
-                                    <option value="0">Option 1</option>
-                                    <option value="1">Option 2</option>
-                                </select>
-                            </div>
-                            <div class="col-sm-1"></div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -110,12 +175,12 @@
             <div class="row">
                 <div class="col-sm-6">
                     <div class="card rounded text-center card-component">
-                        <div class="card-header" id="lbl-H-name" style="font-size: x-large; font-weight: bold;">Player_H</div>
+                        <div class="card-header" id="lbl-H-name" style="font-size: large; font-weight: bold;">Player_H</div>
                         <div class="card-body">
-                            <p style="font-size: 10vw; font-weight: bold; padding: 0.25cap !important;" id="lbl-H-score">000</p>
+                            <p style="font-size: 4cap; font-weight: bold; padding: 0.25cap !important;" id="lbl-H-score">000</p>
                             <div class="row">
                                 <div class="col-6">
-                                    <p style="font-size: 5vw; font-weight: bold; padding: 0.25cap !important;" id="lbl-H-apples"><i class="bi bi-apple"></i>: 0</p>
+                                    <p style="font-size: 2cap; font-weight: bold; padding: 0.25cap !important;" id="lbl-H-apples"><i class="bi bi-apple"></i>: 0</p>
                                 </div>
                                 <div class="col-6 d-flex justify-content-center">
                                     <div class="btn btn-secondary" id="lbl-break-indicator-H">Break<br><i class="bi bi-play-circle-fill"></i></div>
@@ -131,12 +196,12 @@
 
                 <div class="col-sm-6">
                     <div class="card rounded text-center card-component">
-                        <div class="card-header" id="lbl-A-name" style="font-size: x-large; font-weight: bold;">Player_H</div>
+                        <div class="card-header" id="lbl-A-name" style="font-size: large; font-weight: bold;">Player_A</div>
                         <div class="card-body">
-                            <p style="font-size: 10vw; font-weight: bold; padding: 0.25cap !important;" id="lbl-A-score">000</p>
+                            <p style="font-size: 4cap; font-weight: bold; padding: 0.25cap !important;" id="lbl-A-score">000</p>
                             <div class="row">
                                 <div class="col-6">
-                                    <p style="font-size: 5vw; font-weight: bold; padding: 0.25cap !important;" id="lbl-A-apples"><i class="bi bi-apple"></i>: 0</p>
+                                    <p style="font-size: 2cap; font-weight: bold; padding: 0.25cap !important;" id="lbl-A-apples"><i class="bi bi-apple"></i>: 0</p>
                                 </div>
                                 <div class="col-6 d-flex justify-content-center">
                                     <div class="btn btn-secondary" id="lbl-break-indicator-A">Break<br><i class="bi bi-play-circle-fill"></i></div>
