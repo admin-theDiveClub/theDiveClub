@@ -16,5 +16,13 @@ async function CreateMatch (_match)
         player_A: _match.player_A,
     }).select();
 
-    console.log(response);
+    console.log(response.data[0].id);
+
+    if (response.error) {
+        console.error('Error creating match:', response.error.message);
+        alert('Failed to create match. Please try again.');
+    } else {
+        alert('Match created successfully!');
+        window.location.href = "../matches/index.html?matchID=" + response.data[0].id;
+    }
 }

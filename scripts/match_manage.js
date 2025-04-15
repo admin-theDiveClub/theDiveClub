@@ -86,7 +86,7 @@ function GetMatchID()
         return matchID;
     } else 
     {
-        return null;
+        window.location.href = "../matches/create.html";
     }
 }
 

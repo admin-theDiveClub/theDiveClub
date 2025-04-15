@@ -44,14 +44,8 @@ async function Login (_credentials, _persistance)
             {
                 sessionStorage.setItem('supabase_session', session);
             }
-
-            if (sessionStorage.getItem('tournamentID') || localStorage.getItem('tournamentID'))
-            {
-                window.location.href = '../tournaments/entry.html?tournamentID=' + (sessionStorage.getItem('tournamentID') || localStorage.getItem('tournamentID'));
-            } else 
-            {
-                window.location.href = '../index.html';
-            }           
+                        
+            window.location.href = '../index.html';        
         }
     }
 }

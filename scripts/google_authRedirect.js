@@ -1,5 +1,3 @@
-
-
 Start();
 
 async function Start ()
@@ -15,11 +13,6 @@ async function Start ()
         console.log("Session: ", response);
         sessionStorage.setItem("session", JSON.stringify(response.data.session));
         localStorage.setItem("session", JSON.stringify(response.data.session));
-    }
-
-    if (sessionStorage.getItem('tournamentID') || localStorage.getItem('tournamentID'))
-    {
-        window.location.href = '../tournaments/entry.html?tournamentID=' + (sessionStorage.getItem('tournamentID') || localStorage.getItem('tournamentID'));
     }
 }
 
