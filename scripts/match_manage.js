@@ -46,7 +46,10 @@ async function PopulateData ()
 
             if (data.match.player_H && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(data.match.player_H)) 
             {
-                data.player_H = await GetPlayerName(data.match.player_H);
+                data.player_H = await GetPlayerName(data.match.player_H, "ID");
+            } else if (data.match.player_H.includes("@")) 
+            {
+                data.player_H = await GetPlayerName(data.match.player_H, "email");
             } else 
             {
                 data.player_H = data.match.player_H;
@@ -54,7 +57,10 @@ async function PopulateData ()
             
             if (data.match.player_A && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(data.match.player_A)) 
             {
-                data.player_A = await GetPlayerName(data.match.player_A);
+                data.player_A = await GetPlayerName(data.match.player_A, "ID");
+            } else if (data.match.player_A.includes("@")) 
+            {
+                data.player_A = await GetPlayerName(data.match.player_A, "email");
             } else 
             {
                 data.player_A = data.match.player_A;
@@ -141,9 +147,17 @@ async function OnPayloadReceived (payload)
 
 /////////////NEW
 
-async function GetPlayerName (_playerID)
-{
-    const response = await supabase.from('tbl_players').select('name, surname').eq('id', _playerID);
+async function GetPlayerName (_playerID, mode)
+{    
+    var response = null;
+    if (mode == "ID")
+    {
+        response = await supabase.from('tbl_players').select('name, surname').eq('id', _playerID);
+    } else if (mode == "email")
+    {
+        response = await supabase.from('tbl_players').select('name, surname').eq('username', _playerID);
+    }
+
     if (response.error)
     {
         return null;
