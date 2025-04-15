@@ -25,6 +25,12 @@ var data =
     frameStartTime: sessionStorage.getItem('frameStartTime') || 0,
     timing: [],
 };
+
+if (!data.frameStartTime || data.frameStartTime === "0") {
+    data.frameStartTime = null; // Set to null if invalid or zero
+    sessionStorage.removeItem('frameStartTime'); // Clear invalid session storage value
+}
+
 PopulateData();
 
 async function PopulateData ()
@@ -61,6 +67,8 @@ async function PopulateData ()
     }    
 
     console.log("All Data:", data);
+    InitializeMatchType();
+    SetupInputListeners();
     UpdateUI();
 }
 
@@ -311,7 +319,8 @@ async function PushResults (_results)
         'apples_A': _results.apples_A,
         'apples_H': _results.apples_H,
         'lag': _results.lag,
-        'timing': _results.timing
+        'timing': _results.timing,
+        'winCondition': data.match.winCondition,
     }).eq('id', data.id).select();
 
     if (response.error)
@@ -319,7 +328,6 @@ async function PushResults (_results)
         return null;
     } else 
     {
-        UpdateUI();
         return response.data[0];
     }
 }
@@ -330,145 +338,254 @@ document.getElementById('btn-scorecard-view').addEventListener('click', function
     UpdateUI();
 });
 
-//Update UI
+// Initialize match type inputs based on winCondition
+function InitializeMatchType() {
+    const winCondition = data.match.winCondition;
+
+    if (!winCondition) {
+        document.getElementById('freePlay').checked = true;
+    } else 
+    {
+        document.getElementById('raceToBestOf').checked = true;
+        document.getElementById('raceToValue').value = winCondition || '';
+        document.getElementById('bestOfValue').value = (winCondition * 2 - 1);
+    }
+}
+
+// Add event listeners for Race To and Best Of inputs
+function SetupInputListeners() {
+    const raceToInput = document.getElementById('raceToValue');
+    const bestOfInput = document.getElementById('bestOfValue');
+
+    raceToInput.addEventListener('input', function () {
+        const raceTo = parseInt(raceToInput.value);
+        if (!isNaN(raceTo)) {
+            bestOfInput.value = (2 * raceTo) - 1;
+            data.match.winCondition = raceTo; // Update winCondition
+        }
+    });
+
+    bestOfInput.addEventListener('input', function () {
+        const bestOf = parseInt(bestOfInput.value);
+        if (!isNaN(bestOf)) {
+            const raceTo = Math.ceil((bestOf + 1) / 2);
+            raceToInput.value = raceTo;
+            data.match.winCondition = raceTo; // Update winCondition
+        }
+    });
+}
+
+// Update UI and handle win conditions
 function UpdateUI() 
 {
-    // Update player names and scores in the UI
-    document.querySelectorAll('[id^="lbl-H-name"]').forEach(el => el.textContent = data.player_H + (data.match.lag === "Home" ? " *" : ""));
-    document.querySelectorAll('[id^="lbl-A-name"]').forEach(el => el.textContent = data.player_A + (data.match.lag === "Away" ? " *" : ""));
-    document.querySelectorAll('[id^="lbl-H-score"]').forEach(el => el.innerHTML = `${data.score.H}`);
-    document.querySelectorAll('[id^="lbl-A-score"]').forEach(el => el.innerHTML = `${data.score.A}`);
-    document.querySelectorAll('[id^="lbl-H-apples"]').forEach(el => el.innerHTML = `<i class="bi bi-apple"></i>: ${data.score.H_Apples}`);
-    document.querySelectorAll('[id^="lbl-A-apples"]').forEach(el => el.innerHTML = `<i class="bi bi-apple"></i>: ${data.score.A_Apples}`);
+    const uiData = 
+    {
+        player_H: data.player_H,
+        player_A: data.player_A,
+        score_H: `${data.score.H}`,
+        score_A: `${data.score.A}`,
+        apples_H: `<i class="bi bi-apple"></i>: ${data.score.H_Apples}`,
+        apples_A: `<i class="bi bi-apple"></i>: ${data.score.A_Apples}`,
+        frameStartTime: "",
+        lastTiming: FormatLastTiming(),
+        maxFrames: Math.max(data.scorecard.H.length, data.scorecard.A.length),
+        totalTime: FormatTotalTime(),
+        averageTime: FormatAverageTime(),
+    };
 
-    //Update Timers
+    if (data.match.lag === "Home") {
+        uiData.player_H += " *";
+    } else if (data.match.lag === "Away") {
+        uiData.player_A += " *";
+    }
+
+    if (data.frameStartTime === null || data.frameStartTime === 0) {
+        uiData.frameStartTime = "Timer Off";
+    } else {
+        uiData.frameStartTime = "Frame Started at: " + new Date(Number(data.frameStartTime)).toLocaleTimeString();
+    }
+
+    UpdatePlayerLabels(uiData);
+    UpdateTimers(uiData);
+    UpdateScorecardTable(uiData);
+    UpdateLagSelector(uiData);
+    UpdateBreakIndicators(uiData);
+
+    const matchType = document.querySelector('input[name="matchType"]:checked').value;
+
+    // Check for win condition (skip if freeplay)
+    if (matchType !== 'freePlay') 
+    {
+        const maxScore = Math.max(data.score.H, data.score.A);
+        if (maxScore >= data.match.winCondition) {
+            const winner = data.score.H > data.score.A ? data.player_H : data.player_A;
+            alert(`${winner} wins the match!`);
+        }
+    }
+}
+
+function UpdatePlayerLabels (uiData) 
+{
+    document.querySelectorAll('[id^="lbl-H-name"]').forEach(el => el.textContent = uiData.player_H);
+    document.querySelectorAll('[id^="lbl-A-name"]').forEach(el => el.textContent = uiData.player_A);
+    document.querySelectorAll('[id^="lbl-H-score"]').forEach(el => el.innerHTML = uiData.score_H);
+    document.querySelectorAll('[id^="lbl-A-score"]').forEach(el => el.innerHTML = uiData.score_A);
+    document.querySelectorAll('[id^="lbl-H-apples"]').forEach(el => el.innerHTML = uiData.apples_H);
+    document.querySelectorAll('[id^="lbl-A-apples"]').forEach(el => el.innerHTML = uiData.apples_A);
+}
+
+function UpdateTimers (uiData) 
+{
     const timeFrameStartElement = document.getElementById('time-frame-start');
     if (timeFrameStartElement) 
     {
-        if (data.frameStartTime == 0)
+        timeFrameStartElement.textContent = uiData.frameStartTime;
+        const btnTimerStart = document.getElementById('btn-timer-start');
+        if (btnTimerStart) 
         {
-            timeFrameStartElement.textContent = "Timer Off";
-        } else 
-        {
-            timeFrameStartElement.textContent = "Frame Started at: " + new Date(Number(data.frameStartTime)).toLocaleTimeString();
-            const btnTimerStart = document.getElementById('btn-timer-start');
-            if (btnTimerStart) {
+            if (data.frameStartTime === 0 || data.frameStartTime === null) {
+                btnTimerStart.textContent = "Start Frame Timer";
+                btnTimerStart.classList.add('btn-success');
+                btnTimerStart.classList.remove('btn-warning');
+            } else {
                 btnTimerStart.textContent = "Re-start Frame Timer";
-                btnTimerStart.classList.remove('btn-success');
                 btnTimerStart.classList.add('btn-warning');
+                btnTimerStart.classList.remove('btn-success');
             }
-        }        
+        }
     }
 
     const timeFrameLastElement = document.getElementById('time-frame-last');
-    if (timeFrameLastElement) {
-        const lastTiming = data.timing.length > 0 ? data.timing[data.timing.length - 1] : "No Times";
-        if (typeof lastTiming === "number" && lastTiming > 60) {
-            const minutes = Math.ceil(lastTiming / 60);
-            timeFrameLastElement.textContent = `Last Frame: ${minutes} min`;
-        } else {
-            timeFrameLastElement.textContent = `Last Frame: ${lastTiming}`;
-        }
+    if (timeFrameLastElement) 
+    {
+        timeFrameLastElement.textContent = uiData.lastTiming;
     }
+}
 
-    // Determine the maximum number of frames between both players
-    const maxFrames = Math.max(data.scorecard.H.length, data.scorecard.A.length);
-    
-    // Get the scorecard table element
+function UpdateScorecardTable (uiData) 
+{
     const table = document.querySelector('#tbl-scorecard');
-
-    // Clear existing table content
     table.innerHTML = '';
 
-    if (data.scorecardView == 0) {
-        // Create table head
-        const tableHead = document.createElement('thead');
-        const headRow = document.createElement('tr');
-        headRow.innerHTML = '<th>Frame:</th>';
-        for (let i = 1; i <= maxFrames; i++) {
-            headRow.innerHTML += `<th>${i}</th>`;
-        }
-        headRow.innerHTML += '<th>Score:</th><th>Apples:</th>'; // Add Time column
-        tableHead.appendChild(headRow);
-        table.appendChild(tableHead);
+    if (data.scorecardView === 0) 
+    {
+        CreateRowScorecardTable(uiData, table);
+    } 
+    else 
+    {
+        CreateColumnScorecardTable(uiData, table);
+    }
+}
 
-        // Create table body
-        const tableBody = document.createElement('tbody');
-        const bodyRowH = document.createElement('tr');
-        const bodyRowA = document.createElement('tr');
-        const bodyRowTime = document.createElement('tr'); // Row for time
+function CreateRowScorecardTable (uiData, table) 
+{
+    const tableHead = document.createElement('thead');
+    const headRow = document.createElement('tr');
+    headRow.innerHTML = '<th>Frame:</th>' + Array.from({ length: uiData.maxFrames }, (_, i) => `<th>${i + 1}</th>`).join('') + '<th>Score:</th><th>Apples:</th>';
+    tableHead.appendChild(headRow);
+    table.appendChild(tableHead);
 
-        bodyRowH.innerHTML = `<td id="lbl-H-name">${data.player_H + (data.match.lag === "Home" ? " *" : "")}</td>`;
-        bodyRowA.innerHTML = `<td id="lbl-A-name">${data.player_A + (data.match.lag === "Away" ? " *" : "")}</td>`;
-        bodyRowTime.innerHTML = '<td>Time:</td>'; // Label for time row
+    const tableBody = document.createElement('tbody');
+    const bodyRowH = CreateScoreRow(uiData.player_H, data.scorecard.H, uiData.score_H, uiData.apples_H);
+    const bodyRowA = CreateScoreRow(uiData.player_A, data.scorecard.A, uiData.score_A, uiData.apples_A);
+    const bodyRowTime = CreateTimeRow(uiData);
 
-        for (let i = 0; i < maxFrames; i++) {
-            const scoreH = data.scorecard.H[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.H[i]}</span>` : data.scorecard.H[i] || '-';
-            const scoreA = data.scorecard.A[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.A[i]}</span>` : data.scorecard.A[i] || '-';
-            const time = data.timing[i] ? `${data.timing[i]}s` : '-'; // Time for each frame
+    tableBody.appendChild(bodyRowH);
+    tableBody.appendChild(bodyRowA);
+    tableBody.appendChild(bodyRowTime);
+    table.appendChild(tableBody);
+}
 
-            bodyRowH.innerHTML += `<td>${scoreH}</td>`;
-            bodyRowA.innerHTML += `<td>${scoreA}</td>`;
-            bodyRowTime.innerHTML += `<td>${time}</td>`;
-        }
+function CreateColumnScorecardTable (uiData, table) 
+{
+    const tableHead = document.createElement('thead');
+    const headRow = document.createElement('tr');
+    headRow.innerHTML = `<th>Frame:</th><th>${uiData.player_H}</th><th>${uiData.player_A}</th><th>Time</th>`;
+    tableHead.appendChild(headRow);
+    table.appendChild(tableHead);
 
-        // Add scores, apples, and time to the new columns
-        bodyRowH.innerHTML += `<td style="font-weight: bold;">${data.score.H}</td><td>${data.score.H_Apples}</td>`;
-        bodyRowA.innerHTML += `<td style="font-weight: bold;">${data.score.A}</td><td>${data.score.A_Apples}</td>`;
-
-        tableBody.appendChild(bodyRowH);
-        tableBody.appendChild(bodyRowA);
-        tableBody.appendChild(bodyRowTime);
-        table.appendChild(tableBody);
-    } else {
-        // Create table head
-        const tableHead = document.createElement('thead');
-        const headRow = document.createElement('tr');
-        headRow.innerHTML = '<th>Frame:</th><th id="lbl-H-name">' + data.player_H + (data.match.lag === "Home" ? " *" : "") + '</th><th id="lbl-A-name">' + data.player_A + (data.match.lag === "Away" ? " *" : "") + '</th>';
-        tableHead.appendChild(headRow);
-        table.appendChild(tableHead);
-
-        // Create table body
-        const tableBody = document.createElement('tbody');
-
-        for (let i = 0; i < maxFrames; i++) {
-            const bodyRow = document.createElement('tr');
-            const scoreH = data.scorecard.H[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.H[i]}</span>` : data.scorecard.H[i] || '-';
-            const scoreA = data.scorecard.A[i] === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${data.scorecard.A[i]}</span>` : data.scorecard.A[i] || '-';
-            const time = data.timing[i] ? `${data.timing[i]}s` : '-'; // Time for each frame
-
-            bodyRow.innerHTML = `<td>${i + 1}</td><td>${scoreH}</td><td>${scoreA}</td><td>${time}</td>`;
-            tableBody.appendChild(bodyRow);
-        }
-
-        // Add row for score at the end
-        const scoreRow = document.createElement('tr');
-        scoreRow.innerHTML = `<td id="cell-score-final"><b>Score</b></td><td style="font-weight: bold" id="cell-score-final">${data.score.H}</td><td style="font-weight: bold;" id="cell-score-final">${data.score.A}</td><td>-</td>`;
-        tableBody.appendChild(scoreRow);
-
-        // Add row for apples at the end
-        const applesRow = document.createElement('tr');
-        applesRow.innerHTML = `<td id="cell-apples-final">Apples</td><td id="cell-apples-final">${data.score.H_Apples}</td><td id="cell-apples-final">${data.score.A_Apples}</td><td>-</td>`;
-        tableBody.appendChild(applesRow);
-
-        table.appendChild(tableBody);
+    const tableBody = document.createElement('tbody');
+    for (let i = 0; i < uiData.maxFrames; i++) 
+    {
+        const bodyRow = document.createElement('tr');
+        const scoreH = FormatScore(data.scorecard.H[i]);
+        const scoreA = FormatScore(data.scorecard.A[i]);
+        const time = data.timing[i] ? `${Math.ceil(data.timing[i] / 60)} min` : '-';
+        bodyRow.innerHTML = `<td>${i + 1}</td><td>${scoreH}</td><td>${scoreA}</td><td>${time}</td>`;
+        tableBody.appendChild(bodyRow);
     }
 
-    // Populate select-lag with player options
+    const scoreRow = document.createElement('tr');
+    scoreRow.innerHTML = `<td><b>Score</b></td><td>${uiData.score_H}</td><td>${uiData.score_A}</td><td>Total: ${uiData.totalTime}</td>`;
+    tableBody.appendChild(scoreRow);
+
+    const applesRow = document.createElement('tr');
+    applesRow.innerHTML = `<td>Apples</td><td>${uiData.apples_H}</td><td>${uiData.apples_A}</td><td>Avg: ${uiData.averageTime}</td>`;
+    tableBody.appendChild(applesRow);
+
+    table.appendChild(tableBody);
+}
+
+function UpdateLagSelector (uiData) 
+{
     const selectLag = document.getElementById('select-lag');
     selectLag.innerHTML = `
         <option value="" disabled ${!data.match.lag ? "selected" : ""}>Select Lag</option>
-        <option value="0" ${data.match.lag === "Home" ? "selected" : ""}>${data.player_H}</option>
-        <option value="1" ${data.match.lag === "Away" ? "selected" : ""}>${data.player_A}</option>
+        <option value="0" ${data.match.lag === "Home" ? "selected" : ""}>${uiData.player_H}</option>
+        <option value="1" ${data.match.lag === "Away" ? "selected" : ""}>${uiData.player_A}</option>
     `;
+}
 
-    // Show break indicator based on lag and scorecard length
-    document.querySelectorAll('[id^="lbl-break-indicator-H"]').forEach(el => {
+function UpdateBreakIndicators (uiData) 
+{
+    document.querySelectorAll('[id^="lbl-break-indicator-H"]').forEach(el => 
+    {
         el.style.display = (data.match.lag === "Home" && data.scorecard.H.length % 2 === 0) || (data.match.lag === "Away" && data.scorecard.A.length % 2 !== 0) ? 'block' : 'none';
     });
-    document.querySelectorAll('[id^="lbl-break-indicator-A"]').forEach(el => {
+    document.querySelectorAll('[id^="lbl-break-indicator-A"]').forEach(el => 
+    {
         el.style.display = (data.match.lag === "Away" && data.scorecard.A.length % 2 === 0) || (data.match.lag === "Home" && data.scorecard.H.length % 2 !== 0) ? 'block' : 'none';
     });
+}
+
+function CreateScoreRow (playerName, scorecard, totalScore, apples) 
+{
+    const row = document.createElement('tr');
+    row.innerHTML = `<td>${playerName}</td>` + scorecard.map(score => `<td>${FormatScore(score)}</td>`).join('') + `<td>${totalScore}</td><td>${apples}</td>`;
+    return row;
+}
+
+function CreateTimeRow (uiData) 
+{
+    const row = document.createElement('tr');
+    row.innerHTML = '<td>Time:</td>' + data.timing.map(time => `<td>${Math.ceil(time / 60)} min</td>`).join('') + `<td>Total: ${uiData.totalTime}</td><td>Avg: ${uiData.averageTime}</td>`;
+    return row;
+}
+
+function FormatScore (score) 
+{
+    return score === "A" ? `<span style="color: rgba(230, 161, 0, 1);">${score}</span>` : score || '-';
+}
+
+function FormatLastTiming () 
+{
+    const lastTiming = data.timing.length > 0 ? data.timing[data.timing.length - 1] : "No Times";
+    return typeof lastTiming === "number" && lastTiming > 60 ? `Last Frame: ${Math.ceil(lastTiming / 60)} min` : `Last Frame: ${lastTiming}`;
+}
+
+function FormatTotalTime () 
+{
+    const totalTime = data.timing.reduce((a, b) => a + b, 0);
+    return totalTime > 3600
+        ? `${Math.floor(totalTime / 3600)} hr ${Math.floor((totalTime % 3600) / 60)} min`
+        : totalTime > 60
+        ? `${Math.floor(totalTime / 60)} min`
+        : `${totalTime} sec`;
+}
+
+function FormatAverageTime () 
+{
+    return data.timing.length > 0 ? Math.ceil(data.timing.reduce((a, b) => a + b, 0) / data.timing.length / 60) : '-';
 }
 
 document.getElementById('select-lag').addEventListener('change', function(event) 
