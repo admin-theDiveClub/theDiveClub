@@ -8,7 +8,7 @@ async function RestoreSession ()
     {
         localStorage.setItem("session", JSON.stringify(session));
         sessionStorage.setItem("session", JSON.stringify(session));
-        //console.log("Session:", session);
+        console.log("Session:", session);
         //Create Player Profile if none exists
         var newPlayer = await CreatePlayerProfile(session.user);
         if (newPlayer)
