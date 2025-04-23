@@ -59,38 +59,14 @@ async function GetPlayer (_username)
 
 async function GetPlayerProfilePic (_username)
 {
-    const response_list = await supabase.storage.from('bucket-profile-pics').list('', { limit: 1000 });
-    console.log("List Response:", response_list);
-
-    const r = await supabase.storage.from('bucket-profile-pics').getPublicUrl('f5a9e0c6-652f-4a7f-9649-19833b56fafd.jpg');
-    console.log("Public URL:", r);
-    if (r.data && r.data.publicUrl) {
+    const r = await supabase.storage.from('bucket-profile-pics').getPublicUrl(_username);
+    if (r.data && r.data.publicUrl) 
+    {
         const imgElement = document.querySelector('.profile-pic');
-        if (imgElement) {
+        if (imgElement) 
+        {
             imgElement.src = r.data.publicUrl;
         }
-    }
-
-    if (response_list.error) {
-        console.log("Error listing files:", error.message);
-        return null;
-    }
-
-    const file = response_list.find(file => file.name.startsWith(_username));
-    if (!file) {
-        console.log("No matching file found for username:", _username);
-        return null;
-    }
-
-    const response = await supabase.storage.from('bucket-profile-pics').download(file.name);
-    if (response.error)
-    {
-        console.log("Error getting profile pic:", response.error.message);
-        return null;
-    } else 
-    {
-        const url = URL.createObjectURL(response.data);
-        return url;
     }
 }
 
