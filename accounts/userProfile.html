@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Profile</title>
+
+    <!-- Import Supabase resources via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    
+    <!-- Bootstrap CSS -->     
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="../stylesheets/styles_master.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <div class="row hud-nav">
+        <div class="col-md-2 col-1"></div>
+        <div class="col-md-8 col-10">
+            <div class="card rounded card-nav">
+                <div class="btn-group btn-group-lg d-flex justify-content-center" role="group">
+                    <button type="button" class="btn btn-nav" onclick="location.href='../index.html'">
+                        <i class="bi bi-house"></i>
+                        <span class="d-none d-md-inline">Home</span>
+                    </button>
+                    <button type="button" class="btn btn-nav active" onclick="location.href='../accounts/login.html'">
+                        <i class="bi bi-person"></i>
+                        <span class="d-none d-md-inline">Profile</span>
+                    </button>
+                    <button type="button" class="btn btn-nav" onclick="location.href='../matches/create.html'">
+                        <i class="bi bi-trophy"></i>
+                        <span class="d-none d-md-inline">Scorecard</span>
+                    </button>
+                    <div class="btn-group dropup" role="group">
+                        <button type="button" class="btn btn-nav dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-three-dots"></i>
+                            <span class="d-none d-md-inline">Competitions</span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><button class="dropdown-item btn-nav active" type="button"><i class="bi bi-trophy" style="margin: 1cap;"></i> Leagues</button></li>
+                            <li><button class="dropdown-item btn-nav" type="button"><i class="bi bi-calendar-event" style="margin: 1cap;"></i> Tournaments</button></li>
+                            <li><button class="dropdown-item btn-nav" type="button"><i class="bi bi-flag" style="margin: 1cap;"></i> Matches</button></li>
+                        </ul>
+                    </div>
+                </div>                
+            </div>
+        </div>
+        <div class="col-md-2 col-1"></div>
+    </div>
+
+    <!-- Header -->
+    <div class="row" id="header">
+        <div class="col-md-2"></div>
+        <div class="col-md-4">
+            <img src="../resources/drawing_logo_theDiveClub.svg" alt="The Dive Club Logo" class="header-logo">
+        </div>
+        <div class="col-md-4">
+            <div class="row" style="height: 90%;">
+                <div class="col-md-6 col-4">
+                    <img src="../resources/img_pp_test.jpeg" alt="Profile Picture" class="profile-pic">
+                </div>
+                <div class="col-md-6 col-8">
+                    <div class="card-profile" style="text-align: center;">
+                        <h1 id="profile-nickname">UV</h1>
+                        <p id="profile-name">Yuvan Naidoo</p>
+                        <p id="profile-username">yuvannaidoo@gmail.com</p>
+                        <p id="profile-contact">+27 82 766 4905</p>
+                        <p id="profile-playerID">XXXX-XXXX-XXXX-XXXX-XXXX</p>
+                    </div>
+                </div>
+            </div>            
+        </div>
+        <div class="col-md-2"></div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8">
+            
+
+            <div class="card rounded card-component">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs d-flex justify-content-center" id="profileTabs" role="tablist" style="flex-wrap: nowrap;">
+                        <li class="tab-link flex-fill text-center" role="presentation">
+                            <button class="nav-link active w-100" id="tab1-tab" data-bs-toggle="tab" data-bs-target="#tab1" type="button" role="tab" aria-controls="tab1" aria-selected="true">
+                                <i class="bi bi-bar-chart-line" style="font-size: 4cap;"></i>
+                            </button>
+                        </li>
+                        <li class="tab-link flex-fill text-center" role="presentation">
+                            <button class="nav-link w-100" id="tab2-tab" data-bs-toggle="tab" data-bs-target="#tab2" type="button" role="tab" aria-controls="tab2" aria-selected="false">
+                                <i class="bi bi-trophy" style="font-size: 4cap;"></i>
+                            </button>
+                        </li>
+                        <li class="tab-link flex-fill text-center" role="presentation">
+                            <button class="nav-link w-100" id="tab3-tab" data-bs-toggle="tab" data-bs-target="#tab3" type="button" role="tab" aria-controls="tab3" aria-selected="false">
+                                <i class="bi bi-person-circle" style="font-size: 4cap;"></i>
+                            </button>
+                        </li>
+                    </ul>
+                        
+                </div>
+                <div class="card-body tab-pane">
+                    <div class="tab-content" id="profileTabsContent">
+                        <div class="tab-pane fade show active" id="tab1" role="tabpanel" aria-labelledby="tab1-tab">
+                            <h5>Tab 1 Content</h5>
+                            <p>This is the content for Tab 1.</p>
+                        </div>
+                        <div class="tab-pane fade" id="tab2" role="tabpanel" aria-labelledby="tab2-tab">
+                            <h5>Tab 2 Content</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card rounded card-component">
+                                        <h5>Leagues</h5>
+                                        <p>League 1: 1000 points</p>
+                                        <p>League 2: 800 points</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card rounded card-component">
+                                        <h5>Tournaments</h5>
+                                        <p>Tournament 1: 500 points</p>
+                                        <p>Tournament 2: 500 points</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card rounded card-component">
+                                        <h5>Matches</h5>
+                                        <p>Match 1: Win</p>
+                                        <p>Match 2: Loss</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card rounded card-component">
+                                        <h5>Social Play</h5>
+                                        <p>Game Night 1: 5 participants</p>
+                                        <p>Game Night 2: 8 participants</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                        <div class="tab-pane fade" id="tab3" role="tabpanel" aria-labelledby="tab3-tab">
+                            <h5>Tab 3 Content</h5>
+                            <div id="grp_inputs">
+                                
+                                <div class="card rounded input-field">
+                                    <p class="input-label">Email & Password</p>    
+                                    <a href="#" class="btn btn-link inputLabel">Change Password or Email</a>
+                                </div>
+            
+                                <div class="card rounded input-field">
+                                    <p class="input-label">Name</p>    
+                                    <input type="text" class="form-control border-0 inputText" id="inp_name" name="name" placeholder="Enter new name" autocomplete="name">
+                                </div>
+            
+                                <div class="card rounded input-field">
+                                    <p class="input-label">Surname</p>    
+                                    <input type="text" class="form-control border-0 inputText" id="inp_surname" name="surname" placeholder="Enter new surname">
+                                </div>
+            
+                                <div class="card rounded input-field">
+                                    <p class="input-label">Nickname (Optional)</p>    
+                                    <input type="text" class="form-control border-0 inputText" id="inp_nickname" name="nickname" placeholder="Enter new nickname">
+                                </div>                    
+
+                                <div class="card rounded input-field">
+                                    <p class="input-label">Contact</p>    
+                                    <input type="text" class="form-control border-0 inputText" id="inp_contact" name="contact" placeholder="Enter new contact number">
+                                </div>                    
+                            </div>
+            
+                            <div id="grp-output" style="display: none;">
+                                <div class="card rounded card-message">
+                                    <p id="outputMessage" class="inputText" style="text-align: center;">Message</p>
+                                    <a href="../index.html" id="btn_Home" class="btn btn-primary" style="display: none;">Go to The Dive Club</a>
+                                </div>
+                            </div>
+            
+                            <button type="submit" class="btn btn-primary" id="btn_updateDetails" style="width: 100%;">Update Details</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2"></div>
+    </div>
+
+
+
+    <script src="../scripts/supaBase_client.js"></script>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <script type="module">
+        import { matchMode, persistentTrailMode, glowTrailMode } from '../resources/particleEffects/particle_modes.js';
+
+        // Uncomment the mode you want to use:
+        
+        //matchMode();           // Match Mode: Basic particle mode for match/player background
+        //persistentTrailMode(); // Persistent Trail Mode: Trails persist (fade slowly)
+        glowTrailMode();       // Glow Trail Mode: Clean glow effect for home page background
+    </script>
+    <script src="../resources/ui_backgroundRandomization.js"></script>
+
+    <!-- Bootstrap JS (Optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+</body>
+</html>

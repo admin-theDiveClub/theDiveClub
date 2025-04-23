@@ -305,8 +305,9 @@ th, td
     border-radius: 4cap !important;
     background-color: transparent !important;
     border: transparent;
-    color: var(--color-base-med);
-    margin: 1cap;
+    color: var(--color-base-light);
+    margin: 2cap;
+    text-wrap: wrap;
 }
 
 .profile-pic
@@ -316,15 +317,15 @@ th, td
     box-shadow: 0 0px 24px 0px rgba(0, 0, 0, 0.75);
     padding: 0cap;
     border-radius: 100vw;
-    max-width: 30vw;
-    max-height: 30vh;
-    margin: 1cap;
+    max-width: 100%;
+    height: 90%;
+    margin: 2cap;
 }
 
 #profile-nickname
 {
     font-size: 6cap; 
-    color: var(--color-base-light);
+    color: var(--color-base-med);
 }
 
 .tab-pane

@@ -24,6 +24,7 @@ var data =
     scorecardView: 1,
     frameStartTime: sessionStorage.getItem('frameStartTime') || 0,
     timing: [],
+    startTime: null
 };
 
 if (!data.frameStartTime || data.frameStartTime === "0") {
@@ -339,9 +340,11 @@ async function PushResults (_results)
 
     if (response.error)
     {
+        console.error("Error updating match results:", response.error.message);
         return null;
     } else 
     {
+        UpdateUI();
         return response.data[0];
     }
 }
@@ -431,9 +434,16 @@ function UpdateUI()
     if (matchType !== 'freePlay') 
     {
         const maxScore = Math.max(data.score.H, data.score.A);
-        if (maxScore >= data.match.winCondition) {
+        if (maxScore >= data.match.winCondition) 
+        {
             const winner = data.score.H > data.score.A ? data.player_H : data.player_A;
             alert(`${winner} wins the match!`);
+
+            data.frameStartTime = 0;
+            sessionStorage.setItem('frameStartTime', 0);
+            uiData.frameStartTime = "Timer Off";
+            UpdateTimers(uiData);
+            console.log("Timer stopped");
         }
     }
 }

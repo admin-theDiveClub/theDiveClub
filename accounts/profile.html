@@ -19,15 +19,6 @@
 
 <body>
 
-    <div class="row" style="margin: 1cap;">
-        <div class="col-sm-2"></div>
-        <div class="col-sm-8 d-flex justify-content-center align-items-center" style="height: 30vh;">            
-            <canvas id="bg-canvas" style="position: relative; border-radius: 20vw; box-shadow: inset 0 0 2cap 1cap rgba(0, 0, 0, 0.5);"></canvas>
-            <img src="../resources/drawing_logo_theDiveClub.png" alt="Logo Home" class="header-logo" style="position: absolute; max-height: 30vh;"></img>
-        </div>
-        <div class="col-sm-2"></div>
-    </div>
-
     <!-- Navigation -->
     <div class="row hud-nav">
         <div class="col-md-2 col-1"></div>
@@ -38,9 +29,9 @@
                         <i class="bi bi-house"></i>
                         <span class="d-none d-md-inline">Home</span>
                     </button>
-                    <button type="button" class="btn btn-nav" onclick="location.href='../accounts/login.html'">
+                    <button type="button" class="btn btn-nav active" onclick="location.href='../accounts/login.html'">
                         <i class="bi bi-person"></i>
-                        <span class="d-none d-md-inline active">Profile</span>
+                        <span class="d-none d-md-inline">Profile</span>
                     </button>
                     <button type="button" class="btn btn-nav" onclick="location.href='../matches/create.html'">
                         <i class="bi bi-trophy"></i>
@@ -63,25 +54,35 @@
         <div class="col-md-2 col-1"></div>
     </div>
 
+    <!-- Header -->
+    <div class="row" id="header">
+        <div class="col-md-2"></div>
+        <div class="col-md-4">
+            <img src="../resources/drawing_logo_theDiveClub.svg" alt="The Dive Club Logo" class="header-logo">
+        </div>
+        <div class="col-md-4">
+            <div class="row" style="height: 90%;">
+                <div class="col-md-6 col-4">
+                    <img src="../resources/img_pp_test.jpeg" alt="Profile Picture" class="profile-pic">
+                </div>
+                <div class="col-md-6 col-8">
+                    <div class="card-profile" style="text-align: center;">
+                        <h1 id="profile-nickname">UV</h1>
+                        <p id="profile-name">Yuvan Naidoo</p>
+                        <p id="profile-username">yuvannaidoo@gmail.com</p>
+                        <p id="profile-contact">+27 82 766 4905</p>
+                        <p id="profile-playerID">XXXX-XXXX-XXXX-XXXX-XXXX</p>
+                    </div>
+                </div>
+            </div>            
+        </div>
+        <div class="col-md-2"></div>
+    </div>
+
     <div class="row">
         <div class="col-md-2"></div>
         <div class="col-md-8">
-            <div class="card rounded card-profile">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="d-flex justify-content-center">
-                            <img src="../resources/img_pp_test.jpeg" alt="Profile Picture" class="profile-pic">
-                            <div class="card rounded card-profile">
-                                <h1 id="profile-nickname">UV</h1>
-                                <p id="profile-name">Yuvan Naidoo</p>
-                                <p id="profile-username">yuvannaidoo@gmail.com</p>
-                                <p id="profile-contact">+27 82 766 4905</p>
-                                <p id="profile-playerID">XXXX-XXXX-XXXX-XXXX-XXXX</p>
-                            </div>
-                        </div>
-                    </div>                    
-                </div>
-            </div>
+            
 
             <div class="card rounded card-component">
                 <div class="card-header">
@@ -198,6 +199,7 @@
 
     <script src="../scripts/supaBase_client.js"></script>
 
+    <canvas id="bg-canvas"></canvas>
 
     <script type="module">
         import { matchMode, persistentTrailMode, glowTrailMode } from '../resources/particleEffects/particle_modes.js';
@@ -205,8 +207,8 @@
         // Uncomment the mode you want to use:
         
         //matchMode();           // Match Mode: Basic particle mode for match/player background
-        persistentTrailMode(); // Persistent Trail Mode: Trails persist (fade slowly)
-        //glowTrailMode();       // Glow Trail Mode: Clean glow effect for home page background
+        //persistentTrailMode(); // Persistent Trail Mode: Trails persist (fade slowly)
+        glowTrailMode();       // Glow Trail Mode: Clean glow effect for home page background
     </script>
     <script src="../resources/ui_backgroundRandomization.js"></script>
 
