@@ -23,11 +23,11 @@ async function RestoreSession ()
             var response = await supabase.auth.refreshSession();
             if (response.error)
             {
-                //console.log("Session: ", response.error.message);
+                console.log("Session: ", response.error.message);
             }
             else
             {
-                //console.log("Session: ", response);
+                console.log("Session: ", response);
             }
         }
     }

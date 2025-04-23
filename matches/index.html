@@ -89,7 +89,7 @@
                                         <input class="form-check-input" type="radio" name="matchType" id="raceToBestOf" value="raceToBestOf">
                                         <div class="row">
                                             <div class="col-md-6">
-                                                <div class="d-flex flex-wrap align-items-center">
+                                                <div>
                                                     <label class="form-check-label" for="raceToBestOf">
                                                         Race To:
                                                     </label>
@@ -97,7 +97,7 @@
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
-                                                <div class="d-flex flex-wrap align-items-center">
+                                                <div>
                                                     <label class="form-check-label" for="raceToBestOf">
                                                         Best Of:
                                                     </label>
@@ -137,6 +137,7 @@
                             <div class="card-body">
                                 <button class="btn btn-success" id="btn-timer-start">Start Frame Timer</button>
                                 <button class="btn btn-danger" id="btn-timer-stop">Disable Timer</button>
+                                <p id="time-match-start">Match Started At: 00:00.</p>
                                 <p id="time-frame-start">Frame Started At: 00:00.</p>
                                 <p id="time-frame-last">Last Frame: 00 minutes.</p>
                             </div>
@@ -203,9 +204,11 @@
                 <div class="card-body" style="overflow-x: auto; font-size: 1.25cap;">
                     <table class="table" id="tbl-scorecard">                        
                     </table>
+                    <p id="lbl-match-winner">Winner: -</p>
+                    <p id="lbl-match-startTime">Match Start Time: Not Set</p>
+                    <p id="lbl-match-endTime">Match End Time: Not Set</p>
                 </div>
             </div>
-
         </div>
         <div class="col-sm-1"></div>
     </div>

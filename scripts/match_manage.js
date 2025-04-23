@@ -24,7 +24,8 @@ var data =
     scorecardView: 1,
     frameStartTime: sessionStorage.getItem('frameStartTime') || 0,
     timing: [],
-    startTime: null
+    startTime: null,
+    endTime: null,
 };
 
 if (!data.frameStartTime || data.frameStartTime === "0") {
@@ -70,6 +71,8 @@ async function PopulateData ()
             data.scorecard = data.match.scorecard;
             data.score = GetCurrentScore(data.scorecard);
             data.timing = data.match.timing || [];
+            data.startTime = data.match.startTime || null; // Initialize startTime
+            data.endTime = data.match.endTime || null; // Initialize endTime
         }
     }    
 
@@ -158,18 +161,25 @@ async function GetPlayerName (_playerID, mode)
     {
         response = await supabase.from('tbl_players').select('name, surname').eq('username', _playerID);
     }
+    console.log("Player Name Response:", response);
 
     if (response.error)
     {
         return null;
     } else 
     {
-        var fullname = response.data[0].name;
-        if (response.data[0].surname)
+        if (response.data[0])
         {
-            fullname += " " + response.data[0].surname;
+            var fullname = response.data[0].name;
+            if (response.data[0].surname)
+            {
+                fullname += " " + response.data[0].surname;
+            }
+            return fullname;
+        } else 
+        {
+            return _playerID;
         }
-        return fullname;
     }
 }
 
@@ -264,6 +274,10 @@ document.getElementById('btn-correction').addEventListener('click', function()
         data.scorecard.A.pop();
     }
 
+    data.endTime = null; // Reset end time on correction
+    
+    document.getElementById('lbl-match-winner').textContent = `Winner: -`;
+
     UpdateTimeStamps(null);
     
     UpdateData();
@@ -274,6 +288,13 @@ document.getElementById('btn-timer-start').addEventListener('click', function()
     data.frameStartTime = Date.now();
     sessionStorage.setItem('frameStartTime', data.frameStartTime);
     console.log("Timer started at:", new Date(data.frameStartTime).toLocaleTimeString());
+
+    if (data.startTime === 0 || data.startTime === null) 
+    {
+        data.startTime = new Date().toISOString();
+        UpdateData();
+    }
+
     UpdateUI();
 });
 
@@ -314,7 +335,9 @@ function UpdateData ()
         apples_A: data.score.A_Apples,
         scorecard: data.scorecard,
         lag: data.match.lag,
-        timing: data.timing
+        timing: data.timing,
+        startTime: data.startTime,
+        endTime: data.endTime,
     };
 
     PushResults(results);
@@ -336,6 +359,8 @@ async function PushResults (_results)
         'lag': _results.lag,
         'timing': _results.timing,
         'winCondition': data.match.winCondition,
+        'startTime': data.startTime,
+        'endTime': data.endTime,
     }).eq('id', data.id).select();
 
     if (response.error)
@@ -408,6 +433,8 @@ function UpdateUI()
         maxFrames: Math.max(data.scorecard.H.length, data.scorecard.A.length),
         totalTime: FormatTotalTime(),
         averageTime: FormatAverageTime(),
+        startTime: data.startTime,
+        endTime: data.endTime,
     };
 
     if (data.match.lag === "Home") {
@@ -437,13 +464,20 @@ function UpdateUI()
         if (maxScore >= data.match.winCondition) 
         {
             const winner = data.score.H > data.score.A ? data.player_H : data.player_A;
-            alert(`${winner} wins the match!`);
+            document.getElementById('lbl-match-winner').textContent = `Winner: ${winner}`;
+            alert(`${winner} wins! \nFrame timer Stopped.`);
 
             data.frameStartTime = 0;
             sessionStorage.setItem('frameStartTime', 0);
             uiData.frameStartTime = "Timer Off";
             UpdateTimers(uiData);
             console.log("Timer stopped");
+
+            if (!data.endTime)
+            {
+                data.endTime = new Date().toISOString(); // Set end time
+                document.getElementById('lbl-match-endTime').textContent = `Match End Time: ${new Date(data.endTime).toLocaleString()}`;
+            }
         }
     }
 }
@@ -483,6 +517,19 @@ function UpdateTimers (uiData)
     if (timeFrameLastElement) 
     {
         timeFrameLastElement.textContent = uiData.lastTiming;
+    }
+
+    const timeMatchStartElement = document.getElementById('time-match-start');
+    if (timeMatchStartElement) 
+    {
+        timeMatchStartElement.textContent = `Match Started At: ${uiData.startTime ? new Date(uiData.startTime).toLocaleString() : "Match Not Started."}`;
+        document.getElementById('lbl-match-startTime').textContent = `Match Start Time: ${uiData.startTime ? new Date(uiData.startTime).toLocaleString() : "Not Set"}`;
+    }
+
+    const timeMatchEndElement = document.getElementById('lbl-match-endTime');
+    if (timeMatchEndElement) 
+    {
+        timeMatchEndElement.textContent = `Match Ended At: ${uiData.endTime ? new Date(uiData.endTime).toLocaleString() : "Match Not Ended."}`;
     }
 }
 
@@ -544,7 +591,7 @@ function CreateColumnScorecardTable (uiData, table)
     tableBody.appendChild(scoreRow);
 
     const applesRow = document.createElement('tr');
-    applesRow.innerHTML = `<td>Apples</td><td>${uiData.apples_H}</td><td>${uiData.apples_A}</td><td>Avg: ${uiData.averageTime}</td>`;
+    applesRow.innerHTML = `<td>Apples</td><td>${uiData.apples_H}</td><td>${uiData.apples_A}</td><td>Avg: ${uiData.averageTime} min</td>`;
     tableBody.appendChild(applesRow);
 
     table.appendChild(tableBody);
@@ -582,7 +629,7 @@ function CreateScoreRow (playerName, scorecard, totalScore, apples)
 function CreateTimeRow (uiData) 
 {
     const row = document.createElement('tr');
-    row.innerHTML = '<td>Time:</td>' + data.timing.map(time => `<td>${Math.ceil(time / 60)} min</td>`).join('') + `<td>Total: ${uiData.totalTime}</td><td>Avg: ${uiData.averageTime}</td>`;
+    row.innerHTML = '<td>Time:</td>' + data.timing.map(time => `<td>${Math.ceil(time / 60)} min</td>`).join('') + `<td>Total: ${uiData.totalTime}</td><td>Avg: ${uiData.averageTime} min</td>`;
     return row;
 }
 
@@ -594,7 +641,7 @@ function FormatScore (score)
 function FormatLastTiming () 
 {
     const lastTiming = data.timing.length > 0 ? data.timing[data.timing.length - 1] : "No Times";
-    return typeof lastTiming === "number" && lastTiming > 60 ? `Last Frame: ${Math.ceil(lastTiming / 60)} min` : `Last Frame: ${lastTiming}`;
+    return typeof lastTiming === "number" ? `Last Frame: ${Math.ceil(lastTiming / 60)} min` : `Last Frame: ${lastTiming} min`;
 }
 
 function FormatTotalTime () 
