@@ -30,6 +30,18 @@ h1
     box-shadow: inset 0px -48px 96px -24px rgba(0, 0, 0, 1);
 }
 
+.banner-sponsors
+{
+    background-color: var(--color-base-med);
+}
+
+.footer
+{
+    background-color: var(--color-base-dark);
+    box-shadow: inset 0px 12px 24px 6px rgba(0, 0, 0, 1);
+    padding: 2cap;
+}
+
 #page-heading
 {
     text-align: center;
