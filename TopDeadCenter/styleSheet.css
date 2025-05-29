@@ -1,0 +1,69 @@
+:root 
+{
+    --color-base-light: rgba(232, 232, 232, 1);
+    --color-base-dark: rgba(69, 69, 69, 1);
+    --color-base-darkest: rgb(37, 37, 37);
+    --color-primary: rgba(234, 0, 121, 1);
+    --color-secondary: rgba(0, 53, 97, 1);
+    --color-base-med: rgba(135, 135, 135, 1);
+    --color-highlight: rgba(230, 161, 0, 1);
+    --color-secondary-light: rgba(1, 110, 194, 1);
+    --color-secondary-lighter: rgba(0, 186, 245, 1);
+    --shadow: rgba(0, 0, 0, 1);
+}
+
+@font-face 
+{
+    font-family: 'CustomFont';
+    src: url('../resources/Rushfordclean-rgz89.otf') format('opentype');
+}
+    
+.custom-font 
+{
+    font-family: 'CustomFont', sans-serif;
+}
+
+body
+{
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: radial-gradient(circle at 50% -100%, var(--color-base-dark) 0%, var(--color-base-darkest) 80%, var(--color-primary) 250%);
+    overflow-x: hidden;
+}
+
+footer
+{
+    width: 100vw;
+    height: 20vh;
+    display: flex;
+    justify-content: center;
+}
+
+.nav-container
+{
+    position: fixed;
+    width: 102vw;
+    background-color: var(--color-base-darkest);
+    padding: 1cap;
+}
+
+.nav-link
+{
+    margin: 1cap;
+    color: var(--color-base-light);
+}
+
+.active
+{
+    color: var(--color-primary) !important;
+}
+
+.main
+{    
+    box-shadow: 0px 0px 48px 24px var(--shadow);
+}
+
+#welcome-text
+{
+    font-size: 5vw;
+}

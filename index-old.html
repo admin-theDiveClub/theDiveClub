@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>The Dive Club</title>
+
+    <!-- Import Supabase resources via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    
+    <!-- Bootstrap CSS -->     
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="../stylesheets/styles_master.css" rel="stylesheet">
+</head>
+
+<body>    
+    
+    <!-- Header -->
+    <div class="row" id="header">
+        <div class="col-md-4"></div>
+        <div class="col-md-4">
+            <img src="../resources/drawing_logo_theDiveClub.svg" alt="The Dive Club Logo" class="header-logo">
+        </div>
+        <div class="col-md-4"></div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="row hud-nav">
+        <div class="col-md-2 col-1"></div>
+        <div class="col-md-8 col-10">
+            <div class="card rounded card-nav">
+                <div class="btn-group btn-group-lg d-flex justify-content-center" role="group">
+                    <button type="button" class="btn btn-nav active" onclick="location.href='../index.html'">
+                        <i class="bi bi-house"></i>
+                        <span class="d-none d-md-inline">Home</span>
+                    </button>
+                    <button type="button" class="btn btn-nav" onclick="location.href='../accounts/login.html'">
+                        <i class="bi bi-person"></i>
+                        <span class="d-none d-md-inline">Profile</span>
+                    </button>
+                    <button type="button" class="btn btn-nav" onclick="location.href='../matches/create.html'">
+                        <i class="bi bi-trophy"></i>
+                        <span class="d-none d-md-inline">Scorecard</span>
+                    </button>
+                    <div class="btn-group dropup" role="group">
+                        <button type="button" class="btn btn-nav dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-three-dots"></i>
+                            <span class="d-none d-md-inline">Competitions</span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><button class="dropdown-item btn-nav active" type="button"><i class="bi bi-trophy" style="margin: 1cap;"></i> Leagues</button></li>
+                            <li><button class="dropdown-item btn-nav" type="button"><i class="bi bi-calendar-event" style="margin: 1cap;"></i> Tournaments</button></li>
+                            <li><button class="dropdown-item btn-nav" type="button"><i class="bi bi-flag" style="margin: 1cap;"></i> Matches</button></li>
+                        </ul>
+                    </div>
+                </div>                
+            </div>
+        </div>
+        <div class="col-md-2 col-1"></div>
+    </div>
+
+    <script src="../scripts/supaBase_client.js"></script>
+    
+    <script src="../scripts/signOut.js"></script>
+
+    <script src="../scripts/google_authRedirect.js"></script>
+
+    <script src="../scripts/session_restore.js"></script>
+    
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Example usage of particle modes -->
+    <script type="module">
+        import { matchMode, persistentTrailMode, glowTrailMode } from '../resources/particleEffects/particle_modes.js';
+
+        // Uncomment the mode you want to use:
+        
+        //matchMode();           // Match Mode: Basic particle mode for match/player background
+        //persistentTrailMode(); // Persistent Trail Mode: Trails persist (fade slowly)
+        glowTrailMode();       // Glow Trail Mode: Clean glow effect for home page background
+    </script>
+    <script src="../resources/ui_backgroundRandomization.js"></script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+</body>
+</html>
