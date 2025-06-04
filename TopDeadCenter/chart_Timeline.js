@@ -18,7 +18,7 @@ let runningScoreB = 0;
 // Generate 17 fake frames
 for (let i = 0; i < 17; i++) {
   const previousTime = dummyData[dummyData.length - 1].time;
-  const newTime = previousTime + Math.floor(Math.random() * 600 + 30); // 30s to 10min
+  const newTime = previousTime + Math.floor(Math.random() * 600 + 180); // 30s to 10min
   const winner = Math.random() > 0.5 ? 'A' : 'B';
 
   if (winner === 'A') {
@@ -76,7 +76,7 @@ const labelPlugin = {
   afterDatasetsDraw(chart) {
     const { ctx } = chart;
     ctx.save();
-    const fontSize = window.innerWidth < 768 ? 10 : 14;
+    const fontSize = window.innerWidth < 768 ? 12 : 16;
     ctx.font = `${fontSize}px sans-serif`;
     ctx.fillStyle = '#eee';
     ctx.textAlign = 'center';
@@ -86,9 +86,9 @@ const labelPlugin = {
       const meta = chart.getDatasetMeta(2);
       const index = chart.data.datasets[2].data.indexOf(pt);
       const pos = meta.data[index]?.getProps(['x', 'y'], true);
-      const label = pt.raw?.label || '';
+      const label = pt.raw?.frameTime ? `${Math.ceil(pt.raw.frameTime / 60)}m` : ''; // Show frame time
       if (pos) {
-        const offset = 20;
+        const offset = 36;
         const isLeft = pt.x < 0;
         ctx.fillText(label, pos.x + (isLeft ? -offset : offset), pos.y);
       }
@@ -106,7 +106,7 @@ const timelineChart = new Chart(ctx, {
         label: 'Frame Spikes',
         data: points,
         borderColor: '#aaa',
-        borderWidth: 4,
+        borderWidth: 2, // Reduce line thickness
         backgroundColor: 'transparent',
         pointRadius: 0,
         tension: 0
@@ -115,15 +115,10 @@ const timelineChart = new Chart(ctx, {
         label: 'Frame Dots',
         data: highlightPoints,
         showLine: false,
-        pointRadius: 6,
-        pointBackgroundColor: d => {
-          const w = d.raw?.winner;
-          if (w === 'A') return '#3399ff';
-          if (w === 'B') return '#ff4444';
-          return '#ccc';
-        },
+        pointRadius: 12,
+        pointBackgroundColor: 'transparent',
         pointBorderColor: '#fff',
-        pointBorderWidth: 2
+        pointBorderWidth: 1
       },
       {
         label: 'Frame Labels',
