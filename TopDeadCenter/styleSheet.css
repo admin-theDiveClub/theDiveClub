@@ -10,6 +10,8 @@
     --color-secondary-light: rgba(1, 110, 194, 1);
     --color-secondary-lighter: rgba(0, 186, 245, 1);
     --shadow: rgba(0, 0, 0, 1);
+    
+    --color-transparent-dark: rgba(69, 69, 69, 0.25);
 }
 
 @font-face 
@@ -43,8 +45,11 @@ footer
 {
     position: fixed;
     width: 102vw;
-    background-color: var(--color-base-darkest);
+    background-color: var(--color-transparent-dark);
+    backdrop-filter: blur(5px);
     padding: 1cap;
+    z-index: 2000;
+    max-height: 10vh;
 }
 
 .nav-link
