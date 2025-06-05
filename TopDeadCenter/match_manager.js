@@ -177,6 +177,11 @@ function BuildChartData(match)
   return chartPoints;
 }
 
+let isVertical = window.innerWidth < 768; // Vertical if screen size is small (sm), otherwise horizontal
+
+// Update chart container height based on orientation
+const chartContainer = document.getElementById('timeline-chart');
+chartContainer.style.height = isVertical ? '85vh' : '30vh';
 
 //Build the Chart
 function BuildChartO(chartPoints) {
@@ -185,18 +190,17 @@ function BuildChartO(chartPoints) {
   const highlightPoints = [];
 
   chartPoints.forEach((point, index) => {
-    const y = index === 0 ? 0 : point.time / 60;
-    const x = point.winner === match.player_H ? -1 : point.winner === match.player_A ? 1 : 0;
+    const axisTime = index === 0 ? 0 : point.time / 60;
+    const axisValue = point.winner === match.player_H ? -1 : point.winner === match.player_A ? 1 : 0;
 
-    points.push({ x: 0, y });
+    const x = isVertical ? axisValue : axisTime;
+    const y = isVertical ? axisTime : axisValue;
+
+    points.push({ x: isVertical ? 0 : x, y: isVertical ? y : 0 });
     points.push({ x, y, raw: { ...point } });
-    points.push({ x: 0, y });
+    points.push({ x: isVertical ? 0 : x, y: isVertical ? y : 0 });
 
-    highlightPoints.push({
-      x,
-      y,
-      raw: { ...point }
-    });
+    highlightPoints.push({ x, y, raw: { ...point } });
   });
 
   const labelPlugin = {
@@ -213,11 +217,12 @@ function BuildChartO(chartPoints) {
       chart.data.datasets[2].data.forEach((pt, i) => {
         const meta = chart.getDatasetMeta(2);
         const pos = meta.data[i]?.getProps(['x', 'y'], true);
-        const label = pt.raw?.frameTime ? `${Math.round(pt.raw.frameTime / 60)}m` : ''; // label = frame time in minutes
+        const label = pt.raw?.frameTime ? `${Math.round(pt.raw.frameTime / 60)}m` : '';
         if (pos && label) {
           const offset = 32;
-          const isLeft = pt.x < 0;
-          ctx.fillText(label, pos.x + (isLeft ? -offset : offset), pos.y);
+          const offsetX = isVertical ? (pt.x < 0 ? -offset : offset) : 0;
+          const offsetY = isVertical ? 0 : (pt.y < 0 ? offset : -offset);
+          ctx.fillText(label, pos.x + offsetX, pos.y + offsetY);
         }
       });
 
@@ -259,44 +264,82 @@ function BuildChartO(chartPoints) {
       responsive: true,
       maintainAspectRatio: false,
       layout: { padding: 20 },
-      indexAxis: 'y',
+      indexAxis: isVertical ? 'y' : 'x',
       scales: {
-        x: {
-          type: 'linear',
-          min: -2,
-          max: 2,
-          ticks: {
-            color: '#ccc',
-            callback: val =>
-              val === -1 ? match.player_H : val === 1 ? match.player_A : '',
-            stepSize: 1,
-            autoSkip: false,
-            maxRotation: 0,
-            minRotation: 0,
-            font: { size: window.innerWidth < 768 ? 12 : 16 }
-          },
-          grid: {
-            color: '#444',
-            drawOnChartArea: true
-          }
-        },
-        y: {
-          type: 'linear',
-          beginAtZero: true,
-          reverse: true,
-          suggestedMax: Math.max(...chartPoints.map(p => p.time)) / 60,
-          ticks: {
-            color: '#ccc',
-            callback: value => {
-              const hours = Math.floor(value / 60);
-              const minutes = Math.round(value % 60);
-              return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+        x: isVertical
+          ? {
+              type: 'linear',
+              min: -2,
+              max: 2,
+              ticks: {
+                color: '#ccc',
+                callback: val =>
+                  val === -1 ? match.player_H : val === 1 ? match.player_A : '',
+                stepSize: 1,
+                autoSkip: false,
+                maxRotation: 0,
+                minRotation: 0,
+                font: { size: window.innerWidth < 768 ? 12 : 16 }
+              },
+              grid: {
+                color: '#444',
+                drawOnChartArea: true
+              }
             }
-          },
-          grid: {
-            color: '#333'
-          }
-        }
+          : {
+              type: 'linear',
+              beginAtZero: true,
+              reverse: false,
+              suggestedMax: Math.max(...chartPoints.map(p => p.time)) / 60,
+              ticks: {
+                color: '#ccc',
+                callback: value => {
+                  const h = Math.floor(value / 60);
+                  const m = Math.round(value % 60);
+                  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+                }
+              },
+              grid: {
+                color: '#333'
+              }
+            },
+        y: isVertical
+          ? {
+              type: 'linear',
+              beginAtZero: true,
+              reverse: true,
+              suggestedMax: Math.max(...chartPoints.map(p => p.time)) / 60,
+              ticks: {
+                color: '#ccc',
+                callback: value => {
+                  const h = Math.floor(value / 60);
+                  const m = Math.round(value % 60);
+                  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+                }
+              },
+              grid: {
+                color: '#333'
+              }
+            }
+          : {
+              type: 'linear',
+              min: -2,
+              max: 2,
+              ticks: {
+                color: '#ccc',
+                callback: val =>
+                  val === -1 ? match.player_H : val === 1 ? match.player_A : '',
+                stepSize: 1,
+                autoSkip: false,
+                maxRotation: 0,
+                minRotation: 0,
+                font: { size: window.innerWidth < 768 ? 12 : 16 }
+              },
+              grid: {
+                color: '#444',
+                drawOnChartArea: true
+              }
+            }
       },
       plugins: {
         tooltip: {
@@ -361,3 +404,4 @@ function BuildChartO(chartPoints) {
     plugins: [labelPlugin]
   });
 }
+
