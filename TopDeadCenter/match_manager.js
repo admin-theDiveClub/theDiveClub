@@ -209,7 +209,7 @@ function BuildChartO(chartPoints) {
       const { ctx } = chart;
       ctx.save();
       const fontSize = window.innerWidth < 768 ? 10 : 14;
-      ctx.font = `${fontSize}px sans-serif`;
+      ctx.font = `${fontSize}px "Segoe UI", sans-serif`;
       ctx.fillStyle = '#eee';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
