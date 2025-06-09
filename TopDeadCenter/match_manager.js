@@ -41,6 +41,7 @@ async function Initialize()
     BuildChart(match);
 
     UI_UpdateScores();
+    UI_UpdateMatchSummary();
   }
 }
 
@@ -107,6 +108,8 @@ async function OnPayloadReceived (payload)
   BuildChart(match);
   // Update the UI with new scores
   UI_UpdateScores();
+  // Update the match summary
+  UI_UpdateMatchSummary();
 }
 
 /* CHART */
@@ -199,7 +202,8 @@ chartContainer.style.height = isVertical ? '85vh' : '30vh';
 //Build the Chart
 let timelineChart = null; // Store the chart instance globally
 
-function BuildChartObject(chartPoints) {
+function BuildChartObject(chartPoints) 
+{
   const ctx = document.getElementById('timelineChart').getContext('2d');
   const points = [];
   const highlightPoints = [];
@@ -556,4 +560,75 @@ function UI_UpdateScores ()
   document.getElementById('player-A-score').textContent = match.result_A;
   document.getElementById('player-A-apples').textContent = `A : ${match.apples_A}`;
   document.getElementById('player-A-C+').textContent = `C+ : ${match.reverseApples_A}`;
+}
+
+function UI_UpdateMatchSummary ()
+{
+  const scorecardBody = document.getElementById('scorecard-table-body');
+  scorecardBody.innerHTML = ''; // Clear existing rows
+
+  // Dynamically create the header row based on the scorecard
+  const scorecardHeader = document.querySelector('.table thead tr');
+  scorecardHeader.innerHTML = ''; // Clear existing header cells
+
+  const headerCells = ['Player', ...match.scorecard.H.map((_, index) => index + 1)];
+  headerCells.forEach(header => {
+    const th = document.createElement('th');
+    th.className = 'cell-tight';
+    th.textContent = header;
+    scorecardHeader.appendChild(th);
+  });
+
+  // Populate scorecard table
+  ['H', 'A'].forEach(player => {
+    const row = document.createElement('tr');
+    const playerNameCell = document.createElement('td');
+    playerNameCell.textContent = player === 'H' ? players.H.name || 'Player H' : players.A.name || 'Player A';
+    row.appendChild(playerNameCell);
+
+    match.scorecard[player].forEach(score => {
+      const cell = document.createElement('td');
+      cell.textContent = score || '-';
+      row.appendChild(cell);
+    });
+
+    scorecardBody.appendChild(row);
+  });
+
+  // Update match summary table
+  document.getElementById('playerH-name').textContent = players.H.name || 'Player H';
+  document.getElementById('playerA-name').textContent = players.A.name || 'Player A';
+
+  document.getElementById('match-result-playerH').textContent = match.result_H;
+  document.getElementById('match-result-playerA').textContent = match.result_A;
+
+  document.getElementById('match-apples-playerH').textContent = match.apples_H;
+  document.getElementById('match-apples-playerA').textContent = match.apples_A;
+
+  document.getElementById('match-cplus-playerH').textContent = match.reverseApples_H || 0;
+  document.getElementById('match-cplus-playerA').textContent = match.reverseApples_A || 0;
+
+  const winner =
+    match.result_H > match.result_A
+      ? players.H.name || 'Player H'
+      : match.result_A > match.result_H
+      ? players.A.name || 'Player A'
+      : 'Draw';
+  document.getElementById('match-winner').textContent = winner;
+
+  // Update match timing details
+  document.getElementById('match-start-time').textContent = new Date(match.startTime).toLocaleString();
+  document.getElementById('match-end-time').textContent = match.endTime ? new Date(match.endTime).toLocaleString() : 'Ongoing';
+
+  if (match.endTime) {
+    const duration = Math.floor((new Date(match.endTime) - new Date(match.startTime)) / 60000);
+    document.getElementById('match-duration').textContent =
+      duration > 60 ? `${Math.floor(duration / 60)}h ${duration % 60}m` : `${duration} minutes`;
+
+    const averageFrameTime = match.timing.reduce((acc, curr) => acc + curr, 0) / match.timing.length;
+    document.getElementById('match-average-frame-time').textContent = `${Math.round(averageFrameTime / 60)}m`;
+  } else {
+    document.getElementById('match-duration').textContent = 'Ongoing';
+    document.getElementById('match-average-frame-time').textContent = 'N/A';
+  }
 }
