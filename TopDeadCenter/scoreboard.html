@@ -16,90 +16,61 @@
 
     <!-- Custom CSS -->
     <link href="../TopDeadCenter/styleSheet.css" rel="stylesheet">
+    <link href="../TopDeadCenter/styleSheet_scorecard.css" rel="stylesheet">
 
     <!-- Include Chart.js from CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body> 
-
-    <!-- Nav -->
-    <div class="row nav-container">
-        <div class="d-flex justify-content-between w-100">
-            <a href="..">
-                <img src="../resources/drawing_logo_theDiveClub_Alpha.png" style="height: 8vh; object-fit: contain;">
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <i class="bi bi-list" style="font-size: 8vh; color: white;"></i>
-            </button>
-        </div>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="nav-links list-unstyled d-flex justify-content-around flex-wrap">
-                <li><a href="#home" class="nav-link active"><i class="bi bi-house-door"></i> Home</a></li>
-                <li><a href="#profile" class="nav-link"><i class="bi bi-person"></i> Profile</a></li>
-                <li><a href="#scorecard" class="nav-link"><i class="bi bi-card-checklist"></i> Scorecard</a></li>
-                <li class="dropdown">
-                    <a href="#competitions" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-trophy"></i> Competitions</a>
-                    <ul class="dropdown-menu">
-                    <li><a href="#leagues" class="dropdown-item"><i class="bi bi-award"></i> Leagues</a></li>
-                    <li><a href="#tournaments" class="dropdown-item"><i class="bi bi-calendar-event"></i> Tournaments</a></li>
-                    <li><a href="#matches" class="dropdown-item"><i class="bi bi-flag"></i> Matches</a></li>
-                    </ul>
-                </li>
-                <li><a href="#contact" class="nav-link"><i class="bi bi-envelope"></i> Contact</a></li>
-            </ul>
-        </div>
-    </div>
-    <div style="height: 10vh;"></div>
-
     <!-- Main Content -->
     <div class="main">
-        <div class="card rounded" style="background-color: transparent; padding: 1cap;">
+        <div class="card rounded scorecard-container">
             <!-- Scoreboard Cards -->
             <div class="row">
                 <div class="col-sm-6">
-                    <div class="card rounded" style="background-color: transparent; margin: 1cap;">
-                        <div class="card-header text-center">
+                    <div class="card rounded player-card">
+                        <div class="card-header player-header">
                             <div class="d-flex justify-content-center align-items-center">
-                                <img src="../resources/img_pp_test.png" alt="Player Profile" class="rounded-circle" style="width: 10vmax; height: 10vmax; object-fit: cover; border: 0px solid white; margin-right: 1cap; box-shadow: inset 0px 0px 24px 12px rgba(0, 0, 0, 1);">
+                                <img id="player-H-pic" class="player-pic" src="#" alt="Player Profile">
                                 <div>
-                                    <p class="custom-font" style="font-size: 4vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">UV</p>
-                                    <p class="custom-font" style="font-size: 2vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">Yuvan Naidoo</p>
+                                    <p id="player-H-nickname" class="player-nickname">_nickname</p>
+                                    <p id="player-H-name" class="player-name">_fullName</p>
                                 </div>
                             </div>
                         </div>
-                        <div class="card-body text-center" style="box-shadow: inset 0px 0px 96px 24px rgba(0, 0, 0, 1);">
-                            <p class="custom-font" style="font-size: 8vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">99</p>
+                        <div class="card-body player-body">
+                            <p id="player-H-score" class="player-score">99</p>
                             <div class="row">
                                 <div class="col-6">
-                                    <p class="custom-font" style="font-size: 4vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">A : 0</p>
+                                    <p id="player-H-apples" class="player-apples">A : 0</p>
                                 </div>
                                 <div class="col-6">
-                                    <p class="custom-font" style="font-size: 4vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">C<sup>+</sup> : 0</p>
+                                    <p id="player-H-C+" class="player-cplus">C<sup>+</sup> : 0</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-sm-6">
-                    <div class="card rounded" style="background-color: transparent; margin: 1cap;">
-                        <div class="card-header text-center">
+                    <div class="card rounded player-card">
+                        <div class="card-header player-header">
                             <div class="d-flex justify-content-center align-items-center">
-                                <img src="../resources/img_pp_test.png" alt="Player Profile" class="rounded-circle" style="width: 10vmax; height: 10vmax; object-fit: cover; border: 0px solid white; margin-right: 1cap; box-shadow: inset 0px 0px 24px 12px rgba(0, 0, 0, 1);">
+                                <img id="player-A-pic" class="player-pic" src="#" alt="Player Profile">
                                 <div>
-                                    <p class="custom-font" style="font-size: 4vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">UV</p>
-                                    <p class="custom-font" style="font-size: 2vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">Yuvan Naidoo</p>
+                                    <p id="player-A-nickname" class="player-nickname">_nickname</p>
+                                    <p id="player-A-name" class="player-name">_fullName</p>
                                 </div>
                             </div>
                         </div>
-                        <div class="card-body text-center" style="box-shadow: inset 0px 0px 96px 24px rgba(0, 0, 0, 1);">
-                            <p class="custom-font" style="font-size: 8vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">99</p>
+                        <div class="card-body player-body">
+                            <p id="player-A-score" class="player-score">99</p>
                             <div class="row">
                                 <div class="col-6">
-                                    <p class="custom-font" style="font-size: 4vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">A : 0</p>
+                                    <p id="player-A-apples" class="player-apples">A : 0</p>
                                 </div>
                                 <div class="col-6">
-                                    <p class="custom-font" style="font-size: 4vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">C<sup>+</sup> : 0</p>
+                                    <p id="player-A-C+" class="player-cplus">C<sup>+</sup> : 0</p>
                                 </div>
                             </div>
                         </div>
@@ -109,10 +80,9 @@
         </div>
 
         <!-- Match Timeline -->
-        <div id="timeline-chart" class="card rounded" style="background-color: transparent; height: 24vh;">
-            <canvas id="timelineChart" ></canvas>
+        <div id="timeline-chart" class="card rounded timeline-container">
+            <canvas id="timelineChart"></canvas>
         </div>
-
     </div>
 
     <!-- Footer -->
@@ -122,6 +92,7 @@
 
     <script src="../scripts/supaBase_client.js"></script>
     <script src="../TopDeadCenter/match_manager.js"></script>
+    <script src="../TopDeadCenter/backgroundAnimation.js"></script>
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>

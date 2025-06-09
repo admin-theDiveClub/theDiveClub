@@ -16,6 +16,7 @@
 
     <!-- Custom CSS -->
     <link href="../TopDeadCenter/styleSheet.css" rel="stylesheet">
+    <link href="../TopDeadCenter/styleSheet_scorecard.css" rel="stylesheet">
 
     <!-- Include Chart.js from CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -54,62 +55,64 @@
 
     <!-- Main Content -->
     <div class="main">
-        <div class="card rounded" style="background-color: transparent; padding: 1cap;">
+        <div class="card rounded scorecard-container">
             <!-- Scoreboard Cards -->
             <div class="row">
                 <div class="col-sm-6">
-                    <div class="card rounded" style="background-color: transparent; margin: 1cap;">
-                        <div class="card-header text-center">
+                    <div class="card rounded player-card">
+                        <div class="card-header player-header">
                             <div class="d-flex justify-content-center align-items-center">
-                                <img src="../resources/img_pp_test.png" alt="Player Profile" class="rounded-circle" style="width: 10vmax; height: 10vmax; object-fit: cover; border: 0px solid white; margin-right: 1cap; box-shadow: inset 0px 0px 24px 12px rgba(0, 0, 0, 1);">
+                                <img id="player-H-pic" class="player-pic" src="#" alt="Player Profile">
                                 <div>
-                                    <p class="custom-font" style="font-size: 4vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">UV</p>
-                                    <p class="custom-font" style="font-size: 2vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">Yuvan Naidoo</p>
+                                    <p id="player-H-nickname" class="player-nickname">_nickname</p>
+                                    <p id="player-H-name" class="player-name">_fullName</p>
                                 </div>
                             </div>
                         </div>
-                        <div class="card-body text-center" style="box-shadow: inset 0px 0px 96px 24px rgba(0, 0, 0, 1);">
-                            <p class="custom-font" style="font-size: 8vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">99</p>
+                        <div class="card-body player-body">
+                            <p id="player-H-score" class="player-score">99</p>
                             <div class="row">
                                 <div class="col-6">
-                                    <p class="custom-font" style="font-size: 4vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">A : 0</p>
+                                    <p id="player-H-apples" class="player-apples">A : 0</p>
                                 </div>
                                 <div class="col-6">
-                                    <p class="custom-font" style="font-size: 4vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">C<sup>+</sup> : 0</p>
+                                    <p id="player-H-C+" class="player-cplus">C<sup>+</sup> : 0</p>
                                 </div>
                             </div>
-                        </div>                        
-                        <div class="card-footer text-center">                            
-                            <button class="btn btn-primary custom-font" style="font-size: 3vmax;">Point</button>
-                            <button class="btn btn-warning custom-font" style="font-size: 3vmax;">Apple</button>
+                        </div>
+                        <div class="card-footer player-footer">
+                            <button id="btn-player-H-point" class="btn btn-primary player-point-btn">Point</button>
+                            <button id="btn-player-H-Apple" class="btn btn-warning player-apple-btn">Apple</button>
+                            <button id="btn-player-H-cplus" class="btn btn-success player-cplus-btn">C+</button>
                         </div>
                     </div>
                 </div>
                 <div class="col-sm-6">
-                    <div class="card rounded" style="background-color: transparent; margin: 1cap;">
-                        <div class="card-header text-center">
+                    <div class="card rounded player-card">
+                        <div class="card-header player-header">
                             <div class="d-flex justify-content-center align-items-center">
-                                <img src="../resources/img_pp_test.png" alt="Player Profile" class="rounded-circle" style="width: 10vmax; height: 10vmax; object-fit: cover; border: 0px solid white; margin-right: 1cap; box-shadow: inset 0px 0px 24px 12px rgba(0, 0, 0, 1);">
+                                <img id="player-A-pic" class="player-pic" src="#" alt="Player Profile">
                                 <div>
-                                    <p class="custom-font" style="font-size: 4vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">UV</p>
-                                    <p class="custom-font" style="font-size: 2vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">Yuvan Naidoo</p>
+                                    <p id="player-A-nickname" class="player-nickname">_nickname</p>
+                                    <p id="player-A-name" class="player-name">_fullName</p>
                                 </div>
                             </div>
                         </div>
-                        <div class="card-body text-center" style="box-shadow: inset 0px 0px 96px 24px rgba(0, 0, 0, 1);">
-                            <p class="custom-font" style="font-size: 8vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">99</p>
+                        <div class="card-body player-body">
+                            <p id="player-A-score" class="player-score">99</p>
                             <div class="row">
                                 <div class="col-6">
-                                    <p class="custom-font" style="font-size: 4vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">A : 0</p>
+                                    <p id="player-A-apples" class="player-apples">A : 0</p>
                                 </div>
                                 <div class="col-6">
-                                    <p class="custom-font" style="font-size: 4vmax; color: white; text-align: center; margin: 0cap; padding: 0cap;">C<sup>+</sup> : 0</p>
+                                    <p id="player-A-C+" class="player-cplus">C<sup>+</sup> : 0</p>
                                 </div>
                             </div>
-                        </div>                        
-                        <div class="card-footer text-center">                            
-                            <button class="btn btn-primary custom-font" style="font-size: 3vmax;">Point</button>
-                            <button class="btn btn-warning custom-font" style="font-size: 3vmax;">Apple</button>
+                        </div>
+                        <div class="card-footer player-footer">
+                            <button id="btn-player-A-point" class="btn btn-primary player-point-btn">Point</button>
+                            <button id="btn-player-A-Apple" class="btn btn-warning player-apple-btn">Apple</button>
+                            <button id="btn-player-A-cplus" class="btn btn-success player-cplus-btn">C+</button>
                         </div>
                     </div>
                 </div>
@@ -117,10 +120,133 @@
         </div>
 
         <!-- Match Timeline -->
-        <div id="timeline-chart" class="card rounded" style="background-color: transparent; height: 24vh;">
-            <canvas id="timelineChart" ></canvas>
+        <div id="timeline-chart" class="card rounded timeline-container">
+            <canvas id="timelineChart"></canvas>
         </div>
 
+        <!-- Match Summary -->
+        <div class="card rounded match-summary-container">
+            <div class="summary-content">
+                <table class="table table-bordered mt-4" style="font-size: 100%; text-align: center;">
+                    <thead>
+                        <tr>
+                            <th class="cell-tight">Player</th>
+                            <th class="cell-tight">1</th>
+                            <th class="cell-tight">2</th>
+                            <th class="cell-tight">3</th>
+                            <th class="cell-tight">4</th>
+                            <th class="cell-tight">5</th>
+                            <th class="cell-tight">6</th>
+                            <th class="cell-tight">7</th>
+                            <th class="cell-tight">8</th>
+                            <th class="cell-tight">9</th>
+                            <th class="cell-tight">10</th>
+                            <th class="cell-tight">11</th>
+                            <th class="cell-tight">12</th>
+                            <th class="cell-tight">13</th>
+                            <th class="cell-tight">14</th>
+                            <th class="cell-tight">15</th>
+                            <th class="cell-tight">16</th>
+                            <th class="cell-tight">17</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scorecard-table-body">
+                        <!-- Dummy data -->
+                        <tr>
+                            <td class="cell-tight">Player H</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">A</td>
+                            <td class="cell-tight">C</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">A</td>
+                            <td class="cell-tight">C</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">A</td>
+                            <td class="cell-tight">C</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">A</td>
+                            <td class="cell-tight">C</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">A</td>
+                            <td class="cell-tight">C</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">A</td>
+                        </tr>
+                        <tr>
+                            <td class="cell-tight">Player A</td>
+                            <td class="cell-tight">0</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">0</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">0</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">0</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">0</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">0</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">0</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">0</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">0</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th id="playerH-name">Player H</th>
+                            <th id="playerA-name">Player A</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Score</strong></td>
+                            <td id="match-result-playerH" class="fs-4 fw-bold">99</td>
+                            <td id="match-result-playerA" class="fs-4 fw-bold">99</td>
+                        </tr>
+                        <tr>
+                            <td>Apples</td>
+                            <td id="match-apples-playerH">0</td>
+                            <td id="match-apples-playerA">0</td>
+                        </tr>
+                        <tr>
+                            <td>C<sup>+</sup></td>
+                            <td id="match-cplus-playerH">0</td>
+                            <td id="match-cplus-playerA">0</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" class="text-center"><strong>Winner:</strong> <span id="match-winner">Loading...</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <table class="table table-bordered mt-4">
+                    <tbody>
+                        <tr>
+                            <td>Start Time</td>
+                            <td id="match-start-time">Loading...</td>
+                        </tr>
+                        <tr>
+                            <td>End Time</td>
+                            <td id="match-end-time">Loading...</td>
+                        </tr>
+                        <tr>
+                            <td>Match Duration</td>
+                            <td id="match-duration">Loading...</td>
+                        </tr>
+                        <tr>
+                            <td>Average Frame Time</td>
+                            <td id="match-average-frame-time">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <!-- Footer -->

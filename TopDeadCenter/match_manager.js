@@ -34,8 +34,13 @@ async function Initialize()
     match = matchData;
     var subscription = await SubscribeToUpdates(matchID);
     console.log('Subscribed to match updates:', subscription);
+    
+    await PopulatePlayerData(match);    
+    await UI_UpdatePlayerProfiles();
 
     BuildChart(match);
+
+    UI_UpdateScores();
   }
 }
 
@@ -97,16 +102,21 @@ async function OnPayloadReceived (payload)
 {
   console.log('Change received!', payload.new);
   //CODE
+  match = payload.new;
+  // Update the chart with new data
+  BuildChart(match);
+  // Update the UI with new scores
+  UI_UpdateScores();
 }
 
+/* CHART */
 // Prepare data for the chart
 var allPoints = [];
 
 function BuildChart (match)
 {
   var chartData = BuildChartData(match);
-  console.log('Chart data built:', chartData);
-  BuildChartO(chartData);
+  BuildChartObject(chartData);
 }
 
 function BuildChartData(match) 
@@ -115,6 +125,9 @@ function BuildChartData(match)
   const chartPoints = [];
   const runningScores = { H: 0, A: 0 };
   const runningApples = { H: 0, A: 0 };
+
+  // Ensure timing is valid
+  const timing = Array.isArray(match.timing) ? match.timing : null;
 
   // Start Point
   const startPoint = 
@@ -134,7 +147,7 @@ function BuildChartData(match)
     if (scorecard.H[i] != 0)
     {
       runningScores.H++; 
-      winner = match.player_H;
+      winner = players.H.name || match.player_H;
       
       if (scorecard.H[i] == 'A')
       {
@@ -143,7 +156,7 @@ function BuildChartData(match)
     } else if (scorecard.A[i] != 0)
     {
       runningScores.A++;
-      winner = match.player_A;
+      winner = players.A.name || match.player_A;
       
       if (scorecard.A[i] == 'A')
       {
@@ -154,8 +167,8 @@ function BuildChartData(match)
     var newChartPoint = 
     {
       winner: winner,
-      time: match.timing.slice(0, i + 1).reduce((acc, curr) => acc + curr, 0), // Sum of all times up to the current frame
-      frameTime: match.timing[i] || 0, // Save timing[i] as frameTime
+      time: timing ? timing.slice(0, i + 1).reduce((acc, curr) => acc + curr, 0) : i + 1, // Use index if timing is null
+      frameTime: timing ? timing[i] || 0 : 0, // Use 0 if timing is null
       scores: { H: runningScores.H, A: runningScores.A },
       apples: { H: runningApples.H, A: runningApples.A }
     };
@@ -167,7 +180,7 @@ function BuildChartData(match)
   const endPoint = 
   {
     winner: null,
-    time: Math.floor((new Date(match.endTime) - new Date(match.startTime)) / 1000), // Calculate difference in seconds
+    time: timing ? Math.floor((new Date(match.endTime) - new Date(match.startTime)) / 1000) : scorecard.H.length, // Use scorecard length if timing is null
     frameTime: 0, // Add frameTime property
     scores: runningScores,
     apples: runningApples
@@ -184,14 +197,17 @@ const chartContainer = document.getElementById('timeline-chart');
 chartContainer.style.height = isVertical ? '85vh' : '30vh';
 
 //Build the Chart
-function BuildChartO(chartPoints) {
+let timelineChart = null; // Store the chart instance globally
+
+function BuildChartObject(chartPoints) {
   const ctx = document.getElementById('timelineChart').getContext('2d');
   const points = [];
   const highlightPoints = [];
+  const borderColors = []; // Array to store border colors for each point
 
   chartPoints.forEach((point, index) => {
     const axisTime = index === 0 ? 0 : point.time / 60;
-    const axisValue = point.winner === match.player_H ? -1 : point.winner === match.player_A ? 1 : 0;
+    const axisValue = point.winner === players.H.name ? -1 : point.winner === players.A.name ? 1 : 0;
 
     const x = isVertical ? axisValue : axisTime;
     const y = isVertical ? axisTime : axisValue;
@@ -200,7 +216,17 @@ function BuildChartO(chartPoints) {
     points.push({ x, y, raw: { ...point } });
     points.push({ x: isVertical ? 0 : x, y: isVertical ? y : 0 });
 
+    // Determine color based on scorecard value
+    const scoreH = match.scorecard.H[index] || 0;
+    const scoreA = match.scorecard.A[index] || 0;
+    const borderColor = scoreH === "A" || scoreA === "A"
+      ? 'rgba(230, 161, 0, 1)' // Yellow for "A"
+      : scoreH === "C" || scoreA === "C"
+      ? 'rgba(0, 200, 0, 1)' // Green for "C"
+      : '#fff'; // White for others
+
     highlightPoints.push({ x, y, raw: { ...point } });
+    borderColors.push(borderColor); // Add border color to the array
   });
 
   const labelPlugin = {
@@ -230,7 +256,12 @@ function BuildChartO(chartPoints) {
     }
   };
 
-  new Chart(ctx, {
+  // Destroy the existing chart instance if it exists
+  if (timelineChart) {
+    timelineChart.destroy();
+  }
+
+  timelineChart = new Chart(ctx, {
     type: 'line',
     data: {
       datasets: [
@@ -249,7 +280,7 @@ function BuildChartO(chartPoints) {
           showLine: false,
           pointRadius: 12,
           pointBackgroundColor: 'transparent',
-          pointBorderColor: '#fff',
+          pointBorderColor: borderColors, // Apply dynamic border colors
           pointBorderWidth: 1
         },
         {
@@ -274,7 +305,7 @@ function BuildChartO(chartPoints) {
               ticks: {
                 color: '#ccc',
                 callback: val =>
-                  val === -1 ? match.player_H : val === 1 ? match.player_A : '',
+                  val === -1 ? players.H.name : val === 1 ? players.A.name : '',
                 stepSize: 1,
                 autoSkip: false,
                 maxRotation: 0,
@@ -328,7 +359,7 @@ function BuildChartO(chartPoints) {
               ticks: {
                 color: '#ccc',
                 callback: val =>
-                  val === -1 ? match.player_H : val === 1 ? match.player_A : '',
+                  val === -1 ? players.H.name : val === 1 ? players.A.name : '',
                 stepSize: 1,
                 autoSkip: false,
                 maxRotation: 0,
@@ -362,9 +393,9 @@ function BuildChartO(chartPoints) {
               if (ctx.dataIndex === chartPoints.length - 1) {
                 const finalWinner =
                   match.result_H > match.result_A
-                    ? match.player_H
+                    ? players.H.name
                     : match.result_A > match.result_H
-                    ? match.player_A
+                    ? players.A.name
                     : 'Draw';
                 const frameEndTime = new Date(match.endTime).toLocaleString();
                 const matchDuration = Math.floor(
@@ -405,3 +436,124 @@ function BuildChartO(chartPoints) {
   });
 }
 
+/*
+To Do:
+- Update UI with match data
+- Add match controls
+  - Lag (Home/Away)
+  - Timer (Start/Continue, Pause, Restart Frame, End Match, Restart Match)
+  - Free Play, Race To/Best of, Fixed Frame Count
+- Add final scores to chart and prep chart for screenshot output
+- Connect buttons to match controls
+*/
+
+
+/* PLAYERS */
+//Get Player Profiles
+var players = 
+{
+  H:
+  {
+    anonymous: true,
+    id: null,
+    username: null,
+    name: null,
+    nickname: null    
+  },
+  A:
+  {
+    anonymous: true,
+    id: null,
+    username: null,
+    name: null,
+    nickname: null    
+  }
+}
+
+async function PopulatePlayerData (match)
+{
+  response_H = await GetPlayerProfiles(match.player_H);
+  if (response_H)
+  {
+    players.H.anonymous = false;
+    players.H.id = response_H.id;
+    players.H.username = response_H.username;
+    players.H.name = response_H.surname ? `${response_H.name} ${response_H.surname}` : response_H.name;
+    players.H.nickname = response_H.nickname;
+  } else 
+  {
+    players.H.name = match.player_H;
+    players.H.username = match.player_H;
+  }
+
+  response_A = await GetPlayerProfiles(match.player_A);
+  if (response_A)
+  {
+    players.A.anonymous = false;
+    players.A.id = response_A.id;
+    players.A.username = response_A.username;
+    players.A.name = response_A.surname ? `${response_A.name} ${response_A.surname}` : response_A.name;
+    players.A.nickname = response_A.nickname;
+  } else
+  {
+    players.A.name = match.player_A;
+    players.A.username = match.player_A;
+  }
+
+  console.log("Players:", players);
+}
+
+async function GetPlayerProfiles(playerID)
+{  
+  var response = null;
+
+  if (/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(playerID)) 
+  {
+    response = await supabase.from('tbl_players').select('*').eq('id', playerID);
+  } 
+  else 
+  {
+    response = await supabase.from('tbl_players').select('*').eq('username', playerID);
+  }
+
+  return response.data[0];
+}
+
+
+/* UI */
+//UI
+async function UI_UpdatePlayerProfiles ()
+{
+  document.getElementById('player-H-nickname').textContent = players.H.nickname || players.H.username || 'Anonymous';
+  document.getElementById('player-H-name').textContent = players.H.name || players.H.username || 'Unknown Player';
+
+  const r_H = await supabase.storage.from('bucket-profile-pics').getPublicUrl(players.H.id);
+  if (r_H.data && r_H.data.publicUrl) {
+    const imgElement_H = document.getElementById('player-H-pic');
+    if (imgElement_H) {
+      imgElement_H.src = r_H.data.publicUrl;
+    }
+  }
+
+  document.getElementById('player-A-nickname').textContent = players.A.nickname || players.A.username || 'Anonymous';
+  document.getElementById('player-A-name').textContent = players.A.name || players.A.username || 'Unknown Player';
+
+  const r_A = await supabase.storage.from('bucket-profile-pics').getPublicUrl(players.A.id);
+  if (r_A.data && r_A.data.publicUrl) {
+    const imgElement_A = document.getElementById('player-A-pic');
+    if (imgElement_A) {
+      imgElement_A.src = r_A.data.publicUrl;
+    }
+  }
+}
+
+function UI_UpdateScores ()
+{
+  document.getElementById('player-H-score').textContent = match.result_H;
+  document.getElementById('player-H-apples').textContent = `A : ${match.apples_H}`;
+  document.getElementById('player-H-C+').textContent = `C+ : ${match.reverseApples_H}`;
+
+  document.getElementById('player-A-score').textContent = match.result_A;
+  document.getElementById('player-A-apples').textContent = `A : ${match.apples_A}`;
+  document.getElementById('player-A-C+').textContent = `C+ : ${match.reverseApples_A}`;
+}
