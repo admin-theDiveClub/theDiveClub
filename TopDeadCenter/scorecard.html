@@ -70,7 +70,16 @@
                             </div>
                         </div>
                         <div class="card-body player-body">
-                            <p id="player-H-score" class="player-score">99</p>
+                            <div class="row">
+                                <div class="col-4"></div>
+                                <div class="col-4">
+                                    <p id="player-H-score" class="player-score">99</p>
+                                </div>
+                                <div class="col-4">                                    
+                                    <img id="player-H-break-indicator" class="break-indicator" src="../resources/icon_break.png" alt="Break Indicator" style="width: 4cap; margin-top: 1.5cap;">
+                                    <p id="player-H-break" class="player-break">Break</p>
+                                </div>
+                            </div>
                             <div class="row">
                                 <div class="col-6">
                                     <p id="player-H-apples" class="player-apples">A : 0</p>
@@ -99,7 +108,17 @@
                             </div>
                         </div>
                         <div class="card-body player-body">
-                            <p id="player-A-score" class="player-score">99</p>
+                            <div class="row">
+                                <div class="col-4"></div>
+                                <div class="col-4">
+                                    <p id="player-A-score" class="player-score">99</p>
+                                </div>
+                                <div class="col-4">                                    
+                                    <img id="player-A-break-indicator" class="break-indicator" src="../resources/icon_break.png" alt="Break Indicator" style="width: 4cap; margin-top: 1.5cap;">
+                                    <p id="player-A-break" class="player-break">Break</p>
+                                </div>
+                            </div>
+
                             <div class="row">
                                 <div class="col-6">
                                     <p id="player-A-apples" class="player-apples">A : 0</p>
@@ -127,7 +146,7 @@
         <!-- Match Summary -->
         <div class="card rounded match-summary-container">
             <div class="summary-content">
-                <table class="table table-bordered mt-4" style="font-size: 100%; text-align: center;">
+                <table class="table table-bordered" style="font-size: 50%; text-align: center;">
                     <thead>
                         <tr>
                             <th class="cell-tight">Player</th>

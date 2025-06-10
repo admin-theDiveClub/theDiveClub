@@ -18,6 +18,10 @@
 {
     font-family: 'CustomFont';
     src: url('../resources/Rushfordclean-rgz89.otf') format('opentype');
+    font-display: swap; /* Ensures text is displayed immediately */
+    ascent-override: 60%; /* Adjusts the ascent to reduce extra space */
+    descent-override: 0%; /* Adjusts the descent to reduce extra space */
+    line-gap-override: 0%; /* Removes additional line gap */
 }
     
 .custom-font 
@@ -62,15 +66,25 @@ footer
     max-height: 10vh;
 }
 
+.nav-links
+{    
+    backdrop-filter: blur(10px) !important;
+    background-color: var(--color-transparent-dark);
+}
+
 .nav-link
 {
     margin: 1cap;
     color: var(--color-base-light);
+    background-color: var(--color-base-darkest);
+    padding: 1cap;
+    border-radius: 8px;
 }
 
 .active
 {
-    color: var(--color-primary) !important;
+    color: var(--color-base-light) !important;
+    background-color: var(--color-primary);
 }
 
 .main

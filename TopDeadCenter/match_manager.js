@@ -238,7 +238,7 @@ function BuildChartObject(chartPoints)
     afterDatasetsDraw(chart) {
       const { ctx } = chart;
       ctx.save();
-      const fontSize = window.innerWidth < 768 ? 10 : 14;
+      const fontSize = window.innerWidth < 768 ? 8 : 10;
       ctx.font = `${fontSize}px "Segoe UI", sans-serif`;
       ctx.fillStyle = '#eee';
       ctx.textAlign = 'center';
@@ -249,7 +249,7 @@ function BuildChartObject(chartPoints)
         const pos = meta.data[i]?.getProps(['x', 'y'], true);
         const label = pt.raw?.frameTime ? `${Math.round(pt.raw.frameTime / 60)}m` : '';
         if (pos && label) {
-          const offset = 32;
+          const offset = 20;
           const offsetX = isVertical ? (pt.x < 0 ? -offset : offset) : 0;
           const offsetY = isVertical ? 0 : (pt.y < 0 ? offset : -offset);
           ctx.fillText(label, pos.x + offsetX, pos.y + offsetY);
@@ -282,7 +282,7 @@ function BuildChartObject(chartPoints)
           label: 'Frame Dots',
           data: highlightPoints,
           showLine: false,
-          pointRadius: 12,
+          pointRadius: 8,
           pointBackgroundColor: 'transparent',
           pointBorderColor: borderColors, // Apply dynamic border colors
           pointBorderWidth: 1
@@ -314,7 +314,7 @@ function BuildChartObject(chartPoints)
                 autoSkip: false,
                 maxRotation: 0,
                 minRotation: 0,
-                font: { size: window.innerWidth < 768 ? 12 : 16 }
+                font: { size: window.innerWidth < 768 ? 10 : 12 } // Reduced font size
               },
               grid: {
                 color: '#444',
@@ -332,7 +332,8 @@ function BuildChartObject(chartPoints)
                   const h = Math.floor(value / 60);
                   const m = Math.round(value % 60);
                   return h > 0 ? `${h}h ${m}m` : `${m}m`;
-                }
+                },
+                font: { size: window.innerWidth < 768 ? 10 : 12 } // Reduced font size
               },
               grid: {
                 color: '#333'
@@ -350,7 +351,8 @@ function BuildChartObject(chartPoints)
                   const h = Math.floor(value / 60);
                   const m = Math.round(value % 60);
                   return h > 0 ? `${h}h ${m}m` : `${m}m`;
-                }
+                },
+                font: { size: window.innerWidth < 768 ? 10 : 12 } // Reduced font size
               },
               grid: {
                 color: '#333'
@@ -368,7 +370,7 @@ function BuildChartObject(chartPoints)
                 autoSkip: false,
                 maxRotation: 0,
                 minRotation: 0,
-                font: { size: window.innerWidth < 768 ? 12 : 16 }
+                font: { size: window.innerWidth < 768 ? 10 : 12 } // Reduced font size
               },
               grid: {
                 color: '#444',
@@ -528,7 +530,8 @@ async function GetPlayerProfiles(playerID)
 //UI
 async function UI_UpdatePlayerProfiles ()
 {
-  document.getElementById('player-H-nickname').textContent = players.H.nickname || players.H.username || 'Anonymous';
+  document.getElementById('player-H-nickname').textContent = 
+    (players.H.nickname || players.H.username || 'Anonymous') + (match.lag === "Home" ? " *" : "");
   document.getElementById('player-H-name').textContent = players.H.name || players.H.username || 'Unknown Player';
 
   const r_H = await supabase.storage.from('bucket-profile-pics').getPublicUrl(players.H.id);
@@ -539,7 +542,8 @@ async function UI_UpdatePlayerProfiles ()
     }
   }
 
-  document.getElementById('player-A-nickname').textContent = players.A.nickname || players.A.username || 'Anonymous';
+  document.getElementById('player-A-nickname').textContent = 
+    (players.A.nickname || players.A.username || 'Anonymous') + (match.lag === "Away" ? " *" : "");
   document.getElementById('player-A-name').textContent = players.A.name || players.A.username || 'Unknown Player';
 
   const r_A = await supabase.storage.from('bucket-profile-pics').getPublicUrl(players.A.id);
@@ -583,11 +587,15 @@ function UI_UpdateMatchSummary ()
   ['H', 'A'].forEach(player => {
     const row = document.createElement('tr');
     const playerNameCell = document.createElement('td');
-    playerNameCell.textContent = player === 'H' ? players.H.name || 'Player H' : players.A.name || 'Player A';
+    playerNameCell.className = 'cell-tight';
+    playerNameCell.textContent = player === 'H' 
+      ? (players.H.name || 'Player H') + (match.lag === "Home" ? " *" : "") 
+      : (players.A.name || 'Player A') + (match.lag === "Away" ? " *" : "");
     row.appendChild(playerNameCell);
 
     match.scorecard[player].forEach(score => {
       const cell = document.createElement('td');
+      cell.className = 'cell-tight';
       cell.textContent = score || '-';
       row.appendChild(cell);
     });
@@ -596,8 +604,10 @@ function UI_UpdateMatchSummary ()
   });
 
   // Update match summary table
-  document.getElementById('playerH-name').textContent = players.H.name || 'Player H';
-  document.getElementById('playerA-name').textContent = players.A.name || 'Player A';
+  document.getElementById('playerH-name').textContent = 
+    (players.H.name || 'Player H') + (match.lag === "Home" ? " *" : "");
+  document.getElementById('playerA-name').textContent = 
+    (players.A.name || 'Player A') + (match.lag === "Away" ? " *" : "");
 
   document.getElementById('match-result-playerH').textContent = match.result_H;
   document.getElementById('match-result-playerA').textContent = match.result_A;

@@ -1,14 +1,14 @@
 /* General container styling */
 .scorecard-container {
     background-color: transparent;
-    padding: 1rem;
+    padding: 0cap;
     font-family: "CustomFont", sans-serif; /* Apply custom font */
 }
 
 /* Player card styling */
 .player-card {
     background-color: transparent;
-    margin: 1rem;
+    margin: 0cap;
     font-family: "CustomFont", sans-serif; /* Apply custom font */
 }
 
@@ -50,7 +50,7 @@
 }
 
 .player-score {
-    font-size: 8vmax;
+    font-size: 6cap;
     color: white;
     text-align: center;
     margin: 0;
@@ -60,7 +60,7 @@
 
 .player-apples,
 .player-cplus {
-    font-size: 4vmax;
+    font-size: 2cap;
     color: white;
     text-align: center;
     margin: 0;
@@ -70,6 +70,7 @@
 
 .player-footer {
     text-align: center;
+
 }
 
 .player-point-btn,
@@ -94,9 +95,21 @@ th, tr, td
 .cell-tight
 {
     padding: 0cap !important;
+    font-size: 2cap;
 }
 
 table
 {
     background-color: transparent !important;
+}
+
+.player-break
+{
+    color: var(--color-base-light);
+}
+
+.btn-primary
+{
+    margin: 0cap !important;
+    margin-right: 2cap !important;
 }
