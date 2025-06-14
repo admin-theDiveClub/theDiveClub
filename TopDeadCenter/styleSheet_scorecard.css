@@ -8,7 +8,8 @@
 /* Player card styling */
 .player-card {
     background-color: transparent;
-    margin: 0cap;
+    margin: 0.5cap;
+    margin-bottom: 2cap;
     font-family: "CustomFont", sans-serif; /* Apply custom font */
 }
 
@@ -90,6 +91,7 @@ th, tr, td
 {
     background-color: transparent !important;
     color: var(--color-base-light) !important;
+    border: 0.01cap solid var(--color-base-med) !important;
 }
 
 .cell-tight
@@ -101,6 +103,8 @@ th, tr, td
 table
 {
     background-color: transparent !important;
+    text-align: center;
+    font-size: small;
 }
 
 .player-break
@@ -112,4 +116,11 @@ table
 {
     margin: 0cap !important;
     margin-right: 2cap !important;
+}
+
+.matchSettings-heading
+{
+    font-family: "CustomFont", sans-serif; /* Apply custom font */
+    font-size: 3cap; 
+    text-align: center;
 }

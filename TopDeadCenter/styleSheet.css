@@ -69,7 +69,8 @@ footer
 .nav-links
 {    
     backdrop-filter: blur(10px) !important;
-    background-color: var(--color-transparent-dark);
+    background-color: var(--color-base-med);
+    border-radius: 1cap;
 }
 
 .nav-link
