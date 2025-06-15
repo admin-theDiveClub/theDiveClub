@@ -8,8 +8,6 @@
 /* Player card styling */
 .player-card {
     background-color: transparent;
-    margin: 0.5cap;
-    margin-bottom: 2cap;
     font-family: "CustomFont", sans-serif; /* Apply custom font */
 }
 
@@ -18,7 +16,7 @@
 }
 
 .player-pic {
-    width: clamp(8cap, 10vw, 20cap);
+    width: clamp(6cap, 10vw, 20cap);
     object-fit: cover;
     border: 0px solid white;
     margin-right: 2cap;
@@ -27,7 +25,7 @@
 }
 
 .player-nickname {
-    font-size: clamp(4cap, 5vw, 8cap);
+    font-size: clamp(3cap, 5vw, 8cap);
     color: white;
     text-align: center;
     margin: 0;
@@ -36,7 +34,7 @@
 }
 
 .player-name {
-    font-size: clamp(1cap, 5vw, 3cap);
+    font-size: clamp(1cap, 4vw, 3cap);
     color: white;
     text-align: center;
     margin: 0;
@@ -50,7 +48,7 @@
 }
 
 .player-score {
-    font-size: clamp(6cap, 10vw, 20cap);
+    font-size: clamp(5cap, 10vw, 20cap);
     color: white;
     text-align: center;
     margin: 0;
@@ -60,7 +58,7 @@
 
 .player-apples,
 .player-cplus {
-    font-size: clamp(2cap, 6vw, 5cap);
+    font-size: clamp(1cap, 5vw, 5cap);
     color: white;
     text-align: center;
     margin: 0;
@@ -127,4 +125,10 @@ table
 {
     font-size: clamp(2cap, 5vw, 5cap);
     font-weight: 900;
+}
+
+.break-indicator
+{
+    margin-top: clamp(1cap, 2vh, 4cap);
+    width: clamp(1cap, 8vw, 8cap);
 }
