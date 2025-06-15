@@ -34,15 +34,15 @@
         <div class="col-md-8 col-10">
             <div class="card rounded card-nav">
                 <div class="btn-group btn-group-lg d-flex justify-content-center" role="group">
-                    <button type="button" class="btn btn-nav" onclick="location.href='../index.html'">
+                    <button type="button" class="btn btn-nav active">
                         <i class="bi bi-house"></i>
                         <span class="d-none d-md-inline">Home</span>
                     </button>
-                    <button type="button" class="btn btn-nav" onclick="location.href='../accounts/login.html'">
+                    <button type="button" class="btn btn-nav">
                         <i class="bi bi-person"></i>
                         <span class="d-none d-md-inline">Profile</span>
                     </button>
-                    <button type="button" class="btn btn-nav active" onclick="location.href='../matches/create.html'">
+                    <button type="button" class="btn btn-nav" onclick="location.href='../matches/index.html'">
                         <i class="bi bi-trophy"></i>
                         <span class="d-none d-md-inline">Scorecard</span>
                     </button>
@@ -67,90 +67,85 @@
         <div class="col-sm-1"></div>
         <div class="col-sm-10">
 
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card rounded card-component">
-                        <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#collapseMatchControl" aria-expanded="true" aria-controls="collapseMatchControl">
-                            Match Control
-                        </button>
-                        <div id="collapseMatchControl" class="collapse">
-                            <div class="card-body">
+            <div class="card rounded card-component">
+                <div class="card-header" style="font-size: large; font-weight: bold;">
+                    <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#collapseMatchControl" aria-expanded="true" aria-controls="collapseMatchControl">
+                        Match Control
+                    </button>
+                </div>
+                <div id="collapseMatchControl" class="collapse">
+                    <div class="card-body">
+
+                        <p class="input-label">Match Type:</p>                        
         
-                                <p class="input-label">Match Type:</p>                        
-                
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="matchType" id="freePlay" value="freePlay" checked>
-                                        <label class="form-check-label" for="freePlay">
-                                            Free Play
-                                        </label>
-                                    </div>
-                                    
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="matchType" id="raceToBestOf" value="raceToBestOf">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div>
-                                                    <label class="form-check-label" for="raceToBestOf">
-                                                        Race To:
-                                                    </label>
-                                                    <input type="number" class="form-control" id="raceToValue" name="raceToValue" placeholder="Race To" oninput="document.getElementById('bestOfValue').value = this.value">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div>
-                                                    <label class="form-check-label" for="raceToBestOf">
-                                                        Best Of:
-                                                    </label>
-                                                    <input type="number" class="form-control" id="bestOfValue" name="bestOfValue" placeholder="Best Of" oninput="document.getElementById('raceToValue').value = this.value">
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="matchType" id="fixedFrameCount" value="fixedFrameCount">
-                                        <div class="d-flex flex-wrap align-items-center">
-                                            <label class="form-check-label" for="fixedFrameCount">
-                                                Fixed Frame Count:
-                                            </label>
-                                            <input type="number" class="form-control" id="frameCountValue" name="frameCountValue" placeholder="Enter Frame Count">
-                                        </div>
-                                    </div>
-        
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="matchType" id="freePlay" value="freePlay" checked>
+                                <label class="form-check-label" for="freePlay">
+                                    Free Play
+                                </label>
+                            </div>
+                            
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="matchType" id="raceToBestOf" value="raceToBestOf">
                                 <div class="row">
-                                    <p>Lag:</p>
-                                    <select class="form-select" aria-label="Home" id="select-lag">
-                                        <option value="0">Option 1</option>
-                                        <option value="1">Option 2</option>
-                                    </select>
+                                    <div class="col-md-6">
+                                        <div class="d-flex flex-wrap align-items-center">
+                                            <label class="form-check-label me-2" for="raceToBestOf">
+                                                Race To:
+                                            </label>
+                                            <input type="number" class="form-control d-inline-block w-auto mb-2 me-2" id="raceToValue" name="raceToValue" placeholder="Race To" oninput="document.getElementById('bestOfValue').value = this.value">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="d-flex flex-wrap align-items-center">
+                                            <label class="form-check-label me-2" for="raceToBestOf">
+                                                Best Of:
+                                            </label>
+                                            <input type="number" class="form-control d-inline-block w-auto mb-2" id="bestOfValue" name="bestOfValue" placeholder="Best Of" oninput="document.getElementById('raceToValue').value = this.value">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card rounded card-component">
-                        <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#collapseMatchTimer" aria-expanded="true" aria-controls="collapseMatchTimer">
-                            Match Timer
-                        </button>
-                        <div id="collapseMatchTimer" class="collapse">
-                            <div class="card-body">
-                                <button class="btn btn-success" id="btn-timer-start">Start Frame Timer</button>
-                                <button class="btn btn-danger" id="btn-timer-stop">Disable Timer</button>
-                                <p id="time-match-start">Match Started At: 00:00.</p>
-                                <p id="time-frame-start">Frame Started At: 00:00.</p>
-                                <p id="time-frame-last">Last Frame: 00 minutes.</p>
+        
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="matchType" id="fixedFrameCount" value="fixedFrameCount">
+                                <div class="d-flex flex-wrap align-items-center">
+                                    <label class="form-check-label me-2" for="fixedFrameCount">
+                                        Fixed Frame Count:
+                                    </label>
+                                    <input type="number" class="form-control d-inline-block w-auto mb-2" id="frameCountValue" name="frameCountValue" placeholder="Enter Frame Count">
+                                </div>
                             </div>
+
+                        <div class="row">
+                            <p>Lag:</p>
+                            <select class="form-select" aria-label="Home" id="select-lag">
+                                <option value="0">Option 1</option>
+                                <option value="1">Option 2</option>
+                            </select>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <div class="card rounded card-component">
+                <div class="card-header" data-bs-toggle="collapse" data-bs-target="#collapseMatchTimer" aria-expanded="true" aria-controls="collapseMatchTimer" style="cursor: pointer;">
+                    Match Timer
+                </div>
+                <div id="collapseMatchTimer" class="collapse">
+                    <div class="card-body">
+                        <button class="btn btn-success" id="btn-timer-start">Start Frame Timer</button>
+                        <button class="btn btn-danger" id="btn-timer-stop">Disable Timer</button>
+                        <p id="time-frame-start">Frame Started At: 00:00.</p>
+                        <p id="time-frame-last">Last Frame: 00 minutes.</p>
+                    </div>
+                </div>
+            </div>
 
             <div class="row">
                 <div class="col-sm-6">
                     <div class="card rounded text-center card-component">
-                        <div class="card-header" id="lbl-H-name" style="font-size: x-large; font-weight: bold;">Player_H</div>
+                        <div class="card-header" id="lbl-H-name" style="font-size: large; font-weight: bold;">Player_H</div>
                         <div class="card-body">
                             <p style="font-size: 4cap; font-weight: bold; padding: 0.25cap !important;" id="lbl-H-score">000</p>
                             <div class="row">
@@ -171,7 +166,7 @@
 
                 <div class="col-sm-6">
                     <div class="card rounded text-center card-component">
-                        <div class="card-header" id="lbl-A-name" style="font-size: x-large; font-weight: bold;">Player_A</div>
+                        <div class="card-header" id="lbl-A-name" style="font-size: large; font-weight: bold;">Player_A</div>
                         <div class="card-body">
                             <p style="font-size: 4cap; font-weight: bold; padding: 0.25cap !important;" id="lbl-A-score">000</p>
                             <div class="row">
@@ -204,11 +199,9 @@
                 <div class="card-body" style="overflow-x: auto; font-size: 1.25cap;">
                     <table class="table" id="tbl-scorecard">                        
                     </table>
-                    <p id="lbl-match-winner">Winner: -</p>
-                    <p id="lbl-match-startTime">Match Start Time: Not Set</p>
-                    <p id="lbl-match-endTime">Match End Time: Not Set</p>
                 </div>
             </div>
+
         </div>
         <div class="col-sm-1"></div>
     </div>

@@ -40,6 +40,16 @@ body
     background-attachment: fixed;
 }
 
+body::-webkit-scrollbar {
+    width: 4px;
+    background-color: transparent; /* Transparent background for the scrollbar */
+}
+
+body::-webkit-scrollbar-thumb {
+    background-color: var(--color-base-med); /* Dark color for the scrollbar thumb */
+    border-radius: 12px; /* Rounded corners for the scrollbar thumb */
+}
+
 html, body
 {
     width: 100%; /* Prevent white bars on iPhones in landscape mode */
@@ -61,9 +71,9 @@ footer
     width: 102vw;
     background-color: var(--color-transparent-dark);
     backdrop-filter: blur(5px);
-    padding: 1cap 2cap;
+    padding: clamp(0cap, 0.5vmax, 4cap) clamp(1cap, 2vmax, 4cap);
     z-index: 2000;
-    max-height: 8vh;
+    max-height: clamp(2cap, 10vmax, 8cap);
 }
 
 .nav-links
@@ -110,6 +120,7 @@ footer
     color: var(--color-base-light);
     background-color: transparent !important;
     padding: 2cap;
+    margin-bottom: 1cap;
 }
 
 .input-field
