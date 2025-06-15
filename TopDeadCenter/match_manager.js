@@ -549,6 +549,7 @@ async function UI_UpdatePlayerProfiles ()
   document.getElementById('player-H-name').textContent = players.H.name || players.H.username || 'Unknown Player';
 
   const r_H = await supabase.storage.from('bucket-profile-pics').getPublicUrl(players.H.id);
+  console.log('Profile Pic URL:', r_H.data.publicUrl);
   if (r_H.data && r_H.data.publicUrl && !r_H.data.publicUrl.endsWith('null')) 
   {
     const imgElement_H = document.getElementById('player-H-pic');
