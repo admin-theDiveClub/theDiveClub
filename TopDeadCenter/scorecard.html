@@ -28,17 +28,17 @@
     <div class="row nav-container">
         <div class="d-flex justify-content-between w-100">
             <a href="..">
-            <img src="../resources/drawing_logo_theDiveClub_Alpha.png" style="height: 8vh; object-fit: contain;">
+                <img src="../resources/drawing_logo_theDiveClub_Alpha.png" style="height: 6vh; object-fit: contain;"></img>
             </a>
             <div class="d-flex">
-            <!-- Match Settings Button -->
-            <button class="navbar-toggler me-2" type="button" data-bs-toggle="collapse" data-bs-target="#matchSettingsNav" aria-controls="matchSettingsNav" aria-expanded="false" aria-label="Toggle match settings">
-                <i class="bi bi-gear" style="font-size: 6vh; color: white;"></i>
-            </button>
-            <!-- Navbar Button -->
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <i class="bi bi-list" style="font-size: 8vh; color: white;"></i>
-            </button>
+                <!-- Match Settings Button -->
+                <button class="navbar-toggler me-2" type="button" data-bs-toggle="collapse" data-bs-target="#matchSettingsNav" aria-controls="matchSettingsNav" aria-expanded="false" aria-label="Toggle match settings">
+                    <i class="bi bi-gear" style="font-size: 3vh; color: white;"></i>
+                </button>
+                <!-- Navbar Button -->
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <i class="bi bi-list" style="font-size: 4vh; color: white;"></i>
+                </button>
             </div>
         </div>
         <!-- Match Settings Menu -->
@@ -122,7 +122,7 @@
                                 </div>
                             </div>
 
-                            <button class="btn btn-info">Start Match</button>
+                            <button id="btn-timer-startMatch" class="btn btn-info">Start Match</button>
 
                         </div>
                     </div>
@@ -147,7 +147,7 @@
             </ul>
         </div>
     </div>
-    <div style="height: 10vh;"></div>
+    <div style="height: 8vh;"></div>
 
     <!-- Main Content -->
     <div class="main">
@@ -158,7 +158,7 @@
                     <div class="card rounded player-card">
                         <div class="card-header player-header">
                             <div class="d-flex justify-content-center align-items-center">
-                                <img id="player-H-pic" class="player-pic" src="#" alt="Player Profile">
+                                <img id="player-H-pic" class="player-pic" src="../resources/icon_user_default.png" alt="Player Profile">
                                 <div>
                                     <p id="player-H-nickname" class="player-nickname">_nickname</p>
                                     <p id="player-H-name" class="player-name">_fullName</p>
@@ -171,9 +171,11 @@
                                 <div class="col-4">
                                     <p id="player-H-score" class="player-score">99</p>
                                 </div>
-                                <div class="col-4">                                    
-                                    <img id="player-H-break-indicator" class="break-indicator" src="../resources/icon_break.png" alt="Break Indicator" style="width: 4cap; margin-top: 1.5cap;">
-                                    <p id="player-H-break" class="player-break">Break</p>
+                                <div class="col-4">
+                                    <div id="player-H-break-indicator-container" class="break-indicator-container">                                   
+                                        <img id="player-H-break-indicator" class="break-indicator" src="../resources/icon_break.png" alt="Break Indicator" style="width: 4cap; margin-top: 1.5cap;">
+                                        <p id="player-H-break" class="player-break">Break</p>
+                                    </div>
                                 </div>
                             </div>
                             <div class="row">
@@ -210,8 +212,10 @@
                                     <p id="player-A-score" class="player-score">99</p>
                                 </div>
                                 <div class="col-4">                                    
-                                    <img id="player-A-break-indicator" class="break-indicator" src="../resources/icon_break.png" alt="Break Indicator" style="width: 4cap; margin-top: 1.5cap;">
-                                    <p id="player-A-break" class="player-break">Break</p>
+                                    <div id="player-A-break-indicator-container" class="break-indicator-container">                                   
+                                        <img id="player-A-break-indicator" class="break-indicator" src="../resources/icon_break.png" alt="Break Indicator" style="width: 4cap; margin-top: 1.5cap;">
+                                        <p id="player-A-break" class="player-break">Break</p>
+                                    </div>
                                 </div>
                             </div>
 
@@ -232,6 +236,15 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Match Timer -->
+        <div class="card rounded timer-container card-component">
+            <h2 class="text-center">Match Timer</h2>
+            <h2 class="timer-display text-center">
+                <span id="timer-hours">00</span>:<span id="timer-minutes">00</span>:<span id="timer-seconds">00</span>
+            </h2>
+            <p id="timer-listFrameTimes" class="text-center">00, 00, 00, 00</p>
         </div>
 
         <!-- Match Timeline -->
@@ -325,8 +338,8 @@
                     <tbody>
                         <tr>
                             <td><strong>Score</strong></td>
-                            <td id="match-result-playerH" class="fs-4 fw-bold">99</td>
-                            <td id="match-result-playerA" class="fs-4 fw-bold">99</td>
+                            <td id="match-result-playerH" class="match-result">99</td>
+                            <td id="match-result-playerA" class="match-result">99</td>
                         </tr>
                         <tr>
                             <td>Apples</td>

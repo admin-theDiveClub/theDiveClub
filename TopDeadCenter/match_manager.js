@@ -104,6 +104,18 @@ async function OnPayloadReceived (payload)
   console.log('Change received!', payload.new);
   //CODE
   match = payload.new;
+
+  //Check Player Profiles for consistency
+  if (match.player_A != players.A.username || match.player_H != players.H.username)
+  {
+    // Update player data if usernames have changed
+    await PopulatePlayerData(match);
+    await UI_UpdatePlayerProfiles();
+  }
+
+  //Update Lag
+  console.log(GetCurrentLag());
+  
   // Update the chart with new data
   BuildChart(match);
   // Update the UI with new scores
@@ -537,7 +549,8 @@ async function UI_UpdatePlayerProfiles ()
   document.getElementById('player-H-name').textContent = players.H.name || players.H.username || 'Unknown Player';
 
   const r_H = await supabase.storage.from('bucket-profile-pics').getPublicUrl(players.H.id);
-  if (r_H.data && r_H.data.publicUrl) {
+  if (r_H.data && r_H.data.publicUrl && !r_H.data.publicUrl.endsWith('null')) 
+  {
     const imgElement_H = document.getElementById('player-H-pic');
     if (imgElement_H) {
       imgElement_H.src = r_H.data.publicUrl;
@@ -549,7 +562,8 @@ async function UI_UpdatePlayerProfiles ()
   document.getElementById('player-A-name').textContent = players.A.name || players.A.username || 'Unknown Player';
 
   const r_A = await supabase.storage.from('bucket-profile-pics').getPublicUrl(players.A.id);
-  if (r_A.data && r_A.data.publicUrl) {
+  if (r_A.data && r_A.data.publicUrl && !r_A.data.publicUrl.endsWith('null')) 
+  {
     const imgElement_A = document.getElementById('player-A-pic');
     if (imgElement_A) {
       imgElement_A.src = r_A.data.publicUrl;
@@ -566,10 +580,33 @@ function UI_UpdateScores ()
   document.getElementById('player-A-score').textContent = match.result_A;
   document.getElementById('player-A-apples').textContent = `A : ${match.apples_A}`;
   document.getElementById('player-A-C+').textContent = `C+ : ${match.reverseApples_A}`;
+
+  UpdateLagUI();
 }
 
 function UI_UpdateMatchSummary ()
 {
+  //Update Timer
+  const timerListElement = document.getElementById('timer-listFrameTimes');
+  timerListElement.innerHTML = ''; // Clear existing content
+
+  const timingText = match.timing.map(time => {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    return `${minutes}'${seconds}`;
+  }).join(', ');
+  timerListElement.textContent = timingText;
+
+  const totalMatchTime = match.timing.reduce((acc, curr) => acc + curr, 0);
+  const totalHours = Math.floor(totalMatchTime / 3600);
+  const totalMinutes = Math.floor((totalMatchTime % 3600) / 60);
+  const totalSeconds = totalMatchTime % 60;
+
+  document.getElementById('timer-hours').textContent = String(totalHours).padStart(2, '0');
+  document.getElementById('timer-minutes').textContent = String(totalMinutes).padStart(2, '0');
+  document.getElementById('timer-seconds').textContent = String(totalSeconds).padStart(2, '0');
+
+  //Scorecard Simple
   const scorecardBody = document.getElementById('scorecard-table-body');
   scorecardBody.innerHTML = ''; // Clear existing rows
   const scorecardHeader = document.querySelector('.table thead tr');
@@ -579,54 +616,76 @@ function UI_UpdateMatchSummary ()
 
   if (window.innerWidth < 768) 
   {
-  // Vertical table for small screens
-  const headerRow = document.createElement('tr');
+    // Vertical table for small screens
+    const headerRow = document.createElement('tr');
 
-  const frameIndexHeader = document.createElement('th');
-  frameIndexHeader.className = 'cell-tight';
-  frameIndexHeader.textContent = 'Frame';
-  headerRow.appendChild(frameIndexHeader);
+    const frameIndexHeader = document.createElement('th');
+    frameIndexHeader.className = 'cell-tight';
+    frameIndexHeader.textContent = 'Frame';
+    headerRow.appendChild(frameIndexHeader);
 
-  const playerHHeader = document.createElement('th');
-  playerHHeader.className = 'cell-tight';
-  playerHHeader.textContent = players.H.name || 'Player H';
-  headerRow.appendChild(playerHHeader);
+    const playerHHeader = document.createElement('th');
+    playerHHeader.className = 'cell-tight';
+    playerHHeader.textContent = (players.H.name || 'Player H') + (match.lag === "Home" ? " *" : "");
+    headerRow.appendChild(playerHHeader);
 
-  const playerAHeader = document.createElement('th');
-  playerAHeader.className = 'cell-tight';
-  playerAHeader.textContent = players.A.name || 'Player A';
-  headerRow.appendChild(playerAHeader);
+    const playerAHeader = document.createElement('th');
+    playerAHeader.className = 'cell-tight';
+    playerAHeader.textContent = (players.A.name || 'Player A') + (match.lag === "Away" ? " *" : "");
+    headerRow.appendChild(playerAHeader);
 
-  scorecardBody.appendChild(headerRow);
+    scorecardBody.appendChild(headerRow);
 
-  const maxFrames = Math.max(match.scorecard.H.length, match.scorecard.A.length);
+    const maxFrames = Math.max(match.scorecard.H.length, match.scorecard.A.length);
 
-  for (let i = 0; i < maxFrames; i++) {
-    const row = document.createElement('tr');
+    for (let i = 0; i < maxFrames; i++) {
+      const row = document.createElement('tr');
 
-    const frameIndexCell = document.createElement('td');
-    frameIndexCell.className = 'cell-tight';
-    frameIndexCell.textContent = i + 1;
-    row.appendChild(frameIndexCell);
+      const frameIndexCell = document.createElement('td');
+      frameIndexCell.className = 'cell-tight';
+      frameIndexCell.textContent = i + 1;
+      row.appendChild(frameIndexCell);
 
-    const playerHCell = document.createElement('td');
-    playerHCell.className = 'cell-tight';
-    playerHCell.textContent = match.scorecard.H[i] || '-';
-    row.appendChild(playerHCell);
+      const playerHCell = document.createElement('td');
+      playerHCell.className = 'cell-tight';
+      playerHCell.textContent = match.scorecard.H[i] || '-';
+      row.appendChild(playerHCell);
 
-    const playerACell = document.createElement('td');
-    playerACell.className = 'cell-tight';
-    playerACell.textContent = match.scorecard.A[i] || '-';
-    row.appendChild(playerACell);
+      const playerACell = document.createElement('td');
+      playerACell.className = 'cell-tight';
+      playerACell.textContent = match.scorecard.A[i] || '-';
+      row.appendChild(playerACell);
 
-    scorecardBody.appendChild(row);
-  }
-  } else {
+      scorecardBody.appendChild(row);
+    }
+
+    // Add final score row
+    const finalScoreRow = document.createElement('tr');
+
+    const finalScoreLabelCell = document.createElement('td');
+    finalScoreLabelCell.className = 'cell-tight';
+    finalScoreLabelCell.innerHTML = '<b>Score</b>';
+    finalScoreRow.appendChild(finalScoreLabelCell);
+
+    const finalScoreHCell = document.createElement('td');
+    finalScoreHCell.className = 'cell-tight';
+    finalScoreHCell.innerHTML = `<b>${match.result_H}</b>`;
+    finalScoreRow.appendChild(finalScoreHCell);
+
+    const finalScoreACell = document.createElement('td');
+    finalScoreACell.className = 'cell-tight';
+    finalScoreACell.innerHTML = `<b>${match.result_A}</b>`;
+    finalScoreRow.appendChild(finalScoreACell);
+
+    scorecardBody.appendChild(finalScoreRow);
+  } 
+  else 
+  {
     // Horizontal table for larger screens
     const scorecardHeader = document.querySelector('.table thead tr');
     scorecardHeader.innerHTML = ''; // Clear existing header cells
 
-    const headerCells = ['Player', ...match.scorecard.H.map((_, index) => index + 1)];
+    const headerCells = ['Player', ...match.scorecard.H.map((_, index) => index + 1), 'Score'];
     headerCells.forEach(header => {
       const th = document.createElement('th');
       th.className = 'cell-tight';
@@ -649,6 +708,12 @@ function UI_UpdateMatchSummary ()
         cell.textContent = score || '-';
         row.appendChild(cell);
       });
+
+      // Add final score cell
+      const finalScoreCell = document.createElement('td');
+      finalScoreCell.className = 'cell-tight';
+      finalScoreCell.innerHTML = `<b>${player === 'H' ? match.result_H : match.result_A}</b>`;
+      row.appendChild(finalScoreCell);
 
       scorecardBody.appendChild(row);
     });
@@ -697,16 +762,93 @@ function UI_UpdateMatchSummary ()
     document.getElementById('match-average-frame-time').textContent = `${Math.round(averageFrameTime / 60)}m`;
 }
 
+//BUTTONS
+
+document.getElementById('btn-player-H-point').addEventListener('click', () => {  UpdateScores(1, 0);  });
+
+document.getElementById('btn-player-H-Apple').addEventListener('click', () => {  UpdateScores('A', 0);  });
+
+document.getElementById('btn-player-H-cplus').addEventListener('click', () => {  UpdateScores('C', 0);  });
+
+document.getElementById('btn-player-A-point').addEventListener('click', () => {  UpdateScores(0, 1);  });
+
+document.getElementById('btn-player-A-Apple').addEventListener('click', () => {  UpdateScores(0, 'A');  });
+
+document.getElementById('btn-player-A-cplus').addEventListener('click', () => {  UpdateScores(0, 'C');  });
+  
+
+document.getElementById('btn-timer-startMatch').addEventListener('click', () => 
+{
+  StartMatchTimer();
+});
+
+
+//Lag functionality
+function GetCurrentLag() 
+{
+  const totalFrames = match.scorecard.H.length;
+  return match.lag === "Home" 
+    ? (totalFrames % 2 === 0 ? "Home" : "Away") 
+    : (totalFrames % 2 === 0 ? "Away" : "Home");
+}
+
+function UpdateLagUI() {
+  const playerHBreakIndicator = document.getElementById('player-H-break-indicator-container');
+  const playerABreakIndicator = document.getElementById('player-A-break-indicator-container');
+
+  const currentLag = GetCurrentLag();
+
+  if (currentLag === "Home") {
+    playerHBreakIndicator.style.display = "block";
+    playerABreakIndicator.style.display = "none";
+  } else if (currentLag === "Away") {
+    playerHBreakIndicator.style.display = "none";
+    playerABreakIndicator.style.display = "block";
+  } else {
+    playerHBreakIndicator.style.display = "none";
+    playerABreakIndicator.style.display = "none";
+  }
+
+  if (match.lag === null) {
+    document.getElementById('btn-player-H-Apple').style.display = 'inline-block';
+    document.getElementById('btn-player-H-cplus').style.display = 'inline-block';
+    document.getElementById('btn-player-A-Apple').style.display = 'inline-block';
+    document.getElementById('btn-player-A-cplus').style.display = 'inline-block';
+  } else if (currentLag === "Home") {
+    document.getElementById('btn-player-H-Apple').style.display = 'inline-block';
+    document.getElementById('btn-player-H-cplus').style.display = 'none';
+    document.getElementById('btn-player-A-Apple').style.display = 'none';
+    document.getElementById('btn-player-A-cplus').style.display = 'inline-block';
+  } else if (currentLag === "Away") {
+    document.getElementById('btn-player-H-Apple').style.display = 'none';
+    document.getElementById('btn-player-H-cplus').style.display = 'inline-block';
+    document.getElementById('btn-player-A-Apple').style.display = 'inline-block';
+    document.getElementById('btn-player-A-cplus').style.display = 'none';
+  }
+}
+
 //Timer Functions
   //Start Match Timer
   //Start Frame Timer
   //Restart Frame Timer (Frame ended, start new frame)
-  //End Match Timer
+  //End Match Timer  
+
+function Timer_NextFrame()
+{
+  // Record frame time
+  const frameTime = GetFrameTime();
+  match.timing.push(frameTime);
+  console.warn("Timer: Next Frame Started.");
+
+  // Restart frame timer
+  SetFrameTimer();
+}  
 
 function StartMatchTimer()
 {
   match.startTime = new Date().toISOString();
-  console.log('Match started at:', match.startTime);
+  SetFrameTimer(); // Start frame timer as well
+  console.error('Timer: Match started at:', match.startTime);
 }
 
 function SetFrameTimer()
@@ -714,7 +856,7 @@ function SetFrameTimer()
   const frameStartTime = new Date().toISOString();
   localStorage.setItem('frameStartTime', frameStartTime);
   sessionStorage.setItem('frameStartTime', frameStartTime);
-  console.log('Frame timer started at:', frameStartTime);
+  console.log('Timer: Frame timer started at:', frameStartTime);
 }
 
 function GetFrameTime ()
@@ -732,12 +874,64 @@ function GetFrameTime ()
 }
 
 //Update Scores (Button Inputs)
-function UpdateScores (score_H, score_A)
+async function UpdateScores (score_H, score_A)
 {
   //add scores to match.scorecard
+  match.scorecard.H.push(score_H);
+  match.scorecard.A.push(score_A);
+
   //add frame time to match.timing and restart frame timer
+  Timer_NextFrame();
+
   //update match.result_H and match.result_A
-  //update apples and reverseApples (C+) to match
+  if (score_H == 0)
+  {
+    match.result_A++;
+  } else if (score_A == 0)
+  {
+    match.result_H++;
+  }
+
+  //update apples to match
+  if (score_H == 'A')
+  {
+    match.apples_H++;
+  } else if (score_A == 'A')
+  {
+    match.apples_A++;
+  }
+
+  //update reverseApples (C+) to match
+  if (score_H == 'C')
+  {
+    match.reverseApples_H++;
+  } else if (score_A == 'C')
+  {
+    match.reverseApples_A++;
+  }
+
+  console.warn('Scores Updated. Updated match:', match);
+
+  //push match to database
+  PushMatchToDatabase();
 
   //Check win condition
 }
+
+async function PushMatchToDatabase()
+{
+  const response = await supabase.from('tbl_matches').update({
+    result_H: match.result_H,
+    result_A: match.result_A,
+    apples_H: match.apples_H,
+    apples_A: match.apples_A,
+    reverseApples_H: match.reverseApples_H,
+    reverseApples_A: match.reverseApples_A,
+    scorecard: match.scorecard,
+    timing: match.timing,
+    startTime: match.startTime,
+    endTime: match.endTime
+  }).eq('id', match.id).select();
+  console.warn('Match pushed to database. Response:', response);
+}
+

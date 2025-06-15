@@ -18,17 +18,16 @@
 }
 
 .player-pic {
-    width: 10vmax;
-    height: 10vmax;
+    width: clamp(8cap, 10vw, 20cap);
     object-fit: cover;
     border: 0px solid white;
-    margin-right: 1rem;
+    margin-right: 2cap;
     box-shadow: inset 0px 0px 24px 12px rgba(0, 0, 0, 1);
     border-radius: 50%; /* Makes the border round */
 }
 
 .player-nickname {
-    font-size: 4vmax;
+    font-size: clamp(4cap, 5vw, 8cap);
     color: white;
     text-align: center;
     margin: 0;
@@ -37,7 +36,7 @@
 }
 
 .player-name {
-    font-size: 2vmax;
+    font-size: clamp(1cap, 5vw, 3cap);
     color: white;
     text-align: center;
     margin: 0;
@@ -51,7 +50,7 @@
 }
 
 .player-score {
-    font-size: 6cap;
+    font-size: clamp(6cap, 10vw, 20cap);
     color: white;
     text-align: center;
     margin: 0;
@@ -61,7 +60,7 @@
 
 .player-apples,
 .player-cplus {
-    font-size: 2cap;
+    font-size: clamp(2cap, 6vw, 5cap);
     color: white;
     text-align: center;
     margin: 0;
@@ -77,7 +76,7 @@
 .player-point-btn,
 .player-apple-btn,
 .player-cplus-btn {
-    font-size: 3vmax;
+    font-size: clamp(2cap, 5vw, 5cap);
     font-family: "CustomFont", sans-serif; /* Apply custom font */
 }
 
@@ -97,14 +96,14 @@ th, tr, td
 .cell-tight
 {
     padding: 0cap !important;
-    font-size: 2cap;
+    font-size: clamp(1cap, 5vw, 3cap);
 }
 
 table
 {
     background-color: transparent !important;
     text-align: center;
-    font-size: small;
+    font-size: clamp(1cap, 5vw, 3cap);
 }
 
 .player-break
@@ -115,7 +114,6 @@ table
 .btn-primary
 {
     margin: 0cap !important;
-    margin-right: 2cap !important;
 }
 
 .matchSettings-heading
@@ -123,4 +121,10 @@ table
     font-family: "CustomFont", sans-serif; /* Apply custom font */
     font-size: 3cap; 
     text-align: center;
+}
+
+.match-result
+{
+    font-size: clamp(2cap, 5vw, 5cap);
+    font-weight: 900;
 }
