@@ -3,6 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        // Mobile-only helper (keeps desktop unaffected)
+        function hideIosChromeToolbar() {
+          // run only on iOS browsers
+          if (/iphone|ipod|ipad/i.test(navigator.userAgent)) {
+            // give the browser a tick to finish the first layout,
+            // then scroll the viewport by one pixel
+            setTimeout(() => window.scrollTo(0, 1), 0);
+          }
+        }
+      
+        // call once the DOM is ready
+        window.addEventListener('load', hideIosChromeToolbar);
+      </script>
+      
     
     <title>TDC Scorecard</title>
 

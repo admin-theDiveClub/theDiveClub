@@ -53,13 +53,6 @@ body::-webkit-scrollbar-thumb {
     border-radius: 12px; /* Rounded corners for the scrollbar thumb */
 }
 
-html, body
-{
-    width: 100%; /* Prevent white bars on iPhones in landscape mode */
-    overflow-x: hidden; /* Ensure no horizontal scrolling */
-    --test: #ccc;
-}
-
 footer
 {
     width: 100vw;
