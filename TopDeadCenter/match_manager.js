@@ -38,13 +38,14 @@ async function Initialize()
     await PopulatePlayerData(match);    
     await UI_UpdatePlayerProfiles();
     
-    BuildBarGraph(match);
-    
     UI_UpdateScores();
     UI_UpdateMatchSummary();
     UpdateLagUI();
     UpdateWinConditionUI();   
     UpdateTimerUI(); 
+    
+    
+    BuildBarGraph(match);
   }
 }
 
@@ -319,8 +320,9 @@ function UI_UpdateMatchSummary ()
   const timerListElement = document.getElementById('timer-listFrameTimes');
   timerListElement.innerHTML = ''; // Clear existing content
 
-  if (match.timing && match.timing.length > 0) 
+  if (match.timing && match.timing.length > 0 && match.startTime) 
   {
+    document.getElementById('timeline-chart').style.display = 'block';
     const timingText = match.timing.map(time => {
       const minutes = Math.floor(time / 60);
       const seconds = time % 60;
@@ -339,6 +341,7 @@ function UI_UpdateMatchSummary ()
   {
     if (match.startTime) {
       timerListElement.textContent = `Match Started at: ${new Date(match.startTime).toLocaleString()}`;
+      document.getElementById('timeline-chart').style.display = 'block';
     } else {
       timerListElement.textContent = 'Match Timer Not Started.';
       document.getElementById('timeline-chart').style.display = 'none';
