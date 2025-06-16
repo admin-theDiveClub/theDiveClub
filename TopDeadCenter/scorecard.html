@@ -25,8 +25,8 @@
 <body> 
 
     <!-- Nav -->
-    <div class="row nav-container">
-        <div class="d-flex justify-content-between w-100">
+    <div class="row nav-container" >
+        <div class="d-flex justify-content-between">
             <a href="..">
                 <img src="../resources/drawing_logo_theDiveClub_Alpha.png" style="height: 6vh; object-fit: contain;"></img>
             </a>
@@ -42,8 +42,8 @@
             </div>
         </div>
         <!-- Match Settings Menu -->
-        <div class="collapse navbar-collapse" id="matchSettingsNav">
-            <ul class="nav-links list-unstyled justify-content-around flex-wrap" style="background-color: rgba(0,0,0,0.75); max-height: 85vh; overflow-y: auto; overflow-x: hidden; margin-top: 1cap;">
+        <div class="collapse navbar-collapse" id="matchSettingsNav" style="max-height: 100vh;">
+            <ul class="nav-links list-unstyled justify-content-around flex-wrap" style="overflow-x: hidden; max-height: 80vh;">
                 <div class="row">
                     <div class="col-sm-4">
                         <div class="card rounded card-component">
@@ -147,7 +147,8 @@
             </ul>
         </div>
     </div>
-    <div style="height: clamp(4cap, 6vmax, 8cap);"></div>
+
+    <div id="top-margin" style="height: 8vh;"></div>
 
     <!-- Main Content -->
     <div class="main">

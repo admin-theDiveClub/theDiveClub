@@ -11,7 +11,7 @@
     --color-secondary-lighter: rgba(0, 186, 245, 1);
     --shadow: rgba(0, 0, 0, 1);
     
-    --color-transparent-dark: rgba(69, 69, 69, 0.25);
+    --color-transparent-dark: rgba(69, 69, 69, 0.5);
 }
 
 @font-face 
@@ -70,16 +70,14 @@ footer
     position: fixed;
     width: 102vw;
     background-color: var(--color-transparent-dark);
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(10px);
     padding: clamp(0cap, 0.5vmax, 4cap) clamp(1cap, 2vmax, 4cap);
     z-index: 2000;
-    max-height: clamp(2cap, 10vmax, 8cap);
+    min-height: 8vh;
 }
 
 .nav-links
 {    
-    backdrop-filter: blur(10px) !important;
-    background-color: var(--color-base-med);
     border-radius: 1cap;
 }
 
