@@ -42,9 +42,6 @@ async function Initialize()
     
     UI_UpdateScores();
     UI_UpdateMatchSummary();
-    
-    // Push initial match data to the database
-    await PushMatchToDatabase();
   }
 }
 
@@ -638,10 +635,10 @@ function PrepareBarGraphData(match) {
     const frameTime = match.timing[i] / 60; // Convert seconds to minutes
     if (match.scorecard.H[i] == 0)
     {
-      winner = -1;
+      winner = isVertical ? 1 : -1;
     } else if (match.scorecard.A[i] == 0)
     {
-      winner = 1;
+      winner = isVertical ? -1 : 1;
     }
 
     xValues.push(winner); // Frame winner (-1 or 1)
@@ -683,28 +680,29 @@ async function BuildBarGraph(match) {
     },
     width: isVertical ? graphData.barWidths : graphData.barWidths, // Correct bar widths for vertical bars
     text: match.timing.map((time, index) => {
-      const runningScoreH = match.scorecard.H.slice(0, index + 1).reduce((acc, val) => acc + (val === 1 ? 1 : 0), 0);
-      const runningScoreA = match.scorecard.A.slice(0, index + 1).reduce((acc, val) => acc + (val === 1 ? 1 : 0), 0);
+      const runningScoreH = match.scorecard.H.slice(0, index + 1).reduce((acc, val) => acc + (val === 1 || val === 'A' || val === 'C' ? 1 : 0), 0);
+      const runningScoreA = match.scorecard.A.slice(0, index + 1).reduce((acc, val) => acc + (val === 1 || val === 'A' || val === 'C' ? 1 : 0), 0);
       return `${Math.floor(time / 60)}'${time % 60} (${runningScoreH}-${runningScoreA})`; // Running score labels
     }),
     textposition: 'inside', // Position labels inside the bars
     textfont: {
       color: 'white', // Set label color to white
+      family: 'Segoe UI', // Use Segoe UI font
     },
     hoverinfo: 'none', // Disable tooltips on hover
   };
 
   const layout = {
     xaxis: {
-      tickfont: { color: '#ccc' },
+      tickfont: { color: '#ccc', family: 'Segoe UI' }, // Use Segoe UI font for x-axis
       gridcolor: '#444',
-      tickvals: isVertical ? [-1, 1] : undefined,
-      ticktext: isVertical ? [players.A.name, players.H.name] : undefined,
+      tickvals: isVertical ? [1, -1] : undefined, // Reverse order for vertical mode
+      ticktext: isVertical ? [players.A.name, players.H.name] : undefined, // Home on left, Away on right
       tickmode: isVertical ? 'array' : undefined,
       fixedrange: true, // Prevent zooming on x-axis
     },
     yaxis: {
-      tickfont: { color: '#ccc' },
+      tickfont: { color: '#ccc', family: 'Segoe UI' }, // Use Segoe UI font for y-axis
       gridcolor: '#444',
       tickvals: isVertical ? undefined : [1, -1],
       ticktext: isVertical ? undefined : [players.H.name, players.A.name],

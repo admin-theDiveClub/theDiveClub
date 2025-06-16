@@ -26,7 +26,7 @@
 }
 
 .player-nickname {
-    font-size: clamp(2cap, 5vmax, 6cap);
+    font-size: clamp(2cap, 4vmax, 6cap);
     color: white;
     text-align: center;
     margin: 0;
@@ -36,7 +36,7 @@
 }
 
 .player-name {
-    font-size: clamp(0.75cap, 2vmax, 3cap);
+    font-size: clamp(0.5cap, 1.5vmax, 3cap);
     color: white;
     text-align: center;
     margin: 0;
@@ -61,7 +61,7 @@
 
 .player-apples,
 .player-cplus {
-    font-size: clamp(1cap, 3vmax, 5cap);
+    font-size: clamp(1cap, 2vmax, 5cap);
     color: white;
     text-align: center;
     margin: 0;
