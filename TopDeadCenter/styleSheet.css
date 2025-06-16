@@ -150,3 +150,12 @@ h2
     font-size: 4cap;
     text-align: center;
 }
+
+.profile-pic {
+    width: clamp(6cap, 10vmax, 20cap);
+    object-fit: cover;
+    border: 0px solid white;
+    margin-right: 2cap;
+    box-shadow: inset 0px 0px 24px 12px rgba(0, 0, 0, 1);
+    border-radius: 50%; /* Makes the border round */
+}
