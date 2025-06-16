@@ -37,7 +37,7 @@ body
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: radial-gradient(circle at 50% -100%, var(--color-base-dark) 0%, var(--color-base-darkest) 80%, var(--color-primary) 250%);
     overflow-x: hidden;
-    background-attachment: fixed;
+    background-attachment: fixed !important;
     padding: 0 !important;
     margin: 0 !important;
     display: block !important;

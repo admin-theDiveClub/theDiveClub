@@ -414,7 +414,7 @@ function UI_UpdateMatchSummary ()
     const scorecardHeader = document.querySelector('.table thead tr');
     scorecardHeader.innerHTML = ''; // Clear existing header cells
 
-    const headerCells = ['Player', ...match.scorecard.H.map((_, index) => index + 1), 'Score'];
+    const headerCells = ['Player', ...match.scorecard.H.map((_, index) => index + 1), ''];
     headerCells.forEach(header => {
       const th = document.createElement('th');
       th.className = 'cell-tight';
