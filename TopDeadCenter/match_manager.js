@@ -37,11 +37,14 @@ async function Initialize()
     
     await PopulatePlayerData(match);    
     await UI_UpdatePlayerProfiles();
-
-    BuildChart(match);
-
+    
+    BuildBarGraph(match);
+    
     UI_UpdateScores();
     UI_UpdateMatchSummary();
+    
+    // Push initial match data to the database
+    await PushMatchToDatabase();
   }
 }
 
@@ -102,359 +105,35 @@ async function UnsubscribeFromUpdates (channels)
 async function OnPayloadReceived (payload)
 {
   console.log('Change received!', payload.new);
-  //CODE
   match = payload.new;
 
-  //Check Player Profiles for consistency
-  if (match.player_A != players.A.username || match.player_H != players.H.username)
-  {
-    // Update player data if usernames have changed
+  // Update player profiles if necessary
+  if (match.player_A !== players.A.username || match.player_H !== players.H.username) {
     await PopulatePlayerData(match);
     await UI_UpdatePlayerProfiles();
   }
 
-  //Update Lag
-  console.log(GetCurrentLag());
-  
-  // Update the chart with new data
-  BuildChart(match);
-  // Update the UI with new scores
+  // Update the bar graph with new data
+  BuildBarGraph(match);
+
+  // Update other UI elements
   UI_UpdateScores();
-  // Update the match summary
   UI_UpdateMatchSummary();
 }
 
-/* CHART */
-// Prepare data for the chart
-var allPoints = [];
 
-function BuildChart (match)
-{
-  var chartData = BuildChartData(match);
-  BuildChartObject(chartData);
-}
-
-function BuildChartData(match) 
-{
-  const scorecard = match.scorecard;
-  const chartPoints = [];
-  const runningScores = { H: 0, A: 0 };
-  const runningApples = { H: 0, A: 0 };
-
-  // Ensure timing is valid
-  const timing = Array.isArray(match.timing) ? match.timing : null;
-
-  // Start Point
-  const startPoint = 
-  {
-    winner: null,
-    time: new Date(match.startTime).toLocaleString(), // Format as readable date and time
-    frameTime: 0, // Add frameTime property
-    scores: runningScores,
-    apples: runningApples,
-  };
-  chartPoints.push(startPoint);
-
-  // Scorecard Points
-  for (var i = 0; i < scorecard.H.length; i++) 
-  {
-    var winner = null;
-    if (scorecard.H[i] != 0)
-    {
-      runningScores.H++; 
-      winner = players.H.name || match.player_H;
-      
-      if (scorecard.H[i] == 'A')
-      {
-        runningApples.H++;
-      }
-    } else if (scorecard.A[i] != 0)
-    {
-      runningScores.A++;
-      winner = players.A.name || match.player_A;
-      
-      if (scorecard.A[i] == 'A')
-      {
-        runningApples.A++;
-      }
-    }
-
-    var newChartPoint = 
-    {
-      winner: winner,
-      time: timing ? timing.slice(0, i + 1).reduce((acc, curr) => acc + curr, 0) : i + 1, // Use index if timing is null
-      frameTime: timing ? timing[i] || 0 : 0, // Use 0 if timing is null
-      scores: { H: runningScores.H, A: runningScores.A },
-      apples: { H: runningApples.H, A: runningApples.A }
-    };
-    
-    chartPoints.push(newChartPoint);
-  }
-
-  // End Point
-  if (match.endTime) {
-    const endPoint = 
-    {
-      winner: null,
-      time: timing ? Math.floor((new Date(match.endTime) - new Date(match.startTime)) / 1000) : scorecard.H.length, // Use scorecard length if timing is null
-      frameTime: 0, // Add frameTime property
-      scores: runningScores,
-      apples: runningApples
-    };
-    chartPoints.push(endPoint);
-  }
-
-  return chartPoints;
-}
-
-let isVertical = window.innerWidth < 768; // Vertical if screen size is small (sm), otherwise horizontal
+let isVertical = window.innerWidth < 665; // Vertical if screen size is small (sm), otherwise horizontal
 
 // Update chart container height based on orientation
 const chartContainer = document.getElementById('timeline-chart');
-chartContainer.style.height = isVertical ? '85vh' : '30vh';
+chartContainer.style.height = isVertical ? '85vh' : '80vh';
 
-//Build the Chart
-let timelineChart = null; // Store the chart instance globally
-
-function BuildChartObject(chartPoints) 
-{
-  const ctx = document.getElementById('timelineChart').getContext('2d');
-  const points = [];
-  const highlightPoints = [];
-  const borderColors = []; // Array to store border colors for each point
-
-  chartPoints.forEach((point, index) => {
-    const axisTime = index === 0 ? 0 : point.time / 60;
-    const axisValue = point.winner === players.H.name ? -1 : point.winner === players.A.name ? 1 : 0;
-
-    const x = isVertical ? axisValue : axisTime;
-    const y = isVertical ? axisTime : axisValue;
-
-    points.push({ x: isVertical ? 0 : x, y: isVertical ? y : 0 });
-    points.push({ x, y, raw: { ...point } });
-    points.push({ x: isVertical ? 0 : x, y: isVertical ? y : 0 });
-
-    // Determine color based on scorecard value
-    const scoreH = match.scorecard.H[index] || 0;
-    const scoreA = match.scorecard.A[index] || 0;
-    const borderColor = scoreH === "A" || scoreA === "A"
-      ? 'rgba(230, 161, 0, 1)' // Yellow for "A"
-      : scoreH === "C" || scoreA === "C"
-      ? 'rgba(0, 200, 0, 1)' // Green for "C"
-      : '#fff'; // White for others
-
-    highlightPoints.push({ x, y, raw: { ...point } });
-    borderColors.push(borderColor); // Add border color to the array
-  });
-
-  const labelPlugin = {
-    id: 'frameLabels',
-    afterDatasetsDraw(chart) {
-      const { ctx } = chart;
-      ctx.save();
-      const fontSize = window.innerWidth < 768 ? 16 : 10;
-      ctx.font = `${fontSize}px "Segoe UI", sans-serif`;
-      ctx.fillStyle = '#eee';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      chart.data.datasets[2].data.forEach((pt, i) => {
-        const meta = chart.getDatasetMeta(2);
-        const pos = meta.data[i]?.getProps(['x', 'y'], true);
-        const label = pt.raw?.frameTime ? `${Math.round(pt.raw.frameTime / 60)}m` : '';
-        if (pos && label) {
-          const offset = 30;
-          const offsetX = isVertical ? (pt.x < 0 ? -offset : offset) : 0;
-          const offsetY = isVertical ? 0 : (pt.y < 0 ? offset : -offset);
-          ctx.fillText(label, pos.x + offsetX, pos.y + offsetY);
-        }
-      });
-
-      ctx.restore();
-    }
-  };
-
-  // Destroy the existing chart instance if it exists
-  if (timelineChart) {
-    timelineChart.destroy();
-  }
-
-  timelineChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      datasets: [
-        {
-          label: 'Frame Spikes',
-          data: points,
-          borderColor: '#aaa',
-          borderWidth: 2,
-          backgroundColor: 'transparent',
-          pointRadius: 0,
-          tension: 0
-        },
-        {
-          label: 'Frame Dots',
-          data: highlightPoints,
-          showLine: false,
-          pointRadius: 8,
-          pointBackgroundColor: 'transparent',
-          pointBorderColor: borderColors, // Apply dynamic border colors
-          pointBorderWidth: 1
-        },
-        {
-          label: 'Frame Labels',
-          data: highlightPoints,
-          showLine: false,
-          pointRadius: 0
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      layout: { padding: { top: 20, left: 20, right: 20, bottom: 40 }},
-      indexAxis: isVertical ? 'y' : 'x',
-      scales: {
-        x: isVertical
-          ? {
-              type: 'linear',
-              min: -2,
-              max: 2,
-              ticks: {
-                color: '#ccc',
-                callback: val =>
-                  val === -1 ? players.H.name : val === 1 ? players.A.name : '',
-                stepSize: 1,
-                autoSkip: false,
-                maxRotation: 0,
-                minRotation: 0,
-                font: { size: window.innerWidth < 768 ? 16 : 12 } // Reduced font size
-              },
-              grid: {
-                color: '#444',
-                drawOnChartArea: true
-              }
-            }
-          : {
-              type: 'linear',
-              beginAtZero: true,
-              reverse: false,
-              suggestedMax: Math.max(...chartPoints.map(p => p.time)) / 60,
-              ticks: {
-                color: '#ccc',
-                callback: value => {
-                  const h = Math.floor(value / 60);
-                  const m = Math.round(value % 60);
-                  return h > 0 ? `${h}h ${m}m` : `${m}m`;
-                },
-                font: { size: window.innerWidth < 768 ? 16 : 12 } // Reduced font size
-              },
-              grid: {
-                color: '#333'
-              }
-            },
-        y: isVertical
-          ? {
-              type: 'linear',
-              beginAtZero: true,
-              reverse: true,
-              suggestedMax: Math.max(...chartPoints.map(p => p.time)) / 60,
-              ticks: {
-                color: '#ccc',
-                callback: value => {
-                  const h = Math.floor(value / 60);
-                  const m = Math.round(value % 60);
-                  return h > 0 ? `${h}h ${m}m` : `${m}m`;
-                },
-                font: { size: window.innerWidth < 768 ? 16 : 12 } // Reduced font size
-              },
-              grid: {
-                color: '#333'
-              }
-            }
-          : {
-              type: 'linear',
-              min: -2,
-              max: 2,
-              ticks: {
-                color: '#ccc',
-                callback: val =>
-                  val === -1 ? players.H.name : val === 1 ? players.A.name : '',
-                stepSize: 1,
-                autoSkip: false,
-                maxRotation: 0,
-                minRotation: 0,
-                font: { size: window.innerWidth < 768 ? 20 : 12 } // Reduced font size
-              },
-              grid: {
-                color: '#444',
-                drawOnChartArea: true
-              }
-            }
-      },
-      plugins: {
-        tooltip: {
-          enabled: true,
-          callbacks: {
-            title: ctx => {
-              const index = ctx[0].dataIndex;
-              return index === 0
-                ? 'Match Start'
-                : index === chartPoints.length - 1
-                ? 'Match End'
-                : `Frame ${index}`;
-            },
-            label: ctx => {
-              const raw = chartPoints[ctx.dataIndex];
-              if (!raw) return '';
-              if (ctx.dataIndex === 0) {
-                return [`Time: ${raw.time}s`];
-              }
-              if (ctx.dataIndex === chartPoints.length - 1) {
-                const finalWinner =
-                  match.result_H > match.result_A
-                    ? players.H.name
-                    : match.result_A > match.result_H
-                    ? players.A.name
-                    : 'Draw';
-                const frameEndTime = new Date(match.endTime).toLocaleString();
-                const matchDuration = Math.floor(
-                  (new Date(match.endTime) - new Date(match.startTime)) / 60000
-                );
-                const formattedDuration =
-                  matchDuration > 60
-                    ? `${Math.floor(matchDuration / 60)}h ${
-                        matchDuration % 60
-                      }m`
-                    : `${matchDuration} minutes`;
-
-                return [
-                  `Winner: ${finalWinner}`,
-                  `Final Scores: ${match.result_H} - ${match.result_A}`,
-                  `Match End Time: ${frameEndTime}`,
-                  `Match Duration: ${formattedDuration}`
-                ];
-              }
-              return [
-                `Winner: ${raw.winner || '-'}`,
-                `Frame Time: ${Math.ceil(raw.frameTime / 60)}m`,
-                `Elapsed Time: ${Math.ceil(raw.time / 60)}m`,
-                `Scores: ${raw.scores.H} - ${raw.scores.A}`,
-                `Apples: ${raw.apples.H} - ${raw.apples.A}`
-              ];
-            }
-          },
-          titleFont: { size: 20 },
-          bodyFont: { size: 16 }
-        },
-        legend: {
-          display: false
-        }
-      }
-    },
-    plugins: [labelPlugin]
-  });
+if (window.innerHeight > 750 && window.innerWidth > 665) {
+  // If screen is large enough, set chart container height to 80vh
+  chartContainer.style.height = '35vh';
 }
+
+
 
 /*
 To Do:
@@ -545,21 +224,25 @@ async function GetPlayerProfiles(playerID)
 async function UI_UpdatePlayerProfiles ()
 {
   document.getElementById('player-H-nickname').textContent = 
-    (players.H.nickname || players.H.username || 'Anonymous') + (match.lag === "Home" ? " *" : "");
+    (players.H.nickname || players.H.name || '') + (match.lag === "Home" ? " *" : "");
   document.getElementById('player-H-name').textContent = players.H.name || players.H.username || 'Unknown Player';
 
   const r_H = await supabase.storage.from('bucket-profile-pics').getPublicUrl(players.H.id);
-  console.log('Profile Pic URL:', r_H.data.publicUrl);
   if (r_H.data && r_H.data.publicUrl && !r_H.data.publicUrl.endsWith('null')) 
   {
     const imgElement_H = document.getElementById('player-H-pic');
     if (imgElement_H) {
-      imgElement_H.src = r_H.data.publicUrl;
+      // Check if the URL returns an image
+      const img = new Image();
+      img.onload = () => {
+        imgElement_H.src = r_H.data.publicUrl;
+      };
+      img.src = r_H.data.publicUrl;
     }
   }
 
   document.getElementById('player-A-nickname').textContent = 
-    (players.A.nickname || players.A.username || 'Anonymous') + (match.lag === "Away" ? " *" : "");
+  (players.A.nickname || players.A.name || '') + (match.lag === "Away" ? " *" : "");
   document.getElementById('player-A-name').textContent = players.A.name || players.A.username || 'Unknown Player';
 
   const r_A = await supabase.storage.from('bucket-profile-pics').getPublicUrl(players.A.id);
@@ -567,7 +250,12 @@ async function UI_UpdatePlayerProfiles ()
   {
     const imgElement_A = document.getElementById('player-A-pic');
     if (imgElement_A) {
-      imgElement_A.src = r_A.data.publicUrl;
+      // Check if the URL returns an image
+      const img = new Image();
+      img.onload = () => {
+        imgElement_A.src = r_A.data.publicUrl;
+      };
+      img.src = r_A.data.publicUrl;
     }
   }
 }
@@ -615,7 +303,7 @@ function UI_UpdateMatchSummary ()
     scorecardHeader.innerHTML = ''; // Clear the header row as well
   }
 
-  if (window.innerWidth < 768) 
+  if (window.innerWidth < 665) 
   {
     // Vertical table for small screens
     const headerRow = document.createElement('tr');
@@ -936,3 +624,109 @@ async function PushMatchToDatabase()
   console.warn('Match pushed to database. Response:', response);
 }
 
+// Prepare the data for a bar graph and create the graph using Chart.js
+function PrepareBarGraphData(match) {
+  const xValues = [];
+  const yValues = [];
+  const barWidths = [];
+  const barHeights = [];
+  const colors = [];
+
+  let elapsedTime = 0;
+
+  for (let i = 0; i < match.timing.length; i++) {
+    const frameTime = match.timing[i] / 60; // Convert seconds to minutes
+    if (match.scorecard.H[i] == 0)
+    {
+      winner = -1;
+    } else if (match.scorecard.A[i] == 0)
+    {
+      winner = 1;
+    }
+
+    xValues.push(winner); // Frame winner (-1 or 1)
+    yValues.push(elapsedTime + frameTime / 2); // Center the bar vertically
+    barWidths.push(frameTime); // Width based on frame time in minutes
+    barHeights.push(1); // Fixed height for vertical bars
+
+    // Determine color based on score type
+    if (match.scorecard.H[i] === 'A' || match.scorecard.A[i] === 'A') {
+      colors.push('rgba(230, 161, 0, 0.5)'); // Yellow for "A"
+    } else if (match.scorecard.H[i] === 'C' || match.scorecard.A[i] === 'C') {
+      colors.push('rgba(0, 255, 0, 0.25)'); // Green for "C"
+    } else {
+      colors.push('rgba(255, 255, 255, 0.1)'); // Default transparent color
+    }
+
+    elapsedTime += frameTime; // Increment elapsed time
+  }
+
+  return { xValues, yValues, barWidths, barHeights, colors };
+}
+
+async function BuildBarGraph(match) {
+  const graphData = PrepareBarGraphData(match);
+
+  const isVertical = window.innerWidth < 665; // Check if screen size is small (sm)
+
+  const trace = {
+    x: isVertical ? graphData.xValues : graphData.yValues,
+    y: isVertical ? graphData.yValues : graphData.xValues,
+    type: 'bar',
+    orientation: isVertical ? 'h' : 'v', // Horizontal bars for small screens
+    marker: {
+      color: graphData.colors, // Use dynamic colors
+      line: {
+        color: 'rgba(255, 255, 255, 1)', // White borders
+        width: 1,
+      },
+    },
+    width: isVertical ? graphData.barWidths : graphData.barWidths, // Correct bar widths for vertical bars
+    text: match.timing.map((time, index) => {
+      const runningScoreH = match.scorecard.H.slice(0, index + 1).reduce((acc, val) => acc + (val === 1 ? 1 : 0), 0);
+      const runningScoreA = match.scorecard.A.slice(0, index + 1).reduce((acc, val) => acc + (val === 1 ? 1 : 0), 0);
+      return `${Math.floor(time / 60)}'${time % 60} (${runningScoreH}-${runningScoreA})`; // Running score labels
+    }),
+    textposition: 'inside', // Position labels inside the bars
+    textfont: {
+      color: 'white', // Set label color to white
+    },
+    hoverinfo: 'none', // Disable tooltips on hover
+  };
+
+  const layout = {
+    xaxis: {
+      tickfont: { color: '#ccc' },
+      gridcolor: '#444',
+      tickvals: isVertical ? [-1, 1] : undefined,
+      ticktext: isVertical ? [players.A.name, players.H.name] : undefined,
+      tickmode: isVertical ? 'array' : undefined,
+      fixedrange: true, // Prevent zooming on x-axis
+    },
+    yaxis: {
+      tickfont: { color: '#ccc' },
+      gridcolor: '#444',
+      tickvals: isVertical ? undefined : [1, -1],
+      ticktext: isVertical ? undefined : [players.H.name, players.A.name],
+      tickmode: isVertical ? undefined : 'array',
+      automargin: true, // Allow word-wrap for player names
+      fixedrange: true, // Prevent zooming on y-axis
+    },
+    plot_bgcolor: 'transparent',
+    paper_bgcolor: 'transparent',
+    showlegend: false,
+    margin: window.innerWidth < 665
+      ? { l: 50, r: 50, t: 0, b: 50 } // Portrait (small screens)
+      : window.innerWidth < 1024
+      ? { l: 100, r: 25, t: 0, b: 25 } // Landscape (medium screens)
+      : { l: 100, r: 50, t: 0, b: 25 }, // Desktop (large screens)
+  };
+
+  const config = {
+    displayModeBar: false, // Hide the Plotly toolbar
+    responsive: true, // Prevent zoom by making the graph responsive
+    scrollZoom: false, // Disable scroll zoom
+  };
+
+  const graph = await Plotly.newPlot('timelineChart', [trace], layout, config);
+}

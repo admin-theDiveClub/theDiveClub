@@ -18,8 +18,8 @@
     <link href="../TopDeadCenter/styleSheet.css" rel="stylesheet">
     <link href="../TopDeadCenter/styleSheet_scorecard.css" rel="stylesheet">
 
-    <!-- Include Chart.js from CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Include plotly.js from CDN -->
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 </head>
 
 <body> 
@@ -147,7 +147,7 @@
             </ul>
         </div>
     </div>
-    <div style="height: clamp(4cap, 5vmax, 8cap);"></div>
+    <div style="height: clamp(4cap, 6vmax, 8cap);"></div>
 
     <!-- Main Content -->
     <div class="main">
@@ -158,7 +158,7 @@
                     <div class="card rounded player-card">
                         <div class="card-header player-header">
                             <div class="d-flex justify-content-center align-items-center">
-                                <img id="player-H-pic" class="player-pic" src="../resources/icon_user_default.png" alt="Player Profile">
+                                <img id="player-H-pic" class="player-pic" src="../resources/icon_user_default.png" alt="../resources/icon_user_default.png">
                                 <div>
                                     <p id="player-H-nickname" class="player-nickname">_nickname</p>
                                     <p id="player-H-name" class="player-name">_fullName</p>
@@ -198,7 +198,7 @@
                     <div class="card rounded player-card">
                         <div class="card-header player-header">
                             <div class="d-flex justify-content-center align-items-center">
-                                <img id="player-A-pic" class="player-pic" src="../resources/icon_user_default.png" alt="Player Profile">
+                                <img id="player-A-pic" class="player-pic" src="../resources/icon_user_default.png">
                                 <div>
                                     <p id="player-A-nickname" class="player-nickname">_nickname</p>
                                     <p id="player-A-name" class="player-name">_fullName</p>
@@ -250,7 +250,7 @@
         <!-- Match Timeline -->
         <div id="timeline-chart" class="card rounded timeline-container" style="padding-bottom: 1cap; min-height: 45vh;">
             <h2 class="text-center">Timing</h2>
-            <canvas id="timelineChart"></canvas>
+            <div id="timelineChart" style="width: 100%; height: 100%;"></div>
         </div>
 
         <!-- Match Summary -->

@@ -26,21 +26,23 @@
 }
 
 .player-nickname {
-    font-size: clamp(3cap, 5vmax, 8cap);
+    font-size: clamp(2cap, 5vmax, 6cap);
     color: white;
     text-align: center;
     margin: 0;
     padding: 0;
     font-family: "CustomFont", sans-serif; /* Apply custom font */
+    white-space: nowrap;
 }
 
 .player-name {
-    font-size: clamp(1cap, 2.5vmax, 3cap);
+    font-size: clamp(0.75cap, 2vmax, 3cap);
     color: white;
     text-align: center;
     margin: 0;
     padding: 0;
     font-family: "CustomFont", sans-serif; /* Apply custom font */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Fallback font */
 }
 
 .player-body {
@@ -49,7 +51,7 @@
 }
 
 .player-score {
-    font-size: clamp(4cap, 8vmax, 20cap);
+    font-size: clamp(5cap, 8vmax, 20cap);
     color: white;
     text-align: center;
     margin: 0;
@@ -83,6 +85,11 @@
 .timeline-container, .match-summary-container {
     margin: 1cap 1cap;
     background-color: transparent;
+}
+
+#timelineChart
+{
+    padding: 0cap;
 }
 
 th, tr, td
