@@ -500,8 +500,12 @@ function UI_UpdateMatchSummary ()
     document.getElementById('match-average-frame-time').textContent = 'N/A';
   }
   
-  const averageFrameTime = match.timing.reduce((acc, curr) => acc + curr, 0) / match.timing.length;
-  document.getElementById('match-average-frame-time').textContent = `${Math.round(averageFrameTime / 60)}m`;
+  const averageFrameTime = Array.isArray(match.timing) && match.timing.length > 0 
+    ? match.timing.reduce((acc, curr) => acc + curr, 0) / match.timing.length 
+    : 0;
+  document.getElementById('match-average-frame-time').textContent = averageFrameTime > 0 
+    ? `${Math.round(averageFrameTime / 60)}m` 
+    : 'N/A';
 }
 
 //BUTTONS
@@ -620,6 +624,9 @@ function Timer_NextFrame()
 {
   // Record frame time
   const frameTime = GetFrameTime();
+  if (!Array.isArray(match.timing)) {
+    match.timing = [];
+  }
   match.timing.push(frameTime);
   console.warn("Timer: Next Frame Started.");
 
@@ -716,7 +723,7 @@ async function UpdateScores (score_H, score_A)
   PushMatchToDatabase();
 
   //Check win condition
-  if (match.result_H >= match.winCondition || match.result_A >= match.winCondition)
+  if (match.type !== 'freePlay' && (match.result_H >= match.winCondition || match.result_A >= match.winCondition))
   {
     if (confirm('Match has ended. Do you want to end the match?')) 
     {
@@ -755,8 +762,10 @@ function PrepareBarGraphData(match) {
 
   let elapsedTime = 0;
 
-  for (let i = 0; i < Math.max(match.timing.length, match.scorecard.H.length); i++) {
-    const frameTime = match.timing[i] ? match.timing[i] / 60 : 2; // Convert seconds to minutes or use default size
+  const timing = match.timing || [];
+  const scorecardH = match.scorecard?.H || [];
+  for (let i = 0; i < Math.max(timing.length, scorecardH.length); i++) {
+    const frameTime = match.timing[i] ? match.timing[i] / 60 : 5; // Convert seconds to minutes or use default size
     const winner = match.scorecard.H[i] == 0
       ? (isVertical ? 1 : -1)
       : match.scorecard.A[i] == 0
@@ -801,7 +810,7 @@ async function BuildBarGraph(match) {
       },
     },
     width: isVertical ? graphData.barWidths : graphData.barWidths, // Correct bar widths for vertical bars
-    text: match.timing.map((time, index) => {
+    text: (match.timing || []).map((time, index) => {
       const runningScoreH = match.scorecard.H.slice(0, index + 1).reduce((acc, val) => acc + (val === 1 || val === 'A' || val === 'C' ? 1 : 0), 0);
       const runningScoreA = match.scorecard.A.slice(0, index + 1).reduce((acc, val) => acc + (val === 1 || val === 'A' || val === 'C' ? 1 : 0), 0);
       return `${Math.floor(time / 60)}'${time % 60} (${runningScoreH}-${runningScoreA})`; // Running score labels
