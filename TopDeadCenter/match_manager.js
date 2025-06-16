@@ -65,7 +65,7 @@ function UpdateTimerUI ()
       : "Frame Start Time: Not Started.";
 
     if (match.endTime) {
-      window.location.href = "../matches/completed.html";
+      window.location.href = "../TopDeadCenter/scoreboard.html?matchID=" + match.id;
     }
 
     document.getElementById('match-time-end').textContent = match.endTime 
@@ -319,21 +319,36 @@ function UI_UpdateMatchSummary ()
   const timerListElement = document.getElementById('timer-listFrameTimes');
   timerListElement.innerHTML = ''; // Clear existing content
 
-  const timingText = match.timing.map(time => {
-    const minutes = Math.floor(time / 60);
-    const seconds = time % 60;
-    return `${minutes}'${seconds}`;
-  }).join(', ');
-  timerListElement.textContent = timingText;
+  if (match.timing && match.timing.length > 0) 
+  {
+    const timingText = match.timing.map(time => {
+      const minutes = Math.floor(time / 60);
+      const seconds = time % 60;
+      return `${minutes}'${seconds}`;
+    }).join(', ');
 
-  const totalMatchTime = match.timing.reduce((acc, curr) => acc + curr, 0);
-  const totalHours = Math.floor(totalMatchTime / 3600);
-  const totalMinutes = Math.floor((totalMatchTime % 3600) / 60);
-  const totalSeconds = totalMatchTime % 60;
+    timerListElement.textContent = timingText;const totalMatchTime = match.timing.reduce((acc, curr) => acc + curr, 0);
+    const totalHours = Math.floor(totalMatchTime / 3600);
+    const totalMinutes = Math.floor((totalMatchTime % 3600) / 60);
+    const totalSeconds = totalMatchTime % 60;
+  
+    document.getElementById('timer-hours').textContent = String(totalHours).padStart(2, '0');
+    document.getElementById('timer-minutes').textContent = String(totalMinutes).padStart(2, '0');
+    document.getElementById('timer-seconds').textContent = String(totalSeconds).padStart(2, '0');
+  } else 
+  {
+    if (match.startTime) {
+      timerListElement.textContent = `Match Started at: ${new Date(match.startTime).toLocaleString()}`;
+    } else {
+      timerListElement.textContent = 'Match Timer Not Started.';
+      document.getElementById('timeline-chart').style.display = 'none';
+    }
+    document.getElementById('timer-hours').textContent = '00';
+    document.getElementById('timer-minutes').textContent = '00';
+    document.getElementById('timer-seconds').textContent = '00';
+  }
 
-  document.getElementById('timer-hours').textContent = String(totalHours).padStart(2, '0');
-  document.getElementById('timer-minutes').textContent = String(totalMinutes).padStart(2, '0');
-  document.getElementById('timer-seconds').textContent = String(totalSeconds).padStart(2, '0');
+  
 
   //Scorecard Simple
   const scorecardBody = document.getElementById('scorecard-table-body');
@@ -480,15 +495,13 @@ function UI_UpdateMatchSummary ()
     document.getElementById('match-duration').textContent =
       duration > 60 ? `${Math.floor(duration / 60)}h ${duration % 60}m` : `${duration} minutes`;
 
-    const averageFrameTime = match.timing.reduce((acc, curr) => acc + curr, 0) / match.timing.length;
-    document.getElementById('match-average-frame-time').textContent = `${Math.round(averageFrameTime / 60)}m`;
   } else {
     document.getElementById('match-duration').textContent = 'Ongoing';
     document.getElementById('match-average-frame-time').textContent = 'N/A';
   }
-
+  
   const averageFrameTime = match.timing.reduce((acc, curr) => acc + curr, 0) / match.timing.length;
-    document.getElementById('match-average-frame-time').textContent = `${Math.round(averageFrameTime / 60)}m`;
+  document.getElementById('match-average-frame-time').textContent = `${Math.round(averageFrameTime / 60)}m`;
 }
 
 //BUTTONS
@@ -510,6 +523,20 @@ document.getElementById('btn-timer-startMatch').addEventListener('click', () =>
 {
   StartMatchTimer();
 });
+
+document.getElementById('btn-timer-endMatch').addEventListener('click', () =>
+{
+  if (!match.endTime) 
+  {
+    if (confirm('Are you sure you want to end the match? This cannot be undone.')) 
+    {
+      EndMatchTimer();
+    }
+  } else 
+  {
+    alert('Match has already ended.');
+  }  
+});    
 
 
 //Lag functionality
@@ -689,6 +716,16 @@ async function UpdateScores (score_H, score_A)
   PushMatchToDatabase();
 
   //Check win condition
+  if (match.result_H >= match.winCondition || match.result_A >= match.winCondition)
+  {
+    if (confirm('Match has ended. Do you want to end the match?')) 
+    {
+      EndMatchTimer();
+    } else 
+    {
+      alert('Match continues. You can end it later.');
+    }
+  }
 }
 
 async function PushMatchToDatabase()
@@ -718,19 +755,17 @@ function PrepareBarGraphData(match) {
 
   let elapsedTime = 0;
 
-  for (let i = 0; i < match.timing.length; i++) {
-    const frameTime = match.timing[i] / 60; // Convert seconds to minutes
-    if (match.scorecard.H[i] == 0)
-    {
-      winner = isVertical ? 1 : -1;
-    } else if (match.scorecard.A[i] == 0)
-    {
-      winner = isVertical ? -1 : 1;
-    }
+  for (let i = 0; i < Math.max(match.timing.length, match.scorecard.H.length); i++) {
+    const frameTime = match.timing[i] ? match.timing[i] / 60 : 2; // Convert seconds to minutes or use default size
+    const winner = match.scorecard.H[i] == 0
+      ? (isVertical ? 1 : -1)
+      : match.scorecard.A[i] == 0
+      ? (isVertical ? -1 : 1)
+      : 0;
 
     xValues.push(winner); // Frame winner (-1 or 1)
     yValues.push(elapsedTime + frameTime / 2); // Center the bar vertically
-    barWidths.push(frameTime); // Width based on frame time in minutes
+    barWidths.push(frameTime); // Width based on frame time in minutes or default size
     barHeights.push(1); // Fixed height for vertical bars
 
     // Determine color based on score type

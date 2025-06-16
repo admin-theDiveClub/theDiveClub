@@ -3,8 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        // Mobile-only helper (keeps desktop unaffected)
+        function hideIosChromeToolbar() {
+          // run only on iOS browsers
+          if (/iphone|ipod|ipad/i.test(navigator.userAgent)) {
+            // give the browser a tick to finish the first layout,
+            // then scroll the viewport by one pixel
+            setTimeout(() => window.scrollTo(0, 1), 0);
+          }
+        }
+      
+        // call once the DOM is ready
+        window.addEventListener('load', hideIosChromeToolbar);
+      </script>
+      
     
-    <title>TDC Scoreboard</title>
+    <title>TDC Scorecard</title>
 
     <!-- Import Supabase resources via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
@@ -18,11 +33,48 @@
     <link href="../TopDeadCenter/styleSheet.css" rel="stylesheet">
     <link href="../TopDeadCenter/styleSheet_scorecard.css" rel="stylesheet">
 
-    <!-- Include Chart.js from CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Include plotly.js from CDN -->
+    <script src="https://cdn.plot.ly/plotly-3.0.0.min.js"></script>
 </head>
 
 <body> 
+
+    <!-- Nav -->
+    <div class="row nav-container" >
+        <div class="d-flex justify-content-between">
+            <a href="..">
+                <img src="../resources/drawing_logo_theDiveClub_Alpha.png" style="height: 6vh; object-fit: contain;"></img>
+            </a>
+            <div class="d-flex">
+                
+                <!-- Navbar Button -->
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <i class="bi bi-list" style="font-size: 4vh; color: white;"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Main Navbar Menu -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="nav-links list-unstyled d-flex justify-content-around flex-wrap">
+                <li><a href="#home" class="nav-link active"><i class="bi bi-house-door"></i> Home</a></li>
+                <li><a href="#profile" class="nav-link"><i class="bi bi-person"></i> Profile</a></li>
+                <li><a href="#scorecard" class="nav-link"><i class="bi bi-card-checklist"></i> Scorecard</a></li>
+                <li class="dropdown">
+                    <a href="#competitions" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-trophy"></i> Competitions</a>
+                    <ul class="dropdown-menu">
+                    <li><a href="#leagues" class="dropdown-item"><i class="bi bi-award"></i> Leagues</a></li>
+                    <li><a href="#tournaments" class="dropdown-item"><i class="bi bi-calendar-event"></i> Tournaments</a></li>
+                    <li><a href="#matches" class="dropdown-item"><i class="bi bi-flag"></i> Matches</a></li>
+                    </ul>
+                </li>
+                <li><a href="#contact" class="nav-link"><i class="bi bi-envelope"></i> Contact</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="top-margin" style="height: 8vh;"></div>
+
     <!-- Main Content -->
     <div class="main">
         <div class="card rounded scorecard-container">
@@ -32,7 +84,7 @@
                     <div class="card rounded player-card">
                         <div class="card-header player-header">
                             <div class="d-flex justify-content-center align-items-center">
-                                <img id="player-H-pic" class="player-pic" src="#" alt="Player Profile">
+                                <img id="player-H-pic" class="player-pic" src="../resources/icon_user_default.png" alt="../resources/icon_user_default.png">
                                 <div>
                                     <p id="player-H-nickname" class="player-nickname">_nickname</p>
                                     <p id="player-H-name" class="player-name">_fullName</p>
@@ -40,7 +92,18 @@
                             </div>
                         </div>
                         <div class="card-body player-body">
-                            <p id="player-H-score" class="player-score">99</p>
+                            <div class="row">
+                                <div class="col-4"></div>
+                                <div class="col-4">
+                                    <p id="player-H-score" class="player-score">99</p>
+                                </div>
+                                <div class="col-4">
+                                    <div id="player-H-break-indicator-container" class="break-indicator-container">                                   
+                                        <img id="player-H-break-indicator" class="break-indicator" src="../resources/icon_break.png">
+                                        <p id="player-H-break" class="player-break">Break</p>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="row">
                                 <div class="col-6">
                                     <p id="player-H-apples" class="player-apples">A : 0</p>
@@ -56,7 +119,7 @@
                     <div class="card rounded player-card">
                         <div class="card-header player-header">
                             <div class="d-flex justify-content-center align-items-center">
-                                <img id="player-A-pic" class="player-pic" src="#" alt="Player Profile">
+                                <img id="player-A-pic" class="player-pic" src="../resources/icon_user_default.png">
                                 <div>
                                     <p id="player-A-nickname" class="player-nickname">_nickname</p>
                                     <p id="player-A-name" class="player-name">_fullName</p>
@@ -64,7 +127,19 @@
                             </div>
                         </div>
                         <div class="card-body player-body">
-                            <p id="player-A-score" class="player-score">99</p>
+                            <div class="row">
+                                <div class="col-4"></div>
+                                <div class="col-4">
+                                    <p id="player-A-score" class="player-score">99</p>
+                                </div>
+                                <div class="col-4">                                    
+                                    <div id="player-A-break-indicator-container" class="break-indicator-container">                                   
+                                        <img id="player-A-break-indicator" class="break-indicator" src="../resources/icon_break.png">
+                                        <p id="player-A-break" class="player-break">Break</p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="row">
                                 <div class="col-6">
                                     <p id="player-A-apples" class="player-apples">A : 0</p>
@@ -79,9 +154,146 @@
             </div>
         </div>
 
+        <!-- Match Timer -->
+        <div class="card rounded timer-container card-component">
+            <h2 class="text-center">Match Timer</h2>
+            <h2 class="timer-display text-center">
+                <span id="timer-hours">00</span>:<span id="timer-minutes">00</span>:<span id="timer-seconds">00</span>
+            </h2>
+            <p id="timer-listFrameTimes" class="text-center">00, 00, 00, 00</p>
+        </div>
+
         <!-- Match Timeline -->
-        <div id="timeline-chart" class="card rounded timeline-container">
-            <canvas id="timelineChart"></canvas>
+        <div id="timeline-chart" class="card rounded timeline-container" style="padding-bottom: 1cap; min-height: 45vh;">
+            <h2 class="text-center">Timing</h2>
+            <div id="timelineChart" style="width: 100%; height: 100%;"></div>
+        </div>
+
+        <!-- Match Summary -->
+        <div class="card rounded match-summary-container">
+            <div class="summary-content">
+
+                <h2 class="text-center">Match Summary</h2>
+
+                <table class="table table-bordered" style="font-size: 50%; text-align: center;">
+                    <thead>
+                        <tr>
+                            <th class="cell-tight">Player</th>
+                            <th class="cell-tight">1</th>
+                            <th class="cell-tight">2</th>
+                            <th class="cell-tight">3</th>
+                            <th class="cell-tight">4</th>
+                            <th class="cell-tight">5</th>
+                            <th class="cell-tight">6</th>
+                            <th class="cell-tight">7</th>
+                            <th class="cell-tight">8</th>
+                            <th class="cell-tight">9</th>
+                            <th class="cell-tight">10</th>
+                            <th class="cell-tight">11</th>
+                            <th class="cell-tight">12</th>
+                            <th class="cell-tight">13</th>
+                            <th class="cell-tight">14</th>
+                            <th class="cell-tight">15</th>
+                            <th class="cell-tight">16</th>
+                            <th class="cell-tight">17</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scorecard-table-body">
+                        <!-- Dummy data -->
+                        <tr>
+                            <td class="cell-tight">Player H</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">A</td>
+                            <td class="cell-tight">C</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">A</td>
+                            <td class="cell-tight">C</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">A</td>
+                            <td class="cell-tight">C</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">A</td>
+                            <td class="cell-tight">C</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">A</td>
+                            <td class="cell-tight">C</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">A</td>
+                        </tr>
+                        <tr>
+                            <td class="cell-tight">Player A</td>
+                            <td class="cell-tight">0</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">0</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">0</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">0</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">0</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">0</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">0</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">0</td>
+                            <td class="cell-tight">1</td>
+                            <td class="cell-tight">0</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th id="playerH-name">Player H</th>
+                            <th id="playerA-name">Player A</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Score</strong></td>
+                            <td id="match-result-playerH" class="match-result">99</td>
+                            <td id="match-result-playerA" class="match-result">99</td>
+                        </tr>
+                        <tr>
+                            <td>Apples</td>
+                            <td id="match-apples-playerH">0</td>
+                            <td id="match-apples-playerA">0</td>
+                        </tr>
+                        <tr>
+                            <td>C<sup>+</sup></td>
+                            <td id="match-cplus-playerH">0</td>
+                            <td id="match-cplus-playerA">0</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" class="text-center"><strong>Winner:</strong> <span id="match-winner">Loading...</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <table class="table table-bordered">
+                    <tbody>
+                        <tr>
+                            <td>Start Time</td>
+                            <td id="match-start-time">Loading...</td>
+                        </tr>
+                        <tr>
+                            <td>End Time</td>
+                            <td id="match-end-time">Loading...</td>
+                        </tr>
+                        <tr>
+                            <td>Match Duration</td>
+                            <td id="match-duration">Loading...</td>
+                        </tr>
+                        <tr>
+                            <td>Average Frame Time</td>
+                            <td id="match-average-frame-time">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 

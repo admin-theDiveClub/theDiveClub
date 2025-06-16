@@ -3,8 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        // Mobile-only helper (keeps desktop unaffected)
+        function hideIosChromeToolbar() {
+          // run only on iOS browsers
+          if (/iphone|ipod|ipad/i.test(navigator.userAgent)) {
+            // give the browser a tick to finish the first layout,
+            // then scroll the viewport by one pixel
+            setTimeout(() => window.scrollTo(0, 1), 0);
+          }
+        }
+      
+        // call once the DOM is ready
+        window.addEventListener('load', hideIosChromeToolbar);
+      </script>
+      
     
-    <title>TDC Create Match</title>
+    <title>TDC New Match</title>
 
     <!-- Import Supabase resources via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
@@ -16,24 +31,26 @@
 
     <!-- Custom CSS -->
     <link href="../TopDeadCenter/styleSheet.css" rel="stylesheet">
-    <link href="../TopDeadCenter/styleSheet_scorecard.css" rel="stylesheet">
-
-    <!-- Include Chart.js from CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
 
     <!-- Nav -->
-    <div class="row nav-container">
-        <div class="d-flex justify-content-between w-100">
+    <div class="row nav-container" >
+        <div class="d-flex justify-content-between">
             <a href="..">
-                <img src="../resources/drawing_logo_theDiveClub_Alpha.png" style="height: 8vh; object-fit: contain;">
+                <img src="../resources/drawing_logo_theDiveClub_Alpha.png" style="height: 6vh; object-fit: contain;"></img>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <i class="bi bi-list" style="font-size: 8vh; color: white;"></i>
-            </button>
+            <div class="d-flex">
+                
+                <!-- Navbar Button -->
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <i class="bi bi-list" style="font-size: 4vh; color: white;"></i>
+                </button>
+            </div>
         </div>
+        
+        <!-- Main Navbar Menu -->
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="nav-links list-unstyled d-flex justify-content-around flex-wrap">
                 <li><a href="#home" class="nav-link active"><i class="bi bi-house-door"></i> Home</a></li>
@@ -51,7 +68,8 @@
             </ul>
         </div>
     </div>
-    <div style="height: 10vh;"></div>
+
+    <div id="top-margin" style="height: 8vh;"></div>
        
     <div class="row">
         <div class="col-lg-3 col-xl-4"></div>
@@ -61,18 +79,16 @@
                 <h2>New Match</h2>
 
                 <div class="card rounded input-field">
-                    <p class="input-label">Player: Home <button class="btn btn-primary" id="Me">Me <i class="bi bi-arrow-down"></i></button></p>  
 
                     <input type="text" class="form-control border-0 inputText" id="player_H" name="player_H" placeholder="Enter Player Name or Username" autocomplete="off">
-                    <button class="btn btn-primary" id="Me">Find Account <i class="bi bi-search"></i></button>
+                    <button class="btn btn-primary" id="btn-account-find-H">Find Account <i class="bi bi-search"></i></button>
                     
                 </div>
 
                 <div class="card rounded input-field">
-                    <p class="input-label">Player: Away <button class="btn btn-primary" id="Me">Me <i class="bi bi-arrow-down"></i></button></p>  
 
                     <input type="text" class="form-control border-0 inputText" id="player_A" name="player_A" placeholder="Enter Player Name or Username" autocomplete="off">
-                    <button class="btn btn-primary" id="Me">Find Account <i class="bi bi-search"></i></button>
+                    <button class="btn btn-primary"  id="btn-account-find-A">Find Account <i class="bi bi-search"></i></button>
                     
                 </div>
                 
