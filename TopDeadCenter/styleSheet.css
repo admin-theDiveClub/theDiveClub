@@ -64,10 +64,11 @@ footer
 .nav-container
 {
     position: fixed;
-    width: 102vw;
+    display: block;
+    width: 104vw;
     background-color: var(--color-transparent-dark);
     backdrop-filter: blur(10px);
-    padding: clamp(0cap, 0.5vmax, 4cap) clamp(1cap, 2vmax, 4cap);
+    padding: clamp(0cap, 0.5vmax, 4cap) clamp(2cap, 5vmax, 8cap);
     z-index: 2000;
     min-height: 8vh;
 }
