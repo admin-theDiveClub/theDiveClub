@@ -42,6 +42,35 @@ async function Initialize()
     
     UI_UpdateScores();
     UI_UpdateMatchSummary();
+    UpdateLagUI();
+    UpdateWinConditionUI();   
+    UpdateTimerUI(); 
+  }
+}
+
+function UpdateTimerUI ()
+{
+  if (!match.startTime) {
+    document.getElementById('match-time-start').textContent = "Not Started.";
+    document.getElementById('btn-timer-startMatch').disabled = false;
+    document.getElementById('frame-time-start').textContent = "Frame Start Time: Not Started.";
+    document.getElementById('match-time-end').textContent = "Match End Time: Not Started.";
+  } else {
+    document.getElementById('match-time-start').textContent = `Match Start Time: ${new Date(match.startTime).toLocaleString()}`;
+    document.getElementById('btn-timer-startMatch').disabled = true;
+
+    const frameStartTime = localStorage.getItem('frameStartTime') || sessionStorage.getItem('frameStartTime');
+    document.getElementById('frame-time-start').textContent = frameStartTime 
+      ? `Frame Start Time: ${new Date(frameStartTime).toLocaleString()}` 
+      : "Frame Start Time: Not Started.";
+
+    if (match.endTime) {
+      window.location.href = "../matches/completed.html";
+    }
+
+    document.getElementById('match-time-end').textContent = match.endTime 
+      ? `Match End Time: ${new Date(match.endTime).toLocaleString()}` 
+      : "Match End Time: Ongoing.";
   }
 }
 
@@ -116,6 +145,7 @@ async function OnPayloadReceived (payload)
   // Update other UI elements
   UI_UpdateScores();
   UI_UpdateMatchSummary();
+  UpdateWinConditionUI();
 }
 
 
@@ -268,6 +298,19 @@ function UI_UpdateScores ()
   document.getElementById('player-A-C+').textContent = `C+ : ${match.reverseApples_A}`;
 
   UpdateLagUI();
+}
+
+function UpdateWinConditionUI()
+{
+  const selectedType = match.type || 'freePlay';
+  document.querySelector(`input[name="matchType"][value="${selectedType}"]`).checked = true;
+
+  if (selectedType === 'race') {
+    document.getElementById('raceToValue').value = match.winCondition || '';
+    updateBestOfFromRaceTo(match.winCondition || '');
+  } else if (selectedType === 'fixedCount') {
+    document.getElementById('frameCountValue').value = match.winCondition || '';
+  }
 }
 
 function UI_UpdateMatchSummary ()
@@ -478,7 +521,8 @@ function GetCurrentLag()
     : (totalFrames % 2 === 0 ? "Away" : "Home");
 }
 
-function UpdateLagUI() {
+async function UpdateLagUI() 
+{
   const playerHBreakIndicator = document.getElementById('player-H-break-indicator-container');
   const playerABreakIndicator = document.getElementById('player-A-break-indicator-container');
 
@@ -511,7 +555,33 @@ function UpdateLagUI() {
     document.getElementById('btn-player-A-Apple').style.display = 'inline-block';
     document.getElementById('btn-player-A-cplus').style.display = 'none';
   }
+
+  const lagSelect = document.getElementById('select-lag');
+  lagSelect.innerHTML = ''; // Clear existing options
+
+  const homeOption = document.createElement('option');
+  homeOption.value = 'home';
+  homeOption.textContent = players.H.name || 'Home';
+  lagSelect.appendChild(homeOption);
+
+  const awayOption = document.createElement('option');
+  awayOption.value = 'away';
+  awayOption.textContent = players.A.name || 'Away';
+  lagSelect.appendChild(awayOption);
+
+  lagSelect.value = match.lag === 'Home' ? 'home' : 'away';
 }
+
+document.getElementById('select-lag').addEventListener('change', async (event) => 
+{
+  match.lag = event.target.value === 'home' ? 'Home' : 'Away';
+
+  const response = await supabase.from('tbl_matches').update({
+    lag: match.lag,
+  }).eq('id', match.id).select();
+
+  console.warn('Lag updated in database. Response:', response);
+});
 
 //Timer Functions
   //Start Match Timer
@@ -534,7 +604,18 @@ function StartMatchTimer()
 {
   match.startTime = new Date().toISOString();
   SetFrameTimer(); // Start frame timer as well
-  console.error('Timer: Match started at:', match.startTime);
+  console.warn('Timer: Match started at:', match.startTime);
+  document.getElementById('match-time-start').textContent = `Match Start Time: ${new Date(match.startTime).toLocaleString()}`;
+}
+
+function EndMatchTimer() {
+  match.endTime = new Date().toISOString();
+  match.status = "Completed"; // Update match status to completed
+  console.warn('Timer: Match ended at:', match.endTime);
+  document.getElementById('match-time-end').textContent = `Match End Time: ${new Date(match.endTime).toLocaleString()}`;
+
+  // Push the updated endTime to the database
+  PushMatchToDatabase();
 }
 
 function SetFrameTimer()
@@ -543,7 +624,13 @@ function SetFrameTimer()
   localStorage.setItem('frameStartTime', frameStartTime);
   sessionStorage.setItem('frameStartTime', frameStartTime);
   console.log('Timer: Frame timer started at:', frameStartTime);
+  document.getElementById('frame-time-start').textContent = `Frame Start Time: ${new Date(frameStartTime).toLocaleString()}`;
 }
+
+document.getElementById('btn-timer-restartFrameTimer').addEventListener('click', () => 
+{
+  SetFrameTimer();
+});
 
 function GetFrameTime ()
 {
@@ -727,4 +814,51 @@ async function BuildBarGraph(match) {
   };
 
   const graph = await Plotly.newPlot('timelineChart', [trace], layout, config);
+}
+
+document.querySelectorAll('input[name="matchType"]').forEach((radio) => 
+{
+  radio.addEventListener('change', async (event) => 
+  {
+    UpdateWinCondition();
+  });  
+});
+
+document.getElementById('raceToValue').addEventListener('input', async () => 
+{
+  UpdateWinCondition();
+});
+
+document.getElementById('frameCountValue').addEventListener('input', async () => 
+{
+  UpdateWinCondition();
+});
+
+async function UpdateWinCondition() 
+{
+  const selectedType = document.querySelector('input[name="matchType"]:checked').value;
+
+  if (selectedType === 'freePlay') {
+    match.winCondition = null;
+  } else if (selectedType === 'race') {
+    const raceToValue = parseInt(document.getElementById('raceToValue').value, 10);
+    if (!isNaN(raceToValue)) {
+      match.winCondition = raceToValue;
+    }
+  } else if (selectedType === 'fixedCount') {
+    const frameCountValue = parseInt(document.getElementById('frameCountValue').value, 10);
+    if (!isNaN(frameCountValue)) {
+      match.winCondition = frameCountValue;
+    }
+  }
+
+  console.log('Updated winCondition:', match.winCondition);
+
+  // Push the updated winCondition to the database
+  const response = await supabase.from('tbl_matches').update({
+    winCondition: match.winCondition,
+    type: selectedType,
+  }).eq('id', match.id).select();
+
+  console.warn('Win condition pushed to database. Response:', response);
 }

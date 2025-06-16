@@ -55,30 +55,52 @@
                                 </label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="matchType" id="raceToBestOf" value="raceToBestOf">
+                                <input class="form-check-input" type="radio" name="matchType" id="race" value="race">
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div>
-                                            <label class="form-check-label" for="raceToBestOf">
+                                            <label class="form-check-label" for="race">
                                                 Race To:
                                             </label>
-                                            <input type="number" class="form-control" id="raceToValue" name="raceToValue" placeholder="Race To" oninput="document.getElementById('bestOfValue').value = this.value">
+                                            <input type="number" class="form-control" id="raceToValue" name="raceToValue" placeholder="Race To" oninput="updateBestOfFromRaceTo(this.value)">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div>
-                                            <label class="form-check-label" for="raceToBestOf">
+                                            <label class="form-check-label" for="race">
                                                 Best Of:
                                             </label>
-                                            <input type="number" class="form-control" id="bestOfValue" name="bestOfValue" placeholder="Best Of" oninput="document.getElementById('raceToValue').value = this.value">
+                                            <input type="number" class="form-control" id="bestOfValue" name="bestOfValue" placeholder="Best Of" oninput="updateRaceToFromBestOf(this.value)">
                                         </div>
+                                        <script>
+                                            function updateBestOfFromRaceTo(raceToValue) {
+                                                const raceTo = parseInt(raceToValue, 10);
+                                                if (!isNaN(raceTo)) {
+                                                    const bestOf = 2 * raceTo - 1;
+                                                    document.getElementById('bestOfValue').value = bestOf;
+                                                }
+                                            }
+
+                                            function updateRaceToFromBestOf(bestOfValue) {
+                                                const bestOf = parseInt(bestOfValue, 10);
+                                                if (!isNaN(bestOf)) {
+                                                    let raceTo;
+                                                    if (bestOf % 2 === 1) { // Odd bestOf
+                                                        raceTo = (bestOf + 1) / 2;
+                                                    } else { // Even bestOf
+                                                        raceTo = bestOf / 2 + 1;
+                                                    }
+                                                    document.getElementById('raceToValue').value = raceTo;
+                                                }
+                                            }
+                                        </script>
                                     </div>
                                 </div>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="matchType" id="fixedFrameCount" value="fixedFrameCount">
+                                <input class="form-check-input" type="radio" name="matchType" id="fixedCount" value="fixedCount">
                                 <div class="d-flex flex-wrap align-items-center">
-                                    <label class="form-check-label" for="fixedFrameCount">
+                                    <label class="form-check-label" for="fixedCount">
                                         Fixed Frame Count:
                                     </label>
                                     <input type="number" class="form-control" id="frameCountValue" name="frameCountValue" placeholder="Enter Frame Count">
@@ -90,8 +112,8 @@
                         <div class="card rounded card-component">
                             <p class="matchSettings-heading">Lag</p>
                             <select class="form-select" aria-label="Home" id="select-lag">
-                                <option value="0">Option 1</option>
-                                <option value="1">Option 2</option>
+                                <option value="home">Home</option>
+                                <option value="away">Away</option>
                             </select>
                         </div>
                     </div>
@@ -99,6 +121,9 @@
                         <div class="card rounded card-component">
 
                             <p class="matchSettings-heading">Timing</p>
+                            <p id="match-time-start">Match Start Time: 00:00 01/01/2025</p>
+                            <p id="frame-time-start">Frame Start Time: 00:00 01/01/2025</p>
+                            <p id="match-time-end">Match End Time: 00:00 01/01/2025</p>
 
                             <div class="row">
                                 <div class="col-md-6">
@@ -111,18 +136,21 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="timingOption" id="timeLimit" value="timeLimit">
+                                        <input class="form-check-input" type="radio" name="timingOption" id="timeLimit" value="timeLimit" disabled>
                                         <div class="d-flex flex-wrap align-items-center">
                                             <label class="form-check-label" for="timeLimit">
                                                 Time Limit:
                                             </label>
-                                            <input type="number" class="form-control ms-2" id="timeLimitValue" name="timeLimitValue" placeholder="Minutes">
+                                            <input type="number" class="form-control ms-2" id="timeLimitValue" name="timeLimitValue" placeholder="Minutes" disabled>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             <button id="btn-timer-startMatch" class="btn btn-info">Start Match</button>
+                            <button id="btn-timer-restartFrameTimer" class="btn btn-warning">Restart Frame Timer</button>
+                            <button id="btn-timer-endMatch" class="btn btn-danger">End Match</button>
+
 
                         </div>
                     </div>
