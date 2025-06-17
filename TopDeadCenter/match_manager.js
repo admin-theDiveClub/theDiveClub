@@ -69,7 +69,11 @@ function UpdateTimerUI ()
     document.getElementById('match-time-end').textContent = "Match End Time: Not Started.";
   } else {
     document.getElementById('match-time-start').textContent = `Match Start Time: ${new Date(match.startTime).toLocaleString()}`;
-    document.getElementById('btn-timer-startMatch').disabled = true;
+    const startButton = document.getElementById('btn-timer-startMatch');
+    startButton.disabled = true;
+    startButton.textContent = "Match Started";
+    startButton.classList.remove('btn-info');
+    startButton.classList.add('btn-success');
 
     const frameStartTime = localStorage.getItem('frameStartTime') || sessionStorage.getItem('frameStartTime');
     document.getElementById('frame-time-start').textContent = frameStartTime 
