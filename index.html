@@ -72,30 +72,60 @@
 
     <!-- Main Content -->
     <div class="main">
-        <!-- Coming Soon Banner -->
-        <p class="custom-font" style="font-size: 16vmax; color: white; text-align: center;">Coming</p>
-        <p id="countdown" class="custom-font" style="font-size: 4vmax; color: white; text-align: center;">00 Days, 00 Hours, 00 Minutes, 00 Seconds</p>
-        <script>
-            function updateCountdown() {
-            const endDate = new Date('2025-06-17T12:00:00');
-            const now = new Date();
-            const timeDifference = endDate - now;
+        <div id="container-account" class="card card-component">
+            <div class="d-flex align-items-center justify-content-end">
+            <div class="text-end">
+                <p id="user-welcomeMessage" class="player-nickname" >Welcome, </p>
+                <h2 id="user-name" class="player-name">Yuvan Naidoo</h2>
+            </div>
+            <img id="player-H-pic" class="profile-pic" src="../resources/icon_user_default.png" alt="../resources/icon_user_default.png" onclick="window.location.href='accounts/profile.html'" style="cursor: pointer;">
+            </div>
+        </div>
 
-            if (timeDifference > 0) {
-                const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((timeDifference % (1000 * 60)) / 1000);
+        <div id="container-welcomeMessage" class="card card-component">
+            <div class="row">
+                <div class="col-12 col-md-8">
+                    <h1>The Dive Club</h1>
+  
+                    <p>
+                        Whether you're a casual player, league competitor, or tournament regular, <strong>The Dive Club</strong> is your new home for tracking your journey through cue sports — and soon, much more.
+                    </p>
 
-                document.getElementById('countdown').textContent = `${days} Days, ${hours} Hours, ${minutes} Minutes, ${seconds} Seconds`;
-            } else {
-                document.getElementById('countdown').textContent = "The event has started!";
-            }
-            }
+                    <p>
+                        At its core, The Dive Club is a free platform that helps players log their match-play, track performance, and build a personal profile over time. Whether you're competing seriously or just keeping score with friends at your local club, our tools are here to support you.
+                    </p>
 
-            setInterval(updateCountdown, 1000);
-        </script>
-        <p class="custom-font" style="font-size: 16vmax; color: white; text-align: center;">Soon</p>
+                    <h2>Why Join?</h2>
+                    <ul>
+                        <li><strong>Track Every Game:</strong> Log your matches, wins, and stats across formats.</li>
+                        <li><strong>Live Scorecards & Scoreboards:</strong> Let your friends and followers see the action in real-time.</li>
+                        <li><strong>Personal Profiles:</strong> Showcase your stats and match history with pride.</li>
+                        <li><strong>Built-In Timers:</strong> Perfect for structured play or casual sessions.</li>
+                    </ul>
+
+                    <p>
+                        And this is just the beginning. We're already working on features for:
+                    </p>
+
+                    <ul>
+                        <li>Leagues and Tournament Support</li>
+                        <li>Multi-sport Expansion</li>
+                        <li>Custom Club Integrations</li>
+                    </ul>
+
+                    <p>
+                        We’re building this together — with players, for players. If you're part of a club or league and want to offer real value to your players, we’d love to hear from you.
+                    </p>
+
+                    <p><strong>Welcome aboard. Let’s make every frame count.</strong></p>
+
+                    <p><em>– The Dive Club Team</em></p>
+                </div>
+                <div class="col-12 col-md-4 text-center">
+                    <img src="../resources/images/img_Player_Win.png" alt="../resources/icon_user_default.png" style="max-width: 100%; height: auto;">
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Footer -->

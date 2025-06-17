@@ -143,11 +143,19 @@ footer
     color: var(--color-base-light); /* Ensure inputted text is light */
 }
 
+h1
+{
+    font-family: 'CustomFont', sans-serif;
+    color: var(--color-base-light);
+    font-size: clamp(6cap, 8vmax, 12cap);
+    text-align: center;
+}
+
 h2
 {
     font-family: 'CustomFont', sans-serif;
     color: var(--color-base-light);
-    font-size: 4cap;
+    font-size: clamp(4cap, 5vmax, 8cap);
     text-align: center;
 }
 
@@ -155,7 +163,7 @@ h2
     width: clamp(6cap, 10vmax, 20cap);
     object-fit: cover;
     border: 0px solid white;
-    margin-right: 2cap;
+    margin: clamp(1cap, 2vmax, 4cap);
     box-shadow: inset 0px 0px 24px 12px rgba(0, 0, 0, 1);
     border-radius: 50%; /* Makes the border round */
 }
@@ -163,4 +171,16 @@ h2
 .bi 
 {
     color: var(--color-base-light);
+}
+
+.profile-card
+{
+    color: var(--color-base-light);
+    text-align: center;
+}
+
+tr, th, td
+{
+    background-color: transparent !important;
+    color: var(--color-base-light) !important;
 }

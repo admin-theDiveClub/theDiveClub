@@ -72,8 +72,11 @@
 
     <div class="row">
         <div class="col-sm-4"></div>
-        <div class="col-sm-4 d-flex justify-content-center" style="padding: 8cap; padding-bottom: 1cap;">
-            <img src="../resources/icon_user_default.png" alt="Profile Picture" class="profile-pic"></img>
+        <div class="col-sm-4 d-flex justify-content-center" style="padding-bottom: 1cap;">
+            <div class="d-flex align-items-center justify-content-center">
+                <img src="../resources/icon_user_default.png" alt="Profile Picture" class="profile-pic"></img>
+                <h1 id="profile-nickname">UV</h1>
+            </div>
         </div>
         <div class="col-sm-4"></div>
     </div>
@@ -82,7 +85,6 @@
         <div class="col-sm-4"></div>
         <div class="col-sm-4">
             <div class="profile-card">
-                <h1 id="profile-nickname">UV</h1>
                 <p id="profile-name">Yuvan Naidoo</p>
                 <p id="profile-username">yuvannaidoo@gmail.com</p>
                 <p id="profile-contact">+27 82 766 4905</p>
@@ -97,120 +99,28 @@
         <div class="col-sm-4"></div>
     </div>
 
-    <div class="row">
-        <div class="col-sm-1 col-lg-2"></div>
-        <div class="col-sm-10 col-lg-8">
-            <div class="card rounded card-component">
-                <div class="card-header">
-                    <ul class="nav nav-tabs card-header-tabs d-flex justify-content-center" id="profileTabs" role="tablist" style="flex-wrap: nowrap;">
-                        <li class="tab-link flex-fill text-center" role="presentation">
-                            <button class="nav-link active w-100" id="tab1-tab" data-bs-toggle="tab" data-bs-target="#tab1" type="button" role="tab" aria-controls="tab1" aria-selected="true">
-                                <i class="bi bi-bar-chart-line" style="font-size: 4cap;"></i>
-                            </button>
-                        </li>
-                        <li class="tab-link flex-fill text-center" role="presentation">
-                            <button class="nav-link w-100" id="tab2-tab" data-bs-toggle="tab" data-bs-target="#tab2" type="button" role="tab" aria-controls="tab2" aria-selected="false">
-                                <i class="bi bi-trophy" style="font-size: 4cap;"></i>
-                            </button>
-                        </li>
-                        <li class="tab-link flex-fill text-center" role="presentation">
-                            <button class="nav-link w-100" id="tab3-tab" data-bs-toggle="tab" data-bs-target="#tab3" type="button" role="tab" aria-controls="tab3" aria-selected="false">
-                                <i class="bi bi-person-circle" style="font-size: 4cap;"></i>
-                            </button>
-                        </li>
-                    </ul>
-                        
-                </div>
-                <div class="card-body tab-pane">
-                    <div class="tab-content" id="profileTabsContent">
-                        <div class="tab-pane fade show active" id="tab1" role="tabpanel" aria-labelledby="tab1-tab">
-                            <h5>Tab 1 Content</h5>
-                            <p>This is the content for Tab 1.</p>
-                        </div>
-                        <div class="tab-pane fade" id="tab2" role="tabpanel" aria-labelledby="tab2-tab">
-                            <h5>Tab 2 Content</h5>
-                            
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="card rounded card-component">
-                                        <h5>Leagues</h5>
-                                        <p>League 1: 1000 points</p>
-                                        <p>League 2: 800 points</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="card rounded card-component">
-                                        <h5>Tournaments</h5>
-                                        <p>Tournament 1: 500 points</p>
-                                        <p>Tournament 2: 500 points</p>
-                                    </div>
-                                </div>
-                            </div>
-    
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="card rounded card-component">
-                                        <h5>Matches</h5>
-                                        <p>Match 1: Win</p>
-                                        <p>Match 2: Loss</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="card rounded card-component">
-                                        <h5>Social Play</h5>
-                                        <p>Game Night 1: 5 participants</p>
-                                        <p>Game Night 2: 8 participants</p>
-                                    </div>
-                                </div>
-                            </div>
-    
-                        </div>
-                        <div class="tab-pane fade" id="tab3" role="tabpanel" aria-labelledby="tab3-tab">
-                            <h5>Tab 3 Content</h5>
-                            <div id="grp_inputs">
-                                
-                                <div class="card rounded input-field">
-                                    <p class="input-label">Email & Password</p>    
-                                    <a href="#" class="btn btn-link inputLabel">Change Password or Email</a>
-                                </div>
-            
-                                <div class="card rounded input-field">
-                                    <p class="input-label">Name</p>    
-                                    <input type="text" class="form-control border-0 inputText" id="inp_name" name="name" placeholder="Enter new name" autocomplete="name">
-                                </div>
-            
-                                <div class="card rounded input-field">
-                                    <p class="input-label">Surname</p>    
-                                    <input type="text" class="form-control border-0 inputText" id="inp_surname" name="surname" placeholder="Enter new surname">
-                                </div>
-            
-                                <div class="card rounded input-field">
-                                    <p class="input-label">Nickname (Optional)</p>    
-                                    <input type="text" class="form-control border-0 inputText" id="inp_nickname" name="nickname" placeholder="Enter new nickname">
-                                </div>                    
-    
-                                <div class="card rounded input-field">
-                                    <p class="input-label">Contact</p>    
-                                    <input type="text" class="form-control border-0 inputText" id="inp_contact" name="contact" placeholder="Enter new contact number">
-                                </div>                    
-                            </div>
-            
-                            <div id="grp-output" style="display: none;">
-                                <div class="card rounded card-message">
-                                    <p id="outputMessage" class="inputText" style="text-align: center;">Message</p>
-                                    <a href="../index.html" id="btn_Home" class="btn btn-primary" style="display: none;">Go to The Dive Club</a>
-                                </div>
-                            </div>
-            
-                            <button type="submit" class="btn btn-primary" id="btn_updateDetails" style="width: 100%;">Update Details</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-1 col-lg-2"></div>
-        
+    <div class="card card-component">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Opponent</th>
+                    <th>Score</th>
+                    <th>Match Link</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>2023-09-15</td>
+                    <td>Team Alpha</td>
+                    <td>3-2</td>
+                    <td><a href="#match1"><i class="bi bi-arrow-right" style="font-size: 3cap;"></i></a></td>
+                </tr>
+            </tbody>
+        </table>
     </div>
+
+    
 
     <!-- Footer -->
     <footer>        
