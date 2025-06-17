@@ -22,6 +22,17 @@ var match =
   endTime: null
 }
 
+window.addEventListener('resize', () => 
+{
+  isVertical = window.innerWidth < 665; // Vertical if screen size is small (sm), otherwise horizontal
+
+  // Update chart container height based on orientation
+  const chartContainer = document.getElementById('timeline-chart');
+  chartContainer.style.height = isVertical ? '85vh' : '80vh';
+  BuildBarGraph(match);
+  UI_UpdateMatchSummary();
+});
+
 Initialize();
 
 async function Initialize()
@@ -65,7 +76,7 @@ function UpdateTimerUI ()
       ? `Frame Start Time: ${new Date(frameStartTime).toLocaleString()}` 
       : "Frame Start Time: Not Started.";
 
-    if (match.endTime) {
+    if (match.endTime && !window.location.href.includes("scoreboard.html")) {
       window.location.href = "../TopDeadCenter/scoreboard.html?matchID=" + match.id;
     }
 
@@ -432,7 +443,7 @@ function UI_UpdateMatchSummary ()
     const scorecardHeader = document.querySelector('.table thead tr');
     scorecardHeader.innerHTML = ''; // Clear existing header cells
 
-    const headerCells = ['Player', ...match.scorecard.H.map((_, index) => index + 1), ''];
+    const headerCells = ['Player', ...match.scorecard.H.map((_, index) => index + 1)];
     headerCells.forEach(header => {
       const th = document.createElement('th');
       th.className = 'cell-tight';
@@ -643,6 +654,10 @@ function StartMatchTimer()
   SetFrameTimer(); // Start frame timer as well
   console.warn('Timer: Match started at:', match.startTime);
   document.getElementById('match-time-start').textContent = `Match Start Time: ${new Date(match.startTime).toLocaleString()}`;
+  UpdateTimerUI();
+  
+  // Push the updated startTime to the database
+  PushMatchToDatabase();
 }
 
 function EndMatchTimer() {
@@ -816,7 +831,7 @@ async function BuildBarGraph(match) {
     text: (match.timing || []).map((time, index) => {
       const runningScoreH = match.scorecard.H.slice(0, index + 1).reduce((acc, val) => acc + (val === 1 || val === 'A' || val === 'C' ? 1 : 0), 0);
       const runningScoreA = match.scorecard.A.slice(0, index + 1).reduce((acc, val) => acc + (val === 1 || val === 'A' || val === 'C' ? 1 : 0), 0);
-      return `${Math.floor(time / 60)}'${time % 60} (${runningScoreH}-${runningScoreA})`; // Running score labels
+      return `${Math.floor(time / 60)}'${time % 60} <br><b>(${runningScoreH}-${runningScoreA})<b>`; // Running score labels
     }),
     textposition: 'inside', // Position labels inside the bars
     textfont: {
@@ -848,10 +863,10 @@ async function BuildBarGraph(match) {
     paper_bgcolor: 'transparent',
     showlegend: false,
     margin: window.innerWidth < 665
-      ? { l: 50, r: 50, t: 0, b: 50 } // Portrait (small screens)
+      ? { l: 50, r: 50, t: 0, b: 100 } // Portrait (small screens)
       : window.innerWidth < 1024
-      ? { l: 100, r: 25, t: 0, b: 25 } // Landscape (medium screens)
-      : { l: 100, r: 50, t: 0, b: 25 }, // Desktop (large screens)
+      ? { l: 100, r: 25, t: 0, b: 100 } // Landscape (medium screens)
+      : { l: 100, r: 50, t: 0, b: 100 }, // Desktop (large screens)
   };
 
   const config = {
