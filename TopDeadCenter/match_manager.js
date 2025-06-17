@@ -29,6 +29,9 @@ window.addEventListener('resize', () =>
   // Update chart container height based on orientation
   const chartContainer = document.getElementById('timeline-chart');
   chartContainer.style.height = isVertical ? '85vh' : '80vh';
+
+  chartContainer.style.height = window.innerWidth > 1024 ? '35vh' : (isVertical ? '85vh' : '80vh');
+
   BuildBarGraph(match);
   UI_UpdateMatchSummary();
 });
@@ -162,6 +165,7 @@ async function OnPayloadReceived (payload)
   UI_UpdateScores();
   UI_UpdateMatchSummary();
   UpdateWinConditionUI();
+
 }
 
 
@@ -171,7 +175,7 @@ let isVertical = window.innerWidth < 665; // Vertical if screen size is small (s
 const chartContainer = document.getElementById('timeline-chart');
 chartContainer.style.height = isVertical ? '85vh' : '80vh';
 
-if (window.innerHeight > 750 && window.innerWidth > 665) {
+if (window.innerHeight > 750) {
   // If screen is large enough, set chart container height to 80vh
   chartContainer.style.height = '35vh';
 }
@@ -396,6 +400,11 @@ function UI_UpdateMatchSummary ()
     playerAHeader.textContent = (players.A.name || 'Player A') + (match.lag === "Away" ? " *" : "");
     headerRow.appendChild(playerAHeader);
 
+    const frameTimeHeader = document.createElement('th');
+    frameTimeHeader.className = 'cell-tight';
+    frameTimeHeader.textContent = 'Time (min)';
+    headerRow.appendChild(frameTimeHeader);
+
     scorecardBody.appendChild(headerRow);
 
     const maxFrames = Math.max(match.scorecard.H.length, match.scorecard.A.length);
@@ -410,13 +419,18 @@ function UI_UpdateMatchSummary ()
 
       const playerHCell = document.createElement('td');
       playerHCell.className = 'cell-tight';
-      playerHCell.textContent = match.scorecard.H[i] || '-';
+      playerHCell.textContent = match.scorecard.H[i] || '.';
       row.appendChild(playerHCell);
 
       const playerACell = document.createElement('td');
       playerACell.className = 'cell-tight';
-      playerACell.textContent = match.scorecard.A[i] || '-';
+      playerACell.textContent = match.scorecard.A[i] || '.';
       row.appendChild(playerACell);
+
+      const frameTimeCell = document.createElement('td');
+      frameTimeCell.className = 'cell-tight';
+      frameTimeCell.textContent = match.timing[i] ? (match.timing[i] / 60).toFixed(1) : '-';
+      row.appendChild(frameTimeCell);
 
       scorecardBody.appendChild(row);
     }
@@ -439,6 +453,14 @@ function UI_UpdateMatchSummary ()
     finalScoreACell.innerHTML = `<b>${match.result_A}</b>`;
     finalScoreRow.appendChild(finalScoreACell);
 
+    const totalTimeCell = document.createElement('td');
+    totalTimeCell.className = 'cell-tight';
+    const totalTime = match.timing.reduce((acc, curr) => acc + curr, 0); // Sum all timing values
+    const totalMinutes = Math.floor(totalTime / 60);
+    const totalSeconds = totalTime % 60;
+    totalTimeCell.textContent = `${totalMinutes}'${totalSeconds}"`; // Format as minutes and seconds
+    finalScoreRow.appendChild(totalTimeCell);
+
     scorecardBody.appendChild(finalScoreRow);
   } 
   else 
@@ -455,6 +477,11 @@ function UI_UpdateMatchSummary ()
       scorecardHeader.appendChild(th);
     });
 
+    const finalScoreHeader = document.createElement('th');
+    finalScoreHeader.className = 'cell-tight';
+    finalScoreHeader.textContent = 'Final Score';
+    scorecardHeader.appendChild(finalScoreHeader);
+
     ['H', 'A'].forEach(player => {
       const row = document.createElement('tr');
       const playerNameCell = document.createElement('td');
@@ -467,18 +494,43 @@ function UI_UpdateMatchSummary ()
       match.scorecard[player].forEach(score => {
         const cell = document.createElement('td');
         cell.className = 'cell-tight';
-        cell.textContent = score || '-';
+        cell.textContent = score || '.';
         row.appendChild(cell);
       });
 
-      // Add final score cell
+      // Add empty cell for frame time
       const finalScoreCell = document.createElement('td');
       finalScoreCell.className = 'cell-tight';
-      finalScoreCell.innerHTML = `<b>${player === 'H' ? match.result_H : match.result_A}</b>`;
+      finalScoreCell.textContent = player === 'H' ? match.result_H : match.result_A;
       row.appendChild(finalScoreCell);
 
       scorecardBody.appendChild(row);
     });
+
+    // Add frame time row
+    const frameTimeRow = document.createElement('tr');
+    const frameTimeLabelCell = document.createElement('td');
+    frameTimeLabelCell.className = 'cell-tight';
+    frameTimeLabelCell.textContent = 'Time (min)';
+    frameTimeRow.appendChild(frameTimeLabelCell);
+
+    match.timing.forEach(time => {
+      const cell = document.createElement('td');
+      cell.className = 'cell-tight';
+      cell.textContent = (time / 60).toFixed(1);
+      frameTimeRow.appendChild(cell);
+    });
+
+    // Add empty cell for alignment
+    const totalTimeCell = document.createElement('td');
+    totalTimeCell.className = 'cell-tight';
+    const totalTime = match.timing.reduce((acc, curr) => acc + curr, 0); // Sum all timing values
+    const totalMinutes = Math.floor(totalTime / 60);
+    const totalSeconds = totalTime % 60;
+    totalTimeCell.textContent = `${totalMinutes}'${totalSeconds}"`; // Format as minutes and seconds
+    frameTimeRow.appendChild(totalTimeCell);
+
+    scorecardBody.appendChild(frameTimeRow);
   }
 
   // Update match summary table
@@ -619,6 +671,7 @@ async function UpdateLagUI()
   lagSelect.appendChild(awayOption);
 
   lagSelect.value = match.lag === 'Home' ? 'home' : 'away';
+  document.getElementById('matchSettingsNav').classList.remove('show');
 }
 
 document.getElementById('select-lag').addEventListener('change', async (event) => 
@@ -662,6 +715,7 @@ function StartMatchTimer()
   
   // Push the updated startTime to the database
   PushMatchToDatabase();
+  document.getElementById('matchSettingsNav').classList.remove('show');
 }
 
 function EndMatchTimer() {
@@ -672,6 +726,7 @@ function EndMatchTimer() {
 
   // Push the updated endTime to the database
   PushMatchToDatabase();
+  document.getElementById('matchSettingsNav').classList.remove('show');
 }
 
 function SetFrameTimer()
@@ -928,3 +983,35 @@ async function UpdateWinCondition()
 
   console.warn('Win condition pushed to database. Response:', response);
 }
+
+document.getElementById('btn-correction').addEventListener('click', async () => 
+{
+  if (match.scorecard.H.length > 0 && match.scorecard.A.length > 0 && match.timing.length > 0) {
+    // Remove the last entries from scorecard and timing
+    match.scorecard.H.pop();
+    match.scorecard.A.pop();
+    match.timing.pop();
+
+    // Recalculate scores
+    match.result_H = match.scorecard.H.filter(score => score === 1 || score === 'A' || score === 'C').length;
+    match.result_A = match.scorecard.A.filter(score => score === 1 || score === 'A' || score === 'C').length;
+
+    // Recalculate apples and reverseApples
+    match.apples_H = match.scorecard.H.filter(score => score === 'A').length;
+    match.apples_A = match.scorecard.A.filter(score => score === 'A').length;
+    match.reverseApples_H = match.scorecard.H.filter(score => score === 'C').length;
+    match.reverseApples_A = match.scorecard.A.filter(score => score === 'C').length;
+
+    console.warn('Correction applied. Updated match:', match);
+
+    // Push the updated match to the database
+    await PushMatchToDatabase();
+
+    // Update the UI
+    UI_UpdateScores();
+    UI_UpdateMatchSummary();
+    BuildBarGraph(match);
+  } else {
+    alert('No entries to remove.');
+  }
+});

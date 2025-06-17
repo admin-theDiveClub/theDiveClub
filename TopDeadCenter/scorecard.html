@@ -48,11 +48,11 @@
             <div class="d-flex">
                 <!-- Match Settings Button -->
                 <button class="navbar-toggler me-2" type="button" data-bs-toggle="collapse" data-bs-target="#matchSettingsNav" aria-controls="matchSettingsNav" aria-expanded="false" aria-label="Toggle match settings">
-                    <i class="bi bi-gear" style="font-size: 3vh; color: white;"></i>
+                    <i class="bi bi-gear" style="font-size: 3vh;"></i>
                 </button>
                 <!-- Navbar Button -->
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                    <i class="bi bi-list" style="font-size: 4vh; color: white;"></i>
+                    <i class="bi bi-list" style="font-size: 4vh;"></i>
                 </button>
             </div>
         </div>
@@ -301,72 +301,26 @@
         <div class="card rounded match-summary-container">
             <div class="summary-content">
 
-                <h2 class="text-center">Match Summary</h2>
+                <h2 class="text-center">
+                    Match Summary 
+                    <button id="btn-correction" class="btn btn-danger">
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
+                </h2>
 
                 <table class="table table-bordered" style="font-size: 50%; text-align: center;">
                     <thead>
                         <tr>
                             <th class="cell-tight">Player</th>
-                            <th class="cell-tight">1</th>
-                            <th class="cell-tight">2</th>
-                            <th class="cell-tight">3</th>
-                            <th class="cell-tight">4</th>
-                            <th class="cell-tight">5</th>
-                            <th class="cell-tight">6</th>
-                            <th class="cell-tight">7</th>
-                            <th class="cell-tight">8</th>
-                            <th class="cell-tight">9</th>
-                            <th class="cell-tight">10</th>
-                            <th class="cell-tight">11</th>
-                            <th class="cell-tight">12</th>
-                            <th class="cell-tight">13</th>
-                            <th class="cell-tight">14</th>
-                            <th class="cell-tight">15</th>
-                            <th class="cell-tight">16</th>
-                            <th class="cell-tight">17</th>
                         </tr>
                     </thead>
                     <tbody id="scorecard-table-body">
                         <!-- Dummy data -->
                         <tr>
                             <td class="cell-tight">Player H</td>
-                            <td class="cell-tight">1</td>
-                            <td class="cell-tight">A</td>
-                            <td class="cell-tight">C</td>
-                            <td class="cell-tight">1</td>
-                            <td class="cell-tight">A</td>
-                            <td class="cell-tight">C</td>
-                            <td class="cell-tight">1</td>
-                            <td class="cell-tight">A</td>
-                            <td class="cell-tight">C</td>
-                            <td class="cell-tight">1</td>
-                            <td class="cell-tight">A</td>
-                            <td class="cell-tight">C</td>
-                            <td class="cell-tight">1</td>
-                            <td class="cell-tight">A</td>
-                            <td class="cell-tight">C</td>
-                            <td class="cell-tight">1</td>
-                            <td class="cell-tight">A</td>
                         </tr>
                         <tr>
                             <td class="cell-tight">Player A</td>
-                            <td class="cell-tight">0</td>
-                            <td class="cell-tight">1</td>
-                            <td class="cell-tight">0</td>
-                            <td class="cell-tight">1</td>
-                            <td class="cell-tight">0</td>
-                            <td class="cell-tight">1</td>
-                            <td class="cell-tight">0</td>
-                            <td class="cell-tight">1</td>
-                            <td class="cell-tight">0</td>
-                            <td class="cell-tight">1</td>
-                            <td class="cell-tight">0</td>
-                            <td class="cell-tight">1</td>
-                            <td class="cell-tight">0</td>
-                            <td class="cell-tight">1</td>
-                            <td class="cell-tight">0</td>
-                            <td class="cell-tight">1</td>
-                            <td class="cell-tight">0</td>
                         </tr>
                     </tbody>
                 </table>
