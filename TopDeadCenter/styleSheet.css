@@ -188,6 +188,7 @@ tr, th, td
 .sponsors-row
 {
     background-color: var(--color-transparent-dark);
+    max-height: 20vh;
 }
 
 .sponsor-logo
