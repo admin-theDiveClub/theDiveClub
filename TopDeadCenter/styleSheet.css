@@ -184,3 +184,20 @@ tr, th, td
     background-color: transparent !important;
     color: var(--color-base-light) !important;
 }
+
+.sponsors-row
+{
+    background-color: var(--color-transparent-dark);
+}
+
+.sponsor-logo
+{
+    max-width: 12%;
+    padding: 6cap;
+}
+
+sub
+{
+    font-size: 0.25em;
+    color: var(--color-base-med);
+}
