@@ -560,6 +560,9 @@ function UI_UpdateMatchSummary ()
   document.getElementById('match-cplus-playerH').textContent = match.reverseApples_H || 0;
   document.getElementById('match-cplus-playerA').textContent = match.reverseApples_A || 0;
 
+  document.getElementById('match-gb-playerH').textContent = match.goldenBreaks_H || 0;
+  document.getElementById('match-gb-playerA').textContent = match.goldenBreaks_A || 0;
+
   const playerHBreaks = { SB: 0, DB: 0, BI: 0 };
   const playerABreaks = { SB: 0, DB: 0, BI: 0 };
 
@@ -626,6 +629,10 @@ document.getElementById('btn-player-A-point').addEventListener('click', () => { 
 document.getElementById('btn-player-A-Apple').addEventListener('click', () => {  UpdateScores(0, 'A');  });
 
 document.getElementById('btn-player-A-cplus').addEventListener('click', () => {  UpdateScores(0, 'C');  });
+
+document.getElementById('btn-player-H-gb').addEventListener('click', () => { UpdateScores('G', 0); });
+
+document.getElementById('btn-player-A-gb').addEventListener('click', () => { UpdateScores(0, 'G'); });
   
 
 document.getElementById('btn-timer-startMatch').addEventListener('click', () => 
@@ -721,16 +728,21 @@ async function UpdateLagUI()
     document.getElementById('btn-player-H-cplus').style.display = 'inline-block';
     document.getElementById('btn-player-A-Apple').style.display = 'inline-block';
     document.getElementById('btn-player-A-cplus').style.display = 'inline-block';
+    document.getElementById('btn-player-H-gb').style.display = 'inline-block';
   } else if (currentLag === "Home") {
     document.getElementById('btn-player-H-Apple').style.display = 'inline-block';
     document.getElementById('btn-player-H-cplus').style.display = 'none';
     document.getElementById('btn-player-A-Apple').style.display = 'none';
     document.getElementById('btn-player-A-cplus').style.display = 'inline-block';
+    document.getElementById('btn-player-H-gb').style.display = 'inline-block';
+    document.getElementById('btn-player-A-gb').style.display = 'none';
   } else if (currentLag === "Away") {
     document.getElementById('btn-player-H-Apple').style.display = 'none';
     document.getElementById('btn-player-H-cplus').style.display = 'inline-block';
     document.getElementById('btn-player-A-Apple').style.display = 'inline-block';
     document.getElementById('btn-player-A-cplus').style.display = 'none';
+    document.getElementById('btn-player-A-gb').style.display = 'inline-block';
+    document.getElementById('btn-player-H-gb').style.display = 'none';
   }
 
   const lagSelect = document.getElementById('select-lag');
@@ -866,7 +878,7 @@ async function UpdateScores (score_H, score_A)
       console.log('breakEvent:', breakEvent);
 
   match.breakHistory.Player.push(currentLag);
-  if (score_H === "A" || score_A === "A") 
+  if (score_H === "A" || score_A === "A" || score_H === "G" || score_A === "G") 
   {
     match.breakHistory.Event.push(2);
   } else 
@@ -912,6 +924,16 @@ async function UpdateScores (score_H, score_A)
       match.reverseApples_A++;
   }
 
+  // Update goldenBreaks to match
+  if (score_H == 'G') 
+  {
+    match.goldenBreaks_H++;
+  } 
+  else if (score_A == 'G') 
+  {
+    match.goldenBreaks_A++;
+  }
+
   // Update breakHistory based on currentLag and radio group selection
   if (!match.breakHistory) {
       match.breakHistory = { Player: [], Event: [] };
@@ -955,6 +977,8 @@ async function PushMatchToDatabase()
     status: match.status,
     type: match.type,
     winCondition: match.winCondition,
+    goldenBreaks_H: match.goldenBreaks_H,
+    goldenBreaks_A: match.goldenBreaks_A,
   }).eq('id', match.id).select();
   console.warn('Match pushed to database. Response:', response);
 }
@@ -989,6 +1013,8 @@ function PrepareBarGraphData(match) {
       colors.push('rgba(230, 161, 0, 0.5)'); // Yellow for "A"
     } else if (match.scorecard.H[i] === 'C' || match.scorecard.A[i] === 'C') {
       colors.push('rgba(0, 255, 0, 0.25)'); // Green for "C"
+    } else if (match.scorecard.H[i] === 'G' || match.scorecard.A[i] === 'G') {
+      colors.push('rgba(234, 0, 103, 1)'); // Red for "G"
     } else {
       colors.push('rgba(255, 255, 255, 0.1)'); // Default transparent color
     }
@@ -1154,6 +1180,8 @@ document.getElementById('btn-correction').addEventListener('click', async () =>
     match.apples_A = match.scorecard.A.filter(score => score === 'A').length;
     match.reverseApples_H = match.scorecard.H.filter(score => score === 'C').length;
     match.reverseApples_A = match.scorecard.A.filter(score => score === 'C').length;
+    match.goldenBreaks_H = match.scorecard.H.filter(score => score === 'G').length;
+    match.goldenBreaks_A = match.scorecard.A.filter(score => score === 'G').length;
 
     console.warn('Correction applied. Updated match:', match);
 

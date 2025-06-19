@@ -76,7 +76,8 @@
 
 .player-point-btn,
 .player-apple-btn,
-.player-cplus-btn {
+.player-cplus-btn,
+.player-gb-btn {
     font-size: clamp(2cap, 4vmax, 5cap);
     font-family: "CustomFont", sans-serif; /* Apply custom font */
 }
