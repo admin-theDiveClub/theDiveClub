@@ -517,7 +517,9 @@ function UI_UpdateMatchSummary ()
     match.timing.forEach(time => {
       const cell = document.createElement('td');
       cell.className = 'cell-tight';
-      cell.textContent = (time / 60).toFixed(1);
+      const minutes = Math.floor(time / 60);
+      const seconds = time % 60;
+      cell.textContent = `${minutes}'${seconds}"`;
       frameTimeRow.appendChild(cell);
     });
 
@@ -525,9 +527,10 @@ function UI_UpdateMatchSummary ()
     const totalTimeCell = document.createElement('td');
     totalTimeCell.className = 'cell-tight';
     const totalTime = match.timing.reduce((acc, curr) => acc + curr, 0); // Sum all timing values
-    const totalMinutes = Math.floor(totalTime / 60);
+    const totalHours = Math.floor(totalTime / 3600);
+    const totalMinutes = Math.floor((totalTime % 3600) / 60);
     const totalSeconds = totalTime % 60;
-    totalTimeCell.textContent = `${totalMinutes}'${totalSeconds}"`; // Format as minutes and seconds
+    totalTimeCell.textContent = `${String(totalHours).padStart(2, '0')}:${String(totalMinutes).padStart(2, '0')}:${String(totalSeconds).padStart(2, '0')}`; // Format as hh:mm:ss
     frameTimeRow.appendChild(totalTimeCell);
 
     scorecardBody.appendChild(frameTimeRow);
@@ -617,13 +620,54 @@ document.getElementById('btn-timer-endMatch').addEventListener('click', () =>
 function GetCurrentLag() 
 {
   const totalFrames = match.scorecard.H.length;
-  return match.lag === "Home" 
-    ? (totalFrames % 2 === 0 ? "Home" : "Away") 
-    : (totalFrames % 2 === 0 ? "Away" : "Home");
+  if (match.lagType === "Alternate") {
+    return match.lag === "Home" 
+      ? (totalFrames % 2 === 0 ? "Home" : "Away") 
+      : (totalFrames % 2 === 0 ? "Away" : "Home");
+  } else if (match.lagType === "Winner") {
+    if (totalFrames === 0) {
+      return match.lag; // Whoever wins the lag breaks first
+    } else {
+      const lastFrameWinner = match.scorecard.H[totalFrames - 1] !== 0 ? "Home" : "Away";
+      return lastFrameWinner; // Winner of the last frame breaks next
+    }
+  }
+
+  return null; // Default case if lagType is not set
+}
+
+document.querySelectorAll('input[name="lagType"]').forEach((radio) => {
+  radio.addEventListener('change', (event) => {
+    handleLagTypeChange(event.target.value);
+  });
+});
+
+function handleLagTypeChange(value) {
+  match.lagType = value === "alternateBreak" ? "Alternate" : "Winner";
+
+  // Update the lag UI
+  UpdateLagUI();
+
+  // Push the updated lagType to the database
+  supabase.from('tbl_matches').update({
+    lagType: match.lagType,
+  }).eq('id', match.id).select().then(response => {
+    console.warn('Lag type updated in database. Response:', response);
+  }).catch(error => {
+    console.error('Error updating lag type in database:', error);
+  });
 }
 
 async function UpdateLagUI() 
 {
+  // Update the selected lag type based on match.lagType
+  const lagTypeRadios = document.getElementsByName('lagType');
+  lagTypeRadios.forEach(radio => {
+    radio.checked = (match.lagType === "Winner" && radio.value === "winnerBreak") || 
+                    (match.lagType === "Alternate" && radio.value === "alternateBreak");
+  });
+
+
   const playerHBreakIndicator = document.getElementById('player-H-break-indicator-container');
   const playerABreakIndicator = document.getElementById('player-A-break-indicator-container');
 
@@ -736,6 +780,12 @@ function SetFrameTimer()
   sessionStorage.setItem('frameStartTime', frameStartTime);
   console.log('Timer: Frame timer started at:', frameStartTime);
   document.getElementById('frame-time-start').textContent = `Frame Start Time: ${new Date(frameStartTime).toLocaleString()}`;
+
+  // Store a list of frameStartTimes in local & session storage
+  const frameStartTimes = JSON.parse(localStorage.getItem('frameStartTimes') || '[]');
+  frameStartTimes.push(frameStartTime);
+  localStorage.setItem('frameStartTimes', JSON.stringify(frameStartTimes));
+  sessionStorage.setItem('frameStartTimes', JSON.stringify(frameStartTimes));
 }
 
 document.getElementById('btn-timer-restartFrameTimer').addEventListener('click', () => 
@@ -991,6 +1041,22 @@ document.getElementById('btn-correction').addEventListener('click', async () =>
     match.scorecard.H.pop();
     match.scorecard.A.pop();
     match.timing.pop();
+
+    // Update local and session storage for frameStartTime
+    const frameStartTimes = JSON.parse(localStorage.getItem('frameStartTimes') || '[]');
+    frameStartTimes.pop(); // Remove the last entry
+    localStorage.setItem('frameStartTimes', JSON.stringify(frameStartTimes));
+    sessionStorage.setItem('frameStartTimes', JSON.stringify(frameStartTimes));
+
+    // Update the current frameStartTime to the last entry in frameStartTimes
+    const lastFrameStartTime = frameStartTimes[frameStartTimes.length - 1] || null;
+    if (lastFrameStartTime) {
+      localStorage.setItem('frameStartTime', lastFrameStartTime);
+      sessionStorage.setItem('frameStartTime', lastFrameStartTime);
+    } else {
+      localStorage.removeItem('frameStartTime');
+      sessionStorage.removeItem('frameStartTime');
+    }
 
     // Recalculate scores
     match.result_H = match.scorecard.H.filter(score => score === 1 || score === 'A' || score === 'C').length;
