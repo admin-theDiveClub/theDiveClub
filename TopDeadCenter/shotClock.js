@@ -13,6 +13,7 @@ const startKey = "s"; // Start the timer
 const pauseKey = "p"; // Pause the timer
 const resetKey = "r"; // Reset the timer
 const restartKey = " "; // Restart the timer for the next shot (spacebar)
+const extensionKey = "e"; // Extend the shot time by 15 seconds
 
 console.log(`Key bindings - Start: ${startKey}, Pause: ${pauseKey}, Reset: ${resetKey}`);
 
@@ -111,6 +112,11 @@ document.addEventListener("keydown", (event) => {
             currentTime = shotTime * 10; // Update current time
             updateDisplay();
             console.log(`Shot time decreased to ${shotTime} seconds`);
+            break;
+        case extensionKey:
+            currentTime += extensionTime * 10; // Add extension time in tenths of a second
+            updateDisplay();    
+            console.log(`Shot time extended by ${extensionTime} seconds. New shot time: ${shotTime} seconds`);
             break;
     }
 });
