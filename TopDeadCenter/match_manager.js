@@ -491,10 +491,19 @@ function UI_UpdateMatchSummary ()
         : (players.A.name || 'Player A') + (match.lag === "Away" ? " *" : "");
       row.appendChild(playerNameCell);
 
-      match.scorecard[player].forEach(score => {
+      match.scorecard[player].forEach((score, index) => {
         const cell = document.createElement('td');
         cell.className = 'cell-tight';
-        cell.textContent = score || '.';
+        const breakEvent = match.breakHistory && match.breakHistory.Player[index] === (player === 'H' ? 'Home' : 'Away')
+          ? match.breakHistory.Event[index] === 0
+        ? ' (SB)'
+        : match.breakHistory.Event[index] === 1
+        ? ' (DB)'
+        : match.breakHistory.Event[index] === 2
+        ? ' (BI)'
+        : ''
+          : '';
+        cell.textContent = (score || '.') + breakEvent;
         row.appendChild(cell);
       });
 
@@ -550,6 +559,29 @@ function UI_UpdateMatchSummary ()
 
   document.getElementById('match-cplus-playerH').textContent = match.reverseApples_H || 0;
   document.getElementById('match-cplus-playerA').textContent = match.reverseApples_A || 0;
+
+  const playerHBreaks = { SB: 0, DB: 0, BI: 0 };
+  const playerABreaks = { SB: 0, DB: 0, BI: 0 };
+
+  if (match.breakHistory && match.breakHistory.Player && match.breakHistory.Event) {
+    match.breakHistory.Player.forEach((player, index) => {
+      const event = match.breakHistory.Event[index];
+      if (player === "Home") {
+        if (event === 0) playerHBreaks.SB++;
+        else if (event === 1) playerHBreaks.DB++;
+        else if (event === 2) playerHBreaks.BI++;
+      } else if (player === "Away") {
+        if (event === 0) playerABreaks.SB++;
+        else if (event === 1) playerABreaks.DB++;
+        else if (event === 2) playerABreaks.BI++;
+      }
+    });
+  }
+
+  document.getElementById("match-break-playerH").textContent = 
+    `${playerHBreaks.SB} | ${playerHBreaks.DB} | ${playerHBreaks.BI}`;
+  document.getElementById("match-break-playerA").textContent = 
+    `${playerABreaks.SB} | ${playerABreaks.DB} | ${playerABreaks.BI}`;
 
   const winner =
     match.result_H > match.result_A
@@ -716,6 +748,20 @@ async function UpdateLagUI()
 
   lagSelect.value = match.lag === 'Home' ? 'home' : 'away';
   document.getElementById('matchSettingsNav').classList.remove('show');
+
+  const playerHBreakInfoContainer = document.getElementById('player-H-BreakInfo-container');
+  const playerABreakInfoContainer = document.getElementById('player-A-BreakInfo-container');
+
+  if (currentLag === "Home") {
+    playerHBreakInfoContainer.style.display = "block";
+    playerABreakInfoContainer.style.display = "none";
+  } else if (currentLag === "Away") {
+    playerHBreakInfoContainer.style.display = "none";
+    playerABreakInfoContainer.style.display = "block";
+  } else {
+    playerHBreakInfoContainer.style.display = "none";
+    playerABreakInfoContainer.style.display = "none";
+  }
 }
 
 document.getElementById('select-lag').addEventListener('change', async (event) => 
@@ -810,50 +856,78 @@ function GetFrameTime ()
 //Update Scores (Button Inputs)
 async function UpdateScores (score_H, score_A)
 {
-  //add scores to match.scorecard
+  
+
+  const currentLag = GetCurrentLag();
+  const breakEvent = currentLag === "Home"
+      ? document.querySelector('input[name="player-H-option"]:checked').value
+      : document.querySelector('input[name="player-A-option"]:checked').value;
+
+      console.log('breakEvent:', breakEvent);
+
+  match.breakHistory.Player.push(currentLag);
+  if (score_H === "A" || score_A === "A") 
+  {
+    match.breakHistory.Event.push(2);
+  } else 
+  {
+    if (breakEvent === "SB") 
+    {
+      match.breakHistory.Event.push(0);
+    } else if (breakEvent === "DB") 
+    {
+      match.breakHistory.Event.push(1);
+    } else 
+    {
+      match.breakHistory.Event.push(2);
+    }
+  }
+
+
+  // Add scores to match.scorecard
   match.scorecard.H.push(score_H);
   match.scorecard.A.push(score_A);
 
-  //add frame time to match.timing and restart frame timer
+  // Add frame time to match.timing and restart frame timer
   Timer_NextFrame();
 
-  //update match.result_H and match.result_A
-  if (score_H == 0)
-  {
-    match.result_A++;
-  } else if (score_A == 0)
-  {
-    match.result_H++;
+  // Update match.result_H and match.result_A
+  if (score_H == 0) {
+      match.result_A++;
+  } else if (score_A == 0) {
+      match.result_H++;
   }
 
-  //update apples to match
-  if (score_H == 'A')
-  {
-    match.apples_H++;
-  } else if (score_A == 'A')
-  {
-    match.apples_A++;
+  // Update apples to match
+  if (score_H == 'A') {
+      match.apples_H++;
+  } else if (score_A == 'A') {
+      match.apples_A++;
   }
 
-  //update reverseApples (C+) to match
-  if (score_H == 'C')
-  {
-    match.reverseApples_H++;
-  } else if (score_A == 'C')
-  {
-    match.reverseApples_A++;
+  // Update reverseApples (C+) to match
+  if (score_H == 'C') {
+      match.reverseApples_H++;
+  } else if (score_A == 'C') {
+      match.reverseApples_A++;
+  }
+
+  // Update breakHistory based on currentLag and radio group selection
+  if (!match.breakHistory) {
+      match.breakHistory = { Player: [], Event: [] };
   }
 
   console.warn('Scores Updated. Updated match:', match);
 
-  //push match to database
+  // Push match to database
   PushMatchToDatabase();
 
-  //Check win condition
+  // Check win condition
   if (match.type !== 'freePlay' && (match.result_H >= match.winCondition || match.result_A >= match.winCondition))
   {
     if (confirm('Match has ended. Do you want to end the match?')) 
     {
+      match.status = "Completed"; // Update match status to completed
       EndMatchTimer();
     } else 
     {
@@ -874,7 +948,13 @@ async function PushMatchToDatabase()
     scorecard: match.scorecard,
     timing: match.timing,
     startTime: match.startTime,
-    endTime: match.endTime
+    endTime: match.endTime,
+    breakHistory: match.breakHistory,
+    lag: match.lag,
+    lagType: match.lagType,
+    status: match.status,
+    type: match.type,
+    winCondition: match.winCondition,
   }).eq('id', match.id).select();
   console.warn('Match pushed to database. Response:', response);
 }
@@ -1041,6 +1121,13 @@ document.getElementById('btn-correction').addEventListener('click', async () =>
     match.scorecard.H.pop();
     match.scorecard.A.pop();
     match.timing.pop();
+
+    // Remove the last entries from breakHistory
+    if (match.breakHistory && match.breakHistory.Player.length > 0 && match.breakHistory.Event.length > 0) 
+    {
+      match.breakHistory.Player.pop();
+      match.breakHistory.Event.pop();
+    }
 
     // Update local and session storage for frameStartTime
     const frameStartTimes = JSON.parse(localStorage.getItem('frameStartTimes') || '[]');
