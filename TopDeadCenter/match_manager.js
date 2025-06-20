@@ -83,7 +83,8 @@ function UpdateTimerUI ()
       ? `Frame Start Time: ${new Date(frameStartTime).toLocaleString()}` 
       : "Frame Start Time: Not Started.";
 
-    if (match.endTime && !window.location.href.includes("scoreboard.html")) {
+    if (match.endTime && window.location.href.includes("scorecard.html")) 
+    {
       window.location.href = "../TopDeadCenter/scoreboard.html?matchID=" + match.id;
     }
 

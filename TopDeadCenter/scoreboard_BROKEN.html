@@ -48,11 +48,11 @@
             <div class="d-flex">
                 <!-- Match Settings Button -->
                 <button style="display: none;" class="navbar-toggler me-2" type="button" data-bs-toggle="collapse" data-bs-target="#matchSettingsNav" aria-controls="matchSettingsNav" aria-expanded="false" aria-label="Toggle match settings">
-                    <i class="bi bi-gear" style="font-size: 3vh;"></i>
+                    <i class="bi bi-gear" style="font-size: 3vh; color: white;"></i>
                 </button>
                 <!-- Navbar Button -->
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                    <i class="bi bi-list" style="font-size: 4vh;"></i>
+                    <i class="bi bi-list" style="font-size: 4vh; color: white;"></i>
                 </button>
             </div>
         </div>
@@ -126,25 +126,6 @@
                     <div class="col-sm-4">
                         <div class="card rounded card-component">
                             <p class="matchSettings-heading">Lag</p>
-                            <div class="row">
-                                <div class="col-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="lagType" id="alternateBreak" value="alternateBreak" onchange="handleLagTypeChange(this.value)">
-                                        <label class="form-check-label" for="alternateBreak">
-                                            Alternate Break
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="lagType" id="winnerBreak" value="winnerBreak" onchange="handleLagTypeChange(this.value)">
-                                        <label class="form-check-label" for="winnerBreak">
-                                            Winner Break
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                            <p>Lag Winner:</p>
                             <select class="form-select" aria-label="Home" id="select-lag">
                                 <option value="home">Home</option>
                                 <option value="away">Away</option>
@@ -251,30 +232,9 @@
                             </div>
                         </div>
                         <div style="display: none;"  class="card-footer player-footer">
-                            <div class="d-flex justify-content-center align-items-center">
-                                <div>
-                                    <button id="btn-player-H-point" class="btn btn-primary player-point-btn">Point</button>
-                                    <button id="btn-player-H-Apple" class="btn btn-warning player-apple-btn">Apple</button>
-                                    <button id="btn-player-H-gb" class="btn btn-warning player-gb-btn">GB</button>
-                                    <button id="btn-player-H-cplus" class="btn btn-success player-cplus-btn">C+</button>
-                                </div>
-                                <div style="color: white; font-size: 1.5cap; font-family: 'Segoe UI'; margin-left: 1cap;" id="player-H-BreakInfo-container">
-                                    <div class="form-check justify-content-center" style="text-align: center;">
-                                        <input class="form-check-input" type="radio" name="player-H-option" id="player-H-DB" value="DB" checked>
-                                        <label class="form-check-label" for="player-H-DB">DB</label>
-                                    </div>
-                                    <div class="d-flex justify-content-around">
-                                        <div class="form-check" style="margin-right: 2cap;">
-                                            <input class="form-check-input" type="radio" name="player-H-option" id="player-H-SB" value="SB">
-                                            <label class="form-check-label" for="player-H-SB">SB</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="player-H-option" id="player-H-BI" value="BI">
-                                            <label class="form-check-label" for="player-H-BI">BI</label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <button id="btn-player-H-point" class="btn btn-primary player-point-btn">Point</button>
+                            <button id="btn-player-H-Apple" class="btn btn-warning player-apple-btn">Apple</button>
+                            <button id="btn-player-H-cplus" class="btn btn-success player-cplus-btn">C+</button>
                         </div>
                     </div>
                 </div>
@@ -313,30 +273,9 @@
                             </div>
                         </div>
                         <div style="display: none;" class="card-footer player-footer">
-                            <div class="d-flex justify-content-center align-items-center">
-                                <div>
-                                    <button id="btn-player-A-point" class="btn btn-primary player-point-btn">Point</button>
-                                    <button id="btn-player-A-Apple" class="btn btn-warning player-apple-btn">Apple</button>
-                                    <button id="btn-player-A-gb" class="btn btn-warning player-gb-btn">GB</button>
-                                    <button id="btn-player-A-cplus" class="btn btn-success player-cplus-btn">C+</button>
-                                </div>
-                                <div style="color: white; font-size: 1.5cap; font-family: 'Segoe UI'; margin-left: 1cap;" id="player-A-BreakInfo-container">
-                                    <div class="form-check justify-content-center" style="text-align: center;">
-                                        <input class="form-check-input" type="radio" name="player-A-option" id="player-A-DB" value="DB" checked>
-                                        <label class="form-check-label" for="player-A-DB">DB</label>
-                                    </div>
-                                    <div class="d-flex justify-content-around">
-                                        <div class="form-check" style="margin-right: 2cap;">
-                                            <input class="form-check-input" type="radio" name="player-A-option" id="player-A-SB" value="SB">
-                                            <label class="form-check-label" for="player-A-SB">SB</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="player-A-option" id="player-A-BI" value="BI">
-                                            <label class="form-check-label" for="player-A-BI">BI</label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <button id="btn-player-A-point" class="btn btn-primary player-point-btn">Point</button>
+                            <button id="btn-player-A-Apple" class="btn btn-warning player-apple-btn">Apple</button>
+                            <button id="btn-player-A-cplus" class="btn btn-success player-cplus-btn">C+</button>
                         </div>
                     </div>
                 </div>
@@ -362,12 +301,11 @@
         <div class="card rounded match-summary-container">
             <div class="summary-content">
 
-                <h2 class="text-center">
-                    Match Summary 
-                    <button style="display: none;" id="btn-correction" class="btn btn-danger">
-                        <i class="bi bi-arrow-left"></i>
-                    </button>
-                </h2>
+                <h2 class="text-center">Match Summary</h2>
+
+                <button style="display: none;" id="btn-warning" class="btn btn-warning">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
 
                 <table class="table table-bordered" style="font-size: 50%; text-align: center;">
                     <thead>
@@ -409,11 +347,6 @@
                             <td>C<sup>+</sup></td>
                             <td id="match-cplus-playerH">0</td>
                             <td id="match-cplus-playerA">0</td>
-                        </tr>
-                        <tr>
-                            <td>Golden Breaks</td>
-                            <td id="match-gb-playerH">0</td>
-                            <td id="match-gb-playerA">0</td>
                         </tr>
                         <tr>
                             <td>Breaks (SB | DB | BI)</td>
