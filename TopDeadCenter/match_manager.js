@@ -869,125 +869,118 @@ function GetFrameTime ()
 //Update Scores (Button Inputs)
 async function UpdateScores (score_H, score_A)
 {
-  
-  if (match.status === "Completed") 
+  const currentLag = GetCurrentLag();
+  const breakEvent = currentLag === "Home"
+    ? document.querySelector('input[name="player-H-option"]:checked').value
+    : document.querySelector('input[name="player-A-option"]:checked').value;
+  match.breakHistory.Player.push(currentLag);
+
+  if (score_H === "A" || score_A === "A" || score_H === "G" || score_A === "G") 
   {
-    alert('Match has already ended. You cannot update scores.');
-    return;
+    match.breakHistory.Event.push(2);
   } else 
-  { 
-    const currentLag = GetCurrentLag();
-    const breakEvent = currentLag === "Home"
-      ? document.querySelector('input[name="player-H-option"]:checked').value
-      : document.querySelector('input[name="player-A-option"]:checked').value;
-
-      console.log('breakEvent:', breakEvent);
-
-    match.breakHistory.Player.push(currentLag);
-    if (score_H === "A" || score_A === "A" || score_H === "G" || score_A === "G") 
+  {
+    if (breakEvent === "SB") 
     {
-      match.breakHistory.Event.push(2);
+      match.breakHistory.Event.push(0);
+    } else if (breakEvent === "DB") 
+    {
+      match.breakHistory.Event.push(1);
     } else 
     {
-      if (breakEvent === "SB") 
-      {
-        match.breakHistory.Event.push(0);
-      } else if (breakEvent === "DB") 
-      {
-        match.breakHistory.Event.push(1);
-      } else 
-      {
-        match.breakHistory.Event.push(2);
-      }
+      match.breakHistory.Event.push(2);
     }
+  }
 
 
-    // Add scores to match.scorecard
-    match.scorecard.H.push(score_H);
-    match.scorecard.A.push(score_A);
+  // Add scores to match.scorecard
+  match.scorecard.H.push(score_H);
+  match.scorecard.A.push(score_A);
 
-    // Add frame time to match.timing and restart frame timer
-    Timer_NextFrame();
+  // Add frame time to match.timing and restart frame timer
+  Timer_NextFrame();
 
-    // Update match.result_H and match.result_A
-    if (score_H == 0) {
-        match.result_A++;
-    } else if (score_A == 0) {
-        match.result_H++;
-    }
+  // Update match.result_H and match.result_A
+  if (score_H == 0) {
+      match.result_A++;
+  } else if (score_A == 0) {
+      match.result_H++;
+  }
 
-    // Update apples to match
-    if (score_H == 'A') {
-        match.apples_H++;
-    } else if (score_A == 'A') {
-        match.apples_A++;
-    }
+  // Update apples to match
+  if (score_H == 'A') {
+      match.apples_H++;
+  } else if (score_A == 'A') {
+      match.apples_A++;
+  }
 
-    // Update reverseApples (C+) to match
-    if (score_H == 'C') {
-        match.reverseApples_H++;
-    } else if (score_A == 'C') {
-        match.reverseApples_A++;
-    }
+  // Update reverseApples (C+) to match
+  if (score_H == 'C') {
+      match.reverseApples_H++;
+  } else if (score_A == 'C') {
+      match.reverseApples_A++;
+  }
 
-    // Update goldenBreaks to match
-    if (score_H == 'G') 
+  // Update goldenBreaks to match
+  if (score_H == 'G') 
+  {
+    match.goldenBreaks_H++;
+  } 
+  else if (score_A == 'G') 
+  {
+    match.goldenBreaks_A++;
+  }
+
+  // Update breakHistory based on currentLag and radio group selection
+  if (!match.breakHistory) {
+      match.breakHistory = { Player: [], Event: [] };
+  }
+
+  console.warn('Scores Updated. Updated match:', match);
+
+  // Push match to database
+  PushMatchToDatabase();
+
+  // Check win condition
+  if (match.type !== 'freePlay' && (match.result_H >= match.winCondition || match.result_A >= match.winCondition))
+  {
+    if (confirm('Match has ended. Do you want to end the match?')) 
     {
-      match.goldenBreaks_H++;
-    } 
-    else if (score_A == 'G') 
+      match.status = "Completed"; // Update match status to completed
+      EndMatchTimer();
+    } else 
     {
-      match.goldenBreaks_A++;
-    }
-
-    // Update breakHistory based on currentLag and radio group selection
-    if (!match.breakHistory) {
-        match.breakHistory = { Player: [], Event: [] };
-    }
-
-    console.warn('Scores Updated. Updated match:', match);
-
-    // Push match to database
-    PushMatchToDatabase();
-
-    // Check win condition
-    if (match.type !== 'freePlay' && (match.result_H >= match.winCondition || match.result_A >= match.winCondition))
-    {
-      if (confirm('Match has ended. Do you want to end the match?')) 
-      {
-        match.status = "Completed"; // Update match status to completed
-        EndMatchTimer();
-      } else 
-      {
-        alert('Match continues. You can end it later.');
-      }
+      alert('Match continues. You can end it later.');
     }
   }
 }
 
 async function PushMatchToDatabase()
 {
-  const response = await supabase.from('tbl_matches').update({
-    result_H: match.result_H,
-    result_A: match.result_A,
-    apples_H: match.apples_H,
-    apples_A: match.apples_A,
-    reverseApples_H: match.reverseApples_H,
-    reverseApples_A: match.reverseApples_A,
-    scorecard: match.scorecard,
-    timing: match.timing,
-    startTime: match.startTime,
-    endTime: match.endTime,
-    breakHistory: match.breakHistory,
-    lag: match.lag,
-    lagType: match.lagType,
-    status: match.status,
-    type: match.type,
-    winCondition: match.winCondition,
-    goldenBreaks_H: match.goldenBreaks_H,
-    goldenBreaks_A: match.goldenBreaks_A,
-  }).eq('id', match.id).select();
-  console.warn('Match pushed to database. Response:', response);
+  if (match.status != "Completed") 
+  {
+    const response = await supabase.from('tbl_matches').update({
+      result_H: match.result_H,
+      result_A: match.result_A,
+      apples_H: match.apples_H,
+      apples_A: match.apples_A,
+      reverseApples_H: match.reverseApples_H,
+      reverseApples_A: match.reverseApples_A,
+      scorecard: match.scorecard,
+      timing: match.timing,
+      startTime: match.startTime,
+      endTime: match.endTime,
+      breakHistory: match.breakHistory,
+      lag: match.lag,
+      lagType: match.lagType,
+      status: match.status,
+      type: match.type,
+      winCondition: match.winCondition,
+      goldenBreaks_H: match.goldenBreaks_H,
+      goldenBreaks_A: match.goldenBreaks_A,
+    }).eq('id', match.id).select();
+    console.warn('Match pushed to database. Response:', response);
+  }
 }
 
 // Prepare the data for a bar graph and create the graph using Chart.js
