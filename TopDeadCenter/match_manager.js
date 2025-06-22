@@ -155,9 +155,10 @@ async function OnPayloadReceived (payload)
   console.log('Change received!', payload.new);
   match = payload.new;
 
-  if (match.status === "Complete")
+  if ((match.status === "Complete") && (window.location.href.includes("scorecard.html")))
   {
     matchEnded = true;
+    window.location.href = "../TopDeadCenter/scoreboard.html?matchID=" + match.id;
   }
 
   // Update player profiles if necessary
@@ -463,7 +464,7 @@ function UI_UpdateMatchSummary ()
 
     const totalTimeCell = document.createElement('td');
     totalTimeCell.className = 'cell-tight';
-    const totalTime = match.timing.reduce((acc, curr) => acc + curr, 0); // Sum all timing values
+    const totalTime = Array.isArray(match.timing) ? match.timing.reduce((acc, curr) => acc + curr, 0) : 0; // Sum all timing values or default to 0
     const totalMinutes = Math.floor(totalTime / 60);
     const totalSeconds = totalTime % 60;
     totalTimeCell.textContent = `${totalMinutes}'${totalSeconds}"`; // Format as minutes and seconds
@@ -531,7 +532,7 @@ function UI_UpdateMatchSummary ()
     frameTimeLabelCell.textContent = 'Time (min)';
     frameTimeRow.appendChild(frameTimeLabelCell);
 
-    match.timing.forEach(time => {
+    (Array.isArray(match.timing) ? match.timing : []).forEach(time => {
       const cell = document.createElement('td');
       cell.className = 'cell-tight';
       const minutes = Math.floor(time / 60);
@@ -543,11 +544,18 @@ function UI_UpdateMatchSummary ()
     // Add empty cell for alignment
     const totalTimeCell = document.createElement('td');
     totalTimeCell.className = 'cell-tight';
-    const totalTime = match.timing.reduce((acc, curr) => acc + curr, 0); // Sum all timing values
-    const totalHours = Math.floor(totalTime / 3600);
-    const totalMinutes = Math.floor((totalTime % 3600) / 60);
-    const totalSeconds = totalTime % 60;
-    totalTimeCell.textContent = `${String(totalHours).padStart(2, '0')}:${String(totalMinutes).padStart(2, '0')}:${String(totalSeconds).padStart(2, '0')}`; // Format as hh:mm:ss
+    if (match.timing && match.timing.length > 0)
+    {
+      const totalTime = match.timing.reduce((acc, curr) => acc + curr, 0); // Sum all timing values
+      const totalHours = Math.floor(totalTime / 3600);
+      const totalMinutes = Math.floor((totalTime % 3600) / 60);
+      const totalSeconds = totalTime % 60;
+      totalTimeCell.textContent = `${String(totalHours).padStart(2, '0')}:${String(totalMinutes).padStart(2, '0')}:${String(totalSeconds).padStart(2, '0')}`; // Format as hh:mm:ss
+    } else 
+    {
+      totalTimeCell.textContent = '00:00:00'; // Default value if no timing data
+    }
+    
     frameTimeRow.appendChild(totalTimeCell);
 
     scorecardBody.appendChild(frameTimeRow);
@@ -767,7 +775,6 @@ async function UpdateLagUI()
   lagSelect.appendChild(awayOption);
 
   lagSelect.value = match.lag === 'Home' ? 'home' : 'away';
-  document.getElementById('matchSettingsNav').classList.remove('show');
 
   const playerHBreakInfoContainer = document.getElementById('player-H-BreakInfo-container');
   const playerABreakInfoContainer = document.getElementById('player-A-BreakInfo-container');
@@ -837,11 +844,6 @@ function EndMatchTimer() {
   // Push the updated endTime to the database
   PushMatchToDatabase();
   document.getElementById('matchSettingsNav').classList.remove('show');
-
-  if (window.location.href.includes("scorecard.html")) 
-  {
-    window.location.href = "../TopDeadCenter/scoreboard.html?matchID=" + match.id;
-  }
 }
 
 function SetFrameTimer()
