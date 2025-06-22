@@ -428,12 +428,30 @@ function UI_UpdateMatchSummary ()
 
       const playerHCell = document.createElement('td');
       playerHCell.className = 'cell-tight';
-      playerHCell.textContent = match.scorecard.H[i] || '.';
+      const breakEventH = match.breakHistory && match.breakHistory.Player[i] === "Home"
+        ? match.breakHistory.Event[i] === 0
+          ? ' (SB)'
+          : match.breakHistory.Event[i] === 1
+          ? ' (DB)'
+          : match.breakHistory.Event[i] === 2
+          ? ' (BI)'
+          : ''
+        : '';
+      playerHCell.textContent = (match.scorecard.H[i] || '.') + breakEventH;
       row.appendChild(playerHCell);
 
       const playerACell = document.createElement('td');
       playerACell.className = 'cell-tight';
-      playerACell.textContent = match.scorecard.A[i] || '.';
+      const breakEventA = match.breakHistory && match.breakHistory.Player[i] === "Away"
+        ? match.breakHistory.Event[i] === 0
+          ? ' (SB)'
+          : match.breakHistory.Event[i] === 1
+          ? ' (DB)'
+          : match.breakHistory.Event[i] === 2
+          ? ' (BI)'
+          : ''
+        : '';
+      playerACell.textContent = (match.scorecard.A[i] || '.') + breakEventA;
       row.appendChild(playerACell);
 
       const frameTimeCell = document.createElement('td');

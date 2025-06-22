@@ -23,7 +23,6 @@ async function Start() {
         if (containerAccount) {
             containerAccount.style.display = "none";
         }
-        window.location.href = "../accounts/login.html";
         return;
     }
 
