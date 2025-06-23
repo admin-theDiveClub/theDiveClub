@@ -104,6 +104,7 @@ th, tr, td
 {
     padding: 0cap !important;
     font-size: clamp(1cap, 5vmax, 3cap);
+    word-wrap: break-word !important;
 }
 
 table

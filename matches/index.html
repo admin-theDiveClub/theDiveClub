@@ -3,7 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scorecard</title>
+    <script>
+        // Mobile-only helper (keeps desktop unaffected)
+        function hideIosChromeToolbar() {
+          // run only on iOS browsers
+          if (/iphone|ipod|ipad/i.test(navigator.userAgent)) {
+            // give the browser a tick to finish the first layout,
+            // then scroll the viewport by one pixel
+            setTimeout(() => window.scrollTo(0, 1), 0);
+          }
+        }
+      
+        // call once the DOM is ready
+        window.addEventListener('load', hideIosChromeToolbar);
+      </script>
+      
+    
+    <title>TDC Scorecard</title>
 
     <!-- Import Supabase resources via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
@@ -14,217 +30,399 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link href="../stylesheets/styles_master.css" rel="stylesheet">
+    <link href="../TopDeadCenter/styleSheet.css" rel="stylesheet">
+    <link href="../TopDeadCenter/styleSheet_scorecard.css" rel="stylesheet">
+
+    <!-- Include plotly.js from CDN -->
+    <script src="https://cdn.plot.ly/plotly-3.0.0.min.js"></script>
 </head>
 
-<body>
-    
-    <!-- Header -->
-    <div class="row">
-        <div class="col-sm-2"></div>
-        <div class="col-sm-8 d-flex justify-content-center align-items-center">
-            <img src="../resources/drawing_logo_theDiveClub.png" alt="Logo Home" class="header-logo"></img>
-        </div>
-        <div class="col-sm-2"></div>
-    </div>
+<body> 
 
-    <!-- Navigation -->
-    <div class="row hud-nav">
-        <div class="col-md-2 col-1"></div>
-        <div class="col-md-8 col-10">
-            <div class="card rounded card-nav">
-                <div class="btn-group btn-group-lg d-flex justify-content-center" role="group">
-                    <button type="button" class="btn btn-nav active">
-                        <i class="bi bi-house"></i>
-                        <span class="d-none d-md-inline">Home</span>
-                    </button>
-                    <button type="button" class="btn btn-nav">
-                        <i class="bi bi-person"></i>
-                        <span class="d-none d-md-inline">Profile</span>
-                    </button>
-                    <button type="button" class="btn btn-nav" onclick="location.href='../matches/index.html'">
-                        <i class="bi bi-trophy"></i>
-                        <span class="d-none d-md-inline">Scorecard</span>
-                    </button>
-                    <div class="btn-group dropup" role="group">
-                        <button type="button" class="btn btn-nav dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-three-dots"></i>
-                            <span class="d-none d-md-inline">Competitions</span>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><button class="dropdown-item btn-nav active" type="button"><i class="bi bi-trophy" style="margin: 1cap;"></i> Leagues</button></li>
-                            <li><button class="dropdown-item btn-nav" type="button"><i class="bi bi-calendar-event" style="margin: 1cap;"></i> Tournaments</button></li>
-                            <li><button class="dropdown-item btn-nav" type="button"><i class="bi bi-flag" style="margin: 1cap;"></i> Matches</button></li>
-                        </ul>
-                    </div>
-                </div>                
+    <!-- Nav -->
+    <div class="row nav-container" >
+        <div class="d-flex justify-content-between">
+            <a href="..">
+                <img src="../resources/icon_theDiveClub_alpha.svg" style="height: 6vh; object-fit: contain;"></img>
+            </a>
+            <div class="d-flex">
+                <!-- Match Settings Button -->
+                <button class="navbar-toggler me-2" type="button" data-bs-toggle="collapse" data-bs-target="#matchSettingsNav" aria-controls="matchSettingsNav" aria-expanded="false" aria-label="Toggle match settings">
+                    <i class="bi bi-gear" style="font-size: 3vh;"></i>
+                </button>
+                <!-- Navbar Button -->
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <i class="bi bi-list" style="font-size: 4vh;"></i>
+                </button>
             </div>
         </div>
-        <div class="col-md-2 col-1"></div>
-    </div>
-
-    <div class="row">
-        <div class="col-sm-1"></div>
-        <div class="col-sm-10">
-
-            <div class="card rounded card-component">
-                <div class="card-header" style="font-size: large; font-weight: bold;">
-                    <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#collapseMatchControl" aria-expanded="true" aria-controls="collapseMatchControl">
-                        Match Control
-                    </button>
-                </div>
-                <div id="collapseMatchControl" class="collapse">
-                    <div class="card-body">
-
-                        <p class="input-label">Match Type:</p>                        
-        
+        <!-- Match Settings Menu -->
+        <div class="collapse navbar-collapse" id="matchSettingsNav" style="max-height: 100vh;">
+            <ul class="nav-links list-unstyled justify-content-around flex-wrap" style="overflow-x: hidden; max-height: 80vh;">
+                <div class="row">
+                    <div class="col-sm-4">
+                        <div class="card rounded card-component">
+                            <p class="matchSettings-heading">Match Type</p>                        
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="matchType" id="freePlay" value="freePlay" checked>
                                 <label class="form-check-label" for="freePlay">
                                     Free Play
                                 </label>
                             </div>
-                            
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="matchType" id="raceToBestOf" value="raceToBestOf">
+                                <input class="form-check-input" type="radio" name="matchType" id="race" value="race">
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <div class="d-flex flex-wrap align-items-center">
-                                            <label class="form-check-label me-2" for="raceToBestOf">
+                                        <div>
+                                            <label class="form-check-label" for="race">
                                                 Race To:
                                             </label>
-                                            <input type="number" class="form-control d-inline-block w-auto mb-2 me-2" id="raceToValue" name="raceToValue" placeholder="Race To" oninput="document.getElementById('bestOfValue').value = this.value">
+                                            <input type="number" class="form-control" id="raceToValue" name="raceToValue" placeholder="Race To" oninput="updateBestOfFromRaceTo(this.value)">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <div class="d-flex flex-wrap align-items-center">
-                                            <label class="form-check-label me-2" for="raceToBestOf">
+                                        <div>
+                                            <label class="form-check-label" for="race">
                                                 Best Of:
                                             </label>
-                                            <input type="number" class="form-control d-inline-block w-auto mb-2" id="bestOfValue" name="bestOfValue" placeholder="Best Of" oninput="document.getElementById('raceToValue').value = this.value">
+                                            <input type="number" class="form-control" id="bestOfValue" name="bestOfValue" placeholder="Best Of" oninput="updateRaceToFromBestOf(this.value)">
                                         </div>
+                                        <script>
+                                            function updateBestOfFromRaceTo(raceToValue) {
+                                                const raceTo = parseInt(raceToValue, 10);
+                                                if (!isNaN(raceTo)) {
+                                                    const bestOf = 2 * raceTo - 1;
+                                                    document.getElementById('bestOfValue').value = bestOf;
+                                                }
+                                            }
+
+                                            function updateRaceToFromBestOf(bestOfValue) {
+                                                const bestOf = parseInt(bestOfValue, 10);
+                                                if (!isNaN(bestOf)) {
+                                                    let raceTo;
+                                                    if (bestOf % 2 === 1) { // Odd bestOf
+                                                        raceTo = (bestOf + 1) / 2;
+                                                    } else { // Even bestOf
+                                                        raceTo = bestOf / 2 + 1;
+                                                    }
+                                                    document.getElementById('raceToValue').value = raceTo;
+                                                }
+                                            }
+                                        </script>
                                     </div>
                                 </div>
                             </div>
-        
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="matchType" id="fixedFrameCount" value="fixedFrameCount">
+                                <input class="form-check-input" type="radio" name="matchType" id="fixedCount" value="fixedCount">
                                 <div class="d-flex flex-wrap align-items-center">
-                                    <label class="form-check-label me-2" for="fixedFrameCount">
+                                    <label class="form-check-label" for="fixedCount">
                                         Fixed Frame Count:
                                     </label>
-                                    <input type="number" class="form-control d-inline-block w-auto mb-2" id="frameCountValue" name="frameCountValue" placeholder="Enter Frame Count">
+                                    <input type="number" class="form-control" id="frameCountValue" name="frameCountValue" placeholder="Enter Frame Count">
                                 </div>
                             </div>
-
-                        <div class="row">
-                            <p>Lag:</p>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="card rounded card-component">
+                            <p class="matchSettings-heading">Lag</p>
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="lagType" id="alternateBreak" value="alternateBreak" onchange="handleLagTypeChange(this.value)">
+                                        <label class="form-check-label" for="alternateBreak">
+                                            Alternate Break
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="lagType" id="winnerBreak" value="winnerBreak" onchange="handleLagTypeChange(this.value)">
+                                        <label class="form-check-label" for="winnerBreak">
+                                            Winner Break
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <p>Lag Winner:</p>
                             <select class="form-select" aria-label="Home" id="select-lag">
-                                <option value="0">Option 1</option>
-                                <option value="1">Option 2</option>
+                                <option value="home">Home</option>
+                                <option value="away">Away</option>
                             </select>
                         </div>
                     </div>
-                </div>
-            </div>
+                    <div class="col-sm-4">
+                        <div class="card rounded card-component">
 
-            <div class="card rounded card-component">
-                <div class="card-header" data-bs-toggle="collapse" data-bs-target="#collapseMatchTimer" aria-expanded="true" aria-controls="collapseMatchTimer" style="cursor: pointer;">
-                    Match Timer
-                </div>
-                <div id="collapseMatchTimer" class="collapse">
-                    <div class="card-body">
-                        <button class="btn btn-success" id="btn-timer-start">Start Frame Timer</button>
-                        <button class="btn btn-danger" id="btn-timer-stop">Disable Timer</button>
-                        <p id="time-frame-start">Frame Started At: 00:00.</p>
-                        <p id="time-frame-last">Last Frame: 00 minutes.</p>
-                    </div>
-                </div>
-            </div>
+                            <p class="matchSettings-heading">Timing</p>
+                            <p id="match-time-start">Match Start Time: 00:00 01/01/2025</p>
+                            <p id="frame-time-start">Frame Start Time: 00:00 01/01/2025</p>
+                            <p id="match-time-end">Match End Time: 00:00 01/01/2025</p>
 
-            <div class="row">
-                <div class="col-sm-6">
-                    <div class="card rounded text-center card-component">
-                        <div class="card-header" id="lbl-H-name" style="font-size: large; font-weight: bold;">Player_H</div>
-                        <div class="card-body">
-                            <p style="font-size: 4cap; font-weight: bold; padding: 0.25cap !important;" id="lbl-H-score">000</p>
                             <div class="row">
-                                <div class="col-6">
-                                    <p style="font-size: 2cap; font-weight: bold; padding: 0.25cap !important;" id="lbl-H-apples"><i class="bi bi-apple"></i>: 0</p>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="timingOption" id="noLimit" value="noLimit" checked>
+                                        <label class="form-check-label" for="noLimit">
+                                            No Limit
+                                        </label>
+                                    </div>
                                 </div>
-                                <div class="col-6 d-flex justify-content-center">
-                                    <div class="btn btn-secondary" id="lbl-break-indicator-H">Break<br><i class="bi bi-play-circle-fill"></i></div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="timingOption" id="timeLimit" value="timeLimit" disabled>
+                                        <div class="d-flex flex-wrap align-items-center">
+                                            <label class="form-check-label" for="timeLimit">
+                                                Time Limit:
+                                            </label>
+                                            <input type="number" class="form-control ms-2" id="timeLimitValue" name="timeLimitValue" placeholder="Minutes" disabled>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="card-footer">
-                            <button class="btn btn-primary" id="btn-score-H-1" style="width: 40%;">Point</button>
-                            <button class="btn btn-warning" id="btn-score-H-A" style="width: 40%;">Apple</button>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="col-sm-6">
-                    <div class="card rounded text-center card-component">
-                        <div class="card-header" id="lbl-A-name" style="font-size: large; font-weight: bold;">Player_A</div>
-                        <div class="card-body">
-                            <p style="font-size: 4cap; font-weight: bold; padding: 0.25cap !important;" id="lbl-A-score">000</p>
-                            <div class="row">
-                                <div class="col-6">
-                                    <p style="font-size: 2cap; font-weight: bold; padding: 0.25cap !important;" id="lbl-A-apples"><i class="bi bi-apple"></i>: 0</p>
-                                </div>
-                                <div class="col-6 d-flex justify-content-center">
-                                    <div class="btn btn-secondary" id="lbl-break-indicator-A">Break<br><i class="bi bi-play-circle-fill"></i></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-footer">
-                            <button class="btn btn-primary" id="btn-score-A-1" style="width: 40%;">Point</button>
-                            <button class="btn btn-warning" id="btn-score-A-A" style="width: 40%;">Apple</button>
+                            <button id="btn-timer-startMatch" class="btn btn-info">Start Match</button>
+                            <button id="btn-timer-restartFrameTimer" class="btn btn-warning">Restart Frame Timer</button>
+                            <button id="btn-timer-endMatch" class="btn btn-danger">End Match</button>
+
+
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="card rounded text-center card-component">
-                <div class="card-header">
-                    <div class="btn btn-primary" id="btn-scorecard-view" style="float: left;">
-                        <i class="bi bi-shuffle"></i>
-                    </div>
-                    Scorecard
-                    <div class="btn btn-danger" id="btn-correction">
-                        <i class="bi bi-arrow-left"></i>                        
-                    </div>
-                </div>
-                <div class="card-body" style="overflow-x: auto; font-size: 1.25cap;">
-                    <table class="table" id="tbl-scorecard">                        
-                    </table>
-                </div>
-            </div>
-
+            </ul>
         </div>
-        <div class="col-sm-1"></div>
+        <!-- Main Navbar Menu -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="nav-links list-unstyled d-flex justify-content-around flex-wrap">
+                <li><a href="../index.html" class="nav-link active"><i class="bi bi-house-door"></i> Home</a></li>
+                <li><a href="../accounts/profile.html" class="nav-link"><i class="bi bi-person"></i> Profile</a></li>
+                <li><a href="../TopDeadCenter/match_create.html" class="nav-link"><i class="bi bi-card-checklist"></i> Scorecard</a></li>
+                <li class="dropdown">
+                    <a href="#competitions" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" disabled><i class="bi bi-trophy"></i> Competitions</a>
+                    <ul class="dropdown-menu">
+                    <li><a href="#leagues" class="dropdown-item"><i class="bi bi-award"></i> Leagues</a></li>
+                    <li><a href="#tournaments" class="dropdown-item"><i class="bi bi-calendar-event"></i> Tournaments</a></li>
+                    <li><a href="#matches" class="dropdown-item"><i class="bi bi-flag"></i> Matches</a></li>
+                    </ul>
+                </li>
+                <li><a href="../index.html" class="nav-link"><i class="bi bi-envelope"></i> Contact</a></li>
+            </ul>
+        </div>
     </div>
 
-    
+    <div id="top-margin" style="height: 8vh;"></div>
+
+    <!-- Main Content -->
+    <div class="main">
+        <div class="card rounded scorecard-container">
+            <!-- Scoreboard Cards -->
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="card rounded player-card">
+                        <div class="card-header player-header">
+                            <div class="d-flex justify-content-center align-items-center">
+                                <img id="player-H-pic" class="player-pic" src="../resources/icon_user_default.png" alt="../resources/icon_user_default.png">
+                                <div>
+                                    <p id="player-H-nickname" class="player-nickname">_nickname</p>
+                                    <p id="player-H-name" class="player-name">_fullName</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body player-body">
+                            <div class="row">
+                                <div class="col-4"></div>
+                                <div class="col-4">
+                                    <p id="player-H-score" class="player-score">99</p>
+                                </div>
+                                <div class="col-4">
+                                    <div id="player-H-break-indicator-container" class="break-indicator-container">                                   
+                                        <img id="player-H-break-indicator" class="break-indicator" src="../resources/icon_break.png">
+                                        <p id="player-H-break" class="player-break">Break</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-6">
+                                    <p id="player-H-apples" class="player-apples">A : 0</p>
+                                </div>
+                                <div class="col-6">
+                                    <p id="player-H-C+" class="player-cplus">C<sup>+</sup> : 0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer player-footer">
+                            <div class="d-flex justify-content-center align-items-center">
+                                <div>
+                                    <button id="btn-player-H-point" class="btn btn-primary player-point-btn">Point</button>
+                                    <button id="btn-player-H-Apple" class="btn btn-warning player-apple-btn">Apple</button>
+                                    <button id="btn-player-H-gb" class="btn btn-warning player-gb-btn">GB</button>
+                                    <button id="btn-player-H-cplus" class="btn btn-success player-cplus-btn">C+</button>
+                                </div>
+                                <div style="color: white; font-size: 1.5cap; font-family: 'Segoe UI'; margin-left: 1cap;" id="player-H-BreakInfo-container">
+                                    <div class="form-check justify-content-center" style="text-align: center;">
+                                        <input class="form-check-input" type="radio" name="player-H-option" id="player-H-DB" value="DB" checked>
+                                        <label class="form-check-label" for="player-H-DB">DB</label>
+                                    </div>
+                                    <div class="d-flex justify-content-around">
+                                        <div class="form-check" style="margin-right: 2cap;">
+                                            <input class="form-check-input" type="radio" name="player-H-option" id="player-H-SB" value="SB">
+                                            <label class="form-check-label" for="player-H-SB">SB</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="player-H-option" id="player-H-BI" value="BI">
+                                            <label class="form-check-label" for="player-H-BI">BI</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="card rounded player-card">
+                        <div class="card-header player-header">
+                            <div class="d-flex justify-content-center align-items-center">
+                                <img id="player-A-pic" class="player-pic" src="../resources/icon_user_default.png">
+                                <div>
+                                    <p id="player-A-nickname" class="player-nickname">_nickname</p>
+                                    <p id="player-A-name" class="player-name">_fullName</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body player-body">
+                            <div class="row">
+                                <div class="col-4"></div>
+                                <div class="col-4">
+                                    <p id="player-A-score" class="player-score">99</p>
+                                </div>
+                                <div class="col-4">                                    
+                                    <div id="player-A-break-indicator-container" class="break-indicator-container">                                   
+                                        <img id="player-A-break-indicator" class="break-indicator" src="../resources/icon_break.png">
+                                        <p id="player-A-break" class="player-break">Break</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-6">
+                                    <p id="player-A-apples" class="player-apples">A : 0</p>
+                                </div>
+                                <div class="col-6">
+                                    <p id="player-A-C+" class="player-cplus">C<sup>+</sup> : 0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer player-footer">
+                            <div class="d-flex justify-content-center align-items-center">
+                                <div>
+                                    <button id="btn-player-A-point" class="btn btn-primary player-point-btn">Point</button>
+                                    <button id="btn-player-A-Apple" class="btn btn-warning player-apple-btn">Apple</button>
+                                    <button id="btn-player-A-gb" class="btn btn-warning player-gb-btn">GB</button>
+                                    <button id="btn-player-A-cplus" class="btn btn-success player-cplus-btn">C+</button>
+                                </div>
+                                <div style="color: white; font-size: 1.5cap; font-family: 'Segoe UI'; margin-left: 1cap;" id="player-A-BreakInfo-container">
+                                    <div class="form-check justify-content-center" style="text-align: center;">
+                                        <input class="form-check-input" type="radio" name="player-A-option" id="player-A-DB" value="DB" checked>
+                                        <label class="form-check-label" for="player-A-DB">DB</label>
+                                    </div>
+                                    <div class="d-flex justify-content-around">
+                                        <div class="form-check" style="margin-right: 2cap;">
+                                            <input class="form-check-input" type="radio" name="player-A-option" id="player-A-SB" value="SB">
+                                            <label class="form-check-label" for="player-A-SB">SB</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="player-A-option" id="player-A-BI" value="BI">
+                                            <label class="form-check-label" for="player-A-BI">BI</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Match Timer -->
+        <div class="card rounded timer-container card-component">
+            <h2 class="text-center">Match Timer</h2>
+            <h2 class="timer-display text-center">
+                <span id="timer-hours">00</span>:<span id="timer-minutes">00</span>:<span id="timer-seconds">00</span>
+            </h2>
+            <p id="timer-listFrameTimes" class="text-center">00, 00, 00, 00</p>
+        </div>
+
+        <!-- Match Timeline -->
+        <div id="timeline-chart" class="card rounded timeline-container" style="padding-bottom: 1cap; min-height: 45vh;">
+            <h2 class="text-center">Timing</h2>
+            <div id="timelineChart" style="width: 100%; height: 100%;"></div>
+        </div>
+
+        <!-- Match Summary -->
+        <div class="card rounded match-summary-container">
+            <div class="summary-content">
+
+                <h2 class="text-center">
+                    Match Summary 
+                    <button id="btn-correction" class="btn btn-danger">
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
+                </h2>
+
+                <table class="table table-bordered" style="font-size: 50%; text-align: center;">
+                    <thead>
+                    </thead>
+                    <tbody id="scorecard-table-body">
+                        <!-- Dummy data -->
+                        <tr>
+                            <td class="cell-tight">Player H</td>
+                        </tr>
+                        <tr>
+                            <td class="cell-tight">Player A</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <table class="table table-bordered" id="match-summary-table">
+                    
+                </table>
+
+                <table class="table table-bordered">
+                    <tbody>
+                        <tr>
+                            <td>Start Time</td>
+                            <td id="match-start-time">Loading...</td>
+                        </tr>
+                        <tr>
+                            <td>End Time</td>
+                            <td id="match-end-time">Loading...</td>
+                        </tr>
+                        <tr>
+                            <td>Match Duration</td>
+                            <td id="match-duration">Loading...</td>
+                        </tr>
+                        <tr>
+                            <td>Average Frame Time</td>
+                            <td id="match-average-frame-time">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>        
+        <img src="../resources/icon_theDiveClub_alpha.svg">
+    </footer>
+
     <script src="../scripts/supaBase_client.js"></script>
-    <script src="../scripts/session_restore.js"></script>
-    <script src="../scripts/match_manage.js"></script>
+    <script src="../TopDeadCenter/backgroundAnimation.js"></script>
 
-    <canvas id="bg-canvas" style="height: 100vh; width: 100vw;"></canvas>
-
-    <script type="module">
-        import { matchMode, persistentTrailMode, glowTrailMode } from '../resources/particleEffects/particle_modes.js';
-
-        // Uncomment the mode you want to use:
-        
-        matchMode();           // Match Mode: Basic particle mode for match/player background
-        //persistentTrailMode(); // Persistent Trail Mode: Trails persist (fade slowly)
-        //glowTrailMode();       // Glow Trail Mode: Clean glow effect for home page background
-    </script>
-    <script src="../resources/ui_backgroundRandomization.js"></script>
-
-    <!-- Bootstrap JS (Optional) -->
+    <script src="../matches/match_data.js" type="module"></script>
+    <script src="../matches/match_summary.js" type="module"></script>
+    
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
 </body>
