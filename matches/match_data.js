@@ -74,12 +74,17 @@ var match =
 };
 
 import { UpdateMatchSummary } from "../matches/match_summary.js";
+import { UpdateMatchTimingGraph } from "../matches/match_timingGraph.js";
+import { UpdateMatch } from "../matches/match_inputs.js";
 
 Initialize();
 
 async function Initialize()
 {
     match = await getMatchData();    
+    await UpdateMatchPlayers(match);
+    await UpdateMatch(match);
+
     console.log('Source: Match', match);
 
     OnPayloadReceived(match);
@@ -151,4 +156,45 @@ async function SubscribeToUpdates (_matchID)
 async function OnPayloadReceived (payload)
 {
     UpdateMatchSummary(payload);
+    UpdateMatchTimingGraph(payload);
+    UpdateMatch(payload);
+}
+
+async function UpdateMatchPlayers (match)
+{
+    const response = await supabase.from('tbl_players').select('*').in('username', [match.players.home.username, match.players.away.username]);
+    console.log('Source: Player Data Response', response);
+    if (response.error)
+    {
+        console.error('Error fetching player data:', response.error);
+        return;
+    }
+
+    const players = response.data;
+
+    // Step 1: Find the player data for the home player using their username
+    const homePlayerData = players.find(player => player.username === match.players.home.username);
+
+    // Step 2: Check if the player data exists and extract the name, otherwise fallback to existing fullName or username
+    const homePlayerName = homePlayerData 
+        ? `${homePlayerData.name}${homePlayerData.surname ? ' ' + homePlayerData.surname : ''}` 
+        : match.players.home.fullName || match.players.home.username;
+
+    // Step 3: Assign the resolved name to the home player's fullName property in the match object
+    match.players.home.fullName = homePlayerName;
+    match.players.home.id = homePlayerData?.id || match.players.home.id || null;
+    match.players.home.nickname = homePlayerData?.nickname || match.players.home.nickname || null;
+
+    // Step 1: Find the player data for the home player using their username
+    const awayPlayerData = players.find(player => player.username === match.players.away.username);
+
+    // Step 2: Check if the player data exists and extract the name, otherwise fallback to existing fullName or username
+    const awayPlayerName = awayPlayerData 
+        ? `${awayPlayerData.name}${awayPlayerData.surname ? ' ' + awayPlayerData.surname : ''}` 
+        : match.players.away.fullName || match.players.away.username;
+
+    // Step 3: Assign the resolved name to the away player's fullName property in the match object
+    match.players.away.fullName = awayPlayerName;
+    match.players.away.id = awayPlayerData?.id || match.players.away.id || null;
+    match.players.away.nickname = awayPlayerData?.nickname || match.players.away.nickname || null;
 }

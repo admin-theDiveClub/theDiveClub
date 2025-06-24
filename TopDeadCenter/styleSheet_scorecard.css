@@ -104,14 +104,13 @@ th, tr, td
 {
     padding: 0cap !important;
     font-size: clamp(1cap, 5vmax, 3cap);
-    word-wrap: break-word !important;
 }
 
 table
 {
     background-color: transparent !important;
     text-align: center;
-    font-size: clamp(1cap, 2vmax, 3cap);
+    font-size: clamp(1cap, 2vmax, 2cap);
 }
 
 .player-break
