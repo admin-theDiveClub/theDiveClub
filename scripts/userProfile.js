@@ -205,7 +205,13 @@ async function PopulateUserMatchesTable()
 
         const linkCell = document.createElement("td");
         const link = document.createElement("a");
-        link.href = `../matches/index.html?matchID=${match.id}`;
+        if (match.time.end)
+        {
+            link.href = `../matches/scoreboard.html?matchID=${match.id}`;
+        } else 
+        {
+            link.href = `../matches/index.html?matchID=${match.id}`;
+        }
         const icon = document.createElement("i");
         icon.className = "bi bi-arrow-right"; // Bootstrap bi right arrow icon
         icon.style.fontSize = "3cap"; // Set the font size
