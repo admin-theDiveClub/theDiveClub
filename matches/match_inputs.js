@@ -208,11 +208,11 @@ export async function UpdateScores(score_H, score_A)
         if (confirm(`${winner} has won the match. Would you like to end the match?`)) 
         {
             await EndMatchTimer();
-        } else 
-        {
-            await PushUpdatedMatchToDatabase(match);
+            return;
         }
     }
+        
+    await PushUpdatedMatchToDatabase(match);
 }
 
 function GetCurrentLag() 
