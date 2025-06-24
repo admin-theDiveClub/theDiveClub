@@ -93,7 +93,7 @@ async function GetUserMatches() {
     .or(
         `players->home->>username.eq."${userProfile.username}",players->away->>username.eq."${userProfile.username}"`
     )
-    .order('time->>start', { ascending: false }); // or true for oldest first
+    .order('created_at', { ascending: false }); // or true for oldest first
   
 
     if (response.error) {
@@ -108,6 +108,20 @@ async function GetUserMatches() {
 async function PopulateUserMatchesTable() 
 {
     const matches = await GetUserMatches();
+
+
+    matches.sort((a, b) => {
+        const getStatusPriority = (match) => {
+            if (!match.time.start && match.time.end) return 0; // Complete
+            if (!match.time || !match.time.start || !match.time.end) return 2; // New
+            if (match.time.start && !match.time.end) return 1; // Active
+            if (match.time.end) return 0; // Complete
+            return -1; // Fallback
+        };
+
+        return getStatusPriority(b) - getStatusPriority(a);
+    });
+
     const tableBody = document.querySelector(".card-component .table tbody");
     tableBody.innerHTML = ""; // Clear existing rows
 
@@ -149,9 +163,17 @@ async function PopulateUserMatchesTable()
 
         const scoreCell = document.createElement("td");
         if (userProfile.username === match.players.home.username) {
+            if (match.results.home.frames === match.results.away.frames) {
+            scoreCell.textContent = "Draw: " + match.results.home.frames + "-" + match.results.away.frames;
+            } else {
             scoreCell.textContent = (match.results.home.frames > match.results.away.frames ? "Win: " : "Lose: ") + match.results.home.frames + "-" + match.results.away.frames;
+            }
         } else if (userProfile.username === match.players.away.username) {
+            if (match.results.away.frames === match.results.home.frames) {
+            scoreCell.textContent = "Draw: " + match.results.away.frames + "-" + match.results.home.frames;
+            } else {
             scoreCell.textContent = (match.results.away.frames > match.results.home.frames ? "Win: " : "Lose: ") + match.results.away.frames + "-" + match.results.home.frames;
+            }
         } else {
             scoreCell.textContent = "N/A";
         }
