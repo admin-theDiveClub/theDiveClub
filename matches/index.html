@@ -129,7 +129,7 @@
                             <div class="row">
                                 <div class="col-6">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="lagType" id="alternateBreak" value="alternateBreak" onchange="handleLagTypeChange(this.value)">
+                                        <input class="form-check-input" type="radio" name="lagType" id="alternateBreak" value="alternateBreak">
                                         <label class="form-check-label" for="alternateBreak">
                                             Alternate Break
                                         </label>
@@ -137,18 +137,25 @@
                                 </div>
                                 <div class="col-6">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="lagType" id="winnerBreak" value="winnerBreak" onchange="handleLagTypeChange(this.value)">
+                                        <input class="form-check-input" type="radio" name="lagType" id="winnerBreak" value="winnerBreak">
                                         <label class="form-check-label" for="winnerBreak">
                                             Winner Break
                                         </label>
                                     </div>
                                 </div>
                             </div>
-                            <p>Lag Winner:</p>
+
+                            <p style="margin-top: 2cap;">Lag Winner:</p>
                             <select class="form-select" aria-label="Home" id="select-lag">
                                 <option value="home">Home</option>
                                 <option value="away">Away</option>
                             </select>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="advancedBreakRecording" name="advancedBreakRecording">
+                                <label class="form-check-label" for="advancedBreakRecording">
+                                    Advanced Break Recording
+                                </label>
+                            </div>
                         </div>
                     </div>
                     <div class="col-sm-4">

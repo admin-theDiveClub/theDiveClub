@@ -163,7 +163,6 @@ async function OnPayloadReceived (payload)
 async function UpdateMatchPlayers (match)
 {
     const response = await supabase.from('tbl_players').select('*').in('username', [match.players.home.username, match.players.away.username]);
-    console.log('Source: Player Data Response', response);
     if (response.error)
     {
         console.error('Error fetching player data:', response.error);
@@ -197,4 +196,34 @@ async function UpdateMatchPlayers (match)
     match.players.away.fullName = awayPlayerName;
     match.players.away.id = awayPlayerData?.id || match.players.away.id || null;
     match.players.away.nickname = awayPlayerData?.nickname || match.players.away.nickname || null;
+
+    if (match.players.home.id) {
+        const r_H = await supabase.storage.from('bucket-profile-pics').getPublicUrl(match.players.home.id);
+        if (r_H.data && r_H.data.publicUrl && !r_H.data.publicUrl.endsWith('null')) {
+            const imgElement_H = document.getElementById('player-H-pic');
+            if (imgElement_H) {
+                const img = new Image();
+                img.onload = () => {
+                    imgElement_H.src = r_H.data.publicUrl;
+                };
+                img.src = r_H.data.publicUrl;
+            }
+            match.players.home.pp = r_H.data.publicUrl;
+        }
+    }
+
+    if (match.players.away.id) {
+        const r_A = await supabase.storage.from('bucket-profile-pics').getPublicUrl(match.players.away.id);
+        if (r_A.data && r_A.data.publicUrl && !r_A.data.publicUrl.endsWith('null')) {
+            const imgElement_A = document.getElementById('player-A-pic');
+            if (imgElement_A) {
+                const img = new Image();
+                img.onload = () => {
+                    imgElement_A.src = r_A.data.publicUrl;
+                };
+                img.src = r_A.data.publicUrl;
+            }
+            match.players.away.pp = r_A.data.publicUrl;
+        }
+    }
 }

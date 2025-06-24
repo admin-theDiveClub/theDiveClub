@@ -122,6 +122,11 @@ footer
     box-shadow: 0px 4px 8px var(--shadow);
 }
 
+.form-check
+{
+    margin-top: 2cap;
+}
+
 .input-field
 {
     background-color: transparent;
