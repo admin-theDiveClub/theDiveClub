@@ -27,14 +27,14 @@ document.getElementById('btn-timer-startMatch').addEventListener('click', () =>
     }
 });
 
-document.getElementById('btn-timer-endMatch').addEventListener('click', () =>
+document.getElementById('btn-timer-endMatch').addEventListener('click', async () => 
 {
     if (!match.time.end) 
     {
-    if (confirm('Are you sure you want to end the match? This cannot be undone.')) 
-    {
-        EndMatchTimer();
-    }
+        if (confirm('Are you sure you want to end the match? This cannot be undone.')) 
+        {
+            await EndMatchTimer();
+        }
     } else 
     {
         alert('Match has already ended.');
@@ -44,6 +44,12 @@ document.getElementById('btn-timer-endMatch').addEventListener('click', () =>
 export async function UpdateMatch(updatedMatch) 
 {
     match = updatedMatch;
+
+    if (match.time.end && !window.location.href.includes("scoreboard.html"))
+    {
+        window.location.href = `../matches/scoreboard.html?matchID=${match.id}`;
+    }
+
     UpdateLagUI();
     UpdateScoresUI();
     IntializeSettingsUI();
@@ -55,6 +61,12 @@ async function PushUpdatedMatchToDatabase(match)
 
     if (!match || !match.id) {
         console.warn('Match data is incomplete or missing an ID. No updates will be pushed to the database.');
+        return;
+    }
+
+    if (match.time.end)
+    {
+        alert('Match has ended. No further updates can be made.');
         return;
     }
 
@@ -191,7 +203,16 @@ export async function UpdateScores(score_H, score_A)
 
     match.info = { lastUpdated: new Date().toISOString() };
 
-    await PushUpdatedMatchToDatabase(match);
+    if (match.results.home.frames > match.settings.winCondition || match.results.away.frames > match.settings.winCondition) {
+        const winner = match.results.home.frames > match.settings.winCondition ? match.players.home.fullName : match.players.away.fullName;
+        if (confirm(`${winner} has won the match. Would you like to end the match?`)) 
+        {
+            await EndMatchTimer();
+        } else 
+        {
+            await PushUpdatedMatchToDatabase(match);
+        }
+    }
 }
 
 function GetCurrentLag() 
@@ -238,13 +259,15 @@ function StartMatchTimer()
     PushUpdatedMatchToDatabase(match);
 }
 
-function EndMatchTimer() 
+async function EndMatchTimer() 
 {
     match.time.end = new Date().toISOString();
-    match.status = "Complete";
     console.warn('Timer: Match ended at:', match.time.end);
     document.getElementById('match-time-end').textContent = `Match End Time: ${new Date(match.time.end).toLocaleString()}`;
     PushUpdatedMatchToDatabase(match);
+    const response = await supabase.from('tbl_matches_new').update(match).eq('id', match.id).select();
+
+    console.warn('Updated match pushed to database. Response:', response);
 }
 
 function SetFrameTimer() 
