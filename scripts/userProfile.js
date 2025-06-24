@@ -85,13 +85,16 @@ async function GetUserMatches() {
     if (!userProfile || !userProfile.username) {
         console.log("User profile or username is not available.");
         return [];
-    }
+    }    
 
     const response = await supabase
-        .from('tbl_matches')
-        .select('*')
-        .or(`player_H.eq.${userProfile.username},player_A.eq.${userProfile.username}`)
-        .order('startTime', { ascending: false });
+    .from('tbl_matches_new')
+    .select()
+    .or(
+        `players->home->>username.eq."${userProfile.username}",players->away->>username.eq."${userProfile.username}"`
+    )
+    .order('time->>start', { ascending: false }); // or true for oldest first
+  
 
     if (response.error) {
         console.error("Error fetching matches:", response.error);
@@ -113,46 +116,74 @@ async function PopulateUserMatchesTable()
         const row = document.createElement("tr");
 
         const dateCell = document.createElement("td");
-        if (!match.startTime) {
-            dateCell.textContent = "-";
+        if (!match.time || !match.time.start) {
+            const date = new Date(match.created_at || match.time.start);
+            dateCell.textContent = isNaN(date) ? "N/A" : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}, ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
         } else {
-            const date = new Date(match.startTime);
+            const date = new Date(match.created_at || match.time.start);
             dateCell.textContent = isNaN(date) ? "N/A" : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}, ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
         }
         row.appendChild(dateCell);
 
         const opponentCell = document.createElement("td");
-        let opponentUsername = match.player_H === userProfile.username ? match.player_A : match.player_H;
+        let opponentUsername = match.players.home.username === userProfile.username ? match.players.away.username : match.players.home.username;
 
         if (opponentUsername && opponentUsername.includes("@")) 
         {
             const opponentResponse = await supabase.from('tbl_players').select('name, surname, nickname').eq('username', opponentUsername);
             const opponent = opponentResponse.data[0];
-            console.log("Opponent Data:", opponent);
             if (opponent) {
                 opponentCell.textContent = `${opponent.name || "N/A"} ${opponent.surname || "N/A"}`;
             } else {
                 opponentCell.textContent = "N/A";
             }
             
-        } else {
-            opponentCell.textContent = opponentUsername || "N/A";
+        } else 
+        {
+            const pA = match.players.away;
+            const pH = match.players.home;
+            opponentUsername = pH.username === userProfile.username ? pA.username || pA.fullName || "N/A" : pH.username || pH.fullName || "N/A";
+            opponentCell.textContent = opponentUsername;
         }
         row.appendChild(opponentCell);
 
         const scoreCell = document.createElement("td");
-        if (userProfile.username === match.player_H) {
-            scoreCell.textContent = (match.result_H > match.result_A ? "Win: " : "Lose: ") + match.result_H + "-" + match.result_A;
-        } else if (userProfile.username === match.player_A) {
-            scoreCell.textContent = (match.result_A > match.result_H ? "Win: " : "Lose: ") + match.result_A + "-" + match.result_H;
+        if (userProfile.username === match.players.home.username) {
+            scoreCell.textContent = (match.results.home.frames > match.results.away.frames ? "Win: " : "Lose: ") + match.results.home.frames + "-" + match.results.away.frames;
+        } else if (userProfile.username === match.players.away.username) {
+            scoreCell.textContent = (match.results.away.frames > match.results.home.frames ? "Win: " : "Lose: ") + match.results.away.frames + "-" + match.results.home.frames;
         } else {
             scoreCell.textContent = "N/A";
         }
         row.appendChild(scoreCell);
 
+        const typeCell = document.createElement("td");
+        const type = match.settings.winType || "To win";
+        const winCondition = match.settings.winCondition || "N/A";
+        typeCell.textContent = type + ": " + winCondition || "N/A";
+        row.appendChild(typeCell);
+
+        const durationCell = document.createElement("td");
+        const totalSeconds = match.history["frames-duration"] ? match.history["frames-duration"].reduce((sum, duration) => sum + duration, 0) : "N/A";
+        const totalDuration = totalSeconds !== "N/A" ? 
+            `${Math.floor(totalSeconds / 3600)}h ${Math.floor((totalSeconds % 3600) / 60)}m ${totalSeconds % 60}s` : 
+            "N/A";
+        durationCell.textContent = totalDuration !== "N/A" ? `${totalDuration}` : "N/A";
+        row.appendChild(durationCell);
+
+        const statusCell = document.createElement("td");
+        if (match.time && match.time.end) {
+            statusCell.textContent = "Complete";
+        } else if (match.time && match.time.start) {
+            statusCell.textContent = "Active";
+        } else {
+            statusCell.textContent = "New";
+        }
+        row.appendChild(statusCell);
+
         const linkCell = document.createElement("td");
         const link = document.createElement("a");
-        link.href = `../TopDeadCenter/scorecard.html?matchID=${match.id}`;
+        link.href = `../matches/index.html?matchID=${match.id}`;
         const icon = document.createElement("i");
         icon.className = "bi bi-arrow-right"; // Bootstrap bi right arrow icon
         icon.style.fontSize = "3cap"; // Set the font size
@@ -162,11 +193,4 @@ async function PopulateUserMatchesTable()
 
         tableBody.appendChild(row);
     }
-}
-
-var knownOpponents = [];
-
-async function UpdateOpponentNames ()
-{
-
 }
