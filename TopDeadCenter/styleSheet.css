@@ -203,7 +203,7 @@ tr, th, td
 
 .sponsor-logo
 {
-    max-width: 10%;
+    max-width: 8%;
     margin: 1cap;
     filter: brightness(0.8);
     transition: filter 0.3s ease;
