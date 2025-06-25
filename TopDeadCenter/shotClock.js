@@ -141,3 +141,81 @@ document.addEventListener("keydown", (event) => {
 updateDisplay();
 
 
+// Global variables for match timer
+let matchTimeMinutes = 50; // Default match time in minutes
+let matchCurrentTime = matchTimeMinutes * 60; // Current time in seconds
+let matchTimerInterval = null;
+
+// Match timer display element
+const matchTimerDisplay = document.getElementById("match-time");
+
+// Function to update the match timer display
+function updateMatchDisplay() {
+  const minutes = Math.floor(matchCurrentTime / 60);
+  const seconds = matchCurrentTime % 60;
+  matchTimerDisplay.innerHTML = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+// Function to start the match timer
+function startMatchTimer() {
+  if (matchTimerInterval) return; // Prevent multiple intervals
+  matchTimerInterval = setInterval(() => {
+    if (matchCurrentTime > 0) {
+      matchCurrentTime--;
+      updateMatchDisplay();
+    } else {
+      clearInterval(matchTimerInterval);
+      matchTimerInterval = null;
+      console.log("Match time is up!");
+    }
+  }, 1000); // Update every second
+}
+
+// Function to pause the match timer
+function pauseMatchTimer() {
+  clearInterval(matchTimerInterval);
+  matchTimerInterval = null;
+}
+
+// Function to reset the match timer
+function resetMatchTimer() {
+  pauseMatchTimer();
+  matchCurrentTime = matchTimeMinutes * 60;
+  updateMatchDisplay();
+}
+
+// Event listener for match timer controls
+document.addEventListener("keydown", (event) => {
+  switch (event.key.toLowerCase()) {
+    case "m": // Start the match timer
+      startMatchTimer();
+      break;
+    case "n": // Pause/Start toggle
+      if (matchTimerInterval) {
+        pauseMatchTimer();
+      } else {
+        startMatchTimer();
+      }
+      break;
+    case "v": // Restart the match timer
+      resetMatchTimer();
+      break;
+    case "arrowleft": // Decrease match time by 1 minute, minimum 1 minute
+      matchTimeMinutes = Math.max(1, matchTimeMinutes - 1);
+      matchCurrentTime = matchTimeMinutes * 60; // Update current time
+      updateMatchDisplay();
+      console.log(`Match time decreased to ${matchTimeMinutes} minutes`);
+      break;
+    case "arrowright": // Increase match time by 1 minute
+      matchTimeMinutes += 1;
+      matchCurrentTime = matchTimeMinutes * 60; // Update current time
+      updateMatchDisplay();
+      console.log(`Match time increased to ${matchTimeMinutes} minutes`);
+      break;
+  }
+});
+
+// Initialize the match timer display
+updateMatchDisplay();
+
+

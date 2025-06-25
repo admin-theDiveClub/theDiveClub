@@ -23,6 +23,23 @@
     descent-override: 0%; /* Adjusts the descent to reduce extra space */
     line-gap-override: 0%; /* Removes additional line gap */
 }
+
+@font-face 
+{
+    font-family: 'SPL-Font';
+    src: url('../resources/Arboria-Bold.otf') format('opentype');
+    font-display: swap; /* Ensures text is displayed immediately */
+    ascent-override: 100%; /* Adjusts the ascent to reduce extra space */
+    descent-override: 0%; /* Adjusts the descent to reduce extra space */
+    line-gap-override: 0%; /* Removes additional line gap */
+}
+
+.shot-clock-font 
+{
+    font-family: 'SPL-Font', sans-serif;
+    color: var(--color-base-light);
+    text-align: center;
+}
     
 .custom-font 
 {
@@ -198,12 +215,12 @@ tr, th, td
 .sponsors-row
 {
     background-color: var(--color-transparent-dark);
-    max-height: 20vh;
+    max-height: 10vh;
 }
 
 .sponsor-logo
 {
-    max-width: 8%;
+    max-width: 3%;
     margin: 1cap;
     filter: brightness(0.8);
     transition: filter 0.3s ease;
