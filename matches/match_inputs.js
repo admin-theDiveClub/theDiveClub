@@ -211,7 +211,7 @@ export async function UpdateScores(score_H, score_A)
             return;
         }
     }
-        
+
     await PushUpdatedMatchToDatabase(match);
 }
 
@@ -507,13 +507,13 @@ function IntializeSettingsUI ()
 
         // Update the lag winner dropdown options based on players
         const lagWinnerDropdown = document.getElementById('select-lag');
-        lagWinnerDropdown.innerHTML = `
+        lagWinnerDropdown.innerHTML = 
+        `
+            <option value="Please select lag winner." disabled>Please select lag winner.</option>
             <option value="home">${match.players.home.fullName || 'Home'}</option>
             <option value="away">${match.players.away.fullName || 'Away'}</option>
         `;
-        lagWinnerDropdown.value = settings.lagWinner || "home";
-
-        
+        lagWinnerDropdown.value = settings.lagWinner || "Please select lag winner.";        
 
         // Update match time UI
         if (match.time && match.time.start) {
