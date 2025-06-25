@@ -49,6 +49,7 @@ function playAudio(audioFile, volume) {
     const audio = new Audio(audioFile);
     audio.volume = volume;
     audio.play();
+    console.log(`Playing audio: ${audioFile} at volume: ${volume}`);
 }
 
 // Function to start the timer
@@ -156,21 +157,6 @@ function updateMatchDisplay() {
   matchTimerDisplay.innerHTML = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-// Function to start the match timer
-function startMatchTimer() {
-  if (matchTimerInterval) return; // Prevent multiple intervals
-  matchTimerInterval = setInterval(() => {
-    if (matchCurrentTime > 0) {
-      matchCurrentTime--;
-      updateMatchDisplay();
-    } else {
-      clearInterval(matchTimerInterval);
-      matchTimerInterval = null;
-      console.log("Match time is up!");
-    }
-  }, 1000); // Update every second
-}
-
 // Function to pause the match timer
 function pauseMatchTimer() {
   clearInterval(matchTimerInterval);
@@ -218,4 +204,36 @@ document.addEventListener("keydown", (event) => {
 // Initialize the match timer display
 updateMatchDisplay();
 
+// Function to flash the match timer display
+function flashMatchTimer() {
+  const flashInterval = setInterval(() => {
+    matchTimerDisplay.style.color = matchTimerDisplay.style.color === "red" ? "white" : "red";
+  }, 200); // Toggle color every 200ms
 
+  setTimeout(() => {
+    clearInterval(flashInterval);
+    matchTimerDisplay.style.color = "white"; // Reset to white after flashing
+  }, 2000); // Stop flashing after 2 seconds
+}
+
+// Function to trigger the final alarm for the match timer
+function triggerMatchAlarm() {
+  console.log("Match alarm triggered! Time's up.");
+  playAudio(finalAlarmAudio, finalAlarmVolume); // Play the final alarm audio
+  flashMatchTimer(); // Flash the match timer display
+}
+
+// Update the match timer logic to call triggerMatchAlarm when time is up
+function startMatchTimer() {
+  if (matchTimerInterval) return; // Prevent multiple intervals
+  matchTimerInterval = setInterval(() => {
+    if (matchCurrentTime > 0) {
+      matchCurrentTime--;
+      updateMatchDisplay();
+    } else {
+      clearInterval(matchTimerInterval);
+      matchTimerInterval = null;
+      triggerMatchAlarm(); // Call the alarm function when match time is up
+    }
+  }, 1000); // Update every second
+}
