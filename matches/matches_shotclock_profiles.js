@@ -12,7 +12,7 @@ async function Initialize ()
     {
         document.getElementById('player-home-container')?.style && (document.getElementById('player-home-container').style.display = 'none');
         document.getElementById('player-away-container')?.style && (document.getElementById('player-away-container').style.display = 'none');
-        console.error('No match data found.');m
+        console.error('No match data found.');
         return;
     }
 }
@@ -56,10 +56,9 @@ function GetMatchID()
     localStorage.setItem('matchID', matchID);
     sessionStorage.setItem('matchID', matchID);
     return matchID;
-  } else 
-  {
-    window.location.href = "../matches/create.html";
-  }
+  } 
+
+  return null;
 }
 
 async function GetMatch (_matchID)
