@@ -39,8 +39,12 @@ async function getMatchData()
     if (matchID)
     {
         match = await GetMatch(matchID);
+        if (match)
+        {
+            return match;
+        }
     }
-    return match;
+    return null;
 }
 
 function GetMatchID() 
@@ -57,8 +61,6 @@ function GetMatchID()
     sessionStorage.setItem('matchID', matchID);
     return matchID;
   } 
-
-  return null;
 }
 
 async function GetMatch (_matchID)
