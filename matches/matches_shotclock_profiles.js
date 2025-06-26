@@ -6,8 +6,31 @@ async function Initialize ()
     if (matchData)
     {
         console.log('Match Data:', matchData);
+        UpdateProfiles(matchData);
+    }
+    else 
+    {
+        document.getElementById('player-home-container')?.style && (document.getElementById('player-home-container').style.display = 'none');
+        document.getElementById('player-away-container')?.style && (document.getElementById('player-away-container').style.display = 'none');
+        console.error('No match data found.');m
+        return;
     }
 }
+
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'ArrowLeft') {
+        const homeExt = document.getElementById('player-home-extension');
+        if (homeExt) {
+            homeExt.style.display = (homeExt.style.display === 'none' || homeExt.style.display === '') ? 'block' : 'none';
+        }
+    }
+    if (event.key === 'ArrowRight') {
+        const awayExt = document.getElementById('player-away-extension');
+        if (awayExt) {
+            awayExt.style.display = (awayExt.style.display === 'none' || awayExt.style.display === '') ? 'block' : 'none';
+        }
+    }
+});
 
 async function getMatchData() 
 {
@@ -48,5 +71,28 @@ async function GetMatch (_matchID)
     } else 
     {
       return response.data[0];
+    }
+}
+
+function UpdateProfiles (match)
+{
+    if (!match || !match.players) return;
+
+    // Home player
+    const homePlayer = match.players.home;
+    if (homePlayer) {
+        const homePP = document.getElementById('player-home-pp');
+        const homeName = document.getElementById('player-home-name');
+        if (homePP) homePP.src = homePlayer.pp || '../resources/images/img_Player_9x16_alpha.png';
+        if (homeName) homeName.textContent = homePlayer.fullName || '';
+    }
+
+    // Away player
+    const awayPlayer = match.players.away;
+    if (awayPlayer) {
+        const awayPP = document.getElementById('player-away-pp');
+        const awayName = document.getElementById('player-away-name');
+        if (awayPP) awayPP.src = awayPlayer.pp || '../resources/images/img_Player_9x16_alpha.png';
+        if (awayName) awayName.textContent = awayPlayer.fullName || '';
     }
 }

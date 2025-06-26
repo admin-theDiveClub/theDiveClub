@@ -15,7 +15,8 @@ const resetKey = "r"; // Reset the timer
 const restartKey = " "; // Restart the timer for the next shot (spacebar)
 const extensionKey = "b"; // Extend the shot time by 15 seconds
 
-console.log(`Key bindings - Start: ${startKey}, Pause: ${pauseKey}, Reset: ${resetKey}`);
+console.log(`Shot Clock Key bindings - Start: ${startKey}, Pause: ${pauseKey}, Reset: ${resetKey}, Restart: [space], Extension: ${extensionKey}, Increase Time: ArrowUp, Decrease Time: ArrowDown`);
+console.log(`Match Timer Key bindings - Start: m, Pause/Resume: n, Reset: v, Increase Time: w, Decrease Time: q`);
 
 
 // Timer display element
@@ -78,9 +79,9 @@ function pauseTimer() {
 
 // Function to reset the timer
 function resetTimer() {
-    pauseTimer();
-    currentTime = shotTime * 10;
-    updateDisplay();
+  pauseTimer();
+  currentTime = shotTime * 10;
+  updateDisplay();
 }
 
 // Function to flash the timer display
@@ -168,6 +169,9 @@ function resetMatchTimer() {
   pauseMatchTimer();
   matchCurrentTime = matchTimeMinutes * 60;
   updateMatchDisplay();
+  // Clear stored remaining time in local and session storage
+  localStorage.removeItem("matchTimerRemaining");
+  sessionStorage.removeItem("matchTimerRemaining");
 }
 
 // Event listener for match timer controls
@@ -186,13 +190,13 @@ document.addEventListener("keydown", (event) => {
     case "v": // Restart the match timer
       resetMatchTimer();
       break;
-    case "arrowleft": // Decrease match time by 1 minute, minimum 1 minute
+    case "q": // Decrease match time by 1 minute, minimum 1 minute
       matchTimeMinutes = Math.max(1, matchTimeMinutes - 1);
       matchCurrentTime = matchTimeMinutes * 60; // Update current time
       updateMatchDisplay();
       console.log(`Match time decreased to ${matchTimeMinutes} minutes`);
       break;
-    case "arrowright": // Increase match time by 1 minute
+    case "w": // Increase match time by 1 minute
       matchTimeMinutes += 1;
       matchCurrentTime = matchTimeMinutes * 60; // Update current time
       updateMatchDisplay();
@@ -226,14 +230,36 @@ function triggerMatchAlarm() {
 // Update the match timer logic to call triggerMatchAlarm when time is up
 function startMatchTimer() {
   if (matchTimerInterval) return; // Prevent multiple intervals
+
   matchTimerInterval = setInterval(() => {
     if (matchCurrentTime > 0) {
       matchCurrentTime--;
       updateMatchDisplay();
+      // Store remaining time every second
+      localStorage.setItem("matchTimerRemaining", matchCurrentTime);
+      sessionStorage.setItem("matchTimerRemaining", matchCurrentTime);
     } else {
       clearInterval(matchTimerInterval);
       matchTimerInterval = null;
+      // Clear storage when timer ends
+      localStorage.removeItem("matchTimerRemaining");
+      sessionStorage.removeItem("matchTimerRemaining");
       triggerMatchAlarm(); // Call the alarm function when match time is up
     }
   }, 1000); // Update every second
 }
+
+// On page load, check if timer was running and update matchCurrentTime accordingly
+(function restoreMatchTimer() {
+  const storedRemaining = localStorage.getItem("matchTimerRemaining") || sessionStorage.getItem("matchTimerRemaining");
+  if (storedRemaining !== null && !isNaN(Number(storedRemaining))) {
+    matchCurrentTime = Number(storedRemaining);
+    updateMatchDisplay();
+    startMatchTimer(); // Start the timer if it was running
+    // Optionally, you could auto-restart the timer here if desired
+    // if (matchCurrentTime > 0) startMatchTimer();
+    if (matchCurrentTime === 0) {
+      triggerMatchAlarm();
+    }
+  }
+})();
