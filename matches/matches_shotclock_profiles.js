@@ -45,12 +45,8 @@ async function getMatchData()
     if (matchID)
     {
         match = await GetMatch(matchID);
-        if (match.data[0])
-        {
-            return match;
-        }
     }
-    return null;
+    return match;
 }
 
 function GetMatchID() 
