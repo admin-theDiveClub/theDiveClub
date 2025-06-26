@@ -10,8 +10,14 @@ async function Initialize ()
     }
     else 
     {
-        document.getElementById('player-home-container')?.style && (document.getElementById('player-home-container').style.display = 'none');
-        document.getElementById('player-away-container')?.style && (document.getElementById('player-away-container').style.display = 'none');
+        const homeContainer = document.getElementById('player-home-container');
+        if (homeContainer?.style) {
+            homeContainer.style.setProperty('display', 'none', 'important');
+        }
+        const awayContainer = document.getElementById('player-away-container');
+        if (awayContainer?.style) {
+            awayContainer.style.setProperty('display', 'none', 'important');
+        }
         console.error('No match data found.');
         return;
     }
@@ -39,7 +45,7 @@ async function getMatchData()
     if (matchID)
     {
         match = await GetMatch(matchID);
-        if (match)
+        if (match.data[0])
         {
             return match;
         }
