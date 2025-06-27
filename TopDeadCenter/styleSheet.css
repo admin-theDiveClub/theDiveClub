@@ -78,18 +78,6 @@ footer
     justify-content: center;
 }
 
-.nav-container
-{
-    position: fixed;
-    display: block;
-    width: 104vw;
-    background-color: var(--color-transparent-dark);
-    backdrop-filter: blur(10px);
-    padding: clamp(0cap, 0.5vmax, 4cap) clamp(2cap, 5vmax, 8cap);
-    z-index: 2000;
-    min-height: 8vh;
-}
-
 .nav-links
 {    
     border-radius: 1cap;
@@ -193,11 +181,6 @@ h2
     margin: clamp(1cap, 2vmax, 4cap);
     box-shadow: inset 0px 0px 24px 12px rgba(0, 0, 0, 1);
     border-radius: 50%; /* Makes the border round */
-}
-
-.bi 
-{
-    color: var(--color-base-light);
 }
 
 .profile-card
