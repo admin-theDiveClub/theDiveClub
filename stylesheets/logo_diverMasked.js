@@ -12,6 +12,12 @@ function updateMask() {
 
     // Force diver-box to match logo-box width
     diver.style.width = `${l.width}px`;
+
+    if (l.bottom < d.top) {
+        diver.style.display = 'none';
+    } else {
+        diver.style.display = '';
+    }
 }
 
 ['load','scroll','resize'].forEach(ev =>
