@@ -39,3 +39,47 @@
 {
     padding-top: 7cap;
 }
+
+/* this lives on your diver PNG and punches out wherever your logo moves */
+    #diver-box {
+      position: fixed;
+      top: 7cap;
+      left: 50%;
+      width: 50vw;
+      height: auto;
+      transform: translateX(-50%);
+      z-index: 2;
+      pointer-events: none;
+
+      /* this is your pool‐edge mask */
+      mask-image: url('../resources/logo_TDC_Decomposed/mask_poolEdge_test.png');
+      -webkit-mask-image: url('../resources/logo_TDC_Decomposed/mask_poolEdge_test_2.png');
+      mask-repeat: no-repeat;
+      -webkit-mask-repeat: no-repeat;
+      mask-size: contain;
+      -webkit-mask-size: contain;
+      mask-mode: alpha;
+      -webkit-mask-mode: alpha;
+
+      /* punch it out of the diver */
+      mask-composite: exclude;
+      -webkit-mask-composite: destination-out;
+    }
+
+    /* this is your logo PNG, which “drags” the mask around as you scroll */
+    .mask-source {
+      position: absolute;
+      top: 0cap;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      height: auto;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .col-4-scroll-zone {
+      position: relative;
+      height: 80vh;
+      overflow: visible;
+    }

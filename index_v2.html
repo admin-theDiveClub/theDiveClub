@@ -98,7 +98,17 @@
 
     <div class="main" style="height: 150vh; position: relative; overflow: hidden;">
         <div id="visualization-container" style="height: 100%; width: 100%; position: absolute; top: 0%;"></div>
+        <div class="row" id="logo-effect-row">
+            <div class="col-md-4"></div>
+            <div class="col-md-4 col-4-scroll-zone" id="scroll-zone">
+                <!-- diver image -->
+                <img  id="diver-box"  src="../resources/logo_TDC_Decomposed/icon_TDC_Diver.png"   alt="Diver">    
 
+                <!-- your logo image -->
+                <img    id="logo-box"   class="mask-source" src="../resources/logo_TDC_Decomposed/icon_TDC_Logo_NoDiverNoBadge.png" alt="Logo">
+            </div>
+            <div class="col-md-4"></div>
+        </div>        
     </div>
 
 
@@ -112,6 +122,7 @@
     <script src="../scripts/welcomeUser.js"></script>
     <script src="../TopDeadCenter/backgroundAnimation.js"></script>
     <script src="../stylesheets/backgroundAnimation.js"></script>
+    <script src="../styleSheets/logo_diverMasked.js"></script>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>

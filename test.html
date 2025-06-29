@@ -11,10 +11,8 @@
   >
   <style>
     html, body {
-      margin: 0;
-      padding: 0;
-      height: 300vh;       /* make page tall for scrolling */
-      background: grey;
+      height: 150vh;       /* make page tall for scrolling */
+      background: black;
     }
 
     /* this lives on your diver PNG and punches out wherever your logo moves */
@@ -66,44 +64,15 @@
   <div class="row">
     <div class="col-md-4"></div>
     <div class="col-md-4 col-4-scroll-zone" id="scroll-zone">
-      <!-- diver image -->
-      <img
-        id="diver-box"
-        src="../resources/logo_TDC_Decomposed/icon_TDC_Diver.png"
-        alt="Diver"
-      >
+        <!-- diver image -->
+        <img  id="diver-box"  src="../resources/logo_TDC_Decomposed/icon_TDC_Diver.png"   alt="Diver">    
 
-      <!-- your logo image -->
-      <img
-        id="logo-box"
-        class="mask-source"
-        src="../resources/logo_TDC_Decomposed/icon_TDC_Logo_NoDiverNoBadge.png"
-        alt="Logo"
-      >
+        <!-- your logo image -->
+        <img    id="logo-box"   class="mask-source" src="../resources/logo_TDC_Decomposed/icon_TDC_Logo_NoDiverNoBadge.png" alt="Logo">
     </div>
     <div class="col-md-4"></div>
   </div>
 
-  <script>
-    const diver = document.getElementById('diver-box');
-    const logo  = document.getElementById('logo-box');
-
-    function updateMask() {
-      const d  = diver.getBoundingClientRect();
-      const l  = logo.getBoundingClientRect();
-      const dx = l.left - d.left;
-      const dy = l.top  - d.top;
-
-      diver.style.maskPosition       = `${dx}px ${dy}px`;
-      diver.style.webkitMaskPosition = `${dx}px ${dy}px`;
-
-        // Force diver-box to match logo-box width
-        diver.style.width = `${l.width}px`;
-    }
-
-    ['load','scroll','resize'].forEach(ev =>
-      window.addEventListener(ev, updateMask)
-    );
-  </script>
+  <script src="../styleSheets/logo_diverMasked.js"></script>
 </body>
 </html>
