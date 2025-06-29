@@ -53,7 +53,7 @@
 
       /* this is your pool‐edge mask */
       mask-image: url('../resources/logo_TDC_Decomposed/mask_poolEdge_test.png');
-      -webkit-mask-image: url('../resources/logo_TDC_Decomposed/mask_poolEdge_test_2.png');
+      -webkit-mask-image: url('../resources/logo_TDC_Decomposed/mask_poolEdge_test.png');
       mask-repeat: no-repeat;
       -webkit-mask-repeat: no-repeat;
       mask-size: contain;
@@ -80,6 +80,6 @@
 
     .col-4-scroll-zone {
       position: relative;
-      height: 80vh;
+      height: 50vh;
       overflow: visible;
     }
