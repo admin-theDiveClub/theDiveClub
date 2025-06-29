@@ -98,48 +98,6 @@
 
     <div class="main" style="height: 150vh; position: relative; overflow: hidden;">
         <div id="visualization-container" style="height: 100%; width: 100%; position: absolute; top: 0%;"></div>
-        <div id="pool-effect-wrapper" style="position: relative; width: 100vw; height: 50vh; overflow: hidden;">
-            <!-- Diver: fixed in viewport/parent -->
-            <img 
-                id="diver"
-                src="../resources/logo_TDC_Decomposed/icon_TDC_Diver.png"
-                style="
-                position: fixed;
-                top: 10%; left: 50%;
-                width: 25%; max-width: 1000px;
-                height: auto;
-                transform: translate(-50%, -0%);
-                z-index: 1;
-                pointer-events: none;
-                "
-                alt="Diver"
-            >
-
-            <!-- Logo with mask: moves with scroll (relative to document flow, or absolutely in parent) -->
-            <img
-                id="masked-logo"
-                src="../resources/logo_TDC_Decomposed/icon_TDC_Logo_NoDiverNoBadge.png"
-                style="
-                position: absolute;
-                top: 10%; left: 50%;
-                width: 25%; max-width: 1000px;
-                height: auto;
-                transform: translate(-50%, 0);
-                z-index: 2;
-                mask-image: url('../resources/logo_TDC_Decomposed/mask_poolEdge.png');
-                -webkit-mask-image: url('../resources/logo_TDC_Decomposed/mask_poolEdge.png');
-                mask-size: contain;
-                -webkit-mask-size: contain;
-                mask-repeat: no-repeat;
-                -webkit-mask-repeat: no-repeat;
-                mask-position: center;
-                -webkit-mask-position: center;
-                pointer-events: none;
-                "
-                alt="Logo"
-            >
-        </div>
-
 
     </div>
 

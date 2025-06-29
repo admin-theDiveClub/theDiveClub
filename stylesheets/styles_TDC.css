@@ -39,39 +39,3 @@
 {
     padding-top: 7cap;
 }
-
-#pool-effect-wrapper {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-}
-
-#pool-effect-wrapper #diver {
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 60%; max-width: 1000px;
-  height: auto;
-  transform: translate(-50%, -50%);
-  z-index: 1;
-  pointer-events: none;
-}
-
-#pool-effect-wrapper #masked-logo {
-  position: absolute;
-  top: 20%; left: 50%;
-  width: 60%; max-width: 1200px;
-  height: auto;
-  transform: translate(-50%, 0);
-  z-index: 2;
-  /* Masking */
-  mask-image: url('../resources/logo_TDC_Decomposed/mask_poolEdge.png');
-  -webkit-mask-image: url('../resources/logo_TDC_Decomposed/mask_poolEdge.png');
-  mask-size: contain;
-  -webkit-mask-size: contain;
-  mask-repeat: no-repeat;
-  -webkit-mask-repeat: no-repeat;
-  mask-position: center;
-  -webkit-mask-position: center;
-  pointer-events: none;
-}
