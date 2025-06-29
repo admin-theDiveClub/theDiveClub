@@ -20,9 +20,9 @@
     /* this lives on your diver PNG and punches out wherever your logo moves */
     #diver-box {
       position: fixed;
-      top: 10%;
+      top: 0%;
       left: 50%;
-      width: 33vw;
+      width: 50vw;
       height: auto;
       transform: translateX(-50%);
       z-index: 2;
@@ -30,7 +30,7 @@
 
       /* this is your pool‐edge mask */
       mask-image: url('../resources/logo_TDC_Decomposed/mask_poolEdge_test.png');
-      -webkit-mask-image: url('../resources/logo_TDC_Decomposed/mask_poolEdge_test.png');
+      -webkit-mask-image: url('../resources/logo_TDC_Decomposed/mask_poolEdge_test_2.png');
       mask-repeat: no-repeat;
       -webkit-mask-repeat: no-repeat;
       mask-size: contain;
@@ -46,10 +46,10 @@
     /* this is your logo PNG, which “drags” the mask around as you scroll */
     .mask-source {
       position: absolute;
-      bottom: 0;
+      top: 0vh;
       left: 50%;
       transform: translateX(-50%);
-      width: 33vw;
+      width: 100%;
       height: auto;
       z-index: 1;
       pointer-events: none;
@@ -57,15 +57,15 @@
 
     .col-4-scroll-zone {
       position: relative;
-      height: 150vh;
+      height: 80vh;
       overflow: visible;
     }
   </style>
 </head>
 <body>
   <div class="row">
-    <div class="col-4"></div>
-    <div class="col-4 col-4-scroll-zone" id="scroll-zone">
+    <div class="col-md-4"></div>
+    <div class="col-md-4 col-4-scroll-zone" id="scroll-zone">
       <!-- diver image -->
       <img
         id="diver-box"
@@ -81,7 +81,7 @@
         alt="Logo"
       >
     </div>
-    <div class="col-4"></div>
+    <div class="col-md-4"></div>
   </div>
 
   <script>
@@ -96,6 +96,9 @@
 
       diver.style.maskPosition       = `${dx}px ${dy}px`;
       diver.style.webkitMaskPosition = `${dx}px ${dy}px`;
+
+        // Force diver-box to match logo-box width
+        diver.style.width = `${l.width}px`;
     }
 
     ['load','scroll','resize'].forEach(ev =>
