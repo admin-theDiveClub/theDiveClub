@@ -1,7 +1,7 @@
 // === CONFIGURATION ===
 const CONFIG = {
-  ballSizeRatio: 0.02,
-  launchSpeedRatio: 0.6,
+  ballSizeRatio: 0.025,
+  launchSpeedRatio: 0.75,
   friction: 0.98,
   wallBounceDamping: 0.98,
   maxSpin: 1.5,
@@ -42,7 +42,7 @@ resizeCanvas();
 let balls = [];
 let phase = 'init';
 
-let trailAlpha = 0.1;         // Trail fade strength
+let trailAlpha = 0.25;         // Trail fade strength
 let nextCycleDelay = 1500;    // Time in ms to wait after balls stop
 let waitingForNext = false;
 
@@ -182,7 +182,7 @@ function checkCollision() {
 }
 
 function drawBall(ball) {
-  // Draw trail
+  // Draw trail with glow effect
   if (ball.trail && ball.trail.length > 1) {
     for (let i = 0; i < ball.trail.length - 1; i++) {
       const point = ball.trail[i];
@@ -192,6 +192,10 @@ function drawBall(ball) {
       ctx.beginPath();
       ctx.moveTo(point.x, point.y);
       ctx.lineTo(nextPoint.x, nextPoint.y);
+      
+      // Set glow properties
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = ball.type === 'white' ? 'rgba(255, 255, 255, 0.8)' : ball.color;
       
       // Use white for white ball, TDC color for object ball
       if (ball.type === 'white') {
@@ -208,7 +212,13 @@ function drawBall(ball) {
       }
       
       ctx.lineWidth = ballRadius * 0.5;
+      ctx.lineCap = 'round'; // Add round line caps
+      ctx.lineJoin = 'round'; // Add round line joins
       ctx.stroke();
+      
+      // Reset shadow for next drawing operations
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = 'transparent';
     }
   }
 
