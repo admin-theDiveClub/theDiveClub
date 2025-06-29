@@ -80,6 +80,6 @@
 
     .col-4-scroll-zone {
       position: relative;
-      height: 50vh;
+      height: 80vh;
       overflow: visible;
     }
