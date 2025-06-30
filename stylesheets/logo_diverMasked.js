@@ -20,6 +20,7 @@ function updateMask() {
     }
 }
 
-['load','scroll','resize'].forEach(ev =>
-    window.addEventListener(ev, updateMask)
-);
+(function rafLoop(){
+   updateMask();
+   requestAnimationFrame(rafLoop);
+})();
