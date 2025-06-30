@@ -1,5 +1,6 @@
 const diver = document.getElementById('diver-box');
 const logo  = document.getElementById('logo-box');
+const scrollZone = document.getElementById('scroll-zone');
 
 function updateMask() {
     const d  = diver.getBoundingClientRect();
@@ -18,9 +19,21 @@ function updateMask() {
     } else {
         diver.style.display = '';
     }
+
+    
 }
 
 (function rafLoop(){
    updateMask();
    requestAnimationFrame(rafLoop);
 })();
+
+// Update scroll-zone height to match bottom of logo-box
+function updateScrollZoneHeight() {
+    if (scrollZone) {
+        scrollZone.style.height = `${logo.getBoundingClientRect().height}px`;
+    }
+}
+
+window.addEventListener('resize', updateScrollZoneHeight);
+updateScrollZoneHeight();

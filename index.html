@@ -16,8 +16,7 @@
       
         // call once the DOM is ready
         window.addEventListener('load', hideIosChromeToolbar);
-      </script>
-      
+    </script>
     
     <title>The Dive Club</title>
 
@@ -31,104 +30,218 @@
 
     <!-- Custom CSS -->
     <link href="../TopDeadCenter/styleSheet.css" rel="stylesheet">
+    <link href="../stylesheets/styles_TDC.css" rel="stylesheet">
 </head>
 
 <body> 
 
     <!-- Nav -->
-    <div class="row nav-container" >
+    <div id="nav-container" class="row" >
         <div class="d-flex justify-content-between">
             <a href="..">
-                <img src="../resources/icon_theDiveClub_alpha.svg" style="height: 6vh; object-fit: contain;"></img>
+                <img src="../resources/icon_theDiveClub_alpha.svg" style="height: 5cap; object-fit: contain;"></img>
             </a>
-            <div class="d-flex">
-                <!-- Navbar Button -->
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                    <i class="bi bi-list" style="font-size: 4vh; color: white;"></i>
-                </button>
-            </div>
+            <!-- Navbar Button -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav-links-container" aria-controls="nav-links-container" aria-expanded="false" aria-label="Toggle navigation">
+                <i id="navbar-icon" class="bi bi-list"></i>
+            </button>
         </div>
         
         <!-- Main Navbar Menu -->
-        <div class="collapse navbar-collapse" id="navbarNav">
+        <div class="collapse navbar-collapse" id="nav-links-container">
             <ul class="nav-links list-unstyled d-flex justify-content-around flex-wrap">
-                <li><a href="../index.html" class="nav-link active"><i class="bi bi-house-door"></i> Home</a></li>
-                <li><a href="accounts/profile.html" class="nav-link"><i class="bi bi-person"></i> Profile</a></li>
-                <li><a href="../matches/create.html" class="nav-link"><i class="bi bi-card-checklist"></i> Scorecard</a></li>
+                <li>
+                    <button class="btn btn-link nav-link active" onclick="location.href='../index.html'">
+                        <i class="bi bi-house-door"></i> Home
+                    </button>
+                </li>
+                <li>
+                    <button class="btn btn-link nav-link" onclick="location.href='accounts/profile.html'">
+                        <i class="bi bi-person"></i> Profile
+                    </button>
+                </li>
+                <li>
+                    <button class="btn btn-link nav-link" onclick="location.href='../matches/create.html'">
+                        <i class="bi bi-card-checklist"></i> Scorecard
+                    </button>
+                </li>
                 <li class="dropdown">
-                    <a href="#competitions" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" disabled><i class="bi bi-trophy"></i> Competitions</a>
+                    <button class="btn btn-link nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-trophy"></i> Competitions
+                    </button>
                     <ul class="dropdown-menu">
-                    <li><a href="#leagues" class="dropdown-item"><i class="bi bi-award"></i> Leagues</a></li>
-                    <li><a href="#tournaments" class="dropdown-item"><i class="bi bi-calendar-event"></i> Tournaments</a></li>
-                    <li><a href="#matches" class="dropdown-item"><i class="bi bi-flag"></i> Matches</a></li>
+                        <li>
+                            <button class="dropdown-item" onclick="location.href='#leagues'">
+                                <i class="bi bi-award"></i> Leagues
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item" onclick="location.href='#tournaments'">
+                                <i class="bi bi-calendar-event"></i> Tournaments
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item" onclick="location.href='#matches'">
+                                <i class="bi bi-flag"></i> Matches
+                            </button>
+                        </li>
                     </ul>
                 </li>
-                <li><a href="../index.html" class="nav-link"><i class="bi bi-envelope"></i> Contact</a></li>
+                <li>
+                    <button class="btn btn-link nav-link" onclick="location.href='../index.html'">
+                        <i class="bi bi-envelope"></i> Contact
+                    </button>
+                </li>
             </ul>
         </div>
     </div>
 
-    <div id="top-margin" style="height: 8vh;"></div>
+    <div class="main" style="position: relative;">
+        <div id="visualization-container" style="height: 100%; width: 100%; position: absolute; top: 0%; z-index: -1;"></div>
+        <div class="row" id="logo-effect-row">
+            <div class="col-xs-4 col-sm-3 col-md-4 col-lg-3 col-xl-4"></div>
+            <div class="col-xs-4  col-sm-6 col-md-4 col-lg-6 col-xl-4 scroll-zone" id="scroll-zone">
+                <!-- diver image -->
+                <img  id="diver-box"  src="../resources/logo_TDC_Decomposed/icon_TDC_Diver.png"   alt="Diver">    
 
-    <!-- Main Content -->
-    <div class="main" id="visualization-container">
-        <div id="container-account" class="card card-component" style="display: none;">
-            <div class="d-flex align-items-center justify-content-end">
-            <div class="text-end">
-                <p id="user-welcomeMessage" class="player-nickname" >Welcome, </p>
-                <h2 id="user-name" class="player-name">Yuvan Naidoo</h2>
+                <!-- your logo image -->
+                <img    id="logo-box"   class="mask-source" src="../resources/logo_TDC_Decomposed/icon_TDC_Logo_NoDiverNoBadge.png" alt="Logo">
             </div>
-            <img id="player-H-pic" class="profile-pic" src="../resources/icon_user_default.png" alt="../resources/icon_user_default.png" onclick="window.location.href='accounts/profile.html'" style="cursor: pointer;">
-            </div>
+            <div class="col-xs-4  col-sm-3 col-md-4 col-lg-3 col-xl-4"></div>
         </div>
+        <div class="row">
+            <div class="col-md-2"></div>
+            <div class="col-md-8">
+                <div class="text-center">
+                    <p class="text-white h2" style="padding: 1cap;">Dive into the world of cue sports with us!<br></p>
+                    <p class="text-white h5" style="padding: 4cap;">Explore leagues, tournaments, and matches, and connect with fellow players and enthusiasts.</p>
 
-        <div id="container-welcomeMessage" class="card card-component">
-            <div class="row">
-                <div class="col-12 col-md-8">
-                    <h1>The Dive Club</h1>
 
-                    <p style="text-align: center;">
-                        Sign Up, Login or Start Playing! See the menu icon (top-right of the screen).
-                        <br>If you are already logged in, you can access your profile by clicking on your profile picture.
-                    </p>
-  
-                    <p>
-                        Whether you're a casual player, league competitor, or tournament regular, <strong>The Dive Club</strong> is your new home for tracking your journey through cue sports — and soon, much more.
-                    </p>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card-component" style="padding: 0cap; overflow: hidden;">
+                                <img src="../resources/images/img_Screenshot_MatchPlay.png" style="object-fit: contain; width: 100%;">
+                                <div class="h2" style="margin: 1cap;">Live Scores</div>
+                                <p style="margin: 1cap;">Experience real-time match timing, accurate score tracking, and in-depth statistics. Our live scoring app empowers cue sport players to monitor performance, analyze game trends, and improve strategy instantly during play.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card-component" style="padding: 0cap; overflow: hidden;">
+                                <img src="../resources/images/img_Screenshot_MatchPlay.png" style="object-fit: contain; width: 100%;">
+                                <div class="h2" style="margin: 1cap;">Competitions</div>
+                                <p style="margin: 1cap;">Whether you’re aiming for glory in tournaments, climbing the ranks in leagues, or just enjoying a friendly social match, our platform brings cue-sport competitions to life. Discover events for every skill level and connect with a vibrant community of players.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card-component" style="padding: 0cap; overflow: hidden;">
+                                <img src="../resources/images/img_Screenshot_MatchPlay.png" style="object-fit: contain; width: 100%;">
+                                <div class="h2" style="margin: 1cap;">Statistics</div>
+                                <p style="margin: 1cap;">Dive into detailed match analytics, player performance metrics, and comprehensive game statistics. Our platform equips cue sport enthusiasts with the insights needed to refine their skills and elevate their gameplay.</p>
+                            </div>
+                        </div>
+                    </div>
 
-                    <p>
-                        At its core, The Dive Club is a free platform that helps players log their match-play, track performance, and build a personal profile over time. Whether you're competing seriously or just keeping score with friends at your local club, our tools are here to support you.
-                    </p>
 
-                    <h2>Why Join?</h2>
-                    <ul>
-                        <li><strong>Completely FREE</strong> for everyone.</li>
-                        <li><strong>Track Every Game:</strong> Log your matches, wins, and stats across formats.</li>
-                        <li><strong>Live Scorecards & Scoreboards:</strong> Let your friends and followers see the action in real-time.</li>
-                        <li><strong>Personal Profiles:</strong> Showcase your stats and match history with pride.</li>
-                        <li><strong>Built-In Timers:</strong> Perfect for structured play or casual sessions.</li>
-                    </ul>
+                    <div class="row">
+                        <div class="card-component" style="padding: 0cap; overflow: hidden;">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="d-flex flex-column justify-content-around align-items-center h-100" style="height: 100%;">
+                                        <img src="../resources/SPL_Sponsors/img_SPL_0.png" style="object-fit: contain; width: 100%; padding: 2cap;">
+                                        <img src="../resources/SPL_Sponsors/img_SPL_2.png" style="object-fit: contain; width: 100%; padding: 2cap;">
+                                    </div>
+                                </div>
+                                <div class="col-md-9">
+                                    <h2 style="margin: 0.5cap;">Proud Sponsor</h2>
+                                    <p style="padding: 2cap; text-align: left;">
+                                        theDiveClub.org proudly sponsors the Supa Pro League, founded by Billiard Cafe, Rivonia.<br><br>
+                                        We provide live scoring and technical support to the SPL, including statistics management, live graphics integration, shot clock management, and league management support.<br><br>
+                                        Our partnership helps ensure every match is tracked in real-time, delivering accurate results and delivering engaging visuals for players and fans alike.<br><br>
+                                        By supporting the SPL, we aim to foster growth in the cue sports community, promote fair competition, and enhance the experience for everyone involved.
+                                    </p>
+                                    <a href="https://supaproleague.com" class="btn btn-primary" style="padding: 1cap; margin: 1cap; font-size: x-large;">
+                                        Learn More About the SPL
+                                    </a>
+                                </div>
+                            </div>                            
+                        </div>
+                    </div>
 
-                    <p>
-                        And this is just the beginning. We're already working on features for:
-                    </p>
+                    <div class="row">
+                        <div class="card-component" style="padding: 1cap; overflow: hidden;">
+                            <div class="row">
+                                <div class="col-md-7" style="padding: 2cap;">
+                                    <h2 style="margin: 0.5cap;">About Us</h2>
+                                    <p>
+                                        <strong>The Dive Club</strong> is your free home for tracking cue sports—whether you’re a casual player, league competitor, or tournament regular.
+                                    </p>
+                                    <p>
+                                        Log your matches, track stats, and build your profile over time. Compete seriously or just keep score with friends—our tools support every level.
+                                    </p>
+                                    <p class="h2">Why Join?</p>
+                                    <p><strong>Completely FREE</strong> for everyone</p>
+                                    <p><strong>Track Every Game:</strong> Log matches, wins, and stats</p>
+                                    <p><strong>Live Scorecards:</strong> Share real-time action</p>
+                                    <p><strong>Personal Profiles:</strong> Showcase your stats</p>
+                                    <p><strong>Built-In Timers:</strong> For structured or casual play</p>
+                                    <p>
+                                        More features coming soon: leagues, tournaments, multi-sport support, and club integrations.
+                                    </p>
+                                    <p>
+                                        We’re building this with players, for players. Clubs and leagues—get in touch!
+                                    </p>
+                                    <p><strong>Welcome aboard. Let’s make every frame count.</strong></p>
+                                    <p><em>– The Dive Club Team</em></p>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="d-flex flex-column justify-content-around align-items-center h-100" style="height: 100%;">
+                                        <img src="../resources/images/img_Player_Win.png" style="object-fit: contain; width: 100%;">
+                                    </div>
+                                </div>
+                            </div>                            
+                        </div>
+                    </div>
 
-                    <ul>
-                        <li>Leagues and Tournament Support</li>
-                        <li>Multi-sport Expansion</li>
-                        <li>Custom Club Integrations</li>
-                    </ul>
-
-                    <p>
-                        We’re building this together — with players, for players. If you're part of a club or league and want to offer real value to your players, we’d love to hear from you.
-                    </p>
-
-                    <p><strong>Welcome aboard. Let’s make every frame count.</strong></p>
-
-                    <p><em>– The Dive Club Team</em></p>
                 </div>
-                <div class="col-12 col-md-4 text-center">
-                    <img src="../resources/images/img_Player_Win.png" alt="../resources/icon_user_default.png" style="max-width: 100%; height: auto;">
+            </div>
+            <div class="col-md-2"></div>
+        </div>        
+    </div>
+
+
+    <!-- Site Map Banner -->
+    <div class="container-fluid text-white py-3" style="margin-top: 2cap; margin-bottom: 2cap; background-color: rgb(37, 37, 37);">
+        <div class="row">
+            <div class="col">
+                <strong><a href="../index.html" class="text-white text-decoration-none">Home</a></strong>
+            </div>
+            <div class="col">
+                <strong>Profile</strong>
+                <div class="small">
+                    <a href="accounts/profile.html" class="text-white text-decoration-none d-block">Your Profile</a>
+                    <a href="accounts/signup.html" class="text-white text-decoration-none d-block">Sign Up</a>
+                    <a href="accounts/login.html" class="text-white text-decoration-none d-block">Login</a>
+                </div>
+            </div>
+            <div class="col">
+                <strong>Live Scoring</strong>
+                <div class="small">
+                    <a href="../matches/index.html" class="text-white text-decoration-none d-block">Live Scorecard</a>
+                    <a href="../matches/create.html" class="text-white text-decoration-none d-block">New Match</a>
+                </div>
+            </div>
+            <div class="col">
+                <strong>Competitions</strong>
+                <div class="small">
+                    <a href="#leagues" class="text-white text-decoration-none d-block">Leagues</a>
+                    <a href="#tournaments" class="text-white text-decoration-none d-block">Tournaments</a>
+                    <a href="#matches" class="text-white text-decoration-none d-block">Matches</a>
+                </div>
+            </div>
+            <div class="col">
+                <strong>Contact</strong>
+                <div class="small">
+                    <a href="#about" class="text-white text-decoration-none d-block">About Us</a>
                 </div>
             </div>
         </div>
@@ -144,7 +257,8 @@
     <script src="../scripts/welcomeUser.js"></script>
     <script src="../TopDeadCenter/backgroundAnimation.js"></script>
     <script src="../stylesheets/backgroundAnimation.js"></script>
-    
+    <script src="../stylesheets/logo_diverMasked.js"></script>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>

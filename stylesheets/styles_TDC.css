@@ -78,7 +78,7 @@
       pointer-events: none;
     }
 
-    .col-4-scroll-zone {
+    .scroll-zone {
       position: relative;
       height: 80vh;
       overflow: visible;
