@@ -5,11 +5,11 @@ document.getElementById('btn-match-create').addEventListener('click', () =>
     {
         players:
         {
-            home: {
+            h: {
                 fullName: document.getElementById('player_H').value,
                 username: document.getElementById('player_H').value
             },
-            away: {
+            a: {
                 fullName: document.getElementById('player_A').value,
                 username: document.getElementById('player_A').value
             }
@@ -20,7 +20,8 @@ document.getElementById('btn-match-create').addEventListener('click', () =>
 
 async function CreateMatch (_match)
 {
-    const response = await supabase.from('tbl_matches_new').insert(
+    console.log('Creating match with players:', _match.players);
+    const response = await supabase.from('tbl_matches').insert(
         {
             players: _match.players
         }
@@ -37,6 +38,7 @@ async function CreateMatch (_match)
         window.location.href = "../matches/index.html?matchID=" + response.data[0].id;
     }
 }
+
 // Add event listeners for the 'click' events of the account find buttons
 document.getElementById('btn-account-find-H').addEventListener('click', async () => {
     const playerH = document.getElementById('player_H').value;

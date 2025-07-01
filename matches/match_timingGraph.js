@@ -2,9 +2,7 @@ var match = null;
 
 export async function UpdateMatchTimingGraph(updatedMatch) 
 {
-    match = updatedMatch; // Declare match as a local variable
-    //console.log('Match Timing Graph: Updated match data', match);
-
+    match = updatedMatch;
     BuildBarGraph(match);
 }
 
@@ -40,131 +38,160 @@ function PrepareBarGraphData(match) {
     const colors = [];
     let elapsedTime = 0;
 
-    const timing = match.history["frames-duration"] || [];
-    const framesWinner = match.history["frames-winner"] || [];
-    for (let i = 0; i < timing.length; i++) {
-        const frameTime = timing[i] / 60; // Convert seconds to minutes
-        const winner = framesWinner[i] === "away" ? -1 : 1;
-
-        xValues.push(winner); // Frame winner (-1 or 1)
-        yValues.push(elapsedTime + frameTime / 2); // Center the bar vertically
-        barWidths.push(frameTime); // Width based on frame time in minutes
-
-        // Determine color based on frame winner
-        const frameResult = match.history["frames-result"][i];
-        if (frameResult === "C") {
-            colors.push('rgba(0, 255, 0, 0.25)'); // Green for reverseApples
-        } else if (frameResult === "A" || frameResult === "G") {
-            colors.push('rgba(255, 255, 0, 0.25)'); // Yellow for apples and Golden Breaks
-        } else {
-            colors.push(winner === -1 ? 'rgba(0, 186, 245, 0.25)' : 'rgba(234, 0, 103, 0.25)'); // Away: Blue, Home: Red
-        }
-
-        elapsedTime += frameTime; // Increment elapsed time
+    if (!match || !match.history) {
+        return { xValues, yValues, barWidths, colors, historyArr: [] };
     }
 
-    return { xValues, yValues, barWidths, colors };
+    // Convert history object to sorted array
+    const historyArr = Object.keys(match.history)
+        .filter(k => !isNaN(k) && match.history[k])
+        .sort((a, b) => Number(a) - Number(b))
+        .map(k => match.history[k])
+        .filter(frame => frame); // filter out null/undefined frames
+
+    for (let i = 0; i < historyArr.length; i++) {
+        const frame = historyArr[i];
+        if (!frame || typeof frame.duration !== 'number') continue;
+
+        const frameTime = frame.duration / 60; // Convert seconds to minutes
+        const winner = frame["winner-player"] === "a" ? -1 : 1;
+
+        xValues.push(winner);
+        yValues.push(elapsedTime + frameTime / 2);
+        barWidths.push(frameTime);
+
+        // Determine color based on frame winner-result
+        const frameResult = frame["winner-result"];
+        if (frameResult === "C") {
+            colors.push('rgba(0, 255, 0, 0.25)');
+        } else if (frameResult === "A" || frameResult === "G") {
+            colors.push('rgba(255, 255, 0, 0.25)');
+        } else {
+            colors.push(winner === -1 ? 'rgba(0, 186, 245, 0.25)' : 'rgba(234, 0, 103, 0.25)');
+        }
+
+        elapsedTime += frameTime;
+    }
+
+    return { xValues, yValues, barWidths, colors, historyArr };
 }
 
 async function BuildBarGraph(match) {
     const graphData = PrepareBarGraphData(match);
-    const screenMode = GetScreenMode(); // Use GetScreenMode once
-    const isVertical = screenMode === 'mobile'; // Determine if vertical layout is needed
+    const screenMode = GetScreenMode();
+    const isVertical = screenMode === 'mobile';
+
+    // For running score
+    let runningScoreH = 0;
+    let runningScoreA = 0;
+
+    // Swap home/away for vertical mode
+    let xVals = graphData.xValues;
+    let yVals = graphData.yValues;
+    let swapped = false;
+    if (isVertical) {
+        // Flip the sign of xValues to swap sides
+        xVals = graphData.xValues.map(v => -v);
+        swapped = true;
+    }
 
     const trace = {
-        x: isVertical ? graphData.xValues : graphData.yValues,
+        x: isVertical ? xVals : graphData.yValues,
         y: isVertical ? graphData.yValues : graphData.xValues,
         type: 'bar',
-        orientation: isVertical ? 'h' : 'v', // Horizontal bars for small screens
+        orientation: isVertical ? 'h' : 'v',
         marker: {
-            color: graphData.colors, // Use dynamic colors
+            color: graphData.colors,
             line: {
-                color: 'rgba(255, 255, 255, 1)', // White borders
+                color: 'rgba(255, 255, 255, 1)',
                 width: 1,
             },
         },
-        width: graphData.barWidths, // Bar widths
-        text: match.history["frames-duration"].map((time, index) => {
-            const runningScoreH = match.history["frames-result"]
-                .slice(0, index + 1)
-                .filter((result, i) => result === 1 && match.history["frames-winner"][i] === "home").length;
-
-            const runningScoreA = match.history["frames-result"]
-                .slice(0, index + 1)
-                .filter((result, i) => result === 1 && match.history["frames-winner"][i] === "away").length;
-
-            const minutes = Math.floor(time / 60);
-            const seconds = time % 60;
-
-            const label = `${minutes}'${seconds} <br><b>(${runningScoreH}-${runningScoreA})</b>`;
-            return label; // Running score labels
+        width: graphData.barWidths,
+        text: graphData.historyArr.map((frame, index) => {
+            // Running score calculation
+            if (frame["winner-result"] === 1) {
+                if (frame["winner-player"] === "h") runningScoreH++;
+                if (frame["winner-player"] === "a") runningScoreA++;
+            }
+            const minutes = Math.floor(frame.duration / 60);
+            const seconds = frame.duration % 60;
+            return `${minutes}'${seconds} <br><b>(${runningScoreH}-${runningScoreA})</b>`;
         }),
-        textposition: 'inside', // Position labels inside the bars
+        textposition: 'inside',
         textfont: {
-            color: 'white', // Set label color to white
-            family: 'Segoe UI', // Use Segoe UI font
+            color: 'white',
+            family: 'Segoe UI',
         },
-        hoverinfo: 'none', // Disable tooltips on hover
+        hoverinfo: 'none',
     };
 
     const offset = 0.15;
     const breakLabelsTrace = {
         x: isVertical 
-            ? graphData.xValues.map((value, index) => match.history["breaks-player"][index] === "away" ? -offset : offset) // Position based on breaks-player
-            : graphData.yValues.map((value, index) => graphData.yValues[index]), // Offset vertically for horizontal mode
+            ? graphData.xValues.map((value, index) => graphData.historyArr[index]["break-player"] === "a" ? offset : -offset)
+            : graphData.yValues.map((value, index) => graphData.yValues[index]),
         y: isVertical 
-            ? graphData.yValues.map((value, index) => graphData.yValues[index]) // Offset vertically for vertical mode
-            : graphData.xValues.map((value, index) => match.history["breaks-player"][index] === "away" ? -offset : offset), // Position based on breaks-player
+            ? graphData.yValues.map((value, index) => graphData.yValues[index])
+            : graphData.xValues.map((value, index) => graphData.historyArr[index]["break-player"] === "a" ? -offset : offset),
         mode: 'text+markers',
-        text: match.history["breaks-event"].map((event, index) => {
-            const eventLabel = event === 0 ? "scratch" : event === 1 ? "dry" : "in";
-            return ` ${eventLabel} `; // Add padding to the text
+        text: graphData.historyArr.map((frame) => {
+            let eventLabel = "";
+            if (frame["break-event"] === "scr") eventLabel = "scratch";
+            else if (frame["break-event"] === "dry") eventLabel = "dry";
+            else if (frame["break-event"] === "in") eventLabel = "in";
+            else eventLabel = frame["break-event"];
+            return ` ${eventLabel} `;
         }),
         textfont: {
-            color: 'rgba(255, 255, 255, 0.8)', // Slightly transparent white
-            family: 'Segoe UI', // Use Segoe UI font
-            size: 12, // Font size for labels
+            color: 'rgba(255, 255, 255, 0.8)',
+            family: 'Segoe UI',
+            size: 12,
         },
         marker: {
-            color: 'rgba(0, 0, 0, 0.25)', // Semi-transparent black background
-            size: 24, // Marker size for background
-            symbol: 'circle', // Rounded corners
+            color: 'rgba(0, 0, 0, 0.25)',
+            size: 24,
+            symbol: 'circle',
         },
-        hoverinfo: 'none', // Disable tooltips on hover
+        hoverinfo: 'none',
     };
 
     const layout = {
         xaxis: {
-            tickfont: { color: '#ccc', family: 'Segoe UI' }, // Use Segoe UI font for x-axis
+            tickfont: { color: '#ccc', family: 'Segoe UI' },
             gridcolor: '#444',
-            tickvals: isVertical ? [1, -1] : undefined, // Reverse order for vertical mode
-            ticktext: isVertical ? [match.players.away.fullName, match.players.home.fullName] : undefined, // Home on left, Away on right
+            tickvals: isVertical ? [1, -1] : undefined,
+            ticktext: isVertical
+                ? [match.players.a.fullName, match.players.h.fullName] // swapped
+                : undefined,
             tickmode: isVertical ? 'array' : undefined,
-            fixedrange: true, // Prevent zooming on x-axis
+            fixedrange: true,
         },
         yaxis: {
-            tickfont: { color: '#ccc', family: 'Segoe UI' }, // Use Segoe UI font for y-axis
+            tickfont: { color: '#ccc', family: 'Segoe UI' },
             gridcolor: '#444',
             tickvals: isVertical ? undefined : [1, -1],
-            ticktext: isVertical ? undefined : [match.players.home.fullName, match.players.away.fullName],
+            ticktext: isVertical
+                ? undefined
+                : [match.players.h.fullName, match.players.a.fullName],
             tickmode: isVertical ? undefined : 'array',
-            automargin: true, // Allow word-wrap for player names
-            fixedrange: true, // Prevent zooming on y-axis
+            automargin: true,
+            fixedrange: true,
         },
         plot_bgcolor: 'transparent',
         paper_bgcolor: 'transparent',
         showlegend: false,
         margin: screenMode === 'mobile'
-            ? { l: 50, r: 50, t: 0, b: 100 } // Portrait (small screens)
+            ? { l: 50, r: 50, t: 0, b: 100 }
             : screenMode === 'tablet'
-            ? { l: 100, r: 25, t: 0, b: 100 } // Landscape (medium screens)
-            : { l: 100, r: 50, t: 0, b: 100 }, // Desktop (large screens)
+            ? { l: 100, r: 25, t: 0, b: 100 }
+            : { l: 100, r: 50, t: 0, b: 100 },
     };
 
     const config = {
-        displayModeBar: false, // Hide the Plotly toolbar
-        responsive: true, // Prevent zoom by making the graph responsive
-        scrollZoom: false, // Disable scroll zoom
+        displayModeBar: false,
+        responsive: true,
+        scrollZoom: false,
     };
 
     await Plotly.newPlot('timelineChart', [trace, breakLabelsTrace], layout, config);

@@ -3,7 +3,6 @@ var match = null;
 export async function UpdateMatchSummary(updatedMatch) 
 {
     match = updatedMatch;
-    //console.log('Match Summary: Updated match data', match);
 
     if (GetScreenMode() === 'mobile')
     {
@@ -41,13 +40,19 @@ window.addEventListener('resize', () =>
 
 function BuildmatchTable_Vertical(match) 
 {
-    // Start building the HTML for the vertical table
-    let homePlayerName = match.players.home.fullName || match.players.home.username.split('@')[0] || "Home";
-    let awayPlayerName = match.players.away.fullName || match.players.away.username.split('@')[0] || "Away";
+    // Use "h" and "a" keys
+    const homeKey = "h";
+    const awayKey = "a";
 
-    if (match.settings["lagWinner"] === "home") {
+    let homePlayer = (match && match.players && match.players[homeKey]) || {};
+    let awayPlayer = (match && match.players && match.players[awayKey]) || {};
+
+    let homePlayerName = homePlayer.fullName || (homePlayer.username ? homePlayer.username.split('@')[0] : "Player H");
+    let awayPlayerName = awayPlayer.fullName || (awayPlayer.username ? awayPlayer.username.split('@')[0] : "Player A");
+
+    if (match && match.settings && match.settings["lagWinner"] === homeKey) {
         homePlayerName += " *";
-    } else if (match.settings["lagWinner"] === "away") {
+    } else if (match && match.settings && match.settings["lagWinner"] === awayKey) {
         awayPlayerName += " *";
     }
 
@@ -65,53 +70,63 @@ function BuildmatchTable_Vertical(match)
             <tbody id="scorecard-table-body">
     `;
 
-    // Initialize variables to track total frames, duration, and frames won
-    let totalFrames = match.history["frames-result"].length;
+    // Prepare frame data
+    const frames = match && match.history
+        ? Object.keys(match.history)
+            .filter(k => !isNaN(Number(k)))
+            .sort((a, b) => Number(a) - Number(b))
+            .map(k => match.history[k])
+        : [];
+
+    let totalFrames = frames.length;
     let totalDuration = 0;
     let framesWonHome = 0;
     let framesWonAway = 0;
 
-    // Loop through each frame to populate the table rows
     for (let i = 0; i < totalFrames; i++) 
     {
-        const frameDuration = match.history["frames-duration"][i] || 0;
+        const frame = frames[i] || {};
+        const frameDuration = frame.duration || 0;
         totalDuration += frameDuration;
 
-        const frameWinner = match.history["frames-winner"][i];
-        const frameResult = match.history["frames-result"][i] || "";
-        if (frameWinner === "home") framesWonHome++;
-        if (frameWinner === "away") framesWonAway++;
+        const frameWinner = frame["winner-player"];
+        const frameResult = frame["winner-result"] || "";
+        if (frameWinner === homeKey) framesWonHome++;
+        if (frameWinner === awayKey) framesWonAway++;
 
         // Format the break event for display
         const formatBreakEvent = (event) => 
         {
             switch (event) {
-                case 0: return " (SB)";
-                case 1: return " (DB)";
-                case 2: return " (BI)";
-                default: return event;
+                case "scr": return " (SB)";
+                case "dry": return " (DB)";
+                case "in":  return " (BI)";
+                default: return event ? ` (${event})` : "";
             }
         };
 
-        const breakEvent = formatBreakEvent(match.history["breaks-event"][i] || 0);
-        const breakPlayer = match.history["breaks-player"][i] || "";        
+        const breakEvent = formatBreakEvent(frame["break-event"]);
+        const breakPlayer = frame["break-player"] || "";        
 
         // Populate cells for home and away players based on frame winner and break event
         var homeCell = "";
         var awayCell = "";
-        if (frameWinner === "home") 
+        if (frameWinner === homeKey) 
         {
             homeCell += frameResult;
             awayCell += "0";
-        } else if (frameWinner === "away") 
+        } else if (frameWinner === awayKey) 
         {
             awayCell += frameResult;
             homeCell += "0";
-        } 
+        } else {
+            homeCell += "0";
+            awayCell += "0";
+        }
 
-        if (breakPlayer === "home") {
+        if (breakPlayer === homeKey) {
             homeCell += breakEvent;
-        } else if (breakPlayer === "away") 
+        } else if (breakPlayer === awayKey) 
         {
             awayCell += breakEvent;
         }
@@ -158,19 +173,27 @@ function BuildmatchTable_Vertical(match)
     `;
 
     // Update the DOM with the generated table HTML
-    document.getElementById("scorecard-table-body").innerHTML = '';
-    document.getElementById("scorecard-table-body").innerHTML = tableHTML;
+    const scorecardElem = document.getElementById("scorecard-table-body");
+    if (scorecardElem) {
+        scorecardElem.innerHTML = '';
+        scorecardElem.innerHTML = tableHTML;
+    }
 }
 
 function BuildmatchTable_Horizontal(match) 
 {
-    // Start building the HTML for the horizontal table
-    let homePlayerName = match.players.home.fullName || match.players.home.username.split('@')[0] || "Home";
-    let awayPlayerName = match.players.away.fullName || match.players.away.username.split('@')[0] || "Away";
+    const homeKey = "h";
+    const awayKey = "a";
 
-    if (match.settings["lagWinner"] === "home") {
+    let homePlayer = (match && match.players && match.players[homeKey]) || {};
+    let awayPlayer = (match && match.players && match.players[awayKey]) || {};
+
+    let homePlayerName = homePlayer.fullName || (homePlayer.username ? homePlayer.username.split('@')[0] : "Player H");
+    let awayPlayerName = awayPlayer.fullName || (awayPlayer.username ? awayPlayer.username.split('@')[0] : "Player A");
+
+    if (match && match.settings && match.settings["lagWinner"] === homeKey) {
         homePlayerName += " *";
-    } else if (match.settings["lagWinner"] === "away") {
+    } else if (match && match.settings && match.settings["lagWinner"] === awayKey) {
         awayPlayerName += " *";
     }
 
@@ -182,11 +205,16 @@ function BuildmatchTable_Horizontal(match)
                     <th class="cell-tight">Frame</th>
     `;
 
-    // Initialize variables to track total frames, duration, and frames won
-    let totalFrames = match.history["frames-result"].length;
+    // Prepare frame data
+    const frames = match && match.history
+        ? Object.keys(match.history)
+            .filter(k => !isNaN(Number(k)))
+            .sort((a, b) => Number(a) - Number(b))
+            .map(k => match.history[k])
+        : [];
+
+    let totalFrames = frames.length;
     let totalDuration = 0;
-    let framesWonHome = 0;
-    let framesWonAway = 0;
 
     // Add column headers for each frame
     for (let i = 0; i < totalFrames; i++) 
@@ -212,25 +240,26 @@ function BuildmatchTable_Horizontal(match)
 
     for (let i = 0; i < totalFrames; i++) 
     {
-        const frameResult = match.history["frames-result"][i] || "";
-        const frameWinner = match.history["frames-winner"][i];
+        const frame = frames[i] || {};
+        const frameResult = frame["winner-result"] || "";
+        const frameWinner = frame["winner-player"];
 
         // Format the break event for display
         const formatBreakEvent = (event) => 
         {
             switch (event) 
             {
-                case 0: return " (SB)";
-                case 1: return " (DB)";
-                case 2: return " (BI)";
-                default: return event;
+                case "scr": return " (SB)";
+                case "dry": return " (DB)";
+                case "in":  return " (BI)";
+                default: return event ? ` (${event})` : "";
             }
         };
 
-        const breakEvent = formatBreakEvent(match.history["breaks-event"][i] || 0);
-        const breakPlayer = match.history["breaks-player"][i] || "";
-        let cellContent = frameWinner === "home" ? frameResult : "0";
-        if (breakPlayer === "home")
+        const breakEvent = formatBreakEvent(frame["break-event"]);
+        const breakPlayer = frame["break-player"] || "";
+        let cellContent = frameWinner === homeKey ? frameResult : "0";
+        if (breakPlayer === homeKey)
         {
             cellContent += breakEvent;
         }
@@ -240,7 +269,7 @@ function BuildmatchTable_Horizontal(match)
     }
 
     // Add the total score cell for the home player
-    const homeTotalScore = match.results.home.frames || 0;
+    const homeTotalScore = (match && match.results && match.results[homeKey] && match.results[homeKey].fw) || 0;
     tableHTML += `<td class="cell-tight"><b>${homeTotalScore}</b></td></tr>`;
 
     // Add the row for the away player
@@ -251,25 +280,26 @@ function BuildmatchTable_Horizontal(match)
     `;
 
     for (let i = 0; i < totalFrames; i++) {
-        const frameResult = match.history["frames-result"][i] || "";
-        const frameWinner = match.history["frames-winner"][i];
+        const frame = frames[i] || {};
+        const frameResult = frame["winner-result"] || "";
+        const frameWinner = frame["winner-player"];
 
         // Format the break event for display
         const formatBreakEvent = (event) => 
         {
             switch (event) 
             {
-                case 0: return " (SB)";
-                case 1: return " (DB)";
-                case 2: return " (BI)";
-                default: return event;
+                case "scr": return " (SB)";
+                case "dry": return " (DB)";
+                case "in":  return " (BI)";
+                default: return event ? ` (${event})` : "";
             }
         };
 
-        const breakEvent = formatBreakEvent(match.history["breaks-event"][i] || 0);
-        const breakPlayer = match.history["breaks-player"][i] || "";
-        let cellContent = frameWinner === "away" ? frameResult : "0";
-        if (breakPlayer === "away") 
+        const breakEvent = formatBreakEvent(frame["break-event"]);
+        const breakPlayer = frame["break-player"] || "";
+        let cellContent = frameWinner === awayKey ? frameResult : "0";
+        if (breakPlayer === awayKey) 
         {
             cellContent += breakEvent;
         }
@@ -279,7 +309,7 @@ function BuildmatchTable_Horizontal(match)
     }
 
     // Add the total score cell for the away player
-    const awayTotalScore = match.results.away.frames || 0;
+    const awayTotalScore = (match && match.results && match.results[awayKey] && match.results[awayKey].fw) || 0;
     tableHTML += `<td class="cell-tight"><b>${awayTotalScore}</b></td></tr>`;
 
     // Add the row for frame durations
@@ -291,7 +321,8 @@ function BuildmatchTable_Horizontal(match)
 
     for (let i = 0; i < totalFrames; i++) 
     {
-        const frameDuration = match.history["frames-duration"][i] || 0;
+        const frame = frames[i] || {};
+        const frameDuration = frame.duration || 0;
         totalDuration += frameDuration;
 
         // Format the frame duration for display
@@ -320,27 +351,50 @@ function BuildmatchTable_Horizontal(match)
     `;
 
     // Update the DOM with the generated table HTML
-    document.getElementById("scorecard-table-body").innerHTML = '';
-    document.getElementById("scorecard-table-body").innerHTML = tableHTML;
+    const scorecardElem = document.getElementById("scorecard-table-body");
+    if (scorecardElem) {
+        scorecardElem.innerHTML = '';
+        scorecardElem.innerHTML = tableHTML;
+    }
 }
 
 function BuildMatchSummaryTable(match)
 {
-    let homeBreaksTotal = (match.results.home.breaks.scratch || 0) + 
-                          (match.results.home.breaks.dry || 0) + 
-                          (match.results.home.breaks.in || 0);
+    const homeKey = "h";
+    const awayKey = "a";
 
-    let awayBreaksTotal = (match.results.away.breaks.scratch || 0) + 
-                          (match.results.away.breaks.dry || 0) + 
-                          (match.results.away.breaks.in || 0);
+    // Helper to safely access nested properties
+    const safe = (obj, path, def = 0) => {
+        return path.reduce((acc, key) => (acc && acc[key] != null ? acc[key] : undefined), obj) ?? def;
+    };
 
-    let homePlayerName = match.players.home.fullName || match.players.home.username.split('@')[0] || "Home Player Name";
-    let awayPlayerName = match.players.away.fullName || match.players.away.username.split('@')[0] || "Away Player Name";
+    // Defensive: ensure match, match.players, match.results exist
+    const players = (match && match.players) ? match.players : {};
+    const results = (match && match.results) ? match.results : {};
 
-    if (match.settings["lagWinner"] === "home") {
+    let homePlayer = players[homeKey] || {};
+    let awayPlayer = players[awayKey] || {};
+
+    let homePlayerName = homePlayer.fullName || (homePlayer.username ? homePlayer.username.split('@')[0] : "Player H");
+    let awayPlayerName = awayPlayer.fullName || (awayPlayer.username ? awayPlayer.username.split('@')[0] : "Player A");
+
+    if (match && match.settings && match.settings["lagWinner"] === homeKey) {
         homePlayerName += " *";
-    } else if (match.settings["lagWinner"] === "away") {
+    } else if (match && match.settings && match.settings["lagWinner"] === awayKey) {
         awayPlayerName += " *";
+    }
+
+    let homeBreaks = safe(results, [homeKey, 'breaks'], { scr: 0, dry: 0, in: 0 });
+    let awayBreaks = safe(results, [awayKey, 'breaks'], { scr: 0, dry: 0, in: 0 });
+
+    // Count total breaks for each player using match.history
+    let homeBreaksTotal = 0;
+    let awayBreaksTotal = 0;
+    if (match && match.history) {
+        Object.values(match.history).forEach(frame => {
+            if (frame && frame["break-player"] === homeKey) homeBreaksTotal++;
+            if (frame && frame["break-player"] === awayKey) awayBreaksTotal++;
+        });
     }
 
     let tableHTML = `
@@ -353,25 +407,25 @@ function BuildMatchSummaryTable(match)
                 </tr>
             </thead>
             <tbody>
-                <tr">
-                    <td colspan="3" id="framesWon_H" style="font-weight: 900; font-size: 2cap;">${match.results.home.frames || 0}</td>
+                <tr>
+                    <td colspan="3" id="framesWon_H" style="font-weight: 900; font-size: 2cap;">${safe(results, [homeKey, 'fw'])}</td>
                     <td colspan="1">Frames Won</td>
-                    <td colspan="3" id="framesWon_A" style="font-weight: 900; font-size: 2cap;">${match.results.away.frames || 0}</td>
+                    <td colspan="3" id="framesWon_A" style="font-weight: 900; font-size: 2cap;">${safe(results, [awayKey, 'fw'])}</td>
                 </tr>
                 <tr>
-                    <td colspan="3" id="apples_H">${match.results.home.apples || 0}</td>
+                    <td colspan="3" id="apples_H">${safe(results, [homeKey, 'bf'])}</td>
                     <td colspan="1">Apples</td>
-                    <td colspan="3" id="apples_A">${match.results.away.apples || 0}</td>
+                    <td colspan="3" id="apples_A">${safe(results, [awayKey, 'bf'])}</td>
                 </tr>
                 <tr>
-                    <td colspan="3" id="reverseApples_H">${match.results.home.reverseApples || 0}</td>
+                    <td colspan="3" id="reverseApples_H">${safe(results, [homeKey, 'rf'])}</td>
                     <td colspan="1">Reverse Apples</td>
-                    <td colspan="3" id="reverseApples_A">${match.results.away.reverseApples || 0}</td>
+                    <td colspan="3" id="reverseApples_A">${safe(results, [awayKey, 'rf'])}</td>
                 </tr>
                 <tr>
-                    <td colspan="3" id="goldenBreaks_H">${match.results.home.goldenBreaks || 0}</td>
+                    <td colspan="3" id="goldenBreaks_H">${safe(results, [homeKey, 'gb'])}</td>
                     <td colspan="1">Golden Breaks</td>
-                    <td colspan="3" id="goldenBreaks_A">${match.results.away.goldenBreaks || 0}</td>
+                    <td colspan="3" id="goldenBreaks_A">${safe(results, [awayKey, 'gb'])}</td>
                 </tr>
                 <tr>
                     <td>SB</td>
@@ -383,46 +437,69 @@ function BuildMatchSummaryTable(match)
                     <td>BI</td>
                 </tr>
                 <tr>
-                    <td id="breaks_H_SB">${match.results.home.breaks.scratch || 0}</td>
-                    <td id="breaks_H_DB">${match.results.home.breaks.dry || 0}</td>
-                    <td id="breaks_H_BI">${match.results.home.breaks.in || 0}</td>
+                    <td id="breaks_H_SB">${homeBreaks.scr || 0}</td>
+                    <td id="breaks_H_DB">${homeBreaks.dry || 0}</td>
+                    <td id="breaks_H_BI">${homeBreaks.in || 0}</td>
                     
                     <td id="breaks_Total">${homeBreaksTotal} | ${awayBreaksTotal}</td>
 
-                    <td id="breaks_A_SB">${match.results.away.breaks.scratch || 0}</td>
-                    <td id="breaks_A_DB">${match.results.away.breaks.dry || 0}</td>
-                    <td id="breaks_A_BI">${match.results.away.breaks.in || 0}</td>
+                    <td id="breaks_A_SB">${awayBreaks.scr || 0}</td>
+                    <td id="breaks_A_DB">${awayBreaks.dry || 0}</td>
+                    <td id="breaks_A_BI">${awayBreaks.in || 0}</td>
                 </tr>
             </tbody>
         </table>
     `;
 
     // Update the DOM with the generated table HTML
-    document.getElementById("match-summary-table").innerHTML = '';
-    document.getElementById("match-summary-table").innerHTML = tableHTML;
+    const summaryElem = document.getElementById("match-summary-table");
+    if (summaryElem) {
+        summaryElem.innerHTML = '';
+        summaryElem.innerHTML = tableHTML;
+    }
 }
 
-function BuildMatchInformationTable (match)
-{
+function BuildMatchInformationTable(match) {
+    // Defensive: check for null/undefined match and properties
+    const startElem = document.getElementById("match-start-time");
+    const endElem = document.getElementById("match-end-time");
+    const durationElem = document.getElementById("match-duration");
+    const avgElem = document.getElementById("match-average-frame-time");
+
+    if (!match || !match.time) {
+        if (startElem) startElem.textContent = "N/A";
+        if (endElem) endElem.textContent = "N/A";
+        if (durationElem) durationElem.textContent = "00:00:00";
+        if (avgElem) avgElem.textContent = "0\"0'";
+        return;
+    }
+
     const startTime = new Date(match.time.start);
     const endTime = new Date(match.time.end);
-    const matchDurationSeconds = Math.floor((endTime - startTime) / 1000);
+    // Calculate match duration as the total of all frame durations in history
+    const frames = match && match.history
+        ? Object.keys(match.history)
+            .filter(k => !isNaN(Number(k)))
+            .sort((a, b) => Number(a) - Number(b))
+            .map(k => match.history[k])
+        : [];
+    const matchDurationSeconds = frames.reduce((acc, frame) => acc + (frame && frame.duration ? frame.duration : 0), 0);
 
     const hours = Math.floor(matchDurationSeconds / 3600);
     const minutes = Math.floor((matchDurationSeconds % 3600) / 60);
     const seconds = matchDurationSeconds % 60;
     const formattedMatchDuration = `${hours}:${minutes}:${seconds}`;
 
-    const totalFrames = match.history["frames-duration"].length;
-    const totalFrameDuration = match.history["frames-duration"].reduce((acc, duration) => acc + duration, 0);
-    const averageFrameDurationSeconds = Math.floor(totalFrameDuration / totalFrames);
+    const totalFrames = frames.length;
+    const totalFrameDuration = frames.reduce((acc, frame) => acc + (frame && frame.duration ? frame.duration : 0), 0);
+    const averageFrameDurationSeconds = totalFrames > 0 ? Math.floor(totalFrameDuration / totalFrames) : 0;
 
     const avgMinutes = Math.floor((averageFrameDurationSeconds % 3600) / 60);
     const avgSeconds = averageFrameDurationSeconds % 60;
     const formattedAverageFrameDuration = `${avgMinutes}"${avgSeconds}'`;
 
-    document.getElementById("match-start-time").textContent = startTime.toLocaleString();
-    document.getElementById("match-end-time").textContent = endTime.toLocaleString();
-    document.getElementById("match-duration").textContent = formattedMatchDuration;
-    document.getElementById("match-average-frame-time").textContent = formattedAverageFrameDuration;
+    if (startElem) startElem.textContent = isNaN(startTime.getTime()) ? "?" : startTime.toLocaleString();
+    if (endElem) endElem.textContent = (match.time.end && !isNaN(endTime.getTime())) ? endTime.toLocaleString() : "Ongoing";
+    if (durationElem) durationElem.textContent = formattedMatchDuration || "00:00:00";
+    if (avgElem) avgElem.textContent = totalFrames > 0 ? formattedAverageFrameDuration : "0\"0'";
 }

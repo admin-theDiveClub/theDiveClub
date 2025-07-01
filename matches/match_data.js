@@ -1,75 +1,59 @@
-var match = 
-{
+var match = {
     id: null,
     leagueID: null,
     tournamentID: null,
-    time: 
-    {
+    time: {
         end: null,
         start: null
     },
-    players: 
-    {
-        away: 
-        {
+    players: {
+        away: {
             id: null,
+            pp: null,
             fullName: null,
+            nickname: null,
             username: null
         },
-        home: 
-        {
+        home: {
             id: null,
+            pp: null,
             fullName: null,
+            nickname: null,
             username: null
         }
     },
-    settings: 
-    {
+    settings: {
         lagType: null,
         ruleSet: null,
         winType: null,
         lagWinner: null,
         winCondition: null
     },
-    results: 
-    {
-        away: 
-        {
-            apples: 0,
-            breaks: 
-            {
+    results: {
+        away: {
+            bf: 0,
+            fw: 0,
+            gb: 0,
+            rf: 0,
+            breaks: {
                 in: 0,
                 dry: 0,
-                foul: 0,
-                scratch: 0
-            },
-            frames: 0,
-            goldenBreaks: 0,
-            reverseApples: 0
+                scr: 0
+            }
         },
-        home: 
-        {
-            apples: 0,
-            breaks: 
-            {
+        home: {
+            bf: 0,
+            fw: 0,
+            gb: 0,
+            rf: 0,
+            breaks: {
                 in: 0,
                 dry: 0,
-                foul: 0,
-                scratch: 0
-            },
-            frames: 0,
-            goldenBreaks: 0,
-            reverseApples: 0
+                scr: 0
+            }
         }
     },
-    history: 
-    {
-        "breaks-event": [],
-        "breaks-player": [],
-        "frames-result": [],
-        "frames-winner": [],
-        "frames-duration": []
-    },
+    history: [],
     info: null
 };
 
@@ -82,10 +66,9 @@ Initialize();
 async function Initialize()
 {
     match = await getMatchData();    
+    console.log('Source: Match', match);
     await UpdateMatchPlayers(match);
     await UpdateMatch(match);
-
-    console.log('Source: Match', match);
 
     OnPayloadReceived(match);
 }
@@ -127,7 +110,7 @@ function GetMatchID()
 
 async function GetMatch (_matchID)
 {
-    const response = await supabase.from('tbl_matches_new').select('*').eq('id', _matchID);
+    const response = await supabase.from('tbl_matches').select('*').eq('id', _matchID);
     if (response.error)
     {
       return null;
@@ -142,7 +125,7 @@ async function SubscribeToUpdates (_matchID)
   const channels = supabase.channel('custom-update-channel')
   .on(
       'postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'tbl_matches_new', filter: `id=eq.${_matchID}` },
+      { event: 'UPDATE', schema: 'public', table: 'tbl_matches', filter: `id=eq.${_matchID}` },
       (payload) => 
       {
         console.log('Source: Change Received!', payload);
@@ -160,70 +143,75 @@ async function OnPayloadReceived (payload)
     UpdateMatch(payload);
 }
 
-async function UpdateMatchPlayers (match)
-{
-    const response = await supabase.from('tbl_players').select('*').in('username', [match.players.home.username, match.players.away.username]);
-    if (response.error)
-    {
+async function UpdateMatchPlayers(match) {
+    // Use new keys: 'a' for away, 'h' for home
+    const usernames = [
+        match.players.h?.username,
+        match.players.a?.username
+    ].filter(Boolean);
+
+    if (usernames.length === 0) return;
+
+    const response = await supabase
+        .from('tbl_players')
+        .select('*')
+        .in('username', usernames);
+
+    if (response.error) {
         console.error('Error fetching player data:', response.error);
         return;
     }
 
     const players = response.data;
 
-    // Step 1: Find the player data for the home player using their username
-    const homePlayerData = players.find(player => player.username === match.players.home.username);
+    // Home player ('h')
+    if (match.players.h) {
+        const homePlayerData = players.find(player => player.username === match.players.h.username);
 
-    // Step 2: Check if the player data exists and extract the name, otherwise fallback to existing fullName or username
-    const homePlayerName = homePlayerData 
-        ? `${homePlayerData.name}${homePlayerData.surname ? ' ' + homePlayerData.surname : ''}` 
-        : match.players.home.fullName || match.players.home.username;
+        match.players.h.fullName = homePlayerData
+            ? `${homePlayerData.name}${homePlayerData.surname ? ' ' + homePlayerData.surname : ''}`
+            : match.players.h.fullName || match.players.h.username;
+        match.players.h.id = homePlayerData?.id || match.players.h.id || null;
+        match.players.h.nickname = homePlayerData?.nickname || (homePlayerData ? match.players.h.nickname : "Guest") || null;
 
-    // Step 3: Assign the resolved name to the home player's fullName property in the match object
-    match.players.home.fullName = homePlayerName;
-    match.players.home.id = homePlayerData?.id || match.players.home.id || null;
-    match.players.home.nickname = homePlayerData?.nickname || match.players.home.nickname || null;
-
-    // Step 1: Find the player data for the home player using their username
-    const awayPlayerData = players.find(player => player.username === match.players.away.username);
-
-    // Step 2: Check if the player data exists and extract the name, otherwise fallback to existing fullName or username
-    const awayPlayerName = awayPlayerData 
-        ? `${awayPlayerData.name}${awayPlayerData.surname ? ' ' + awayPlayerData.surname : ''}` 
-        : match.players.away.fullName || match.players.away.username;
-
-    // Step 3: Assign the resolved name to the away player's fullName property in the match object
-    match.players.away.fullName = awayPlayerName;
-    match.players.away.id = awayPlayerData?.id || match.players.away.id || null;
-    match.players.away.nickname = awayPlayerData?.nickname || match.players.away.nickname || null;
-
-    if (match.players.home.id) {
-        const r_H = await supabase.storage.from('bucket-profile-pics').getPublicUrl(match.players.home.id);
-        if (r_H.data && r_H.data.publicUrl && !r_H.data.publicUrl.endsWith('null')) {
-            const imgElement_H = document.getElementById('player-H-pic');
-            if (imgElement_H) {
-                const img = new Image();
-                img.onload = () => {
-                    imgElement_H.src = r_H.data.publicUrl;
-                };
-                img.src = r_H.data.publicUrl;
+        if (match.players.h.id) {
+            const r_H = await supabase.storage.from('bucket-profile-pics').getPublicUrl(match.players.h.id);
+            if (r_H.data && r_H.data.publicUrl && !r_H.data.publicUrl.endsWith('null')) {
+                const imgElement_H = document.getElementById('player-H-pic');
+                if (imgElement_H) {
+                    const img = new Image();
+                    img.onload = () => {
+                        imgElement_H.src = r_H.data.publicUrl;
+                    };
+                    img.src = r_H.data.publicUrl;
+                }
+                match.players.h.pp = r_H.data.publicUrl;
             }
-            match.players.home.pp = r_H.data.publicUrl;
         }
     }
 
-    if (match.players.away.id) {
-        const r_A = await supabase.storage.from('bucket-profile-pics').getPublicUrl(match.players.away.id);
-        if (r_A.data && r_A.data.publicUrl && !r_A.data.publicUrl.endsWith('null')) {
-            const imgElement_A = document.getElementById('player-A-pic');
-            if (imgElement_A) {
-                const img = new Image();
-                img.onload = () => {
-                    imgElement_A.src = r_A.data.publicUrl;
-                };
-                img.src = r_A.data.publicUrl;
+    // Away player ('a')
+    if (match.players.a) {
+        const awayPlayerData = players.find(player => player.username === match.players.a.username);
+        match.players.a.fullName = awayPlayerData
+            ? `${awayPlayerData.name}${awayPlayerData.surname ? ' ' + awayPlayerData.surname : ''}`
+            : match.players.a.fullName || match.players.a.username;
+        match.players.a.id = awayPlayerData?.id || match.players.a.id || null;
+        match.players.a.nickname = awayPlayerData?.nickname || (awayPlayerData ? match.players.a.nickname : "Guest") || null;
+
+        if (match.players.a.id) {
+            const r_A = await supabase.storage.from('bucket-profile-pics').getPublicUrl(match.players.a.id);
+            if (r_A.data && r_A.data.publicUrl && !r_A.data.publicUrl.endsWith('null')) {
+                const imgElement_A = document.getElementById('player-A-pic');
+                if (imgElement_A) {
+                    const img = new Image();
+                    img.onload = () => {
+                        imgElement_A.src = r_A.data.publicUrl;
+                    };
+                    img.src = r_A.data.publicUrl;
+                }
+                match.players.a.pp = r_A.data.publicUrl;
             }
-            match.players.away.pp = r_A.data.publicUrl;
         }
     }
 }

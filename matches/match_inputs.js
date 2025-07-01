@@ -45,7 +45,7 @@ export async function UpdateMatch(updatedMatch)
 {
     match = updatedMatch;
 
-    if (match.time.end && !window.location.href.includes("scoreboard.html"))
+    if (match && match.time && match.time.end && !window.location.href.includes("scoreboard.html"))
     {
         window.location.href = `../matches/scoreboard.html?matchID=${match.id}`;
     }
@@ -57,20 +57,21 @@ export async function UpdateMatch(updatedMatch)
 
 async function PushUpdatedMatchToDatabase(match) 
 {
-    match.info = { lastUpdated: new Date().toISOString() };
+    if (!match.info) match.info = {};
+    match.info.lastUpdated = new Date().toISOString();
 
     if (!match || !match.id) {
         console.warn('Match data is incomplete or missing an ID. No updates will be pushed to the database.');
         return;
     }
 
-    if (match.time.end)
+    if (match.time && match.time.end)
     {
         alert('Match has ended. No further updates can be made.');
         return;
     }
 
-    const response = await supabase.from('tbl_matches_new').update(match).eq('id', match.id).select();
+    const response = await supabase.from('tbl_matches').update(match).eq('id', match.id).select();
 
     console.warn('Updated match pushed to database. Response:', response);
 }
@@ -85,128 +86,95 @@ export async function UpdateScores(score_H, score_A)
     const currentLag = GetCurrentLag();
 
     var breakEvent = null;
-    if (document.getElementById('advancedBreakRecording').checked) 
+    if (document.getElementById('advancedBreakRecording') && document.getElementById('advancedBreakRecording').checked) 
     {
         breakEvent = currentLag === "home"
         ? document.querySelector('input[name="player-H-option"]:checked').value
         : document.querySelector('input[name="player-A-option"]:checked').value;
     } 
     
-
     if (!match.history) {
-        match.history = {
-            "breaks-event": [],
-            "breaks-player": [],
-            "frames-result": [],
-            "frames-winner": [],
-            "frames-duration": []
+        match.history = {};
+    }
+
+    // Handle array-based history format
+    if (match.history) {
+        // Determine frame index for array
+        // Determine frame index for array or object-based history
+        let frameIndex;
+        if (Array.isArray(match.history)) {
+            frameIndex = match.history.length;
+        } else {
+            // Object-based: find max numeric key and increment
+            const keys = Object.keys(match.history)
+            .map(k => parseInt(k))
+            .filter(k => !isNaN(k));
+            frameIndex = keys.length > 0 ? Math.max(...keys) + 1 : 0;
+        }
+        console.log('Frame Index:', frameIndex);
+        
+        // Add frame to array-based history
+        const frameData = {
+            duration: GetFrameTime(),
+            "break-event": getBreakEventString(score_H, score_A, breakEvent),
+            "break-player": currentLag,
+            "winner-player": getWinnerPlayer(score_H, score_A),
+            "winner-result": getWinnerResult(score_H, score_A)
         };
+        
+        match.history[frameIndex] = frameData;
+    } else {
+        // Handle object-based history format (existing code)
+        // ...existing object-based history code...
     }
 
-    match.history["breaks-player"].push(currentLag);
-
-    if (score_H === "A" || score_A === "A" || score_H === "G" || score_A === "G") 
-    {
-        match.history["breaks-event"].push(2);
-        breakEvent = 'BI';
-    } else 
-    {
-        if (breakEvent === "BI") 
-        {
-            match.history["breaks-event"].push(2);
-        } else if (breakEvent === "DB") 
-        {
-            match.history["breaks-event"].push(1);
-        } else if (breakEvent === "SB" || breakEvent === "FB") 
-        {
-            match.history["breaks-event"].push(0);
-        } else 
-        {
-            match.history["breaks-event"].push(null);
-        }
-    }
-
-    if (currentLag === "home") 
-    {
-        if (breakEvent === "BI") 
-        {
-            match.results.home.breaks.in++;
-        } else if (breakEvent === "DB") 
-        {
-            match.results.home.breaks.dry++;
-        } else  if (breakEvent === "SB" || breakEvent === "FB") 
-        {
-            match.results.home.breaks.scratch++;
-        }
-    } else if (currentLag === "away") 
-    {
-        if (breakEvent === "BI") 
-        {
-            match.results.away.breaks.in++;
-        } else if (breakEvent === "DB") 
-        {
-            match.results.away.breaks.dry++;
-        } else if (breakEvent === "SB" || breakEvent === "FB")
-        {
-            match.results.away.breaks.scratch++;
-        }
-    }
-
+    // Update results object
     if (!match.results) {
         match.results = {
-            home: {
-                apples: 0,
-                breaks: { in: 0, dry: 0, foul: 0, scratch: 0 },
-                frames: 0,
-                goldenBreaks: 0,
-                reverseApples: 0
-            },
-            away: {
-                apples: 0,
-                breaks: { in: 0, dry: 0, foul: 0, scratch: 0 },
-                frames: 0,
-                goldenBreaks: 0,
-                reverseApples: 0
-            }
+            h: { fw: 0, rf: 0, gb: 0, bf: 0, breaks: { in: 0, dry: 0, scr: 0 } },
+            a: { fw: 0, rf: 0, gb: 0, bf: 0, breaks: { in: 0, dry: 0, scr: 0 } }
         };
     }
 
-    if (score_H === 0) {
-        match.results.away.frames++;
-        match.history["frames-winner"].push("away");
-        match.history["frames-result"].push(score_A);
-    } else if (score_A === 0) {
-        match.results.home.frames++;
-        match.history["frames-winner"].push("home");
-        match.history["frames-result"].push(score_H);
+    // Define variables for break event, break player, winner player, and winner result
+    const breakEventStr = getBreakEventString(score_H, score_A, breakEvent);
+    const breakPlayer = currentLag;
+    const winnerPlayer = getWinnerPlayer(score_H, score_A);
+    const winnerResult = getWinnerResult(score_H, score_A);
+
+    // Update break stats
+    if (breakEventStr && breakPlayer && match.results[breakPlayer] && match.results[breakPlayer].breaks[breakEventStr] !== undefined) {
+        match.results[breakPlayer].breaks[breakEventStr]++;
     }
 
-    if (score_H === "A") {
-        match.results.home.apples++;
-    } else if (score_A === "A") {
-        match.results.away.apples++;
+    // Update frame win
+    if (winnerPlayer && match.results[winnerPlayer]) {
+        match.results[winnerPlayer].fw++;
     }
 
-    if (score_H === "C") {
-        match.results.home.reverseApples++;
-    } else if (score_A === "C") {
-        match.results.away.reverseApples++;
+    // "A" is bf, "G" is gb, "C" is rf
+    if (winnerResult === "A" && winnerPlayer && match.results[winnerPlayer]) {
+        match.results[winnerPlayer].bf++;
+    }
+    if (winnerResult === "G" && winnerPlayer && match.results[winnerPlayer]) {
+        match.results[winnerPlayer].gb++;
+    }
+    if (winnerResult === "C" && winnerPlayer && match.results[winnerPlayer]) {
+        match.results[winnerPlayer].rf++;
     }
 
-    if (score_H === "G") {
-        match.results.home.goldenBreaks++;
-    } else if (score_A === "G") {
-        match.results.away.goldenBreaks++;
-    }
-
+    // Timer and info
     Timer_NextFrame();
+    if (!match.info) match.info = {};
+    match.info.lastUpdated = new Date().toISOString();
 
-    match.info = { lastUpdated: new Date().toISOString() };
-
-    if (match.results.home.frames > match.settings.winCondition || match.results.away.frames > match.settings.winCondition) {
-        const winner = match.results.home.frames > match.settings.winCondition ? match.players.home.fullName : match.players.away.fullName;
-        if (confirm(`${winner} has won the match. Would you like to end the match?`)) 
-        {
+    // Check for match end with null-safe access
+    const winCondition = match.settings ? match.settings.winCondition : null;
+    if (winCondition && (match.results.h.fw >= winCondition || match.results.a.fw >= winCondition)) {
+        const winner = match.results.h.fw >= winCondition
+            ? (match.players && match.players.h ? match.players.h.fullName : 'Home Player')
+            : (match.players && match.players.a ? match.players.a.fullName : 'Away Player');
+        if (confirm(`${winner} has won the match. Would you like to end the match?`)) {
             await EndMatchTimer();
             return;
         }
@@ -215,58 +183,101 @@ export async function UpdateScores(score_H, score_A)
     await PushUpdatedMatchToDatabase(match);
 }
 
+// Helper functions to extract winner data
+function getBreakEventString(score_H, score_A, breakEvent) {
+    if (score_H === "A" || score_A === "A" || score_H === "G" || score_A === "G") {
+        return "in";
+    } else if (breakEvent === "BI") {
+        return "in";
+    } else if (breakEvent === "DB") {
+        return "dry";
+    } else if (breakEvent === "SB" || breakEvent === "FB") {
+        return "scr";
+    }
+    return null;
+}
+
+function getWinnerPlayer(score_H, score_A) {
+    if (score_H === 0) return "a";
+    if (score_A === 0) return "h";
+    return null;
+}
+
+function getWinnerResult(score_H, score_A) {
+    return score_H === 0 ? score_A : score_H;
+}
+
 function GetCurrentLag() 
 {
-    const totalFrames = match.history["breaks-player"].length;
-
-    if (match.settings.lagType === "alternate") 
-    {
-        return match.settings.lagWinner === "home" 
-            ? (totalFrames % 2 === 0 ? "home" : "away") 
-            : (totalFrames % 2 === 0 ? "away" : "home");
-    } else if (match.settings.lagType === "winner") 
-    {
-        if (totalFrames === 0) 
-        {
-            return match.settings.lagWinner; // Whoever wins the lag breaks first
-        } else 
-        {
-            const lastWinnerPlayer = match.history["frames-winner"][totalFrames - 1];
-            return lastWinnerPlayer; // Last winner player breaks next
+    // Count frames safely
+    let totalFrames = 0;
+    if (match && match.history) {
+        if (Array.isArray(match.history)) {
+            totalFrames = match.history.length;
+        } else {
+            totalFrames = Object.keys(match.history)
+                .filter(key => !isNaN(Number(key)))
+                .length;
         }
     }
 
-    return null; // Default case if lagType is not set
+    const settings = match && match.settings ? match.settings : {};
+    const lagType = settings.lagType || null;
+    const lagWinner = settings.lagWinner || null;
+    
+    if (!lagWinner) return null;
+
+    if (lagType === "alternate") {
+        if (lagWinner === "home" || lagWinner === "h") {
+            return totalFrames % 2 === 0 ? "h" : "a";
+        } else {
+            return totalFrames % 2 === 0 ? "a" : "h";
+        }
+    } else if (lagType === "winner") {
+        if (totalFrames === 0) {
+            return lagWinner === "home" || lagWinner === "h" ? "h" : "a";
+        } else {
+            // Get last winner from history
+            if (Array.isArray(match.history) && match.history.length > 0) {
+                const lastFrame = match.history[match.history.length - 1];
+                return lastFrame && lastFrame["winner-player"] ? lastFrame["winner-player"] : null;
+            }
+            // ...existing object-based logic...
+        }
+    }
+
+    return null;
 }
 
 function Timer_NextFrame() 
 {
-    const frameTime = GetFrameTime();
-    if (!Array.isArray(match.history["frames-duration"])) {
-        match.history["frames-duration"] = [];
-    }
-    match.history["frames-duration"].push(frameTime);
     console.warn("Timer: Next Frame Started.");
     SetFrameTimer();
 }  
 
 function StartMatchTimer() 
 {
+    if (!match.time) match.time = {};
     match.time.start = new Date().toISOString();
     SetFrameTimer();
     console.warn('Timer: Match started at:', match.time.start);
-    document.getElementById('match-time-start').textContent = `Match Start Time: ${new Date(match.time.start).toLocaleString()}`;
+    const startElement = document.getElementById('match-time-start');
+    if (startElement) {
+        startElement.textContent = `Match Start Time: ${new Date(match.time.start).toLocaleString()}`;
+    }
     PushUpdatedMatchToDatabase(match);
 }
 
 async function EndMatchTimer() 
 {
+    if (!match.time) match.time = {};
     match.time.end = new Date().toISOString();
     console.warn('Timer: Match ended at:', match.time.end);
-    document.getElementById('match-time-end').textContent = `Match End Time: ${new Date(match.time.end).toLocaleString()}`;
-    PushUpdatedMatchToDatabase(match);
-    const response = await supabase.from('tbl_matches_new').update(match).eq('id', match.id).select();
-
+    const endElement = document.getElementById('match-time-end');
+    if (endElement) {
+        endElement.textContent = `Match End Time: ${new Date(match.time.end).toLocaleString()}`;
+    }
+    const response = await supabase.from('tbl_matches').update(match).eq('id', match.id).select();
     console.warn('Updated match pushed to database. Response:', response);
 }
 
@@ -303,83 +314,87 @@ document.getElementById('btn-timer-restartFrameTimer').addEventListener('click',
 {
     SetFrameTimer();
 });
-
 document.getElementById('btn-correction').addEventListener('click', async () => 
 {
-    if (
-        match.history["frames-result"].length > 0 &&
-        match.history["frames-winner"].length > 0 &&
-        match.history["frames-duration"].length > 0
-    ) {
-        // Remove the last entries from history
-        match.history["frames-result"].pop();
-        match.history["frames-winner"].pop();
-        match.history["frames-duration"].pop();
-
-        // Remove the last entries from breaks history
-        if (
-            match.history["breaks-player"].length > 0 &&
-            match.history["breaks-event"].length > 0
-        ) {
-            const lastBreakPlayer = match.history["breaks-player"].pop();
-            const lastBreakEvent = match.history["breaks-event"].pop();
-
-            // Update results based on the removed break event
-            if (lastBreakPlayer === "home") {
-            if (lastBreakEvent === 2) {
-                match.results.home.breaks.in--;
-            } else if (lastBreakEvent === 1) {
-                match.results.home.breaks.dry--;
-            } else {
-                match.results.home.breaks.scratch--;
-            }
-            } else if (lastBreakPlayer === "away") {
-            if (lastBreakEvent === 2) {
-                match.results.away.breaks.in--;
-            } else if (lastBreakEvent === 1) {
-                match.results.away.breaks.dry--;
-            } else {
-                match.results.away.breaks.scratch--;
-            }
-            }
-        }
-
-        // Update local and session storage for frameStartTime
-        const frameStartTimes = JSON.parse(localStorage.getItem('frameStartTimes') || '[]');
-        frameStartTimes.pop(); // Remove the last entry
-        localStorage.setItem('frameStartTimes', JSON.stringify(frameStartTimes));
-        sessionStorage.setItem('frameStartTimes', JSON.stringify(frameStartTimes));
-
-        // Update the current frameStartTime to the last entry in frameStartTimes
-        const lastFrameStartTime = frameStartTimes[frameStartTimes.length - 1] || null;
-        if (lastFrameStartTime) {
-            localStorage.setItem('frameStartTime', lastFrameStartTime);
-            sessionStorage.setItem('frameStartTime', lastFrameStartTime);
-        } else {
-            localStorage.removeItem('frameStartTime');
-            sessionStorage.removeItem('frameStartTime');
-        }
-
-        // Recalculate results
-        match.results.home.frames = match.history["frames-winner"].filter(winner => winner === "home").length;
-        match.results.away.frames = match.history["frames-winner"].filter(winner => winner === "away").length;
-
-        match.results.home.apples = match.history["frames-result"].filter(score => score === "A").length;
-        match.results.away.apples = match.history["frames-result"].filter(score => score === "A").length;
-
-        match.results.home.reverseApples = match.history["frames-result"].filter(score => score === "C").length;
-        match.results.away.reverseApples = match.history["frames-result"].filter(score => score === "C").length;
-
-        match.results.home.goldenBreaks = match.history["frames-result"].filter(score => score === "G").length;
-        match.results.away.goldenBreaks = match.history["frames-result"].filter(score => score === "G").length;
-
-        console.warn('Correction applied. Updated match:', match);
-
-        // Push the updated match to the database
-        await PushUpdatedMatchToDatabase(match);
-    } else {
-        alert('No entries to remove.');
+    // Correction for object-based history (remove last frame and recalc results)
+    if (!match || !match.history) {
+        alert('No match or history to correct.');
+        return;
     }
+    // Find numeric keys in history
+    const frameKeys = Object.keys(match.history)
+        .map(k => parseInt(k))
+        .filter(k => !isNaN(k));
+    if (frameKeys.length === 0) {
+        alert('No entries to remove.');
+        return;
+    }
+    const lastFrameKey = Math.max(...frameKeys).toString();
+
+    // Remove last frame
+    if (Array.isArray(match.history)) {
+        match.history.pop();
+    } else {
+        delete match.history[lastFrameKey];
+    }
+
+    // Remove last frame duration from frames-duration array
+    if (Array.isArray(match.history["frames-duration"])) {
+        match.history["frames-duration"].pop();
+    }
+
+    // Update local/session storage for frameStartTime
+    const frameStartTimes = JSON.parse(localStorage.getItem('frameStartTimes') || '[]');
+    frameStartTimes.pop();
+    localStorage.setItem('frameStartTimes', JSON.stringify(frameStartTimes));
+    sessionStorage.setItem('frameStartTimes', JSON.stringify(frameStartTimes));
+    const lastFrameStartTime = frameStartTimes[frameStartTimes.length - 1] || null;
+    if (lastFrameStartTime) {
+        localStorage.setItem('frameStartTime', lastFrameStartTime);
+        sessionStorage.setItem('frameStartTime', lastFrameStartTime);
+    } else {
+        localStorage.removeItem('frameStartTime');
+        sessionStorage.removeItem('frameStartTime');
+    }
+
+    // Reset results
+    match.results = {
+        h: { fw: 0, rf: 0, gb: 0, bf: 0, breaks: { in: 0, dry: 0, scr: 0 } },
+        a: { fw: 0, rf: 0, gb: 0, bf: 0, breaks: { in: 0, dry: 0, scr: 0 } }
+    };
+
+    // Rebuild results from history
+    Object.keys(match.history)
+        .filter(k => !isNaN(Number(k)))
+        .sort((a, b) => Number(a) - Number(b))
+        .forEach(frameKey => {
+            const frame = match.history[frameKey];
+            if (!frame) return;
+            // Update break stats
+            if (frame["break-event"] && frame["break-player"]) {
+                if (match.results[frame["break-player"]]?.breaks[frame["break-event"]] !== undefined) {
+                    match.results[frame["break-player"]].breaks[frame["break-event"]]++;
+                }
+            }
+            // Update frame win
+            if (frame["winner-player"]) {
+                match.results[frame["winner-player"]].fw++;
+            }
+            // "A" is bf, "G" is gb, "C" is rf
+            if (frame["winner-result"] === "A") {
+                match.results[frame["winner-player"]].bf++;
+            }
+            if (frame["winner-result"] === "G") {
+                match.results[frame["winner-player"]].gb++;
+            }
+            if (frame["winner-result"] === "C") {
+                match.results[frame["winner-player"]].rf++;
+            }
+        });
+
+    console.warn('Correction applied. Updated match:', match);
+
+    await PushUpdatedMatchToDatabase(match);
 });
 
 function UpdateLagUI ()
@@ -387,80 +402,107 @@ function UpdateLagUI ()
     const currentLag = GetCurrentLag();
     const playerHBreakInfoContainer = document.getElementById('player-H-BreakInfo-container');
     const playerABreakInfoContainer = document.getElementById('player-A-BreakInfo-container');
-    if (currentLag === "home") {
-        playerHBreakInfoContainer.style.display = "block";
-        playerABreakInfoContainer.style.display = "none";
+    if (currentLag === "h") 
+    {
+        if (match.settings && match.settings.advancedBreaks) {
+            playerHBreakInfoContainer.style.display = "block";
+            playerABreakInfoContainer.style.display = "none";
+        } else {
+            playerHBreakInfoContainer.style.display = "none";
+            playerABreakInfoContainer.style.display = "none";
+        }
+        document.getElementById('player-H-break-indicator-container').style.display = 'inline-block';
+        document.getElementById('player-A-break-indicator-container').style.display = 'none';
         document.getElementById('btn-player-H-Apple').style.display = 'inline-block';
         document.getElementById('btn-player-H-cplus').style.display = 'none';
         document.getElementById('btn-player-A-Apple').style.display = 'none';
         document.getElementById('btn-player-A-cplus').style.display = 'inline-block';
         document.getElementById('btn-player-H-gb').style.display = 'inline-block';
         document.getElementById('btn-player-A-gb').style.display = 'none';
-    } else if (currentLag === "away") {
-        playerHBreakInfoContainer.style.display = "none";
-        playerABreakInfoContainer.style.display = "block";
+    } else if (currentLag === "a") 
+    {
+        if (match.settings && match.settings.advancedBreaks) {
+            playerHBreakInfoContainer.style.display = "none";
+            playerABreakInfoContainer.style.display = "block";
+        } else {
+            playerHBreakInfoContainer.style.display = "none";
+            playerABreakInfoContainer.style.display = "none";
+        }
+        document.getElementById('player-H-break-indicator-container').style.display = 'none';
+        document.getElementById('player-A-break-indicator-container').style.display = 'inline-block';
         document.getElementById('btn-player-H-Apple').style.display = 'none';
         document.getElementById('btn-player-H-cplus').style.display = 'inline-block';
         document.getElementById('btn-player-A-Apple').style.display = 'inline-block';
         document.getElementById('btn-player-A-cplus').style.display = 'none';
         document.getElementById('btn-player-A-gb').style.display = 'inline-block';
         document.getElementById('btn-player-H-gb').style.display = 'none';
-    } else {
-        playerHBreakInfoContainer.style.display = "none";
+    } else 
+    {
         playerABreakInfoContainer.style.display = "none";
+        playerHBreakInfoContainer.style.display = "none";
+        document.getElementById('player-H-break-indicator-container').style.display = 'none';
+        document.getElementById('player-A-break-indicator-container').style.display = 'none';
         document.getElementById('btn-player-H-Apple').style.display = 'inline-block';
         document.getElementById('btn-player-H-cplus').style.display = 'inline-block';
         document.getElementById('btn-player-A-Apple').style.display = 'inline-block';
         document.getElementById('btn-player-A-cplus').style.display = 'inline-block';
         document.getElementById('btn-player-H-gb').style.display = 'inline-block';
+        document.getElementById('btn-player-A-gb').style.display = 'inline-block';
     }
 }
 
 function UpdateScoresUI ()
 {
+    if (!match) return;
+
+    // Safely get player data
+    const players = match.players || {};
+    const playerH = players.h || {};
+    const playerA = players.a || {};
+
     const playerHNicknameElement = document.getElementById('player-H-nickname');
     const playerHNameElement = document.getElementById('player-H-name');
     const playerANicknameElement = document.getElementById('player-A-nickname');
     const playerANameElement = document.getElementById('player-A-name');
 
-    if (match && match.players) {
-        playerHNicknameElement.textContent = match.players.home.nickname || match.players.home.fullName || '';
-        playerHNameElement.textContent = match.players.home.fullName || '_fullName';
-        playerANicknameElement.textContent = match.players.away.nickname || match.players.away.fullName || '_nickname';
-        playerANameElement.textContent = match.players.away.fullName || '_fullName';
+    if (playerHNicknameElement) playerHNicknameElement.textContent = playerH.nickname || playerH.fullName || '';
+    if (playerHNameElement) playerHNameElement.textContent = playerH.fullName || '';
+    if (playerANicknameElement) playerANicknameElement.textContent = playerA.nickname || playerA.fullName || '';
+    if (playerANameElement) playerANameElement.textContent = playerA.fullName || '';
+
+    // Safely get results
+    const results = match.results || {
+        h: { fw: 0, bf: 0, rf: 0 },
+        a: { fw: 0, bf: 0, rf: 0 }
+    };
+    const hRes = results.h || { fw: 0, bf: 0, rf: 0 };
+    const aRes = results.a || { fw: 0, bf: 0, rf: 0 };
+
+    // Update score elements safely
+    const scoreElements = {
+        'player-H-score': hRes.fw ?? 0,
+        'player-H-apples': `A : ${hRes.bf ?? 0}`,
+        'player-H-C+': `C+ : ${hRes.rf ?? 0}`,
+        'player-A-score': aRes.fw ?? 0,
+        'player-A-apples': `A : ${aRes.bf ?? 0}`,
+        'player-A-C+': `C+ : ${aRes.rf ?? 0}`
+    };
+
+    Object.entries(scoreElements).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+    });
+
+    // Timer: total duration of all frames
+    let totalDuration = 0;
+    if (match.history && Array.isArray(match.history["frames-duration"])) {
+        totalDuration = match.history["frames-duration"].reduce((sum, duration) => sum + duration, 0);
+    } else if (match.history) {
+        // fallback: sum durations from object keys
+        totalDuration = Object.values(match.history)
+            .filter(f => f && typeof f === "object" && f.duration)
+            .reduce((sum, f) => sum + (f.duration || 0), 0);
     }
-
-    const playerHScoreElement = document.getElementById('player-H-score');
-    const playerHApplesElement = document.getElementById('player-H-apples');
-    const playerHCPlusElement = document.getElementById('player-H-C+');
-    const playerHBreakIndicatorElement = document.getElementById('player-H-break-indicator-container');
-
-    const playerAScoreElement = document.getElementById('player-A-score');
-    const playerAApplesElement = document.getElementById('player-A-apples');
-    const playerACPlusElement = document.getElementById('player-A-C+');
-    const playerABreakIndicatorElement = document.getElementById('player-A-break-indicator-container');
-
-    if (match && match.results) 
-    {
-        playerHScoreElement.textContent = match.results.home.frames;
-        playerHApplesElement.textContent = `A : ${match.results.home.apples}`;
-        playerHCPlusElement.textContent = `C+ : ${match.results.home.reverseApples}`;
-        playerHBreakIndicatorElement.style.display = GetCurrentLag() === "home" ? "block" : "none";
-
-        playerAScoreElement.textContent = match.results.away.frames;
-        playerAApplesElement.textContent = `A : ${match.results.away.apples}`;
-        playerACPlusElement.textContent = `C+ : ${match.results.away.reverseApples}`;
-        playerABreakIndicatorElement.style.display = GetCurrentLag() === "away" ? "block" : "none";
-    }
-
-    if (!match.settings.advancedBreaks == true)
-    {
-        document.getElementById('player-H-BreakInfo-container').style.display = "none";
-        document.getElementById('player-A-BreakInfo-container').style.display = "none";
-    }
-
-    // Update the timer display with the total duration of all frames
-    const totalDuration = match.history["frames-duration"].reduce((sum, duration) => sum + duration, 0);
     const hours = Math.floor(totalDuration / 3600);
     const minutes = Math.floor((totalDuration % 3600) / 60);
     const seconds = totalDuration % 60;
@@ -469,8 +511,17 @@ function UpdateScoresUI ()
     document.getElementById('timer-minutes').textContent = String(minutes).padStart(2, '0');
     document.getElementById('timer-seconds').textContent = String(seconds).padStart(2, '0');
 
-    // Update the list text with all entries in the format mm'ss
-    const formattedDurations = match.history["frames-duration"].map(duration => {
+    // Frame durations list
+    let frameDurations = [];
+    if (match.history && Array.isArray(match.history["frames-duration"])) {
+        frameDurations = match.history["frames-duration"];
+    } else if (match.history) {
+        // fallback: collect durations from object keys
+        frameDurations = Object.values(match.history)
+            .filter(f => f && typeof f === "object" && f.duration)
+            .map(f => f.duration);
+    }
+    const formattedDurations = frameDurations.map(duration => {
         const mins = Math.floor(duration / 60);
         const secs = duration % 60;
         return `${mins}'${String(secs).padStart(2, '0')}`;
@@ -481,66 +532,104 @@ function UpdateScoresUI ()
 
 function IntializeSettingsUI ()
 {
-    const settings = match.settings || null;
-    if (settings) 
+    const settings = match && match.settings ? match.settings : {};
+    
+    // Safely update match type
+    const matchType = settings.winType || "freePlay";
+    const matchTypeElement = document.getElementById(matchType);
+    if (matchTypeElement) matchTypeElement.checked = true;
+
+    // Update inputs based on winType
+    if (matchType === "race") 
     {
-        // Update match type radio group based on settings.winType
-        const matchType = settings.winType || "freePlay";
-        document.getElementById(matchType).checked = true;
+        document.getElementById('raceToValue').value = settings.winCondition || '';
+        updateBestOfFromRaceTo(settings.winCondition || '');
+    } else if (matchType === "fixed") {
+        document.getElementById('frameCountValue').value = settings.winCondition || '';
+    }
 
-        // Update inputs based on winType
-        if (matchType === "race") 
-        {
-            document.getElementById('raceToValue').value = settings.winCondition || '';
-            updateBestOfFromRaceTo(settings.winCondition || '');
-        } else if (matchType === "fixed") {
-            document.getElementById('frameCountValue').value = settings.winCondition || '';
-        }
-
-        // Update the "Advanced Break Recording" checkbox based on settings.advancedBreaks
-        const advancedBreakRecordingCheckbox = document.getElementById('advancedBreakRecording');
+    // Update the "Advanced Break Recording" checkbox based on settings.advancedBreaks
+    const advancedBreakRecordingCheckbox = document.getElementById('advancedBreakRecording');
+    if (advancedBreakRecordingCheckbox) {
         advancedBreakRecordingCheckbox.checked = settings.advancedBreaks || false;
+    }
 
-        // Update the lag type radio buttons based on settings.lagType
-        const lagType = settings.lagType || "alternate";
-        document.getElementById(lagType === "alternate" ? "alternateBreak" : "winnerBreak").checked = true;
+    // Update the lag type radio buttons based on settings.lagType
+    const lagType = settings.lagType || null;
+    // Set lag type radio buttons
+    if (lagType === "alternate") {
+        document.getElementById("alternateBreak").checked = true;
+    } else if (lagType === "winner") {
+        document.getElementById("winnerBreak").checked = true;
+    } else {
+        // If lagType does not exist or is not recognized, check "None"
+        document.getElementById("none").checked = true;
+    }
 
-        // Update the lag winner dropdown options based on players
-        const lagWinnerDropdown = document.getElementById('select-lag');
+    // Update the lag winner dropdown options based on players (support both "h"/"a" and "home"/"away")
+    const lagWinnerDropdown = document.getElementById('select-lag');
+    if (lagWinnerDropdown) {
+        const players = match && match.players ? match.players : {};
+        const homePlayer = players.h || {};
+        const awayPlayer = players.a || {};
+        
         lagWinnerDropdown.innerHTML = 
         `
             <option value="Please select lag winner." disabled>Please select lag winner.</option>
-            <option value="home">${match.players.home.fullName || 'Home'}</option>
-            <option value="away">${match.players.away.fullName || 'Away'}</option>
+            <option value="h">${homePlayer.fullName || 'Home'}</option>
+            <option value="a">${awayPlayer.fullName || 'Away'}</option>
         `;
-        lagWinnerDropdown.value = settings.lagWinner || "Please select lag winner.";        
+        lagWinnerDropdown.value = settings.lagWinner || "Please select lag winner.";
+    }
 
-        // Update match time UI
-        if (match.time && match.time.start) {
-        document.getElementById('match-time-start').textContent = `Match Start Time: ${new Date(match.time.start).toLocaleString()}`;
+    // Safely update time UI
+    if (match) 
+    {
+        const startElement = document.getElementById('match-time-start');
+        const endElement = document.getElementById('match-time-end');
+
+        if (match.time && match.time.start) 
+        {
+            startElement.textContent = `Match Start Time: ${new Date(match.time.start).toLocaleString()}`;
+        } else 
+        {
+            startElement.textContent = "Match Start Time: Timer Not Started.";
         }
 
-        if (match.time && match.time.end) {
-        document.getElementById('match-time-end').textContent = `Match End Time: ${new Date(match.time.end).toLocaleString()}`;
+        if (match.time && match.time.end) 
+        {
+            endElement.textContent = `Match End Time: ${new Date(match.time.end).toLocaleString()}`;
+        } else {
+            endElement.textContent = "Match End Time: Ongoing";
         }
+    }
 
-        // Update frame start time UI
-        const frameStartTime = localStorage.getItem('frameStartTime') || sessionStorage.getItem('frameStartTime');
-        if (frameStartTime) {
-            document.getElementById('frame-time-start').textContent = `Frame Start Time: ${new Date(frameStartTime).toLocaleString()}`;
-        }   
+    // Update frame start time UI
+    const frameStartTime = localStorage.getItem('frameStartTime') || sessionStorage.getItem('frameStartTime');
+    const frameTimeStartElement = document.getElementById('frame-time-start');
+    if (frameTimeStartElement) {
+        if (match && match.time && match.time.start) {
+            if (frameStartTime) {
+                frameTimeStartElement.textContent = `Frame Start Time: ${new Date(frameStartTime).toLocaleString()}`;
+            } else {
+                frameTimeStartElement.textContent = "Frame Start Time: Not Available";
+            }
+        } else {
+            frameTimeStartElement.textContent = "Frame Timer Not Started";
+        }
     }
 }
 
 document.querySelectorAll('input[name="matchType"]').forEach(radio => {
     radio.addEventListener('change', async (event) => {
         const selectedType = event.target.value;
+        if (!match.settings) match.settings = {};
         match.settings.winType = selectedType;
 
         if (selectedType === "race") {
             const raceToValue = document.getElementById('raceToValue').value;
             match.settings.winCondition = parseInt(raceToValue, 10) || null;
-        } else if (selectedType === "fixedCount") {
+        } else if (selectedType === "fixed") {
             const frameCountValue = document.getElementById('frameCountValue').value;
             match.settings.winCondition = parseInt(frameCountValue, 10) || null;
         } else {
@@ -554,6 +643,7 @@ document.querySelectorAll('input[name="matchType"]').forEach(radio => {
 document.getElementById('raceToValue').addEventListener('input', async (event) => {
     const raceToValue = parseInt(event.target.value, 10);
     if (!isNaN(raceToValue)) {
+        if (!match.settings) match.settings = {};
         match.settings.winCondition = raceToValue;
         match.settings.winType = "race";
         document.getElementById('race').checked = true;
@@ -570,6 +660,7 @@ document.getElementById('bestOfValue').addEventListener('input', async (event) =
         } else {
             raceTo = bestOfValue / 2 + 1;
         }
+        if (!match.settings) match.settings = {};
         match.settings.winCondition = raceTo;
         match.settings.winType = "race";
         document.getElementById('race').checked = true;
@@ -581,6 +672,7 @@ document.getElementById('bestOfValue').addEventListener('input', async (event) =
 document.getElementById('frameCountValue').addEventListener('input', async (event) => {
     const frameCountValue = parseInt(event.target.value, 10);
     if (!isNaN(frameCountValue)) {
+        if (!match.settings) match.settings = {};
         match.settings.winCondition = frameCountValue;
         match.settings.winType = "fixed";
         document.getElementById('fixedCount').checked = true;
@@ -601,7 +693,14 @@ document.getElementById('advancedBreakRecording').addEventListener('change', asy
 
 document.querySelectorAll('input[name="lagType"]').forEach(radio => {
     radio.addEventListener('change', async (event) => {
-        const selectedLagType = event.target.value === "alternateBreak" ? "alternate" : "winner";
+        let selectedLagType = null;
+        if (event.target.value === "alternateBreak") {
+            selectedLagType = "alternate";
+        } else if (event.target.value === "winnerBreak") {
+            selectedLagType = "winner";
+        } else if (event.target.value === "none") {
+            selectedLagType = null;
+        }
         if (!match.settings) {
             match.settings = {};
         }
