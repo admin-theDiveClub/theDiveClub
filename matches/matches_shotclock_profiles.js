@@ -106,12 +106,16 @@ async function SubscribeToUpdates (_matchID)
 async function OnPayloadReceived (payload)
 {
     console.log('Payload Received:', payload);
-    UpdateScores(payload.new);
+    UpdateScores(payload);
 }
 
 function UpdateScores (match)
 {
-    if (!match || !match.results) return;
+    if (!match || !match.results)
+    {
+        console.error('No match results found.');
+        return;
+    }
 
     const homeScoreElem = document.getElementById('player-home-score');
     const awayScoreElem = document.getElementById('player-away-score');
