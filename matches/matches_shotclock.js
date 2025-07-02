@@ -180,8 +180,7 @@ document.addEventListener("keydown", (event) => {
     if (now - lastTime < doublePressThreshold) {
       resetShotClock();
     } else {
-      if (!shotClockActive) startShotClock();
-      else restartShotClock();
+      restartShotClock();
     }
     if (event.code === "PageUp") lastHomeNextShotTime = now;
     else lastHomeNextShotAltTime = now;
@@ -196,8 +195,7 @@ document.addEventListener("keydown", (event) => {
     if (now - lastTime < doublePressThreshold) {
       resetShotClock();
     } else {
-      if (!shotClockActive) startShotClock();
-      else restartShotClock();
+      restartShotClock();
     }
     if (event.code === "PageDown") lastAwayNextShotTime = now;
     else lastAwayNextShotAltTime = now;
