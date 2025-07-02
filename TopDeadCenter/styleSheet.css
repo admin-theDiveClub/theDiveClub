@@ -30,7 +30,7 @@
     src: url('../resources/Arboria-Bold.otf') format('opentype');
     font-display: swap; /* Ensures text is displayed immediately */
     ascent-override: 100%; /* Adjusts the ascent to reduce extra space */
-    descent-override: 0%; /* Adjusts the descent to reduce extra space */
+    descent-override: -80%; /* Adjusts the descent to reduce extra space */
     line-gap-override: 0%; /* Removes additional line gap */
 }
 

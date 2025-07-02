@@ -74,6 +74,10 @@ async function PushUpdatedMatchToDatabase(match)
     const response = await supabase.from('tbl_matches').update(match).eq('id', match.id).select();
 
     console.warn('Updated match pushed to database. Response:', response);
+
+    if (!response.error) {
+        UpdateMatch(match);
+    }
 }
 
 export async function UpdateScores(score_H, score_A) 

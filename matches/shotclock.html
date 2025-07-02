@@ -139,28 +139,29 @@
         .shotclock-player-img {
             object-fit: contain;
             max-width: 100%;
-            max-height: 40%;
+            max-height: clamp(20%,15vmax, 60%);
             width: auto;
             height: auto;
         }
 
         .shotclock-player-name {
-            font-size: clamp(1cap, 25vmax, 6cap);
+            font-size: clamp(1cap, 30vmax, 8cap);
             word-break: break-word;
             white-space: normal;
-            margin-bottom: 0cap;
+            margin: 0cap;
             font-family: inherit;
         }
 
         .shotclock-player-score {
-            font-size: clamp(2cap, 25vmax, 15cap);
+            font-size: clamp(2cap, 15vmax, 15cap);
             word-break: break-word;
             white-space: normal;
             font-family: inherit;
+            margin-bottom: 1cap;
         }
 
         .shotclock-extension-card {
-            margin-top: 1cap;
+            margin: 0cap;
             background: transparent;
             border: none;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
