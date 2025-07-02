@@ -22,16 +22,44 @@ console.log(`Match Timer Key bindings - Start: m, Pause/Resume: n, Reset: v, Inc
 // Timer display element
 const timerDisplay = document.getElementById("shot-time");
 
+// Helper for double press detection
+let lastPageUpTime = 0;
+let lastPageDownTime = 0;
+const doublePressThreshold = 400; // ms
+
 document.addEventListener("keydown", (event) => {
   console.log(`Key pressed: ${event.key} | Code: ${event.code}`);
 
+  const now = Date.now();
+
   switch (event.code) {
     case "PageDown":
-      resetTimer(); // Reset the timer
+      if (now - lastPageDownTime < doublePressThreshold) {
+        // Double press detected
+        console.log("Double PageDown detected");
+        // Add your double PageDown logic here
+        // Example: reset and flash timer
+        resetTimer();
+        flashTimer();
+      } else {
+        resetTimer(); // Single press: reset the timer
+      }
+      lastPageDownTime = now;
       break;
     case "PageUp":
-      resetTimer(); // Reset the timer
-      startTimer(); // Start the timer for the next shot
+      if (now - lastPageUpTime < doublePressThreshold) {
+        // Double press detected
+        console.log("Double PageUp detected");
+        // Add your double PageUp logic here
+        // Example: reset, start, and flash timer
+        resetTimer();
+        startTimer();
+        flashTimer();
+      } else {
+        resetTimer(); // Single press: reset the timer
+        startTimer(); // Start the timer for the next shot
+      }
+      lastPageUpTime = now;
       break;
     default:
       // Optional: log unknown keys
@@ -132,9 +160,21 @@ document.addEventListener("keydown", (event) => {
             console.log(`Shot time decreased to ${shotTime} seconds`);
             break;
         case extensionKey:
-            currentTime += extensionTime * 10; // Add extension time in tenths of a second
-            updateDisplay();    
-            console.log(`Shot time extended by ${extensionTime} seconds. New shot time: ${shotTime} seconds`);
+            // Double press detection for extension key
+            if (!window.lastExtensionKeyTime) window.lastExtensionKeyTime = 0;
+            const extensionNow = Date.now();
+            if (extensionNow - window.lastExtensionKeyTime < doublePressThreshold) {
+          // Double press: add double extension time
+          currentTime += extensionTime * 2 * 10;
+          updateDisplay();
+          console.log(`Double extension: Shot time extended by ${extensionTime * 2} seconds. New shot time: ${Math.floor(currentTime / 10)} seconds`);
+            } else {
+          // Single press: add extension time
+          currentTime += extensionTime * 10;
+          updateDisplay();
+          console.log(`Shot time extended by ${extensionTime} seconds. New shot time: ${Math.floor(currentTime / 10)} seconds`);
+            }
+            window.lastExtensionKeyTime = extensionNow;
             break;
     }
 });
