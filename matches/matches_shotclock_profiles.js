@@ -122,7 +122,17 @@ function UpdateScores (match)
 
     const homeScore = match.results.h.fw || 0;
     const awayScore = match.results.a.fw || 0;
+    const homeBF = match.results.h.bf || 0;
+    const awayBF = match.results.a.bf || 0;
 
-    if (homeScoreElem) homeScoreElem.textContent = homeScore.toString();
-    if (awayScoreElem) awayScoreElem.textContent = awayScore.toString();
+    if (homeScoreElem) {
+        homeScoreElem.innerHTML = homeBF > 0
+            ? `${homeScore}<sub>+${homeBF}</sub>`
+            : `${homeScore}`;
+    }
+    if (awayScoreElem) {
+        awayScoreElem.innerHTML = awayBF > 0
+            ? `${awayScore}<sub>+${awayBF}</sub>`
+            : `${awayScore}`;
+    }
 }

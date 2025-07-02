@@ -189,6 +189,17 @@ function setFocus(player) {
   focusedPlayer = player;
   // Optionally update UI to indicate focus
   console.log(`Focus set to ${player}`);
+  const homeContainer = document.getElementById("player-home-container");
+  const awayContainer = document.getElementById("player-away-container");
+  if (homeContainer && awayContainer) {
+    if (player === "home") {
+      homeContainer.style.boxShadow = "inset 0 0 200px 20px rgba(0, 186, 245, 0.25)";
+      awayContainer.style.boxShadow = "";
+    } else {
+      awayContainer.style.boxShadow = "inset 0 0 200px 20px rgba(0, 186, 245, 0.25)";
+      homeContainer.style.boxShadow = "";
+    }
+  }
 }
 
 // === SHOT CLOCK CONTROL LOGIC ===
