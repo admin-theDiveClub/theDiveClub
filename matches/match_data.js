@@ -214,4 +214,7 @@ async function UpdateMatchPlayers(match) {
             }
         }
     }
+
+    const playerUpdateResponse = await supabase.from('tbl_matches').update(match).eq('id', match.id).select();
+    console.log('Source: Player Update Response', playerUpdateResponse);
 }

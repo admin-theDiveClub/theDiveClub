@@ -88,26 +88,116 @@
             </div>
         </div>
 
-        <div class="row justify-content-center flex-grow-1 align-items-center" style="min-height: 0; max-height: 75%;">
-            <div id="player-home-container" class="col-4 d-flex flex-column justify-content-center align-items-center h-100" style="padding: 4cap; overflow: hidden;">
-                <img id="player-home-pp" src="../resources/images/img_Player_9x16_alpha.png" class="team-logo card-img-top" style="object-fit: contain; max-width: 100%; max-height: 75%; width: auto; height: auto;">
-                <p id="player-home-name" class="team-name shot-clock-font" style="font-size: clamp(1cap, 20vmax, 4cap); word-break: break-word; white-space: normal;">Llewellen Sedgewick</p>
-                <div id="player-home-extension" class="card card-component">
-                    <p class="team-name shot-clock-font" style="font-size: clamp(1cap, 20vmax, 3cap); word-break: break-word; white-space: normal; color: rgba(230, 161, 0, 1);">Extension</p>
+        <div class="row justify-content-center flex-grow-1 align-items-center shotclock-main-row">
+            <div id="player-home-container" class="col-4 shotclock-player-container">
+                <img id="player-home-pp" src="../resources/images/img_Player_9x16_alpha.png" class="shotclock-player-img">
+                <p id="player-home-name" class="shotclock-player-name">Llewellen Sedgewick</p>
+                <p id="player-home-score" class="shotclock-player-score">00</p>
+                <div id="home-extension-container" class="card card-component shotclock-extension-card">
+                    <p class="shotclock-extension-text">Extension</p>
                 </div>
             </div>
-            <div class="col-4 d-flex flex-column justify-content-center align-items-center h-100">
-                <p id="shot-time" class="shot-clock-font" style="font-size: clamp(4cap, 20vmax, 55cap); text-align: center;">45</p>
-                <p id="match-time" class="shot-clock-font" style="font-size: clamp(2cap, 10vmax, 10cap); text-align: center; color: rgba(234, 0, 103, 1);">45</p>
+            <div class="col-4 shotclock-center-container">
+                <p id="shot-time" class="shotclock-shot-time">45</p>
+                <p id="match-time" class="shotclock-match-time">45</p>
             </div>
-            <div id="player-away-container" class="col-4 d-flex flex-column justify-content-center align-items-center h-100" style="padding: 4cap; overflow: hidden;">
-                <img id="player-away-pp" src="../resources/images/img_Player_9x16_alpha.png" class="team-logo card-img-top" style="object-fit: contain; max-width: 100%; max-height: 75%; width: auto; height: auto;">
-                <p id="player-away-name" class="team-name shot-clock-font" style="font-size: clamp(1cap, 20vmax, 4cap); word-break: break-word; white-space: normal;">Llewellen Sedgewick</p>
-                <div id="player-away-extension" class="card card-component">
-                    <p class="team-name shot-clock-font" style="font-size: clamp(1cap, 20vmax, 3cap); word-break: break-word; white-space: normal; color: rgba(230, 161, 0, 1);">Extension</p>
+            <div id="player-away-container" class="col-4 shotclock-player-container">
+                <img id="player-away-pp" src="../resources/images/img_Player_9x16_alpha.png" class="shotclock-player-img">
+                <p id="player-away-name" class="shotclock-player-name">Llewellen Sedgewick</p>
+                <p id="player-away-score" class="shotclock-player-score">00</p>
+                <div id="away-extension-container" class="card card-component shotclock-extension-card">
+                    <p class="shotclock-extension-text">Extension</p>
                 </div>
             </div>
         </div>
+
+        <style>
+        .main{
+            font-family: 'SPL-Font';
+            color: white;
+        }
+
+        /* Shotclock Layout Styles */
+        .shotclock-main-row {
+            min-height: 0;
+            max-height: 90%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .shotclock-player-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 4cap;
+            overflow: hidden;
+        }
+
+        .shotclock-player-img {
+            object-fit: contain;
+            max-width: 100%;
+            max-height: 40%;
+            width: auto;
+            height: auto;
+        }
+
+        .shotclock-player-name {
+            font-size: clamp(1cap, 25vmax, 6cap);
+            word-break: break-word;
+            white-space: normal;
+            margin-bottom: 0cap;
+            font-family: inherit;
+        }
+
+        .shotclock-player-score {
+            font-size: clamp(2cap, 25vmax, 15cap);
+            word-break: break-word;
+            white-space: normal;
+            font-family: inherit;
+        }
+
+        .shotclock-extension-card {
+            margin-top: 1cap;
+            background: transparent;
+            border: none;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .shotclock-extension-text {
+            font-size: clamp(1cap, 20vmax, 4cap);
+            word-break: keep-all;
+            white-space: normal;
+            color: rgba(230, 161, 0, 1);
+            margin: 0cap 3cap;
+            font-family: inherit;
+        }
+
+        .shotclock-center-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+
+        .shotclock-shot-time {
+            font-size: clamp(4cap, 20vmax, 55cap);
+            text-align: center;
+            font-family: inherit;
+            margin: 0;
+        }
+
+        .shotclock-match-time {
+            font-size: clamp(2cap, 10vmax, 10cap);
+            text-align: center;
+            color: rgba(234, 0, 103, 1);
+            font-family: inherit;
+            margin: 0;
+        }
+        </style>
 
         <!-- Bottom Sponsors -->
         <div class="row sponsors-row" style="flex-shrink: 0;">

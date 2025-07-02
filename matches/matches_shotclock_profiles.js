@@ -11,32 +11,16 @@ async function Initialize ()
     else 
     {
         const homeContainer = document.getElementById('player-home-container');
-        if (homeContainer?.style) {
-            homeContainer.style.setProperty('display', 'none', 'important');
-        }
         const awayContainer = document.getElementById('player-away-container');
-        if (awayContainer?.style) {
-            awayContainer.style.setProperty('display', 'none', 'important');
-        }
+
+        homeContainer.style.setProperty('display', 'none', 'important');
+        awayContainer.style.setProperty('display', 'none', 'important');
+
         console.error('No match data found.');
+
         return;
     }
 }
-
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'ArrowLeft') {
-        const homeExt = document.getElementById('player-home-extension');
-        if (homeExt) {
-            homeExt.style.display = (homeExt.style.display === 'none' || homeExt.style.display === '') ? 'block' : 'none';
-        }
-    }
-    if (event.key === 'ArrowRight') {
-        const awayExt = document.getElementById('player-away-extension');
-        if (awayExt) {
-            awayExt.style.display = (awayExt.style.display === 'none' || awayExt.style.display === '') ? 'block' : 'none';
-        }
-    }
-});
 
 async function getMatchData() 
 {
@@ -67,13 +51,16 @@ function GetMatchID()
 
 async function GetMatch (_matchID)
 {
-    const response = await supabase.from('tbl_matches_new').select('*').eq('id', _matchID);
+    const response = await supabase.from('tbl_matches').select('*').eq('id', _matchID);
     if (response.error)
     {
-      return null;
+        return null;
     } else 
     {
-      return response.data[0];
+        const subResponse = await SubscribeToUpdates(_matchID);
+        console.log('Subscription Response:', subResponse);
+        UpdateScores(response.data[0]);
+        return response.data[0];
     }
 }
 
@@ -82,20 +69,56 @@ function UpdateProfiles (match)
     if (!match || !match.players) return;
 
     // Home player
-    const homePlayer = match.players.home;
+    const homePlayer = match.players.h;
     if (homePlayer) {
         const homePP = document.getElementById('player-home-pp');
         const homeName = document.getElementById('player-home-name');
         if (homePP) homePP.src = homePlayer.pp || '../resources/images/img_Player_9x16_alpha.png';
-        if (homeName) homeName.textContent = homePlayer.fullName || '';
+        homeName.textContent = (homePlayer.fullName ? homePlayer.fullName.split(' ')[0] : '');
     }
 
     // Away player
-    const awayPlayer = match.players.away;
+    const awayPlayer = match.players.a;
     if (awayPlayer) {
         const awayPP = document.getElementById('player-away-pp');
         const awayName = document.getElementById('player-away-name');
         if (awayPP) awayPP.src = awayPlayer.pp || '../resources/images/img_Player_9x16_alpha.png';
-        if (awayName) awayName.textContent = awayPlayer.fullName || '';
+        awayName.textContent = (awayPlayer.fullName ? awayPlayer.fullName.split(' ')[0] : '');
     }
+}
+
+async function SubscribeToUpdates (_matchID)
+{
+  const channels = supabase.channel('custom-update-channel')
+  .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'tbl_matches', filter: `id=eq.${_matchID}` },
+      (payload) => 
+      {
+        console.log('Source: Change Received!', payload);
+        OnPayloadReceived(payload.new);
+      }
+  )
+  .subscribe();
+  return channels;
+}
+
+async function OnPayloadReceived (payload)
+{
+    console.log('Payload Received:', payload);
+    UpdateScores(payload.new);
+}
+
+function UpdateScores (match)
+{
+    if (!match || !match.results) return;
+
+    const homeScoreElem = document.getElementById('player-home-score');
+    const awayScoreElem = document.getElementById('player-away-score');
+
+    const homeScore = match.results.h.fw || 0;
+    const awayScore = match.results.a.fw || 0;
+
+    if (homeScoreElem) homeScoreElem.textContent = homeScore.toString();
+    if (awayScoreElem) awayScoreElem.textContent = awayScore.toString();
 }
