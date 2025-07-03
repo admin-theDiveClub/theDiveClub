@@ -62,6 +62,7 @@ async function PushUpdatedMatchToDatabase(match)
 
     if (!match.info) match.info = {};
     const winCondition = match.settings && match.settings.winCondition;
+    console.log('winCondition:', winCondition);
     const hScore = match.results && match.results.h ? match.results.h.fw : 0;
     const aScore = match.results && match.results.a ? match.results.a.fw : 0;
 
@@ -292,6 +293,7 @@ async function EndMatchTimer()
 {
     if (!match.time) match.time = {};
     match.time.end = new Date().toISOString();
+    match.info.status = "Complete"; // Set match status to complete
     console.warn('Timer: Match ended at:', match.time.end);
     const endElement = document.getElementById('match-time-end');
     if (endElement) {
