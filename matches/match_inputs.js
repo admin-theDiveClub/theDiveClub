@@ -60,6 +60,19 @@ async function PushUpdatedMatchToDatabase(match)
     if (!match.info) match.info = {};
     match.info.lastUpdated = new Date().toISOString();
 
+    if (!match.info) match.info = {};
+    const winCondition = match.settings && match.settings.winCondition;
+    const hScore = match.results && match.results.h ? match.results.h.fw : 0;
+    const aScore = match.results && match.results.a ? match.results.a.fw : 0;
+
+    if (match.time && match.time.end || (winCondition && (hScore >= winCondition || aScore >= winCondition))) {
+        match.info.status = "Complete";
+    } else if ((match.time && match.time.start) || hScore > 0 || aScore > 0) {
+        match.info.status = "Live";
+    } else {
+        match.info.status = "New";
+    }
+
     if (!match || !match.id) {
         console.warn('Match data is incomplete or missing an ID. No updates will be pushed to the database.');
         return;
