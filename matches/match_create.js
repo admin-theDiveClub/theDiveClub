@@ -13,6 +13,10 @@ document.getElementById('btn-match-create').addEventListener('click', () =>
                 fullName: document.getElementById('player_A').value,
                 username: document.getElementById('player_A').value
             }
+        },
+        info: 
+        {
+            status : "New"
         }
     }
     CreateMatch(match);
@@ -23,7 +27,8 @@ async function CreateMatch (_match)
     console.log('Creating match with players:', _match.players);
     const response = await supabase.from('tbl_matches').insert(
         {
-            players: _match.players
+            players: _match.players,
+            info: _match.info
         }
     ).select();
 
