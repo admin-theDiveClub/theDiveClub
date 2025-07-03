@@ -262,8 +262,17 @@ function GetCurrentLag()
             if (Array.isArray(match.history) && match.history.length > 0) {
                 const lastFrame = match.history[match.history.length - 1];
                 return lastFrame && lastFrame["winner-player"] ? lastFrame["winner-player"] : null;
+            } else if (match.history && typeof match.history === "object") {
+                // Object-based history: find the highest numeric key
+                const numericKeys = Object.keys(match.history)
+                    .map(k => parseInt(k))
+                    .filter(k => !isNaN(k));
+                if (numericKeys.length > 0) {
+                    const lastKey = Math.max(...numericKeys).toString();
+                    const lastFrame = match.history[lastKey];
+                    return lastFrame && lastFrame["winner-player"] ? lastFrame["winner-player"] : null;
+                }
             }
-            // ...existing object-based logic...
         }
     }
 
@@ -422,6 +431,7 @@ document.getElementById('btn-correction').addEventListener('click', async () =>
 function UpdateLagUI ()
 {
     const currentLag = GetCurrentLag();
+    console.log('Current Lag:', currentLag);
     const playerHBreakInfoContainer = document.getElementById('player-H-BreakInfo-container');
     const playerABreakInfoContainer = document.getElementById('player-A-BreakInfo-container');
     if (currentLag === "h") 
