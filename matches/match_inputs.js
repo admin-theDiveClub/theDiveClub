@@ -65,11 +65,14 @@ async function PushUpdatedMatchToDatabase(match)
     const hScore = match.results && match.results.h ? match.results.h.fw : 0;
     const aScore = match.results && match.results.a ? match.results.a.fw : 0;
 
-    if (match.time && match.time.end || (winCondition && (hScore >= winCondition || aScore >= winCondition))) {
+    if ((match.time && match.time.end) || (winCondition && (hScore >= winCondition || aScore >= winCondition))) 
+    {
         match.info.status = "Complete";
-    } else if ((match.time && match.time.start) || hScore > 0 || aScore > 0) {
+    } else if ((match.time && match.time.start) || hScore > 0 || aScore > 0) 
+    {
         match.info.status = "Live";
-    } else {
+    } else 
+    {
         match.info.status = "New";
     }
 
