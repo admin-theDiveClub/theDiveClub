@@ -1,20 +1,23 @@
-var match = {
+var match, matchTemplate = {
     id: null,
-    leagueID: null,
-    tournamentID: null,
+    competitions:
+    {
+        leagueID: null,
+        tournamentID: null
+    },
     time: {
         end: null,
         start: null
     },
     players: {
-        away: {
+        a: {
             id: null,
             pp: null,
             fullName: null,
             nickname: null,
             username: null
         },
-        home: {
+        h: {
             id: null,
             pp: null,
             fullName: null,
@@ -27,10 +30,11 @@ var match = {
         ruleSet: null,
         winType: null,
         lagWinner: null,
-        winCondition: null
+        winCondition: null,
+        advancedBreaks: null
     },
     results: {
-        away: {
+        a: {
             bf: 0,
             fw: 0,
             gb: 0,
@@ -41,7 +45,7 @@ var match = {
                 scr: 0
             }
         },
-        home: {
+        h: {
             bf: 0,
             fw: 0,
             gb: 0,
@@ -67,6 +71,7 @@ async function Initialize()
 {
     match = await getMatchData();    
     console.log('Source: Match', match);
+
     await UpdateMatchPlayers(match);
     await UpdateMatch(match);
 
@@ -80,10 +85,33 @@ async function getMatchData()
     if (matchID)
     {
         match = await GetMatch(matchID);
+        match = InitializeMatch(match);
         if (match)
         {
             const subscriptionResponse = await SubscribeToUpdates(matchID);
             console.log('Source: Subscription Response', subscriptionResponse);
+        }
+    }
+    return match;
+}
+
+function InitializeMatch (match)
+{
+    for (const key in matchTemplate) 
+    {
+        if (match[key] === undefined || match[key] === null) 
+        {
+            match[key] = JSON.parse(JSON.stringify(matchTemplate[key]));
+        } else if (typeof match[key] === "object" && match[key] !== null && !Array.isArray(match[key])) 
+        {
+            // Deep merge for objects (but not arrays)
+            for (const subKey in matchTemplate[key]) 
+            {
+                if (match[key][subKey] === undefined || match[key][subKey] === null) 
+                {
+                    match[key][subKey] = JSON.parse(JSON.stringify(matchTemplate[key][subKey]));
+                }
+            }
         }
     }
     return match;
@@ -128,7 +156,7 @@ async function SubscribeToUpdates (_matchID)
       { event: 'UPDATE', schema: 'public', table: 'tbl_matches', filter: `id=eq.${_matchID}` },
       (payload) => 
       {
-        console.log('Source: Change Received!', payload);
+        console.log('Source: Change Received!', payload.new);
         OnPayloadReceived(payload.new);
       }
   )
@@ -165,7 +193,8 @@ async function UpdateMatchPlayers(match) {
     const players = response.data;
 
     // Home player ('h')
-    if (match.players.h) {
+    if (match.players.h) 
+    {
         const homePlayerData = players.find(player => player.username === match.players.h.username);
 
         match.players.h.fullName = homePlayerData
@@ -191,7 +220,8 @@ async function UpdateMatchPlayers(match) {
     }
 
     // Away player ('a')
-    if (match.players.a) {
+    if (match.players.a) 
+    {
         const awayPlayerData = players.find(player => player.username === match.players.a.username);
         match.players.a.fullName = awayPlayerData
             ? `${awayPlayerData.name}${awayPlayerData.surname ? ' ' + awayPlayerData.surname : ''}`
