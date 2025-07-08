@@ -264,17 +264,35 @@ document.getElementById('btn-correction').addEventListener('click', async () => 
     const keys = Object.keys(match.history)
         .map(k => parseInt(k))
         .filter(k => !isNaN(k));
+
     if (keys.length === 0) {
         alert('No entries to remove.');
         return;
     }
     const lastFrameKey = Math.max(...keys).toString();
 
-    delete match.history[lastFrameKey];
+    // Remove the last frame and shift subsequent frames down if match.history is array-like
+    const sortedKeys = Object.keys(match.history)
+        .map(Number)
+        .filter(k => !isNaN(k))
+        .sort((a, b) => a - b);
 
-    // Remove last frame duration from frames-duration array if present
-    if (Array.isArray(match.history["frames-duration"])) {
-        match.history["frames-duration"].pop();
+    // Remove the last frame
+    if (Array.isArray(match.history)) {
+        match.history.splice(lastFrameKey, 1);
+        // Remove any null entries
+        match.history = match.history.filter(entry => entry != null);
+    } else {
+        // Convert to array, remove, then rebuild object with shifted keys and skip nulls
+        const newHistory = {};
+        sortedKeys
+            .filter(k => k !== Number(lastFrameKey))
+            .map(k => match.history[k])
+            .filter(entry => entry != null)
+            .forEach((entry, idx) => {
+                newHistory[idx] = entry;
+            });
+        match.history = newHistory;
     }
 
     // Update local/session storage for frameStartTime
