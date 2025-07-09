@@ -59,8 +59,8 @@
     font-family: "CustomFont", sans-serif; /* Apply custom font */
 }
 
-.player-apples,
-.player-cplus {
+.player-bf,
+.player-rf {
     font-size: clamp(1cap, 2vmax, 5cap);
     color: white;
     text-align: center;
@@ -75,8 +75,8 @@
 }
 
 .player-point-btn,
-.player-apple-btn,
-.player-cplus-btn,
+.player-rf-btn,
+.player-bf-btn,
 .player-gb-btn {
     font-size: clamp(2cap, 4vmax, 5cap);
     font-family: "CustomFont", sans-serif; /* Apply custom font */
@@ -140,4 +140,26 @@ table
 {
     margin-top: clamp(1cap, 2vh, 4cap);
     width: clamp(1cap, 4vmax, 8cap);
+}
+
+.break-radio-btn
+{
+    margin: 0cap !important;
+    padding: 0.5cap 3cap !important;
+    border: 1px solid var(--color-base-med);
+    border-radius: 1cap;
+}
+
+.form-check-input
+{
+    accent-color: var(--color-primary) !important;
+    background-color: transparent !important;
+    border-color: var(--color-primary) !important;
+}
+
+/* For better support, explicitly style the checked state */
+.form-check-input[type="radio"]:checked {
+    background-color: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 8px 4px rgba(234, 0, 103, 0.5);  
 }

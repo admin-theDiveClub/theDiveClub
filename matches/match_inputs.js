@@ -1,11 +1,11 @@
 var match = null;
 
 document.getElementById('btn-player-H-point').addEventListener('click', () => { UpdateScores(1, 0); });
-document.getElementById('btn-player-H-Apple').addEventListener('click', () => { UpdateScores('A', 0); });
-document.getElementById('btn-player-H-cplus').addEventListener('click', () => { UpdateScores('C', 0); });
+document.getElementById('btn-player-H-bf').addEventListener('click', () => { UpdateScores('A', 0); });
+document.getElementById('btn-player-H-rf').addEventListener('click', () => { UpdateScores('C', 0); });
 document.getElementById('btn-player-A-point').addEventListener('click', () => { UpdateScores(0, 1); });
-document.getElementById('btn-player-A-Apple').addEventListener('click', () => { UpdateScores(0, 'A'); });
-document.getElementById('btn-player-A-cplus').addEventListener('click', () => { UpdateScores(0, 'C'); });
+document.getElementById('btn-player-A-bf').addEventListener('click', () => { UpdateScores(0, 'A'); });
+document.getElementById('btn-player-A-rf').addEventListener('click', () => { UpdateScores(0, 'C'); });
 document.getElementById('btn-player-H-gb').addEventListener('click', () => { UpdateScores('G', 0); });
 document.getElementById('btn-player-A-gb').addEventListener('click', () => { UpdateScores(0, 'G'); });
 
@@ -37,6 +37,16 @@ export async function UpdateMatch(updatedMatch) {
     UpdateLagUI();
     UpdateScoresUI();
     IntializeSettingsUI();
+
+    
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (loadingOverlay) {
+        loadingOverlay.style.transition = 'opacity 0.5s';
+        loadingOverlay.style.opacity = '0';
+        setTimeout(() => {
+            loadingOverlay.style.display = 'none';
+        }, 500);
+    }
 }
 
 async function PushUpdatedMatchToDatabase(match) {
@@ -77,10 +87,18 @@ export async function UpdateScores(score_H, score_A) {
     const currentLag = GetCurrentLag();
 
     let breakEvent = null;
-    if (document.getElementById('advancedBreakRecording')?.checked) {
-        breakEvent = currentLag === "home"
-            ? document.querySelector('input[name="player-H-option"]:checked').value
-            : document.querySelector('input[name="player-A-option"]:checked').value;
+    if (match.settings.advancedBreaks) 
+    {
+        let selectedInput = currentLag === "h"
+            ? document.querySelector('input[name="player-H-option"]:checked')
+            : document.querySelector('input[name="player-A-option"]:checked');        
+
+        breakEvent = selectedInput ? selectedInput.value : null;
+        
+        document.querySelectorAll('input[name="player-H-option"]').forEach(input => input.checked = false);
+        document.querySelectorAll('input[name="player-A-option"]').forEach(input => input.checked = false);
+
+        saveBreakRadioSelection(currentLag === "h" ? "H" : "A");
     }
 
     // Determine next frame index
@@ -148,14 +166,9 @@ export async function UpdateScores(score_H, score_A) {
 function getBreakEventString(score_H, score_A, breakEvent) {
     if (score_H === "A" || score_A === "A" || score_H === "G" || score_A === "G") {
         return "in";
-    } else if (breakEvent === "BI") {
-        return "in";
-    } else if (breakEvent === "DB") {
-        return "dry";
-    } else if (breakEvent === "SB" || breakEvent === "FB") {
-        return "scr";
+    } else {
+        return breakEvent;
     }
-    return null;
 }
 
 function getWinnerPlayer(score_H, score_A) {
@@ -201,8 +214,8 @@ function GetCurrentLag() {
     return null;
 }
 
-function Timer_NextFrame() {
-    console.warn("Timer: Next Frame Started.");
+function Timer_NextFrame() 
+{
     SetFrameTimer();
 }
 
@@ -249,7 +262,6 @@ function GetFrameTime() {
         const start = new Date(frameStartTime);
         const now = new Date();
         const duration = Math.floor((now - start) / 1000);
-        console.log('Frame duration:', duration + ' seconds');
         return duration;
     }
     console.log('No frame start time found.');
@@ -360,10 +372,10 @@ function UpdateLagUI() {
         }
         document.getElementById('player-H-break-indicator-container').style.display = 'inline-block';
         document.getElementById('player-A-break-indicator-container').style.display = 'none';
-        document.getElementById('btn-player-H-Apple').style.display = 'inline-block';
-        document.getElementById('btn-player-H-cplus').style.display = 'none';
-        document.getElementById('btn-player-A-Apple').style.display = 'none';
-        document.getElementById('btn-player-A-cplus').style.display = 'inline-block';
+        document.getElementById('btn-player-H-bf').style.display = 'inline-block';
+        document.getElementById('btn-player-H-rf').style.display = 'none';
+        document.getElementById('btn-player-A-bf').style.display = 'none';
+        document.getElementById('btn-player-A-rf').style.display = 'inline-block';
         document.getElementById('btn-player-H-gb').style.display = 'inline-block';
         document.getElementById('btn-player-A-gb').style.display = 'none';
     } else if (currentLag === "a") {
@@ -376,10 +388,10 @@ function UpdateLagUI() {
         }
         document.getElementById('player-H-break-indicator-container').style.display = 'none';
         document.getElementById('player-A-break-indicator-container').style.display = 'inline-block';
-        document.getElementById('btn-player-H-Apple').style.display = 'none';
-        document.getElementById('btn-player-H-cplus').style.display = 'inline-block';
-        document.getElementById('btn-player-A-Apple').style.display = 'inline-block';
-        document.getElementById('btn-player-A-cplus').style.display = 'none';
+        document.getElementById('btn-player-H-bf').style.display = 'none';
+        document.getElementById('btn-player-H-rf').style.display = 'inline-block';
+        document.getElementById('btn-player-A-bf').style.display = 'inline-block';
+        document.getElementById('btn-player-A-rf').style.display = 'none';
         document.getElementById('btn-player-A-gb').style.display = 'inline-block';
         document.getElementById('btn-player-H-gb').style.display = 'none';
     } else {
@@ -387,10 +399,10 @@ function UpdateLagUI() {
         playerHBreakInfoContainer.style.display = "none";
         document.getElementById('player-H-break-indicator-container').style.display = 'none';
         document.getElementById('player-A-break-indicator-container').style.display = 'none';
-        document.getElementById('btn-player-H-Apple').style.display = 'inline-block';
-        document.getElementById('btn-player-H-cplus').style.display = 'inline-block';
-        document.getElementById('btn-player-A-Apple').style.display = 'inline-block';
-        document.getElementById('btn-player-A-cplus').style.display = 'inline-block';
+        document.getElementById('btn-player-H-bf').style.display = 'inline-block';
+        document.getElementById('btn-player-H-rf').style.display = 'inline-block';
+        document.getElementById('btn-player-A-bf').style.display = 'inline-block';
+        document.getElementById('btn-player-A-rf').style.display = 'inline-block';
         document.getElementById('btn-player-H-gb').style.display = 'inline-block';
         document.getElementById('btn-player-A-gb').style.display = 'inline-block';
     }
@@ -417,11 +429,11 @@ function UpdateScoresUI() {
 
     const scoreElements = {
         'player-H-score': hRes.fw ?? 0,
-        'player-H-apples': `A : ${hRes.bf ?? 0}`,
-        'player-H-C+': `C+ : ${hRes.rf ?? 0}`,
+        'player-H-bfs': `A : ${hRes.bf ?? 0}`,
+        'player-H-rf': `rf : ${hRes.rf ?? 0}`,
         'player-A-score': aRes.fw ?? 0,
-        'player-A-apples': `A : ${aRes.bf ?? 0}`,
-        'player-A-C+': `C+ : ${aRes.rf ?? 0}`
+        'player-A-bfs': `A : ${aRes.bf ?? 0}`,
+        'player-A-rf': `rf : ${aRes.rf ?? 0}`
     };
 
     Object.entries(scoreElements).forEach(([id, value]) => {
@@ -610,4 +622,39 @@ document.getElementById('select-lag').addEventListener('change', async (event) =
     const selectedLagWinner = event.target.value;
     match.settings.lagWinner = selectedLagWinner;
     await PushUpdatedMatchToDatabase(match);
+});
+
+function saveBreakRadioSelection(player) {
+    const selected = document.querySelector(`input[name="player-${player}-option"]:checked`);
+    if (selected) {
+        localStorage.setItem(`breakRadioSelection-${player}`, selected.value);
+    } else {
+        localStorage.removeItem(`breakRadioSelection-${player}`);
+    }
+}
+
+function restoreBreakRadioSelection(player) {
+    const value = localStorage.getItem(`breakRadioSelection-${player}`);
+    const radios = document.querySelectorAll(`input[name="player-${player}-option"]`);
+    let found = false;
+    radios.forEach(radio => {
+        if (radio.value === value) {
+            radio.checked = true;
+            found = true;
+        } else {
+            radio.checked = false;
+        }
+    });
+    if (!found) {
+        radios.forEach(radio => radio.checked = false);
+    }
+}
+
+// Attach listeners for both players
+['H', 'A'].forEach(player => {
+    document.querySelectorAll(`input[name="player-${player}-option"]`).forEach(radio => {
+        radio.addEventListener('change', () => saveBreakRadioSelection(player));
+    });
+    // Restore on load
+    restoreBreakRadioSelection(player);
 });
