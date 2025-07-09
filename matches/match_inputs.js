@@ -418,9 +418,16 @@ function UpdateScoresUI() {
     const playerANicknameElement = document.getElementById('player-A-nickname');
     const playerANameElement = document.getElementById('player-A-name');
 
-    if (playerHNicknameElement) playerHNicknameElement.textContent = playerH.nickname || playerH.fullName || '';
+    // Add '*' to nickname if player is lag winner
+    const lagWinner = match.settings.lagWinner;
+    let playerHNickname = playerH.nickname || playerH.fullName || '';
+    let playerANickname = playerA.nickname || playerA.fullName || '';
+    if (lagWinner === 'h') playerHNickname += ' *';
+    if (lagWinner === 'a') playerANickname += ' *';
+
+    if (playerHNicknameElement) playerHNicknameElement.textContent = playerHNickname;
     if (playerHNameElement) playerHNameElement.textContent = playerH.fullName || '';
-    if (playerANicknameElement) playerANicknameElement.textContent = playerA.nickname || playerA.fullName || '';
+    if (playerANicknameElement) playerANicknameElement.textContent = playerANickname;
     if (playerANameElement) playerANameElement.textContent = playerA.fullName || '';
 
     const results = match.results;

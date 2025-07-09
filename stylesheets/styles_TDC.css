@@ -42,8 +42,8 @@
 
 .card, .card-component
 {    
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
 }
 
 /* this lives on your diver PNG and punches out wherever your logo moves */

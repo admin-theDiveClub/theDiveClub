@@ -31,99 +31,140 @@
 
     <!-- Custom CSS -->
     <link href="../TopDeadCenter/styleSheet.css" rel="stylesheet">
+    <link href="../stylesheets/styles_TDC.css" rel="stylesheet">
+    <link href="../TopDeadCenter/styleSheet.css" rel="stylesheet">
 </head>
 
 <body> 
 
     <!-- Nav -->
-    <div class="row nav-container" >
+    <div id="nav-container" class="row" >
         <div class="d-flex justify-content-between">
             <a href="..">
-                <img src="../resources/icon_theDiveClub_alpha.svg" style="height: 6vh; object-fit: contain;"></img>
+                <img src="../resources/icon_theDiveClub_alpha.svg" style="height: 5cap; object-fit: contain;"></img>
             </a>
-            <div class="d-flex">
-                <!-- Navbar Button -->
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                    <i class="bi bi-list" style="font-size: 4vh; color: white;"></i>
-                </button>
-            </div>
+            <!-- Navbar Button -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav-links-container" aria-controls="nav-links-container" aria-expanded="false" aria-label="Toggle navigation">
+                <i id="navbar-icon" class="bi bi-list"></i>
+            </button>
         </div>
         
         <!-- Main Navbar Menu -->
-        <div class="collapse navbar-collapse" id="navbarNav">
+        <div class="collapse navbar-collapse" id="nav-links-container">
             <ul class="nav-links list-unstyled d-flex justify-content-around flex-wrap">
-                <li><a href="../index.html" class="nav-link active"><i class="bi bi-house-door"></i> Home</a></li>
-                <li><a href="../accounts/profile.html" class="nav-link"><i class="bi bi-person"></i> Profile</a></li>
-                <li><a href="../matches/create.html" class="nav-link"><i class="bi bi-card-checklist"></i> Scorecard</a></li>
+                <li>
+                    <button class="btn btn-link nav-link active" onclick="location.href='../index.html'">
+                        <i class="bi bi-house-door"></i> Home
+                    </button>
+                </li>
+                <li>
+                    <button class="btn btn-link nav-link" onclick="location.href='../accounts/profile.html'">
+                        <i class="bi bi-person"></i> Profile
+                    </button>
+                </li>
+                <li>
+                    <button class="btn btn-link nav-link" onclick="location.href='../matches/create.html'">
+                        <i class="bi bi-card-checklist"></i> Scorecard
+                    </button>
+                </li>
                 <li class="dropdown">
-                    <a href="#competitions" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" disabled><i class="bi bi-trophy"></i> Competitions</a>
+                    <button class="btn btn-link nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-trophy"></i> Competitions
+                    </button>
                     <ul class="dropdown-menu">
-                    <li><a href="#leagues" class="dropdown-item"><i class="bi bi-award"></i> Leagues</a></li>
-                    <li><a href="#tournaments" class="dropdown-item"><i class="bi bi-calendar-event"></i> Tournaments</a></li>
-                    <li><a href="#matches" class="dropdown-item"><i class="bi bi-flag"></i> Matches</a></li>
+                        <li>
+                            <button class="dropdown-item" onclick="location.href='#leagues'">
+                                <i class="bi bi-award"></i> Leagues
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item" onclick="location.href='#tournaments'">
+                                <i class="bi bi-calendar-event"></i> Tournaments
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item" onclick="location.href='#matches'">
+                                <i class="bi bi-flag"></i> Matches
+                            </button>
+                        </li>
                     </ul>
                 </li>
-                <li><a href="../index.html" class="nav-link"><i class="bi bi-envelope"></i> Contact</a></li>
+                <li>
+                    <button class="btn btn-link nav-link" onclick="location.href='../index.html'">
+                        <i class="bi bi-envelope"></i> Contact
+                    </button>
+                </li>
             </ul>
         </div>
     </div>
 
-    <div id="top-margin" style="height: 8vh;"></div>
-
-    <div class="row">
-        <div class="col-sm-4"></div>
-        <div class="col-sm-4 d-flex justify-content-center" style="padding-bottom: 1cap;">
-            <div class="d-flex align-items-center justify-content-center">
-                <img src="../resources/icon_user_default.png" alt="Profile Picture" class="profile-pic"></img>
-                <h1 id="profile-nickname">UV</h1>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 105vh; background: rgba(0,0,0,1); z-index: 1800; display: flex; align-items: center; justify-content: center;">
+        <div style="position: relative; width: 50vw; height: 50vh; display: flex; align-items: center; justify-content: center;">
+            <!-- SVG Logo -->
+            <img src="../resources/icon_theDiveClub_alpha.svg" alt="Loading..." style="width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; z-index: 1;">
+            <!-- Animated Fill Overlay -->
+            <div id="logo-fill" style="position: absolute; left: 0; bottom: 0; width: 100%; height: 0%;
+                background: linear-gradient(to top, rgba(234, 0, 103, 1) 50%, transparent 100%);
+                z-index: 2; pointer-events: none; mix-blend-mode: multiply; transition: height 0.1s;">
             </div>
         </div>
-        <div class="col-sm-4"></div>
     </div>
 
-    <div class="row">
-        <div class="col-sm-4"></div>
-        <div class="col-sm-4">
-            <div class="profile-card">
-                <p id="profile-name">Yuvan Naidoo</p>
-                <p id="profile-username">yuvannaidoo@gmail.com</p>
-                <p id="profile-contact">+27 82 766 4905</p>
-                <p id="profile-playerID">XXXX-XXXX-XXXX-XXXX-XXXX</p>
-                <div class="d-flex justify-content-center" style="padding: 1cap;">
-                    <button id="btn-profile-share" class="btn btn-primary" style="margin: 1cap;" disabled>Share Profile</button>
-                    <button id="btn-profile-edit" class="btn btn-primary" style="margin: 1cap;" disabled>Edit Profile</button>
-                    <button id="btn_signOut" class="btn btn-danger" style="margin: 1cap;">Logout</button>
+    <div class="main">
+            <div class="row">
+                <div class="col-sm-4"></div>
+                <div class="col-sm-4 d-flex justify-content-center" style="padding-bottom: 1cap;">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <img src="../resources/icon_user_default.png" alt="Profile Picture" class="profile-pic"></img>
+                        <h1 id="profile-nickname">UV</h1>
+                    </div>
                 </div>
+                <div class="col-sm-4"></div>
             </div>
-        </div>
-        <div class="col-sm-4"></div>
-    </div>
 
-    <div class="card card-component">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Opponent</th>
-                    <th>Score</th>
-                    <th>Type</th>
-                    <th>Duration</th>
-                    <th>Status</th>
-                    <th>Match Link</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>2023-09-15</td>
-                    <td>Team Alpha</td>
-                    <td>3-2</td>
-                    <td><a href="#match1"><i class="bi bi-arrow-right" style="font-size: 3cap;"></i></a></td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+            <div class="row">
+                <div class="col-sm-4"></div>
+                <div class="col-sm-4">
+                    <div class="profile-card">
+                        <p id="profile-name">Yuvan Naidoo</p>
+                        <p id="profile-username">yuvannaidoo@gmail.com</p>
+                        <p id="profile-contact">+27 82 766 4905</p>
+                        <p id="profile-playerID">XXXX-XXXX-XXXX-XXXX-XXXX</p>
+                        <div class="d-flex justify-content-center" style="padding: 1cap;">
+                            <button id="btn-profile-share" class="btn btn-primary" style="margin: 1cap;" disabled>Share Profile</button>
+                            <button id="btn-profile-edit" class="btn btn-primary" style="margin: 1cap;" disabled>Edit Profile</button>
+                            <button id="btn_signOut" class="btn btn-danger" style="margin: 1cap;">Logout</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4"></div>
+            </div>
 
-    
+            <div class="card card-component">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Opponent</th>
+                            <th>Score</th>
+                            <th>Type</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                            <th>Match Link</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2023-09-15</td>
+                            <td>Team Alpha</td>
+                            <td>3-2</td>
+                            <td><a href="#match1"><i class="bi bi-arrow-right" style="font-size: 3cap;"></i></a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+    </div>    
 
     <!-- Footer -->
     <footer>        
@@ -135,6 +176,7 @@
     <script src="../scripts/signOut.js"></script>
 
     <script src="../TopDeadCenter/backgroundAnimation.js"></script>
+    <script src="../stylesheets/loadingOverlay.js"></script>
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>

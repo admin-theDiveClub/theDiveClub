@@ -491,8 +491,10 @@ function BuildMatchInformationTable(match) {
     const formattedMatchDuration = `${hours}:${minutes}:${seconds}`;
 
     const totalFrames = frames.length;
-    const totalFrameDuration = frames.reduce((acc, frame) => acc + (frame && frame.duration ? frame.duration : 0), 0);
-    const averageFrameDurationSeconds = totalFrames > 0 ? Math.floor(totalFrameDuration / totalFrames) : 0;
+    // Only consider frames with duration > 0 for average calculation
+    const framesWithDuration = frames.filter(frame => frame && frame.duration > 0);
+    const totalFrameDuration = framesWithDuration.reduce((acc, frame) => acc + frame.duration, 0);
+    const averageFrameDurationSeconds = framesWithDuration.length > 0 ? Math.floor(totalFrameDuration / framesWithDuration.length) : 0;
 
     const avgMinutes = Math.floor((averageFrameDurationSeconds % 3600) / 60);
     const avgSeconds = averageFrameDurationSeconds % 60;

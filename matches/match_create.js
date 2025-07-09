@@ -5,10 +5,7 @@ document.getElementById('btn-match-create').addEventListener('click', () =>
     {
         players:
         {
-            h: {
-                fullName: document.getElementById('player_H').value,
-                username: document.getElementById('player_H').value
-            },
+            h: userProfile,
             a: {
                 fullName: document.getElementById('player_A').value,
                 username: document.getElementById('player_A').value
@@ -40,6 +37,16 @@ async function CreateMatch (_match)
     } else {
         alert('Match created successfully!');        
         sessionStorage.setItem('frameStartTime', 0);
+
+        sessionStorage.removeItem('breakRadioSelection-H');
+        sessionStorage.removeItem('breakRadioSelection-A');
+        sessionStorage.removeItem('frameStartTime');
+        sessionStorage.removeItem('frameStartTimes');
+        localStorage.removeItem('breakRadioSelection-H');
+        localStorage.removeItem('breakRadioSelection-A');
+        localStorage.removeItem('frameStartTime');
+        localStorage.removeItem('frameStartTimes');
+
         window.location.href = "../matches/index.html?matchID=" + response.data[0].id;
     }
 }
@@ -91,3 +98,87 @@ document.getElementById('player_A').addEventListener('input', () => {
     buttonA.classList.add('btn-primary');
     buttonA.innerHTML = '<i class="bi bi-search"></i> Find Account';
 });
+
+var userProfile = null;
+
+Start();
+
+async function Start() 
+{
+    var user = await GetUser();
+    console.log("User:", user);
+    if (user) {
+        var player = await GetPlayer(user.email);
+        console.log("Player:", player);
+        if (player) {
+            userProfile = player;
+            PopulateUserUI();
+        }
+    }
+}
+
+function PopulateUserUI ()
+{
+    if (userProfile) {
+        // Update the Player H nickname heading if available
+        if (userProfile.nickname) {
+            document.getElementById('player-H-nickname').textContent = userProfile.nickname;
+        } else if (userProfile.name) {
+            document.getElementById('player-H-nickname').textContent = userProfile.name;
+        }
+        // Update the username paragraph
+        const usernameParagraphs = document.querySelectorAll('#player-H-username');
+        if (usernameParagraphs.length > 0) {
+            usernameParagraphs[0].textContent = `You are logged in as: ${userProfile.username}`;
+        }
+        // Optionally update the profile picture
+        const imgElement = document.getElementById('player-H-pic');
+        if (imgElement && userProfile.username) {
+            GetPlayerProfilePic(userProfile.id);
+        }
+
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.style.transition = 'opacity 0.5s';
+            loadingOverlay.style.opacity = '0';
+            setTimeout(() => {
+                loadingOverlay.style.display = 'none';
+            }, 500);
+        }
+    }
+}
+
+async function GetUser() {
+    var response = await supabase.auth.getSession();
+    var session = response.data.session;
+    if (session) {
+        console.log("Session (Auth):", session);
+        return session.user;
+    } else {
+        var session = JSON.parse(localStorage.getItem('session')) || JSON.parse(sessionStorage.getItem('session'));
+        if (session) {
+            console.log("Session (Storage):", session);
+            return session.user;
+        }
+    }
+    
+    window.location.href = "../accounts/login.html";
+    return null;
+}
+
+async function GetPlayer(_username) {
+    const response = await supabase.from('tbl_players').select('*').eq('username', _username);
+    console.log("GetPlayer Response:", response);
+    return response.data[0];
+}
+
+async function GetPlayerProfilePic(_username) 
+{
+    const r = await supabase.storage.from('bucket-profile-pics').getPublicUrl(_username);
+    if (r.data && r.data.publicUrl) {
+        const imgElement = document.getElementById('player-H-pic');
+        if (imgElement) {
+            imgElement.src = r.data.publicUrl;
+        }
+    }
+}
