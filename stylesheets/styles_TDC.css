@@ -40,6 +40,12 @@
     padding-top: 7cap;
 }
 
+.card, .card-component
+{    
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
 /* this lives on your diver PNG and punches out wherever your logo moves */
     #diver-box {
       position: fixed;

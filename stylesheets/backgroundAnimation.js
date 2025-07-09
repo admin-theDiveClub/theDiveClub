@@ -1,6 +1,6 @@
 // === CONFIGURATION ===
 const CONFIG = {
-  ballSizeRatio: 0.025,
+  ballSizeRatio: 0.02,
   launchSpeedRatio: 0.75,
   friction: 0.98,
   wallBounceDamping: 0.98,

@@ -48,11 +48,11 @@
             </a>
             <div class="d-flex">
                 <!-- Match Settings Button -->
-                <button style="display: none;" class="navbar-toggler me-2" type="button" data-bs-toggle="collapse" data-bs-target="#matchSettingsNav" aria-controls="matchSettingsNav" aria-expanded="false" aria-label="Toggle match settings">
+                <button class="navbar-toggler me-2" type="button" data-bs-toggle="collapse" data-bs-target="#matchSettingsNav" aria-controls="matchSettingsNav" aria-expanded="false" aria-label="Toggle match settings">
                     <i class="bi bi-gear" style="font-size: 3vh;"></i>
                 </button>
                 <!-- Navbar Button -->
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav-links-container" aria-controls="nav-links-container" aria-expanded="false" aria-label="Toggle navigation">
+                <button style="display: none;" class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav-links-container" aria-controls="nav-links-container" aria-expanded="false" aria-label="Toggle navigation">
                     <i id="navbar-icon" class="bi bi-list"></i>
                 </button>
             </div>
@@ -254,6 +254,22 @@
         </div>
     </div>
 
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 105vh; background: rgba(0,0,0,1); z-index: 1800; display: flex; align-items: center; justify-content: center;">
+        <div style="position: relative; width: 50vw; height: 50vh; display: flex; align-items: center; justify-content: center;">
+            <!-- SVG Logo -->
+            <img src="../resources/icon_theDiveClub_alpha.svg" alt="Loading..." style="width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; z-index: 1;">
+            <!-- Animated Fill Overlay -->
+            <div id="logo-fill" style="position: absolute; left: 0; bottom: 0; width: 100%; height: 0%;
+                background: linear-gradient(to top, rgba(234, 0, 103, 1) 50%, transparent 100%);
+                z-index: 2; pointer-events: none; mix-blend-mode: multiply; transition: height 0.1s;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Visualization Container -->
+    <div id="visualization-container" style="height: 100vh; width: 100vw; position: fixed; z-index: -1000;"></div>
+
     <!-- Main Content -->
     <div class="main">
         <div class="card rounded scorecard-container">
@@ -285,35 +301,37 @@
                             </div>
                             <div class="row">
                                 <div class="col-6">
-                                    <p id="player-H-apples" class="player-apples">A : 0</p>
+                                    <p id="player-H-bf" class="player-bf">B/F : 0</p>
                                 </div>
                                 <div class="col-6">
-                                    <p id="player-H-C+" class="player-cplus">C<sup>+</sup> : 0</p>
+                                    <p id="player-H-rf" class="player-rf">R/F : 0</p>
                                 </div>
                             </div>
                         </div>
-                        <div  style="display: none;" class="card-footer player-footer">
+                        <div style="display: none;" class="card-footer player-footer">
                             <div class="d-flex justify-content-center align-items-center">
                                 <div>
                                     <button id="btn-player-H-point" class="btn btn-primary player-point-btn">Point</button>
-                                    <button id="btn-player-H-Apple" class="btn btn-warning player-apple-btn">Apple</button>
+                                    <button id="btn-player-H-bf" class="btn btn-warning player-bf-btn">B/F</button>
                                     <button id="btn-player-H-gb" class="btn btn-warning player-gb-btn">GB</button>
-                                    <button id="btn-player-H-cplus" class="btn btn-success player-cplus-btn">C+</button>
+                                    <button id="btn-player-H-rf" class="btn btn-success player-rf-btn">R/F</button>
                                 </div>
-                                <div style="color: white; font-size: 1.5cap; font-family: 'Segoe UI'; margin-left: 1cap;" id="player-H-BreakInfo-container">
-                                    <div class="form-check justify-content-center" style="text-align: center;">
-                                        <input class="form-check-input" type="radio" name="player-H-option" id="player-H-DB" value="DB" checked>
-                                        <label class="form-check-label" for="player-H-DB">DB</label>
+                                <div style="color: white; font-size: clamp(1cap, 1.5vw, 2cap); font-family: 'Segoe UI'; margin-left: 1cap;" id="player-H-BreakInfo-container">
+                                    <div class="d-flex justify-content-around">
+                                        <label class="form-check justify-content-center break-radio-btn" style="margin-right: 2cap; cursor: pointer;">
+                                            <input class="form-check-input" type="radio" name="player-H-option" id="player-H-dry" value="dry" style="cursor: pointer;">
+                                            <span class="form-check-label" for="player-H-dry">dry</span>
+                                        </label>
                                     </div>
                                     <div class="d-flex justify-content-around">
-                                        <div class="form-check" style="margin-right: 2cap;">
-                                            <input class="form-check-input" type="radio" name="player-H-option" id="player-H-SB" value="SB">
-                                            <label class="form-check-label" for="player-H-SB">SB</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="player-H-option" id="player-H-BI" value="BI">
-                                            <label class="form-check-label" for="player-H-BI">BI</label>
-                                        </div>
+                                        <label class="form-check break-radio-btn" style="margin-right: 2cap; cursor: pointer;">
+                                            <input class="form-check-input" type="radio" name="player-H-option" id="player-H-scratch" value="scr" style="cursor: pointer;">
+                                            <span class="form-check-label" for="player-H-scratch">scr</span>
+                                        </label>
+                                        <label class="form-check break-radio-btn" style="cursor: pointer;">
+                                            <input class="form-check-input" type="radio" name="player-H-option" id="player-H-in" value="in" style="cursor: pointer;">
+                                            <span class="form-check-label" for="player-H-in">in</span>
+                                        </label>
                                     </div>
                                 </div>
                             </div>
@@ -344,38 +362,39 @@
                                     </div>
                                 </div>
                             </div>
-
                             <div class="row">
                                 <div class="col-6">
-                                    <p id="player-A-apples" class="player-apples">A : 0</p>
+                                    <p id="player-A-bf" class="player-bf">B/F : 0</p>
                                 </div>
                                 <div class="col-6">
-                                    <p id="player-A-C+" class="player-cplus">C<sup>+</sup> : 0</p>
+                                    <p id="player-A-rf" class="player-rf">R/F : 0</p>
                                 </div>
                             </div>
                         </div>
-                        <div  style="display: none;" class="card-footer player-footer">
+                        <div style="display: none;" class="card-footer player-footer">
                             <div class="d-flex justify-content-center align-items-center">
                                 <div>
                                     <button id="btn-player-A-point" class="btn btn-primary player-point-btn">Point</button>
-                                    <button id="btn-player-A-Apple" class="btn btn-warning player-apple-btn">Apple</button>
+                                    <button id="btn-player-A-bf" class="btn btn-warning player-bf-btn">B/F</button>
                                     <button id="btn-player-A-gb" class="btn btn-warning player-gb-btn">GB</button>
-                                    <button id="btn-player-A-cplus" class="btn btn-success player-cplus-btn">C+</button>
+                                    <button id="btn-player-A-rf" class="btn btn-success player-rf-btn">R/F</button>
                                 </div>
-                                <div style="color: white; font-size: 1.5cap; font-family: 'Segoe UI'; margin-left: 1cap;" id="player-A-BreakInfo-container">
-                                    <div class="form-check justify-content-center" style="text-align: center;">
-                                        <input class="form-check-input" type="radio" name="player-A-option" id="player-A-DB" value="DB" checked>
-                                        <label class="form-check-label" for="player-A-DB">DB</label>
+                                <div style="color: white; font-size: clamp(1cap, 1.5vw, 2cap); font-family: 'Segoe UI'; margin-left: 1cap;" id="player-A-BreakInfo-container">
+                                    <div class="d-flex justify-content-around">
+                                        <label class="form-check justify-content-center break-radio-btn" style="margin-right: 2cap; cursor: pointer;">
+                                            <input class="form-check-input" type="radio" name="player-A-option" id="player-A-dry" value="dry" style="cursor: pointer;">
+                                            <span class="form-check-label" for="player-A-dry">dry</span>
+                                        </label>
                                     </div>
                                     <div class="d-flex justify-content-around">
-                                        <div class="form-check" style="margin-right: 2cap;">
-                                            <input class="form-check-input" type="radio" name="player-A-option" id="player-A-SB" value="SB">
-                                            <label class="form-check-label" for="player-A-SB">SB</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="player-A-option" id="player-A-BI" value="BI">
-                                            <label class="form-check-label" for="player-A-BI">BI</label>
-                                        </div>
+                                        <label class="form-check break-radio-btn" style="margin-right: 2cap; cursor: pointer;">
+                                            <input class="form-check-input" type="radio" name="player-A-option" id="player-A-scratch" value="scr" style="cursor: pointer;">
+                                            <span class="form-check-label" for="player-A-scratch">scr</span>
+                                        </label>
+                                        <label class="form-check break-radio-btn" style="cursor: pointer;">
+                                            <input class="form-check-input" type="radio" name="player-A-option" id="player-A-in" value="in" style="cursor: pointer;">
+                                            <span class="form-check-label" for="player-A-in">in</span>
+                                        </label>
                                     </div>
                                 </div>
                             </div>
@@ -406,7 +425,7 @@
 
                 <h2 class="text-center">
                     Match Summary 
-                    <button  style="display: none;" id="btn-correction" class="btn btn-danger">
+                    <button style="display: none;" id="btn-correction" class="btn btn-danger">
                         <i class="bi bi-arrow-left"></i>
                     </button>
                 </h2>
@@ -460,6 +479,8 @@
 
     <script src="../scripts/supaBase_client.js"></script>
     <script src="../TopDeadCenter/backgroundAnimation.js"></script>
+    <script src="../stylesheets/loadingOverlay.js"></script>
+    <script src="../stylesheets/backgroundAnimation.js"></script>
 
     <script src="../matches/match_data.js" type="module"></script>
     <script src="../matches/match_summary.js" type="module"></script>
