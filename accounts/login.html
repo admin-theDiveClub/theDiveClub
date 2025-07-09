@@ -31,46 +31,75 @@
 
     <!-- Custom CSS -->
     <link href="../TopDeadCenter/styleSheet.css" rel="stylesheet">
+    <link href="../stylesheets/styles_TDC.css" rel="stylesheet">
+    <link href="../TopDeadCenter/styleSheet.css" rel="stylesheet">
 </head>
 
-<body> 
+<body>
 
     <!-- Nav -->
-    <div class="row nav-container" >
+    <div id="nav-container" class="row" >
         <div class="d-flex justify-content-between">
             <a href="..">
-                <img src="../resources/icon_theDiveClub_alpha.svg" style="height: 6vh; object-fit: contain;"></img>
+                <img src="../resources/icon_theDiveClub_alpha.svg" style="height: 5cap; object-fit: contain;"></img>
             </a>
-            <div class="d-flex">
-                <!-- Navbar Button -->
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                    <i class="bi bi-list" style="font-size: 4vh; color: white;"></i>
-                </button>
-            </div>
+            <!-- Navbar Button -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav-links-container" aria-controls="nav-links-container" aria-expanded="false" aria-label="Toggle navigation">
+                <i id="navbar-icon" class="bi bi-list"></i>
+            </button>
         </div>
         
         <!-- Main Navbar Menu -->
-        <div class="collapse navbar-collapse" id="navbarNav">
+        <div class="collapse navbar-collapse" id="nav-links-container">
             <ul class="nav-links list-unstyled d-flex justify-content-around flex-wrap">
-                <li><a href="../index.html" class="nav-link active"><i class="bi bi-house-door"></i> Home</a></li>
-                <li><a href="../accounts/profile.html" class="nav-link"><i class="bi bi-person"></i> Profile</a></li>
-                <li><a href="../matches/create.html" class="nav-link"><i class="bi bi-card-checklist"></i> Scorecard</a></li>
+                <li>
+                    <button class="btn btn-link nav-link active" onclick="location.href='../index.html'">
+                        <i class="bi bi-house-door"></i> Home
+                    </button>
+                </li>
+                <li>
+                    <button class="btn btn-link nav-link" onclick="location.href='../accounts/profile.html'">
+                        <i class="bi bi-person"></i> Profile
+                    </button>
+                </li>
+                <li>
+                    <button class="btn btn-link nav-link" onclick="location.href='../matches/create.html'">
+                        <i class="bi bi-card-checklist"></i> Scorecard
+                    </button>
+                </li>
                 <li class="dropdown">
-                    <a href="#competitions" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" disabled><i class="bi bi-trophy"></i> Competitions</a>
+                    <button class="btn btn-link nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-trophy"></i> Competitions
+                    </button>
                     <ul class="dropdown-menu">
-                    <li><a href="#leagues" class="dropdown-item"><i class="bi bi-award"></i> Leagues</a></li>
-                    <li><a href="#tournaments" class="dropdown-item"><i class="bi bi-calendar-event"></i> Tournaments</a></li>
-                    <li><a href="#matches" class="dropdown-item"><i class="bi bi-flag"></i> Matches</a></li>
+                        <li>
+                            <button class="dropdown-item" onclick="location.href='#leagues'">
+                                <i class="bi bi-award"></i> Leagues
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item" onclick="location.href='#tournaments'">
+                                <i class="bi bi-calendar-event"></i> Tournaments
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item" onclick="location.href='#matches'">
+                                <i class="bi bi-flag"></i> Matches
+                            </button>
+                        </li>
                     </ul>
                 </li>
-                <li><a href="../index.html" class="nav-link"><i class="bi bi-envelope"></i> Contact</a></li>
+                <li>
+                    <button class="btn btn-link nav-link" onclick="location.href='../index.html'">
+                        <i class="bi bi-envelope"></i> Contact
+                    </button>
+                </li>
             </ul>
         </div>
     </div>
 
-    <div id="top-margin" style="height: 8vh;"></div>
-       
-    <div class="row">
+    <div class="main">
+        <div class="row">
         <div class="col-lg-3 col-xl-4"></div>
         <div class="col-lg-6 col-xl-4">
             <div class="card rounded card-component">
@@ -114,8 +143,8 @@
             </div>
         </div>
         <div class="col-lg-3 col-xl-4"></div>
-    </div>    
-    
+    </div>
+
     <script src="../scripts/supaBase_client.js"></script>
     <script src="../scripts/login_email.js"></script>
     <script src="../scripts/login_google.js"></script>
