@@ -666,13 +666,17 @@ function restoreBreakRadioSelection(player) {
     restoreBreakRadioSelection(player);
 });
 
-document.getElementById('btn-timer-abortStart').addEventListener('click', async () => {
-    if (match.time && match.time.start) {
-        if (confirm('Are you sure you want to abort the match start? This will reset the match timer.')) {
-            delete match.time.start;
-            await PushUpdatedMatchToDatabase(match);
+if (document.getElementById('btn-timer-abortStart'))
+{
+    document.getElementById('btn-timer-abortStart').addEventListener('click', async () => 
+    {
+        if (match.time && match.time.start) {
+            if (confirm('Are you sure you want to abort the match start? This will reset the match timer.')) {
+                delete match.time.start;
+                await PushUpdatedMatchToDatabase(match);
+            }
+        } else {
+            alert('Match timer has not been started.');
         }
-    } else {
-        alert('Match timer has not been started.');
-    }
-});
+    });
+}
