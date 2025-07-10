@@ -113,6 +113,12 @@ function resetShotClock() {
   pauseShotClock();
   shotCurrentTime = shotTime * 10;
   updateShotDisplay();
+
+  // Convert matchCurrentTime to "mm:ss" format as text
+  const matchMinutes = Math.floor(matchCurrentTime / 60);
+  const matchSeconds = (matchCurrentTime % 60).toString().padStart(2, "0");
+  const matchTimeText = `${matchMinutes}:${matchSeconds}`;
+  
   UpdateDatabaseTimers(
     localStorage.getItem('matchID'),
     matchTimeText,
