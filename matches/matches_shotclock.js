@@ -113,6 +113,11 @@ function resetShotClock() {
   pauseShotClock();
   shotCurrentTime = shotTime * 10;
   updateShotDisplay();
+  UpdateDatabaseTimers(
+    localStorage.getItem('matchID'),
+    matchTimeText,
+    Math.floor(shotCurrentTime / 10)
+  );
 }
 
 function restartShotClock() {
