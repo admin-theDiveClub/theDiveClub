@@ -203,7 +203,7 @@ tr, th, td
 
 .sponsors-row
 {
-    background-color: var(--color-transparent-dark);
+    background-color: var(--color-base-darkest);
     max-height: 10vh;
 }
 

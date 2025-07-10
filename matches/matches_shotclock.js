@@ -68,6 +68,15 @@ function updateShotDisplay() {
   shotTimerDisplay.innerHTML = `${seconds}`;
 }
 
+async function UpdateDatabaseTimers (_matchID, _matchTime, _shotTime)
+{
+  // Update tbl_timers with new matchTime and shotTime for the given matchID
+  response = await supabase
+    .from('tbl_timers')
+    .update({ matchTime: _matchTime, shotTime: _shotTime })
+    .eq('matchID', _matchID);
+}
+
 function playAudio(audioFile, volume) {
   const audio = new Audio(audioFile);
   audio.volume = volume;
@@ -154,10 +163,10 @@ function setFocus(player) {
   const awayContainer = document.getElementById("player-away-container");
   if (homeContainer && awayContainer) {
     if (player === "home") {
-      homeContainer.style.boxShadow = "inset 0 0 200px 20px rgba(0, 186, 245, 0.25)";
+      homeContainer.style.boxShadow = "inset 0 0 200px 20px rgba(236, 0, 140, 0.5)";
       awayContainer.style.boxShadow = "";
     } else {
-      awayContainer.style.boxShadow = "inset 0 0 200px 20px rgba(0, 186, 245, 0.25)";
+      awayContainer.style.boxShadow = "inset 0 0 200px 20px rgba(236, 0, 140, 0.5)";
       homeContainer.style.boxShadow = "";
     }
   }
@@ -259,27 +268,22 @@ function nextFramePlaceholder() {
   console.log("Next frame logic placeholder called.");
 }
 
-// === INITIALIZATION ===
-updateShotDisplay();
-updateMatchDisplay();
-
-// Restore match timer if needed
-(function restoreMatchTimer() {
-  const storedRemaining = localStorage.getItem("matchTimerRemaining") || sessionStorage.getItem("matchTimerRemaining");
-  if (storedRemaining !== null && !isNaN(Number(storedRemaining))) {
-    matchCurrentTime = Number(storedRemaining);
-    updateMatchDisplay();
-    startMatchTimer();
-    if (matchCurrentTime === 0) {
-      triggerMatchAlarm();
-    }
-  }
-})();
 // === MATCH CLOCK FUNCTIONS ===
 function updateMatchDisplay() {
   const minutes = Math.floor(matchCurrentTime / 60);
   const seconds = matchCurrentTime % 60;
   matchTimerDisplay.innerHTML = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  
+  // Convert matchCurrentTime to "mm:ss" format as text
+  const matchMinutes = Math.floor(matchCurrentTime / 60);
+  const matchSeconds = (matchCurrentTime % 60).toString().padStart(2, "0");
+  const matchTimeText = `${matchMinutes}:${matchSeconds}`;
+
+  UpdateDatabaseTimers(
+    localStorage.getItem('matchID'),
+    matchTimeText,
+    Math.floor(shotCurrentTime / 10)
+  );
 }
 
 function startMatchTimer() {
