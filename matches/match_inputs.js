@@ -58,7 +58,7 @@ async function PushUpdatedMatchToDatabase(match) {
 
     if (match.time.end || (winCondition && (hScore >= winCondition || aScore >= winCondition))) {
         match.info.status = "Complete";
-    } else if (match.time.start || hScore > 0 || aScore > 0) {
+    } else if (match.time.start) {
         match.info.status = "Live";
     } else {
         match.info.status = "New";
