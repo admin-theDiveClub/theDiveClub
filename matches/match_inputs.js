@@ -436,11 +436,11 @@ function UpdateScoresUI() {
 
     const scoreElements = {
         'player-H-score': hRes.fw ?? 0,
-        'player-H-bfs': `A : ${hRes.bf ?? 0}`,
-        'player-H-rf': `rf : ${hRes.rf ?? 0}`,
+        'player-H-bf': `B/F : ${hRes.bf ?? 0}`,
+        'player-H-rf': `R/F : ${hRes.rf ?? 0}`,
         'player-A-score': aRes.fw ?? 0,
-        'player-A-bfs': `A : ${aRes.bf ?? 0}`,
-        'player-A-rf': `rf : ${aRes.rf ?? 0}`
+        'player-A-bf': `B/F : ${aRes.bf ?? 0}`,
+        'player-A-rf': `R/F : ${aRes.rf ?? 0}`
     };
 
     Object.entries(scoreElements).forEach(([id, value]) => {
