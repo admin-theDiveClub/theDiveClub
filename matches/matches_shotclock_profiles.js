@@ -74,7 +74,7 @@ function UpdateProfiles (match)
         const homePP = document.getElementById('player-home-pp');
         const homeName = document.getElementById('player-home-name');
         if (homePP) homePP.src = homePlayer.pp || '../resources/images/img_Player_9x16_alpha.png';
-        homeName.textContent = (homePlayer.fullName ? homePlayer.fullName.split(' ')[0] : '');
+        homeName.textContent = (homePlayer.fullName ? homePlayer.fullName.split(' ')[0].toUpperCase() : '');
     }
 
     // Away player
@@ -83,7 +83,7 @@ function UpdateProfiles (match)
         const awayPP = document.getElementById('player-away-pp');
         const awayName = document.getElementById('player-away-name');
         if (awayPP) awayPP.src = awayPlayer.pp || '../resources/images/img_Player_9x16_alpha.png';
-        awayName.textContent = (awayPlayer.fullName ? awayPlayer.fullName.split(' ')[0] : '');
+        awayName.textContent = (awayPlayer.fullName ? awayPlayer.fullName.split(' ')[0].toUpperCase() : '');
     }
 }
 
