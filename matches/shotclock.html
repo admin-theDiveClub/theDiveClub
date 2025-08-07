@@ -72,7 +72,7 @@
 
     <!-- Logo -->
     <div style="position: fixed; top: 10vh; left: 50%; transform: translateX(-50%); z-index: 1000; width: auto; display: flex; justify-content: center; align-items: center;">
-        <img src="../resources/icon_theDiveClub_alpha.svg" alt="The Dive Club Logo" style="height: 8vh; object-fit: contain;">
+        <img src="../resources/icon_theDiveClub_alpha.svg" alt="The Dive Club Logo" style="height: 12vh; object-fit: contain;">
     </div>
 
     <!-- Main Content -->
@@ -94,11 +94,11 @@
 
         <div class="row justify-content-center flex-grow-1 align-items-center shotclock-main-row">
             <div id="player-home-container" class="col-4 shotclock-player-container">
-                <img id="player-home-pp" src="../resources/images/img_Player_9x16_alpha.png" class="shotclock-player-img">
-                <p id="player-home-name" class="shotclock-player-name">Llewellen Sedgewick</p>
+                <img id="player-home-pp" src="../resources/icon_user_default.png" class="shotclock-player-img">
+                <p id="player-home-name" class="shotclock-player-name">HOME</p>
                 <p id="player-home-score" class="shotclock-player-score">00</p>
                 <div id="home-extension-container" class="card card-component shotclock-extension-card">
-                    <p class="shotclock-extension-text">Extension</p>
+                    <p id="home-extension-text" class="shotclock-extension-text">Extension</p>
                 </div>
             </div>
             <div class="col-4 shotclock-center-container">
@@ -106,11 +106,11 @@
                 <p id="match-time" class="shotclock-match-time">45</p>
             </div>
             <div id="player-away-container" class="col-4 shotclock-player-container">
-                <img id="player-away-pp" src="../resources/images/img_Player_9x16_alpha.png" class="shotclock-player-img">
-                <p id="player-away-name" class="shotclock-player-name">Llewellen Sedgewick</p>
+                <img id="player-away-pp" src="../resources/icon_user_default.png" class="shotclock-player-img">
+                <p id="player-away-name" class="shotclock-player-name">AWAY</p>
                 <p id="player-away-score" class="shotclock-player-score">00</p>
                 <div id="away-extension-container" class="card card-component shotclock-extension-card">
-                    <p class="shotclock-extension-text">Extension</p>
+                    <p id="away-extension-text" class="shotclock-extension-text">Extension</p>
                 </div>
             </div>
         </div>
@@ -136,7 +136,7 @@
             justify-content: center;
             align-items: center;
             height: 100%;
-            padding: 4cap;
+            padding: 2cap;
             overflow: hidden;
             z-index: -1;
         }
@@ -144,7 +144,7 @@
         .shotclock-player-img {
             object-fit: contain;
             max-width: 100%;
-            max-height: clamp(20%,15vmax, 60%);
+            max-height: clamp(40%, 15vh, 60%);
             width: auto;
             height: auto;
         }
@@ -155,6 +155,7 @@
             white-space: normal;
             margin: 0cap;
             font-family: inherit;
+            font-weight: 900;
         }
 
         .shotclock-player-score {

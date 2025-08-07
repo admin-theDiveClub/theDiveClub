@@ -7,9 +7,9 @@ let shotClockActive = false;
 let focusedPlayer = "home"; // "home" or "away"
 let homeExtensionUsed = false;
 let awayExtensionUsed = false;
-let lastFiveSecondsAudio = "../resources/audio/audio_timer_Beep_1.mp3";
-let finalAlarmAudio = "../resources/audio/audio_timer_alarm_1.mp3";
-let lastFiveSecondsVolume = 0.5;
+let lastFiveSecondsAudio = "../resources/audio/sound_secondsTime.wav";
+let finalAlarmAudio = "../resources/audio/sound_endTime.wav";
+let lastFiveSecondsVolume = 1.0;
 let finalAlarmVolume = 1.0;
 
 console.warn(`
@@ -62,6 +62,9 @@ const matchTimerDisplay = document.getElementById("match-time");
 const homeExtensionContainer = document.getElementById("home-extension-container");
 const awayExtensionContainer = document.getElementById("away-extension-container");
 
+const home_extensionText = document.getElementById("home-extension-text");
+const away_extensionText = document.getElementById("away-extension-text");
+
 // === SHOT CLOCK FUNCTIONS ===
 function updateShotDisplay() {
   const seconds = Math.floor(shotCurrentTime / 10);
@@ -89,16 +92,21 @@ function startShotClock() {
   shotClockInterval = setInterval(() => {
     if (shotCurrentTime > 0) {
       // Play beep for last 5 seconds (50 tenths)
-      if (shotCurrentTime <= 60 && shotCurrentTime % 10 === 0) {
+      if (shotCurrentTime <= 60 && shotCurrentTime > 10 && shotCurrentTime % 10 === 0) {
         playAudio(lastFiveSecondsAudio, lastFiveSecondsVolume);
+      }
+      // Trigger final alarm at 0.9s or less (shotCurrentTime < 10)
+      if (shotCurrentTime < 10) {
+        clearInterval(shotClockInterval);
+        shotClockInterval = null;
+        shotClockActive = false;
+        triggerShotAlarm();
+        shotCurrentTime = 0; // Ensure display shows 0
+        updateShotDisplay();
+        return;
       }
       shotCurrentTime--;
       updateShotDisplay();
-    } else {
-      clearInterval(shotClockInterval);
-      shotClockInterval = null;
-      shotClockActive = false;
-      triggerShotAlarm();
     }
   }, 100);
 }
@@ -150,12 +158,14 @@ function applyExtension(player) {
   if (player === "home" && !homeExtensionUsed) {
     shotCurrentTime += extensionTime * 10;
     homeExtensionUsed = true;
-    if (homeExtensionContainer) homeExtensionContainer.style.display = "none";
+    //if (homeExtensionContainer) homeExtensionContainer.style.display = "none";
+    home_extensionText.style.color = "black";
     updateShotDisplay();
   } else if (player === "away" && !awayExtensionUsed) {
     shotCurrentTime += extensionTime * 10;
     awayExtensionUsed = true;
-    if (awayExtensionContainer) awayExtensionContainer.style.display = "none";
+    //if (awayExtensionContainer) awayExtensionContainer.style.display = "none";
+    away_extensionText.style.color = "black";
     updateShotDisplay();
   }
 }
@@ -163,8 +173,10 @@ function applyExtension(player) {
 function resetExtensions() {
   homeExtensionUsed = false;
   awayExtensionUsed = false;
-  if (homeExtensionContainer) homeExtensionContainer.style.display = "";
-  if (awayExtensionContainer) awayExtensionContainer.style.display = "";
+  home_extensionText.style.color = "rgba(236, 0, 140, 1)";
+  away_extensionText.style.color = "rgba(236, 0, 140, 1)";
+  //if (homeExtensionContainer) homeExtensionContainer.style.display = "";
+  //if (awayExtensionContainer) awayExtensionContainer.style.display = "";
 }
 
 // === PLAYER FOCUS HANDLING ===
@@ -304,6 +316,15 @@ function startMatchTimer() {
       // Play beep for last 5 seconds
       if (matchCurrentTime <= 6 && matchCurrentTime > 0) {
         playAudio(lastFiveSecondsAudio, lastFiveSecondsVolume);
+      }
+      // Trigger final alarm at <1s (0.9s)
+      if (matchCurrentTime < 1) {
+        clearInterval(matchTimerInterval);
+        matchTimerInterval = null;
+        triggerMatchAlarm();
+        matchCurrentTime = 0; // Ensure display shows 0
+        updateMatchDisplay();
+        return;
       }
       matchCurrentTime--;
       updateMatchDisplay();
