@@ -100,64 +100,98 @@
     <div id="visualization-container" style="height: 100vh; width: 100vw; position: fixed; z-index: -1000;"></div>
     
     <div class="main" style="position: relative;">
+        
+        <!-- Log -->
+        <div class="card rounded card-component">
+            <div class="card-header">
+                <h3 id="league-name">League Name</h3>
+            </div>
+            <div class="card-body">
+                <table class="table" style="text-align: center;">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Rank</th>
+                            <th>Player</th>
+                            <th>Frames-P</th>
+                            <th>Frames-W</th>
+                            <th>Frames-L</th>
+                            <th>Frames Win %</th>
+                            <th>B/F</th>
+                            <th>Lags %</th>
+                            <th>Pts</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>-</td>
+                            <td>00</td>
+                            <td>Player Name</td>
+                            <td>00</td>
+                            <td>00</td>
+                            <td>00</td>
+                            <td>00.0%</td>
+                            <td>00</td>
+                            <td>00.0%</td>
+                            <td>00</td>
+                        </tr>
+                        <tr>
+                            <td>-</td>
+                            <td>01</td>
+                            <td>Player Name</td>
+                            <td>00</td>
+                            <td>00</td>
+                            <td>00</td>
+                            <td>00.0%</td>
+                            <td>00</td>
+                            <td>00.0%</td>
+                            <td>00</td>
+                        </tr>                                  
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-        <div class="row">
-            <div class="col-1"></div>
-            <div class="col-10">
-                <div class="card rounded card-component">
-                    <div class="card-header">
-                        <h3>League Name</h3>
-                    </div>
-                    <div class="card-body">
-                        <p>League Information</p>                        
-                        
-                        <!-- Log -->
-                        <div class="card rounded card-component">
-                            <table class="table table-striped" style="border-radius: 10px; overflow: hidden; text-align: center;">
-                                <thead>
-                                    <tr>
-                                        <th>Rank</th>
-                                        <th>Player</th>
-                                        <th>Played</th>
-                                        <th>Won</th>
-                                        <th>Lost</th>
-                                        <th>Win %</th>
-                                        <th>B/F</th>
-                                        <th>Lags %</th>
-                                        <th>Pts</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>00</td>
-                                        <td>Player Name</td>
-                                        <td>00</td>
-                                        <td>00</td>
-                                        <td>00</td>
-                                        <td>00.0%</td>
-                                        <td>00</td>
-                                        <td>00.0%</td>
-                                        <td>00</td>
-                                    </tr>
-                                    <tr>
-                                        <td>01</td>
-                                        <td>Player Name</td>
-                                        <td>00</td>
-                                        <td>00</td>
-                                        <td>00</td>
-                                        <td>00.0%</td>
-                                        <td>00</td>
-                                        <td>00.0%</td>
-                                        <td>00</td>
-                                    </tr>                                  
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+        <!-- League Matches -->
+        <div id="rounds-container">
+            <div class="card rounded card-component">
+                <div class="card-header">
+                    <h3>Round 1</h3>
+                </div>
+                <div class="card-body">
+                    <table class="table" style="text-align: center;">
+                        <thead>
+                            <tr>
+                                <th>Home</th>
+                                <th>FW</th>
+                                <th>B/F</th>
+                                <th><b>Pts</b></th>
+                                <th>|</th>
+                                <th><b>Pts</b></th>
+                                <th>B/F</th>
+                                <th>FW</th>
+                                <th>Away</th>
+                            </tr>
+                        </thead>
+                        <tbody id="round-1-matches">
+                            <tr>
+                                <td>Player_Home</td>
+                                <td>0</td>
+                                <td>0</td>
+                                <td><b>0</b></td>
+                                <td>|</td>
+                                <td><b>0</b></td>
+                                <td>0</td>
+                                <td>0</td>
+                                <td>Player_Away</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <div class="col-1"></div>
         </div>
+
+        
 
     </div>
     

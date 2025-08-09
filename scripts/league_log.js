@@ -16,6 +16,7 @@ async function BuildLog ()
     console.log('League ID:', leagueID);
 
     const league = await GetLeague(leagueID);
+    document.getElementById('league-name').textContent = league.name;
     console.log('League Details:', league);
 
     var leaguePlayers = league.players;
@@ -28,6 +29,14 @@ async function BuildLog ()
 
     log = PopulateLogData(log, leagueMatches);
     console.log('Populated Log:', log);
+
+    PopulateTable(log);
+
+    const leagueRounds = await GetLeagueRounds(leagueID);
+    console.log('League Rounds:', leagueRounds);
+    PopulateLeagueRoundsMatches(leagueRounds, leagueMatches);
+    console.log('Populated League Rounds Matches:', leagueRounds);
+    PopulateRoundsTables(leagueRounds);
 }
 
 function GetLeagueID()
@@ -165,14 +174,30 @@ function PopulateLogData (_log, _leagueMatches)
         delete entry.__lagsWon;
     }
 
-    // Rank by pts (dense ranking: ties share the same rank)
-    const sorted = [..._log].sort((a, b) => b.pts - a.pts);
+    // Rank by pts, then frames_w, then bf, then lags_rate (dense ranking)
+    const sorted = [..._log].sort((a, b) => {
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        if (b.frames_w !== a.frames_w) return b.frames_w - a.frames_w;
+        if (b.bf !== a.bf) return b.bf - a.bf;
+        if (b.lags_rate !== a.lags_rate) return b.lags_rate - a.lags_rate;
+        return 0;
+    });
     let rank = 0;
-    let prevPts = null;
+    let prev = {};
     for (const e of sorted) {
-        if (prevPts === null || e.pts !== prevPts) {
+        if (
+            prev.pts !== e.pts ||
+            prev.frames_w !== e.frames_w ||
+            prev.bf !== e.bf ||
+            prev.lags_rate !== e.lags_rate
+        ) {
             rank += 1;
-            prevPts = e.pts;
+            prev = {
+                pts: e.pts,
+                frames_w: e.frames_w,
+                bf: e.bf,
+                lags_rate: e.lags_rate
+            };
         }
         e.rank = rank;
     }
@@ -181,7 +206,147 @@ function PopulateLogData (_log, _leagueMatches)
     _log.sort((a, b) => a.rank - b.rank);
 
     return _log;
+}
 
+function PopulateTable (_log)
+{
 
-    return _log;
+    const tbody = document.querySelector('.table tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    // Helper to get color class based on rank
+    function getRankColor(rank) {
+        if (rank >= 1 && rank <= 4) return 'rank-top'; // green
+        if (rank === 5) return 'rank-mid'; // purple (custom class, define in CSS)
+        if (rank >= 6 && rank <= 8) return 'rank-low'; // red
+        return '';
+    }
+
+    _log.forEach(player => {
+        const tr = document.createElement('tr');
+        const colorClass = getRankColor(player.rank);
+
+        tr.innerHTML = `
+            <td class="${colorClass}" style="width:24px"></td>
+            <td>${String(player.rank).padStart(2, '0')}</td>
+            <td>${player.fullName}</td>
+            <td>${player.frames_p}</td>
+            <td>${player.frames_w}</td>
+            <td>${player.frames_l}</td>
+            <td>${(player.frames_rate * 100).toFixed(1)}%</td>
+            <td>${player.bf}</td>
+            <td>${(player.lags_rate * 100).toFixed(1)}%</td>
+            <td>${player.pts}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+const leagueRounds = null;
+async function GetLeagueRounds (_leagueID)
+{
+    const response = await supabase.from('tbl_tournaments').select('*').eq('leagueID', _leagueID).order('date', { ascending: false });
+    return response.data;
+}
+
+function PopulateLeagueRoundsMatches (_leagueRounds, _leagueMatches)
+{
+    if (!Array.isArray(_leagueRounds) || !Array.isArray(_leagueMatches)) return;
+
+    // Build a lookup of tournamentID to matches
+    const matchesByTournament = {};
+    for (const match of _leagueMatches) {
+        const tid = match?.competitions?.tournamentID;
+        if (!tid) continue;
+        if (!matchesByTournament[tid]) matchesByTournament[tid] = [];
+        matchesByTournament[tid].push(match);
+    }
+
+    // Attach matches to each round
+    for (const round of _leagueRounds) {
+        round.matches = matchesByTournament[round.id] || [];
+    }
+}
+
+function PopulateRoundsTables (_leagueRounds)
+{
+    const roundsContainer = document.getElementById('rounds-container');
+    if (!roundsContainer) return;
+
+    roundsContainer.innerHTML = '';
+
+    _leagueRounds.forEach((round, idx) => {
+        const card = document.createElement('div');
+        card.className = 'card rounded card-component mb-4';
+
+        // Card Header
+        const header = document.createElement('div');
+        header.className = 'card-header';
+        header.innerHTML = `<h3>${round.name || `Round ${idx + 1}`}</h3>
+            <div style="font-size:0.9em;color:#888;">${round.date} @ ${round.location}</div>`;
+        card.appendChild(header);
+
+        // Card Body
+        const body = document.createElement('div');
+        body.className = 'card-body';
+
+        // Table
+        const table = document.createElement('table');
+        table.className = 'table';
+        table.style.textAlign = 'center';
+
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>Home</th>
+                    <th>FW</th>
+                    <th>B/F</th>
+                    <th><b>Pts</b></th>
+                    <th>|</th>
+                    <th><b>Pts</b></th>
+                    <th>B/F</th>
+                    <th>FW</th>
+                    <th>Away</th>
+                </tr>
+            </thead>
+            <tbody id="round-${idx + 1}-matches"></tbody>
+        `;
+
+        // Fill matches
+        const tbody = table.querySelector('tbody');
+        (round.matches || []).forEach(match => {
+            const h = match.players?.h;
+            const a = match.players?.a;
+            const hFW = match.results?.h?.fw ?? 0;
+            const hBF = match.results?.h?.bf ?? 0;
+            const hPts = hFW + hBF;
+            const aFW = match.results?.a?.fw ?? 0;
+            const aBF = match.results?.a?.bf ?? 0;
+            const aPts = aFW + aBF;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${h?.fullName || ''}</td>
+                <td>${hFW}</td>
+                <td>${hBF}</td>
+                <td><b>${hPts}</b></td>
+                <td>
+                    <a href="https://thediveclub.org/matches/scoreboard.html?matchID=${match.id}" target="_blank" style="text-decoration:none;">
+                        <i class="bi bi-box-arrow-up-right"></i>
+                    </a>
+                </td>
+                <td><b>${aPts}</b></td>
+                <td>${aBF}</td>
+                <td>${aFW}</td>
+                <td>${a?.fullName || ''}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        body.appendChild(table);
+        card.appendChild(body);
+        roundsContainer.appendChild(card);
+    });
 }
