@@ -239,11 +239,16 @@ async function GetPlayerProfilePic(_username)
 var selectedLeagueID = null;
 async function PopulateAdminLeagues (coordinatorID)
 {
-    const response = await supabase.from('tbl_leagues').select('*').eq('coordinatorID', coordinatorID);
-    console.log("Admin Leagues Response:", response.data);
-    const admin_leagues = response.data;
+    const { data, error } = await supabase.from('tbl_leagues').select('*').eq('coordinatorID', coordinatorID);
+    if (error) {
+        console.error('Error loading admin leagues:', error);
+        return;
+    }
+    console.log("Admin Leagues Response:", data);
+    const admin_leagues = data || [];
 
     const container = document.querySelector('#admin-leagues .d-flex');
+    if (!container) return;
     container.innerHTML = '';
     admin_leagues.forEach((league, idx) => {
         const btn = document.createElement('button');
@@ -255,12 +260,15 @@ async function PopulateAdminLeagues (coordinatorID)
             selectedLeagueID = league.id;
             console.log('Selected league:', league);
             PopulateLeagueRounds(selectedLeagueID);
+            PopulateLeaguePlayers(league);
             ResetLeagueSelection();
             btn.classList.remove('btn-info');
             btn.classList.add('btn-success');
-            // Unhide the admin-rounds element when a league is selected
+
             const adminRounds = document.getElementById('admin-rounds');
-            adminRounds.style.display = 'block';
+            if (adminRounds) adminRounds.style.display = 'block';
+            const adminPlayers = document.getElementById('admin-players');
+            if (adminPlayers) adminPlayers.style.display = 'block';
         });
         container.appendChild(btn);
     });
@@ -269,10 +277,15 @@ async function PopulateAdminLeagues (coordinatorID)
 var selectedRoundID = null;
 async function PopulateLeagueRounds (leagueID)
 {
-    const response = await supabase.from('tbl_tournaments').select('*').eq('leagueID', leagueID);
-    console.log("League Rounds Response:", response.data);
-    const leagueRounds = response.data;
+    const { data, error } = await supabase.from('tbl_tournaments').select('*').eq('leagueID', leagueID);
+    if (error) {
+        console.error('Error loading league rounds:', error);
+        return;
+    }
+    console.log("League Rounds Response:", data);
+    const leagueRounds = data || [];
     const container = document.querySelector('#admin-rounds .d-flex');
+    if (!container) return;
     container.innerHTML = '';
     leagueRounds.forEach((round, idx) => {
         const btn = document.createElement('button');
@@ -280,13 +293,107 @@ async function PopulateLeagueRounds (leagueID)
         btn.className = 'btn btn-warning';
         btn.id = `round-${idx}`;
         btn.textContent = round.name || round.date || `Round ${idx + 1}`;
-        // Optionally, add a click handler for each round button
         btn.addEventListener('click', () => {
-            // Handle round button click here   
             console.log('Selected round:', round);
             selectedRoundID = round.id;
             ResetRoundSelection();
             btn.classList.remove('btn-warning');
+            btn.classList.add('btn-success');
+            // Reset the 'Find Account' button for Player H when a round is selected
+            const findHBtn = document.getElementById('btn-account-find-H');
+            if (findHBtn) {
+                findHBtn.classList.remove('btn-success', 'btn-warning');
+                findHBtn.classList.add('btn-primary');
+                findHBtn.innerHTML = 'Find Account <i class="bi bi-search"></i>';
+            }
+            player_H_exists = false;
+
+            const findABtn = document.getElementById('btn-account-find-A');
+            if (findABtn) {
+                findABtn.classList.remove('btn-success', 'btn-warning');
+                findABtn.classList.add('btn-primary');
+                findABtn.innerHTML = 'Find Account <i class="bi bi-search"></i>';
+            }
+            player_A_exists = false;
+        });
+        container.appendChild(btn);
+    });
+}
+
+function ResetPlayerSelection ()
+{
+    // Reset the 'Find Account' button for Player H when a round is selected
+    const findHBtn = document.getElementById('btn-account-find-H');
+    if (findHBtn) {
+        findHBtn.classList.remove('btn-success', 'btn-warning');
+        findHBtn.classList.add('btn-primary');
+        findHBtn.innerHTML = 'Find Account <i class="bi bi-search"></i>';
+    }
+    player_H_exists = false;
+
+    const findABtn = document.getElementById('btn-account-find-A');
+    if (findABtn) {
+        findABtn.classList.remove('btn-success', 'btn-warning');
+        findABtn.classList.add('btn-primary');
+        findABtn.innerHTML = 'Find Account <i class="bi bi-search"></i>';
+    }
+    player_A_exists = false;
+
+    const playerButtons = document.querySelectorAll('#admin-players .d-flex button');
+    playerButtons.forEach(btn => {
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-primary');
+    });
+}
+
+async function PopulateLeaguePlayers (league)
+{
+    const container = document.querySelector('#admin-players .d-flex');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!league || !Array.isArray(league.players) || league.players.length === 0) {
+        return;
+    }
+
+    const usernames = league.players.filter(Boolean);
+    let profiles = [];
+    const { data, error } = await supabase
+        .from('tbl_players')
+        .select('id, username, name, nickname')
+        .in('username', usernames);
+
+    if (error) {
+        console.error('Error loading league players:', error);
+    } else {
+        profiles = data || [];
+    }
+
+    usernames.forEach((username, idx) => {
+        const p = profiles.find(pr => pr.username === username);
+        const label = (p && (p.nickname || p.name)) ? (p.nickname || p.name) : username;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-outline-primary';
+        btn.id = `player-${idx}`;
+        btn.textContent = label;
+        btn.title = username;
+        btn.addEventListener('click', () => {
+            console.log('Selected league player:', p || username);
+            const uname = p && p.username ? p.username : username;
+            const playerHInput = document.getElementById('player_H');
+            const playerAInput = document.getElementById('player_A');
+
+            if (!playerHInput.value || playerHInput.value.trim() === '') {
+                playerHInput.value = uname;
+            } else if (!playerAInput.value || playerAInput.value.trim() === '') {
+                playerAInput.value = uname;
+            } else {
+                playerHInput.value = uname;
+            }
+            ResetPlayerSelection();
+            btn.classList.remove('btn-outline-primary');
             btn.classList.add('btn-success');
         });
         container.appendChild(btn);
