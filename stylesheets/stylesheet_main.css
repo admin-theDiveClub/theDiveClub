@@ -1,0 +1,17 @@
+:root
+{
+    --color-base-00: #292929;
+    --color-base-01: #6b6b6b;
+    --color-base-10: #ffffff;
+}
+
+body
+{
+    background-color: var(--color-base-00);
+}
+
+.main
+{
+    padding-top: 8vh;
+    min-height: 100vh;
+}

@@ -1,0 +1,63 @@
+<div class="nav-bar-container">
+    <div class="row">        
+        <div class="col-2" id="icon-container-menu">
+            <button id="btn-nav-menu-toggle" class="nav-bar-button">
+                <img id="icon-nav-menu" src="../resources/icons/icon_menu.svg">
+            </button>
+        </div>
+        <div class="col-8" id="icon-container-TDC">
+            <button class="nav-bar-button">
+                <img id="icon-nav-bar" src="../resources/logo_TDC_Decomposed/icon_TDC_TextOnly.png">
+            </button>
+        </div>
+        <div class="col-2"></div>
+    </div>
+</div>
+
+<style>
+    .nav-bar-container 
+    {
+        background-color: transparent;
+        backdrop-filter: blur(10px);
+        position: fixed;
+        z-index: 1000;
+        width: 100vw;
+        height: 8vh;
+        
+    }
+
+    #icon-container-TDC
+    {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #icon-container-menu
+    {
+        padding: 0.5cap;
+        padding-left: 1cap;
+    }
+
+    .nav-bar-button
+    {
+        background-color: transparent;
+        border: none;
+    }
+
+    #icon-nav-bar 
+    {
+        max-height: 8vh;
+        max-width: 100%;
+        object-fit: contain;
+        padding: 0.5cap;
+    }
+    
+    #icon-nav-menu
+    {
+        max-height: 6vh;
+        max-width: 100%;
+        object-fit: contain;
+        padding: 1cap;
+    }
+</style>
