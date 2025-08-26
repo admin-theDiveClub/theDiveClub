@@ -12,6 +12,7 @@ addEventListener("DOMContentLoaded", () =>
     [
         "nav-bar",
         "nav-menu",
+        "siteMap",
         "footer"
     ]
 

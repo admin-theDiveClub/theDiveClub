@@ -1,17 +1,137 @@
 :root
 {
-    --color-base-00: #292929;
-    --color-base-01: #6b6b6b;
+    --color-base-00: #000000;
+    --color-base-01: #242424;
+    --color-base-02: #3f3f3f;
+    --color-base-03: #7c7c7c;
+    --color-base-04: #818181;
+    --color-base-05: #e6e6e6;
+    --color-base-06: #f0f0f0;
+    --color-base-07: #f9f9f9;
+    --color-base-08: #ffffff;
+    --color-base-09: #ffffff;
     --color-base-10: #ffffff;
+
+    --color-primary-00: #ff008c;
+    --color-primary-01: #830048;
+    --color-primary-02: #53002e;
+
+    --color-secondary-00: #0099ff;
+    --color-secondary-01: #005383;
+    --color-secondary-02: #003b53;
+}
+
+@font-face 
+{
+    font-family: 'Font_TDC';
+    src: url('../resources/Rushfordclean-rgz89.otf') format('opentype');
+    font-display: swap; /* Ensures text is displayed immediately */
+    ascent-override: 60%; /* Adjusts the ascent to reduce extra space */
+    descent-override: 0%; /* Adjusts the descent to reduce extra space */
+    line-gap-override: 0%; /* Removes additional line gap */
 }
 
 body
 {
-    background-color: var(--color-base-00);
+    background-color: var(--color-base-02);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--color-base-06);
 }
 
 .main
 {
     padding-top: 8vh;
-    min-height: 100vh;
+}
+
+.page-title
+{
+    font-family: 'Font_TDC';
+    text-align: center;
+    margin: 1.2em;
+    font-size: 2em;
+}
+
+.card
+{
+    background-color: var(--color-base-01);
+    margin: 2cap 0.2cap;
+    border: none;
+    box-shadow: 0px 0px 16px 4px var(--color-base-00);
+    color: var(--color-base-06);
+}
+
+.input-group
+{
+    padding: 2cap;
+}
+
+.form-label
+{
+    padding: 1cap 2cap;
+    color: var(--color-base-04);
+}
+
+.form-control
+{
+    background-color: transparent;
+    color: var(--color-base-06) !important;
+    border: none;
+    padding: 2cap;
+    box-shadow:  0px 0px 8px 0px var(--color-base-02);
+}
+
+.form-control:focus
+{
+    border: none;
+    background-color: transparent;
+    outline: none !important;
+    box-shadow:  0px 0px 8px 2px var(--color-primary-00);
+}
+
+.form-control::placeholder
+{
+    color: var(--color-base-03) !important;
+}
+
+.form-check-input
+{
+    margin: 1cap 0cap;
+    width: 2cap;
+    height: 2cap;
+    background-color: transparent;
+    border: none;
+    box-shadow:  0px 0px 8px 2px var(--color-base-02);
+}
+
+.form-check-input:checked
+{
+    border: none;
+    background-color: var(--color-primary-00);
+    box-shadow:  0px 0px 8px 2px var(--color-primary-00);    
+}
+
+.btn-standard
+{
+    background-color: var(--color-primary-00);
+    color: var(--color-base-06);
+    border: none;
+    padding: 1cap 2cap;
+    border-radius: 4cap;
+    box-shadow: 0px 0px 8px 2px var(--color-primary-01);
+    font-size: 1em;
+    margin: 1cap 1cap;
+}
+
+.btn-standard:hover
+{
+    background-color: var(--color-primary-00);
+    box-shadow: 0px 0px 8px 2px var(--color-secondary-00);
+    cursor: pointer;
+}
+
+.btn-standard:focus
+{
+    background-color: var(--color-secondary-00);
+    box-shadow: 0px 0px 8px 2px var(--color-secondary-00);
+    outline: none;
 }

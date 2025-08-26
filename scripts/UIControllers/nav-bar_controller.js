@@ -6,7 +6,7 @@ function ControlNavBar() {
 
     // Smooth hide/show
     nav.style.transform = 'translateY(0)';
-    nav.style.transition = 'transform 200ms ease';
+    nav.style.transition = 'transform 300ms ease';
     nav.style.willChange = 'transform';
 
     let lastY = window.scrollY || 0;
@@ -140,3 +140,109 @@ const menuObserver = new MutationObserver(() => {
     }
 });
 menuObserver.observe(document.body, { childList: true, subtree: true });
+
+
+// Fade in menu rows each time the nav menu opens
+(function () {
+    function initRowFader() {
+        const btn = document.querySelector('#btn-nav-menu-toggle');
+        const table = document.querySelector('.menu-table');
+        if (!btn || !table) return false;
+
+        const rows = Array.from(table.querySelectorAll('tbody tr'));
+        if (!rows.length) return false;
+
+        rows.forEach(r => {
+            r.style.opacity = '0';
+            r.style.transition = 'opacity 220ms ease';
+            r.style.willChange = 'opacity';
+        });
+
+        const reset = () => {
+            rows.forEach(r => {
+                r.style.transitionDelay = '0ms';
+                r.style.opacity = '0';
+            });
+        };
+
+        const fadeIn = () => {
+            rows.forEach((r, i) => {
+                r.style.transitionDelay = `${i * 60}ms`;
+                r.style.opacity = '1';
+            });
+        };
+
+        const handle = () => {
+            const open = btn.getAttribute('aria-expanded') === 'true';
+            if (open) {
+                reset();
+                requestAnimationFrame(fadeIn);
+            } else {
+                reset();
+            }
+        };
+
+        // Observe aria-expanded to trigger animation on open/close
+        const btnObserver = new MutationObserver(muts => {
+            for (const m of muts) {
+                if (m.type === 'attributes' && m.attributeName === 'aria-expanded') {
+                    handle();
+                    break;
+                }
+            }
+        });
+        btnObserver.observe(btn, { attributes: true, attributeFilter: ['aria-expanded'] });
+
+        // Run once in case it's already open
+        handle();
+        return true;
+    }
+
+    // Wait for elements to exist
+    if (!initRowFader()) {
+        const waitObserver = new MutationObserver(() => {
+            if (initRowFader()) waitObserver.disconnect();
+        });
+        waitObserver.observe(document.body, { childList: true, subtree: true });
+    }
+})();
+
+(function () {
+    function initRankedEventsToggle() {
+        const toggle = document.getElementById('ranked-events-toggle');
+        const submenuRow = document.getElementById('ranked-events-submenu');
+        if (!toggle || !submenuRow) return false;
+
+        const chevron = toggle.querySelector('.chevron');
+
+        const setState = (expanded) => {
+            toggle.setAttribute('aria-expanded', String(expanded));
+            submenuRow.style.display = expanded ? 'table-row' : 'none';
+            if (chevron) chevron.textContent = expanded ? '▾' : '▸';
+        };
+
+        setState(toggle.getAttribute('aria-expanded') === 'true');
+
+        const onActivate = (e) => {
+            if (e.type === 'click') e.preventDefault();
+            if (e.type === 'keydown') {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                e.preventDefault();
+            }
+            const next = toggle.getAttribute('aria-expanded') !== 'true';
+            setState(next);
+        };
+
+        toggle.addEventListener('click', onActivate);
+        toggle.addEventListener('keydown', onActivate);
+
+        return true;
+    }
+
+    if (!initRankedEventsToggle()) {
+        const observer = new MutationObserver(() => {
+            if (initRankedEventsToggle()) observer.disconnect();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+})();

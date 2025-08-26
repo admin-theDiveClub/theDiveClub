@@ -1,7 +1,31 @@
 <div id="nav-menu-container">
     <div class="row">
         <div id="nav-menu-body" class="col-sm-8 col-lg-4">
-            
+            <table class="menu-table">
+                <tbody>
+                    <tr><td><a href="#home">Home</a></td></tr>
+                    <tr><td><a href="#trips">Profile</a></td></tr>
+                    <tr><td><a href="#training">Live Scoring</a></td></tr>
+                    <tr id="ranked-events-row">
+                        <td href="#members" id="ranked-events-toggle" role="button" aria-expanded="false" aria-controls="ranked-events-submenu">
+                            <p>
+                                <span class="chevron" aria-hidden="true">▸</span> Ranked Events
+                            </p>
+                        </td>
+                    </tr>
+                    <tr id="ranked-events-submenu" style="display:none;">
+                        <td>
+                            <div role="group" aria-label="Ranked Events" style="display:flex; flex-direction:column; gap:8px;">
+                                <button type="button" onclick="location.hash='series'">Series</button>
+                                <button type="button" onclick="location.hash='leagues'">Leagues</button>
+                                <button type="button" onclick="location.hash='tournaments'">Tournaments</button>
+                                <button type="button" onclick="location.hash='matches'">Matches</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr><td><a href="#contact">Contact</a></td></tr>
+                </tbody>
+            </table>
         </div>
         <div class="col-sm-4 col-lg-8"></div>
     </div>
@@ -20,7 +44,49 @@
     #nav-menu-body 
     {
         height: 92vh;
-        background-color: rgba(129, 58, 0, 0.5);
         backdrop-filter: blur(10px);
+        padding: 2cap;
+        overflow-y: auto;
+        -ms-overflow-style: none; /* IE/Edge legacy */
+        scrollbar-width: none; /* Firefox */
+    }
+        
+    #nav-menu-body::-webkit-scrollbar 
+    {
+        width: 0;
+        height: 0;
+    }
+
+    .menu-table 
+    { 
+        width: 100%; 
+        border-collapse: collapse;
+    }
+
+    .menu-table td 
+    { 
+        padding: 14px 16px; 
+        border-bottom: 1px solid rgba(255,255,255,.25); 
+        font-size: large;
+    }
+
+    .menu-table a
+    { 
+        display: block; 
+        width: 100%; 
+        text-decoration: none; 
+        color: #fff; 
+    }
+
+    .menu-table tr:hover 
+    { 
+        background: rgba(255,255,255,.08); 
+        cursor: pointer; 
+    }
+
+    .menu-table tr:focus-within 
+    { 
+        outline: 2px solid rgba(255,255,255,.6); 
+        outline-offset: -2px; 
     }
 </style>
