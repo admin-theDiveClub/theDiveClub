@@ -43,6 +43,17 @@ body
     padding-top: 8vh;
 }
 
+a
+{
+    color: var(--color-primary-01);    
+}
+
+a:hover
+{
+    color: var(--color-secondary-00);
+    text-decoration: none;
+}
+
 .page-title
 {
     font-family: 'Font_TDC';
@@ -124,14 +135,28 @@ body
 
 .btn-standard:hover
 {
-    background-color: var(--color-primary-00);
+    background-color: var(--color-secondary-00);
     box-shadow: 0px 0px 8px 2px var(--color-secondary-00);
     cursor: pointer;
 }
 
 .btn-standard:focus
 {
-    background-color: var(--color-secondary-00);
     box-shadow: 0px 0px 8px 2px var(--color-secondary-00);
     outline: none;
+}
+
+.btn-tool
+{
+    background-color: transparent;
+}
+
+.btn-warning
+{
+    background-color: var(--color-base-00);
+}
+
+.btn-warning:hover
+{
+    background-color: var(--color-base-03);
 }
