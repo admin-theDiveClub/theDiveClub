@@ -1,24 +1,28 @@
 :root
 {
-    --color-base-00: #000000;
-    --color-base-01: #242424;
-    --color-base-02: #3f3f3f;
-    --color-base-03: #7c7c7c;
-    --color-base-04: #818181;
-    --color-base-05: #e6e6e6;
-    --color-base-06: #f0f0f0;
-    --color-base-07: #f9f9f9;
-    --color-base-08: #ffffff;
-    --color-base-09: #ffffff;
-    --color-base-10: #ffffff;
+    /* Gradient between base-00 and base-05 */
+    --color-base-00: rgb(0, 0, 0);
+    --color-base-01: rgb(12, 12, 23);
+    --color-base-02: rgb(24, 24, 44);
+    --color-base-03: rgb(36, 36, 65);
+    --color-base-04: rgb(48, 48, 76);
+    --color-base-05: rgb(59, 60, 87);
+    --color-base-05: rgb(59, 60, 87);
+    --color-base-06: rgb(59, 60, 87);
+    --color-base-07: rgb(102, 93, 119);
+    --color-base-08: rgb(146, 126, 153);
+    --color-base-09: rgb(190, 177, 172);
+    --color-base-10: rgb(234, 228, 191);
 
-    --color-primary-00: #ff008c;
-    --color-primary-01: #830048;
-    --color-primary-02: #53002e;
+    --color-primary-00: rgb(229, 21, 119);
+    --color-primary-01: rgb(170, 20, 90);
+    --color-primary-02: rgb(70, 8, 37);
 
-    --color-secondary-00: #0099ff;
-    --color-secondary-01: #005383;
-    --color-secondary-02: #003b53;
+    --color-secondary-00: rgb(2, 200, 237);
+    --color-secondary-01: rgb(3, 134, 158);
+    --color-secondary-02: rgb(3, 68, 80);
+
+    --color-highlight-0 : rgb(207, 190, 0);
 }
 
 @font-face 
@@ -35,7 +39,7 @@ body
 {
     background-color: var(--color-base-02);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: var(--color-base-06);
+    color: var(--color-base-10);
 }
 
 .main
@@ -45,7 +49,7 @@ body
 
 a
 {
-    color: var(--color-primary-01);    
+    color: var(--color-base-08);    
 }
 
 a:hover
@@ -64,11 +68,11 @@ a:hover
 
 .card
 {
-    background-color: var(--color-base-01);
+    background-color: var(--color-base-03);
     margin: 2cap 0.2cap;
     border: none;
     box-shadow: 0px 0px 16px 4px var(--color-base-00);
-    color: var(--color-base-06);
+    color: var(--color-base-09);
 }
 
 .input-group
@@ -79,16 +83,24 @@ a:hover
 .form-label
 {
     padding: 1cap 2cap;
-    color: var(--color-base-04);
+    color: var(--color-base-09);
 }
 
 .form-control
 {
     background-color: transparent;
-    color: var(--color-base-06) !important;
+    color: var(--color-base-10) !important;
     border: none;
     padding: 2cap;
-    box-shadow:  0px 0px 8px 0px var(--color-base-02);
+    box-shadow:  0px 0px 4px 0px var(--color-base-10);
+}
+
+.form-control:hover
+{
+    border: none;
+    background-color: transparent;
+    box-shadow:  0px 0px 8px 2px var(--color-base-10);
+    color: var(--color-base-10) !important;
 }
 
 .form-control:focus
@@ -101,7 +113,7 @@ a:hover
 
 .form-control::placeholder
 {
-    color: var(--color-base-03) !important;
+    color: var(--color-base-08) !important;
 }
 
 .form-check-input
@@ -111,7 +123,14 @@ a:hover
     height: 2cap;
     background-color: transparent;
     border: none;
-    box-shadow:  0px 0px 8px 2px var(--color-base-02);
+    box-shadow:  0px 0px 4px 0px var(--color-base-10);
+}
+
+.form-check-input:hover
+{
+    border: none;
+    background-color: transparent;
+    box-shadow:  0px 0px 8px 2px var(--color-base-10);    
 }
 
 .form-check-input:checked
@@ -124,25 +143,28 @@ a:hover
 .btn-standard
 {
     background-color: var(--color-primary-00);
-    color: var(--color-base-06);
+    color: var(--color-base-10);
     border: none;
     padding: 1cap 2cap;
     border-radius: 4cap;
-    box-shadow: 0px 0px 8px 2px var(--color-primary-01);
+    box-shadow: 0px 0px 4px 0px var(--color-base-10);
     font-size: 1em;
     margin: 1cap 1cap;
 }
 
 .btn-standard:hover
 {
-    background-color: var(--color-secondary-00);
-    box-shadow: 0px 0px 8px 2px var(--color-secondary-00);
+    background-color: var(--color-base-10);
+    box-shadow: 0px 0px 8px 2px var(--color-base-00);
+    color: var(--color-base-00);
     cursor: pointer;
 }
 
 .btn-standard:focus
 {
-    box-shadow: 0px 0px 8px 2px var(--color-secondary-00);
+    box-shadow: 0px 0px 8px 2px var(--color-base-10);
+    background-color: var(--color-base-10);
+    color: var(--color-base-00);
     outline: none;
 }
 
@@ -158,5 +180,6 @@ a:hover
 
 .btn-warning:hover
 {
-    background-color: var(--color-base-03);
+    background-color: var(--color-base-02);
+    color: var(--color-secondary-00);
 }
