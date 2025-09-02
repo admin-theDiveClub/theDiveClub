@@ -24,9 +24,11 @@
 
 <body>
 
+    <div id="component-nav-bar"></div>
+
     <div class="main">
 
-        <div class="card" id="tournament-players">
+        <div style="display: none;" class="card" id="tournament-players">
             <div class="card-title">Eligible Players</div>
             <div class="card-body">
                 <button class="btn-standard btn-select-player">Player 0</button>
@@ -37,7 +39,7 @@
             </div>
         </div>
 
-        <div class="card">
+        <div style="display: none;" class="card">
             <div class="card-body">
                 <div id="rounds-buttons">
                     <button class="btn-standard">Round 1</button>
@@ -400,33 +402,33 @@
         </div>
 
         <div class="card" id="tournament-data">
-            <table class="table-ranking">
-                <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th>Player</th>
-                        <th>MP</th>
-                        <th>MW</th>
-                        <th>ML</th>
-                        <th>FP</th>
-                        <th>FW</th>
-                        <th>F%</th>
-                        <th>B/F</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>Player 0</td>
-                        <td>2</td>
-                        <td>1</td>
-                        <td>1</td>
-                        <td>13</td>
-                        <td>8</td>
-                        <td>61.5%</td>
-                        <td>1</td>
-                    </tr>
-                </tbody>
+            <table class="table-ranking" style="background-color: transparent;">
+                    <thead>
+                            <tr>
+                                    <th>Rank</th>
+                                    <th>Player</th>
+                                    <th>MP</th>
+                                    <th>MW</th>
+                                    <th>ML</th>
+                                    <th>FP</th>
+                                    <th>FW</th>
+                                    <th>F%</th>
+                                    <th>B/F</th>
+                            </tr>
+                    </thead>
+                    <tbody>
+                            <tr>
+                                    <td>1</td>
+                                    <td>Player 0</td>
+                                    <td>2</td>
+                                    <td>1</td>
+                                    <td>1</td>
+                                    <td>13</td>
+                                    <td>8</td>
+                                    <td>61.5%</td>
+                                    <td>1</td>
+                            </tr>
+                    </tbody>
             </table>
         </div>
 
@@ -785,9 +787,15 @@
             background-color: var(--color-primary-00);
             color: var(--color-base-02);            
         }
-    </style>
 
-    <div id="component-siteMap"></div>
+        .card-title
+        {
+            font-family: 'Font_TDC';
+            font-size: 2rem;
+            text-align: center;
+            padding: 2cap;
+        }
+    </style>
 
     <div id="component-footer"></div>
 

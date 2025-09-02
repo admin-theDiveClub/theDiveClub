@@ -972,8 +972,13 @@ function UpdateLeaderboardUI (leaderboard)
 
     tbody.innerHTML = "";
 
-    leaderboard.forEach(entry => {
+    // Row colors
+    const rowColorA = "rgb(59, 60, 87)"; // primary row color
+    const rowColorB = "rgb(36, 36, 65)"; // alternate row color
+
+    leaderboard.forEach((entry, idx) => {
         const tr = document.createElement("tr");
+        tr.style.backgroundColor = (idx % 2 === 0) ? rowColorA : rowColorB;
         tr.innerHTML = `
             <td>${entry.rank}</td>
             <td>${entry.player}</td>
