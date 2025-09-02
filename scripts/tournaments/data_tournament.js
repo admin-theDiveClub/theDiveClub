@@ -175,7 +175,7 @@ function CompileTournamentData(tournament, matches)
             const playerObj = side ? match.players?.[side] : null;
             if (playerObj)
             {
-                PlayerName = playerObj.nickname ? playerObj.nickname : playerObj.fullName ? playerObj.fullName : playerObj.username ? playerObj.username : username;
+                PlayerName = playerObj.nickname ? (playerObj.nickname !== "Guest" ? playerObj.nickname : playerObj.fullName ? playerObj.fullName : playerObj.username ? playerObj.username : username) : username;
             } else {
                 PlayerName = username || "";
             }
@@ -475,8 +475,8 @@ function CreateTournamentVisualization(tournamentRounds)
             card.classList.add('match-complete');
         } else {
             // not complete: if both players present, mark as active
-            const pA = match && match.players && match.players.a;
-            const pH = match && match.players && match.players.h;
+            const pA = match && match.players && match.players.a && match.players.a.username;
+            const pH = match && match.players && match.players.h && match.players.h.username;
             if (pA != null && pH != null) {
                 card.classList.add('match-active');
             }
@@ -495,7 +495,17 @@ function CreateTournamentVisualization(tournamentRounds)
             const tdPlayer = document.createElement('td');
             tdPlayer.className = 'match-player';
             const p = match && match.players && match.players[side];
-            tdPlayer.textContent = p ? (p.nickname === 'Guest' ? p.fullName : p.nickname || p.fullName || p.username || '') : (side === 'h' ? '-' : '-');
+            var pName = null;
+            if (p)
+            {
+                pName = p.nickname ? p.nickname === 'Guest' ? null : p.nickname : null;
+                if (!pName)
+                {
+                    pName = p.fullName ? p.fullName : p.username ? p.username : 'null';
+                }
+            }
+            
+            tdPlayer.textContent = pName ? pName : '-';
 
             const tdScore = document.createElement('td');
             tdScore.className = 'match-score';
@@ -755,7 +765,12 @@ function loadSelectedRoundRaw() {
 // Helpers
 function displayName(p) {
     if (!p) return "";
-    return p.nickname || p.fullName || p.name || p.username || "";
+    var pName = p.nickname ? p.nickname === 'Guest' ? null : p.nickname : null;
+    if (!pName)
+    {
+        pName = p.fullName ? p.fullName : p.username ? p.username : 'null';
+    }
+    return pName;
 }
 function clonePlayer(p) {
     return p ? JSON.parse(JSON.stringify(p)) : null;
@@ -974,6 +989,113 @@ function UpdateLeaderboardUI (leaderboard)
     });
 }
 
+// Wire "Randomize" button to shuffle eligible players order and update tournament.players in DB
+(function wireRandomizeEligibleButton() {
+    const btn = Array.from(document.querySelectorAll('button.btn-standard'))
+        .find(b => (b.textContent || '').trim().toLowerCase() === 'randomize');
+    if (!btn || btn.dataset.wired) return;
+    btn.dataset.wired = '1';
+
+    const shuffle = (arr) => {
+        const a = Array.isArray(arr) ? arr.slice() : [];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    };
+
+    btn.addEventListener('click', async (ev) => {
+        ev?.preventDefault?.();
+
+        // Ensure we have the latest data
+        const t = tournament;
+        const m = matches;
+        let lb = leaderboard;
+
+        if (!t || !Array.isArray(m)) {
+            console.warn('Cannot randomize eligible players: tournament or matches missing');
+            return;
+        }
+
+        // If leaderboard not available, compute it
+        if (!Array.isArray(lb)) {
+            lb = CompileTournamentData(t, m) || [];
+        }
+
+        // Shuffle a copy of the leaderboard so other UIs (ranking) remain intact
+        const shuffledLeaderboard = shuffle(lb);
+
+        // Build players index for resolving usernames/display names
+        const playersIndex = buildPlayersIndex(t, m);
+
+        // Construct new players list for tournament.players using usernames only
+        const newPlayers = shuffledLeaderboard.map(entry => {
+            const disp = entry.player;
+            // Prefer lookup by display -> player object with username
+            const byDisp = playersIndex.byDisplay.get(disp);
+            if (byDisp && byDisp.username) return byDisp.username;
+
+            // If the display string actually is a username present in byUsername map
+            if (playersIndex.byUsername.has(disp)) return disp;
+
+            // Try to match by comparing known player objects' displayName
+            for (const [uname, pobj] of playersIndex.byUsername.entries()) {
+                if (displayName(pobj) === disp || pobj.fullName === disp || pobj.nickname === disp) {
+                    return uname;
+                }
+            }
+
+            // Fallback: coerce to string (best-effort username)
+            return String(disp || '');
+        });
+        
+        UpdateEligiblePlayersUI(tournament, matches, leaderboard, playersIndex);
+
+        // Persist to DB
+        try {
+            btn.disabled = true;
+            // Use tournament id if available, otherwise try GetTournamentID()
+            const tid = t?.id ?? GetTournamentID();
+            if (!tid) {
+                throw new Error('No tournament id available to persist players');
+            }
+
+            console.log('Persisting randomized players to DB:', newPlayers);
+
+            const response = await supabase
+                .from('tbl_tournaments')
+                .update({ players: newPlayers })
+                .eq('id', tid)
+                .select('*');
+
+            if (response.error) {
+                console.error('Failed to update tournament players', response.error);
+                alert('Could not save randomized players. See console for details.');
+                // revert UI by reloading current tournament/matches
+                await Start();
+                return;
+            } else 
+            {
+                console.log('Successfully updated tournament players', response.data);
+            }
+
+            // Refresh local tournament and UI
+            tournament = response.data || await GetTournament(tid);
+            matches = await GetTournamentMatches(tid);
+            leaderboard = CompileTournamentData(tournament, matches);
+            UpdateUI(tournament, matches, leaderboard);
+            // ensure selection cleared
+            clearActiveSelection();
+        } finally {
+            btn.disabled = false;
+            await Start();
+        }
+    });
+})();
+
+
+
 function UpdateEligiblePlayersUI (tournament, matches, leaderboard, playersIndex)
 {
     const cardBody = document.querySelector("#tournament-players .card-body");
@@ -1036,7 +1158,7 @@ function UpdateRoundsMatchesUI (matches, playersIndex)
         if (activeSelection.type === 'match' && activeSelection.el === btn) {
             match.players[side] = null;
             await saveMatchPlayers(matchId, match.players);
-            btn.textContent = side === 'a' ? 'Player A' : 'Player H';
+            btn.textContent = side === null ? '-' : side === 'a' ? 'Player A' : side === 'h' ? 'Player H' : '?';
             clearActiveSelection();
             return;
         }
@@ -1051,7 +1173,7 @@ function UpdateRoundsMatchesUI (matches, playersIndex)
             }
             match.players[side] = newPlayer;
             await saveMatchPlayers(matchId, match.players);
-            btn.textContent = displayName(newPlayer) || (side === 'a' ? 'Player A' : 'Player H');
+            btn.textContent = displayName(newPlayer) || (side === null ? '-' : side === 'a' ? 'Player A' : side === 'h' ? 'Player H' : '?');
             clearActiveSelection();
             return;
         }
@@ -1083,8 +1205,8 @@ function UpdateRoundsMatchesUI (matches, playersIndex)
             await saveMatchPlayers(matchId, matchB.players);
 
             // Update UI labels
-            aBtn.textContent = displayName(matchA.players[aSide]) || (aSide === 'a' ? 'Player A' : 'Player H');
-            btn.textContent = displayName(matchB.players[side]) || (side === 'a' ? 'Player A' : 'Player H');
+            aBtn.textContent = displayName(matchA.players[aSide]) || (aSide === null ? '-' : aSide === 'a' ? 'Player A' : aSide === 'h' ? 'Player H' : '?');
+            btn.textContent = displayName(matchB.players[side]) || (side === null ? '-' : side === 'a' ? 'Player A' : side === 'h' ? 'Player H' : '?');
 
             clearActiveSelection();
             return;
@@ -1112,7 +1234,7 @@ function UpdateRoundsMatchesUI (matches, playersIndex)
             tdPlayerH.className = "match-player";
             const btnH = document.createElement("button");
             btnH.className = "btn-standard btn-select-player";
-            btnH.textContent = match.players && match.players.h ? displayName(match.players.h) : "Player H";
+            btnH.textContent = match.players && match.players.h ? displayName(match.players.h) : "-";
             btnH.dataset.matchId = match.id;
             btnH.dataset.side = 'h';
             btnH.addEventListener('click', () => onMatchPlayerClick(match.id, 'h', btnH));
@@ -1136,7 +1258,7 @@ function UpdateRoundsMatchesUI (matches, playersIndex)
             tdPlayerA.className = "match-player";
             const btnA = document.createElement("button");
             btnA.className = "btn-standard btn-select-player";
-            btnA.textContent = match.players && match.players.a ? displayName(match.players.a) : "Player A";
+            btnA.textContent = match.players && match.players.a ? displayName(match.players.a) : "-";
             btnA.dataset.matchId = match.id;
             btnA.dataset.side = 'a';
             btnA.addEventListener('click', () => onMatchPlayerClick(match.id, 'a', btnA));
@@ -1350,7 +1472,7 @@ function getActiveRoundSelection() {
             }
 
             const newMatch = {
-                info: { round: value, status: 'Live' },
+                info: { round: value, status: 'New' },
                 competitions: { tournamentID },
                 players: { a: null, h: null },
                 results: {
