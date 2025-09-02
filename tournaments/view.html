@@ -23,16 +23,23 @@
 </head>
 
 <body>
-
     <div id="component-nav-bar"></div>
 
     <div class="main">
+
+        <div class="card" style="padding: 2cap;">
+            <p id="t-name" style="font-family: 'Font_TDC'; font-size: x-large;">Tournament Name</p>
+            <p id="t-venue">Venue</p>
+            <p id="t-date">Date</p>
+            <p id="t-time">Time</p>
+            <p id="t-max-entries">Max Entries</p>
+        </div> 
 
         <div style="display: none;" class="card">
             <div class="input-group">
                 <div class="w-100 flex-column">
                     <label for="text-input" class="form-label">Enter text:</label>
-                    <input id="text-input" type="text" class="form-control" placeholder="Enter text">
+                    <textarea id="text-input" class="form-control" placeholder="Enter text" rows="6" aria-label="Enter text"></textarea>
                 </div>
             </div>
             <button class="btn-standard" id="btn-update-players">Update Players List</button>
@@ -412,33 +419,33 @@
         </div>
 
         <div class="card" id="tournament-data">
-            <table class="table-ranking" style="background-color: transparent;">
-                    <thead>
-                            <tr>
-                                    <th>Rank</th>
-                                    <th>Player</th>
-                                    <th>MP</th>
-                                    <th>MW</th>
-                                    <th>ML</th>
-                                    <th>FP</th>
-                                    <th>FW</th>
-                                    <th>F%</th>
-                                    <th>B/F</th>
-                            </tr>
-                    </thead>
-                    <tbody>
-                            <tr>
-                                    <td>1</td>
-                                    <td>Player 0</td>
-                                    <td>2</td>
-                                    <td>1</td>
-                                    <td>1</td>
-                                    <td>13</td>
-                                    <td>8</td>
-                                    <td>61.5%</td>
-                                    <td>1</td>
-                            </tr>
-                    </tbody>
+            <table class="table-ranking">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>MP</th>
+                        <th>MW</th>
+                        <th>ML</th>
+                        <th>FP</th>
+                        <th>FW</th>
+                        <th>F%</th>
+                        <th>B/F</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>Player 0</td>
+                        <td>2</td>
+                        <td>1</td>
+                        <td>1</td>
+                        <td>13</td>
+                        <td>8</td>
+                        <td>61.5%</td>
+                        <td>1</td>
+                    </tr>
+                </tbody>
             </table>
         </div>
 
@@ -737,8 +744,8 @@
         {
             text-align: center;
             max-width: 10vw;
-            font-family: 'Font_TDC';
             font-size: large;
+            font-weight: 900;
         }
 
         .btn-standard
@@ -796,14 +803,6 @@
         {
             background-color: var(--color-primary-00);
             color: var(--color-base-02);            
-        }
-
-        .card-title
-        {
-            font-family: 'Font_TDC';
-            font-size: 2rem;
-            text-align: center;
-            padding: 2cap;
         }
     </style>
 

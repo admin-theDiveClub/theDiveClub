@@ -868,7 +868,7 @@ async function saveMatchPlayers(matchId, players) {
             console.error('Failed to save match players', error);
         } else 
         {
-            await Start(); // Refresh entire UI for simplicity
+            //await Start(); // Refresh entire UI for simplicity
         }
     } catch (e) {
         console.error('Exception saving match players', e);
@@ -882,7 +882,7 @@ async function saveMatchResults(matchId, results) {
             console.error('Failed to save match results', error);
         } else 
         {
-            await Start(); // Refresh entire UI for simplicity
+            //await Start(); // Refresh entire UI for simplicity
         }
     } catch (e) {
         console.error('Exception saving match results', e);
@@ -894,7 +894,7 @@ async function saveMatchInfo(matchId, info) {
         if (error) {
             console.error('Failed to save match info', error);
         } else {
-            await Start(); // Refresh entire UI for simplicity
+            //await Start(); // Refresh entire UI for simplicity
         }
     } catch (e) {
         console.error('Exception saving match info', e);
