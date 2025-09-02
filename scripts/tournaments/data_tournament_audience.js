@@ -212,21 +212,33 @@ function CreateTournamentVisualization (matches)
 
         // Matches in this round
         r.list.forEach((match) => {
-            // Resolve sides and results
-            const players = match?.players || {};
-            const results = match?.results || {};
-            const pH =
-                players.h ||
-                players.home ||
-                Object.values(players)[0] ||
+            // Robustly resolve side keys to avoid duplicating a player when the other side is null
+            const playersObj = match?.players || {};
+            const playerKeys = Object.keys(playersObj);
+
+            // Prefer explicit 'h'/'home' and 'a'/'away' keys, otherwise pick first non-null as home and next non-null as away
+            const homeKey =
+                playerKeys.find(k => k === 'h' || k === 'home') ||
+                playerKeys.find(k => playersObj[k]); // first truthy value
+            const awayKey =
+                playerKeys.find(k => k === 'a' || k === 'away') ||
+                playerKeys.find(k => playersObj[k] && k !== homeKey) || null;
+
+            const pH = homeKey ? playersObj[homeKey] : null;
+            const pA = awayKey ? playersObj[awayKey] : null;
+
+            // Resolve matching results for the chosen keys (fallbacks for different naming)
+            const resultsObj = match?.results || {};
+            const rH =
+                (homeKey && resultsObj[homeKey]) ||
+                resultsObj.home ||
+                resultsObj.h ||
                 {};
-            const pA =
-                players.a ||
-                players.away ||
-                Object.values(players)[1] ||
+            const rA =
+                (awayKey && resultsObj[awayKey]) ||
+                resultsObj.away ||
+                resultsObj.a ||
                 {};
-            const rH = results.h || results.home || {};
-            const rA = results.a || results.away || {};
 
             const nameH = displayName(pH) || 'Player H';
             const nameA = displayName(pA) || 'Player A';
@@ -235,8 +247,8 @@ function CreateTournamentVisualization (matches)
 
             // Card
             const card = document.createElement('div');
-
-            card.className = 'card mb-3' + (match?.info.status === 'Complete' ? ' card-match-ended' : match?.info.status === 'Live' ? ' card-match-live' : '');
+            const status = match?.info?.status;
+            card.className = 'card mb-3' + (status === 'Complete' ? ' card-match-ended' : status === 'Live' ? ' card-match-live' : '');
 
             const table = document.createElement('table');
             table.className = 'w-100';

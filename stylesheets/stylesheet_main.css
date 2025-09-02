@@ -7,7 +7,6 @@
     --color-base-03: rgb(36, 36, 65);
     --color-base-04: rgb(48, 48, 76);
     --color-base-05: rgb(59, 60, 87);
-    --color-base-05: rgb(59, 60, 87);
     --color-base-06: rgb(59, 60, 87);
     --color-base-07: rgb(102, 93, 119);
     --color-base-08: rgb(146, 126, 153);
@@ -69,7 +68,7 @@ a:hover
 .card
 {
     background-color: var(--color-base-03);
-    margin: 2cap 0.2cap;
+    margin: 1cap 0.2cap;
     border: none;
     box-shadow: 0px 0px 16px 4px var(--color-base-00);
     color: var(--color-base-09);

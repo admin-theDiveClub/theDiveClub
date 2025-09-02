@@ -15,6 +15,9 @@
     <!--Custom CSS-->
     <link href="../stylesheets/styleSheet_main.css" rel="stylesheet">    
 
+    <script src="https://cdn.jsdelivr.net/npm/leader-line@1.0.7/leader-line.min.js"></script>
+
+
     <title>TDC: Tournament</title>
     <link rel="icon" href="../resources/icon_TDC.ico">
 </head>
@@ -26,33 +29,674 @@
 
     <div class="main">
 
-        <div id="tournamentVisualization" class="card">
-            <div class="row">
-                <div class="col-lg-2">
-                    <div class="card">
-                        <table>
-                            <tbody>
-                                <tr>
-                                    <td class="match-player">Player H</td>
-                                    <td class="match-score">0</td>
-                                </tr>
-                                <tr>
-                                    <td class="match-player">Player A</td>
-                                    <td class="match-score">0</td>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>   
+        <div style="display: none;" class="card" id="tournament-players">
+            <div class="card-title">Eligible Players</div>
+            <div class="card-body">
+                <button class="btn-standard btn-select-player">Player 0</button>
+            </div>
+            <div class="card-footer">
+                <button class="btn-standard">Randomize</button>
+                <button class="btn-standard">Load Eligible Players</button>
+            </div>
+        </div>
+
+        <div style="display: none;" class="card">
+            <div class="card-body">
+                <div id="rounds-buttons">
+                    <button class="btn-standard">Round 1</button>
+                    <button class="btn-standard">Round 2</button>
+                </div>
+                <button id="btn-add-round" class="btn-standard btn-tool">Add Round</button>
+                <hr class="my-3">
+                
+                <button class="btn-standard btn-warning">Delete Round</button>
+                <button class="btn-standard btn-tool">Add Match</button>
+
+                <div style="display: none;" class="row">
+
+                    <div class="col-md-3">
+                        <div class="card component-match-editing">
+                            <div class="card-title"><a href="#">XXXX-XXXX-XXXX-XXXX</a></div>
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="match-player"><button class="btn-standard btn-select-player">Player H</button></td>
+                                        <td class="match-score">
+                                            <input type="text" class="form-control" placeholder="0">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="match-player"><button class="btn-standard btn-select-player">Player A</button></td>
+                                        <td class="match-score">
+                                            <input type="text" class="form-control" placeholder="0">
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <button class="btn-standard">Start/End Match</button>
+                            <button class="btn-standard  btn-warning">Delete Match</button>    
+                        </div>
+
+                        <div class="card">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="match-player">Player H</td>
+                                        <td class="match-score">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="match-player">Player A</td>
+                                        <td class="match-score">0</td>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <button class="btn-standard">Edit Match</button>     
+                        </div>
+
+                        <div class="card">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="match-player">Player H</td>
+                                        <td class="match-score">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="match-player">Player A</td>
+                                        <td class="match-score">0</td>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>   
+                        </div>
+
+                    </div>                    
+
+                </div>
+
+                <div class="row" id="grp-matches">
+
+                    <div class="col-md-3">
+                        <div class="card component-match-editing">
+                            <div class="card-title"><a href="#">XXXX-XXXX-XXXX-XXXX</a></div>
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="match-player"><button class="btn-standard btn-select-player">Player H</button></td>
+                                        <td class="match-score">
+                                            <input type="text" class="form-control" placeholder="0">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="match-player"><button class="btn-standard btn-select-player">Player A</button></td>
+                                        <td class="match-score">
+                                            <input type="text" class="form-control" placeholder="0">
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <button class="btn-standard">Start/End Match</button>
+                            <button class="btn-standard  btn-warning">Delete Match</button>    
+                        </div>
+                    </div>
+                    <div class="col-md-3"></div> 
+                    <div class="col-md-3"></div>
+                    <div class="col-md-3"></div>            
+
+                </div>
+            </div>
+        </div>
+
+        <div class="card" id="tournament-visualization">
+            <div class="card-title">Tournament Visualization</div>
+            <div class="card-body">
+
+                <div class="row">
+                    <div class="col-1 col-tournamentVisualization">
+                        <div class="card match-mini">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="match-player">Player H</td>
+                                        <td class="match-score">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="match-player">Player A</td>
+                                        <td class="match-score">0</td>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>   
+                        </div>
+                    
+                        <div class="card match-mini">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="match-player">Player H</td>
+                                        <td class="match-score">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="match-player">Player A</td>
+                                        <td class="match-score">0</td>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>   
+                        </div>
+                        
+                        <div class="card match-mini">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="match-player">Player H</td>
+                                        <td class="match-score">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="match-player">Player A</td>
+                                        <td class="match-score">0</td>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>   
+                        </div>
+                        
+                        <div class="card match-mini">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="match-player">Player H</td>
+                                        <td class="match-score">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="match-player">Player A</td>
+                                        <td class="match-score">0</td>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>   
+                        </div>
+                    </div>
+                    <div class="col-2 col-tournamentVisualization">
+                        <div class="card match-mini">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="match-player">Player H</td>
+                                        <td class="match-score">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="match-player">Player A</td>
+                                        <td class="match-score">0</td>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>   
+                        </div>
+                        <div class="card match-mini">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="match-player">Player H</td>
+                                        <td class="match-score">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="match-player">Player A</td>
+                                        <td class="match-score">0</td>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>   
+                        </div>
+                    </div>
+                    <div class="col-2 col-tournamentVisualization">
+                        <div class="card match-mini">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="match-player">Player H</td>
+                                        <td class="match-score">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="match-player">Player A</td>
+                                        <td class="match-score">0</td>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>   
+                        </div>
+                    </div>
+                    <div class="col-2 col-tournamentVisualization">
+                        <div class="card match-mini">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="match-player">Player H</td>
+                                        <td class="match-score">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="match-player">Player A</td>
+                                        <td class="match-score">0</td>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>   
+                        </div>
+                    </div>
+                    <div class="col-2 col-tournamentVisualization">
+                        <div class="card match-mini">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="match-player">Player H</td>
+                                        <td class="match-score">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="match-player">Player A</td>
+                                        <td class="match-score">0</td>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>   
+                        </div>
+                    </div>
+                    <div class="col-2 col-tournamentVisualization">
+                        <div class="card match-mini">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="match-player">Player H</td>
+                                        <td class="match-score">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="match-player">Player A</td>
+                                        <td class="match-score">0</td>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>   
+                        </div>
+                        <div class="card match-mini">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="match-player">Player H</td>
+                                        <td class="match-score">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="match-player">Player A</td>
+                                        <td class="match-score">0</td>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>   
+                        </div>
+                    </div>
+                    <div class="col-1 col-tournamentVisualization">
+                        <div class="card match-mini">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="match-player">Player H</td>
+                                        <td class="match-score">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="match-player">Player A</td>
+                                        <td class="match-score">0</td>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>   
+                        </div>
+                    
+                        <div class="card match-mini">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="match-player">Player H</td>
+                                        <td class="match-score">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="match-player">Player A</td>
+                                        <td class="match-score">0</td>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>   
+                        </div>
+                        
+                        <div class="card match-mini">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="match-player">Player H</td>
+                                        <td class="match-score">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="match-player">Player A</td>
+                                        <td class="match-score">0</td>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>   
+                        </div>
+                        
+                        <div class="card match-mini">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="match-player">Player H</td>
+                                        <td class="match-score">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="match-player">Player A</td>
+                                        <td class="match-score">0</td>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>   
+                        </div>
                     </div>
                 </div>
-                <div class="col-lg-2"></div>
-                <div class="col-lg-2"></div>
-                <div class="col-lg-2"></div>
-                <div class="col-lg-2"></div>
-                <div class="col-lg-2"></div>
+
             </div>
-            
         </div>
+
+        <div class="card" id="tournament-data">
+            <table class="table-ranking">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>MP</th>
+                        <th>MW</th>
+                        <th>ML</th>
+                        <th>FP</th>
+                        <th>FW</th>
+                        <th>F%</th>
+                        <th>B/F</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>Player 0</td>
+                        <td>2</td>
+                        <td>1</td>
+                        <td>1</td>
+                        <td>13</td>
+                        <td>8</td>
+                        <td>61.5%</td>
+                        <td>1</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="display: none;" class="card">
+            <div class="card-title">Round 0</div>
+            <div class="card">
+                <div class="card-title">Eligible Players</div>
+                <div class="card-body">
+                    <button class="btn-standard btn-select-player">Player 0</button>
+                    <button class="btn-standard btn-select-player">Player 1</button>
+                    <button class="btn-standard btn-select-player">Player 2</button>
+                    <button class="btn-standard btn-select-player">Player 3</button>
+                    <button class="btn-standard btn-select-player">Player 4</button>
+                    <button class="btn-standard btn-select-player">Player 5</button>
+                    <button class="btn-standard btn-select-player">Player 6</button>
+                    <button class="btn-standard btn-select-player">Player 7</button>
+                    <button class="btn-standard btn-select-player">Player 8</button>
+                    <button class="btn-standard btn-select-player">Player 9</button>
+                    <button class="btn-standard btn-select-player">Player 10</button>
+                    <button class="btn-standard btn-select-player">Player 11</button>
+                    <button class="btn-standard btn-select-player">Player 12</button>
+                    <button class="btn-standard btn-select-player">Player 13</button>
+                    <button class="btn-standard btn-select-player">Player 14</button>
+                    <button class="btn-standard btn-select-player">Player 15</button>
+                </div>
+                <div class="card-footer">
+                    <button class="btn-standard">Randomize</button>
+                    <button class="btn-standard">Load Players</button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">Matches</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td class="match-player"><button class="btn-standard btn-select-player">Player H</button></td>
+                                            <td class="match-score">
+                                                <input type="text" class="form-control" placeholder="0">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="match-player"><button class="btn-standard btn-select-player">Player A</button></td>
+                                            <td class="match-score">
+                                                <input type="text" class="form-control" placeholder="0">
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <button class="btn-standard">Start/End Match</button>  
+                            </div>
+                            <div class="card">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td class="match-player">Player H</td>
+                                            <td class="match-score">0</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="match-player">Player A</td>
+                                            <td class="match-score">0</td>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <button class="btn-standard">Edit Match</button>     
+                            </div>
+                            <div class="card">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td class="match-player">Player H</td>
+                                            <td class="match-score">0</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="match-player">Player A</td>
+                                            <td class="match-score">0</td>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>   
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td class="match-player"><button class="btn-standard btn-select-player">Player H</button></td>
+                                            <td class="match-score">
+                                                <input type="text" class="form-control" placeholder="0">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="match-player"><button class="btn-standard btn-select-player">Player A</button></td>
+                                            <td class="match-score">
+                                                <input type="text" class="form-control" placeholder="0">
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <button class="btn-standard">Start/End Match</button>  
+                            </div>
+                            <div class="card">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td class="match-player">Player H</td>
+                                            <td class="match-score">0</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="match-player">Player A</td>
+                                            <td class="match-score">0</td>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <button class="btn-standard">Edit Match</button>     
+                            </div>
+                            <div class="card">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td class="match-player">Player H</td>
+                                            <td class="match-score">0</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="match-player">Player A</td>
+                                            <td class="match-score">0</td>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>   
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td class="match-player">Player H</td>
+                                            <td class="match-score">0</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="match-player">Player A</td>
+                                            <td class="match-score">0</td>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>   
+                            </div>
+                            <div class="card">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td class="match-player">Player H</td>
+                                            <td class="match-score">0</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="match-player">Player A</td>
+                                            <td class="match-score">0</td>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>   
+                            </div>
+                            <div class="card">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td class="match-player">Player H</td>
+                                            <td class="match-score">0</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="match-player">Player A</td>
+                                            <td class="match-score">0</td>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>   
+                            </div>
+                            <div class="card">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td class="match-player">Player H</td>
+                                            <td class="match-score">0</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="match-player">Player A</td>
+                                            <td class="match-score">0</td>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>   
+                            </div>
+                            <div class="card">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td class="match-player">Player H</td>
+                                            <td class="match-score">0</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="match-player">Player A</td>
+                                            <td class="match-score">0</td>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>   
+                            </div>
+                            <div class="card">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td class="match-player">Player H</td>
+                                            <td class="match-score">0</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="match-player">Player A</td>
+                                            <td class="match-score">0</td>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>   
+                            </div>
+                            <div class="card">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td class="match-player">Player H</td>
+                                            <td class="match-score">0</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="match-player">Player A</td>
+                                            <td class="match-score">0</td>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>   
+                            </div>
+                            <div class="card">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td class="match-player">Player H</td>
+                                            <td class="match-score">0</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="match-player">Player A</td>
+                                            <td class="match-score">0</td>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>   
+                            </div>
+                        </div>
+                        <div class="col-xl-3"></div>
+                    </div>
+
+                                        
+                </div>
+            </div>
+        </div> 
 
     </div>
 
@@ -68,6 +712,13 @@
             padding: 0.5cap 1cap;
         }
 
+        .round-header
+        {
+            text-align: center;
+            font-family: 'Font_TDC';
+            font-size: large;
+        }
+
         .match-player
         {
             padding-left: 2cap;
@@ -77,6 +728,8 @@
         {
             text-align: center;
             max-width: 10vw;
+            font-family: 'Font_TDC';
+            font-size: large;
         }
 
         .btn-standard
@@ -92,17 +745,48 @@
 
         .btn-active
         {
-            background-color: var(--color-secondary-02);
+            background-color: var(--color-base-05);
         }
 
-        .card-match-ended
+        .col-tournamentVisualization
         {
-            box-shadow:  0px 0px 8px 2px var(--color-primary-01);
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* center cards vertically */
         }
 
-        .card-match-live
+        .match-mini
+        {
+            margin: 2cap 0cap;
+        }
+
+        .match-mini td
+        {
+            padding: 1cap;
+            margin: 0cap;
+            border: 1px solid var(--color-base-05);
+            white-space: wrap;
+        }
+
+        .col-tournamentVisualization
+        {
+            padding: 3cap;
+        }
+
+        .match-active
         {
             box-shadow:  0px 0px 8px 2px var(--color-secondary-00);
+        }
+
+        .match-complete
+        {        
+            box-shadow:  0px 0px 8px 2px var(--color-primary-00);    
+        }
+
+        .cell-win
+        {
+            background-color: var(--color-primary-00);
+            color: var(--color-base-02);            
         }
     </style>
 
@@ -115,6 +799,6 @@
     <script src="../scripts/UIControllers/nav-bar_controller.js"></script>
 
     <script src="../scripts/supabase/supaBase_client.js"></script>
-    <script src="../scripts/tournaments/data_tournament_audience.js"></script>
+    <script src="../scripts/tournaments/data_tournament.js"></script>
 </body>
 </html>

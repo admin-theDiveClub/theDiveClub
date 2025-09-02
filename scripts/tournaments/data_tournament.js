@@ -1,5 +1,7 @@
-const tournament = null;
-const matches = null;
+var tournament = null;
+var matches = null;
+var leaderboard = null;
+var tournamentRounds = null;
 
 Start();
 
@@ -13,18 +15,99 @@ async function Start ()
     } else 
     {
         console.log("Tournament ID: " + tournamentID);
-        const tournament = await GetTournament(tournamentID);
+        tournament = await GetTournament(tournamentID);
         if (tournament) 
         {
             console.log("Tournament" , tournament);
-            const matches = await GetTournamentMatches(tournamentID);
+            matches = await GetTournamentMatches(tournamentID);
             if (matches) 
             {
                 console.log("Matches: ", matches);
-                const leaderboard = CompileTournamentData(tournament, matches);
+                leaderboard = CompileTournamentData(tournament, matches);
                 UpdateUI(tournament, matches, leaderboard);
+                tournamentRounds = CreateRoundsData(matches);
+                console.log("Tournament Rounds: ", tournamentRounds);
+                CreateTournamentVisualization(tournamentRounds);
+                SubscribeToUpdates(matches);
             }
         }
+    }
+}
+
+function SubscribeToUpdates (_matches)
+{
+    // unsubscribe previous subscription if any
+    try {
+        if (window._tournamentMatchesSub) {
+            try { supabase.removeSubscription?.(window._tournamentMatchesSub); } catch (e) { /* ignore */ }
+            try { window._tournamentMatchesSub?.unsubscribe?.(); } catch (e) { /* ignore */ }
+            window._tournamentMatchesSub = null;
+        }
+    } catch (e) { /* ignore */ }
+
+    if (!Array.isArray(_matches) || _matches.length === 0) return;
+
+    const ids = new Set(_matches.map(m => m && m.id).filter(Boolean));
+    if (ids.size === 0) return;
+
+    // debounce refresh to avoid many rapid Start() calls
+    const debouncedRefresh = debounce(() => {
+        try { Start(); } catch (e) { console.error('Failed to refresh after realtime change', e); }
+    }, 250);
+
+    const handler = (payload) => {
+        const event = payload?.eventType ?? payload?.event ?? payload?.type ?? '';
+        const rec = payload?.new ?? payload?.record ?? payload?.old ?? null;
+        const id = rec?.id ?? null;
+        if (!id || !ids.has(id)) return;
+
+            matchUpdated = payload.new;
+            console.log("Match updated: ", matchUpdated);
+            console.log("Matches: ", matches);
+            // Replace matching entry in `matches` with the updated record (or insert if not found)
+            (() => {
+                const updated = (typeof matchUpdated !== 'undefined' && matchUpdated) ? matchUpdated : rec;
+                if (!updated || !Array.isArray(matches)) return;
+                const id = updated.id;
+                const idx = matches.findIndex(m => m && m.id === id);
+                if (idx !== -1) {
+                    matches[idx] = updated;
+                } else {
+                    matches.push(updated);
+                }
+            })();
+            leaderboard = CompileTournamentData(tournament, matches);
+            UpdateUI(tournament, matches, leaderboard);
+            tournamentRounds = CreateRoundsData(matches);
+            console.log("Tournament Rounds: ", tournamentRounds);
+            CreateTournamentVisualization(tournamentRounds);
+
+        // Refresh UI/state when relevant changes occur
+        if (['INSERT', 'UPDATE', 'DELETE'].includes(String(event).toUpperCase()) || payload?.new || payload?.old) {
+            debouncedRefresh();
+        }
+    };
+
+    // Try the common subscription API first
+    try {
+        const sub = supabase.from('tbl_matches').on('*', handler).subscribe();
+        window._tournamentMatchesSub = sub;
+        console.log("Subscribed to tbl_matches changes");
+        return;
+    } catch (e) {
+        // fall through to channel-based subscription
+    }
+
+    // Fallback: channel/postgres_changes style
+    try {
+        const ch = supabase
+            .channel('realtime:tbl_matches')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'tbl_matches' }, handler)
+            .subscribe();
+        window._tournamentMatchesSub = ch;
+        console.log("Subscribed to realtime:tbl_matches changes");
+    } catch (e) {
+        console.error('Failed to create realtime subscription for matches', e);
     }
 }
 
@@ -55,7 +138,12 @@ async function GetTournament (_tournamentID)
 
 async function GetTournamentMatches (_tournamentID)
 {
-    const response = await supabase.from('tbl_matches').select('*').eq('competitions->>tournamentID', _tournamentID);
+    const response = await supabase
+        .from('tbl_matches')
+        .select('*')
+        .eq('competitions->>tournamentID', _tournamentID)
+        .order('info->>round', { ascending: true })
+        .order('createdAt', { ascending: true });
     return response.data;
 }
 
@@ -63,7 +151,7 @@ function CompileTournamentData(tournament, matches)
 {
     const leaderboard = (tournament?.players || []).map((username) => {
         // Find all matches where this player participated
-        const playerMatches = (matches || []).filter(match => {
+        const playerMatches = matches.filter(match => {
             const playersObj = match && match.players ? match.players : {};
             return Object.values(playersObj).some(p => {
                 const id = p?.username ?? p?.fullName ?? p?.nickname ?? p?.name ?? null;
@@ -148,6 +236,495 @@ function CompileTournamentData(tournament, matches)
 
     console.log("Leaderboard: ", leaderboard);
     return leaderboard;
+}
+
+
+function CreateRoundsData(_matches) {
+    const tournamentRounds = {};
+    if (!Array.isArray(_matches)) return tournamentRounds;
+
+    // Build per-round arrays preserving order of _matches
+    const roundMap = new Map(); // key = normalizedRaw, value = { raw, numeric|null, arr: [] }
+
+    _matches.forEach((m) => {
+        const rawVal = getMatchRound(m);
+        const normalizedRaw = (rawVal == null || String(rawVal).trim() === "") ? "" : String(rawVal).trim();
+        const numeric = (/^\d+$/.test(normalizedRaw)) ? parseInt(normalizedRaw, 10) : null;
+
+        if (!roundMap.has(normalizedRaw)) {
+            roundMap.set(normalizedRaw, { raw: normalizedRaw, numeric, arr: [] });
+        }
+        const rd = roundMap.get(normalizedRaw);
+        rd.arr.push({
+            matchIndex: rd.arr.length,
+            match: m
+        });
+    });
+
+    // Sort rounds by numeric when available, otherwise by locale string
+    const sortedRounds = Array.from(roundMap.values()).sort((a, b) => {
+        if (a.numeric != null && b.numeric != null) return a.numeric - b.numeric;
+        if (a.numeric != null && b.numeric == null) return -1;
+        if (a.numeric == null && b.numeric != null) return 1;
+        return a.raw.localeCompare(b.raw, undefined, { numeric: true, sensitivity: 'base' });
+    });
+
+    // Populate tournamentRounds object with arrays and compute preceding info
+    sortedRounds.forEach((rd, idx) => {
+        // choose key: numeric when available else raw string (empty string allowed for unclassified)
+        const key = rd.numeric != null ? rd.numeric : rd.raw;
+        tournamentRounds[key] = rd.arr.map(obj => Object.assign({}, obj)); // shallow copy
+
+        // if not the first round, compute precedingRound and precedingMatches for each match
+        if (idx > 0) {
+            const prev = sortedRounds[idx - 1];
+            const prevKey = prev.numeric != null ? prev.numeric : prev.raw;
+            const prevCount = (prev.arr || []).length;
+
+            tournamentRounds[key].forEach((matchObj) => {
+                const j = matchObj.matchIndex;
+                const a = j * 2;
+                const b = j * 2 + 1;
+                if (prevCount === 0) {
+                    matchObj.precedingRound = prevKey;
+                    matchObj.precedingMatches = [];
+                    return;
+                }
+                const idxA = Math.min(a, prevCount - 1);
+                const idxB = Math.min(b, prevCount - 1);
+                const pairs = idxA === idxB ? [idxA] : [idxA, idxB];
+                matchObj.precedingRound = prevKey;
+                matchObj.precedingMatches = pairs;
+            });
+        }
+    });
+
+    // Asynchronously attempt to auto-populate winners from preceding completed matches.
+    // This runs in background (fire-and-forget) so CreateRoundsData stays synchronous.
+    (async () => {
+        try {
+            const updates = []; // { matchId, side, playerObj, newPlayersObj (after change) }
+
+            const getIdOf = (p) => p?.username ?? p?.fullName ?? p?.nickname ?? p?.name ?? null;
+
+            // Iterate rounds (preserving sorted order)
+            for (let r = 1; r < sortedRounds.length; r++) {
+                const curr = sortedRounds[r];
+                const prev = sortedRounds[r - 1];
+                const currKey = curr.numeric != null ? curr.numeric : curr.raw;
+                const prevKey = prev.numeric != null ? prev.numeric : prev.raw;
+                const prevArr = tournamentRounds[prevKey] || [];
+                const currArr = tournamentRounds[currKey] || [];
+
+                for (const matchObj of currArr) {
+                    const currMatch = matchObj.match;
+                    if (!matchObj.precedingMatches || matchObj.precedingMatches.length === 0) continue;
+
+                    // map preceding index 0 -> 'h', 1 -> 'a'
+                    for (let pIndex = 0; pIndex < matchObj.precedingMatches.length; pIndex++) {
+                        const side = pIndex === 0 ? 'h' : 'a';
+                        const prevIdx = matchObj.precedingMatches[pIndex];
+                        const prevObj = prevArr[prevIdx];
+                        if (!prevObj || !prevObj.match) continue;
+
+                        const prevMatch = prevObj.match;
+                        if (!prevMatch.info || (prevMatch.info.status || "") !== "Complete") continue;
+
+                        // Determine winner of prevMatch by comparing results.fw
+                        const ra = (prevMatch.results && prevMatch.results.a) ? (prevMatch.results.a.fw || 0) : 0;
+                        const rh = (prevMatch.results && prevMatch.results.h) ? (prevMatch.results.h.fw || 0) : 0;
+                        if (ra === rh) continue; // no winner or draw
+
+                        const winnerSide = ra > rh ? 'a' : 'h';
+                        const winnerPlayer = prevMatch.players ? prevMatch.players[winnerSide] : null;
+                        if (!winnerPlayer) continue;
+
+                        // Current slot value and identity check
+                        currMatch.players = currMatch.players || {};
+                        const currentPlayer = currMatch.players[side] || null;
+
+                        const currId = getIdOf(currentPlayer);
+                        const winnerId = getIdOf(winnerPlayer);
+
+                        // If current is already the winner -> do nothing
+                        if (currId && winnerId && currId === winnerId) continue;
+
+                        // If current is non-null but different -> do nothing
+                        if (currentPlayer && (!currId || currId !== winnerId)) continue;
+
+                        // Otherwise current is null, set it to winner and persist
+                        const newPlayers = Object.assign({}, currMatch.players);
+                        newPlayers[side] = clonePlayer(winnerPlayer);
+
+                        updates.push({ matchId: currMatch.id, newPlayers, matchRef: currMatch, side, winnerId });
+                        // Only assign the first applicable preceding completed match for this side.
+                        break;
+                    }
+                }
+            }
+
+            if (updates.length === 0) return;
+
+            // Persist sequentially to avoid race conditions and refresh at end
+            for (const u of updates) {
+                try {
+                    await saveMatchPlayers(u.matchId, u.newPlayers);
+                } catch (e) {
+                    console.error('Failed to auto-assign winner to match', u.matchId, e);
+                }
+            }
+
+            // Refresh entire UI/flow once after updates
+            await Start();
+        } catch (e) {
+            console.error('Error in auto-assigning preceding winners', e);
+        }
+    })();
+
+    return tournamentRounds;
+}
+    
+function CreateTournamentVisualization(tournamentRounds) 
+{
+    const row = document.querySelector('#tournament-visualization .card-body .row');
+    if (!row) return;
+    row.innerHTML = '';
+
+    const keys = Object.keys(tournamentRounds || {});
+    if (keys.length === 0) return;
+
+    // numeric-aware sort of round keys
+    keys.sort((a, b) => {
+        const na = /^\d+$/.test(String(a)) ? parseInt(a, 10) : Number.POSITIVE_INFINITY;
+        const nb = /^\d+$/.test(String(b)) ? parseInt(b, 10) : Number.POSITIVE_INFINITY;
+        if (na !== nb) return na - nb;
+        return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
+    });
+
+    // Precompute left/right halves per round (right half is for mirror column).
+    const splits = new Map();
+    keys.forEach((k, idx) => {
+        const arr = Array.isArray(tournamentRounds[k]) ? tournamentRounds[k] : [];
+        if (idx === keys.length - 1) {
+            // Last round: do not split
+            splits.set(k, { left: arr, right: [] });
+        } else {
+            const half = Math.ceil(arr.length / 2); // left gets first half, right gets second half
+            splits.set(k, { left: arr.slice(0, half), right: arr.slice(half) });
+        }
+    });
+
+    // Build ordered columns: left side ascending, then mirrored right side descending (excluding last)
+    const columns = [];
+    keys.forEach(k => {
+        const { left } = splits.get(k) || { left: [] };
+        columns.push({ label: k, items: left, extraClass: 'bracket-left' });
+    });
+    for (let i = keys.length - 2; i >= 0; i--) {
+        const k = keys[i];
+        const { right } = splits.get(k) || { right: [] };
+        columns.push({ label: k, items: right, extraClass: 'bracket-right' });
+    }
+
+    // Distribute 12-grid width across all columns with preference to final round column
+    const totalCols = Math.max(1, columns.length);
+    const baseSize = Math.floor(12 / totalCols);
+    let remainder = 12 % totalCols;
+
+    // Final round column index is the last "left" column
+    const finalColIndex = Math.max(0, Math.min(totalCols - 1, keys.length - 1));
+
+    // Priority order: final column first, then expand outward (left, right, left, right, ...)
+    const order = [finalColIndex];
+    for (let d = 1; order.length < totalCols; d++) {
+        const left = finalColIndex - d;
+        const right = finalColIndex + d;
+        if (left >= 0) order.push(left);
+        if (right < totalCols) order.push(right);
+    }
+
+    // Assign remainder (+1) starting with the final round column
+    const bonus = new Array(totalCols).fill(0);
+    for (let i = 0; i < order.length && remainder > 0; i++) {
+        bonus[order[i]] = 1;
+        remainder--;
+    }
+
+    const sizeForIndex = (idx) => {
+        const b = bonus[idx] || 0;
+        return Math.max(1, Math.min(12, baseSize + b));
+    };
+
+    // Helper to create a match-mini card (accepts the original item obj so we can attach metadata)
+    const createMatchMini = (itemObj, roundKey) => {
+        const match = itemObj && itemObj.match ? itemObj.match : itemObj;
+        const matchIndex = (typeof itemObj.matchIndex !== 'undefined') ? itemObj.matchIndex : null;
+        const card = document.createElement('div');
+        card.className = 'card match-mini';
+        // Attach metadata for arrow drawing
+        if (match && match.id) card.dataset.matchId = match.id;
+        if (matchIndex != null) card.dataset.matchIndex = String(matchIndex);
+        if (typeof itemObj.precedingRound !== 'undefined') card.dataset.precedingRound = String(itemObj.precedingRound);
+        if (Array.isArray(itemObj.precedingMatches)) card.dataset.precedingMatches = JSON.stringify(itemObj.precedingMatches);
+        card.dataset.round = String(roundKey ?? '');
+        card.dataset.status = (match && match.info && match.info.status) ? match.info.status : '';
+
+        // Add classes based on status / players:
+        const status = (match && match.info && match.info.status) ? match.info.status : "";
+        if (status === "Complete") {
+            card.classList.add('match-complete');
+        } else {
+            // not complete: if both players present, mark as active
+            const pA = match && match.players && match.players.a;
+            const pH = match && match.players && match.players.h;
+            if (pA != null && pH != null) {
+                card.classList.add('match-active');
+            }
+        }
+
+        // Compute frame wins for both sides (numeric) to mark winner cells when complete
+        const fwA = Number((match && match.results && match.results.a && match.results.a.fw) ?? 0) || 0;
+        const fwH = Number((match && match.results && match.results.h && match.results.h.fw) ?? 0) || 0;
+        const winnerSide = (status === "Complete" && fwA !== fwH) ? (fwA > fwH ? 'a' : 'h') : null;
+
+        const table = document.createElement('table');
+        const tbody = document.createElement('tbody');
+
+        const mkRow = (side) => {
+            const tr = document.createElement('tr');
+            const tdPlayer = document.createElement('td');
+            tdPlayer.className = 'match-player';
+            const p = match && match.players && match.players[side];
+            tdPlayer.textContent = p ? (p.nickname === 'Guest' ? p.fullName : p.nickname || p.fullName || p.username || '') : (side === 'h' ? '-' : '-');
+
+            const tdScore = document.createElement('td');
+            tdScore.className = 'match-score';
+            const score = match && match.results && match.results[side] && typeof match.results[side].fw !== 'undefined'
+                ? String(match.results[side].fw)
+                : '0';
+            tdScore.textContent = score;
+
+            // If match is complete and this side is the winner, add 'cell-win' to the player's td(s)
+            if (winnerSide && winnerSide === side) 
+            {
+                tdScore.classList.add('cell-win');
+            }
+
+            tr.appendChild(tdPlayer);
+            tr.appendChild(tdScore);
+            return tr;
+        };
+
+        tbody.appendChild(mkRow('h'));
+        tbody.appendChild(mkRow('a'));
+        table.appendChild(tbody);
+        card.appendChild(table);
+        return card;
+    };
+
+    const renderColumn = (labelKey, items, extraClass, colSize) => {
+        const colDiv = document.createElement('div');
+        colSize = Math.max(1, Math.min(12, colSize | 0));
+        colDiv.className = `col-${colSize} col-tournamentVisualization${extraClass ? ' ' + extraClass : ''}`;
+
+        const header = document.createElement('div');
+        header.className = 'round-header';
+        header.textContent = roundLabelFromValue(labelKey);
+        colDiv.appendChild(header);
+
+        items.forEach(obj => {
+            // pass the original obj (so we can read precedingMatches, matchIndex, etc)
+            const el = createMatchMini(obj, labelKey);
+            colDiv.appendChild(el);
+        });
+
+        row.appendChild(colDiv);
+    };
+
+    // Render columns with width distribution
+    columns.forEach((col, idx) => {
+        renderColumn(col.label, col.items, col.extraClass, sizeForIndex(idx));
+    });
+
+    // After DOM insertion, draw arrows
+    // Delay briefly to ensure layout finalized
+    setTimeout(() => {
+        DrawTournamentProgressionArrows();
+    }, 60);
+}
+
+function DrawTournamentProgressionArrows ()
+{
+    // Guard: leader-line library must exist
+    if (typeof LeaderLine === 'undefined') {
+        // nothing to do if leaderline not available
+        console.warn('LeaderLine library is not loaded');
+        return;
+    }
+
+    // Remove previous lines if any
+    try {
+        if (window._tournamentLeaderLines && Array.isArray(window._tournamentLeaderLines)) {
+            window._tournamentLeaderLines.forEach(l => {
+                try { l.remove(); } catch (e) { /* ignore */ }
+            });
+        }
+    } catch (e) {
+        console.error('Error clearing previous leader lines', e);
+    }
+    window._tournamentLeaderLines = [];
+
+    // Find all destination match elements that declare precedingMatches
+    const allMatches = Array.from(document.querySelectorAll('.match-mini'));
+    if (allMatches.length === 0) return;
+
+    // Helper to find element by round key and matchIndex
+    const findMatchElement = (roundKey, matchIndex) => {
+        // roundKey may be number or string; use stringified form
+        const rk = String(roundKey ?? '');
+        return document.querySelector(`.match-mini[data-round="${rk}"][data-match-index="${String(matchIndex)}"]`);
+    };
+
+    // Helper: determine whether an element is in left or right bracket column
+    const getBracketSideFor = (el) => {
+        if (!el) return null;
+        const col = el.closest('.col-tournamentVisualization');
+        if (!col) return null;
+        if (col.classList.contains('bracket-right')) return 'right';
+        if (col.classList.contains('bracket-left')) return 'left';
+        return null;
+    };
+
+    // map socket -> anchor options for leader-line pointAnchor
+    const anchorForSocket = (socket) => {
+        switch ((socket || '').toLowerCase()) {
+            case 'left': return { x: '-2%', y: '50%' };
+            case 'right': return { x: '102%', y: '50%' };
+            default: return { x: '50%', y: '50%' };
+        }
+    };
+
+    const createdLines = [];
+
+    allMatches.forEach(destEl => {
+        const rawPrevRound = destEl.dataset.precedingRound;
+        const rawPrevMatches = destEl.dataset.precedingMatches;
+        if (!rawPrevRound || !rawPrevMatches) return;
+
+        let prevMatches;
+        try {
+            prevMatches = JSON.parse(rawPrevMatches);
+            if (!Array.isArray(prevMatches)) return;
+        } catch (e) {
+            return;
+        }
+
+        prevMatches.forEach(pmIdx => {
+            const sourceEl = findMatchElement(rawPrevRound, pmIdx);
+            if (!sourceEl) return;
+
+            // compute sockets based on column bracket side primarily (mirror logic)
+            const srcBracket = getBracketSideFor(sourceEl);
+            const dstBracket = getBracketSideFor(destEl);
+
+            let startSocket = 'right';
+            let endSocket = 'left';
+
+            // If both source and destination are in the right-side (mirrored) columns,
+            // invert sockets so arrows go from left of source to right of destination.
+            if (srcBracket === 'right' && dstBracket === 'right') {
+                startSocket = 'left';
+                endSocket = 'right';
+            } else {
+                // otherwise, decide left/right based on horizontal geometry only
+                const sRect = sourceEl.getBoundingClientRect();
+                const dRect = destEl.getBoundingClientRect();
+
+                // If source is entirely to the left of destination, arrow goes right->left (source right -> dest left)
+                if (sRect.right <= dRect.left) {
+                    startSocket = 'right';
+                    endSocket = 'left';
+                } else {
+                    // otherwise point from left side of source to right side of destination
+                    startSocket = 'left';
+                    endSocket = 'right';
+                }
+            }
+
+            // Style: color depending on completion of source match (green if complete, gray otherwise)
+            const srcStatus = (sourceEl.dataset.status || '').toLowerCase();
+            const color = srcStatus === 'complete' ? 'rgb(229, 21, 119)' : 'rgb(2, 200, 237)';
+
+            // Determine anchor points consistent with sockets
+            const startAnchorOpts = anchorForSocket(startSocket);
+            const endAnchorOpts = anchorForSocket(endSocket);
+
+            // Create the leader line using a smooth path ("fluid").
+            // If fluid not supported in fallback, use "arc".
+            try {
+                const line = new LeaderLine(
+                    LeaderLine.pointAnchor(sourceEl, startAnchorOpts),
+                    LeaderLine.pointAnchor(destEl, endAnchorOpts),
+                    {
+                        startSocket,
+                        endSocket,
+                        color,
+                        size: 1.6,
+                        path: 'fluid',        // smooth curved path
+                        startPlug: 'disc',
+                        endPlug: 'arrow1',
+                        // tighten the curve a bit for better visuals
+                        startPlugSize: 2,
+                        endPlugSize: 2,
+                        dash: { animation: true }
+                    }
+                );
+
+                createdLines.push(line);
+            } catch (e) {
+                // fallback simpler constructor if pointAnchor or 'fluid' isn't available
+                try {
+                    const line = new LeaderLine(sourceEl, destEl, {
+                        startSocket,
+                        endSocket,
+                        color,
+                        size: 1.6,
+                        path: 'arc', // smooth curved fallback
+                        startPlug: 'disc',
+                        endPlug: 'arrow1'
+                    });
+                    createdLines.push(line);
+                } catch (ex) {
+                    // ignore failures for a particular connection
+                }
+            }
+        });
+    });
+
+    // store globally so we can remove later
+    window._tournamentLeaderLines = createdLines;
+
+    // on resize/scroll update positions (debounced)
+    if (window._tournamentLeaderLinesResizeHandler) {
+        window.removeEventListener('resize', window._tournamentLeaderLinesResizeHandler);
+        window.removeEventListener('scroll', window._tournamentLeaderLinesResizeHandler, true);
+        clearTimeout(window._tournamentLeaderLinesResizeTimer);
+    }
+
+    window._tournamentLeaderLinesResizeTimer = null;
+    window._tournamentLeaderLinesResizeHandler = () => {
+        if (window._tournamentLeaderLinesResizeTimer) clearTimeout(window._tournamentLeaderLinesResizeTimer);
+        window._tournamentLeaderLinesResizeTimer = setTimeout(() => {
+            try {
+                (window._tournamentLeaderLines || []).forEach(l => {
+                    try { l.position(); } catch (e) { /* ignore */ }
+                });
+            } catch (e) { /* ignore */ }
+        }, 80);
+    };
+
+    window.addEventListener('resize', window._tournamentLeaderLinesResizeHandler);
+    window.addEventListener('scroll', window._tournamentLeaderLinesResizeHandler, true);
 }
 
 
