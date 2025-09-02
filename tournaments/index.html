@@ -29,6 +29,24 @@
 
     <div class="main">
 
+        <div class="card" style="padding: 2cap;">
+            <p id="t-name" style="font-family: 'Font_TDC'; font-size: x-large;">Tournament Name</p>
+            <p id="t-venue">Venue</p>
+            <p id="t-date">Date</p>
+            <p id="t-time">Time</p>
+            <p id="t-max-entries">Max Entries</p>
+        </div> 
+
+        <div class="card">
+            <div class="input-group">
+                <div class="w-100 flex-column">
+                    <label for="text-input" class="form-label">Enter text:</label>
+                    <textarea id="text-input" class="form-control" placeholder="Enter text" rows="6" aria-label="Enter text"></textarea>
+                </div>
+            </div>
+            <button class="btn-standard" id="btn-update-players">Update Players List</button>
+        </div>
+
         <div class="card" id="tournament-players">
             <div class="card-title">Eligible Players</div>
             <div class="card-body">

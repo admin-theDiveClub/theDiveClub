@@ -19,6 +19,78 @@ async function Start ()
         if (tournament) 
         {
             console.log("Tournament" , tournament);
+            // Update tournament header elements (name, venue, date, time, max entries)
+            (() => {
+                const setText = (id, v) => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.textContent = (v == null) ? "" : String(v);
+                };
+
+                if (!tournament) return;
+
+                // Name
+                const name = tournament.name ?? tournament.title ?? tournament.tournamentName ?? tournament.displayName ?? tournament.tName ?? "";
+                setText('t-name', name);
+
+                // Venue
+                const venue = tournament.venue ?? tournament.location ?? tournament.venueName ?? tournament.place ?? "";
+                setText('t-venue', venue);
+
+                // Date / Time: try common fields and fall back to raw values
+                const dateCandidates = [
+                    tournament.date,
+                    tournament.startDate,
+                    tournament.start,
+                    tournament.dateTime,
+                    tournament.datetime,
+                    tournament.info?.date,
+                    tournament.info?.start,
+                    tournament.time // sometimes date and time combined or time only
+                ].filter(v => typeof v !== 'undefined' && v !== null);
+
+                let dateText = "";
+                let timeText = "";
+
+                if (dateCandidates.length > 0) {
+                    const raw = dateCandidates[0];
+                    // If it's already a Date object
+                    if (raw instanceof Date && !isNaN(raw)) {
+                        dateText = raw.toLocaleDateString();
+                        timeText = raw.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    } else {
+                        // Try parseable ISO / timestamp
+                        const parsed = new Date(String(raw));
+                        if (!isNaN(parsed)) {
+                            dateText = parsed.toLocaleDateString();
+                            timeText = parsed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        } else {
+                            // Not parseable: if it contains time-like substring split heuristically
+                            const s = String(raw).trim();
+                            const parts = s.split(/\s+at\s+|\s+@|\s+/);
+                            if (parts.length >= 2 && /\d{1,2}[:.]\d{2}/.test(s)) {
+                                // attempt to separate date and time
+                                dateText = parts.slice(0, parts.length - 1).join(' ');
+                                timeText = parts[parts.length - 1];
+                            } else {
+                                // fallback: put whole raw into date slot
+                                dateText = s;
+                            }
+                        }
+                    }
+                } else {
+                    // Maybe separate time-only field
+                    const timeOnly = tournament.time ?? tournament.startTime ?? tournament.timeStart ?? tournament.info?.time;
+                    if (timeOnly) timeText = String(timeOnly);
+                }
+
+                setText('t-date', dateText);
+                setText('t-time', timeText);
+
+                // Max entries: common field names or fallback to players length
+                const max = tournament.maxEntries ?? tournament.max_entries ?? tournament.maxPlayers ?? tournament.capacity ?? tournament.limit ?? (Array.isArray(tournament.players) ? tournament.players.length : null);
+                setText('t-max-entries', max != null ? String(max) : "");
+            })();
             matches = await GetTournamentMatches(tournamentID);
             if (matches) 
             {
@@ -964,6 +1036,86 @@ function UpdateUI(tournament, matches, leaderboard)
     UpdateRoundsButtons(matches, playersIndex);
     // Do not call UpdateRoundsMatchesUI here; UpdateRoundsButtons applies persisted filter or shows all.
 }
+
+(function wireUpdatePlayersButton() {
+    const btn = document.getElementById('btn-update-players') ||
+        Array.from(document.querySelectorAll('button.btn-standard'))
+            .find(b => (b.textContent || '').trim().toLowerCase() === 'update players list');
+    if (!btn || btn.dataset.wired) return;
+    btn.dataset.wired = '1';
+
+    btn.addEventListener('click', async (ev) => {
+        try {
+            ev?.preventDefault?.();
+            btn.disabled = true;
+            await UpdatePlayersList();
+        } catch (e) {
+            console.error('Failed to run UpdatePlayersList', e);
+        } finally {
+            btn.disabled = false;
+        }
+    });
+})();
+
+async function UpdatePlayersList ()
+    {
+        const input = document.getElementById('text-input');
+        if (!input) {
+            alert('Text input not found');
+            return;
+        }
+
+        // Split lines, trim and filter empties, deduplicate preserving order
+        const raw = input.value || '';
+        const lines = raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+        if (lines.length === 0) {
+            alert('No player names provided');
+            return;
+        }
+        const seen = new Set();
+        const players = [];
+        lines.forEach(n => {
+            if (!seen.has(n)) {
+                seen.add(n);
+                players.push(n);
+            }
+        });
+
+        const tid = (tournament && tournament.id) ? tournament.id : GetTournamentID();
+        if (!tid) {
+            alert('No tournament ID found');
+            return;
+        }
+
+        const btn = document.getElementById('btn-update-players');
+        if (btn) btn.disabled = true;
+
+        try {
+            const { data, error } = await supabase
+                .from('tbl_tournaments')
+                .update({ players })
+                .eq('id', tid)
+                .select('*')
+                .single();
+
+            if (error) {
+                console.error('Failed to update tournament players', error);
+                alert('Could not save players. See console for details.');
+                return;
+            }
+
+            // update local tournament reference if returned
+            if (data) tournament = data;
+
+            // Refresh full UI/state
+            await Start();
+        } catch (e) {
+            console.error('Exception updating players list', e);
+            alert('Unexpected error while updating players. See console.');
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
 
 function UpdateLeaderboardUI (leaderboard)
 {
