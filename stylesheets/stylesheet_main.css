@@ -68,20 +68,21 @@ a:hover
 .card
 {
     background-color: var(--color-base-03);
-    margin: 1cap 0.2cap;
+    margin: 1rem;
     border: none;
     box-shadow: 0px 0px 16px 4px var(--color-base-00);
     color: var(--color-base-09);
+    padding: 1rem;
 }
 
 .input-group
 {
-    padding: 2cap;
+    padding: 2rem;
 }
 
 .form-label
 {
-    padding: 1cap 2cap;
+    padding: 1rem 2rem;
     color: var(--color-base-09);
 }
 
@@ -90,7 +91,7 @@ a:hover
     background-color: transparent;
     color: var(--color-base-10) !important;
     border: none;
-    padding: 2cap;
+    padding: 2rem;
     box-shadow:  0px 0px 4px 0px var(--color-base-10);
 }
 
@@ -117,9 +118,9 @@ a:hover
 
 .form-check-input
 {
-    margin: 1cap 0cap;
-    width: 2cap;
-    height: 2cap;
+    margin: 0rem 0rem;
+    width: 2rem;
+    height: 2rem;
     background-color: transparent;
     border: none;
     box-shadow:  0px 0px 4px 0px var(--color-base-10);
@@ -144,11 +145,10 @@ a:hover
     background-color: var(--color-primary-00);
     color: var(--color-base-10);
     border: none;
-    padding: 1cap 2cap;
-    border-radius: 4cap;
+    padding: 1rem 2rem;
+    border-radius: 4rem;
     box-shadow: 0px 0px 4px 0px var(--color-base-10);
     font-size: 1em;
-    margin: 1cap 1cap;
 }
 
 .btn-standard:hover
@@ -181,4 +181,12 @@ a:hover
 {
     background-color: var(--color-base-02);
     color: var(--color-secondary-00);
+}
+
+.tag
+{
+    background-color: var(--color-base-02);
+    margin: 0rem;
+    padding: 0.25rem 1rem;
+    border-radius: 0.5rem;
 }
