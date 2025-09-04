@@ -119,10 +119,31 @@
             <table id="tbl-entries">
                 <thead>
                     <tr>
+                        <th colspan="3">
+                            <label class="form-label" for="t-input-multiplePlayers">Add Mulitple Players</label>
+                            <div class="input-group">
+                                <textarea id="t-input-multiplePlayers" class="form-control" placeholder="Enter Player List" rows="1" aria-label="Enter text"></textarea>
+                                <button class="btn btn-success" aria-label="Submit">
+                                    Update<br>List<br>
+                                </button>
+                            </div>
+                        </th>
+                    </tr>
+                    <tr>
+                        <th colspan="3">
+                            <label for="t-input-newEntry" class="form-label t-info-label">Add Single Entry</label>
+                            <div class="input-group">
+                                <input id="t-input-newEntry" class="form-control t-info-item" type="text" placeholder="Player Name / Username"></input>
+                                <button class="btn btn-sm btn-success" aria-label="Move up">
+                                    <i class="bi bi-plus"></i>
+                                </button>
+                            </div>
+                        </th>
+                    </tr>
+                    <tr>
                         <th>#</th>
                         <th>Name</th>
                         <th>Confirmed</th>
-                        <th>Tools</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -135,22 +156,123 @@
                             <label class="form-label tag" for="option-check">#1</label>
                         </td>
                         <td>
-                            <button class="btn btn-sm btn-primary" aria-label="Move up">
-                                <i class="bi bi-arrow-up"></i>
-                            </button>
-                            <button class="btn btn-sm btn-primary" aria-label="Move down">
-                                <i class="bi bi-arrow-down"></i>
-                            </button>
                             <button class="btn btn-sm btn-danger">X</button>
                         </td>
                     </tr>
                 </tbody>
+                <tfoot>
+                    
+                </tfoot>
             </table>
+        </div>
+
+        <div class="card" id="t-matches-control">
+
+            <div class="row">
+                <div class="col-md-4">
+                    <table id="tbl-eligiblePlayers">                
+                        <thead>
+                            <tr>
+                                <th colspan="2">
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">Max Players</span>
+                                        <input id="t-info-max-entries" class="form-control t-info-item" type="number" min="1" step="1" placeholder="0">
+                                    </div>
+                                </th>
+                                <th>
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">Lives Per Player</span>
+                                        <input id="t-info-lives-per-player" class="form-control t-info-item" type="number" min="1" step="1" placeholder="0">
+                                    </div>
+                                </th>
+                            </tr>
+                            <tr>
+                                <th>#</th>
+                                <th>Player</th>
+                                <th>Lives</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td>Player 1</td>
+                                <td>3</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="col-md-2">
+                    <table id="tbl-eligiblePlayers">                
+                        <thead>
+                            <th>Round</th>
+                            <th>Matches</th>
+                        </thead>
+
+                        <tbody>
+                            <tr>
+                                <td><button class="btn-standard">Round 1</button></td>
+                                <td>0 / 8</td>
+                            </tr>
+                        </tbody>
+
+                        <tfoot>
+                            <tr>
+                                <td colspan="5">
+                                    <button class="btn btn-sm btn-success" aria-label="New Round">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="col-md-6">
+                    <table id="tbl-eligiblePlayers">                
+                        <thead>
+                            <th colspan="5">Matches</th>
+                        </thead>
+
+                        <tbody>
+                            <tr>
+                                <td colspan="5">Round 1</td>
+                            </tr>
+                            <tr>
+                                <td>Player_H</td>
+                                <td><input id="m-score-H" class="form-control t-info-item" type="number" min="1" step="1" placeholder="0"></td>
+                                <td><i class="bi bi-box-arrow-up-right"></i></td>
+                                <td><input id="m-score-H" class="form-control t-info-item" type="number" min="1" step="1" placeholder="0"></td>
+                                <td>Player_A</td>
+                                <td><button class="btn btn-sm btn-danger">X</button></td>
+                            </tr>                            
+                        </tbody>
+
+                        <tfoot>
+                            <tr>
+                                <td colspan="5">
+                                    <button class="btn btn-sm btn-success" aria-label="New Match">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>            
         </div>
 
     </div>
 
     <style>
+        #tbl-entries td, #tbl-entries th, #tbl-eligiblePlayers td, #tbl-eligiblePlayers th
+        {
+            border: 0.01rem solid var(--color-base-08);
+            padding: 0.5rem;
+            text-align: center;
+        }
+
         #t-info-icon img
         {
             width: 100%;
@@ -187,6 +309,6 @@
     <script src="../scripts/UIControllers/nav-bar_controller.js"></script>
 
     <script src="../scripts/supabase/supaBase_client.js"></script>
-    <script src="../scripts/tournaments/data_tournament.js"></script>
+    <script src="../scripts/tournaments/tournament_data.js" type="module"></script>
 </body>
 </html>

@@ -75,11 +75,6 @@ a:hover
     padding: 1rem;
 }
 
-.input-group
-{
-    padding: 2rem;
-}
-
 .form-label
 {
     padding: 1rem 2rem;
@@ -118,7 +113,7 @@ a:hover
 
 .form-check-input
 {
-    margin: 0rem 0rem;
+    margin: 0.5rem 0rem;
     width: 2rem;
     height: 2rem;
     background-color: transparent;
@@ -186,7 +181,12 @@ a:hover
 .tag
 {
     background-color: var(--color-base-02);
-    margin: 0rem;
+    margin: 0.5rem;
     padding: 0.25rem 1rem;
     border-radius: 0.5rem;
+}
+
+table
+{
+    margin: 1rem 0rem;
 }
