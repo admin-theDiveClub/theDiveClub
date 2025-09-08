@@ -75,6 +75,11 @@ a:hover
     padding: 1rem;
 }
 
+.card-body
+{
+    padding: 0rem;
+}
+
 .form-label
 {
     padding: 1rem 2rem;
@@ -144,6 +149,7 @@ a:hover
     border-radius: 4rem;
     box-shadow: 0px 0px 4px 0px var(--color-base-10);
     font-size: 1em;
+    margin: 1rem;
 }
 
 .btn-standard:hover
@@ -182,11 +188,18 @@ a:hover
 {
     background-color: var(--color-base-02);
     margin: 0.5rem;
-    padding: 0.25rem 1rem;
+    padding: 0.25rem 0.25rem;
     border-radius: 0.5rem;
 }
 
 table
 {
     margin: 1rem 0rem;
+    width: 100%;
+}
+
+:disabled
+{
+    background-color: var(--color-base-02) !important;
+    color: var(--color-base-05) !important;
 }

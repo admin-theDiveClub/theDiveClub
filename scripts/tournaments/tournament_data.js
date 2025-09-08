@@ -1,29 +1,44 @@
-import { UpdateTournamentMatch } from "../tournaments/tournament_UI_control.js";
+import { UpdateTournamentUI_Control } from "../tournaments/tournament_UI_control.js";
 
 var tournamentID = null;
 var tournament = null;
 var tournamentMatches = null;
+var tournamentRounds = null;
+var tournamentLog = null;
+var tournamentPlayers = null;
 
 Start ();
 
 async function Start ()
 {
     tournamentID = GetTournamentID();
-    console.log('Source: Tournament ID', tournamentID);
     if (tournamentID)
     {
         tournament = await GetTournament(tournamentID);
-        console.log('Source: Tournament Data', tournament);
-        await PopulatePlayerInfo(tournament.players);
+        console.warn('Source: Tournament', tournament);
+        tournamentPlayers = await PopulatePlayerInfo(tournament.players);
+        console.warn('Source: Tournament Players', tournamentPlayers);
         if (tournament)
         {
             tournamentMatches = await GetTournamentMatches(tournamentID);
-            console.log('Source: Tournament Matches', tournamentMatches);
             SubscribeToUpdates(tournamentID);
-            CompileTournamentLog(GetConfirmedPlayers(tournamentPlayers), tournamentMatches);
-            CompileTournamentRounds(tournamentMatches);
+            tournamentLog = CompileTournamentLog(GetConfirmedPlayers(tournamentPlayers), tournamentMatches);
+            tournamentRounds = CompileTournamentRounds(tournamentMatches);
+            console.warn('Source: Tournament Rounds', tournamentRounds);
+            console.warn('Source: Tournament Log', tournamentLog);
         }
-    }    
+    }
+
+    UpdateTournamentUI_Control(tournament, tournamentPlayers, tournamentLog, tournamentRounds);
+}
+
+async function UpdateTournamentData ()
+{
+    tournamentPlayers = await PopulatePlayerInfo(tournament.players);
+    tournamentLog = CompileTournamentLog(GetConfirmedPlayers(tournamentPlayers), tournamentMatches);
+    tournamentRounds = CompileTournamentRounds(tournamentMatches);
+
+    UpdateTournamentUI_Control(tournament, tournamentPlayers, tournamentLog, tournamentRounds);
 }
 
 function GetTournamentID()
@@ -104,25 +119,22 @@ async function SubscribeToTournamentMatchesUpdates (_tournamentID)
 function OnPayloadReceived_tournament (_tournament)
 {
     console.log('Tournament Data Updated:', _tournament);
-    // Update the UI or perform any necessary actions with the new tournament data
+    tournament = _tournament;
+    UpdateTournamentData();
 }
 
 function OnPayloadReceived_tournamentMatches (_match)
 {
     console.log('Tournament Match Data Updated:', _match);
-    UpdateTournamentMatch(_match);
+
+    const idx = tournamentMatches.findIndex(m => m && m.id === _match.id);
+    if (idx !== -1) 
+    {
+        tournamentMatches[idx] = _match;
+        UpdateTournamentData();
+    }
 }
 
-var tournamentPlayers =
-{
-    0: 
-    {
-        "username": null,
-        "displayName": null,
-        "confirmed": false,
-        "playerProfile": null
-    }
-};
 
 async function PopulatePlayerInfo (t_players)
 {
@@ -168,6 +180,20 @@ async function PopulatePlayerInfo (t_players)
             // preserve the original confirmed flag from the incoming player object
             t_players[i].confirmed = player.confirmed;
             t_players[i].playerProfile = playerInfo;
+
+            const response_pic = await supabase.storage.from('bucket-profile-pics').getPublicUrl(playerInfo.id);
+            if (response_pic.data && response_pic.data.publicUrl && !response_pic.data.publicUrl.endsWith('null')) 
+            {
+                /*const imgElement_H = document.getElementById('player-H-pic');
+                if (imgElement_H) {
+                    const img = new Image();
+                    img.onload = () => {
+                        imgElement_H.src = response_pic.data.publicUrl;
+                    };
+                    img.src = response_pic.data.publicUrl;
+                }*/
+                t_players[i].pp = response_pic.data.publicUrl;
+            }
         }
         else
         {
@@ -178,9 +204,8 @@ async function PopulatePlayerInfo (t_players)
             t_players[i].playerProfile = null;
         }
     }
-
-    console.log('Player Information Populated:', t_players);
-    tournamentPlayers = t_players;
+    
+    return t_players;
 }
 
 async function GetPlayerProfiles (usernames)
@@ -230,7 +255,19 @@ var tournamentRounds =
 
 function GetConfirmedPlayers (players)
 {
-    return players.filter(p => p.confirmed);
+    if (!players || players.length === 0) return [];
+
+    const confirmed = players.filter(p => p && p.confirmed);
+
+    const maxEntries = tournament && tournament.maxEntries !== undefined
+        ? Number(tournament.maxEntries)
+        : null;
+
+    if (Number.isFinite(maxEntries) && maxEntries >= 0) {
+        return confirmed.slice(0, maxEntries);
+    }
+
+    return confirmed;
 }
 
 function CompileTournamentLog (players, matches)
@@ -311,7 +348,6 @@ function CompileTournamentLog (players, matches)
         'B/F': entry['B/F']
     }));
 
-    console.log('Tournament Log:', finalLog);
     return finalLog;
 }
 
@@ -342,7 +378,5 @@ function CompileTournamentRounds (matches)
         };
     }
 
-    console.log('Compiled Tournament Rounds:', allRounds);
-    UpdateTournamentMatch(allRounds);
     return allRounds;
 }
