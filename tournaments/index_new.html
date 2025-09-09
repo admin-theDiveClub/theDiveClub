@@ -220,7 +220,7 @@
                             <tfoot>
                                 <tr>
                                     <td colspan="5">
-                                        <button class="btn btn-sm btn-success" aria-label="New Round">
+                                        <button id="btn-add-round" class="btn btn-sm btn-success" aria-label="New Round">
                                             <i class="bi bi-plus"></i>
                                         </button>
                                     </td>
@@ -271,7 +271,7 @@
                     <div class="col-md-8">
                         <table id="tbl-t-matches">                
                             <thead>
-                                <th colspan="6">Matches</th>
+                                <th colspan="7">Matches</th>
                             </thead>
 
                             <tbody>
@@ -279,10 +279,13 @@
                                     <td colspan="6">Round 1</td>
                                 </tr>
                                 <tr>
+                                    <td>
+                                        <input class="form-check-input" type="checkbox" id="option-check">
+                                    </td>
                                     <td>Player_H</td>
-                                    <td><input id="m-score-H" class="form-control t-info-item" type="number" inputmode="numeric" pattern="[0-9]*" min="1" step="1" placeholder="0"></td>
+                                    <td><input id="m-score-H" class="form-control t-info-item" type="number" inputmode="numeric" pattern="[0-9]*" min="0" step="1" placeholder="0"></td>
                                     <td><i class="bi bi-box-arrow-up-right"></i></td>
-                                    <td><input id="m-score-H" class="form-control t-info-item" type="number" inputmode="numeric" pattern="[0-9]*" min="1" step="1" placeholder="0"></td>
+                                    <td><input id="m-score-H" class="form-control t-info-item" type="number" inputmode="numeric" pattern="[0-9]*" min="0" step="1" placeholder="0"></td>
                                     <td>Player_A</td>
                                     <td><button class="btn btn-sm btn-danger">X</button></td>
                                 </tr>                            
@@ -418,6 +421,29 @@
         {
             padding: 0.25rem 0rem;
             text-align: center;
+        }
+
+        .cell-player-swap
+        {
+            background-color: var(--color-secondary-00);
+            color: var(--color-base-00);
+            border-radius: 2cap;            
+        }
+
+        .cell-player-swappable:hover
+        {
+            background-color: var(--color-secondary-00);
+            color: var(--color-base-00);
+        }
+
+        .input-complete
+        {
+            background-color: var(--color-base-02);
+        }
+
+        .input-win
+        {
+            box-shadow: 0px 0px 8px 2px var(--color-secondary-00);
         }
     </style>
 

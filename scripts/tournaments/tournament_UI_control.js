@@ -721,6 +721,7 @@ function UpdateEligiblePlayers(players, log, multiLife)
         // player display name
         const tdPlayer = document.createElement('td');
         tdPlayer.textContent = p.displayName || p.username || '';
+        tdPlayer.classList.add('cell-player-swappable');
         tr.appendChild(tdPlayer);
 
         // lives remaining = multiLife - ML (from log)
@@ -741,7 +742,7 @@ function UpdateEligiblePlayers(players, log, multiLife)
                 }) || null;
             }
             // pass the tournament player if found, otherwise pass the original player object
-            Swap_matchPlayer(found.username || p, null);
+            Swap_matchPlayer(found.username || p, null, null, tdPlayer);
         });
 
         tbody.appendChild(tr);
@@ -832,6 +833,28 @@ function UpdateTournamentRounds(rounds)
     });
 }
 
+document.getElementById('btn-add-round').addEventListener('click', async () => 
+{
+    const newMatch = 
+    {
+        competitions: 
+        {
+            tournamentID: tournament.id
+        },
+        info: 
+        {
+            round: (Object.keys(tournamentRounds || {}).length + 1).toString(),
+            status: 'New'
+        },
+        players: 
+        {
+            h: { username: null },
+            a: { username: null }
+        }
+    };
+    await DB_Insert('tbl_matches', newMatch);
+});
+
 //Matches
 function UpdateTournamentMatches(players, rounds)
 {
@@ -862,7 +885,7 @@ function UpdateTournamentMatches(players, rounds)
         // round header row
         const trHeader = document.createElement('tr');
         const tdHeader = document.createElement('td');
-        tdHeader.colSpan = 6;
+        tdHeader.colSpan = 7;
         tdHeader.textContent = `Round ${rnum}`;
         tdHeader.style.fontWeight = 'bold';
         tdHeader.style.backgroundColor = 'rgba(0,0,0,0.25)';
@@ -877,6 +900,23 @@ function UpdateTournamentMatches(players, rounds)
             // row for the match
             const tr = document.createElement('tr');
 
+            //Completion CheckBox
+            const tdComplete = document.createElement('td');
+            const chk = document.createElement('input');
+            chk.className = 'form-check-input form-check-input-small';
+            chk.type = 'checkbox';
+            chk.id = `m-complete-${rk}-${mkKey}`;
+            const status = match && match.info && String(match.info.status) === 'Complete';
+            chk.checked = status;
+            chk.title = 'Complete';
+            chk.addEventListener('change', async () => 
+            {
+                match.info.status = chk.checked ? 'Complete' : 'New';
+                await DB_Update('tbl_matches', match, match.id);    
+            });
+            tdComplete.appendChild(chk);
+            tr.appendChild(tdComplete);
+
             // Player usernames
             const un_h = match.players.h? match.players.h.username : null;
             const un_a = match.players.a? match.players.a.username : null;
@@ -888,14 +928,18 @@ function UpdateTournamentMatches(players, rounds)
 
             const t_player_h = FindMatchPlayerInTournamentPlayers(un_h);
             const t_player_a = FindMatchPlayerInTournamentPlayers(un_a);
+            const score_H = (match && match.results && match.results.h && typeof match.results.h.fw !== 'undefined') ? String(match.results.h.fw) : 0;
+            const score_A = (match && match.results && match.results.a && typeof match.results.a.fw !== 'undefined') ? String(match.results.a.fw) : 0;
 
             const tdHName = document.createElement('td');
             tdHName.textContent = t_player_h ? t_player_h.displayName : '-';
             tdHName.style.cursor = 'pointer';
             tdHName.title = 'Click to select this player for swapping';
+            tdHName.classList.add('cell-player-swappable');
             tdHName.addEventListener('click', () => 
             {
-                Swap_matchPlayer(t_player_h ? t_player_h.username : null, match, 'h');
+                Swap_matchPlayer(t_player_h ? t_player_h.username : null, match, 'h', tdHName);
+                tdHName.classList.add('cell-player-swap');
             });
             tr.appendChild(tdHName);
 
@@ -907,9 +951,17 @@ function UpdateTournamentMatches(players, rounds)
             inputH.step = '1';
             inputH.className = 'form-control t-info-item input-score';
             inputH.id = `m-score-${rk}-${mkKey}-h`;
-            inputH.value = (match && match.results && match.results.h && typeof match.results.h.fw !== 'undefined') ? String(match.results.h.fw) : '';
+            inputH.value = score_H;
             inputH.setAttribute('inputmode', 'numeric');
             inputH.setAttribute('pattern', '[0-9]*');
+            if (status)
+            {
+                inputH.classList.add('input-complete');
+                if (score_H > score_A)
+                {
+                    inputH.classList.add('input-win');
+                }
+            }
             inputH.addEventListener('change', async () => 
             {
                 const raw = inputH.value;
@@ -952,9 +1004,17 @@ function UpdateTournamentMatches(players, rounds)
             inputA.step = '1';
             inputA.className = 'form-control t-info-item input-score';
             inputA.id = `m-score-${rk}-${mkKey}-a`;
-            inputA.value = (match && match.results && match.results.a && typeof match.results.a.fw !== 'undefined') ? String(match.results.a.fw) : ''; 
+            inputA.value = score_A; 
             inputA.setAttribute('inputmode', 'numeric');
             inputA.setAttribute('pattern', '[0-9]*');
+            if (status)
+            {
+                inputA.classList.add('input-complete');
+                if (score_A > score_H)
+                {
+                    inputA.classList.add('input-win');
+                }
+            }
             inputA.addEventListener('change', async () => 
             {
                 const raw = inputA.value;
@@ -982,9 +1042,11 @@ function UpdateTournamentMatches(players, rounds)
             tdAName.textContent = t_player_a ? t_player_a.displayName : '-';
             tdAName.style.cursor = 'pointer';
             tdAName.title = 'Click to select this player for swapping';
+            tdAName.classList.add('cell-player-swappable');
             tdAName.addEventListener('click', () => 
             {
-                Swap_matchPlayer(t_player_a ? t_player_a.username : null, match, 'a');
+                Swap_matchPlayer(t_player_a ? t_player_a.username : null, match, 'a', tdAName);
+                tdAName.classList.add('cell-player-swap');
             });
             tr.appendChild(tdAName);
 
@@ -1014,14 +1076,15 @@ function UpdateTournamentMatches(players, rounds)
 var swapA = null;
 var swapB = null;
 
-async function Swap_matchPlayer(player, match, side)
+async function Swap_matchPlayer(player, match, side, cell)
 {
     if (!swapA)
     {
-        swapA = { player, match, side };
+        swapA = { player, match, side, cell};
+        cell.classList.add('cell-player-swap');
     } else 
     {
-        swapB = { player, match, side };
+        swapB = { player, match, side, cell};
 
         if (swapA.match == swapB.match && swapA.side != swapB.side)
         {
@@ -1029,6 +1092,8 @@ async function Swap_matchPlayer(player, match, side)
             swapB.match.players[swapB.side] = { username: swapA.player };
             await DB_Update('tbl_matches', swapA.match, swapA.match.id);
             //clear swap variables
+            swapA.cell.classList.remove('cell-player-swap');
+            swapB.cell.classList.remove('cell-player-swap');
             swapA = null;
             swapB = null;
             return;
@@ -1039,6 +1104,8 @@ async function Swap_matchPlayer(player, match, side)
             swapA.match.players[swapA.side] = null;
             await DB_Update('tbl_matches', swapA.match, swapA.match.id);
             //clear swap variables
+            swapA.cell.classList.remove('cell-player-swap');
+            swapB.cell.classList.remove('cell-player-swap');
             swapA = null;
             swapB = null;
             return;
@@ -1057,6 +1124,8 @@ async function Swap_matchPlayer(player, match, side)
         }
 
         //clear swap variables
+        swapA.cell.classList.remove('cell-player-swap');
+        swapB.cell.classList.remove('cell-player-swap');
         swapA = null;
         swapB = null;
     }
