@@ -9,7 +9,7 @@ var tournamentPlayers = null;
 
 Start ();
 
-async function Start ()
+export async function Start ()
 {
     tournamentID = GetTournamentID();
     if (tournamentID)

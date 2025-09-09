@@ -1,4 +1,6 @@
 import { DB_Update } from '../supabase/supaBase_db_helpers.js';
+import { DB_Delete } from '../supabase/supaBase_db_helpers.js';
+import { DB_Insert } from '../supabase/supaBase_db_helpers.js';
 
 export function UpdateTournamentUI_Control(_tournament, _tournamentPlayers, _tournamentLog, _tournamentRounds)
 {
@@ -801,9 +803,26 @@ function UpdateTournamentRounds(rounds)
         icon.className = 'bi bi-plus';
         btn.appendChild(icon);
 
-        btn.addEventListener('click', () => {
-            // dispatch an event on the table so callers can handle creating a new match for this round
-            table.dispatchEvent(new CustomEvent('round-new-match', { detail: { round: rk } }));
+        btn.addEventListener('click', async () => 
+        {
+            const newMatch = 
+            {
+                competitions: 
+                {
+                    tournamentID: tournament.id
+                },
+                info: 
+                {
+                    round: rk,
+                    status: 'New'
+                },
+                players: 
+                {
+                    h: { username: null },
+                    a: { username: null }
+                }
+            };
+            await DB_Insert('tbl_matches', newMatch);
         });
 
         tdAdd.appendChild(btn);
@@ -811,8 +830,6 @@ function UpdateTournamentRounds(rounds)
 
         tbody.appendChild(tr);
     });
-
-    table.dispatchEvent(new CustomEvent('rounds-updated', { detail: { count: roundKeys.length } }));
 }
 
 //Matches
@@ -826,11 +843,6 @@ function UpdateTournamentMatches(players, rounds)
     // clear existing rows
     tbody.innerHTML = '';
 
-    if (!rounds || typeof rounds !== 'object') {
-        table.dispatchEvent(new CustomEvent('matches-updated', { detail: { count: 0 } }));
-        return;
-    }
-
     const roundKeys = Object.keys(rounds)
         .map(k => Number(k))
         .filter(n => !Number.isNaN(n))
@@ -838,16 +850,8 @@ function UpdateTournamentMatches(players, rounds)
 
     let totalMatches = 0;
 
-    const findPlayer = (playerRef) =>
+    roundKeys.forEach(rnum => 
     {
-        if (!playerRef) return null;
-        // match by username first, then by id
-        const username = playerRef.username;
-        const id = playerRef.id;
-        return players && players.find(p => (username && p.username === username) || (id != null && p.id == id)) || null;
-    };
-
-    roundKeys.forEach(rnum => {
         const rk = String(rnum);
         const matchesObj = rounds[rk] || {};
         const matchKeys = Object.keys(matchesObj)
@@ -865,31 +869,33 @@ function UpdateTournamentMatches(players, rounds)
         trHeader.appendChild(tdHeader);
         tbody.appendChild(trHeader);
 
-        matchKeys.forEach(mk => {
+        matchKeys.forEach(mk => 
+        {
             const mkKey = String(mk);
-            const wrapper = matchesObj[mkKey];
-            const match = wrapper && wrapper.match ? wrapper.match : null;
+            const match = matchesObj[mkKey].match;
 
             // row for the match
             const tr = document.createElement('tr');
 
-            // home player name
-            const playerHRef = match && match.players ? match.players.h : null;
-            const playerARef = match && match.players ? match.players.a : null;
+            // Player usernames
+            const un_h = match.players.h? match.players.h.username : null;
+            const un_a = match.players.a? match.players.a.username : null;
 
-            const foundH = findPlayer(playerHRef);
-            const foundA = findPlayer(playerARef);
+            const FindMatchPlayerInTournamentPlayers = (username) =>
+            {
+                return players.find(p => p.username === username) || null;
+            };
 
-            const nameH = (foundH && (foundH.displayName || foundH.username)) || (playerHRef && playerHRef.username) || '-';
-            const nameA = (foundA && (foundA.displayName || foundA.username)) || (playerARef && playerARef.username) || '-';
+            const t_player_h = FindMatchPlayerInTournamentPlayers(un_h);
+            const t_player_a = FindMatchPlayerInTournamentPlayers(un_a);
 
             const tdHName = document.createElement('td');
-            tdHName.textContent = nameH;
+            tdHName.textContent = t_player_h ? t_player_h.displayName : '-';
             tdHName.style.cursor = 'pointer';
             tdHName.title = 'Click to select this player for swapping';
-            tdHName.addEventListener('click', () => {
-                const playerObj = foundH || playerHRef;
-                if (playerObj) Swap_matchPlayer(playerObj, match);
+            tdHName.addEventListener('click', () => 
+            {
+                Swap_matchPlayer(t_player_h ? t_player_h.username : null, match, 'h');
             });
             tr.appendChild(tdHName);
 
@@ -902,27 +908,40 @@ function UpdateTournamentMatches(players, rounds)
             inputH.className = 'form-control t-info-item input-score';
             inputH.id = `m-score-${rk}-${mkKey}-h`;
             inputH.value = (match && match.results && match.results.h && typeof match.results.h.fw !== 'undefined') ? String(match.results.h.fw) : '';
+            inputH.setAttribute('inputmode', 'numeric');
+            inputH.setAttribute('pattern', '[0-9]*');
+            inputH.addEventListener('change', async () => 
+            {
+                const raw = inputH.value;
+                const parsed = raw === '' ? null : parseInt(raw, 10);
+
+                if(!match.results)
+                {
+                    match.results = 
+                    {
+                        a: {fw: 0},
+                        h: {fw: parsed ? parsed : 0}
+                    };
+                } else 
+                {
+                    match.results.h.fw = parsed ? parsed : 0;
+                }
+
+                const response = await DB_Update('tbl_matches', match, match.id);
+            });
             tdHScore.appendChild(inputH);
             tr.appendChild(tdHScore);
 
             // arrow cell
             const tdArrow = document.createElement('td');
-            const a = document.createElement('a');
-            if (match && match.id) {
-                a.href = 'https://thediveclub.org/matches/index.html?matchID=' + encodeURIComponent(match.id);
-                a.target = '_blank';
-                a.rel = 'noopener noreferrer';
-                a.title = 'Open match';
-            } else {
-                a.href = '#';
-                a.style.pointerEvents = 'none';
-                a.style.opacity = '0.6';
-                a.title = 'Match ID not available';
-            }
+            const link = document.createElement('a');
+            link.href = 'https://thediveclub.org/matches/scoreboard.html?matchID=' + encodeURIComponent(match.id);
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
             const icon = document.createElement('i');
             icon.className = 'bi bi-box-arrow-up-right';
-            a.appendChild(icon);
-            tdArrow.appendChild(a);
+            link.appendChild(icon);
+            tdArrow.appendChild(link);
             tr.appendChild(tdArrow);
 
             // score input for A
@@ -933,18 +952,39 @@ function UpdateTournamentMatches(players, rounds)
             inputA.step = '1';
             inputA.className = 'form-control t-info-item input-score';
             inputA.id = `m-score-${rk}-${mkKey}-a`;
-            inputA.value = (match && match.results && match.results.a && typeof match.results.a.fw !== 'undefined') ? String(match.results.a.fw) : '';
+            inputA.value = (match && match.results && match.results.a && typeof match.results.a.fw !== 'undefined') ? String(match.results.a.fw) : ''; 
+            inputA.setAttribute('inputmode', 'numeric');
+            inputA.setAttribute('pattern', '[0-9]*');
+            inputA.addEventListener('change', async () => 
+            {
+                const raw = inputA.value;
+                const parsed = raw === '' ? null : parseInt(raw, 10);
+
+                if(!match.results)
+                {
+                    match.results = 
+                    {
+                        a: {fw: parsed ? parsed : 0},
+                        h: {fw: 0}
+                    };
+                } else 
+                {
+                    match.results.a.fw = parsed ? parsed : 0;
+                }
+
+                const response = await DB_Update('tbl_matches', match, match.id);
+            });
             tdAScore.appendChild(inputA);
             tr.appendChild(tdAScore);
 
             // away player name
             const tdAName = document.createElement('td');
-            tdAName.textContent = nameA;
+            tdAName.textContent = t_player_a ? t_player_a.displayName : '-';
             tdAName.style.cursor = 'pointer';
             tdAName.title = 'Click to select this player for swapping';
-            tdAName.addEventListener('click', () => {
-                const playerObj = foundA || playerARef;
-                if (playerObj) Swap_matchPlayer(playerObj, match);
+            tdAName.addEventListener('click', () => 
+            {
+                Swap_matchPlayer(t_player_a ? t_player_a.username : null, match, 'a');
             });
             tr.appendChild(tdAName);
 
@@ -955,9 +995,12 @@ function UpdateTournamentMatches(players, rounds)
             btn.type = 'button';
             btn.title = 'Remove match';
             btn.textContent = 'X';
-            btn.addEventListener('click', () => {
-                tr.remove();
-                table.dispatchEvent(new CustomEvent('match-removed', { detail: { round: rk, match: mkKey } }));
+            btn.addEventListener('click', async () => 
+            {
+                if (confirm(`Delete match between ${t_player_h ? t_player_h.displayName : '-'} and ${t_player_a ? t_player_a.displayName : '-'}? This action cannot be undone.`)) 
+                {
+                    const response = await DB_Delete('tbl_matches', match.id);
+                }
             });
             tdRemove.appendChild(btn);
             tr.appendChild(tdRemove);
@@ -966,95 +1009,52 @@ function UpdateTournamentMatches(players, rounds)
             totalMatches++;
         });
     });
-
-    table.dispatchEvent(new CustomEvent('matches-updated', { detail: { count: totalMatches } }));
 }
 
 var swapA = null;
 var swapB = null;
 
-function Swap_matchPlayer(player, match)
+async function Swap_matchPlayer(player, match, side)
 {
     if (!swapA)
     {
-        swapA = { player, match };
-        console.log("Swap A set:", swapA);
+        swapA = { player, match, side };
     } else 
     {
-        swapB = { player, match };
-        console.log("Swap B set:", swapB);
+        swapB = { player, match, side };
 
-        // helper to normalize a player argument to an object with a username property
-        const normalizePlayer = (p) => {
-            if (!p) return null;
-            if (typeof p === 'string') return { username: p };
-            return (typeof p === 'object') ? p : null;
-        };
-
-        // helper to find side key ('h' or 'a') or index (0/1) depending on players structure
-        const findSide = (m, uname) => {
-            if (!m || !m.players || !uname) return null;
-            const pl = m.players;
-            if (Array.isArray(pl)) {
-                const idx = pl.findIndex(pp => pp && String(pp.username) === String(uname));
-                return idx === -1 ? null : idx; // return numeric index for arrays
-            } else if (typeof pl === 'object') {
-                if (pl.h && String(pl.h.username) === String(uname)) return 'h';
-                if (pl.a && String(pl.a.username) === String(uname)) return 'a';
-                return null;
-            }
-            return null;
-        };
-
-        // perform a swap for a given match+side with a provided player object
-        const setPlayerAtSide = (m, side, newPlayer) => {
-            if (!m || !m.players || side == null) return;
-            const pl = m.players;
-            if (Array.isArray(pl) && typeof side === 'number') {
-                pl[side] = newPlayer;
-            } else if (typeof pl === 'object' && (side === 'h' || side === 'a')) {
-                pl[side] = newPlayer;
-            }
-        };
-
-        // normalized players
-        const normAPlayer = normalizePlayer(swapA.player);
-        const normBPlayer = normalizePlayer(swapB.player);
-
-        if (swapA.match && swapB.match)
+        if (swapA.match == swapB.match && swapA.side != swapB.side)
         {
-            const unameA = normAPlayer && normAPlayer.username;
-            const unameB = normBPlayer && normBPlayer.username;
-
-            const sideA = findSide(swapA.match, unameA);
-            const sideB = findSide(swapB.match, unameB);
-
-            // swap them if sides were found
-            if (sideA != null) setPlayerAtSide(swapA.match, sideA, normBPlayer);
-            if (sideB != null) setPlayerAtSide(swapB.match, sideB, normAPlayer);
-
-            const response_A = DB_Update('tbl_matches', swapA.match, swapA.match.id);
-            const response_B = DB_Update('tbl_matches', swapB.match, swapB.match.id);
+            swapA.match.players[swapA.side] = { username: swapB.player };
+            swapB.match.players[swapB.side] = { username: swapA.player };
+            await DB_Update('tbl_matches', swapA.match, swapA.match.id);
+            //clear swap variables
+            swapA = null;
+            swapB = null;
+            return;
         }
 
-        if (swapA.match && !swapB.match)
+        if (swapA.match == swapB.match && swapA.player == swapB.player)
         {
-            const unameA = normAPlayer && normAPlayer.username;
-            const sideA = findSide(swapA.match, unameA);
-            if (sideA != null) setPlayerAtSide(swapA.match, sideA, normBPlayer);
-            const response_A = DB_Update('tbl_matches', swapA.match, swapA.match.id);
+            swapA.match.players[swapA.side] = null;
+            await DB_Update('tbl_matches', swapA.match, swapA.match.id);
+            //clear swap variables
+            swapA = null;
+            swapB = null;
+            return;
         }
 
-        if (!swapA.match && swapB.match)
+        if (swapA.match)
         {
-            const unameB = normBPlayer && normBPlayer.username;
-            const sideB = findSide(swapB.match, unameB);
-            if (sideB != null) setPlayerAtSide(swapB.match, sideB, normAPlayer);
-            const response_B = DB_Update('tbl_matches', swapB.match, swapB.match.id);
+            swapA.match.players[swapA.side] = { username: swapB.player };
+            await DB_Update('tbl_matches', swapA.match, swapA.match.id);
         }
 
-        console.log("Swap A: Updated", swapA);
-        console.log("Swap B: Updated", swapB);
+        if (swapB.match)
+        {
+            swapB.match.players[swapB.side] = { username: swapA.player };
+            await DB_Update('tbl_matches', swapB.match, swapB.match.id);
+        }
 
         //clear swap variables
         swapA = null;
