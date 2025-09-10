@@ -1,4 +1,4 @@
-import { Start } from '../tournaments/tournament_data.js';
+import { UpdateTournamentData } from '../tournaments/tournament_data.js';
 
 function OutputResponse(response) 
 {
@@ -32,10 +32,7 @@ export async function DB_Delete(tbl, id)
     .select();
 
     OutputResponse(response);
-    if (!response.error)
-    {
-        Start();
-    }
+    UpdateTournamentData();
     return response;
 }
 
@@ -47,9 +44,6 @@ export async function DB_Insert(tbl, data)
     .select();
 
     OutputResponse(response);
-    if (!response.error)
-    {
-        Start();
-    }
+    UpdateTournamentData();
     return response;
 }

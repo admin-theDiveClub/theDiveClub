@@ -10,7 +10,7 @@ var tournamentPlayers = null;
 
 Start ();
 
-export async function Start ()
+async function Start ()
 {
     tournamentID = GetTournamentID();
     if (tournamentID)
@@ -39,9 +39,10 @@ export async function Start ()
     }
 }
 
-async function UpdateTournamentData ()
+export async function UpdateTournamentData ()
 {
     tournamentPlayers = await PopulatePlayerInfo(tournament.players);
+    tournamentMatches = await GetTournamentMatches(tournamentID);
     tournamentLog = CompileTournamentLog(GetConfirmedPlayers(tournamentPlayers), tournamentMatches);
     tournamentRounds = CompileTournamentRounds(tournamentMatches);
 
@@ -123,6 +124,9 @@ async function SubscribeToTournamentMatchesUpdates (_tournamentID)
             if (payload.new.competitions && payload.new.competitions.tournamentID === _tournamentID)
             {
                 OnPayloadReceived_tournamentMatches(payload.new);
+            } else if (payload.eventType === 'DELETE')
+            {
+                OnPayloadReceived_tournamentMatches(payload.new);
             }
         })
         .subscribe();
@@ -144,8 +148,8 @@ function OnPayloadReceived_tournamentMatches (_match)
     if (idx !== -1) 
     {
         tournamentMatches[idx] = _match;
-        UpdateTournamentData();
     }
+    UpdateTournamentData();
 }
 
 
@@ -366,29 +370,21 @@ function CompileTournamentLog (players, matches)
 
 function CompileTournamentRounds (matches)
 {
-    var allRounds = {};
-    
+    var allRounds = [];
+
     for (var i = 0; i < matches.length; i++)
     {
-        const m_round = matches[i].info?.round || "Unclassified";
-        if (!Object.prototype.hasOwnProperty.call(allRounds, m_round)) 
-        {
-            allRounds[m_round] = {};
-        }
-        const roundMatchesCount = Object.keys(allRounds[m_round]).length;
-        const precedingRound = m_round > 0 ? m_round - 1 : null;
-        var precedingMatches = null;
-        if (precedingRound)
-        {
-            precedingMatches = m_round > 0 ? [roundMatchesCount * 2, roundMatchesCount * 2 + 1] : [];
-        }
-
-        allRounds[m_round][roundMatchesCount] = 
+        const m_round = matches[i].info?.round || 0;
+        allRounds[m_round] = allRounds[m_round] || [];
+        const matchRef = 
         {
             match: matches[i],
-            precedingRound: precedingRound,
-            precedingMatches: precedingMatches
-        };
+            round: m_round,
+            id: allRounds[m_round].length,
+            precedingRound: m_round > 0 ? m_round - 1 : null,
+            precedingMatches: m_round > 1 ? [allRounds[m_round].length * 2, allRounds[m_round].length * 2 + 1] : []
+        }
+        allRounds[m_round].push(matchRef);
     }
 
     return allRounds;

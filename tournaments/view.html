@@ -59,6 +59,16 @@
 
         <div id="progressionChart-V" class="card">
         </div>
+
+        <div id="progressionChart-H" class="card">
+            <div class="row" id="prog-chart-h-container">
+
+            </div>
+        </div>
+
+        <div id="progressionChart-V-Alt" class="card">
+
+        </div>
     </div>
 
     <style>
@@ -68,59 +78,68 @@
             text-align: center;
         }
 
-        #progressionChart-V, #progressionChart-H
+        #progressionChart-V, #progressionChart-H, #progressionChart-V-Alt
         {
             text-align: center;
             overflow-x: auto;
         }
 
-        #progressionChart-V .card
+        #progressionChart-V .card, #progressionChart-H .card, #progressionChart-V-Alt .card
         {
             padding: 0rem;
             max-width: 20vw;
+            margin: 0.5rem;
         }
 
-        #progressionChart-V .col
+        #progressionChart-V .col, #progressionChart-V-Alt .col
         {
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
-        #progressionChart-V table
+        #progressionChart-V table, #progressionChart-V-Alt table, #progressionChart-H table
         {
             margin: 0rem;
         }
 
-        #progressionChart-V .prog-player
+        .prog-player
         {
             padding: 0.25rem 1rem;
         }
 
-        #progressionChart-V .prog-score
+        .prog-score
         {
             font-size: 1.5rem;
         }
 
-        #progressionChart-V .prog-winner
+        .prog-winner
         {
             font-weight: bold;
             color: var(--color-primary-00);
         }
 
-        #progressionChart-V .card-completed
+        .card-completed
         {
             box-shadow: 0 0 12px 0px var(--color-primary-00) !important;
         }
 
-        #progressionChart-V .card-live
+        .card-live
         {
             box-shadow: 0 0 12px 0px var(--color-accent-0) !important;
         }
 
-        #progressionChart-V .card-new
+        .card-new
         {
             box-shadow: 0 0 12px 0px var(--color-base-00) !important;
+        }
+
+        #progressionChart-H .col
+        {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+            align-items: center;
         }
     </style>
 
