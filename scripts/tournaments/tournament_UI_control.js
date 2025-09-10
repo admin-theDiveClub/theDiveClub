@@ -311,6 +311,12 @@ function UpdateEntriesList(entries)
 
     const altRowColor = 'rgba(0,0,0,0.25)';
 
+    console.log(entries);
+    if (!entries)
+    {
+        entries = [];
+    }
+
     entries.forEach((p, i) => {
         const tr = document.createElement('tr');
         tr.dataset.username = p.username || '';
@@ -478,7 +484,7 @@ if (addEntriesMultiBtn)
         const newEntriesList = lines.map(line => {
             const trimmed = line.trim();
             if (!trimmed) return null;
-            const m = trimmed.match(/^\d+\.\s*(.*)$/);
+            const m = trimmed.match(/^[^.]*\.\s*(.*)$/);
             return m ? m[1].trim() : trimmed;
         }).filter(Boolean);
 
@@ -488,6 +494,10 @@ if (addEntriesMultiBtn)
         {
             const entry = newEntriesList[i];
             var entryFound = false;
+            if (!tournamentPlayers)
+            {
+                tournamentPlayers = [];
+            }
             for (var j = 0; j < tournamentPlayers.length; j ++)
             {
                 const player = tournamentPlayers[j];
@@ -645,14 +655,20 @@ if (addEntryBtn)
         if (!entry) return;
 
         var entryFound = false;
-        for (var j = 0; j < tournamentPlayers.length; j ++)
+        if (tournamentPlayers)
         {
-            const player = tournamentPlayers[j];
-            if (player.username === entry || player.displayName === entry)
+            for (var j = 0; j < tournamentPlayers.length; j ++)
             {
-                entryFound = true;
-                break;
+                const player = tournamentPlayers[j];
+                if (player.username === entry || player.displayName === entry)
+                {
+                    entryFound = true;
+                    break;
+                }
             }
+        } else 
+        {
+            tournamentPlayers = [];
         }
         if (!entryFound)
         {
