@@ -271,7 +271,15 @@
                     <div class="col-md-8">
                         <table id="tbl-t-matches">                
                             <thead>
-                                <th colspan="7">Matches</th>
+                                <tr>
+                                    <th colspan="7">Matches</th>
+                                </tr>
+                                <tr>
+                                    <th colspan="7">    
+                                        <input class="form-check-input" type="checkbox" id="option-hideCompleted">
+                                        <label id="option-hideCompleted-label" class="form-label" for="option-hideCompleted">Hide Completed</label>
+                                    </th>
+                                </tr>
                             </thead>
 
                             <tbody>
@@ -444,6 +452,12 @@
         .input-win
         {
             box-shadow: 0px 0px 8px 2px var(--color-secondary-00);
+        }
+
+        #option-hideCompleted-label
+        {
+            text-align: left !important;
+            padding: 1rem;
         }
     </style>
 

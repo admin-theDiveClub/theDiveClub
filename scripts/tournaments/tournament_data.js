@@ -1,4 +1,5 @@
 import { UpdateTournamentUI_Control } from "../tournaments/tournament_UI_control.js";
+import { UpdateTournamentUI } from "./tournament_UI_view.js";
 
 var tournamentID = null;
 var tournament = null;
@@ -29,7 +30,13 @@ export async function Start ()
         }
     }
 
-    UpdateTournamentUI_Control(tournament, tournamentPlayers, tournamentLog, tournamentRounds);
+    if (window.location.href && window.location.href.toLowerCase().includes('view.html')) 
+    {
+        UpdateTournamentUI(tournament, tournamentLog, tournamentRounds, tournamentPlayers);
+    } else 
+    {
+        UpdateTournamentUI_Control(tournament, tournamentPlayers, tournamentLog, tournamentRounds);
+    }
 }
 
 async function UpdateTournamentData ()
@@ -38,7 +45,13 @@ async function UpdateTournamentData ()
     tournamentLog = CompileTournamentLog(GetConfirmedPlayers(tournamentPlayers), tournamentMatches);
     tournamentRounds = CompileTournamentRounds(tournamentMatches);
 
-    UpdateTournamentUI_Control(tournament, tournamentPlayers, tournamentLog, tournamentRounds);
+    if (window.location.href && window.location.href.toLowerCase().includes('view.html')) 
+    {
+        UpdateTournamentUI(tournament, tournamentLog, tournamentRounds, tournamentPlayers);
+    } else 
+    {
+        UpdateTournamentUI_Control(tournament, tournamentPlayers, tournamentLog, tournamentRounds);
+    }
 }
 
 function GetTournamentID()
@@ -285,8 +298,6 @@ function CompileTournamentLog (players, matches)
             if (!side) continue;
 
             const status = m.info && m.info.status;
-            if (status !== 'Complete') continue;
-
             MP++;
             const results = m.results || {};
             const pRes = results[side] || {};
@@ -299,6 +310,8 @@ function CompileTournamentLog (players, matches)
             FP += pFW + oFW;
             FW += pFW;
             BF += pBF;
+            
+            if (status !== 'Complete') continue;
 
             if (pFW > oFW) MW++;
             else if (pFW < oFW) ML++;

@@ -132,106 +132,118 @@ async function UpdateTournamentInfo(tournament)
     document.getElementById('t-matches-lives-per-player').value = tournament.multiLife || 1;
 }
 
-document.getElementById('t-info-editToggle-btn').addEventListener('click', function() 
+const editToggleBtn = document.getElementById('t-info-editToggle-btn');
+if (editToggleBtn)
 {
-    const editCard = document.getElementById('t-info-edit');
-    const viewCard = document.getElementById('t-info-view');
+    editToggleBtn.addEventListener('click', function() 
+    {
+        const editCard = document.getElementById('t-info-edit');
+        const viewCard = document.getElementById('t-info-view');
 
-    editCard.style.display = "block";
-    viewCard.style.display = "none";
-});
+        if (editCard) {editCard.style.display = 'block';}
+        if (viewCard) {viewCard.style.display = 'none';}
+    });
+}
 
-document.getElementById('t-info-editCancel-btn').addEventListener('click', function() 
+const editCancelBtn = document.getElementById('t-info-editCancel-btn');
+if (editCancelBtn) 
 {
-    const editCard = document.getElementById('t-info-edit');
-    const viewCard = document.getElementById('t-info-view');
+    editCancelBtn.addEventListener('click', function() 
+    {
+        const editCard = document.getElementById('t-info-edit');
+        const viewCard = document.getElementById('t-info-view');
 
-    editCard.style.display = "none";
-    viewCard.style.display = "block";
-});
+        editCard.style.display = "none";
+        viewCard.style.display = "block";
+    });
+}
 
-document.getElementById('t-info-edit-btn').addEventListener('click', async function() 
+const editBtn = document.getElementById('t-info-edit-btn');
+if (editBtn) 
 {
-    const el = id => document.getElementById(id);
+    editBtn.addEventListener('click', async function() 
+    {
+        const el = id => document.getElementById(id);
 
-    // create/assign a global tournament_new from an existing tournament if present
-    const source = tournament;
-    const tn = Object.assign({}, source); // shallow clone
+        // create/assign a global tournament_new from an existing tournament if present
+        const source = tournament;
+        const tn = Object.assign({}, source); // shallow clone
 
-    const nameEl = el('t-info-name');
-    const maxEl = el('t-info-max-entries');
-    const formatEl = el('t-info-format');
-    const dateEl = el('t-info-date');
-    const timeEl = el('t-info-time');
-    const locEl = el('t-info-location');
-    const descEl = el('t-info-description');
+        const nameEl = el('t-info-name');
+        const maxEl = el('t-info-max-entries');
+        const formatEl = el('t-info-format');
+        const dateEl = el('t-info-date');
+        const timeEl = el('t-info-time');
+        const locEl = el('t-info-location');
+        const descEl = el('t-info-description');
 
-    var allChanges = [];
+        var allChanges = [];
 
-    if (nameEl) tn.name = nameEl.value;
-    if (tn.name != source.name) allChanges.push({ field: 'name', oldValue: source.name, newValue: tn.name });
-    if (maxEl) tn.maxEntries = maxEl.value !== '' ? Number(maxEl.value) : null;
-    if (tn.maxEntries != source.maxEntries) allChanges.push({ field: 'maxEntries', oldValue: source.maxEntries, newValue: tn.maxEntries });
-    if (formatEl) tn.format = formatEl.value;
-    if (tn.format != source.format) allChanges.push({ field: 'format', oldValue: source.format, newValue: tn.format });
-    if (dateEl) tn.date = dateEl.value || null;
-    if (tn.date != source.date) allChanges.push({ field: 'date', oldValue: source.date, newValue: tn.date });
-    if (timeEl) tn.time = timeEl.value || null;
-    // normalize time to HH:MM:SS
-    if (timeEl) {
-        const raw = timeEl.value || '';
-        if (raw) {
-            const parts = raw.split(':').map(p => Number(p || 0));
-            const hh = Math.max(0, Math.min(23, parts[0] || 0));
-            const mm = Math.max(0, Math.min(59, parts[1] || 0));
-            const ss = Math.max(0, Math.min(59, parts[2] || 0));
-            const pad = n => String(n).padStart(2, '0');
-            tn.time = `${pad(hh)}:${pad(mm)}:${pad(ss)}`;
+        if (nameEl) tn.name = nameEl.value;
+        if (tn.name != source.name) allChanges.push({ field: 'name', oldValue: source.name, newValue: tn.name });
+        if (maxEl) tn.maxEntries = maxEl.value !== '' ? Number(maxEl.value) : null;
+        if (tn.maxEntries != source.maxEntries) allChanges.push({ field: 'maxEntries', oldValue: source.maxEntries, newValue: tn.maxEntries });
+        if (formatEl) tn.format = formatEl.value;
+        if (tn.format != source.format) allChanges.push({ field: 'format', oldValue: source.format, newValue: tn.format });
+        if (dateEl) tn.date = dateEl.value || null;
+        if (tn.date != source.date) allChanges.push({ field: 'date', oldValue: source.date, newValue: tn.date });
+        if (timeEl) tn.time = timeEl.value || null;
+        // normalize time to HH:MM:SS
+        if (timeEl) {
+            const raw = timeEl.value || '';
+            if (raw) {
+                const parts = raw.split(':').map(p => Number(p || 0));
+                const hh = Math.max(0, Math.min(23, parts[0] || 0));
+                const mm = Math.max(0, Math.min(59, parts[1] || 0));
+                const ss = Math.max(0, Math.min(59, parts[2] || 0));
+                const pad = n => String(n).padStart(2, '0');
+                tn.time = `${pad(hh)}:${pad(mm)}:${pad(ss)}`;
+            } else {
+                tn.time = null;
+            }
+        }
+        if (tn.time != source.time) allChanges.push({ field: 'time', oldValue: source.time, newValue: tn.time });
+        if (locEl) tn.location = locEl.value;
+        if (tn.location != source.location) allChanges.push({ field: 'location', oldValue: source.location, newValue: tn.location });
+        if (descEl) tn.description = descEl.textContent || null;
+        if (tn.description != source.description) allChanges.push({ field: 'description', oldValue: source.description, newValue: tn.description });
+
+        // console.log('tournament_new', tn);
+        // console.log('allChanges', allChanges);
+
+        if (!Array.isArray(allChanges) || allChanges.length === 0) {
+            alert('No changes to save.');
         } else {
-            tn.time = null;
-        }
-    }
-    if (tn.time != source.time) allChanges.push({ field: 'time', oldValue: source.time, newValue: tn.time });
-    if (locEl) tn.location = locEl.value;
-    if (tn.location != source.location) allChanges.push({ field: 'location', oldValue: source.location, newValue: tn.location });
-    if (descEl) tn.description = descEl.textContent || null;
-    if (tn.description != source.description) allChanges.push({ field: 'description', oldValue: source.description, newValue: tn.description });
+            const fmt = v => {
+                try {
+                    if (v === null) return 'null';
+                    if (v === undefined) return 'undefined';
+                    if (typeof v === 'object') return JSON.stringify(v);
+                    return String(v);
+                } catch (e) {
+                    return String(v);
+                }
+            };
 
-    // console.log('tournament_new', tn);
-    // console.log('allChanges', allChanges);
-
-    if (!Array.isArray(allChanges) || allChanges.length === 0) {
-        alert('No changes to save.');
-    } else {
-        const fmt = v => {
-            try {
-                if (v === null) return 'null';
-                if (v === undefined) return 'undefined';
-                if (typeof v === 'object') return JSON.stringify(v);
-                return String(v);
-            } catch (e) {
-                return String(v);
-            }
-        };
-
-        const lines = allChanges.map(c => `${c.field}: ${fmt(c.oldValue)} -> ${fmt(c.newValue)}`);
-        const msg = 'The following changes will be applied:\n\n' + lines.join('\n');
-        if (confirm(msg + '\n\nApply these changes to the database?')) 
-        {
-            const response = await DB_Update('tbl_tournaments', tn, tn.id);
-            if (response.error) {
-                alert('Failed to push changes: ' + (response.error.message || String(response.error)));
-            } else 
+            const lines = allChanges.map(c => `${c.field}: ${fmt(c.oldValue)} -> ${fmt(c.newValue)}`);
+            const msg = 'The following changes will be applied:\n\n' + lines.join('\n');
+            if (confirm(msg + '\n\nApply these changes to the database?')) 
             {
-                const editCard = document.getElementById('t-info-edit');
-                const viewCard = document.getElementById('t-info-view');
+                const response = await DB_Update('tbl_tournaments', tn, tn.id);
+                if (response.error) {
+                    alert('Failed to push changes: ' + (response.error.message || String(response.error)));
+                } else 
+                {
+                    const editCard = document.getElementById('t-info-edit');
+                    const viewCard = document.getElementById('t-info-view');
 
-                editCard.style.display = "none";
-                viewCard.style.display = "block";
+                    editCard.style.display = "none";
+                    viewCard.style.display = "block";
+                }
             }
         }
-    }
-});
+    });
+}
 
 (function() {
     const maxEl = document.getElementById('t-matches-max-entries');
@@ -454,53 +466,58 @@ function UpdateEntriesList(entries)
     table.dispatchEvent(new CustomEvent('entries-loaded', { detail: { count: entries.length } }));
 }
 
-document.getElementById('add-entries-multi-btn').addEventListener('click', async function() 
+const addEntriesMultiBtn = document.getElementById('add-entries-multi-btn')
+if (addEntriesMultiBtn)
 {
-    const ta = document.getElementById('t-input-multiplePlayers');
-    console.log(ta.value);
-
-    const lines = (ta.value || '').split(/\r?\n/);
-    const newEntriesList = lines.map(line => {
-        const trimmed = line.trim();
-        if (!trimmed) return null;
-        const m = trimmed.match(/^\d+\.\s*(.*)$/);
-        return m ? m[1].trim() : trimmed;
-    }).filter(Boolean);
-
-    console.log(newEntriesList);
-
-    for (var i = 0; i < newEntriesList.length; i ++)
+    addEntriesMultiBtn.addEventListener('click', async function() 
     {
-        const entry = newEntriesList[i];
-        var entryFound = false;
-        for (var j = 0; j < tournamentPlayers.length; j ++)
+        const ta = document.getElementById('t-input-multiplePlayers');
+        console.log(ta.value);
+
+        const lines = (ta.value || '').split(/\r?\n/);
+        const newEntriesList = lines.map(line => {
+            const trimmed = line.trim();
+            if (!trimmed) return null;
+            const m = trimmed.match(/^\d+\.\s*(.*)$/);
+            return m ? m[1].trim() : trimmed;
+        }).filter(Boolean);
+
+        console.log(newEntriesList);
+
+        for (var i = 0; i < newEntriesList.length; i ++)
         {
-            const player = tournamentPlayers[j];
-            if (player.username === entry || player.displayName === entry)
+            const entry = newEntriesList[i];
+            var entryFound = false;
+            for (var j = 0; j < tournamentPlayers.length; j ++)
             {
-                entryFound = true;
-                break;
+                const player = tournamentPlayers[j];
+                if (player.username === entry || player.displayName === entry)
+                {
+                    entryFound = true;
+                    break;
+                }
+            }
+            if (!entryFound)
+            {
+                const newTournamentPlayer = 
+                {
+                    username: entry,
+                    confirmed: false
+                };
+                tournamentPlayers.push(newTournamentPlayer);
             }
         }
-        if (!entryFound)
-        {
-            const newTournamentPlayer = 
-            {
-                username: entry,
-                confirmed: false
-            };
-            tournamentPlayers.push(newTournamentPlayer);
-        }
-    }
 
-    var rawPlayersList = tournamentPlayers.map(p => ({ username: p.username, confirmed: p.confirmed }));
-    tournament.players = rawPlayersList;
-    const response = await DB_Update('tbl_tournaments', tournament, tournament.id);
-    if (response.error)
-    {
-        console.error('Error updating tournament:', response.error);
-    }
-});
+        var rawPlayersList = tournamentPlayers.map(p => ({ username: p.username, confirmed: p.confirmed }));
+        tournament.players = rawPlayersList;
+        const response = await DB_Update('tbl_tournaments', tournament, tournament.id);
+        if (response.error)
+        {
+            console.error('Error updating tournament:', response.error);
+        }
+    });
+    
+}
 
 (function() {
     const el = document.getElementById('t-input-newEntry');
@@ -619,42 +636,47 @@ async function GetPlayerProfiles(_searchTerm)
     return response.data;
 }
 
-document.getElementById('add-entry-btn').addEventListener('click', async function()
+const addEntryBtn = document.getElementById('add-entry-btn');
+if (addEntryBtn)
 {
-    const entry = document.getElementById('t-input-newEntry').value.trim();
-    if (!entry) return;
-
-    var entryFound = false;
-    for (var j = 0; j < tournamentPlayers.length; j ++)
+    addEntryBtn.addEventListener('click', async function()
     {
-        const player = tournamentPlayers[j];
-        if (player.username === entry || player.displayName === entry)
+        const entry = document.getElementById('t-input-newEntry').value.trim();
+        if (!entry) return;
+
+        var entryFound = false;
+        for (var j = 0; j < tournamentPlayers.length; j ++)
         {
-            entryFound = true;
-            break;
+            const player = tournamentPlayers[j];
+            if (player.username === entry || player.displayName === entry)
+            {
+                entryFound = true;
+                break;
+            }
         }
-    }
-    if (!entryFound)
-    {
-        const newTournamentPlayer = 
+        if (!entryFound)
         {
-            username: entry,
-            confirmed: false
-        };
-        tournamentPlayers.push(newTournamentPlayer);
-    }
+            const newTournamentPlayer = 
+            {
+                username: entry,
+                confirmed: false
+            };
+            tournamentPlayers.push(newTournamentPlayer);
+        }
 
-    var rawPlayersList = tournamentPlayers.map(p => ({ username: p.username, confirmed: p.confirmed }));
-    tournament.players = rawPlayersList;
-    const response = await DB_Update('tbl_tournaments', tournament, tournament.id);
-    if (response.error)
-    {
-        console.error('Error updating tournament:', response.error);
-    } else 
-    {
-        document.getElementById('t-input-newEntry').value = '';
-    }
-});
+        var rawPlayersList = tournamentPlayers.map(p => ({ username: p.username, confirmed: p.confirmed }));
+        tournament.players = rawPlayersList;
+        const response = await DB_Update('tbl_tournaments', tournament, tournament.id);
+        if (response.error)
+        {
+            console.error('Error updating tournament:', response.error);
+        } else 
+        {
+            document.getElementById('t-input-newEntry').value = '';
+        }
+    });
+}
+
 
 //Players
 function GetConfirmedPlayers (players)
@@ -833,27 +855,32 @@ function UpdateTournamentRounds(rounds)
     });
 }
 
-document.getElementById('btn-add-round').addEventListener('click', async () => 
+const btnAddRound = document.getElementById('btn-add-round');
+if (btnAddRound)
 {
-    const newMatch = 
+    btnAddRound.addEventListener('click', async () => 
     {
-        competitions: 
+        const newMatch = 
         {
-            tournamentID: tournament.id
-        },
-        info: 
-        {
-            round: (Object.keys(tournamentRounds || {}).length + 1).toString(),
-            status: 'New'
-        },
-        players: 
-        {
-            h: { username: null },
-            a: { username: null }
-        }
-    };
-    await DB_Insert('tbl_matches', newMatch);
-});
+            competitions: 
+            {
+                tournamentID: tournament.id
+            },
+            info: 
+            {
+                round: (Object.keys(tournamentRounds || {}).length + 1).toString(),
+                status: 'New'
+            },
+            players: 
+            {
+                h: { username: null },
+                a: { username: null }
+            }
+        };
+        await DB_Insert('tbl_matches', newMatch);
+    });
+}
+
 
 //Matches
 function UpdateTournamentMatches(players, rounds)
@@ -1067,11 +1094,33 @@ function UpdateTournamentMatches(players, rounds)
             tdRemove.appendChild(btn);
             tr.appendChild(tdRemove);
 
-            tbody.appendChild(tr);
+            
+            if (completedMatchesHidden)
+            {
+                if (!status)
+                {
+                    tbody.appendChild(tr);
+                }
+            } else 
+            {
+                tbody.appendChild(tr);
+            }
             totalMatches++;
         });
     });
 }
+
+var completedMatchesHidden = false;
+const input_hideCompleted = document.getElementById('option-hideCompleted');
+if (input_hideCompleted)
+{
+    input_hideCompleted.addEventListener('change', async () => 
+    {
+        completedMatchesHidden = input_hideCompleted.checked;
+        UpdateTournamentMatches(tournamentPlayers, tournamentRounds);
+    });
+}
+
 
 var swapA = null;
 var swapB = null;
