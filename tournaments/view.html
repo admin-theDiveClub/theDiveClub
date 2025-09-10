@@ -60,14 +60,17 @@
         <div id="progressionChart-V" class="card">
         </div>
 
+        <div id="progressionChart-V-Alt" class="card">
+        </div>
+
         <div id="progressionChart-H" class="card">
             <div class="row" id="prog-chart-h-container">
-
             </div>
         </div>
 
-        <div id="progressionChart-V-Alt" class="card">
-
+        <div id="progressionChart-H-Alt" class="card">
+            <div class="row" id="prog-chart-h-alt-container">
+            </div>
         </div>
     </div>
 
@@ -78,27 +81,26 @@
             text-align: center;
         }
 
-        #progressionChart-V, #progressionChart-H, #progressionChart-V-Alt
+        #progressionChart-V, #progressionChart-H, #progressionChart-V-Alt, #progressionChart-H-Alt
         {
             text-align: center;
             overflow-x: auto;
         }
 
-        #progressionChart-V .card, #progressionChart-H .card, #progressionChart-V-Alt .card
+        #progressionChart-V .card, #progressionChart-H .card, #progressionChart-V-Alt .card, #progressionChart-H-Alt .card
         {
             padding: 0rem;
-            max-width: 20vw;
-            margin: 0.5rem;
+            margin: 1rem 0rem;
         }
 
-        #progressionChart-V .col, #progressionChart-V-Alt .col
+        #progressionChart-V .col, #progressionChart-V-Alt .col, #progressionChart-H-Alt .col
         {
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
-        #progressionChart-V table, #progressionChart-V-Alt table, #progressionChart-H table
+        #progressionChart-V table, #progressionChart-V-Alt table, #progressionChart-H table, #progressionChart-H-Alt table
         {
             margin: 0rem;
         }
@@ -134,7 +136,7 @@
             box-shadow: 0 0 12px 0px var(--color-base-00) !important;
         }
 
-        #progressionChart-H .col
+        #progressionChart-H .col, #progressionChart-H-Alt .col
         {
             display: flex;
             flex-direction: column;
