@@ -227,13 +227,12 @@ function CreateMatchCard (match, matchRefID, orientation)
     e_card.className = 'card';
     e_card.id = `match-card-r${match.info.round}-m${matchRefID}`;
     e_card.classList.add('match-card');
-    if (match.info.status === 'Complete')
-    {
+    if ((match.info.status || '').toLowerCase() === 'complete') {
         e_card.classList.add('card-completed');
-    } else 
-    {
+    } else {
         e_card.classList.add('card-new');
     }
+
     const e_table = document.createElement('table');
     e_table.className = 'match-table';
 
@@ -241,69 +240,59 @@ function CreateMatchCard (match, matchRefID, orientation)
     const e_tr_bottom = document.createElement('tr');
 
     const e_td_name_H = document.createElement('td');
-    var name_H = '-';
-    if (match.players && match.players.h && match.players.h.username)
-    {
+    let name_H = '-';
+    if (match.players?.h?.username) {
         name_H = GetPlayerDisplayName(match.players.h.username, tournamentPlayers);
     }
     e_td_name_H.textContent = name_H;
     e_td_name_H.classList.add('prog-player');
+
     const e_td_name_A = document.createElement('td');
-    var name_A = '-';
-    if (match.players && match.players.a && match.players.a.username)
-    {
+    let name_A = '-';
+    if (match.players?.a?.username) {
         name_A = GetPlayerDisplayName(match.players.a.username, tournamentPlayers);
     }
     e_td_name_A.textContent = name_A;
     e_td_name_A.classList.add('prog-player');
 
     const e_td_score_H = document.createElement('td');
-    var score_H = 0;
-    if (match.results && match.results.h)
-    {
+    let score_H = 0;
+    if (match.results?.h) {
         score_H = match.results.h.fw;
     }
     e_td_score_H.textContent = score_H;
     e_td_score_H.classList.add('prog-score');
 
     const e_td_score_A = document.createElement('td');
-    var score_A = 0;
-    if (match.results && match.results.a)
-    {
+    let score_A = 0;
+    if (match.results?.a) {
         score_A = match.results.a.fw;
     }
     e_td_score_A.textContent = score_A;
     e_td_score_A.classList.add('prog-score');
 
-    if (score_H > score_A && match.info.status === 'Complete')
-    {
+    if (score_H > score_A && (match.info.status || '').toLowerCase() === 'complete') {
         e_td_score_H.classList.add('prog-winner');
         e_td_name_H.classList.add('prog-winner');
-    } else if (score_A > score_H && match.info.status === 'Complete')
-    {
+    } else if (score_A > score_H && (match.info.status || '').toLowerCase() === 'complete') {
         e_td_score_A.classList.add('prog-winner');
         e_td_name_A.classList.add('prog-winner');
     }
 
-    if (match.info.status !== 'Complete')
-    {
-        if (name_H !== '-' || name_A !== '-' || score_H !== 0 || score_A !== 0)
-        {
+    if ((match.info.status || '').toLowerCase() !== 'complete') {
+        if (name_H !== '-' || name_A !== '-' || score_H !== 0 || score_A !== 0) {
             e_card.classList.remove('card-new');
             e_card.classList.add('card-live');
         }
     }
 
-    if (orientation === 'H')
-    {        
+    if (orientation === 'H') {
         e_tr_top.appendChild(e_td_name_H);
         e_tr_bottom.appendChild(e_td_name_A);
 
         e_tr_top.appendChild(e_td_score_H);
         e_tr_bottom.appendChild(e_td_score_A);
-    } else if (orientation === 'V')
-    {
-        
+    } else if (orientation === 'V') {
         e_tr_top.appendChild(e_td_name_H);
         e_tr_bottom.appendChild(e_td_score_H);
 
@@ -313,9 +302,30 @@ function CreateMatchCard (match, matchRefID, orientation)
 
     e_table.appendChild(e_tr_top);
     e_table.appendChild(e_tr_bottom);
-
-
     e_card.appendChild(e_table);
+
+    // Reapply current card spacing (margin) if a dynamic override exists
+    try {
+        const styleEl = document.getElementById('match-card-dynamic-style');
+        if (styleEl && styleEl.textContent) {
+            const m = styleEl.textContent.match(/\.match-card\s*\{\s*margin:\s*([0-9.]+)rem/i);
+            if (m && m[1]) {
+                e_card.style.margin = `${m[1]}rem`;
+            }
+        }
+    } catch {}
+
+    // Reapply current magnification if it has been set
+    try {
+        const scale = typeof window.__matchCardScale === 'number' ? window.__matchCardScale : 1;
+        if (scale !== 1) {
+            const t = getComputedStyle(e_card).transform;
+            e_card.dataset.baseTransform = t && t !== 'none' ? t : '';
+            e_card.style.transformOrigin = e_card.style.transformOrigin || 'center center';
+            e_card.style.transform = `${e_card.dataset.baseTransform} scale(${scale})`.trim();
+        }
+    } catch {}
+
     return e_card;
 }
 
