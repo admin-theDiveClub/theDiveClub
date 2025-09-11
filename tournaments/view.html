@@ -81,6 +81,13 @@
             text-align: center;
         }
 
+        .row
+        {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+        }
+
         #progressionChart-V, #progressionChart-H, #progressionChart-V-Alt, #progressionChart-H-Alt
         {
             text-align: center;
@@ -90,7 +97,8 @@
         #progressionChart-V .card, #progressionChart-H .card, #progressionChart-V-Alt .card, #progressionChart-H-Alt .card
         {
             padding: 0rem;
-            margin: 1rem 0rem;
+            margin: 4rem 0.5rem;
+            overflow-x: auto;
         }
 
         #progressionChart-V .col, #progressionChart-V-Alt .col, #progressionChart-H-Alt .col
@@ -113,12 +121,14 @@
         .prog-score
         {
             font-size: 1.5rem;
+            padding: 0.25rem 0.5rem;
         }
 
         .prog-winner
         {
             font-weight: bold;
             color: var(--color-primary-00);
+            box-shadow: inset 0 0 2px 0px var(--color-primary-00) !important;
         }
 
         .card-completed
@@ -142,6 +152,11 @@
             flex-direction: column;
             justify-content: space-evenly;
             align-items: center;
+        }
+
+        #progressionChart-V .card
+        {
+            margin: 3rem 1rem;
         }
     </style>
 

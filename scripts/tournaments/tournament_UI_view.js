@@ -46,9 +46,9 @@ function PopulateLog (log)
 function PopulateProgressionCharts (rounds)
 {       
     // PopulateVerticalProgressionChart(rounds);
-    // PopulateVerticalAltProgressionChart(rounds);
+     PopulateVerticalAltProgressionChart(rounds);
     // PopulateHorizontalProgressionChart(rounds);
-     PopulateHorizontalAltProgressionChart(rounds);
+    // PopulateHorizontalAltProgressionChart(rounds);
 
     DrawProgressionArrows(rounds);
 }
@@ -66,7 +66,7 @@ function PopulateVerticalProgressionChart (rounds)
             const match = rounds[i][j].match;
             const e_col = document.createElement('div');
             e_col.className = 'col';
-            const e_card = CreateMatchCard(match, rounds[i][j].id);
+            const e_card = CreateMatchCard(match, rounds[i][j].id, 'V');
             rounds[i][j].card = e_card;
             e_col.appendChild(e_card);
             e_row.appendChild(e_col);
@@ -79,20 +79,37 @@ function PopulateVerticalAltProgressionChart (rounds)
 {
     const container = document.getElementById('progressionChart-V-Alt');
     container.innerHTML = '';
+    
     for (let i = 1; i < rounds.length; i ++)
     {
         const e_row = document.createElement('div');
         e_row.className = 'row';
-        for (let j = 0; j < rounds[i].length / 2; j ++)
+        if (i == rounds.length - 1)
         {
-            const match = rounds[i][j].match;
-            const e_col = document.createElement('div');
-            e_col.className = 'col';
-            const e_card = CreateMatchCard(match, rounds[i][j].id);
-            rounds[i][j].card = e_card;
-            e_col.appendChild(e_card);
-            e_row.appendChild(e_col);
+            for (let j = 0; j < rounds[i].length; j ++)
+            {
+                const match = rounds[i][j].match;
+                const e_col = document.createElement('div');
+                e_col.className = 'col';
+                const e_card = CreateMatchCard(match, rounds[i][j].id, 'V');
+                rounds[i][j].card = e_card;
+                e_col.appendChild(e_card);
+                e_row.appendChild(e_col);
+            }
+        } else 
+        {
+            for (let j = 0; j < rounds[i].length / 2; j ++)
+            {
+                const match = rounds[i][j].match;
+                const e_col = document.createElement('div');
+                e_col.className = 'col';
+                const e_card = CreateMatchCard(match, rounds[i][j].id, 'V');
+                rounds[i][j].card = e_card;
+                e_col.appendChild(e_card);
+                e_row.appendChild(e_col);
+            }
         }
+        
         container.appendChild(e_row);
     }
 
@@ -100,17 +117,20 @@ function PopulateVerticalAltProgressionChart (rounds)
     {
         const e_row = document.createElement('div');
         e_row.className = 'row';
-        for (let j = Math.ceil(rounds[i].length / 2); j < rounds[i].length; j ++)
+        if (i != rounds.length - 1) 
         {
-            const match = rounds[i][j].match;
-            const e_col = document.createElement('div');
-            e_col.className = 'col';
-            const e_card = CreateMatchCard(match, rounds[i][j].id);
-            rounds[i][j].card = e_card;
-            e_col.appendChild(e_card);
-            e_row.appendChild(e_col);
-        }
-        container.appendChild(e_row);
+            for (let j = Math.ceil(rounds[i].length / 2); j < rounds[i].length; j ++)
+            {
+                const match = rounds[i][j].match;
+                const e_col = document.createElement('div');
+                e_col.className = 'col';
+                const e_card = CreateMatchCard(match, rounds[i][j].id, 'V');
+                rounds[i][j].card = e_card;
+                e_col.appendChild(e_card);
+                e_row.appendChild(e_col);
+            }
+            container.appendChild(e_row);
+        }        
     }
 }
 
@@ -125,7 +145,7 @@ function PopulateHorizontalProgressionChart (rounds)
         for (let j = 0; j < rounds[i].length; j ++)
         {
             const match = rounds[i][j].match;
-            const e_card = CreateMatchCard(match, rounds[i][j].id);
+            const e_card = CreateMatchCard(match, rounds[i][j].id, 'H');
             rounds[i][j].card = e_card;
             e_col.appendChild(e_card);
         }
@@ -142,28 +162,44 @@ function PopulateHorizontalAltProgressionChart (rounds)
     {
         const e_col = document.createElement('div');
         e_col.className = 'col';
-        for (let j = 0; j < rounds[i].length / 2; j ++)
+        if (i == rounds.length - 1)
         {
-            const match = rounds[i][j].match;
-            const e_card = CreateMatchCard(match, rounds[i][j].id);
-            rounds[i][j].card = e_card;
-            e_col.appendChild(e_card);
+            for (let j = 0; j < rounds[i].length; j ++)
+            {
+                const match = rounds[i][j].match;
+                const e_card = CreateMatchCard(match, rounds[i][j].id, 'H');
+                rounds[i][j].card = e_card;
+                e_col.appendChild(e_card);
+            }
+        } else 
+        {
+            for (let j = 0; j < rounds[i].length / 2; j ++)
+            {
+                const match = rounds[i][j].match;
+                const e_card = CreateMatchCard(match, rounds[i][j].id, 'H');
+                rounds[i][j].card = e_card;
+                e_col.appendChild(e_card);
+            }
         }
+        
         container.appendChild(e_col);
     }
     
     for (let i = rounds.length - 1; i > 0; i --)
     {
-        const e_col = document.createElement('div');
-        e_col.className = 'col';
-        for (let j = Math.ceil(rounds[i].length / 2); j < rounds[i].length; j ++)
+        if (i != rounds.length - 1) // Skip last round as it's already been added
         {
-            const match = rounds[i][j].match;
-            const e_card = CreateMatchCard(match, rounds[i][j].id);
-            rounds[i][j].card = e_card;
-            e_col.appendChild(e_card);
-        }
-        container.appendChild(e_col);
+            const e_col = document.createElement('div');
+            e_col.className = 'col';
+            for (let j = Math.ceil(rounds[i].length / 2); j < rounds[i].length; j ++)
+            {
+                const match = rounds[i][j].match;
+                const e_card = CreateMatchCard(match, rounds[i][j].id, 'H');
+                rounds[i][j].card = e_card;
+                e_col.appendChild(e_card);
+            }
+            container.appendChild(e_col);
+        }        
     }
 }
 
@@ -184,7 +220,7 @@ function GetPlayerDisplayName(username)
     return player;
 }
 
-function CreateMatchCard (match, matchRefID)
+function CreateMatchCard (match, matchRefID, orientation)
 {
     const e_card = document.createElement('div');
     e_card.className = 'card';
@@ -198,7 +234,9 @@ function CreateMatchCard (match, matchRefID)
     }
     const e_table = document.createElement('table');
 
-    const e_tr_names = document.createElement('tr');
+    const e_tr_top = document.createElement('tr');
+    const e_tr_bottom = document.createElement('tr');
+
     const e_td_name_H = document.createElement('td');
     var name_H = '-';
     if (match.players && match.players.h && match.players.h.username)
@@ -215,11 +253,6 @@ function CreateMatchCard (match, matchRefID)
     }
     e_td_name_A.textContent = name_A;
     e_td_name_A.classList.add('prog-player');
-    e_tr_names.appendChild(e_td_name_H);
-    e_tr_names.appendChild(e_td_name_A);
-    e_table.appendChild(e_tr_names);
-
-    const e_tr_scores = document.createElement('tr');
 
     const e_td_score_H = document.createElement('td');
     var score_H = 0;
@@ -258,9 +291,27 @@ function CreateMatchCard (match, matchRefID)
         }
     }
 
-    e_tr_scores.appendChild(e_td_score_H);
-    e_tr_scores.appendChild(e_td_score_A);
-    e_table.appendChild(e_tr_scores);
+    if (orientation === 'H')
+    {        
+        e_tr_top.appendChild(e_td_name_H);
+        e_tr_bottom.appendChild(e_td_name_A);
+
+        e_tr_top.appendChild(e_td_score_H);
+        e_tr_bottom.appendChild(e_td_score_A);
+    } else if (orientation === 'V')
+    {
+        
+        e_tr_top.appendChild(e_td_name_H);
+        e_tr_bottom.appendChild(e_td_score_H);
+
+        e_tr_top.appendChild(e_td_name_A);
+        e_tr_bottom.appendChild(e_td_score_A);
+    }
+
+    e_table.appendChild(e_tr_top);
+    e_table.appendChild(e_tr_bottom);
+
+
     e_card.appendChild(e_table);
     return e_card;
 }
@@ -382,10 +433,11 @@ function DrawProgressionArrows(rounds) {
                 {
                 color,
                 size: 2.5,
-                path: 'smooth',
+                path: 'fluid',
                 startPlug: 'disc',
+                startPlugSize: 3,
                 endPlug: 'arrow3',
-                endPlugSize: 1.5,
+                endPlugSize: 3,
                 // sockets are already implied by edge pointAnchor; keep auto routing
                 dash: dashed ? { animation: true } : false
                 }

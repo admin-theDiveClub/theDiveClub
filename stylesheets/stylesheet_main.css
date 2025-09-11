@@ -41,6 +41,19 @@ body
     background-color: var(--color-base-02);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: var(--color-base-10);
+
+    /* Hide scrollbars across browsers */
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
+    
+/* Hide scrollbars for WebKit-based browsers */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar 
+{
+    display: none;
 }
 
 .main
