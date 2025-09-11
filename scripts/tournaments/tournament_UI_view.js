@@ -5,7 +5,7 @@ export function UpdateTournamentUI(tournament, log, rounds, players)
     tournamentPlayers = players;
 
     PopulateLog(log, players);
-    PopulateProgressionCharts(rounds);
+    DrawChart(tournamentRounds);
 }
 
 var tournamentRounds = null;
@@ -18,8 +18,14 @@ function PopulateLog (log)
     tbody.innerHTML = '';
     if (!Array.isArray(log)) return;
 
-    log.forEach(entry => {
+    log.forEach((entry, idx) => {
         const tr = document.createElement('tr');
+
+        // Zebra striping: give every second row a different background color
+        if (idx % 2 === 1) {
+            tr.style.backgroundColor = 'var(--color-base-02)';
+        }
+
         const fPct = entry['F%'] != null ? String(entry['F%']).replace('%', '') + '%' : '';
         const cols = [
             entry.Rank ?? '',
@@ -43,19 +49,11 @@ function PopulateLog (log)
     });
 }
 
-function PopulateProgressionCharts (rounds)
-{       
-    // PopulateVerticalProgressionChart(rounds);
-     PopulateVerticalAltProgressionChart(rounds);
-    // PopulateHorizontalProgressionChart(rounds);
-    // PopulateHorizontalAltProgressionChart(rounds);
-
-    DrawProgressionArrows(rounds);
-}
 
 function PopulateVerticalProgressionChart (rounds)
 {
     const container = document.getElementById('progressionChart-V');
+    container.style.display = 'block';
     container.innerHTML = '';
     for (let i = 1; i < rounds.length; i ++)
     {
@@ -78,6 +76,7 @@ function PopulateVerticalProgressionChart (rounds)
 function PopulateVerticalAltProgressionChart (rounds)
 {
     const container = document.getElementById('progressionChart-V-Alt');
+    container.style.display = 'block';
     container.innerHTML = '';
     
     for (let i = 1; i < rounds.length; i ++)
@@ -136,6 +135,7 @@ function PopulateVerticalAltProgressionChart (rounds)
 
 function PopulateHorizontalProgressionChart (rounds)
 {
+    document.getElementById('progressionChart-H').style.display = 'block';
     const container = document.getElementById('prog-chart-h-container');
     container.innerHTML = '';
     for (let i = 1; i < rounds.length; i ++)
@@ -156,6 +156,7 @@ function PopulateHorizontalProgressionChart (rounds)
 
 function PopulateHorizontalAltProgressionChart (rounds)
 {
+    document.getElementById('progressionChart-H-Alt').style.display = 'block';
     const container = document.getElementById('prog-chart-h-alt-container');
     container.innerHTML = '';
     for (let i = 1; i < rounds.length; i ++)
@@ -225,6 +226,7 @@ function CreateMatchCard (match, matchRefID, orientation)
     const e_card = document.createElement('div');
     e_card.className = 'card';
     e_card.id = `match-card-r${match.info.round}-m${matchRefID}`;
+    e_card.classList.add('match-card');
     if (match.info.status === 'Complete')
     {
         e_card.classList.add('card-completed');
@@ -233,6 +235,7 @@ function CreateMatchCard (match, matchRefID, orientation)
         e_card.classList.add('card-new');
     }
     const e_table = document.createElement('table');
+    e_table.className = 'match-table';
 
     const e_tr_top = document.createElement('tr');
     const e_tr_bottom = document.createElement('tr');
@@ -316,7 +319,7 @@ function CreateMatchCard (match, matchRefID, orientation)
     return e_card;
 }
 
-function DrawProgressionArrows(rounds) {
+function DrawProgressionArrows(rounds, pathType) {
     // Clear existing lines if any
     if (window.__tournamentLines && Array.isArray(window.__tournamentLines)) {
         window.__tournamentLines.forEach(l => { try { l.remove(); } catch {} });
@@ -364,26 +367,31 @@ function DrawProgressionArrows(rounds) {
         }
     };
 
-    // Decide which edges to use based on relative positions (horizontal vs vertical dominant)
-    const chooseSides = (prevCard, currCard) => {
-        const a = centerOf(prevCard);
-        const b = centerOf(currCard);
+    // Independently choose an exit side for the start card based on direction to target
+    const chooseStartSide = (startEl, endEl) => {
+        const a = centerOf(startEl);
+        const b = centerOf(endEl);
         const dx = b.x - a.x;
         const dy = b.y - a.y;
-        if (Math.abs(dx) >= Math.abs(dy)) {
-            // Horizontal connection
-            return {
-                startSide: dx >= 0 ? 'right' : 'left',
-                endSide:   dx >= 0 ? 'left'  : 'right',
-                axis: 'horizontal'
-            };
+        // Favor the dominant axis to leave the start card
+        if (Math.abs(dy) > Math.abs(dx)) {
+            return dy >= 0 ? 'bottom' : 'top';
         } else {
-            // Vertical connection
-            return {
-                startSide: dy >= 0 ? 'bottom' : 'top',
-                endSide:   dy >= 0 ? 'top'    : 'bottom',
-                axis: 'vertical'
-            };
+            return dx >= 0 ? 'right' : 'left';
+        }
+    };
+
+    // Independently choose an entry side for the end card based on where the line is coming from
+    const chooseEndSide = (startEl, endEl) => {
+        const a = centerOf(startEl);
+        const b = centerOf(endEl);
+        const dx = a.x - b.x; // vector from end to start (so we pick the facing side)
+        const dy = a.y - b.y;
+        // Favor the dominant axis to enter the end card from the side that faces the start
+        if (Math.abs(dy) > Math.abs(dx)) {
+            return dy <= 0 ? 'top' : 'bottom';
+        } else {
+            return dx <= 0 ? 'left' : 'right';
         }
     };
 
@@ -395,57 +403,59 @@ function DrawProgressionArrows(rounds) {
             const currRef = currRound[j];
             if (!currRef) continue;
 
-            const currCard = currRef.card || document.getElementById(`match-card-r${currRef.round}-m${currRef.id}`);
+            const currCard =
+                currRef.card ||
+                document.getElementById(`match-card-r${(currRef.round ?? currRef.match?.info?.round)}-m${currRef.id}`);
             if (!currCard) continue;
-
-            const status = currRef.match && currRef.match.info ? currRef.match.info.status : null;
 
             const prevRoundIdx = Number.isInteger(currRef.precedingRound) ? currRef.precedingRound : (i - 1);
             const prevIdxs = Array.isArray(currRef.precedingMatches) ? currRef.precedingMatches : [];
             const totalIncoming = prevIdxs.length;
 
             prevIdxs.forEach((prevIdx, k) => {
-            const prevRef = rounds[prevRoundIdx] && rounds[prevRoundIdx][prevIdx];
-            if (!prevRef) return;
+                const prevRef = rounds[prevRoundIdx] && rounds[prevRoundIdx][prevIdx];
+                if (!prevRef) return;
 
-            const prevCard = prevRef.card || document.getElementById(`match-card-r${prevRef.round}-m${prevRef.id}`);
-            if (!prevCard) return;
+                const prevCard =
+                    prevRef.card ||
+                    document.getElementById(`match-card-r${(prevRef.round ?? prevRef.match?.info?.round)}-m${prevRef.id}`);
+                if (!prevCard) return;
 
-            // Choose sides using relative positions of the cards
-            const { startSide, endSide } = chooseSides(prevCard, currCard);
+                // Compute start and end sides independently so they can mix (e.g., bottom -> left)
+                const startSide = chooseStartSide(prevCard, currCard);
+                const endSide = chooseEndSide(prevCard, currCard);
 
-            // Spread multiple lines along the edge of the target to reduce overlap
-            const endOffsetPercent = 50;
+                // Distribute incoming lines across the destination edge to reduce overlap
+                const endOffsetPercent = 50;
 
-            // For the start, mirror the same offset to keep lines neat
-            const startOffsetPercent = endOffsetPercent;
+                // Keep start centered; could be advanced later if we track outgoing counts
+                const startOffsetPercent = 50;
 
-            const startAnchor = edgePointAnchor(prevCard, startSide, startOffsetPercent);
-            const endAnchor = edgePointAnchor(currCard, endSide, endOffsetPercent);
+                const startAnchor = edgePointAnchor(prevCard, startSide, startOffsetPercent);
+                const endAnchor = edgePointAnchor(currCard, endSide, endOffsetPercent);
 
-            // Use color based on the preceding match
-            const color = getLineColor(prevRef.match);
-            const dashed = getDashed(prevRef.match);
+                // Style based on the preceding match
+                const color = getLineColor(prevRef.match);
+                const dashed = getDashed(prevRef.match);
 
-            const line = new LeaderLine(
-                startAnchor,
-                endAnchor,
-                {
-                color,
-                size: 2.5,
-                path: 'fluid',
-                startPlug: 'disc',
-                startPlugSize: 3,
-                endPlug: 'arrow3',
-                endPlugSize: 3,
-                // sockets are already implied by edge pointAnchor; keep auto routing
-                dash: dashed ? { animation: true } : false
-                }
-            );
+                const line = new LeaderLine(
+                    startAnchor,
+                    endAnchor,
+                    {
+                        color,
+                        size: 2.5,
+                        path: pathType || 'fluid',
+                        startPlug: 'disc',
+                        startPlugSize: 1,
+                        endPlug: 'arrow3',
+                        endPlugSize: 2,
+                        dash: dashed ? { animation: true } : false
+                    }
+                );
 
-            try { if (line && line.path) line.path.style.zIndex = '0'; } catch {}
+                try { if (line && line.path) line.path.style.zIndex = '0'; } catch {}
 
-            window.__tournamentLines.push(line);
+                window.__tournamentLines.push(line);
             });
         }
     }
@@ -459,5 +469,172 @@ function DrawProgressionArrows(rounds) {
         window.addEventListener('resize', reposition, { passive: true });
         window.addEventListener('scroll', reposition, true);
         window.__tournamentLinesListenersAdded = true;
+    }
+}
+
+const view_controlPanel = document.getElementById('view-controls-panel');
+
+// Trigger redraw when any chartOrientation radio changes
+if (view_controlPanel) {
+    view_controlPanel.addEventListener('change', (e) => {
+        if (e.target && e.target.matches('input[name="chartOrientation"]')) {
+            DrawChart(tournamentRounds);
+        }
+    });
+    view_controlPanel.addEventListener('change', (e) => {
+        if (e.target && e.target.matches('input[name="chartStyle"]')) {
+            DrawChart(tournamentRounds);
+        }
+    });
+    view_controlPanel.addEventListener('change', (e) => {
+        if (e.target && e.target.matches('input[name="pathType"], input[name="chartLineType"]')) {
+            DrawChart(tournamentRounds);
+        }
+    });
+
+    view_controlPanel.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+
+        if (btn.id === 'card-spacing-increase') {
+            UpdateCardMargins(true);
+        } else if (btn.id === 'card-spacing-decrease') {
+            UpdateCardMargins(false);
+        }
+    });
+
+    view_controlPanel.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+
+        if (btn.id === 'card-magnification-increase') {
+            MagnifyCards(true);
+        } else if (btn.id === 'card-magnification-decrease') {
+            MagnifyCards(false);
+        }
+    });
+}
+
+function DrawChart (rounds)
+{
+    const orientationInput = document.querySelector('input[name="chartOrientation"]:checked');
+    const styleInput = document.querySelector('input[name="chartStyle"]:checked');
+
+    const orientation = orientationInput ? orientationInput.value : 'horizontal';
+    const style = styleInput ? styleInput.value : 'linear';
+
+    const pathInput = document.querySelector('input[name="chartLineType"]:checked') || document.querySelector('input[name="chartLineType"]:checked');
+    console.log(pathInput.value);
+    const pathType = pathInput ? pathInput.value : 'fluid';
+    console.log('DrawChart', rounds, orientation, style, pathType);
+
+    SetView(rounds, orientation, style, pathType);
+}
+
+function SetView (rounds, orientation, style, pathType)
+{
+    document.getElementById('progressionChart-V').style.display = 'none';
+    document.getElementById('progressionChart-V-Alt').style.display = 'none';
+    document.getElementById('progressionChart-H').style.display = 'none';
+    document.getElementById('progressionChart-H-Alt').style.display = 'none';
+    if (orientation === 'horizontal' && style === 'linear') {PopulateHorizontalProgressionChart(rounds);};
+    if (orientation === 'horizontal' && style === 'championship') {PopulateHorizontalAltProgressionChart(rounds);};
+    if (orientation === 'vertical' && style === 'linear') {PopulateVerticalProgressionChart(rounds);};
+    if (orientation === 'vertical' && style === 'championship') {PopulateVerticalAltProgressionChart(rounds);}
+    DrawProgressionArrows(rounds, pathType);
+}
+
+function UpdateCardMargins (increase)
+{
+    const STEP_REM = 0.25;
+    const MIN_REM = 0;
+    const MAX_REM = 4;
+
+    const getBasePx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+
+    const parseRem = (val) => {
+        if (!val) return NaN;
+        const n = parseFloat(val);
+        if (Number.isNaN(n)) return NaN;
+        if (/\brem\b/i.test(val)) return n;
+        if (/\bpx\b/i.test(val)) return +(n / getBasePx()).toFixed(3);
+        return n; // assume rem if unitless
+    };
+
+    const findMatchCardRule = () => {
+        for (const sheet of Array.from(document.styleSheets)) {
+            let rules;
+            try { rules = sheet.cssRules; } catch { continue; }
+            if (!rules) continue;
+            for (const rule of Array.from(rules)) {
+                if (rule.type === CSSRule.STYLE_RULE && rule.selectorText && rule.selectorText.split(',').map(s => s.trim()).includes('.match-card')) {
+                    return rule;
+                }
+            }
+        }
+        return null;
+    };
+
+    const rule = findMatchCardRule();
+    let currentRem = parseRem(rule?.style?.margin);
+
+    if (Number.isNaN(currentRem)) {
+        const sample = document.querySelector('.match-card');
+        const comp = sample ? getComputedStyle(sample) : null;
+        currentRem = parseRem(comp?.marginLeft) || 1; // default
+    }
+
+    currentRem += increase ? STEP_REM : -STEP_REM;
+    currentRem = Math.min(MAX_REM, Math.max(MIN_REM, Math.round(currentRem * 100) / 100));
+
+    if (rule) {
+        rule.style.margin = `${currentRem}rem`;
+    } else {
+        // Fallback: inject/replace a simple override for .match-card
+        let styleEl = document.getElementById('match-card-dynamic-style');
+        if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = 'match-card-dynamic-style';
+            document.head.appendChild(styleEl);
+        }
+        styleEl.textContent = `.match-card { margin: ${currentRem}rem; }`;
+    }
+
+    if (window.__tournamentLines && Array.isArray(window.__tournamentLines)) {
+        requestAnimationFrame(() => {
+            window.__tournamentLines.forEach(l => { try { l.position(); } catch {} });
+        });
+    }
+}
+
+function MagnifyCards (increase)
+{
+    const STEP = 0.1;
+    const MIN = 0.5;
+    const MAX = 3;
+
+    const cards = document.querySelectorAll('.match-card');
+    if (!cards.length) return;
+
+    const current = typeof window.__matchCardScale === 'number' ? window.__matchCardScale : 1;
+    let next = current + (increase ? STEP : -STEP);
+    next = Math.min(MAX, Math.max(MIN, Math.round(next * 100) / 100));
+    window.__matchCardScale = next;
+
+    cards.forEach(card => {
+        if (!card.dataset.baseTransform) {
+            const t = getComputedStyle(card).transform;
+            card.dataset.baseTransform = t && t !== 'none' ? t : '';
+        }
+        card.style.transformOrigin = card.style.transformOrigin || 'center center';
+        const base = card.dataset.baseTransform || '';
+        card.style.transform = `${base} scale(${next})`.trim();
+    });
+
+    const lines = window.__tournamentLines;
+    if (Array.isArray(lines) && lines.length) {
+        requestAnimationFrame(() => {
+            lines.forEach(l => { try { l.position(); } catch {} });
+        });
     }
 }

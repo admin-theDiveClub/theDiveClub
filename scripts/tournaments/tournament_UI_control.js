@@ -311,7 +311,7 @@ function UpdateEntriesList(entries)
 
     const altRowColor = 'rgba(0,0,0,0.25)';
 
-    console.log(entries);
+    //console.log('Entries', entries);
     if (!entries)
     {
         entries = [];
@@ -770,9 +770,11 @@ function UpdateEligiblePlayers(players, log, multiLife)
         tr.appendChild(tdLives);
 
         // click to select for swapping: find the corresponding tournamentPlayers entry (by username or id) and call Swap_matchPlayer(player, null)
-        tr.addEventListener('click', () => {
+        tr.addEventListener('click', () => 
+        {
             let found = null;
-            if (Array.isArray(tournamentPlayers)) {
+            if (Array.isArray(tournamentPlayers)) 
+            {
                 found = tournamentPlayers.find(tp => {
                     if (p.username && tp.username === p.username) return true;
                     if (p.id != null && tp.id != null && String(tp.id) === String(p.id)) return true;
@@ -785,8 +787,101 @@ function UpdateEligiblePlayers(players, log, multiLife)
 
         tbody.appendChild(tr);
     });
+}
 
-    table.dispatchEvent(new CustomEvent('eligible-loaded', { detail: { count: eligible.length } }));
+const btn_randomizeEligiblePlayers = document.getElementById('btn-randomize-eligible');
+if (btn_randomizeEligiblePlayers)
+{
+    btn_randomizeEligiblePlayers.addEventListener('click', () =>
+    {
+        const table = document.getElementById('tbl-eligiblePlayers');
+        if (!table) return;
+        const tbody = table.querySelector('tbody');
+        if (!tbody) return;
+        RandomizeEligiblePlayers (tbody);
+    });
+}
+
+function RandomizeEligiblePlayers (tableBody)
+{
+    const e_players = GetConfirmedPlayers(tournamentPlayers);
+
+    // Shuffle eligible players list and rebuild UI
+    if (!Array.isArray(e_players) || e_players.length <= 1) return;
+
+    // Fisher–Yates shuffle on a copy
+    const shuffled = e_players.slice();
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    // store for later use (e.g., LoadRound1)
+    shuffledList = shuffled;
+
+    // Re-render eligible players table
+    UpdateEligiblePlayers(shuffled, tournamentLog, tournament.multiLife);
+}
+
+var shuffledList = null;
+
+const btn_load_round1 = document.getElementById('btn-load-round-1');
+if (btn_load_round1)
+{
+    btn_load_round1.addEventListener('click', () =>
+    {
+        LoadRound1();
+    });
+}
+
+async function LoadRound1 ()
+{
+    var playersList = GetConfirmedPlayers(tournamentPlayers);
+    if (shuffledList)
+    {
+        playersList = shuffledList;
+    }
+    const roundMatches = tournamentRounds[1];
+    console.log(playersList, roundMatches);
+
+    for (var i = 0; i < roundMatches.length; i ++)
+    {
+        var match = roundMatches[i].match;
+        if (!match.players)
+        {
+            match.players = {h: null, a: null};
+        } 
+        const player_h = playersList[i * 2] || null;
+        if (player_h && !match.players.h || !match.players.h.username)
+        {
+            match.players.h = {username: player_h.username};
+        }
+
+        const player_a = playersList[i * 2 + 1] || null;
+        if (player_a && !match.players.a || !match.players.a.username)
+        {
+            match.players.a = {username: player_a.username};
+        }
+        roundMatches[i].match = match;
+    }
+    console.log(roundMatches);
+
+    // Persist all updated matches for this round in parallel
+    try {
+        const items = Array.isArray(roundMatches) ? roundMatches : Object.values(roundMatches || {});
+        const updates = items
+            .map(x => x && x.match)
+            .filter(m => m && m.id)
+            .map(m => DB_Update('tbl_matches', m, m.id));
+
+        const results = await Promise.all(updates);
+        const failures = results.filter(r => r && r.error);
+        if (failures.length) {
+            console.error('Some matches failed to update:', failures.map(f => f.error));
+        }
+    } catch (err) {
+        console.error('Failed to update round matches:', err);
+    }
 }
 
 //Rounds
@@ -1104,7 +1199,19 @@ function UpdateTournamentMatches(players, rounds)
             {
                 if (confirm(`Delete match between ${t_player_h ? t_player_h.displayName : '-'} and ${t_player_a ? t_player_a.displayName : '-'}? This action cannot be undone.`)) 
                 {
-                    const response = await DB_Delete('tbl_matches', match.id);
+                    if (match.info.round == tournamentRounds.length - 1)
+                    {
+                        const response = await DB_Delete('tbl_matches', match.id);
+                    } else 
+                    {
+                        if (tournamentRounds[match.info.round].length > 1)
+                        {
+                            const response = await DB_Delete('tbl_matches', match.id);
+                        } else
+                        {
+                            alert("You cannot delete the last match in a preceeding round until you delete all matches in the following rounds.");
+                        }
+                    }
                 }
             });
             tdRemove.appendChild(btn);

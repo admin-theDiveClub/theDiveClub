@@ -1,6 +1,8 @@
 import { UpdateTournamentUI_Control } from "../tournaments/tournament_UI_control.js";
 import { UpdateTournamentUI } from "./tournament_UI_view.js";
 
+import { DB_Update } from "../supabase/supaBase_db_helpers.js";
+
 var tournamentID = null;
 var tournament = null;
 var tournamentMatches = null;
@@ -24,7 +26,7 @@ async function Start ()
             tournamentMatches = await GetTournamentMatches(tournamentID);
             SubscribeToUpdates(tournamentID);
             tournamentLog = CompileTournamentLog(GetConfirmedPlayers(tournamentPlayers), tournamentMatches);
-            tournamentRounds = CompileTournamentRounds(tournamentMatches);
+            tournamentRounds = await CompileTournamentRounds(tournamentMatches);
             console.warn('Source: Tournament Rounds', tournamentRounds);
             console.warn('Source: Tournament Log', tournamentLog);
         }
@@ -44,7 +46,7 @@ export async function UpdateTournamentData ()
     tournamentPlayers = await PopulatePlayerInfo(tournament.players);
     tournamentMatches = await GetTournamentMatches(tournamentID);
     tournamentLog = CompileTournamentLog(GetConfirmedPlayers(tournamentPlayers), tournamentMatches);
-    tournamentRounds = CompileTournamentRounds(tournamentMatches);
+    tournamentRounds = await CompileTournamentRounds(tournamentMatches);
 
     if (window.location.href && window.location.href.toLowerCase().includes('view.html')) 
     {
@@ -368,7 +370,7 @@ function CompileTournamentLog (players, matches)
     return finalLog;
 }
 
-function CompileTournamentRounds (matches)
+async function CompileTournamentRounds (matches)
 {
     var allRounds = [];
 
@@ -384,8 +386,70 @@ function CompileTournamentRounds (matches)
             precedingRound: m_round > 0 ? m_round - 1 : null,
             precedingMatches: m_round > 1 ? [allRounds[m_round].length * 2, allRounds[m_round].length * 2 + 1] : []
         }
+
+        if (m_round > 1)
+        {
+            const prevRound = allRounds[m_round - 1] || [];
+            const m = matchRef.match || null;
+            const prevMatch_0 = prevRound[matchRef.precedingMatches[0]]?.match || null;
+            const prevMatch_1 = prevRound[matchRef.precedingMatches[1]]?.match || null;
+            if (m && prevMatch_0 && prevMatch_1)
+            {
+                matchRef.match = await AutoUpdateMatchPlayers(m, prevMatch_0, prevMatch_1);
+            }
+        }
+
         allRounds[m_round].push(matchRef);
     }
 
     return allRounds;
+}
+
+async function AutoUpdateMatchPlayers (match, prevMatch_0, prevMatch_1)
+{
+    if (match.info.status === 'Complete') return; // do not auto-update completed matches
+    if (!(match.players && match.players.h && match.players.h.username))
+    {
+        if (prevMatch_0.info.status === 'Complete')
+        {
+            if (prevMatch_0.results.h.fw > prevMatch_0.results.a.fw)
+            {
+                if (prevMatch_0.players && prevMatch_0.players.h && prevMatch_0.players.h.username)
+                {      
+                    match.players.h = {username: prevMatch_0.players.h.username};
+                    await DB_Update('tbl_matches', match, match.id);
+                }
+            } else if (prevMatch_0.results.h.fw < prevMatch_0.results.a.fw)
+            {
+                if (prevMatch_0.players && prevMatch_0.players.a && prevMatch_0.players.a.username)
+                {
+                    match.players.h = {username: prevMatch_0.players.a.username};
+                    await DB_Update('tbl_matches', match, match.id);
+                }
+            }
+        }
+    }
+    if (!(match.players && match.players.a && match.players.a.username))
+    {
+        if (prevMatch_1.info.status === 'Complete')
+        {
+            if (prevMatch_1.results.h.fw > prevMatch_1.results.a.fw)
+            {
+                if (prevMatch_1.players && prevMatch_1.players.h && prevMatch_1.players.h.username)
+                {
+                    match.players.a = {username: prevMatch_1.players.h.username};
+                    await DB_Update('tbl_matches', match, match.id);
+                }
+            } else if (prevMatch_1.results.h.fw < prevMatch_1.results.a.fw)
+            {
+                if (prevMatch_1.players && prevMatch_1.players.a && prevMatch_1.players.a.username)
+                {
+                    match.players.a = {username: prevMatch_1.players.a.username};
+                    await DB_Update('tbl_matches', match, match.id);
+                }
+            }
+        }
+    }
+    
+    return match;
 }

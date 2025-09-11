@@ -55,7 +55,7 @@
                     </tr>
                 </tbody>
             </table>
-        </div>
+        </div>        
 
         <div id="progressionChart-V" class="card">
         </div>
@@ -72,6 +72,75 @@
             <div class="row" id="prog-chart-h-alt-container">
             </div>
         </div>
+
+        <div class="card" id="view-controls-panel">
+            <!--Contols
+            visualization Types: 4 types (make images for each)
+            path type: grid, fluid, straight, arc, curve, magnet
+            card spacing: +/-
+            card magnification: +/-
+            -->
+            <div class="row" style="text-align: center;">
+                <div class="col">
+                    <label class="form-label d-block">Orientation</label>
+                    <div class="btn-group" role="radiogroup" aria-label="Chart orientation">
+                        <input type="radio" class="btn-check" name="chartOrientation" id="orientation-horizontal" value="horizontal" autocomplete="off" checked>
+                        <label class="btn btn-outline-primary" for="orientation-horizontal">Horizontal</label>
+
+                        <input type="radio" class="btn-check" name="chartOrientation" id="orientation-vertical" value="vertical" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="orientation-vertical">Vertical</label>
+                    </div>
+                </div>
+                <div class="col">
+                    <label class="form-label d-block">Style</label>
+                    <div class="btn-group" role="radiogroup" aria-label="Chart orientation">
+                        <input type="radio" class="btn-check" name="chartStyle" id="style-linear" value="linear" autocomplete="off" checked>
+                        <label class="btn btn-outline-primary" for="style-linear">Linear</label>
+
+                        <input type="radio" class="btn-check" name="chartStyle" id="style-championship" value="championship" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="style-championship">Championship</label>
+                    </div>
+                </div>
+                <div class="col">
+                    <label class="form-label d-block">Line Types</label>
+                    <div class="btn-group" role="radiogroup" aria-label="Line type">
+                        <input type="radio" class="btn-check" name="chartLineType" id="line-type-straight" value="straight" autocomplete="off" checked>
+                        <label class="btn btn-outline-primary" for="line-type-straight">Straight</label>
+                        
+                        <input type="radio" class="btn-check" name="chartLineType" id="line-type-arc" value="arc" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="line-type-arc">Arc</label>
+                        
+
+                        <input type="radio" class="btn-check" name="chartLineType" id="line-type-fluid" value="fluid" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="line-type-fluid">Fluid</label>
+
+                        <input type="radio" class="btn-check" name="chartLineType" id="line-type-magnet" value="magnet" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="line-type-magnet">Magnet</label>
+
+                        <input type="radio" class="btn-check" name="chartLineType" id="line-type-grid" value="grid" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="line-type-grid">Grid</label>
+                    </div>
+                </div>
+                <div class="col">
+                    <label class="form-label d-block">Card Spacing</label>
+                    <div class="d-flex align-items-center">
+                        <div class="btn-group" role="group" aria-label="Card spacing controls" style="margin: auto;">
+                            <button class="btn btn-outline-primary" type="button" id="card-spacing-decrease" title="Decrease card spacing">−</button>
+                            <button class="btn btn-outline-primary" type="button" id="card-spacing-increase" title="Increase card spacing">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <label class="form-label d-block">Card Magnification</label>
+                    <div class="d-flex align-items-center">
+                        <div class="btn-group" role="group" aria-label="Card magnification controls" style="margin: auto;">
+                            <button class="btn btn-outline-primary" type="button" id="card-magnification-decrease" title="Decrease card magnification">−</button>
+                            <button class="btn btn-outline-primary" type="button" id="card-magnification-increase" title="Increase card magnification">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <style>
@@ -81,12 +150,12 @@
             text-align: center;
         }
 
-        .row
+        /* .row
         {
             display: flex;
             flex-wrap: nowrap;
             overflow-x: auto;
-        }
+        } */
 
         #progressionChart-V, #progressionChart-H, #progressionChart-V-Alt, #progressionChart-H-Alt
         {
@@ -94,23 +163,11 @@
             overflow-x: auto;
         }
 
-        #progressionChart-V .card, #progressionChart-H .card, #progressionChart-V-Alt .card, #progressionChart-H-Alt .card
-        {
-            padding: 0rem;
-            margin: 4rem 0.5rem;
-            overflow-x: auto;
-        }
-
-        #progressionChart-V .col, #progressionChart-V-Alt .col, #progressionChart-H-Alt .col
+        #progressionChart-V .col, #progressionChart-V-Alt .col, #progressionChart-H .col, #progressionChart-H-Alt .col
         {
             display: flex;
             justify-content: center;
             align-items: center;
-        }
-
-        #progressionChart-V table, #progressionChart-V-Alt table, #progressionChart-H table, #progressionChart-H-Alt table
-        {
-            margin: 0rem;
         }
 
         .prog-player
@@ -154,9 +211,16 @@
             align-items: center;
         }
 
-        #progressionChart-V .card
+        .match-card
         {
-            margin: 3rem 1rem;
+            padding: 0rem;
+            margin: 0.5rem;
+        }
+
+         .match-table
+        {
+            padding: 0rem;
+            margin: 0rem;
         }
     </style>
 
