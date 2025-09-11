@@ -1371,6 +1371,7 @@ async function Swap_matchPlayer(player, match, side, cell)
 
         if (swapA.match == swapB.match && swapA.player == swapB.player)
         {
+            if (!swapA.match.players){ swapA.match.players = {}; }
             swapA.match.players[swapA.side] = null;
             await DB_Update('tbl_matches', swapA.match, swapA.match.id);
             //clear swap variables

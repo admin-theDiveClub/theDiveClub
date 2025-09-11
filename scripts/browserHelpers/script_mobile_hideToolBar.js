@@ -16,7 +16,7 @@
 
         clearTimeout(timer);
         timer = setTimeout(() => {
-            if (window.scrollY < 2) {
+            if (window.scrollY < 0) {
                 requestAnimationFrame(() => window.scrollTo(0, 1));
                 // retry shortly in case layout wasn't finished
                 setTimeout(() => {

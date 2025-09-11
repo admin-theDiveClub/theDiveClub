@@ -482,61 +482,188 @@ function DrawProgressionArrows(rounds, pathType) {
     }
 }
 
-const view_controlPanel = document.getElementById('view-controls-panel');
+// Persisted settings keys
+const LS_KEYS = {
+    orientation: 't_view_orientation',
+    style: 't_view_style',
+    path: 't_view_pathType',
+    margin: 't_card_margin_rem',
+    scale: 't_card_scale'
+};
 
-// Trigger redraw when any chartOrientation radio changes
-if (view_controlPanel) {
-    view_controlPanel.addEventListener('change', (e) => {
-        if (e.target && e.target.matches('input[name="chartOrientation"]')) {
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+const load = (k, d) => { try { const v = localStorage.getItem(k); return v != null ? JSON.parse(v) : d; } catch { return d; } };
+
+function getCurrentMarginRem() {
+    const styleEl = document.getElementById('match-card-dynamic-style');
+    if (styleEl && styleEl.textContent) {
+        const m = styleEl.textContent.match(/margin:\s*([0-9.]+)\s*rem/i);
+        if (m && m[1]) return parseFloat(m[1]);
+    }
+    try {
+        for (const sheet of Array.from(document.styleSheets)) {
+            let rules; try { rules = sheet.cssRules; } catch { continue; }
+            if (!rules) continue;
+            for (const rule of Array.from(rules)) {
+                if (rule.type === CSSRule.STYLE_RULE && rule.selectorText && rule.selectorText.split(',').map(s => s.trim()).includes('.match-card')) {
+                    const val = rule.style.margin || rule.style.marginLeft;
+                    if (val) {
+                        const n = parseFloat(val);
+                        if (!Number.isNaN(n)) {
+                            if (/\bpx\b/i.test(val)) {
+                                const base = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+                                return +(n / base).toFixed(3);
+                            }
+                            return n;
+                        }
+                    }
+                }
+            }
+        }
+    } catch {}
+    const sample = document.querySelector('.match-card');
+    if (sample) {
+        const comp = getComputedStyle(sample);
+        const val = comp.marginLeft;
+        const n = parseFloat(val);
+        if (!Number.isNaN(n)) {
+            if (/\bpx\b/i.test(val)) {
+                const base = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+                return +(n / base).toFixed(3);
+            }
+            return n;
+        }
+    }
+    return null;
+}
+const persistMargin = () => requestAnimationFrame(() => {
+    const m = getCurrentMarginRem();
+    if (typeof m === 'number') save(LS_KEYS.margin, m);
+});
+
+function applySavedUI() {
+    // Radios
+    const o = load(LS_KEYS.orientation, null);
+    if (o) {
+        const inp = document.querySelector(`input[name="chartOrientation"][value="${o}"]`);
+        if (inp) inp.checked = true;
+    }
+    const s = load(LS_KEYS.style, null);
+    if (s) {
+        const inp = document.querySelector(`input[name="chartStyle"][value="${s}"]`);
+        if (inp) inp.checked = true;
+    }
+    const p = load(LS_KEYS.path, null);
+    if (p) {
+        const inp = document.querySelector(`input[name="chartLineType"][value="${p}"]`) ||
+                    document.querySelector(`input[name="pathType"][value="${p}"]`);
+        if (inp) inp.checked = true;
+    }
+
+    // Card margin (inject dynamic style so CreateMatchCard picks it up)
+    const savedMargin = load(LS_KEYS.margin, null);
+    if (typeof savedMargin === 'number') {
+        let styleEl = document.getElementById('match-card-dynamic-style');
+        if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = 'match-card-dynamic-style';
+            document.head.appendChild(styleEl);
+        }
+        styleEl.textContent = `.match-card { margin: ${savedMargin}rem; }`;
+    }
+
+    // Card magnification (store for CreateMatchCard; apply now if cards already exist)
+    const savedScale = load(LS_KEYS.scale, null);
+    if (typeof savedScale === 'number') {
+        window.__matchCardScale = savedScale;
+        const cards = document.querySelectorAll('.match-card');
+        if (cards.length) {
+            cards.forEach(card => {
+                if (!card.dataset.baseTransform) {
+                    const t = getComputedStyle(card).transform;
+                    card.dataset.baseTransform = t && t !== 'none' ? t : '';
+                }
+                card.style.transformOrigin = card.style.transformOrigin || 'center center';
+                const base = card.dataset.baseTransform || '';
+                card.style.transform = `${base} scale(${savedScale})`.trim();
+            });
+        }
+    }
+}
+
+function wireViewControls() {
+    const panel = document.getElementById('view-controls-panel');
+    if (!panel) return;
+
+    panel.addEventListener('change', (e) => {
+        if (e.target?.matches('input[name="chartOrientation"]')) {
+            save(LS_KEYS.orientation, e.target.value);
             DrawChart(tournamentRounds);
         }
     });
-    view_controlPanel.addEventListener('change', (e) => {
-        if (e.target && e.target.matches('input[name="chartStyle"]')) {
+    panel.addEventListener('change', (e) => {
+        if (e.target?.matches('input[name="chartStyle"]')) {
+            save(LS_KEYS.style, e.target.value);
             DrawChart(tournamentRounds);
         }
     });
-    view_controlPanel.addEventListener('change', (e) => {
-        if (e.target && e.target.matches('input[name="pathType"], input[name="chartLineType"]')) {
+    panel.addEventListener('change', (e) => {
+        if (e.target?.matches('input[name="pathType"], input[name="chartLineType"]')) {
+            save(LS_KEYS.path, e.target.value);
             DrawChart(tournamentRounds);
         }
     });
 
-    view_controlPanel.addEventListener('click', (e) => {
+    panel.addEventListener('click', (e) => {
         const btn = e.target.closest('button');
         if (!btn) return;
-
         if (btn.id === 'card-spacing-increase') {
             UpdateCardMargins(true);
+            persistMargin();
         } else if (btn.id === 'card-spacing-decrease') {
             UpdateCardMargins(false);
+            persistMargin();
         }
     });
 
-    view_controlPanel.addEventListener('click', (e) => {
+    panel.addEventListener('click', (e) => {
         const btn = e.target.closest('button');
         if (!btn) return;
-
         if (btn.id === 'card-magnification-increase') {
             MagnifyCards(true);
+            save(LS_KEYS.scale, typeof window.__matchCardScale === 'number' ? window.__matchCardScale : 1);
         } else if (btn.id === 'card-magnification-decrease') {
             MagnifyCards(false);
+            save(LS_KEYS.scale, typeof window.__matchCardScale === 'number' ? window.__matchCardScale : 1);
         }
     });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        applySavedUI();
+        wireViewControls();
+    });
+} else {
+    applySavedUI();
+    wireViewControls();
 }
 
 function DrawChart (rounds)
 {
     const orientationInput = document.querySelector('input[name="chartOrientation"]:checked');
     const styleInput = document.querySelector('input[name="chartStyle"]:checked');
+    const pathInput = document.querySelector('input[name="chartLineType"]:checked') ||
+                      document.querySelector('input[name="pathType"]:checked');
 
-    const orientation = orientationInput ? orientationInput.value : 'horizontal';
-    const style = styleInput ? styleInput.value : 'linear';
+    const orientation = orientationInput ? orientationInput.value : load(LS_KEYS.orientation, 'horizontal');
+    const style = styleInput ? styleInput.value : load(LS_KEYS.style, 'linear');
+    const pathType = pathInput ? pathInput.value : load(LS_KEYS.path, 'fluid');
 
-    const pathInput = document.querySelector('input[name="chartLineType"]:checked') || document.querySelector('input[name="chartLineType"]:checked');
-    console.log(pathInput.value);
-    const pathType = pathInput ? pathInput.value : 'fluid';
-    console.log('DrawChart', rounds, orientation, style, pathType);
+    // Keep storage in sync even if defaults are used
+    save(LS_KEYS.orientation, orientation);
+    save(LS_KEYS.style, style);
+    save(LS_KEYS.path, pathType);
 
     SetView(rounds, orientation, style, pathType);
 }
