@@ -55,24 +55,7 @@
                     </tr>
                 </tbody>
             </table>
-        </div>        
-
-        <div id="progressionChart-V" class="card">
         </div>
-
-        <div id="progressionChart-V-Alt" class="card">
-        </div>
-
-        <div id="progressionChart-H" class="card">
-            <div class="row" id="prog-chart-h-container">
-            </div>
-        </div>
-
-        <div id="progressionChart-H-Alt" class="card">
-            <div class="row" id="prog-chart-h-alt-container">
-            </div>
-        </div>
-
         <div class="card" id="view-controls-panel">
             <!--Contols
             visualization Types: 4 types (make images for each)
@@ -122,11 +105,18 @@
                     </div>
                 </div>
                 <div class="col">
-                    <label class="form-label d-block">Card Spacing</label>
+                    <label class="form-label d-block">Horizontal Card Spacing</label>
                     <div class="d-flex align-items-center">
-                        <div class="btn-group" role="group" aria-label="Card spacing controls" style="margin: auto;">
-                            <button class="btn btn-outline-primary" type="button" id="card-spacing-decrease" title="Decrease card spacing">−</button>
-                            <button class="btn btn-outline-primary" type="button" id="card-spacing-increase" title="Increase card spacing">+</button>
+                        <div class="btn-group" role="group" aria-label="Horizontal card spacing controls" style="margin: auto;">
+                            <button class="btn btn-outline-primary" type="button" id="card-spacing-decrease-h" title="Decrease card spacing">−</button>
+                            <button class="btn btn-outline-primary" type="button" id="card-spacing-increase-h" title="Increase card spacing">+</button>
+                        </div>
+                    </div>
+                    <label class="form-label d-block">Vertical Card Spacing</label>
+                    <div class="d-flex align-items-center">
+                        <div class="btn-group" role="group" aria-label="Vertical card spacing controls" style="margin: auto;">
+                            <button class="btn btn-outline-primary" type="button" id="card-spacing-decrease-v" title="Decrease card spacing">−</button>
+                            <button class="btn btn-outline-primary" type="button" id="card-spacing-increase-v" title="Increase card spacing">+</button>
                         </div>
                     </div>
                 </div>
@@ -141,9 +131,19 @@
                 </div>
             </div>
         </div>
+
+        <div id="progressionChart" class="card">
+        </div>        
     </div>
 
     <style>
+        :root
+        {
+            --card-spacing-v: 1rem;
+            --card-spacing-h: 3rem;
+            --card-magnification: 1.0;
+        }
+
         #log 
         {
             overflow-x: auto;
@@ -157,70 +157,28 @@
             overflow-x: auto;
         } */
 
-        #progressionChart-V, #progressionChart-H, #progressionChart-V-Alt, #progressionChart-H-Alt
+        #progressionChart .row, #progressionChart .col
         {
-            text-align: center;
-            overflow-x: auto;
-        }
-
-        #progressionChart-V .col, #progressionChart-V-Alt .col, #progressionChart-H .col, #progressionChart-H-Alt .col
-        {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .prog-player
-        {
-            padding: 0.25rem 1rem;
-        }
-
-        .prog-score
-        {
-            font-size: 1.5rem;
-            padding: 0.25rem 0.5rem;
-        }
-
-        .prog-winner
-        {
-            font-weight: bold;
-            color: var(--color-primary-00);
-            box-shadow: inset 0 0 2px 0px var(--color-primary-00) !important;
-        }
-
-        .card-completed
-        {
-            box-shadow: 0 0 12px 0px var(--color-primary-00) !important;
-        }
-
-        .card-live
-        {
-            box-shadow: 0 0 12px 0px var(--color-accent-0) !important;
-        }
-
-        .card-new
-        {
-            box-shadow: 0 0 12px 0px var(--color-base-00) !important;
-        }
-
-        #progressionChart-H .col, #progressionChart-H-Alt .col
-        {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-evenly;
-            align-items: center;
+            background-color: aqua;
+            margin: auto;
+            padding: 0rem;
         }
 
         .match-card
         {
-            padding: 0rem;
-            margin: 0.5rem;
+            margin: var(--card-spacing-v) var(--card-spacing-h);
+            transform: scale(var(--card-magnification));
+            padding: 0.25rem;
         }
 
-         .match-table
+        .match-table
         {
-            padding: 0rem;
-            margin: 0rem;
+            margin: 0rem !important;
+        }
+
+        .match-table td
+        {
+            padding: 0.5rem !important;
         }
     </style>
 

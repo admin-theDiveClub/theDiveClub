@@ -49,165 +49,268 @@ function PopulateLog (log)
     });
 }
 
-
-function PopulateVerticalProgressionChart (rounds)
+function DrawChart (rounds)
 {
-    const container = document.getElementById('progressionChart-V');
-    container.style.display = 'block';
+    const orientationInput = document.querySelector('input[name="chartOrientation"]:checked');
+    const styleInput = document.querySelector('input[name="chartStyle"]:checked');
+    const pathInput = document.querySelector('input[name="chartLineType"]:checked') ||
+                      document.querySelector('input[name="pathType"]:checked');
+
+    const orientation = orientationInput ? orientationInput.value : 'horizontal';
+    const style = styleInput ? styleInput.value : 'championship';
+    const pathType = pathInput ? pathInput.value : 'straight';
+
+    if (orientation === 'horizontal') {PopulateChart_H(rounds, style);};
+    if (orientation === 'vertical') {PopulateChart_V(rounds, style);};
+
+    DrawProgressionArrows(rounds, pathType);
+}
+
+document.addEventListener('DOMContentLoaded', () => 
+{
+    wireViewControls();
+});
+
+function wireViewControls() {
+    const panel = document.getElementById('view-controls-panel');
+    if (!panel) return;
+
+    panel.addEventListener('change', (e) => {
+        if (e.target?.matches('input[name="chartOrientation"]')) {
+            DrawChart(tournamentRounds);
+        }
+    });
+    panel.addEventListener('change', (e) => {
+        if (e.target?.matches('input[name="chartStyle"]')) {
+            DrawChart(tournamentRounds);
+        }
+    });
+    panel.addEventListener('change', (e) => {
+        if (e.target?.matches('input[name="pathType"], input[name="chartLineType"]')) {
+            DrawChart(tournamentRounds);
+        }
+    });
+    // Card spacing and magnification controls
+    panel.addEventListener('click', (e) => 
+    {
+        const btn = e.target && e.target.closest('button');
+        if (!btn) return;
+
+        switch (btn.id) {
+            case 'card-spacing-decrease-h':
+                UpdateCardSpacing_H('-');
+                break;
+            case 'card-spacing-increase-h':
+                UpdateCardSpacing_H('+');
+                break;
+            case 'card-spacing-decrease-v':
+                UpdateCardSpacing_V('-');
+                break;
+            case 'card-spacing-increase-v':
+                UpdateCardSpacing_V('+');
+                break;
+            case 'card-magnification-decrease':
+                UpdateCardMagnification('-');
+                break;
+            case 'card-magnification-increase':
+                UpdateCardMagnification('+');
+                break;
+        }
+        
+        DrawChart(tournamentRounds);
+    });
+}
+
+function UpdateCardSpacing_H (direction)
+{
+    const root = document.documentElement;
+    root.style.setProperty('--card-spacing-h',
+        (parseFloat(getComputedStyle(root).getPropertyValue('--card-spacing-h')) || 1) + (direction === '+' ? 0.5 : -0.5) + 'rem');
+}
+
+function UpdateCardSpacing_V (direction)
+{
+    const root = document.documentElement;
+    root.style.setProperty('--card-spacing-v',
+        (parseFloat(getComputedStyle(root).getPropertyValue('--card-spacing-v')) || 1) + (direction === '+' ? 0.5 : -0.5) + 'rem');
+}
+
+function UpdateCardMagnification (direction)
+{
+    const root = document.documentElement;
+    root.style.setProperty('--card-magnification',
+        (parseFloat(getComputedStyle(root).getPropertyValue('--card-magnification')) || 1) + (direction === '+' ? 0.1 : -0.1));
+}
+
+function PopulateChart_V (rounds, style)
+{
+    const container = document.getElementById('progressionChart');
     container.innerHTML = '';
-    for (let i = 1; i < rounds.length; i ++)
+
+    var _rounds = rounds;
+    if (style === 'championship')
+    {
+        const splitRounds = SplitRoundsInHalf(rounds);
+        _rounds = splitRounds;
+    }
+
+    //Many Rows
+    for (let i = 1; i < _rounds.length; i ++)
     {
         const e_row = document.createElement('div');
         e_row.className = 'row';
-        for (let j = 0; j < rounds[i].length; j ++)
+        const mObjs = _rounds[i];
+        //Many Cols
+        for (let j = 0; j < mObjs.length; j ++)
         {
-            const match = rounds[i][j].match;
-            const e_col = document.createElement('div');
-            e_col.className = 'col';
-            const e_card = CreateMatchCard(match, rounds[i][j].id, 'V');
-            rounds[i][j].card = e_card;
-            e_col.appendChild(e_card);
-            e_row.appendChild(e_col);
+            //One Card per Col
+            const col_cards = newCardGroup_col([mObjs[j]]);
+            e_row.appendChild(col_cards);
         }
         container.appendChild(e_row);
     }    
 }
 
-function PopulateVerticalAltProgressionChart (rounds)
+function PopulateChart_H (rounds, style)
 {
-    const container = document.getElementById('progressionChart-V-Alt');
-    container.style.display = 'block';
+    const container = document.getElementById('progressionChart');
     container.innerHTML = '';
-    
-    for (let i = 1; i < rounds.length; i ++)
-    {
-        const e_row = document.createElement('div');
-        e_row.className = 'row';
 
-        if (i == rounds.length - 1)
-        {
-            for (let j = 0; j < rounds[i].length; j ++)
-            {
-                const match = rounds[i][j].match;
-                const e_col = document.createElement('div');
-                e_col.className = 'col';
-                const e_card = CreateMatchCard(match, rounds[i][j].id, 'V');
-                rounds[i][j].card = e_card;
-                e_col.appendChild(e_card);
-                e_row.appendChild(e_col);
-            }
-        } else 
-        {
-            for (let j = 0; j < rounds[i].length / 2; j ++)
-            {
-                const match = rounds[i][j].match;
-                const e_col = document.createElement('div');
-                e_col.className = 'col';
-                const e_card = CreateMatchCard(match, rounds[i][j].id, 'V');
-                rounds[i][j].card = e_card;
-                e_col.appendChild(e_card);
-                e_row.appendChild(e_col);
-            }
-        }
-                
-        container.appendChild(e_row);
+    var _rounds = rounds;
+    if (style === 'championship')
+    {
+        const splitRounds = SplitRoundsInHalf(rounds);
+        _rounds = splitRounds;
     }
 
-    for (let i = rounds.length - 1; i > 0; i --)
+    //One Row
+    const e_row = document.createElement('div');
+    e_row.className = 'row';
+    //Many Cols
+    for (let i = 1; i < _rounds.length; i ++)
     {
-        const e_row = document.createElement('div');
-        e_row.className = 'row';
-        if (i != rounds.length - 1) 
-        {
-            for (let j = Math.ceil(rounds[i].length / 2); j < rounds[i].length; j ++)
-            {
-                const match = rounds[i][j].match;
-                const e_col = document.createElement('div');
-                e_col.className = 'col';
-                const e_card = CreateMatchCard(match, rounds[i][j].id, 'V');
-                rounds[i][j].card = e_card;
-                e_col.appendChild(e_card);
-                e_row.appendChild(e_col);
-            }
-            container.appendChild(e_row);
-        }        
+        //Many Cards per Col
+        const col_cards = newCardGroup_col(_rounds[i]);
+        e_row.appendChild(col_cards);
     }
+    container.appendChild(e_row);
 }
 
-function PopulateHorizontalProgressionChart (rounds)
+function SplitRoundsInHalf(rounds)
 {
-    document.getElementById('progressionChart-H').style.display = 'block';
-    const container = document.getElementById('prog-chart-h-container');
-    container.innerHTML = '';
-    for (let i = 1; i < rounds.length; i ++)
+    var splitRounds = [];
+    splitRounds[rounds.length - 1] = rounds[rounds.length - 1];
+    for (var i = 1; i < rounds.length - 1; i ++)
     {
-        const e_col = document.createElement('div');
-        e_col.className = 'col';
-        for (let j = 0; j < rounds[i].length; j ++)
+        if (rounds[i].length % 2 == 0)
         {
-            const match = rounds[i][j].match;
-            const e_card = CreateMatchCard(match, rounds[i][j].id, 'H');
-            rounds[i][j].card = e_card;
-            e_col.appendChild(e_card);
-        }
-        container.appendChild(e_col);
-    }
-    
-}
-
-function PopulateHorizontalAltProgressionChart (rounds)
-{
-    document.getElementById('progressionChart-H-Alt').style.display = 'block';
-    const container = document.getElementById('prog-chart-h-alt-container');
-    container.innerHTML = '';
-    for (let i = 1; i < rounds.length; i ++)
-    {
-        const e_col = document.createElement('div');
-        e_col.className = 'col';
-        if (i == rounds.length - 1)
-        {
-            for (let j = 0; j < rounds[i].length; j ++)
-            {
-                const match = rounds[i][j].match;
-                const e_card = CreateMatchCard(match, rounds[i][j].id, 'H');
-                rounds[i][j].card = e_card;
-                e_col.appendChild(e_card);
-            }
+            splitRounds[i] = rounds[i].slice(0, rounds[i].length / 2);
+            splitRounds[rounds.length * 2 - 2 - i] = rounds[i].slice(rounds[i].length / 2);
         } else 
         {
-            for (let j = 0; j < rounds[i].length / 2; j ++)
-            {
-                const match = rounds[i][j].match;
-                const e_card = CreateMatchCard(match, rounds[i][j].id, 'H');
-                rounds[i][j].card = e_card;
-                e_col.appendChild(e_card);
-            }
+            splitRounds[i] = rounds[i].slice(0, Math.floor(rounds[i].length / 2) + 1);
+            splitRounds[rounds.length * 2 - 2 - i] = rounds[i].slice(Math.floor(rounds[i].length / 2) + 1);
         }
-        
-        container.appendChild(e_col);
     }
-    
-    for (let i = rounds.length - 1; i > 0; i --)
+
+    return splitRounds;
+}
+
+const newCardGroup_col = (_mObjs) => 
+{
+    const e_col = document.createElement('div');
+    e_col.className = 'col';
+
+    for (var i = 0; i < _mObjs.length; i ++)
     {
-        if (i != rounds.length - 1) // Skip last round as it's already been added
-        {
-            const e_col = document.createElement('div');
-            e_col.className = 'col';
-            for (let j = Math.ceil(rounds[i].length / 2); j < rounds[i].length; j ++)
-            {
-                const match = rounds[i][j].match;
-                const e_card = CreateMatchCard(match, rounds[i][j].id, 'H');
-                rounds[i][j].card = e_card;
-                e_col.appendChild(e_card);
-            }
-            container.appendChild(e_col);
-        }        
+        const m_Obj = _mObjs[i];
+        const e_matchCard = newMatchCard(m_Obj, 'H');
+        e_col.appendChild(e_matchCard);
     }
+
+    return e_col;
+} 
+
+const newMatchCard = (m_Obj, orientation) =>
+{
+    //card
+    const e_card = document.createElement('div');
+    e_card.className = 'card';
+    e_card.id = `match-card-r${m_Obj.round}-m${m_Obj.id}`;
+    e_card.classList.add('match-card');
+
+    //table
+    const e_table = document.createElement('table');
+    e_table.className = 'match-table';
+
+    //rows
+    const e_tr_0 = document.createElement('tr');
+    const e_tr_1 = document.createElement('tr');
+
+    //cells
+    const e_td_name_H = document.createElement('td');
+    const e_td_score_H = document.createElement('td');
+    const e_td_name_A = document.createElement('td');
+    const e_td_score_A = document.createElement('td');
+
+    //Set Info
+    e_td_name_H.textContent = GetPlayerDisplayName(m_Obj.match.players?.h?.username);
+    e_td_name_A.textContent = GetPlayerDisplayName(m_Obj.match.players?.a?.username);
+    e_td_score_H.textContent = (m_Obj.match.results?.h.fw != null) ? m_Obj.match.results.h.fw : '-';
+    e_td_score_A.textContent = (m_Obj.match.results?.a.fw != null) ? m_Obj.match.results.a.fw : '-';
+
+    //Set Styling
+
+        //Standard
+        e_card.classList.add('match-card');
+        e_table.classList.add('match-table');
+
+    const status = (m_Obj) =>
+    {
+        if (!m_Obj || !m_Obj.match || !m_Obj.match.info) return;
+        if (m_Obj.match.info.status && m_Obj.match.info.status === 'Complete')
+        {
+            return 'complete';
+        } else if (m_Obj.match.info.status && m_Obj.match.info.status === 'Live')
+        {
+            return 'live';
+        } else if (m_Obj.match.players?.h?.username || m_Obj.match.players?.a?.username || m_Obj.match.results?.h?.fw > 0 || m_Obj.match.results?.a?.fw > 0)
+        {
+            return 'live';
+        } else 
+        {
+            return 'new';
+        }
+    }
+    const s = status(m_Obj);
+    console.log('Match Status:', s);
+
+    //Append All
+    if (orientation === 'H')
+    {
+        e_tr_0.appendChild(e_td_name_H);
+        e_tr_0.appendChild(e_td_score_H);
+        e_tr_1.appendChild(e_td_name_A);
+        e_tr_1.appendChild(e_td_score_A);
+    } else if (orientation === 'V')
+    {
+        e_tr_0.appendChild(e_td_name_H);
+        e_tr_0.appendChild(e_td_name_A);
+        e_tr_1.appendChild(e_td_score_H);
+        e_tr_1.appendChild(e_td_score_A);
+    }
+
+    e_table.appendChild(e_tr_0);
+    e_table.appendChild(e_tr_1);
+    e_card.appendChild(e_table);
+
+    //Add style classes for all elements
+    return e_card;
 }
 
 function GetPlayerDisplayName(username)
 {
-    const player = username;
+    const playerName = username;
     if (username)
     {
         for (var i = 0; i < Object.keys(tournamentPlayers).length; i ++)
@@ -219,115 +322,7 @@ function GetPlayerDisplayName(username)
             }
         }
     } 
-    return player;
-}
-
-function CreateMatchCard (match, matchRefID, orientation)
-{    
-    const e_card = document.createElement('div');
-    e_card.className = 'card';
-    e_card.id = `match-card-r${match.info.round}-m${matchRefID}`;
-    e_card.classList.add('match-card');
-    if ((match.info.status || '').toLowerCase() === 'complete') {
-        e_card.classList.add('card-completed');
-    } else {
-        e_card.classList.add('card-new');
-    }
-
-    const e_table = document.createElement('table');
-    e_table.className = 'match-table';
-
-    const e_tr_top = document.createElement('tr');
-    const e_tr_bottom = document.createElement('tr');
-
-    const e_td_name_H = document.createElement('td');
-    let name_H = '-';
-    if (match.players?.h?.username) {
-        name_H = GetPlayerDisplayName(match.players.h.username, tournamentPlayers);
-    }
-    e_td_name_H.textContent = name_H;
-    e_td_name_H.classList.add('prog-player');
-
-    const e_td_name_A = document.createElement('td');
-    let name_A = '-';
-    if (match.players?.a?.username) {
-        name_A = GetPlayerDisplayName(match.players.a.username, tournamentPlayers);
-    }
-    e_td_name_A.textContent = name_A;
-    e_td_name_A.classList.add('prog-player');
-
-    const e_td_score_H = document.createElement('td');
-    let score_H = 0;
-    if (match.results?.h) {
-        score_H = match.results.h.fw;
-    }
-    e_td_score_H.textContent = score_H;
-    e_td_score_H.classList.add('prog-score');
-
-    const e_td_score_A = document.createElement('td');
-    let score_A = 0;
-    if (match.results?.a) {
-        score_A = match.results.a.fw;
-    }
-    e_td_score_A.textContent = score_A;
-    e_td_score_A.classList.add('prog-score');
-
-    if (score_H > score_A && (match.info.status || '').toLowerCase() === 'complete') {
-        e_td_score_H.classList.add('prog-winner');
-        e_td_name_H.classList.add('prog-winner');
-    } else if (score_A > score_H && (match.info.status || '').toLowerCase() === 'complete') {
-        e_td_score_A.classList.add('prog-winner');
-        e_td_name_A.classList.add('prog-winner');
-    }
-
-    if ((match.info.status || '').toLowerCase() !== 'complete') {
-        if (name_H !== '-' || name_A !== '-' || score_H !== 0 || score_A !== 0) {
-            e_card.classList.remove('card-new');
-            e_card.classList.add('card-live');
-        }
-    }
-
-    if (orientation === 'H') {
-        e_tr_top.appendChild(e_td_name_H);
-        e_tr_bottom.appendChild(e_td_name_A);
-
-        e_tr_top.appendChild(e_td_score_H);
-        e_tr_bottom.appendChild(e_td_score_A);
-    } else if (orientation === 'V') {
-        e_tr_top.appendChild(e_td_name_H);
-        e_tr_bottom.appendChild(e_td_score_H);
-
-        e_tr_top.appendChild(e_td_name_A);
-        e_tr_bottom.appendChild(e_td_score_A);
-    }
-
-    e_table.appendChild(e_tr_top);
-    e_table.appendChild(e_tr_bottom);
-    e_card.appendChild(e_table);
-
-    // Reapply current card spacing (margin) if a dynamic override exists
-    try {
-        const styleEl = document.getElementById('match-card-dynamic-style');
-        if (styleEl && styleEl.textContent) {
-            const m = styleEl.textContent.match(/\.match-card\s*\{\s*margin:\s*([0-9.]+)rem/i);
-            if (m && m[1]) {
-                e_card.style.margin = `${m[1]}rem`;
-            }
-        }
-    } catch {}
-
-    // Reapply current magnification if it has been set
-    try {
-        const scale = typeof window.__matchCardScale === 'number' ? window.__matchCardScale : 1;
-        if (scale !== 1) {
-            const t = getComputedStyle(e_card).transform;
-            e_card.dataset.baseTransform = t && t !== 'none' ? t : '';
-            e_card.style.transformOrigin = e_card.style.transformOrigin || 'center center';
-            e_card.style.transform = `${e_card.dataset.baseTransform} scale(${scale})`.trim();
-        }
-    } catch {}
-
-    return e_card;
+    return playerName;
 }
 
 function DrawProgressionArrows(rounds, pathType) {
@@ -481,57 +476,4 @@ function DrawProgressionArrows(rounds, pathType) {
         window.addEventListener('scroll', reposition, true);
         window.__tournamentLinesListenersAdded = true;
     }
-}
-
-function wireViewControls() {
-    const panel = document.getElementById('view-controls-panel');
-    if (!panel) return;
-
-    panel.addEventListener('change', (e) => {
-        if (e.target?.matches('input[name="chartOrientation"]')) {
-            DrawChart(tournamentRounds);
-        }
-    });
-    panel.addEventListener('change', (e) => {
-        if (e.target?.matches('input[name="chartStyle"]')) {
-            DrawChart(tournamentRounds);
-        }
-    });
-    panel.addEventListener('change', (e) => {
-        if (e.target?.matches('input[name="pathType"], input[name="chartLineType"]')) {
-            DrawChart(tournamentRounds);
-        }
-    });
-}
-
-document.addEventListener('DOMContentLoaded', () => 
-{
-    wireViewControls();
-});
-
-function DrawChart (rounds)
-{
-    const orientationInput = document.querySelector('input[name="chartOrientation"]:checked');
-    const styleInput = document.querySelector('input[name="chartStyle"]:checked');
-    const pathInput = document.querySelector('input[name="chartLineType"]:checked') ||
-                      document.querySelector('input[name="pathType"]:checked');
-
-    const orientation = orientationInput ? orientationInput.value : 'horizontal';
-    const style = styleInput ? styleInput.value : 'championship';
-    const pathType = pathInput ? pathInput.value : 'straight';
-
-    SetView(rounds, orientation, style, pathType);
-}
-
-function SetView (rounds, orientation, style, pathType)
-{
-    document.getElementById('progressionChart-V').style.display = 'none';
-    document.getElementById('progressionChart-V-Alt').style.display = 'none';
-    document.getElementById('progressionChart-H').style.display = 'none';
-    document.getElementById('progressionChart-H-Alt').style.display = 'none';
-    if (orientation === 'horizontal' && style === 'linear') {PopulateHorizontalProgressionChart(rounds);};
-    if (orientation === 'horizontal' && style === 'championship') {PopulateHorizontalAltProgressionChart(rounds);};
-    if (orientation === 'vertical' && style === 'linear') {PopulateVerticalProgressionChart(rounds);};
-    if (orientation === 'vertical' && style === 'championship') {PopulateVerticalAltProgressionChart(rounds);}
-    DrawProgressionArrows(rounds, pathType);
 }
