@@ -395,7 +395,7 @@ async function CompileTournamentRounds (matches)
             const prevMatch_1 = prevRound[matchRef.precedingMatches[1]]?.match || null;
             if (m && prevMatch_0 && prevMatch_1)
             {
-                matchRef.match = await AutoUpdateMatchPlayers(m, prevMatch_0, prevMatch_1);
+                //matchRef.match = await AutoUpdateMatchPlayers(m, prevMatch_0, prevMatch_1);
             }
         }
 
@@ -404,7 +404,7 @@ async function CompileTournamentRounds (matches)
 
     return allRounds;
 }
-
+/*
 async function AutoUpdateMatchPlayers (match, prevMatch_0, prevMatch_1)
 {
     if (match.info.status === 'Complete') return; // do not auto-update completed matches
@@ -452,4 +452,4 @@ async function AutoUpdateMatchPlayers (match, prevMatch_0, prevMatch_1)
     }
     
     return match;
-}
+}*/

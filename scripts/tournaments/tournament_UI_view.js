@@ -83,32 +83,39 @@ function PopulateVerticalAltProgressionChart (rounds)
     {
         const e_row = document.createElement('div');
         e_row.className = 'row';
+
         if (i == rounds.length - 1)
         {
             for (let j = 0; j < rounds[i].length; j ++)
             {
                 const match = rounds[i][j].match;
-                const e_col = document.createElement('div');
-                e_col.className = 'col';
-                const e_card = CreateMatchCard(match, rounds[i][j].id, 'V');
-                rounds[i][j].card = e_card;
-                e_col.appendChild(e_card);
-                e_row.appendChild(e_col);
+                if (match && match.info)
+                {
+                    const e_col = document.createElement('div');
+                    e_col.className = 'col';
+                    const e_card = CreateMatchCard(match, rounds[i][j].id, 'V');
+                    rounds[i][j].card = e_card;
+                    e_col.appendChild(e_card);
+                    e_row.appendChild(e_col);
+                }
             }
         } else 
         {
             for (let j = 0; j < rounds[i].length / 2; j ++)
             {
                 const match = rounds[i][j].match;
-                const e_col = document.createElement('div');
-                e_col.className = 'col';
-                const e_card = CreateMatchCard(match, rounds[i][j].id, 'V');
-                rounds[i][j].card = e_card;
-                e_col.appendChild(e_card);
-                e_row.appendChild(e_col);
+                if (match && match.info)
+                {
+                    const e_col = document.createElement('div');
+                    e_col.className = 'col';
+                    const e_card = CreateMatchCard(match, rounds[i][j].id, 'V');
+                    rounds[i][j].card = e_card;
+                    e_col.appendChild(e_card);
+                    e_row.appendChild(e_col);
+                }
             }
         }
-        
+                
         container.appendChild(e_row);
     }
 
@@ -121,12 +128,15 @@ function PopulateVerticalAltProgressionChart (rounds)
             for (let j = Math.ceil(rounds[i].length / 2); j < rounds[i].length; j ++)
             {
                 const match = rounds[i][j].match;
-                const e_col = document.createElement('div');
-                e_col.className = 'col';
-                const e_card = CreateMatchCard(match, rounds[i][j].id, 'V');
-                rounds[i][j].card = e_card;
-                e_col.appendChild(e_card);
-                e_row.appendChild(e_col);
+                if (match && match.info)
+                {
+                    const e_col = document.createElement('div');
+                    e_col.className = 'col';
+                    const e_card = CreateMatchCard(match, rounds[i][j].id, 'V');
+                    rounds[i][j].card = e_card;
+                    e_col.appendChild(e_card);
+                    e_row.appendChild(e_col);
+                }
             }
             container.appendChild(e_row);
         }        
@@ -222,7 +232,7 @@ function GetPlayerDisplayName(username)
 }
 
 function CreateMatchCard (match, matchRefID, orientation)
-{
+{    
     const e_card = document.createElement('div');
     e_card.className = 'card';
     e_card.id = `match-card-r${match.info.round}-m${matchRefID}`;
