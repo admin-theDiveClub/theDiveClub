@@ -29,7 +29,7 @@ function PopulateLog (log)
         const fPct = entry['F%'] != null ? String(entry['F%']).replace('%', '') + '%' : '';
         const cols = [
             entry.Rank ?? '',
-            GetPlayerDisplayName(entry.username) ?? '',
+            GetPlayerProfile(entry.username).displayName || entry.username || '?',
             entry.MP ?? '',
             entry.MW ?? '',
             entry.ML ?? '',
@@ -255,16 +255,31 @@ const newMatchCard = (m_Obj, orientation) =>
     const e_td_score_A = document.createElement('td');
 
     //Set Info
-    e_td_name_H.textContent = GetPlayerDisplayName(m_Obj.match.players?.h?.username);
-    e_td_name_A.textContent = GetPlayerDisplayName(m_Obj.match.players?.a?.username);
-    e_td_score_H.textContent = (m_Obj.match.results?.h.fw != null) ? m_Obj.match.results.h.fw : '-';
-    e_td_score_A.textContent = (m_Obj.match.results?.a.fw != null) ? m_Obj.match.results.a.fw : '-';
+    const player_H = GetPlayerProfile(m_Obj.match.players?.h?.username);
+    e_td_name_H.textContent = player_H.displayName || player_H.username;
+    const player_A = GetPlayerProfile(m_Obj.match.players?.a?.username);
+    e_td_name_A.textContent = player_A.displayName || player_A.username;
+    const score_H = (m_Obj.match.results?.h.fw != null) ? m_Obj.match.results.h.fw : '-';
+    const score_A = (m_Obj.match.results?.a.fw != null) ? m_Obj.match.results.a.fw : '-';
+    e_td_score_H.textContent = score_H;
+    e_td_score_A.textContent = score_A;
 
-    //Set Styling
+    //Profile Pictures
+    if (player_H.pp)
+    {
+        const e_img_H = document.createElement('img');
+        e_img_H.src = player_H.pp;
+        e_img_H.className = 'match-player-pp';
+        e_td_name_H.prepend(e_img_H);
+    }
 
-        //Standard
-        e_card.classList.add('match-card');
-        e_table.classList.add('match-table');
+    if (player_A.pp)
+    {
+        const e_img_A = document.createElement('img');
+        e_img_A.src = player_A.pp;
+        e_img_A.className = 'match-player-pp';
+        e_td_name_A.prepend(e_img_A);
+    }
 
     const status = (m_Obj) =>
     {
@@ -283,8 +298,61 @@ const newMatchCard = (m_Obj, orientation) =>
             return 'new';
         }
     }
+
     const s = status(m_Obj);
-    console.log('Match Status:', s);
+    //Set Styling
+
+        //Standard
+        e_card.classList.add('match-card');
+        e_table.classList.add('match-table');
+        e_td_name_H.classList.add('match-player');
+        e_td_name_A.classList.add('match-player');
+        e_td_score_H.classList.add('match-score');
+        e_td_score_A.classList.add('match-score');
+
+        //Win/Lose
+        if (s === 'complete')
+        {
+            e_card.classList.add('match-complete');
+            if (score_H > score_A)
+            {
+                e_td_name_H.classList.add('match-winner');
+                e_td_score_H.classList.add('match-winner');
+                e_td_name_A.classList.add('match-loser');
+                e_td_score_A.classList.add('match-loser');
+            } else if (score_A > score_H)
+            {
+                e_td_name_A.classList.add('match-winner');
+                e_td_score_A.classList.add('match-winner');
+                e_td_name_H.classList.add('match-loser');
+                e_td_score_H.classList.add('match-loser');
+            }
+
+            if (m_Obj.match.info.round == tournamentRounds.length - 1)
+            {
+                e_card.classList.add('match-final');
+                if (score_H > score_A)
+                {
+                    e_td_name_H.classList.add('match-final');
+                    e_td_score_H.classList.add('match-final');
+                    e_td_name_A.classList.add('match-loser');
+                    e_td_score_A.classList.add('match-loser');
+                } else if (score_A > score_H)
+                {
+                    e_td_name_A.classList.add('match-final');
+                    e_td_score_A.classList.add('match-final');
+                    e_td_name_H.classList.add('match-loser');
+                    e_td_score_H.classList.add('match-loser');
+                }
+            }
+        } else if (s === 'live')
+        {
+            e_card.classList.add('match-live');
+            e_td_name_H.classList.add('match-live');
+            e_td_score_H.classList.add('match-live');
+            e_td_name_A.classList.add('match-live');
+            e_td_score_A.classList.add('match-live');
+        }
 
     //Append All
     if (orientation === 'H')
@@ -309,7 +377,7 @@ const newMatchCard = (m_Obj, orientation) =>
     return e_card;
 }
 
-function GetPlayerDisplayName(username)
+function GetPlayerProfile(username)
 {
     const playerName = username;
     if (username)
@@ -319,11 +387,11 @@ function GetPlayerDisplayName(username)
             var p = tournamentPlayers[i.toString()];
             if (p.username === username)
             {
-                return p.displayName;
+                return p;
             }
         }
     } 
-    return playerName;
+    return { username: playerName };
 }
 
 function DrawProgressionArrows(rounds, pathType) {
