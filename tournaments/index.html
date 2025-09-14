@@ -283,7 +283,7 @@
                             </thead>
 
                             <tbody>
-                                <!-- <tr>
+                                <tr>
                                     <td colspan="6">Round 1</td>
                                 </tr>
                                 <tr>
@@ -291,12 +291,12 @@
                                         <input class="form-check-input" type="checkbox" id="option-check">
                                     </td>
                                     <td>Player_H</td>
-                                    <td><input id="m-score-H" class="form-control t-info-item" type="number" inputmode="numeric" pattern="[0-9]*" min="0" step="1" placeholder="0"></td>
-                                    <td><i class="bi bi-box-arrow-up-right"></i></td>
-                                    <td><input id="m-score-H" class="form-control t-info-item" type="number" inputmode="numeric" pattern="[0-9]*" min="0" step="1" placeholder="0"></td>
+                                    <td><input id="m-score-H" class="form-control t-info-item" type="number" inputmode="numeric" pattern="[0-9]*" min="0" step="1" placeholder="-"></td>
+                                    <td><input id="m-score-H" class="form-control t-info-item" type="number" inputmode="numeric" pattern="[0-9]*" min="0" step="1" placeholder="-"></td>
                                     <td>Player_A</td>
+                                    <td><i class="bi bi-box-arrow-up-right"></i></td>
                                     <td><button class="btn btn-sm btn-danger">X</button></td>
-                                </tr>                             -->
+                                </tr>                            
                             </tbody>
                         </table>
                     </div>
@@ -438,7 +438,7 @@
             border-radius: 2cap;            
         }
 
-        .cell-player-swappable:hover
+        .cell-player-swappable:active
         {
             background-color: var(--color-secondary-00);
             color: var(--color-base-00);

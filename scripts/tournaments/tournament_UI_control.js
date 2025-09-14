@@ -992,342 +992,204 @@ if (btnAddRound)
     });
 }
 
+function GetPlayerDisplayName(username)
+{
+    var playerName = username;
+    if (username)
+    {
+        for (var i = 0; i < Object.keys(tournamentPlayers).length; i ++)
+        {
+            var p = tournamentPlayers[i.toString()];
+            if (p.username === username)
+            {
+                playerName = p.displayName || p.username;
+            }
+        }
+    } 
+    return playerName;
+}
 
 //Matches
 function UpdateTournamentMatches(players, rounds)
 {
-    const table = document.getElementById('tbl-t-matches');
-    if (!table) return;
-    const tbody = table.querySelector('tbody');
-    if (!tbody) return;
+    const e_table = document.getElementById('tbl-t-matches');
+    const e_tbody = e_table.querySelector('tbody');
+    e_tbody.innerHTML = '';
 
-    // Instead of clearing and rebuilding all rows, update existing rows where possible.
-    // We key rows by match.id. If a match.id is new or removed, we insert/remove rows accordingly.
+    for (var i = 0; i < rounds.length; i ++)
+    {
+        const round = rounds[i];
+        if (round)
+        {
+            const tr_roundHeader = document.createElement('tr');
+            const td_roundHeader = document.createElement('td');
+            td_roundHeader.colSpan = 5;
+            td_roundHeader.textContent = `Round ${i}`;
+            td_roundHeader.className = 'round-header';
+            tr_roundHeader.appendChild(td_roundHeader);
+            e_tbody.appendChild(tr_roundHeader);
 
-    // Create or reuse per-table maps
-    const rowMap = table._rowByMatchId || (table._rowByMatchId = new Map());
-    const headerMap = table._roundHeaderByKey || (table._roundHeaderByKey = new Map());
+            for (var j = 0; j < round.length; j ++)
+            {
+                const m_Obj = round[j];
+                if (m_Obj && m_Obj.match)
+                {
+                    const m = m_Obj.match;
+                    if (completedMatchesHidden && m.info.status !== 'Complete') continue;
+                    const tr_match = document.createElement('tr');
 
-    const ensureHeaderRow = (rk, rnum) => {
-        let trHeader = headerMap.get(rk);
-        if (trHeader && !trHeader.isConnected) {
-            headerMap.delete(rk);
-            trHeader = null;
-        }
-        if (!trHeader) {
-            trHeader = document.createElement('tr');
-            trHeader.dataset.round = rk;
+                    const td_match_status = document.createElement('td');
+                    const td_player_h = document.createElement('td');
+                    const td_score_h = document.createElement('td');
+                    const td_score_a = document.createElement('td');
+                    const td_player_a = document.createElement('td');
+                    const td_match_link = document.createElement('td');
+                    const td_match_delete = document.createElement('td');
 
-            const tdHeader = document.createElement('td');
-            tdHeader.colSpan = 7;
-            tdHeader.textContent = `Round ${rnum}`;
-            tdHeader.style.fontWeight = 'bold';
-            tdHeader.style.backgroundColor = 'rgba(0,0,0,0.25)';
+                    // status checkbox cell
+                    const chk = document.createElement('input');
+                    chk.type = 'checkbox';
+                    chk.className = 'form-check-input';
+                    chk.id = `option-check-${m.id ?? `${i}-${j}`}`;
+                    chk.checked = !!(m.info && String(m.info.status) === 'Complete');
+                    chk.addEventListener('change', async () => {
+                        try {
+                            if (!m.info) m.info = {};
+                            m.info.status = chk.checked ? 'Complete' : 'New';
+                            const resp = await DB_Update('tbl_matches', m, m.id);
+                            if (resp && resp.error) console.error('Failed to update match status', resp.error);
+                        } catch (err) {
+                            console.error('Error updating match status', err);
+                        }
+                    });
+                    td_match_status.appendChild(chk);
 
-            trHeader.appendChild(tdHeader);
-            tbody.appendChild(trHeader);
-            headerMap.set(rk, trHeader);
-        } else {
-            // keep header text in sync (in case round label changes)
-            const tdHeader = trHeader.firstElementChild;
-            if (tdHeader) tdHeader.textContent = `Round ${rnum}`;
-            // keep at least attached to tbody
-            if (trHeader.parentElement !== tbody) {
-                tbody.appendChild(trHeader);
-            }
-        }
-        return trHeader;
-    };
+                    // player H cell (clickable / swappable)
+                    td_player_h.classList.add('cell-player-swappable');
+                    td_player_h.textContent = GetPlayerDisplayName((m.players && m.players.h && m.players.h.username) ? m.players.h.username : '---') || '?';
+                    td_player_h.style.cursor = 'pointer';
+                    td_player_h.addEventListener('click', () => {
+                        Swap_matchPlayer((m.players && m.players.h && m.players.h.username) || null, m, 'h', td_player_h);
+                    });
 
-    const ensureInsertedAfterHeader = (row, headerRow) => {
-        // Insert the row right after the header if it's not already in DOM
-        if (!row.isConnected) {
-            if (headerRow.nextSibling) {
-                tbody.insertBefore(row, headerRow.nextSibling);
-            } else {
-                tbody.appendChild(row);
-            }
-        }
-    };
-
-    const createMatchRow = (rk, mkKey) => {
-        const tr = document.createElement('tr');
-        tr.dataset.round = rk;
-
-        // Completion checkbox
-        const tdComplete = document.createElement('td');
-        const chk = document.createElement('input');
-        chk.className = 'form-check-input form-check-input-small';
-        chk.type = 'checkbox';
-        chk.id = `m-complete-${rk}-${mkKey}`;
-        chk.title = 'Complete';
-        tdComplete.appendChild(chk);
-        tr.appendChild(tdComplete);
-
-        // Home name
-        const tdHName = document.createElement('td');
-        tdHName.style.cursor = 'pointer';
-        tdHName.title = 'Click to select this player for swapping';
-        tdHName.classList.add('cell-player-swappable');
-        tr.appendChild(tdHName);
-
-        // Home score
-        const tdHScore = document.createElement('td');
-        const inputH = document.createElement('input');
-        inputH.type = 'number';
-        inputH.min = '0';
-        inputH.step = '1';
-        inputH.className = 'form-control t-info-item input-score';
-        inputH.id = `m-score-${rk}-${mkKey}-h`;
-        inputH.setAttribute('inputmode', 'numeric');
-        inputH.setAttribute('pattern', '[0-9]*');
-        tdHScore.appendChild(inputH);
-        tr.appendChild(tdHScore);
-
-        // Arrow cell
-        const tdArrow = document.createElement('td');
-        const link = document.createElement('a');
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        const icon = document.createElement('i');
-        icon.className = 'bi bi-box-arrow-up-right';
-        link.appendChild(icon);
-        tdArrow.appendChild(link);
-        tr.appendChild(tdArrow);
-
-        // Away score
-        const tdAScore = document.createElement('td');
-        const inputA = document.createElement('input');
-        inputA.type = 'number';
-        inputA.min = '0';
-        inputA.step = '1';
-        inputA.className = 'form-control t-info-item input-score';
-        inputA.id = `m-score-${rk}-${mkKey}-a`;
-        inputA.setAttribute('inputmode', 'numeric');
-        inputA.setAttribute('pattern', '[0-9]*');
-        tdAScore.appendChild(inputA);
-        tr.appendChild(tdAScore);
-
-        // Away name
-        const tdAName = document.createElement('td');
-        tdAName.style.cursor = 'pointer';
-        tdAName.title = 'Click to select this player for swapping';
-        tdAName.classList.add('cell-player-swappable');
-        tr.appendChild(tdAName);
-
-        // Remove button
-        const tdRemove = document.createElement('td');
-        const btn = document.createElement('button');
-        btn.className = 'btn btn-sm btn-danger';
-        btn.type = 'button';
-        btn.title = 'Remove match';
-        btn.textContent = 'X';
-        tdRemove.appendChild(btn);
-        tr.appendChild(tdRemove);
-
-        // Store element refs
-        tr._els = {
-            chk,
-            tdHName,
-            inputH,
-            link,
-            inputA,
-            tdAName,
-            btnRemove: btn
-        };
-
-        // Listeners use row._match so we can update the bound data without recreating the row
-        chk.addEventListener('change', async () => {
-            const m = tr._match;
-            if (!m) return;
-            m.info = m.info || {};
-            m.info.status = chk.checked ? 'Complete' : 'New';
-            await DB_Update('tbl_matches', m, m.id);
-        });
-
-        tdHName.addEventListener('click', () => {
-            const m = tr._match;
-            if (!m) return;
-            const uname = m && m.players && m.players.h ? m.players.h.username : null;
-            Swap_matchPlayer(uname, m, 'h', tdHName);
-            tdHName.classList.add('cell-player-swap');
-        });
-
-        inputH.addEventListener('change', async () => {
-            const m = tr._match;
-            if (!m) return;
-            const raw = inputH.value;
-            const parsed = raw === '' ? null : parseInt(raw, 10);
-            m.results = m.results || { a: { fw: 0 }, h: { fw: 0 } };
-            if (!m.results.h) m.results.h = { fw: 0 };
-            m.results.h.fw = parsed ? parsed : 0;
-            await DB_Update('tbl_matches', m, m.id);
-        });
-
-        inputA.addEventListener('change', async () => {
-            const m = tr._match;
-            if (!m) return;
-            const raw = inputA.value;
-            const parsed = raw === '' ? null : parseInt(raw, 10);
-            m.results = m.results || { a: { fw: 0 }, h: { fw: 0 } };
-            if (!m.results.a) m.results.a = { fw: 0 };
-            m.results.a.fw = parsed ? parsed : 0;
-            await DB_Update('tbl_matches', m, m.id);
-        });
-
-        tdAName.addEventListener('click', () => {
-            const m = tr._match;
-            if (!m) return;
-            const uname = m && m.players && m.players.a ? m.players.a.username : null;
-            Swap_matchPlayer(uname, m, 'a', tdAName);
-            tdAName.classList.add('cell-player-swap');
-        });
-
-        btn.addEventListener('click', async () => {
-            const m = tr._match;
-            if (!m) return;
-            const hName = tr._els.tdHName.textContent || '-';
-            const aName = tr._els.tdAName.textContent || '-';
-            if (confirm(`Delete match between ${hName} and ${aName}? This action cannot be undone.`)) {
-                if (m.info.round == tournamentRounds.length - 1) {
-                    await DB_Delete('tbl_matches', m.id);
-                } else {
-                    if (tournamentRounds[m.info.round].length > 1) {
-                        await DB_Delete('tbl_matches', m.id);
-                    } else {
-                        alert("You cannot delete the last match in a preceeding round until you delete all matches in the following rounds.");
+                    // score H input
+                    const scoreH = document.createElement('input');
+                    scoreH.type = 'number';
+                    scoreH.inputMode = 'numeric';
+                    scoreH.pattern = '[0-9]*';
+                    scoreH.min = '0';
+                    scoreH.step = '1';
+                    scoreH.placeholder = '-';
+                    scoreH.className = 'form-control t-info-item';
+                    scoreH.id = `m-score-H-${m.id ?? `${i}-${j}`}`;
+                    var score_H = 0;
+                    if (m.results && m.results.h)
+                    {
+                        if (m.results.h.fw > 0 || m.info.status === 'Complete')
+                        {
+                            score_H = m.results.h.fw;
+                            scoreH.value = score_H;
+                        } else 
+                        {
+                            scoreH.value = '';
+                        }
                     }
+                    scoreH.addEventListener('change', async () => 
+                    {
+                        if (!m.results) m.results = {};
+                        if (!m.results.h) m.results.h = {};
+                        m.results.h.fw = scoreH.value === '' ? 0 : Number(scoreH.value);
+                        const resp = await DB_Update('tbl_matches', m, m.id);
+                    });
+                    td_score_h.appendChild(scoreH);
+
+                    // score A input
+                    const scoreA = document.createElement('input');
+                    scoreA.type = 'number';
+                    scoreA.inputMode = 'numeric';
+                    scoreA.pattern = '[0-9]*';
+                    scoreA.min = '0';
+                    scoreA.step = '1';
+                    scoreA.placeholder = '-';
+                    scoreA.className = 'form-control t-info-item';
+                    scoreA.id = `m-score-A-${m.id ?? `${i}-${j}`}`;
+                    var score_A = 0;
+                    if (m.results && m.results.a)
+                    {
+                        if (m.results.a.fw > 0 || m.info.status === 'Complete')
+                        {
+                            score_A = m.results.a.fw;
+                            scoreA.value = score_A;
+                        } else 
+                        {
+                            scoreA.value = '';
+                        }
+                    }
+                    scoreA.addEventListener('change', async () => 
+                    {
+                        if (!m.results) m.results = {};
+                        if (!m.results.a) m.results.a = {};
+                        m.results.a.fw = scoreA.value === '' ? 0 : Number(scoreA.value);
+                        const resp = await DB_Update('tbl_matches', m, m.id);
+                    });
+                    td_score_a.appendChild(scoreA);
+
+                    // player A cell (clickable / swappable)
+                    td_player_a.classList.add('cell-player-swappable');
+                    td_player_a.textContent = GetPlayerDisplayName((m.players && m.players.a && m.players.a.username) ? m.players.a.username : '---') || '?';
+                    td_player_a.style.cursor = 'pointer';
+                    td_player_a.addEventListener('click', () => {
+                        Swap_matchPlayer((m.players && m.players.a && m.players.a.username) || null, m, 'a', td_player_a);
+                    });
+
+                    // link / open icon
+                    const link = document.createElement('a');
+                    link.href = `https://thediveclub.org/matches/index.html?matchID=${m.id}`;
+                    link.className = 'btn btn-link p-0';
+                    link.title = 'Open match';
+                    link.setAttribute('aria-label', 'Open match');
+
+                    const openIcon = document.createElement('i');
+                    openIcon.className = 'bi bi-box-arrow-up-right';
+                    link.appendChild(openIcon);
+
+                    td_match_link.appendChild(link);
+
+                    // delete button
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'btn btn-sm btn-danger';
+                    delBtn.type = 'button';
+                    delBtn.textContent = 'X';
+                    delBtn.title = 'Remove match';
+                    delBtn.addEventListener('click', async () => {
+                        if (!confirm('Delete this match?')) return;
+                        try {
+                            const resp = await DB_Delete('tbl_matches', m.id);
+                            if (resp && resp.error) {
+                                console.error('Failed to delete match', resp.error);
+                                alert('Failed to delete match: ' + (resp.error.message || resp.error));
+                                return;
+                            }
+                            tr_match.remove();
+                        } catch (err) {
+                            console.error('Error deleting match', err);
+                        }
+                    });
+                    td_match_delete.appendChild(delBtn);
+
+                    // append tds to match row and add to tbody
+                    tr_match.appendChild(td_match_status);
+                    tr_match.appendChild(td_player_h);
+                    tr_match.appendChild(td_score_h);
+                    tr_match.appendChild(td_score_a);
+                    tr_match.appendChild(td_player_a);
+                    tr_match.appendChild(td_match_link);
+                    tr_match.appendChild(td_match_delete);
+
+                    e_tbody.appendChild(tr_match);
                 }
             }
-        });
-
-        return tr;
-    };
-
-    const updateMatchRow = (tr, rk, mkKey, match, t_player_h, t_player_a) => {
-        tr.dataset.matchId = String(match.id);
-        tr._match = match;
-
-        const els = tr._els;
-
-        // Status
-        const statusComplete = !!(match && match.info && String(match.info.status) === 'Complete');
-        els.chk.checked = statusComplete;
-
-        // Names
-        els.tdHName.textContent = t_player_h ? (t_player_h.displayName || t_player_h.username || '-') : '-';
-        els.tdAName.textContent = t_player_a ? (t_player_a.displayName || t_player_a.username || '-') : '-';
-
-        // Scores
-        const scH = match && match.results && match.results.h && typeof match.results.h.fw !== 'undefined'
-            ? Number(match.results.h.fw) : 0;
-        const scA = match && match.results && match.results.a && typeof match.results.a.fw !== 'undefined'
-            ? Number(match.results.a.fw) : 0;
-
-        els.inputH.value = String(scH);
-        els.inputA.value = String(scA);
-
-        // Reset and apply classes based on completion/winner
-        els.inputH.classList.remove('input-complete', 'input-win');
-        els.inputA.classList.remove('input-complete', 'input-win');
-        if (statusComplete) {
-            els.inputH.classList.add('input-complete');
-            els.inputA.classList.add('input-complete');
-            if (scH > scA) els.inputH.classList.add('input-win');
-            if (scA > scH) els.inputA.classList.add('input-win');
-        }
-
-        // Link
-        els.link.href = 'https://thediveclub.org/matches/scoreboard.html?matchID=' + encodeURIComponent(match.id);
-
-        // Hide/Show based on filter
-        if (completedMatchesHidden && statusComplete) {
-            tr.style.display = 'none';
-        } else {
-            tr.style.display = '';
-        }
-    };
-
-    // Build sorted round -> match keys
-    const roundKeys = Object.keys(rounds)
-        .map(k => Number(k))
-        .filter(n => !Number.isNaN(n))
-        .sort((a, b) => a - b);
-
-    let totalMatches = 0;
-    const seenIds = new Set();
-
-    roundKeys.forEach(rnum => {
-        const rk = String(rnum);
-        const matchesObj = rounds[rk] || {};
-        const matchKeys = Object.keys(matchesObj)
-            .map(k => Number(k))
-            .filter(n => !Number.isNaN(n))
-            .sort((a, b) => a - b);
-
-        // Ensure round header exists
-        const headerRow = ensureHeaderRow(rk, rnum);
-
-        matchKeys.forEach(mk => {
-            const mkKey = String(mk);
-            const mm = matchesObj[mkKey];
-            if (!mm || !mm.match) return;
-
-            const match = mm.match;
-            if (!match || !match.id) return;
-
-            seenIds.add(String(match.id));
-
-            // Resolve players for display
-            const un_h = match.players && match.players.h ? match.players.h.username : null;
-            const un_a = match.players && match.players.a ? match.players.a.username : null;
-
-            const FindMatchPlayerInTournamentPlayers = (username) => {
-                if (!username) return null;
-                return players.find(p => p.username === username) || null;
-            };
-
-            const t_player_h = FindMatchPlayerInTournamentPlayers(un_h);
-            const t_player_a = FindMatchPlayerInTournamentPlayers(un_a);
-
-            // Row by id
-            let tr = rowMap.get(String(match.id));
-            if (!tr) {
-                tr = createMatchRow(rk, mkKey);
-                rowMap.set(String(match.id), tr);
-                ensureInsertedAfterHeader(tr, headerRow);
-            } else if (!tr.isConnected) {
-                // Row exists in map but got detached; reattach beneath header
-                ensureInsertedAfterHeader(tr, headerRow);
-            }
-
-            updateMatchRow(tr, rk, mkKey, match, t_player_h, t_player_a);
-            totalMatches++;
-        });
-    });
-
-    // Remove rows for matches that no longer exist
-    for (const [mid, tr] of Array.from(rowMap.entries())) {
-        if (!seenIds.has(mid)) {
-            if (tr && tr.isConnected) tr.remove();
-            rowMap.delete(mid);
-        }
-    }
-
-    // Remove headers for rounds that no longer exist or have no rows under them
-    for (const [rk, headerRow] of Array.from(headerMap.entries())) {
-        if (!rounds[rk]) {
-            if (headerRow && headerRow.isConnected) headerRow.remove();
-            headerMap.delete(rk);
-        } else {
-            // If no rows exist for this round, keep header if you want a placeholder,
-            // or remove it. We remove it to avoid empty sections.
-            const hasAnyRow = Array.from(rowMap.values()).some(r => r.dataset.round === rk);
-            if (!hasAnyRow) {
-                if (headerRow && headerRow.isConnected) headerRow.remove();
-                headerMap.delete(rk);
-            }
-        }
+        }        
     }
 }
 

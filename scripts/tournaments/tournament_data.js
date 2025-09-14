@@ -235,42 +235,7 @@ async function GetPlayerProfiles (usernames)
     return response.data || [];
 }
 
-var tournamentRounds =
-{
-    /*
-    Round0:
-    {
-        Match0:
-        {
-            match: null,
-        },
-        Match1:
-        {
-            match: null,
-        }
-    }
-    */
-    0:
-    {
-        0:
-        {
-            match: null,
-        },
-        1:
-        {
-            match: null,
-        }
-    },
-    1:
-    {
-        0:
-        {
-            match: null,
-            precedingRound: 0,
-            precedingMatches: [0, 1]
-        }
-    }
-}
+var tournamentRounds = null
 
 function GetConfirmedPlayers (players)
 {
@@ -376,7 +341,12 @@ async function CompileTournamentRounds (matches)
 
     for (var i = 0; i < matches.length; i++)
     {
-        const m_round = matches[i].info?.round || 0;
+        const m_round = (() => {
+            const r = matches[i]?.info?.round;
+            if (Number.isInteger(r)) return r;
+            const n = parseInt(String(r ?? '0'), 10);
+            return Number.isNaN(n) ? 0 : n;
+        })();
         allRounds[m_round] = allRounds[m_round] || [];
         const matchRef = 
         {
