@@ -116,7 +116,7 @@ function wireViewControls() {
                 UpdateCardMagnification('+');
                 break;
         }
-        
+
         DrawChart(tournamentRounds);
     });
 }
@@ -155,7 +155,8 @@ function PopulateChart_V (rounds, style)
     }
 
     //Many Rows
-    for (let i = 1; i < _rounds.length; i ++)
+    //for (let i = 1; i < _rounds.length; i ++)
+    for (let i = _rounds.length - 1; i > 0; i --)
     {
         const e_row = document.createElement('div');
         e_row.className = 'row';
