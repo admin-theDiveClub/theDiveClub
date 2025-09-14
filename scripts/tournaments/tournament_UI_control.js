@@ -1035,7 +1035,7 @@ function UpdateTournamentMatches(players, rounds)
                 if (m_Obj && m_Obj.match)
                 {
                     const m = m_Obj.match;
-                    if (completedMatchesHidden && m.info.status !== 'Complete') continue;
+                    if (completedMatchesHidden && m.info.status === 'Complete') break;
                     const tr_match = document.createElement('tr');
 
                     const td_match_status = document.createElement('td');
