@@ -259,8 +259,8 @@ const newMatchCard = (m_Obj, orientation) =>
     e_td_name_H.textContent = player_H.displayName || player_H.username;
     const player_A = GetPlayerProfile(m_Obj.match.players?.a?.username);
     e_td_name_A.textContent = player_A.displayName || player_A.username;
-    const score_H = (m_Obj.match.results?.h.fw != null) ? m_Obj.match.results.h.fw : '-';
-    const score_A = (m_Obj.match.results?.a.fw != null) ? m_Obj.match.results.a.fw : '-';
+    const score_H = (m_Obj.match.results?.h != null) ? m_Obj.match.results.h.fw ? m_Obj.match.results.h.fw : 0 : 0;
+    const score_A = (m_Obj.match.results?.a != null) ? m_Obj.match.results.a.fw ? m_Obj.match.results.a.fw : 0 : 0;
     e_td_score_H.textContent = score_H;
     e_td_score_A.textContent = score_A;
 

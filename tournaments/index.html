@@ -293,9 +293,9 @@
                                     <td>Player_H</td>
                                     <td><input id="m-score-H" class="form-control t-info-item" type="number" inputmode="numeric" pattern="[0-9]*" min="0" step="1" placeholder="-"></td>
                                     <td><input id="m-score-H" class="form-control t-info-item" type="number" inputmode="numeric" pattern="[0-9]*" min="0" step="1" placeholder="-"></td>
-                                    <td>Player_A</td>
+                                    <td class="cell-player-swap">Player_A <i class="bi bi-"></i></td>
                                     <td><i class="bi bi-box-arrow-up-right"></i></td>
-                                    <td><button class="btn btn-sm btn-danger">X</button></td>
+                                    <td><button class="btn btn-sm btn-danger"><i class="bi bi-x"></i></button></td>
                                 </tr>                            
                             </tbody>
                         </table>
@@ -433,8 +433,8 @@
 
         .cell-player-swap
         {
-            background-color: var(--color-secondary-00);
-            color: var(--color-base-00);
+            background-color: var(--color-secondary-02);
+            color: var(--color-base-10);
             border-radius: 2cap;            
         }
 
@@ -458,6 +458,12 @@
         {
             text-align: left !important;
             padding: 1rem;
+        }
+
+        .cell-player-duplicate
+        {
+            background-color: var(--color-highlight-0) !important;
+            color: var(--color-base-00) !important;
         }
     </style>
 

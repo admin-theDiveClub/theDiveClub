@@ -137,17 +137,15 @@
         <div id="progressionChart" class="card">
         </div>
 
-        <div id="observer" class="card">
-            <div class="observer-iframe-wrapper">
-                <iframe
-                    src="https://thediveclub.org/tournaments/view.html?tournamentID=72c920ae-43e0-45b1-85d1-89cb35d54ebd"
-                    title="Tournament View"
-                    style="width:100%; height:30vh; min-height:480px; border:1px solid #ddd; border-radius:4px;"
-                    loading="lazy"
-                    allowfullscreen>
-                </iframe>
-            </div>
-        </div> 
+        <div class="observer-iframe-wrapper">
+            <iframe
+                src="../tournaments/view.html?tournamentID=72c920ae-43e0-45b1-85d1-89cb35d54ebd"
+                title="Tournament View"
+                style="width:100%; height:30vh; min-height:480px;"
+                loading="lazy"
+                allowfullscreen>
+            </iframe>
+        </div>
     </div>
 
     <style>
@@ -184,6 +182,29 @@
             padding: 0.25rem;
         }
 
+        .match-card.match-live
+        {
+            box-shadow: 0 0 10px var(--color-accent-0);
+        }
+
+        .match-card.match-complete
+        {
+            box-shadow: 0 0 10px var(--color-primary-00);
+        }        
+
+        .match-card.match-final
+        {
+            box-shadow: 0 0 10px var(--color-secondary-00);
+        }
+
+        .match-player.match-final, .match-score.match-final
+        {
+            color: var(--color-secondary-00) !important;
+            font-weight: bold !important;
+            font-size: 1.5rem !important;
+            text-shadow: 0 0 8px var(--color-secondary-00) !important;
+        }
+
         .match-table
         {
             margin: 0rem !important;
@@ -193,9 +214,64 @@
         {
             padding: 0.5rem !important;
         }
+
+        .match-player.match-live, .match-score.match-live
+        {
+            color: var(--color-accent-0);
+            font-weight: bold;
+            font-size: 1.25rem;
+            text-shadow: 0 0 2px var(--color-accent-0);
+        }
+
+        .match-player
+        {
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .match-score
+        {
+            text-align: center;
+        }
+
+        .match-player.match-winner
+        {
+            font-weight: bold;
+            color: var(--color-primary-00);
+            font-size: 1.25rem;
+            text-shadow: 0 0 12px var(--color-primary-00);
+        }
+
+        .match-score.match-winner
+        {
+            font-weight: bold;
+            color: var(--color-primary-00);
+            font-size: 1.25rem;
+            text-shadow: 0 0 12px var(--color-primary-00);
+        }
+
+        .match-player.match-loser
+        {
+            color: var(--color-base-07);
+        }
+
+        .match-score.match-loser
+        {
+            color: var(--color-base-07);
+            font-size: 0.75rem;
+        }
+
+        img.match-player-pp
+        {
+            width: 1rem;
+            height: 1rem;
+            object-fit: contain;
+            margin-right: 0.5rem;
+            border-radius: 50%;
+        }
     </style>
 
-    <div id="component-siteMap"></div>
+    <!-- <div id="component-siteMap"></div> -->
 
     <div id="component-footer"></div>
 
