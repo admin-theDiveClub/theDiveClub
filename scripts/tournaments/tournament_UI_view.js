@@ -22,8 +22,12 @@ function PopulateLog (log)
         const tr = document.createElement('tr');
 
         // Zebra striping: give every second row a different background color
-        if (idx % 2 === 1) {
+        if (idx % 2 === 1) 
+        {
             tr.style.backgroundColor = 'var(--color-base-02)';
+        } else 
+        {
+            tr.style.backgroundColor = 'var(--color-base-04)';
         }
 
         const fPct = entry['F%'] != null ? String(entry['F%']).replace('%', '') + '%' : '';

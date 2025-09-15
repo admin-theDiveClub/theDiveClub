@@ -1,10 +1,10 @@
 // === CONFIGURATION ===
 const CONFIG = {
   ballSizeRatio: 0.02,
-  launchSpeedRatio: 0.75,
-  friction: 0.98,
-  wallBounceDamping: 0.98,
-  maxSpin: 1.5,
+  launchSpeedRatio: 0.5,
+  friction: 0.99,
+  wallBounceDamping: 0.99,
+  maxSpin: 1.8,
   spinDamping: 0.9,
   spinInfluence: 0.1,
   maxDeviationFactor: 1.0,
@@ -25,14 +25,20 @@ parent.appendChild(canvas);
 
 const ctx = canvas.getContext('2d');
 let width, height, minDim, ballRadius;
-function resizeCanvas() {
+
+function resizeCanvas() 
+{
   canvas.width = parent.clientWidth;
   canvas.height = parent.clientHeight;
   width = canvas.width;
   height = canvas.height;
   minDim = Math.min(width, height);
   ballRadius = CONFIG.ballSizeRatio * minDim * 0.5;
+  
+  canvas.style.width = parent.clientWidth + 'px';
+  canvas.style.height = parent.clientHeight + 'px';
 }
+
 window.addEventListener('resize', () => {
   resizeCanvas();
 });
@@ -65,11 +71,11 @@ function randomColor() {
 
 function randomTDCColor() {
   const colors = [
-    'rgba(230, 161, 0, 1)',    // highlight
-    'rgba(1, 110, 194, 1)',    // secondary-light
-    'rgba(0, 186, 245, 1)',    // secondary-lighter
-    'rgba(234, 0, 103, 1)',    // primary
-    'rgba(0, 53, 97, 1)'       // secondary
+    'rgba(229, 21, 119, 1)',  // primary-00
+    'rgba(2, 200, 237, 1)',   // secondary-00
+    'rgba(207, 190, 0, 1)',   // highlight-0
+    'rgba(0, 255, 0, 1)',      // accent-0
+    'rgb(146, 126, 153)'
   ];
   return colors[Math.floor(Math.random() * colors.length)];
 }
@@ -95,7 +101,7 @@ function spawnBalls() {
   const speed = baseSpeed * speedMultiplier;
 
   const white = {
-    color: 'white',
+    color: 'rgb(234, 228, 191)',
     x: wx,
     y: wy,
     vx: nx * speed + perp[0] * contactOffset * 0.01,
@@ -195,11 +201,11 @@ function drawBall(ball) {
       
       // Set glow properties
       ctx.shadowBlur = 15;
-      ctx.shadowColor = ball.type === 'white' ? 'rgba(255, 255, 255, 0.8)' : ball.color;
+      ctx.shadowColor = ball.type === 'white' ? 'rgb(234, 228, 191)' : ball.color;
       
       // Use white for white ball, TDC color for object ball
       if (ball.type === 'white') {
-        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.strokeStyle = `rgba(234, 228, 191, ${alpha})`;
       } else {
         // Extract RGB values from ball.color (rgba format) and apply alpha
         const colorMatch = ball.color.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)/);
@@ -207,7 +213,7 @@ function drawBall(ball) {
           const [, r, g, b] = colorMatch;
           ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
         } else {
-          ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`; // fallback
+          ctx.strokeStyle = `rgba(234, 228, 191, ${alpha})`; // fallback
         }
       }
       

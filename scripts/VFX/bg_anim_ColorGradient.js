@@ -33,7 +33,7 @@ function animateBackground() {
         }
 
         // Apply the updated gradient
-        body.style.background = `radial-gradient(circle at ${circleAtX}% ${firstStop}%, var(--color-base-dark) 0%, var(--color-base-darkest) ${secondStop}%, var(--color-primary) ${lastStop}%)`;
+        body.style.background = `radial-gradient(circle at ${circleAtX}% ${firstStop}%, var(--color-base-02) 0%, var(--color-base-03) ${secondStop}%, var(--color-primary-02) ${lastStop}%)`;
 
         requestAnimationFrame(updateGradient); // Smooth animation
     }
