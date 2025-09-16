@@ -23,9 +23,14 @@
 </head>
 
 <body>
+    <div id="visualization-container" style="height: 100vh; width: 100vw; position: fixed; z-index: -1000; top: 0%;"></div>
     <div id="component-nav-bar"></div>
 
     <div id="component-nav-menu"></div>
+
+    <div id="component-profile-menu"></div>
+
+    <div id="component-login"></div>
 
     <div class="main">
         <!-- Edit Tournament Info -->
@@ -484,6 +489,8 @@
     <!--Scripts-->
     <script src="../scripts/browserHelpers/script_includeComponents.js"></script>
     <script src="../scripts/UIControllers/nav-bar_controller.js"></script>
+    
+    <script src="../scripts/VFX/bg_anim_ColorGradient.js"></script>
     
     <script src="../scripts/tournaments/tournament_data.js" type="module"></script>
 </body>

@@ -3,31 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script>
-        // Mobile-only helper (keeps desktop unaffected)
-        function hideIosChromeToolbar() {
-          // run only on iOS browsers
-          if (/iphone|ipod|ipad/i.test(navigator.userAgent)) {
-            // give the browser a tick to finish the first layout,
-            // then scroll the viewport by one pixel
-            setTimeout(() => window.scrollTo(0, 1), 0);
-          }
-        }
-      
-        // call once the DOM is ready
-        window.addEventListener('load', hideIosChromeToolbar);
-      </script>
-      
-    
-    <title>TDC Scorecard</title>
-
-    <!-- Import Supabase resources via CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     
     <!-- Bootstrap CSS -->     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Import Supabase resources via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>    
+    <!-- Browser Helpers -->
+    <script src="../scripts/browserHelpers/script_mobile_hideToolBar.js"></script>
+
+    
+    <link href="../stylesheets/stylesheet_main.css" rel="stylesheet">    
 
     <!-- Custom CSS -->
     <link href="../TopDeadCenter/styleSheet.css" rel="stylesheet">
@@ -36,6 +23,9 @@
 
     <!-- Include plotly.js from CDN -->
     <script src="https://cdn.plot.ly/plotly-3.0.0.min.js"></script>
+
+    <title>TDC: Match</title>
+    <link rel="icon" href="../resources/icon_TDC.ico">
 </head>
 
 <body> 
@@ -50,10 +40,6 @@
                 <!-- Match Settings Button -->
                 <button class="navbar-toggler me-2" type="button" data-bs-toggle="collapse" data-bs-target="#matchSettingsNav" aria-controls="matchSettingsNav" aria-expanded="false" aria-label="Toggle match settings">
                     <i class="bi bi-gear" style="font-size: 3vh;"></i>
-                </button>
-                <!-- Navbar Button -->
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav-links-container" aria-controls="nav-links-container" aria-expanded="false" aria-label="Toggle navigation">
-                    <i id="navbar-icon" class="bi bi-list"></i>
                 </button>
             </div>
         </div>
@@ -473,15 +459,30 @@
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer>        
-        <img src="../resources/icon_theDiveClub_alpha.svg">
-    </footer>
+    <div id="component-siteMap"></div>
 
+    <div id="component-footer"></div>
+
+    <!-- Supabase -->
     <script src="../scripts/supabase/supaBase_client.js"></script>
-    <script src="../TopDeadCenter/backgroundAnimation.js"></script>
+
+    <!-- Accounts -->
+    <script src="../scripts/accounts/google_authRedirect.js"></script>
+    <script src="../scripts/accounts/login_email.js"></script>
+    <script src="../scripts/accounts/login_google.js"></script>
+    <script src="../scripts/accounts/session_restore.js"></script>
+    <script src="../scripts/accounts/signOut.js"></script>
+
+    <!--Scripts-->
+    <script src="../scripts/browserHelpers/script_includeComponents.js"></script>
+    <script src="../scripts/UIControllers/nav-bar_controller.js"></script>
+
+    <script src="../scripts/VFX/bg_anim_ColorGradient.js"></script>
+    <script src="../scripts/VFX/bg_anim_PoolVisualization.js"></script>
+
+
+
     <script src="../stylesheets/loadingOverlay.js"></script>
-    <script src="../stylesheets/backgroundAnimation.js"></script>
 
     <script src="../matches/match_data.js" type="module"></script>
     <script src="../matches/match_summary.js" type="module"></script>

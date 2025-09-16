@@ -23,14 +23,16 @@
 </head>
 
 <body>
+    <div id="visualization-container" style="height: 100vh; width: 100vw; position: fixed; z-index: -1000; top: 0%;"></div>
     <div id="component-nav-bar"></div>
 
     <div id="component-nav-menu"></div>
 
+    <div id="component-profile-menu"></div>
+
     <div id="component-login"></div>
 
     <div class="main">
-        <div id="visualization-container" style="height: 100vh; width: 100vw; position: fixed; z-index: -1000; top: 0%;"></div>
 
         <div class="card" id="view-controls-panel">
             <!--Contols
@@ -273,14 +275,22 @@
 
     <div id="component-footer"></div>
 
+    <!-- Supabase -->
+    <script src="../scripts/supabase/supaBase_client.js"></script>
+
+    <!-- Accounts -->
+    <script src="../scripts/accounts/google_authRedirect.js"></script>
+    <script src="../scripts/accounts/login_email.js"></script>
+    <script src="../scripts/accounts/login_google.js"></script>
+    <script src="../scripts/accounts/session_restore.js"></script>
+    <script src="../scripts/accounts/signOut.js"></script>
+
     <!--Scripts-->
     <script src="../scripts/browserHelpers/script_includeComponents.js"></script>
     <script src="../scripts/UIControllers/nav-bar_controller.js"></script>
 
     <script src="../scripts/VFX/bg_anim_ColorGradient.js"></script>
     <script src="../scripts/VFX/bg_anim_PoolVisualization.js"></script>
-
-    <script src="../scripts/supabase/supaBase_client.js"></script>
     <script src="../scripts/tournaments/tournament_data.js" type="module"></script>
 </body>
 </html>
