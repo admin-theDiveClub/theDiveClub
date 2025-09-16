@@ -1,15 +1,13 @@
 var userProfile = null;
 
-Start ();
+document.addEventListener('sessionRestored', Start_UP());
 
-async function Start ()
+async function Start_UP ()
 {
     var user = await GetUser();
-    console.log("User:", user);
     if (user)
     {
         var player = await GetPlayer(user.email);
-        console.log("Player:", player);
         if (player)
         {
             userProfile = player;
@@ -26,7 +24,6 @@ async function Start ()
     }
 
     var profilePic = await GetPlayerProfilePic(userProfile.id);
-    console.log("Profile Pic:", profilePic);
 
     PopulateUserMatchesTable ();
 
@@ -46,14 +43,12 @@ async function GetUser ()
     var session = response.data.session;
     if (session)
     {
-        console.log("Session (Auth):", session);
         return session.user;
     } else 
     {
         var session = JSON.parse(localStorage.getItem('session')) || JSON.parse(sessionStorage.getItem('session'));
         if (session)
         {
-            console.log("Session (Storage):", session);
             return session.user;
         }
     }
@@ -64,7 +59,6 @@ async function GetUser ()
 async function GetPlayer (_username)
 {
     const response = await supabase.from('tbl_players').select('*').eq('username', _username);
-    console.log("GetPlayer Response:", response);
     return response.data[0];
 }
 
@@ -102,7 +96,7 @@ async function GetUserMatches() {
     .or(
         `players->h->>username.eq."${userProfile.username}",players->a->>username.eq."${userProfile.username}"`
     )
-    .order('time->start', { ascending: false }); // or true for oldest first
+    .order('createdAt', { ascending: false }); // or true for oldest first
   
 
     if (response.error) {
@@ -118,9 +112,10 @@ async function PopulateUserMatchesTable()
 {
     const matches = await GetUserMatches();
 
-
     matches.sort((a, b) => {
-        const getStatusPriority = (match) => {
+        const getStatusPriority = (match) => 
+        {
+            if (!match.time) return 2; // New
             if (!match.time.start && match.time.end) return 0; // Complete
             if (!match.time || !match.time.start || !match.time.end) return 2; // New
             if (match.time.start && !match.time.end) return 1; // Active
@@ -131,7 +126,7 @@ async function PopulateUserMatchesTable()
         return getStatusPriority(b) - getStatusPriority(a);
     });
 
-    const tableBody = document.querySelector(".card-component .table tbody");
+    const tableBody = document.getElementById('tbl-match-history');
     tableBody.innerHTML = ""; // Clear existing rows
 
     for (let i = 0; i < matches.length; i++) {
@@ -173,27 +168,53 @@ async function PopulateUserMatchesTable()
         }
         row.appendChild(opponentCell);
 
-        const scoreCell = document.createElement("td");
-        if (userProfile.username === match.players.h.username) {
-            if (match.results.h.fw === match.results.a.fw) {
-            scoreCell.textContent = "Draw: " + match.results.h.fw + "-" + match.results.a.fw;
-            } else {
-            scoreCell.textContent = (match.results.h.fw > match.results.a.fw ? "Win: " : "Lose: ") + match.results.h.fw + "-" + match.results.a.fw;
+        const compCell = document.createElement("td");
+        var comp = "-";
+        if (match.competitions)
+        {
+            if (match.competitions.leagueID)
+            {
+                const r = await supabase.from('tbl_leagues').select('name').eq('id', match.competitions.leagueID);
+                comp = r.data[0].name;
+            } else if (match.competitions.tournamentID)
+            {
+                const r = await supabase.from('tbl_tournaments').select('name').eq('id', match.competitions.tournamentID);
+                comp = r.data[0].name;
             }
-        } else if (userProfile.username === match.players.a.username) {
-            if (match.results.a.fw === match.results.h.fw) {
-            scoreCell.textContent = "Draw: " + match.results.a.fw + "-" + match.results.h.fw;
-            } else {
-            scoreCell.textContent = (match.results.a.fw > match.results.h.fw ? "Win: " : "Lose: ") + match.results.a.fw + "-" + match.results.h.fw;
-            }
-        } else {
-            scoreCell.textContent = "N/A";
         }
+        compCell.textContent = comp;
+        row.appendChild(compCell);
+
+        const scoreCell = document.createElement("td");
+        if (!match.results || !match.results.h || !match.results.a)
+        {
+            scoreCell.textContent = "N/A";
+        } else 
+        {
+            if (userProfile.username === match.players.h.username) 
+            {
+                if (match.results.h.fw === match.results.a.fw) {
+                scoreCell.textContent = "Draw: " + match.results.h.fw + "-" + match.results.a.fw;
+                } else {
+                scoreCell.textContent = (match.results.h.fw > match.results.a.fw ? "Win: " : "Lose: ") + match.results.h.fw + "-" + match.results.a.fw;
+                }
+            } else if (userProfile.username === match.players.a.username) 
+            {
+                if (match.results.a.fw === match.results.h.fw) {
+                scoreCell.textContent = "Draw: " + match.results.a.fw + "-" + match.results.h.fw;
+                } else {
+                scoreCell.textContent = (match.results.a.fw > match.results.h.fw ? "Win: " : "Lose: ") + match.results.a.fw + "-" + match.results.h.fw;
+                }
+            } else 
+            {
+                scoreCell.textContent = "N/A";
+            }
+        }        
         row.appendChild(scoreCell);
 
         const typeCell = document.createElement("td");
-        const type = match.settings.winType || "";
-        const winCondition = match.settings.winCondition || "Freeplay";
+        const type = match.settings && match.settings.winType ? match.settings.winType : "";
+        const winCondition = match.settings && match.settings.winCondition ? match.settings.winCondition : "";
         typeCell.textContent = type + " " + winCondition;
         row.appendChild(typeCell);
 

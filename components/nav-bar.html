@@ -1,16 +1,20 @@
 <div class="nav-bar-container">
     <div class="row">        
-        <div class="col-2" id="icon-container-menu">
+        <div class="col-4" id="icon-container-menu">
             <button id="btn-nav-menu-toggle" class="nav-bar-button">
                 <img id="icon-nav-menu" src="../resources/icons/icon_menu.svg">
             </button>
         </div>
-        <div class="col-8" id="icon-container-TDC">
-            <button class="nav-bar-button">
-                <img id="icon-nav-bar" src="../resources/icon_theDiveClub_alpha.svg">
+        <div class="col-4" id="icon-container-TDC">
+            <a id="nav-link" class="nav-bar-link" href="../index.html" aria-label="The Dive Club home">
+                <img id="icon-nav-bar" src="../resources/icon_theDiveClub_alpha.svg" >
+            </a>
+        </div>
+        <div class="col-4" id="icon-container-profile">
+            <button id="btn-profile-menu-toggle" class="nav-bar-button">
+                <img id="icon-profile-menu" src="../resources/icons/icon_player.svg">
             </button>
         </div>
-        <div class="col-2"></div>
     </div>
 </div>
 
@@ -23,7 +27,6 @@
         z-index: 1000;
         width: 100vw;
         height: 8vh;
-        
     }
 
     #icon-container-TDC
@@ -35,11 +38,18 @@
 
     #icon-container-menu
     {
-        padding: 0.5cap;
-        padding-left: 1cap;
+        padding: 0.5cap 1cap;
     }
 
-    .nav-bar-button
+    #icon-container-profile
+    {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        padding-right: 2rem;
+    }
+
+    .nav-bar-link, .nav-bar-button
     {
         background-color: transparent;
         border: none;
@@ -53,7 +63,7 @@
         padding: 0.5cap;
     }
     
-    #icon-nav-menu
+    #icon-nav-menu, #icon-profile-menu
     {
         max-height: 6vh;
         max-width: 100%;

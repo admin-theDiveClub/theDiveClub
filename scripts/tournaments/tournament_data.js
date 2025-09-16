@@ -193,7 +193,7 @@ async function PopulatePlayerInfo (t_players)
             }
             else
             {
-                displayName = playerInfo.fullName || playerInfo.name || playerInfo.username;
+                displayName = playerInfo.name || playerInfo.username;
             }
             t_players[i].displayName = displayName;
             // preserve the original confirmed flag from the incoming player object

@@ -1,0 +1,142 @@
+<div id="login-container">
+    <div class="row">
+        <div class="col-sm-3 col-lg-4"></div>
+        <div class="col-sm-6 col-lg-4">
+            <div class="card" id="login-card">
+
+                <div class="card-title">Login</div>
+
+                <div class="input-field">
+                    <p class="input-label">Username</p>    
+                    <input type="text" class="form-control inputText" id="login-username" name="username" placeholder="Enter username" autocomplete="username">
+                </div>
+                
+                <div class="input-field">
+                    <p class="input-label">Password</p>    
+                    <input type="password" class="form-control inputText" id="login-password" name="password" placeholder="Enter password" autocomplete="current-password">
+                </div>
+                
+                <div class="check-group">
+                    <input class="form-check-input" type="checkbox" value="" id="login-rememberMe" checked>
+                    <label class="form-check-label" for="login-rememberMe">Keep me signed in</label>
+                </div>
+
+                <div id="grp-login-output" style="display: block;">
+                    <div class="card card-message">
+                        <p id="login-outputMessage" class="inputText" style="text-align: center;">Message</p>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="btn-login">Login</button>                
+                
+                <p class="input-label" style="text-align: center;">Log in with:</p>
+                <button type="button btnHolder" class="btn btn-primary" id="btn-login-google">
+                    Google
+                    <img src="../resources/icon_google.svg" alt="">
+                </button>
+
+                <hr>
+                
+                <p class="link-label" style="text-align: center;">Don't have account?</p>
+                <a href="../accounts/signUp.html" class="link" style="text-align: center;">Sign Up now.</a>
+            </div>
+        </div>
+        <div class="col-sm-3 col-lg-4"></div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-3 col-lg-2"></div>
+        <div class="col-sm-6 col-lg-8">
+            <div class="card" id="profile-card">
+
+                <div class="row">
+                    <div class="col-md-4" id="profile-m-info-container">                            
+                        <img src="../resources/icons/icon_player.svg" alt="Profile Picture" id="user-m-profile-pic"></img>
+                        <p id="profile-m-nickname">Nickname</p>
+                        <p id="profile-m-fullname">Full Name</p>
+                        <p id="profile-m-username">Username</p>
+                    </div>
+                    <div class="col-md-8">
+                        
+                    </div>
+                </div>
+
+                <hr>
+
+                <div style="display: flex; justify-content: space-between;">                    
+                    <a id="btn-link-userProfile" class="btn btn-standard" href="../accounts/profile.html">User Profile</a>
+                    <button id="btn-signOut" class="btn btn-warning">Logout</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-3 col-lg-2"></div>
+    </div>
+</div>
+
+<style>
+    #login-container
+    {
+        position: fixed;
+        width: 99vw;
+        height: 100vh;
+        z-index: 998;
+        overflow-y: auto;
+        overflow-x: hidden;
+        
+        display: none;
+    }
+
+    #login-card .card-title
+    {
+        font-size: 1.5rem;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    #login-card, #profile-card
+    {
+        margin-top: 10vh;
+        backdrop-filter: blur(96px);        
+    }
+
+    #login-card .input-label
+    {
+        margin: 1rem 2rem;
+    }
+
+    #login-card .input-field
+    {
+        margin-bottom: 0.5rem;
+    }
+
+    .link-label
+    {
+        margin: 0rem;
+    }
+
+    #profile-m-info-container
+    {
+        text-align: center;
+    }
+
+    #user-m-profile-pic
+    {
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+        margin: auto;
+        border-radius: 50% !important;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+
+    #profile-m-nickname
+    {
+        font-size: 2rem;
+        font-weight: bold;
+    }
+
+    #btn-link-userProfile
+    {
+        margin: 0rem;
+    }
+</style>

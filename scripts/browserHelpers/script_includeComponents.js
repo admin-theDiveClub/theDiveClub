@@ -13,7 +13,9 @@ addEventListener("DOMContentLoaded", () =>
         "nav-bar",
         "nav-menu",
         "siteMap",
-        "footer"
+        "footer",
+        "profile-menu",
+        "login"
     ]
 
     for (const component of components) 

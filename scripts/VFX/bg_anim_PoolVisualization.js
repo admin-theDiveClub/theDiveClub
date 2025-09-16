@@ -1,11 +1,11 @@
 // === CONFIGURATION ===
 const CONFIG = {
   ballSizeRatio: 0.02,
-  launchSpeedRatio: 0.5,
+  launchSpeedRatio: 0.3,
   friction: 0.99,
   wallBounceDamping: 0.99,
   maxSpin: 1.8,
-  spinDamping: 0.9,
+  spinDamping: 0.925,
   spinInfluence: 0.1,
   maxDeviationFactor: 1.0,
 };
@@ -34,7 +34,7 @@ function resizeCanvas()
   height = canvas.height;
   minDim = Math.min(width, height);
   ballRadius = CONFIG.ballSizeRatio * minDim * 0.5;
-  
+
   canvas.style.width = parent.clientWidth + 'px';
   canvas.style.height = parent.clientHeight + 'px';
 }

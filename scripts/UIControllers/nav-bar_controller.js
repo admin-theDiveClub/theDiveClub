@@ -131,15 +131,158 @@ function ControlNavMenu() {
     });
 }
 
+var session = null;
+var user = null;
+
+async function Start ()
+{
+    session = JSON.parse(localStorage.getItem('session')) || JSON.parse(sessionStorage.getItem('session'));
+    
+    if (session && session.user)
+    {
+        user = await GetUserProfile(session.user.email);
+        if (user)
+        {
+            PopulateMiniUserProfile(user);
+        }
+    }
+}
+
+async function GetUserProfile (username)
+{
+    if (!username) return null;
+
+    const response = await supabase.from('tbl_players').select().eq('username', username).single();
+    if (response.error) return null;
+
+    return response.data;
+}
+
+async function PopulateMiniUserProfile(user)
+{
+    const r = await supabase.storage.from('bucket-profile-pics').getPublicUrl(user.id);
+    if (r.data && r.data.publicUrl && !r.data.publicUrl.endsWith('null')) {
+        const imgElement = document.getElementById('user-m-profile-pic');
+        if (imgElement) {
+            const img = new Image();
+            img.onload = () => {
+                imgElement.src = r.data.publicUrl;
+                const navbar_img = document.getElementById('icon-profile-menu');
+                if (navbar_img) 
+                {
+                    navbar_img.src = r.data.publicUrl;
+                    navbar_img.style.borderRadius = '50%';
+                    navbar_img.style.padding = '0cap';
+                }
+            };
+            img.src = r.data.publicUrl;
+        }
+        user.pp = r.data.publicUrl;
+    }
+
+    const nicknameEl = document.getElementById('profile-m-nickname');
+    const fullnameEl = document.getElementById('profile-m-fullname');
+    const usernameEl = document.getElementById('profile-m-username');
+
+    const nickname = user.nickname || user.name || '';
+    const fullname = [user.name, user.surname].filter(Boolean).join(' ');
+    const username = user.username || '';
+
+    if (nicknameEl) {
+        nicknameEl.textContent = nickname;
+        nicknameEl.title = nickname;
+    }
+    if (fullnameEl) {
+        fullnameEl.textContent = fullname || '';
+        fullnameEl.title = fullname || '';
+    }
+    if (usernameEl) {
+        usernameEl.textContent = username;
+        usernameEl.title = username;
+    }
+}
+
+async function ControlProfileMenu() 
+{
+    session = JSON.parse(localStorage.getItem('session')) || JSON.parse(sessionStorage.getItem('session'));
+    if (session && !user)
+    {
+        await Start();
+    }
+    const login = document.getElementById('login-container');
+    if (!login) return;
+    
+    const login_card = document.getElementById('login-card');
+    const profile_card = document.getElementById('profile-card');
+
+    if (session && session.user)
+    {
+        if (login_card) login_card.style.display = 'none';
+        if (profile_card) profile_card.style.display = 'block';
+    } else 
+    {
+        if (login_card) login_card.style.display = 'block';
+        if (profile_card) profile_card.style.display = 'none';
+    }
+
+    // Ensure transition and hinting are set
+    login.style.transition = 'top 300ms ease';
+    login.style.willChange = 'top';
+
+    const isOpen = login.dataset.open === 'true';
+
+    if (!isOpen) {
+        // Open: make visible and slide in from above
+        login.style.display = 'block';
+        // Ensure it starts off-screen above
+        login.style.top = '-100%';
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                login.style.top = '0%';
+                login.dataset.open = 'true';
+            });
+        });
+    } else {
+        // Close: slide back up and then hide
+        const onTransitionEnd = (e) => {
+            if (e.propertyName === 'top') {
+                login.style.display = 'none';
+                login.removeEventListener('transitionend', onTransitionEnd);
+            }
+        };
+        login.addEventListener('transitionend', onTransitionEnd);
+        // Trigger close
+        login.style.top = '-100%';
+        login.dataset.open = 'false';
+        // Fallback in case transitionend doesn't fire
+        setTimeout(() => {
+            if (login.dataset.open !== 'true') {
+                login.style.display = 'none';
+                login.removeEventListener('transitionend', onTransitionEnd);
+            }
+        }, 400);
+    }
+}
+
 const menuObserver = new MutationObserver(() => {
-    const btn = document.querySelector('#btn-nav-menu-toggle');
+    const btn_menu = document.querySelector('#btn-nav-menu-toggle');
     const menu = document.querySelector('#nav-menu-container');
-    if (btn && menu) {
+    const btn_profile = document.querySelector('#btn-profile-menu-toggle');
+    if (btn_menu && menu && btn_profile) {
+        Start();
         menuObserver.disconnect();
         ControlNavMenu();
+        // Attach click handler to open the profile menu when the button is clicked
+        btn_profile.addEventListener('click', ControlProfileMenu);
     }
 });
+
 menuObserver.observe(document.body, { childList: true, subtree: true });
+
+window.addEventListener("sessionRestored", () => 
+{
+    Start();   
+});
 
 
 // Fade in menu rows each time the nav menu opens
@@ -246,3 +389,4 @@ menuObserver.observe(document.body, { childList: true, subtree: true });
         observer.observe(document.body, { childList: true, subtree: true });
     }
 })();
+
