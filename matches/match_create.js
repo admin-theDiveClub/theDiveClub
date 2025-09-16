@@ -162,7 +162,8 @@ async function GetUser() {
         }
     }
     
-    window.location.href = "../accounts/login.html";
+    alert('You must be logged in to create a match. Redirecting to home page.');
+    window.location.href = "..";
     return null;
 }
 
