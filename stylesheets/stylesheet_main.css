@@ -48,6 +48,7 @@ body
     /* Hide scrollbars across browsers */
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
+    min-height: 100vh;
 }
 
 .main
