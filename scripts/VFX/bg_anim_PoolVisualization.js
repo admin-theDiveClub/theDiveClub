@@ -1,13 +1,13 @@
 // === CONFIGURATION ===
 const CONFIG = {
   ballSizeRatio: 0.02,
-  launchSpeedRatio: 0.3,
-  friction: 0.99,
-  wallBounceDamping: 0.99,
-  maxSpin: 1.8,
+  launchSpeedRatio: 0.25,
+  friction: 0.995,
+  wallBounceDamping: 0.995,
+  maxSpin: 1.7,
   spinDamping: 0.925,
   spinInfluence: 0.1,
-  maxDeviationFactor: 1.0,
+  maxDeviationFactor: 0.5,
 };
 
 // === SETUP ===
@@ -48,8 +48,8 @@ resizeCanvas();
 let balls = [];
 let phase = 'init';
 
-let trailAlpha = 0.25;         // Trail fade strength
-let nextCycleDelay = 1500;    // Time in ms to wait after balls stop
+let trailAlpha = 0.1;         // Trail fade strength
+let nextCycleDelay = 3000;    // Time in ms to wait after balls stop
 let waitingForNext = false;
 
 function randInRange(a, b) {
@@ -154,7 +154,7 @@ function applyPhysics(ball) {
     ball.y = Math.max(ballRadius, Math.min(ball.y, height - ballRadius));
   }
 
-  if (Math.hypot(ball.vx, ball.vy) < 0.1) {
+  if (Math.hypot(ball.vx, ball.vy) < 0.01) {
     ball.active = false;
   }
 }
@@ -166,7 +166,7 @@ function checkCollision() {
   const dx = object.x - white.x;
   const dy = object.y - white.y;
   const distance = Math.hypot(dx, dy);
-  if (distance < ballRadius * 2) {
+  if (distance < ballRadius) {
     const [nx, ny] = normalize(dx, dy);
 
     const dvx = white.vx - object.vx;
@@ -200,7 +200,7 @@ function drawBall(ball) {
       ctx.lineTo(nextPoint.x, nextPoint.y);
       
       // Set glow properties
-      ctx.shadowBlur = 15;
+      ctx.shadowBlur = 10;
       ctx.shadowColor = ball.type === 'white' ? 'rgb(234, 228, 191)' : ball.color;
       
       // Use white for white ball, TDC color for object ball

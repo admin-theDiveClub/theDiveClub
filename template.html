@@ -13,16 +13,21 @@
     <!-- Browser Helpers -->
     <script src="../scripts/browserHelpers/script_mobile_hideToolBar.js"></script>
     <!--Custom CSS-->
-    <link href="../stylesheets/styleSheet_main.css" rel="stylesheet">    
+    <link href="../stylesheets/stylesheet_main.css" rel="stylesheet">    
 
-    <title>TEMPLATE TDC</title>
+    <title>The Dive Club</title>
     <link rel="icon" href="../resources/icon_TDC.ico">
 </head>
 
 <body>
+    <div id="visualization-container" ></div>
     <div id="component-nav-bar"></div>
 
     <div id="component-nav-menu"></div>
+
+    <div id="component-profile-menu"></div>
+
+    <div id="component-login"></div>
 
     <div class="main">
 
@@ -57,8 +62,21 @@
 
     <div id="component-footer"></div>
 
+    <!-- Supabase -->
+    <script src="../scripts/supabase/supaBase_client.js"></script>
+
+    <!-- Accounts -->
+    <script src="../scripts/accounts/google_authRedirect.js"></script>
+    <script src="../scripts/accounts/login_email.js"></script>
+    <script src="../scripts/accounts/login_google.js"></script>
+    <script src="../scripts/accounts/session_restore.js"></script>
+    <script src="../scripts/accounts/signOut.js"></script>
+
     <!--Scripts-->
     <script src="../scripts/browserHelpers/script_includeComponents.js"></script>
     <script src="../scripts/UIControllers/nav-bar_controller.js"></script>
+
+    <script src="../scripts/VFX/bg_anim_ColorGradient.js"></script>
+    <script src="../scripts/VFX/bg_anim_PoolVisualization.js"></script>
 </body>
 </html>

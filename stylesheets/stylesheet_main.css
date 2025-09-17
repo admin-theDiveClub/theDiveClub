@@ -49,11 +49,16 @@ body
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
     min-height: 100vh;
+    padding-top: 8vh;
 }
 
-.main
+#visualization-container
 {
-    padding-top: 8vh;
+    height: 100vh;
+    width: 100vw;
+    position: fixed;
+    z-index: -1000;
+    top: 0%;
 }
 
 a

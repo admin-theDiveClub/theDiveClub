@@ -173,6 +173,7 @@ async function PopulateMiniUserProfile(user)
                     navbar_img.src = r.data.publicUrl;
                     navbar_img.style.borderRadius = '50%';
                     navbar_img.style.padding = '0cap';
+                    navbar_img.style.boxShadow = '0px 0px 8px 0px var(--color-base-00)';
                 }
             };
             img.src = r.data.publicUrl;

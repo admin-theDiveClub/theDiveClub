@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Bootstrap CSS -->     
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Import Supabase resources via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>    
+    <!-- Browser Helpers -->
+    <script src="../scripts/browserHelpers/script_mobile_hideToolBar.js"></script>
+    <!--Custom CSS-->
+    <link href="../stylesheets/stylesheet_main.css" rel="stylesheet">    
+
+    <title>The Dive Club</title>
+    <link rel="icon" href="../resources/icon_TDC.ico">
+</head>
+
+<body>
+    <div id="visualization-container" ></div>
+    <div id="component-nav-bar"></div>
+
+    <div id="component-nav-menu"></div>
+
+    <div id="component-profile-menu"></div>
+
+    <div id="component-login"></div>
+
+    <div class="main">
+
+        <div class="row">
+            <div class="col-sm-6">
+                <!-- card-title player-title player-title-reverse -->
+                <div class="card ctrl-score" id="ctrl-score-A">
+                    <div class="card-title player-title reverse">
+                        <img class="player-title-pp" src="../resources/images/pp_UV_0.png">
+                        <div class="player-title-dp">Display Name</div>
+                    </div>
+                    <div class="card-body ctrl-score-body">
+                        <div class="row">
+                            <div class="col col-3">
+                                <button class="btn-score-input" id="ctrl-score-A-special">B/F</button>
+                                <button class="btn-score-input rf" id="ctrl-score-A-special">R/F</button>
+                                <button class="btn-score-input" id="ctrl-score-A-special">GB</button>
+                            </div>
+                            <div class="col col-6">
+                                <p id="ctrl-score-A-score" class="ctrl-score-main">0</p>
+                            </div>
+                            <div class="col col-3">
+                                <button class="btn-score-input" id="ctrl-score-A-point">+</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="ctrl-score-break-input">
+                            <img class="icon-break" src="../resources/icons/icon_break.svg">                                
+                            <button class="btn-score-input btn-break" id="ctrl-score-break">Dry</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-break">In</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-break">Scr</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-break">Foul</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="card ctrl-score" id="ctrl-score-A">
+                    <div class="card-title player-title">
+                        <img class="player-title-pp" src="../resources/images/pp_UV_0.png">
+                        <div class="player-title-dp">Display Name</div>
+                    </div>
+                    <div class="card-body ctrl-score-body">
+                        <div class="row">
+                            <div class="col col-3">
+                                <button class="btn-score-input" id="ctrl-score-A-special">B/F</button>
+                                <button class="btn-score-input rf" id="ctrl-score-A-special">R/F</button>
+                                <button class="btn-score-input" id="ctrl-score-A-special">GB</button>
+                            </div>
+                            <div class="col col-6">
+                                <p id="ctrl-score-A-score" class="ctrl-score-main">0</p>
+                            </div>
+                            <div class="col col-3">
+                                <button class="btn-score-input" id="ctrl-score-A-point">+</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="ctrl-score-break-input"> 
+                            <img class="icon-break" src="../resources/icons/icon_break.svg">                               
+                            <button class="btn-score-input btn-break" id="ctrl-score-break">Dry</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-break">In</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-break">Scr</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-break">Foul</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" id="scorecard-horizontal">
+            <table class="tbl-scorecard">
+                <th>
+                    <tr>
+                        <td></td>
+                        <td>F1</td>
+                        <td>F2</td>
+                        <td>F3</td>
+                        <td>F4</td>
+                        <td>F5</td>
+                        <td>F6</td>
+                        <td>F7</td>
+                        <td>F8</td>
+                        <td>F9 <i class="bi bi-x tag"></i></td>
+                        <td>Total</td>
+                    </tr>
+                </th>
+                <tr>
+                    <td>Player H *</td>
+                    <td>
+                        <select id="f1-player-h-dropdown" class="form-select" aria-label="F1 Player H selection">
+                            <option value="">0</option>
+                            <option value="opt1">1</option>
+                            <option value="opt2">B/F</option>
+                            <option value="opt3">R/F</option>
+                            <option value="opt4">GB</option>
+                        </select>
+                    </td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>0</td>
+                </tr>
+                <tr>
+                    <td>Player A</td>
+                    <td>
+                        <select id="f1-player-h-dropdown" class="form-select" aria-label="F1 Player H selection">
+                            <option value="">0</option>
+                            <option value="opt1">1</option>
+                            <option value="opt2">B/F</option>
+                            <option value="opt3">R/F</option>
+                            <option value="opt4">GB</option>
+                        </select>
+                    </td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>0</td>
+                </tr>
+                
+                <tr>
+                    <td>Break</td>
+                    <td>
+                        <select id="f1-player-h-dropdown" class="form-select" aria-label="F1 Player H selection">
+                            <option value="">-</option>
+                            <option value="opt1">dry</option>
+                            <option value="opt2">in</option>
+                            <option value="opt3">scratch</option>
+                            <option value="opt4">foul</option>
+                        </select>
+                    </td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+
+                <tr>
+                    <td>Duration</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>0</td>
+                </tr>
+            </table>
+        </div>
+        
+        
+        <div class="card" id="scorecard-vertical" style="display: none;">
+            <table class="tbl-scorecard">
+                <th>
+                    <tr>
+                        <td></td>
+                        <td>Player H *</td>
+                        <td>Player A</td>
+                        <td>Break</td>
+                        <td>Duration</td>
+                    </tr>
+                </th>
+                <tr>
+                    <td>F1</td>
+                    <td>
+                        <select id="f1-player-h-dropdown" class="form-select" aria-label="F1 Player H selection">
+                            <option value="">0</option>
+                            <option value="opt1">1</option>
+                            <option value="opt2">B/F</option>
+                            <option value="opt3">R/F</option>
+                            <option value="opt4">GB</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select id="f1-player-h-dropdown" class="form-select" aria-label="F1 Player H selection">
+                            <option value="">0</option>
+                            <option value="opt1">1</option>
+                            <option value="opt2">B/F</option>
+                            <option value="opt3">R/F</option>
+                            <option value="opt4">GB</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select id="f1-player-h-dropdown" class="form-select" aria-label="F1 Player H selection">
+                            <option value="">-</option>
+                            <option value="opt1">dry</option>
+                            <option value="opt2">in</option>
+                            <option value="opt3">scratch</option>
+                            <option value="opt4">foul</option>
+                        </select>
+                    </td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>F2</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>F3</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>F4</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>F5</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>F6</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>F7</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>F8</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>F9</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tfoot>
+                    <tr>
+                        <td>Total</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td></td>
+                        <td>0</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <style>
+            .card
+            {
+                padding: 0rem;
+            }
+
+            .ctrl-score
+            {
+                margin-left: 0rem;
+                margin-right: 0rem;
+            }
+
+            table
+            {
+                text-align: center;
+                margin: 0rem;
+                width: 100%;
+            }
+
+            .row
+            {
+                width: 100%;
+                padding: 0rem !important;
+                margin: 0rem !important;
+            }
+
+            .col
+            {
+                padding: 0rem !important;
+                margin: 0rem !important;
+            }
+
+            /* Score Input Header */
+            .player-title
+            {
+                display: flex;
+                padding: 1rem;
+                margin: 0rem;
+                backdrop-filter: blur(96px);
+            }
+
+            .reverse
+            {
+                flex-direction: row-reverse;
+            }
+
+            .player-title-dp
+            {
+                margin: auto 1rem;
+                font-size: 2.5rem;
+                font-family: 'Font_TDC';
+                white-space: nowrap;
+                overflow: hidden;
+                color: var(--color-base-10);
+            }
+
+            .player-title-pp
+            {
+                width: 100%;
+                max-width: 3em;
+                object-fit: contain;
+                box-shadow: 0px 0px 12px 0px var(--color-base-00), inset 0px 0px 12px 0px var(--color-base-00);
+                border-radius: 50%;
+                margin: auto 0rem;
+            }
+
+            /* Score Input Body */
+            .ctrl-score-body
+            {
+                padding: 0rem;
+                box-shadow: inset 0px 0px 96px 12px rgba(0,0,0,0.75);
+                overflow-y: hidden;
+            }
+
+            .ctrl-score-main
+            {
+                font-size: 6rem; 
+                text-align: center; 
+                margin: auto; 
+                padding-top: 1rem;
+                color: var(--color-base-10);
+                font-family: 'Font_TDC';
+            }
+
+            .btn-score-input
+            {
+                background-color: transparent;
+                border: none;
+                color: var(--color-base-10);
+
+                font-family: 'Font_TDC';
+            }
+            
+            .btn-score-input:hover
+            {
+                box-shadow: inset 0px 0px 48px -24px var(--color-primary-00) !important;
+                color: var(--color-base-10);
+            }
+
+            .btn-score-input:active
+            {
+                box-shadow: inset 0px 0px 24px 0px var(--color-primary-00) !important;
+                color: var(--color-base-10);
+            }
+
+            .btn-score-input#ctrl-score-A-point
+            {
+                width: 100%;
+                height: 100%;
+                font-size: 6rem;
+                box-shadow: inset 48px 0px 48px -48px var(--color-primary-00);
+            }
+
+            .btn-score-input#ctrl-score-A-special
+            {
+                width: 100%;
+                height: 33.3%;
+                font-size: 2rem;
+                box-shadow: inset -48px 0px 48px -48px var(--color-highlight-0);
+            }
+
+            .btn-score-input#ctrl-score-A-special.rf
+            {
+                box-shadow: inset -48px 0px 48px -48px var(--color-accent-0);
+            }
+
+            /* Score Input Footer */
+            .card-footer
+            {
+                display: flex;
+                padding: 0rem 1rem;
+                backdrop-filter: blur(96px);
+                margin: 0rem;
+            }
+
+            .icon-break
+            {
+                height: 100%;
+                max-height: 3em;
+                object-fit: contain;
+                margin: auto 1rem;
+            }
+
+            .ctrl-score-break-input
+            {
+                display: flex;
+                width: 100%;
+                padding: 0rem 1rem;
+                justify-content: center;
+                width: 100%;
+            }
+
+            .btn-score-input.btn-break
+            {
+                font-size: 1.5rem;
+                padding: 0.5rem 0.5rem;
+                box-shadow: inset 0px 48px 48px -48px var(--color-secondary-00);
+                margin: 0rem 0.1rem;
+            }
+
+            /* Scorecard */
+            .form-select, .form-select:focus
+            {
+                background-color: transparent;
+                color: var(--color-base-10);
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                appearance: none;
+
+                text-align: center;
+                padding: 0rem;
+                border: none;
+                outline: none;
+
+                /* Hide native dropdown arrow across browsers */
+                background-image: none !important;
+                background-repeat: no-repeat;
+                background-position: right 0.5rem center;
+                padding-right: 0.5rem;
+
+                box-shadow: inset 0px 0px 12px 0px rgba(0,0,0,0.5);
+            }
+
+            /* Ensure focus state remains visible on dark background */
+            .form-select:hover, .form-select:active {
+                border-color: var(--color-primary-00);
+                box-shadow: 0 0 12px 0px var(--color-primary-00);
+                outline: none;
+                border: none;
+            }
+
+            /* Options shown in the native dropdown */
+            .form-select option {
+                background-color: var(--color-base-03);
+                color: var(--color-base-10);
+            }
+
+            /* Hide default IE/Edge arrow if you plan to supply a custom caret */
+            .form-select::-ms-expand {
+                display: none;
+            }
+
+            .tbl-scorecard .form-select
+            {
+                padding: 0.5rem 0rem !important;
+            }
+        </style>
+    </div>
+
+    
+
+    <div id="component-siteMap"></div>
+
+    <div id="component-footer"></div>
+
+    <!-- Supabase -->
+    <script src="../scripts/supabase/supaBase_client.js"></script>
+
+    <!-- Accounts -->
+    <script src="../scripts/accounts/google_authRedirect.js"></script>
+    <script src="../scripts/accounts/login_email.js"></script>
+    <script src="../scripts/accounts/login_google.js"></script>
+    <script src="../scripts/accounts/session_restore.js"></script>
+    <script src="../scripts/accounts/signOut.js"></script>
+
+    <!--Scripts-->
+    <script src="../scripts/browserHelpers/script_includeComponents.js"></script>
+    <script src="../scripts/UIControllers/nav-bar_controller.js"></script>
+
+    <script src="../scripts/VFX/bg_anim_ColorGradient.js"></script>
+    <script src="../scripts/VFX/bg_anim_PoolVisualization.js"></script>
+</body>
+</html>
