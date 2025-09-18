@@ -256,7 +256,6 @@ function GetConfirmedPlayers (players)
 
 function CompileTournamentLog (players, matches)
 {
-    console.log(players);
     const log = players.map(p => {
         const uname = p.username || 'Unknown';
         let MP = 0, MW = 0, ML = 0, FP = 0, FW = 0, BF = 0;
