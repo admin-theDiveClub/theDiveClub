@@ -32,7 +32,7 @@
 
     <div id="component-login"></div>
 
-    <div class="main"> 
+    <div class="main">
 
         <div id="iframe" class="observer-iframe-wrapper">
             <iframe
@@ -42,11 +42,11 @@
                 loading="lazy"
                 allowfullscreen>
             </iframe>
-        </div>   
+        </div> 
 
         <div id="progressionChart" class="card">
-        </div>    
-        
+        </div>
+
         <div class="card" id="view-controls-panel">
             <!--Contols
             visualization Types: 4 types (make images for each)
@@ -123,7 +123,7 @@
                     </div>
                 </div>
             </div>
-        </div>      
+        </div>
 
         <div id="log" class="card">
             <table>
@@ -152,7 +152,7 @@
                     </tr>
                 </tbody>
             </table>
-        </div>   
+        </div>
     </div>
 
     <style>
@@ -160,7 +160,10 @@
         {
             --card-spacing-v: 1rem;
             --card-spacing-h: 3rem;
-            --card-magnification: 1.0;
+            
+            --card-magnification-sml: 1rem;
+            --card-magnification-med: 1.25rem;
+            --card-magnification-lrg: 1.5rem;
         }
 
         #log 
@@ -185,7 +188,7 @@
         .match-card
         {
             margin: var(--card-spacing-v) var(--card-spacing-h);
-            transform: scale(var(--card-magnification));
+            font-size: var(--card-magnification-sml);
             padding: 0.25rem;
             background-color: var(--color-base-02);
         }
@@ -209,7 +212,7 @@
         {
             color: var(--color-secondary-00) !important;
             font-weight: bold !important;
-            font-size: 1.5rem !important;
+            font-size: var(--card-magnification-lrg) !important;
             text-shadow: 0 0 8px var(--color-secondary-00) !important;
         }
 
@@ -227,7 +230,7 @@
         {
             color: var(--color-accent-0);
             font-weight: bold;
-            font-size: 1.25rem;
+            font-size: var(--card-magnification-med);
             text-shadow: 0 0 2px var(--color-accent-0);
         }
 
@@ -246,7 +249,7 @@
         {
             font-weight: bold;
             color: var(--color-primary-00);
-            font-size: 1.25rem;
+            font-size: var(--card-magnification-med);
             text-shadow: 0 0 12px var(--color-primary-00);
         }
 
@@ -254,19 +257,20 @@
         {
             font-weight: bold;
             color: var(--color-primary-00);
-            font-size: 1.25rem;
+            font-size: var(--card-magnification-med);
             text-shadow: 0 0 12px var(--color-primary-00);
         }
 
         .match-player.match-loser
         {
             color: var(--color-base-07);
+            font-size: var(--card-magnification-sml);
         }
 
         .match-score.match-loser
         {
             color: var(--color-base-07);
-            font-size: 0.75rem;
+            font-size: var(--card-magnification-sml);
         }
 
         img.match-player-pp

@@ -153,8 +153,12 @@ function UpdateCardSpacing_V (direction)
 function UpdateCardMagnification (direction)
 {
     const root = document.documentElement;
-    root.style.setProperty('--card-magnification',
-        (parseFloat(getComputedStyle(root).getPropertyValue('--card-magnification')) || 1) + (direction === '+' ? 0.1 : -0.1));
+    root.style.setProperty('--card-magnification-sml',
+        (parseFloat(getComputedStyle(root).getPropertyValue('--card-magnification-sml')) || 0.75) + (direction === '+' ? 0.1 : -0.1) + 'rem');
+    root.style.setProperty('--card-magnification-med',
+        (parseFloat(getComputedStyle(root).getPropertyValue('--card-magnification-med')) || 1) + (direction === '+' ? 0.1 : -0.1) + 'rem');
+    root.style.setProperty('--card-magnification-lrg',
+        (parseFloat(getComputedStyle(root).getPropertyValue('--card-magnification-lrg')) || 1.25) + (direction === '+' ? 0.1 : -0.1) + 'rem');
 }
 
 function PopulateChart_V (rounds, style)
