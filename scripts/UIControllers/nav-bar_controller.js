@@ -134,7 +134,7 @@ function ControlNavMenu() {
 var session = null;
 var user = null;
 
-async function Start ()
+async function Start_SessionUpdate ()
 {
     session = JSON.parse(localStorage.getItem('session')) || JSON.parse(sessionStorage.getItem('session'));
     
@@ -270,7 +270,7 @@ const menuObserver = new MutationObserver(() => {
     const menu = document.querySelector('#nav-menu-container');
     const btn_profile = document.querySelector('#btn-profile-menu-toggle');
     if (btn_menu && menu && btn_profile) {
-        Start();
+        Start_SessionUpdate();
         menuObserver.disconnect();
         ControlNavMenu();
         // Attach click handler to open the profile menu when the button is clicked
@@ -282,7 +282,7 @@ menuObserver.observe(document.body, { childList: true, subtree: true });
 
 window.addEventListener("sessionRestored", () => 
 {
-    Start();   
+    Start_SessionUpdate();   
 });
 
 

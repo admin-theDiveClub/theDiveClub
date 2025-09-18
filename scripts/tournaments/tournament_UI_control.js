@@ -745,6 +745,7 @@ function UpdateEligiblePlayers(players, log, multiLife)
         return ml < maxLives;
     });
 
+    
     eligible.forEach((p, i) => {
         const tr = document.createElement('tr');
         tr.style.backgroundColor = (i % 2 === 0) ? altRowColor : '';

@@ -1,8 +1,8 @@
 var userProfile = null;
 
-document.addEventListener('sessionRestored', Start_UP());
+document.addEventListener('sessionRestored', Start());
 
-async function Start_UP ()
+async function Start ()
 {
     var user = await GetUser();
     if (user)

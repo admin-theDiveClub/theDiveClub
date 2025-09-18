@@ -18,6 +18,7 @@ async function RestoreSession ()
         
         // Notify other scripts that the session was restored
         const event = new CustomEvent('sessionRestored');
+        console.log("Session Restored. Welcome back ", session.user.email);
         window.dispatchEvent(event);
     } else 
     {
@@ -36,9 +37,17 @@ async function RestoreSession ()
                 sessionStorage.setItem("session", JSON.stringify(response.data.session));
                 // Notify other scripts that the session was restored
                 const event = new CustomEvent('sessionRestored');
+                console.log("Session Restored. Welcome back ", session.user.email);
                 window.dispatchEvent(event);
             }
         }
+    }
+
+    if (!session)
+    {
+        const event = new CustomEvent('sessionAnonymous');
+        console.log("Session Anonymous");
+        window.dispatchEvent(event);
     }
 }
 

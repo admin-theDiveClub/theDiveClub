@@ -34,33 +34,33 @@
         <div class="row">
             <div class="col-sm-6">
                 <!-- card-title player-title player-title-reverse -->
-                <div class="card ctrl-score" id="ctrl-score-A">
+                <div class="card ctrl-score" id="ctrl-score-H">
                     <div class="card-title player-title reverse">
-                        <img class="player-title-pp" src="../resources/images/pp_UV_0.png">
-                        <div class="player-title-dp">Display Name</div>
+                        <img class="player-title-pp" src="../resources/images/pp_UV_0.png" id="player-pp-H">
+                        <div class="player-title-dn" id="player-dn-H">Display Name</div>
                     </div>
                     <div class="card-body ctrl-score-body">
                         <div class="row">
                             <div class="col col-3">
-                                <button class="btn-score-input" id="ctrl-score-A-special">B/F</button>
-                                <button class="btn-score-input rf" id="ctrl-score-A-special">R/F</button>
-                                <button class="btn-score-input" id="ctrl-score-A-special">GB</button>
+                                <button class="btn-score-input score-input-special" id="ctrl-score-H-special-bf">B/F</button>
+                                <button class="btn-score-input score-input-special rf" id="ctrl-score-H-special-rf">R/F</button>
+                                <button class="btn-score-input score-input-special" id="ctrl-score-H-special-gb">GB</button>
                             </div>
                             <div class="col col-6">
-                                <p id="ctrl-score-A-score" class="ctrl-score-main">0</p>
+                                <p class="ctrl-score-main" id="ctrl-score-H-score">0</p>
                             </div>
                             <div class="col col-3">
-                                <button class="btn-score-input" id="ctrl-score-A-point">+</button>
+                                <button class="btn-score-input" id="ctrl-score-H-point">+</button>
                             </div>
                         </div>
                     </div>
                     <div class="card-footer">
-                        <div class="ctrl-score-break-input">
+                        <div class="ctrl-score-break-input" id="ctrl-score-H-break-input">
                             <img class="icon-break" src="../resources/icons/icon_break.svg">                                
-                            <button class="btn-score-input btn-break" id="ctrl-score-break">Dry</button>
-                            <button class="btn-score-input btn-break" id="ctrl-score-break">In</button>
-                            <button class="btn-score-input btn-break" id="ctrl-score-break">Scr</button>
-                            <button class="btn-score-input btn-break" id="ctrl-score-break">Foul</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-H-break-dry">Dry</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-H-break-in">In</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-H-break-scr">Scr</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-H-break-foul">Foul</button>
                         </div>
                     </div>
                 </div>
@@ -68,18 +68,18 @@
             <div class="col-sm-6">
                 <div class="card ctrl-score" id="ctrl-score-A">
                     <div class="card-title player-title">
-                        <img class="player-title-pp" src="../resources/images/pp_UV_0.png">
-                        <div class="player-title-dp">Display Name</div>
+                        <img class="player-title-pp" src="../resources/images/pp_UV_0.png" id="player-pp-A">
+                        <div class="player-title-dn" id="player-dn-A">Display Name</div>
                     </div>
                     <div class="card-body ctrl-score-body">
                         <div class="row">
                             <div class="col col-3">
-                                <button class="btn-score-input" id="ctrl-score-A-special">B/F</button>
-                                <button class="btn-score-input rf" id="ctrl-score-A-special">R/F</button>
-                                <button class="btn-score-input" id="ctrl-score-A-special">GB</button>
+                                <button class="btn-score-input score-input-special" id="ctrl-score-A-special-bf">B/F</button>
+                                <button class="btn-score-input score-input-special rf" id="ctrl-score-A-special-rf">R/F</button>
+                                <button class="btn-score-input score-input-special" id="ctrl-score-A-special-gb">GB</button>
                             </div>
                             <div class="col col-6">
-                                <p id="ctrl-score-A-score" class="ctrl-score-main">0</p>
+                                <p class="ctrl-score-main" id="ctrl-score-A-score">0</p>
                             </div>
                             <div class="col col-3">
                                 <button class="btn-score-input" id="ctrl-score-A-point">+</button>
@@ -87,12 +87,12 @@
                         </div>
                     </div>
                     <div class="card-footer">
-                        <div class="ctrl-score-break-input"> 
+                        <div class="ctrl-score-break-input" id="ctrl-score-A-break-input"> 
                             <img class="icon-break" src="../resources/icons/icon_break.svg">                               
-                            <button class="btn-score-input btn-break" id="ctrl-score-break">Dry</button>
-                            <button class="btn-score-input btn-break" id="ctrl-score-break">In</button>
-                            <button class="btn-score-input btn-break" id="ctrl-score-break">Scr</button>
-                            <button class="btn-score-input btn-break" id="ctrl-score-break">Foul</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-A-break-dry">Dry</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-A-break-in">In</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-A-break-scr">Scr</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-A-break-foul">Foul</button>
                         </div>
                     </div>
                 </div>
@@ -353,7 +353,7 @@
                 flex-direction: row-reverse;
             }
 
-            .player-title-dp
+            .player-title-dn
             {
                 margin: auto 1rem;
                 font-size: 2.5rem;
@@ -396,6 +396,7 @@
                 background-color: transparent;
                 border: none;
                 color: var(--color-base-10);
+                padding: auto;
 
                 font-family: 'Font_TDC';
             }
@@ -412,7 +413,7 @@
                 color: var(--color-base-10);
             }
 
-            .btn-score-input#ctrl-score-A-point
+            .btn-score-input
             {
                 width: 100%;
                 height: 100%;
@@ -420,7 +421,7 @@
                 box-shadow: inset 48px 0px 48px -48px var(--color-primary-00);
             }
 
-            .btn-score-input#ctrl-score-A-special
+            .btn-score-input.score-input-special
             {
                 width: 100%;
                 height: 33.3%;
@@ -428,7 +429,7 @@
                 box-shadow: inset -48px 0px 48px -48px var(--color-highlight-0);
             }
 
-            .btn-score-input#ctrl-score-A-special.rf
+            .btn-score-input.score-input-special.rf
             {
                 box-shadow: inset -48px 0px 48px -48px var(--color-accent-0);
             }
@@ -462,9 +463,9 @@
             .btn-score-input.btn-break
             {
                 font-size: 1.5rem;
-                padding: 0.5rem 0.5rem;
                 box-shadow: inset 0px 48px 48px -48px var(--color-secondary-00);
                 margin: 0rem 0.1rem;
+                padding: 0.5rem;
             }
 
             /* Scorecard */
@@ -513,6 +514,13 @@
             {
                 padding: 0.5rem 0rem !important;
             }
+
+            sup
+            {
+                color: var(--color-highlight-0);
+                vertical-align: super;
+                font-size: 2rem;
+            }
         </style>
     </div>
 
@@ -538,5 +546,8 @@
 
     <script src="../scripts/VFX/bg_anim_ColorGradient.js"></script>
     <script src="../scripts/VFX/bg_anim_PoolVisualization.js"></script>
+
+    <!-- Match Scripts -->
+    <script src="../scripts/matches/match_data.js" type="module"></script>
 </body>
 </html>

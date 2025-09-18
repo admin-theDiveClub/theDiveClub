@@ -6,6 +6,17 @@ export function UpdateTournamentUI(tournament, log, rounds, players)
 
     PopulateLog(log, players);
     DrawChart(tournamentRounds);
+
+    
+    if (window.location.href.includes('multi_view.html'))
+    {
+        const target = document.getElementById('iframe');
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else
+    {        
+        const target = document.getElementById('progressionChart');
+        target.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
 }
 
 var tournamentRounds = null;
