@@ -15,6 +15,9 @@
     <!--Custom CSS-->
     <link href="../stylesheets/stylesheet_main.css" rel="stylesheet">    
 
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <title>The Dive Club</title>
     <link rel="icon" href="../resources/icon_TDC.ico">
 </head>
@@ -30,6 +33,122 @@
     <div id="component-login"></div>
 
     <div class="main">
+        <div class="card" id="card-match-settings">
+            <div class="card-title" id="card-match-settings-toggle" role="button" tabindex="0" aria-expanded="true" aria-controls="card-match-settings-body" style="display:flex;align-items:center;cursor:pointer;">
+                <i class="bi bi-gear"></i>
+                <span style="margin-left:0.5rem;">Match Settings</span>
+            </div>
+            <div class="card-body" id="card-match-settings-body">
+            <div class="row">                
+
+                <div class="col-sm-6 col-lg-3">
+                    <label for="win-type-select" class="form-label">Select Win Type</label>
+                    <select id="win-type-select" class="form-select" aria-label="Select Win Type">
+                        <option value="Freeplay" selected>Free Play</option>
+                        <option value="Race">Race To / Best Of</option>
+                        <option value="Fixed">Fixed Frame Count</option>
+                    </select>
+                </div>
+
+                <div class="col-sm-6 col-lg-3">
+                    <label for="lag-winner-select" class="form-label">Select Lag Winner</label>
+                    <select id="lag-winner-select" class="form-select" aria-label="Select Lag Winner">
+                        <option value="" selected>Select player</option>
+                        <option value="player_h">Player_H</option>
+                        <option value="player_a">Player_A</option>
+                    </select>
+
+                    
+                    <label for="lag-type-select" class="form-label">Select Lag Type</label>
+                    <select id="lag-type-select" class="form-select" aria-label="Select Lag Type">
+                        <option value="" selected>Select type</option>
+                        <option value="Alternate">Alternate Break</option>
+                        <option value="Winner">Winner Break</option>
+                    </select>
+
+                    
+
+                    <div style="display: flex;">
+                        <input class="form-check-input" type="checkbox" id="advanced-break-toggle">
+                        <p for="advanced-break-toggle" class="form-label" id="advanced-break-label">Advanced Break Recording</p>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-lg-3">
+                    <div style="display: flex; justify-content: center; align-items: center; padding: 0.5rem;">
+                        <label for="match-time-limit" class="form-label" style="text-align: right !important; margin: auto 0rem !important;">Match Time Limit:</label>
+                        <input type="number" id="match-time-limit" class="form-control" placeholder="Time Limit (minutes)">
+                    </div>
+                    <p id="match-time-settings-label">00:00</p>
+                    <div class="timer-buttons-container">
+                        <button id="btn-match-timer-start" class="timer-button"><i class="bi bi-play"></i></button>
+                        <button id="btn-match-timer-pause" class="timer-button"><i class="bi bi-pause"></i></button>
+                        <button id="btn-match-timer-reset" class="timer-button"><i class="bi bi-arrow-clockwise"></i></button>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-lg-3">                    
+                    <p id="match-time-settings-label">00:00</p>
+                    <div class="timer-buttons-container">
+                        <button id="btn-match-timer-start" class="timer-button"><i class="bi bi-play"></i></button>
+                        <button id="btn-match-timer-pause" class="timer-button"><i class="bi bi-pause"></i></button>
+                        <button id="btn-match-timer-reset" class="timer-button"><i class="bi bi-arrow-clockwise"></i></button>
+                    </div>
+                </div>
+            </div>
+            </div>
+        </div>
+
+        <script>
+            (function(){
+                const toggle = document.getElementById('card-match-settings-toggle');
+                const card = document.getElementById('card-match-settings');
+                const body = document.getElementById('card-match-settings-body');
+                const icon = toggle.querySelector('.bi-gear');
+
+                // prepare transition
+                body.style.overflow = 'hidden';
+                body.style.transition = 'max-height .22s ease';
+
+                // initialize max-height to allow transition on first collapse
+                function setBodyMax() 
+                {
+                    body.style.maxHeight = body.scrollHeight + 'px';
+                }
+                setBodyMax();
+
+                let collapsed = false;
+
+                function updateState() {
+                    if (collapsed) 
+                    {
+                        body.style.maxHeight = '0';
+                        toggle.setAttribute('aria-expanded', 'false');
+                        card.classList.add('collapsed');
+                    } else 
+                    {
+                        setBodyMax();
+                        toggle.setAttribute('aria-expanded', 'true');
+                        card.classList.remove('collapsed');
+                    }
+                }
+
+                // toggle on click and keyboard (Enter / Space)
+                toggle.addEventListener('click', () => { collapsed = !collapsed; updateState(); });
+                toggle.addEventListener('keydown', (e) => 
+                {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); collapsed = !collapsed; updateState(); }
+                });
+
+                // keep max-height correct on resize when expanded
+                window.addEventListener('resize', () => { if (!collapsed) setBodyMax(); });
+
+                // if you want the card to start collapsed by default, uncomment:
+                // collapsed = true; updateState();
+            })();
+        </script>
+
+
 
         <div class="row">
             <div class="col-sm-6">
@@ -307,11 +426,104 @@
             </table>
         </div>
 
+        <div class="card">
+            <table id="tbl-match-timeline">
+                <tr>
+                    <td>lag</td>
+                    <td>
+                        <div id="timeline_h" class="match-timeline-container">
+
+                        </div>
+                    </td>
+                    <td>player</td>
+                </tr>
+            </table>
+        </div>
+
         <style>
             .card
             {
                 padding: 0rem;
+                margin: 0.75rem;
+                color: var(--color-base-10);
             }
+
+            /* Settings Card */
+            #card-match-settings .card-title
+            {
+                padding: 0.5rem;
+                margin: auto 0rem;
+                font-family: 'Font_TDC';
+                font-size: 1.5rem;
+            }
+
+            #card-match-settings label, #card-match-settings .form-select
+            {
+                padding: 0.5rem;
+            }
+
+            #card-match-settings .col-sm-6
+            {
+                padding: 0.25rem;
+                margin: auto;
+            }
+
+            #card-match-settings label
+            {
+                width: 100%;
+                text-align: center !important;
+            }
+
+            #card-match-settings #advanced-break-label
+            {
+                padding: 0rem;
+                margin: auto 0.25rem;
+            }
+
+            #card-match-settings #match-time-settings-label
+            {
+                text-align: center;
+                font-size: 4rem;
+                margin: auto;
+                font-family: 'Font_TDC';
+            }
+
+            .timer-buttons-container
+            {
+                display: flex;
+                justify-content: center;
+            }
+
+            #card-match-settings .timer-button
+            {
+                background-color: transparent;
+                border: none;
+                padding: 0.5rem;
+                font-size: 2rem;
+                color: var(--color-base-10);
+            }
+
+            #card-match-settings .form-control
+            {
+                margin: auto 0rem;
+            }
+
+            #btn-match-timer-start
+            {
+                box-shadow: inset 0px -48px 48px -48px var(--color-accent-0);
+            }            
+
+            #btn-match-timer-pause
+            {
+                box-shadow: inset 0px -48px 48px -48px var(--color-highlight-0);
+            }            
+
+            #btn-match-timer-reset
+            {
+                box-shadow: inset 0px -48px 48px -48px var(--color-secondary-00);
+            }
+
+            /* Score Control Cards */
 
             .ctrl-score
             {
@@ -329,12 +541,6 @@
             .row
             {
                 width: 100%;
-                padding: 0rem !important;
-                margin: 0rem !important;
-            }
-
-            .col
-            {
                 padding: 0rem !important;
                 margin: 0rem !important;
             }
@@ -520,6 +726,17 @@
                 color: var(--color-highlight-0);
                 vertical-align: super;
                 font-size: 2rem;
+            }
+        </style>
+
+        <style>
+            .match-timeline-container
+            {
+                width: 100%;
+                min-height: 20vh;
+                box-shadow: inset 0px 0px 12px 0px rgba(0,0,0,0.5);
+                margin: 0rem;
+                padding: 0rem;
             }
         </style>
     </div>

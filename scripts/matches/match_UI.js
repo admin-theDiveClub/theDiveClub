@@ -152,6 +152,7 @@ export async function UpdateMatchUI (match)
     if (match)
     {
         await PopulateUI(match);
+        PrepTimeLineData(match);
     } else 
     {        
         console.log("No match data to populate UI");
@@ -278,4 +279,181 @@ function UpdateBreakIndicators(e_ctrl, breaking, advancedBreaking)
     {
         e_ctrl.e_ctrl_score_break_input.style.display = 'none';
     }
+}
+
+function PrepTimeLineData (match)
+{
+    if (!match || !match.history || match.history.length == 0)
+    {
+        return null;
+    }
+
+    var historyMeta = 
+    {
+        totalFrames: match.history.length,
+        totalPoints: {h: 0, a: 0},
+        totalDuration: 0,
+    }
+
+    for (var i = 0; i < match.history.length; i++)
+    {
+        const frame = match.history[i];
+        if (frame.duration && frame.duration > 0)
+        {
+            historyMeta.totalDuration += frame.duration;
+        }
+        if (frame['winner-player'] == 'h')
+        {
+            historyMeta.totalPoints.h ++;
+        } else if (frame['winner-player'] == 'a')
+        {
+            historyMeta.totalPoints.a ++;
+        }
+    }
+
+    console.log(match.history, player_H, player_A, historyMeta);
+
+    DrawMatchTimeLine(match.history, player_H, player_A, historyMeta);
+}
+
+function DrawMatchTimeLine (history, player_H, player_A, historyMeta) 
+{
+    const timelineContainerH = document.getElementById('timeline_h');
+    if (!timelineContainerH || !history || history.length === 0) return;
+
+    // build series
+    const times = [0];
+    const scoreH = [0];
+    const scoreA = [0];
+    const frameWinsH = [0];
+    const frameWinsA = [0];
+    const breaksH = [];
+    const breaksA = [];
+    let t = 0, h = 0, a = 0;
+    for (const f of history) {
+        t += f.duration || 0;
+        const winner = f['winner-player'];
+        if (winner === 'h') h++; else if (winner === 'a') a++;
+        if (winner === 'h') frameWinsH.push(1); else frameWinsH.push(0);
+        if (winner === 'a') frameWinsA.push(1); else frameWinsA.push(0);
+        times.push(t);
+        scoreH.push(h);
+        // keep A negative like original to visually separate on same chart
+        scoreA.push(a);
+        breaksH.push(f['break-player'] === 'h' ? 1 : 0);
+        breaksA.push(f['break-player'] === 'a' ? 1 : 0);
+    }
+
+    // ensure a canvas element exists inside container and return it
+    function ensureCanvas(container, id) {
+        let canvas = container.querySelector('canvas');
+        if (!canvas) {
+            canvas = document.createElement('canvas');
+            if (id) canvas.id = id;
+            container.style.position = 'relative';
+            container.appendChild(canvas);
+        }
+        return canvas;
+    }
+
+    // destroy previous chart if present helper
+    function destroyChartIfAny(canvas) {
+        if (canvas && canvas._chart) {
+            try { canvas._chart.destroy(); } catch (e) { /* ignore */ }
+            canvas._chart = null;
+        }
+    }
+
+    // build point color arrays from breaks array
+    function pointColorsFromHistory(breaksArray, pointsArray, color) {
+        if (!Array.isArray(breaksArray)) return color;
+        const bg = pointsArray.map(b => b ? color : 'black');
+        const border = breaksArray.map(b => b ? color : 'white');
+        return { background: bg, border: border };
+    }
+
+    // prepare points as {x,y} so linear x axis positions correctly
+    const pointsH = times.map((time, i) => ({ x: time, y: scoreH[i] }));
+    const pointsA = times.map((time, i) => ({ x: time, y: scoreA[i] }));
+
+    // canvas (single chart in timeline_h)
+    const canvas = ensureCanvas(timelineContainerH, 'chart-timeline');
+    destroyChartIfAny(canvas);
+
+    // colors
+    const colorH = 'rgba(229,21,119,0.6)';
+    const colorA = 'rgba(2,200,237,0.6)';
+
+    const pColH = pointColorsFromHistory(breaksH, frameWinsH, colorH);
+    const pColA = pointColorsFromHistory(breaksA, frameWinsA, colorA);
+
+    const ctx = canvas.getContext('2d');
+    canvas._chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            // note: when using objects {x,y} the labels array is unnecessary for linear x
+            datasets: [
+                {
+                    label: (player_H && player_H.displayName) || 'H',
+                    data: pointsH,
+                    borderColor: colorH,
+                    backgroundColor: colorH,
+                    fill: scoreH[scoreH.length - 1] < scoreA[scoreA.length - 1], // fill if H is winning
+                    tension: 0.2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: pColH.background,
+                    pointBorderColor: pColH.border,
+                    pointBorderWidth: 1,
+                    zIndex: scoreH[scoreH.length - 1] < scoreA[scoreA.length - 1] ? 1 : 2 // keep on top if winning
+                },
+                {
+                    label: (player_A && player_A.displayName) || 'A',
+                    data: pointsA,
+                    borderColor: colorA,
+                    backgroundColor: colorA,
+                    fill: scoreA[scoreA.length - 1] < scoreH[scoreH.length - 1], // fill if A is winning
+                    tension: 0.2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: pColA.background,
+                    pointBorderColor: pColA.border,
+                    pointBorderWidth: 1,
+                    zIndex: scoreH[scoreH.length - 1] > scoreA[scoreA.length - 1] ? 1 : 2 // keep on top if winning
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: { padding: { left: 0, right: 0, top: 0, bottom: 0 } },
+            plugins: { legend: { display: false } },
+            scales: {
+                x: {
+                    type: 'linear',
+                    title: { display: false, text: 'Time (min)' },
+                    beginAtZero: true,
+                    ticks: { display: false, padding: 6 },
+                    grid: { drawBorder: false, offset: true }
+                },
+                y: {
+                    title: { display: false, text: 'Running Score' },
+                    beginAtZero: true,
+                    precision: 0,
+                    ticks: { display: false, padding: 6 },
+                    grid: { drawBorder: false }
+                }
+            },
+            elements: {
+                point: {
+                    radius: 6,
+                    hoverRadius: 8,
+                    borderColor: '#ffffff',
+                    borderWidth: 1
+                }
+            }
+        }
+    });
+
+    return canvas._chart;
 }
