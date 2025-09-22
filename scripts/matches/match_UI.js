@@ -153,6 +153,8 @@ export async function UpdateMatchUI (match)
     {
         await PopulateUI(match);
         PrepTimeLineData(match);
+
+        UpdateScorecard(match);
     } else 
     {        
         console.log("No match data to populate UI");
@@ -278,6 +280,250 @@ function UpdateBreakIndicators(e_ctrl, breaking, advancedBreaking)
     } else
     {
         e_ctrl.e_ctrl_score_break_input.style.display = 'none';
+    }
+}
+
+function UpdateScorecard (match)
+{
+    const mode = window.innerWidth < 768 ? 'vertical' : 'horizontal';
+    PopulateScorecard(match, mode, player_H, player_A);
+}
+
+function PopulateScorecard (match, mode, playerH, playerA)
+{
+
+    const e_cell_header = (text, color) =>
+    {
+        const e_td = document.createElement('td');
+        e_td.className = 'scorecard-header';
+        e_td.innerText = text;
+        if (color)
+        {
+            e_td.style.color = color;
+        }
+        return e_td;
+    }
+
+    const e_cell_frame = (index) =>
+    {
+        const e_td = document.createElement('td');
+        e_td.className = 'scorecard-frame';
+        e_td.innerText = "F" + (index + 1);
+        return e_td;
+    }
+
+    const e_cell_score = (value) =>
+    {
+        const e_td = document.createElement('td');
+        const e_select = document.createElement('select');
+        e_select.className = 'form-select';
+        e_select.setAttribute('aria-label', 'Frame Score Selection');
+        const options = ['0', '1', 'B/F', 'R/F', 'GB'];
+        for (const opt of options)
+        {
+            const e_opt = document.createElement('option');
+            e_opt.value = opt;
+            e_opt.innerText = opt;
+            if (opt == value)
+            {
+                e_opt.selected = true;
+            } else 
+            {
+                if (value == "A" && e_opt.value == "B/F")
+                {
+                    e_opt.selected = true;
+                } else if (value == "C" && e_opt.value == "R/F")
+                {
+                    e_opt.selected = true;
+                }
+            }
+
+            if (value != 0)
+            {
+                e_select.classList.add('score-win');
+            } else 
+            {
+                e_select.classList.add('score-loss');
+            }
+            e_select.appendChild(e_opt);
+        }
+        e_td.appendChild(e_select);
+        return e_td;
+    };
+
+    const e_cell_break = (value) =>
+    {
+        const e_td = document.createElement('td');
+        const e_select = document.createElement('select');
+        e_select.className = 'form-select';
+        e_select.setAttribute('aria-label', 'Frame Break Selection');
+        const options = ['', 'dry', 'in', 'scratch', 'foul'];
+        for (const opt of options)
+        {
+            const e_opt = document.createElement('option');
+            e_opt.value = opt;
+            e_opt.innerText = opt;
+            if (opt == value)
+            {
+                e_opt.selected = true;
+            } else 
+            {
+                if (value == "scr" && e_opt.value == "scratch")
+                {
+                    e_opt.selected = true;
+                }
+            }
+            e_select.appendChild(e_opt);
+        }
+        e_td.appendChild(e_select);
+        return e_td;
+    };
+
+    const e_cell_duration = (value) =>
+    {
+        const e_td = document.createElement('td');
+        e_td.className = 'scorecard-duration';
+        if (value == null || isNaN(value)) {
+            e_td.innerText = '?';
+        } else {
+            const totalSeconds = Math.floor(Number(value));
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            e_td.innerHTML = `${mins}<sub>m</sub> ${secs}<sub>s</sub>`;
+        }
+        return e_td;
+    };    
+    
+    var e_scorecardContainer = null;
+    if (mode == 'vertical')
+    {
+        e_scorecardContainer = document.getElementById('scorecard-vertical');
+        e_scorecardContainer.style.display = 'block';
+        document.getElementById('scorecard-horizontal').style.display = 'none';
+    } else if (mode == 'horizontal')
+    {
+        e_scorecardContainer = document.getElementById('scorecard-horizontal');
+        e_scorecardContainer.style.display = 'block';
+        document.getElementById('scorecard-vertical').style.display = 'none';
+    }
+
+    const headerCells = 
+    [
+        e_cell_header('Break', null),
+        e_cell_header(playerH.name ? playerH.name : playerH.username, 'var(--color-primary-00)'),
+        e_cell_header(playerA.name ? playerA.name : playerA.username, 'var(--color-secondary-00)'),
+        e_cell_header('Duration', null)
+    ];
+
+    const e_table = e_scorecardContainer.querySelector('table');
+    e_table.innerHTML = '';
+
+    const history = match.history ? match.history : [];
+    const cell_0 = e_cell_header('Frames', null);
+    const frameIndexCells = history.map((f, i) => e_cell_frame(i));
+
+    if (mode == 'vertical')
+    {
+        const e_headerRow = document.createElement('tr');
+        e_headerRow.appendChild(cell_0);
+        for (const cell of headerCells)
+        {
+            e_headerRow.appendChild(cell);
+        }
+        e_table.appendChild(e_headerRow);
+
+        for (let i = 0; i < history.length; i++)
+        {
+            const frame = history[i];
+            const e_frameRow = document.createElement('tr');
+            e_frameRow.appendChild(e_cell_frame(i));            
+
+            const breakEvent = frame['break-event'] ? frame['break-event'] : null;
+            const e_break = e_cell_break(breakEvent);
+            e_frameRow.appendChild(e_break);
+
+            var score_H = 0;
+            var score_A = 0;
+            if (frame['winner-player'] == 'h')
+            {
+                score_H = frame['winner-result'];
+                score_A = 0;
+            } else if (frame['winner-player'] == 'a')
+            {
+                score_A = frame['winner-result'];
+                score_H = 0;
+            }
+            const e_score_H = e_cell_score(score_H);
+            const e_score_A = e_cell_score(score_A);
+            e_frameRow.appendChild(e_score_H);
+            e_frameRow.appendChild(e_score_A);
+
+            const duration = frame.duration ? frame.duration : null;
+            const e_duration = e_cell_duration(duration);
+            e_frameRow.appendChild(e_duration);
+
+            e_table.appendChild(e_frameRow);
+        }
+    } else if (mode == 'horizontal')
+    {
+        const e_headerRow = document.createElement('tr');
+        e_headerRow.appendChild(cell_0);
+        for (const cell of frameIndexCells)
+        {
+            e_headerRow.appendChild(cell);
+        }
+        e_table.appendChild(e_headerRow);
+
+        const e_playerHRow = document.createElement('tr');
+        const e_playerHCell = e_cell_header(playerH.name ? playerH.name : playerH.username, 'var(--color-primary-00)');
+        e_playerHRow.appendChild(e_playerHCell);
+
+        const e_playerARow = document.createElement('tr');
+        const e_playerACell = e_cell_header(playerA.name ? playerA.name : playerA.username, 'var(--color-secondary-00)');
+        e_playerARow.appendChild(e_playerACell);
+
+        const e_breakRow = document.createElement('tr');
+        const e_breakCell = e_cell_header('Break', null);
+        e_breakRow.appendChild(e_breakCell);
+
+        const e_durationRow = document.createElement('tr');
+        const e_durationCell = e_cell_header('Duration', null);
+        e_durationRow.appendChild(e_durationCell);
+        
+        e_table.appendChild(e_breakRow);
+        e_table.appendChild(e_playerHRow);
+        e_table.appendChild(e_playerARow);
+        e_table.appendChild(e_durationRow);
+
+        for (let i = 0; i < history.length; i++)
+        {
+            const frame = history[i];
+
+            var score_H = 0;
+            var score_A = 0;
+            if (frame['winner-player'] == 'h')
+            {
+                score_H = frame['winner-result'];
+                score_A = 0;
+            } else if (frame['winner-player'] == 'a')
+            {
+                score_A = frame['winner-result'];
+                score_H = 0;
+            }
+            const e_score_H = e_cell_score(score_H);
+            e_playerHRow.appendChild(e_score_H);
+
+            const e_score_A = e_cell_score(score_A);
+            e_playerARow.appendChild(e_score_A);
+
+            const breakEvent = frame['break-event'] ? frame['break-event'] : null;
+            const e_break = e_cell_break(breakEvent);
+            e_breakRow.appendChild(e_break);
+
+            const duration = frame.duration ? frame.duration : null;
+            const e_duration = e_cell_duration(duration);
+            e_durationRow.appendChild(e_duration);
+        }
     }
 }
 

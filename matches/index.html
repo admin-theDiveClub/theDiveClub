@@ -321,7 +321,7 @@
         </div>
         
         
-        <div class="card" id="scorecard-vertical" style="display: none;">
+        <div class="card" id="scorecard-vertical">
             <table class="tbl-scorecard">
                 <th>
                     <tr>
@@ -441,6 +441,16 @@
                 padding: 0rem;
                 margin: 0.75rem;
                 color: var(--color-base-10);
+            }
+
+            .card-body
+            {
+                padding: 0rem !important;
+            }
+
+            .col
+            {
+                padding: 0rem !important;
             }
 
             /* Settings Card */
@@ -698,6 +708,16 @@
                 padding-right: 0.5rem;
 
                 box-shadow: inset 0px 0px 12px 0px rgba(0,0,0,0.5);
+            }
+
+            .form-select.score-win
+            {
+                color: var(--color-accent-0) !important;
+            }
+
+            .form-select.score-loss
+            {
+                color: var(--color-base-01) !important;
             }
 
             /* Ensure focus state remains visible on dark background */

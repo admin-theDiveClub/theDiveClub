@@ -75,7 +75,7 @@ function randomTDCColor() {
     'rgba(2, 200, 237, 1)',   // secondary-00
     'rgba(207, 190, 0, 1)',   // highlight-0
     'rgba(0, 255, 0, 1)',      // accent-0
-    'rgb(146, 126, 153)'
+    'rgb(12, 12, 23)'
   ];
   return colors[Math.floor(Math.random() * colors.length)];
 }
@@ -154,7 +154,7 @@ function applyPhysics(ball) {
     ball.y = Math.max(ballRadius, Math.min(ball.y, height - ballRadius));
   }
 
-  if (Math.hypot(ball.vx, ball.vy) < 0.01) {
+  if (Math.hypot(ball.vx, ball.vy) < 0.1) {
     ball.active = false;
   }
 }
