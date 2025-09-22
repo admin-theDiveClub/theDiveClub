@@ -3,492 +3,651 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script>
-        // Mobile-only helper (keeps desktop unaffected)
-        function hideIosChromeToolbar() {
-          // run only on iOS browsers
-          if (/iphone|ipod|ipad/i.test(navigator.userAgent)) {
-            // give the browser a tick to finish the first layout,
-            // then scroll the viewport by one pixel
-            setTimeout(() => window.scrollTo(0, 1), 0);
-          }
-        }
-      
-        // call once the DOM is ready
-        window.addEventListener('load', hideIosChromeToolbar);
-      </script>
-      
-    
-    <title>TDC Scorecard</title>
-
-    <!-- Import Supabase resources via CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     
     <!-- Bootstrap CSS -->     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Import Supabase resources via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>    
+    <!-- Browser Helpers -->
+    <script src="../scripts/browserHelpers/script_mobile_hideToolBar.js"></script>
+    <!--Custom CSS-->
+    <link href="../stylesheets/stylesheet_main.css" rel="stylesheet">    
 
-    <!-- Custom CSS -->
-    <link href="../TopDeadCenter/styleSheet.css" rel="stylesheet">
-    <link href="../stylesheets/styles_TDC.css" rel="stylesheet">
-    <link href="../TopDeadCenter/styleSheet_scorecard.css" rel="stylesheet">
+    <!-- Chart.js CDN (UMD build to avoid "import" in non-module scripts) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
 
-    <!-- Include plotly.js from CDN -->
-    <script src="https://cdn.plot.ly/plotly-3.0.0.min.js"></script>
+    <title>The Dive Club</title>
+    <link rel="icon" href="../resources/icon_TDC.ico">
 </head>
 
-<body> 
+<body>
+    <div id="visualization-container" ></div>
+    <div id="component-nav-bar"></div>
 
-    <!-- Nav -->
-    <div id="nav-container" class="row">
-        <div class="d-flex justify-content-between">
-            <a href="..">
-                <img src="../resources/icon_theDiveClub_alpha.svg" style="height: 5cap; object-fit: contain;"></img>
-            </a>
-            <div class="d-flex">
-                <!-- Match Settings Button -->
-                <button style="display: none;" class="navbar-toggler me-2" type="button" data-bs-toggle="collapse" data-bs-target="#matchSettingsNav" aria-controls="matchSettingsNav" aria-expanded="false" aria-label="Toggle match settings">
-                    <i class="bi bi-gear" style="font-size: 3vh;"></i>
-                </button>
-                <!-- Navbar Button -->
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav-links-container" aria-controls="nav-links-container" aria-expanded="false" aria-label="Toggle navigation">
-                    <i id="navbar-icon" class="bi bi-list"></i>
-                </button>
-            </div>
-        </div>
-        <!-- Match Settings Menu -->
-        <div class="collapse navbar-collapse" id="matchSettingsNav" style="max-height: 100vh;">
-            <ul class="nav-links list-unstyled justify-content-around flex-wrap" style="overflow-x: hidden; max-height: 80vh;">
-                <div class="row">
-                    <div class="col-sm-4">
-                        <div class="card rounded card-component">
-                            <p class="matchSettings-heading">Match Type</p>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="matchType" id="freePlay" value="freePlay" checked>
-                                <label class="form-check-label" for="freePlay">
-                                    Free Play
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="matchType" id="race" value="race">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div>
-                                            <label class="form-check-label" for="race">
-                                                Race To:
-                                            </label>
-                                            <input type="number" class="form-control" id="raceToValue" name="raceToValue" placeholder="Race To" oninput="updateBestOfFromRaceTo(this.value)">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div>
-                                            <label class="form-check-label" for="race">
-                                                Best Of:
-                                            </label>
-                                            <input type="number" class="form-control" id="bestOfValue" name="bestOfValue" placeholder="Best Of" oninput="updateRaceToFromBestOf(this.value)">
-                                        </div>
-                                        <script>
-                                            function updateBestOfFromRaceTo(raceToValue) {
-                                                const raceTo = parseInt(raceToValue, 10);
-                                                if (!isNaN(raceTo)) {
-                                                    const bestOf = 2 * raceTo - 1;
-                                                    document.getElementById('bestOfValue').value = bestOf;
-                                                }
-                                            }
+    <div id="component-nav-menu"></div>
 
-                                            function updateRaceToFromBestOf(bestOfValue) {
-                                                const bestOf = parseInt(bestOfValue, 10);
-                                                if (!isNaN(bestOf)) {
-                                                    let raceTo;
-                                                    if (bestOf % 2 === 1) { // Odd bestOf
-                                                        raceTo = (bestOf + 1) / 2;
-                                                    } else { // Even bestOf
-                                                        raceTo = bestOf / 2 + 1;
-                                                    }
-                                                    document.getElementById('raceToValue').value = raceTo;
-                                                }
-                                            }
-                                        </script>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="matchType" id="fixedCount" value="fixedCount">
-                                <div class="d-flex flex-wrap align-items-center">
-                                    <label class="form-check-label" for="fixedCount">
-                                        Fixed Frame Count:
-                                    </label>
-                                    <input type="number" class="form-control" id="frameCountValue" name="frameCountValue" placeholder="Enter Frame Count">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-4">
-                        <div class="card rounded card-component">
-                            <p class="matchSettings-heading">Lag</p>
-                            <div class="row">
-                                <div class="col-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="lagType" id="none" value="none" checked>
-                                        <label class="form-check-label" for="none"></label>
-                                            None
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="lagType" id="alternateBreak" value="alternateBreak">
-                                        <label class="form-check-label" for="alternateBreak">
-                                            Alternate Break
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="lagType" id="winnerBreak" value="winnerBreak">
-                                        <label class="form-check-label" for="winnerBreak">
-                                            Winner Break
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
+    <div id="component-profile-menu"></div>
 
-                            <p style="margin-top: 2cap;">Lag Winner:</p>
-                            <select class="form-select" aria-label="Home" id="select-lag">
-                                <option value="home">Home</option>
-                                <option value="away">Away</option>
-                            </select>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="advancedBreakRecording" name="advancedBreakRecording">
-                                <label class="form-check-label" for="advancedBreakRecording">
-                                    Advanced Break Recording
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-4">
-                        <div class="card rounded card-component">
+    <div id="component-login"></div>
 
-                            <p class="matchSettings-heading">Timing</p>
-                            <p id="match-time-start">Match Start Time: 00:00 01/01/2025</p>
-                            <p id="frame-time-start">Frame Start Time: 00:00 01/01/2025</p>
-                            <p id="match-time-end">Match End Time: 00:00 01/01/2025</p>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="timingOption" id="noLimit" value="noLimit" checked>
-                                        <label class="form-check-label" for="noLimit">
-                                            No Limit
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="timingOption" id="timeLimit" value="timeLimit" disabled>
-                                        <div class="d-flex flex-wrap align-items-center">
-                                            <label class="form-check-label" for="timeLimit">
-                                                Time Limit:
-                                            </label>
-                                            <input type="number" class="form-control ms-2" id="timeLimitValue" name="timeLimitValue" placeholder="Minutes" disabled>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button id="btn-timer-startMatch" class="btn btn-info">Start Match</button>
-                            <button id="btn-timer-restartFrameTimer" class="btn btn-warning">Restart Frame Timer</button>
-                            <button id="btn-timer-endMatch" class="btn btn-danger">End Match</button>
-                        </div>
-                    </div>
-                </div>
-            </ul>
-        </div>
-        <!-- Main Navbar Menu -->
-        <div class="collapse navbar-collapse" id="nav-links-container">
-            <ul class="nav-links list-unstyled d-flex justify-content-around flex-wrap">
-                <li>
-                    <button class="btn btn-link nav-link active" onclick="location.href='../index.html'">
-                        <i class="bi bi-house-door"></i> Home
-                    </button>
-                </li>
-                <li>
-                    <button class="btn btn-link nav-link" onclick="location.href='../accounts/profile.html'">
-                        <i class="bi bi-person"></i> Profile
-                    </button>
-                </li>
-                <li>
-                    <button class="btn btn-link nav-link" onclick="location.href='../matches/create.html'">
-                        <i class="bi bi-card-checklist"></i> Scorecard
-                    </button>
-                </li>
-                <li class="dropdown">
-                    <button class="btn btn-link nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-trophy"></i> Competitions
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li>
-                            <button class="dropdown-item" onclick="location.href='#leagues'">
-                                <i class="bi bi-award"></i> Leagues
-                            </button>
-                        </li>
-                        <li>
-                            <button class="dropdown-item" onclick="location.href='#tournaments'">
-                                <i class="bi bi-calendar-event"></i> Tournaments
-                            </button>
-                        </li>
-                        <li>
-                            <button class="dropdown-item" onclick="location.href='#matches'">
-                                <i class="bi bi-flag"></i> Matches
-                            </button>
-                        </li>
-                    </ul>
-                </li>
-                <li>
-                    <button class="btn btn-link nav-link" onclick="location.href='../index.html'">
-                        <i class="bi bi-envelope"></i> Contact
-                    </button>
-                </li>
-            </ul>
-        </div>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 105vh; background: rgba(0,0,0,1); z-index: 1800; display: flex; align-items: center; justify-content: center;">
-        <div style="position: relative; width: 50vw; height: 50vh; display: flex; align-items: center; justify-content: center;">
-            <!-- SVG Logo -->
-            <img src="../resources/icon_theDiveClub_alpha.svg" alt="Loading..." style="width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; z-index: 1;">
-            <!-- Animated Fill Overlay -->
-            <div id="logo-fill" style="position: absolute; left: 0; bottom: 0; width: 100%; height: 0%;
-                background: linear-gradient(to top, rgba(234, 0, 103, 1) 50%, transparent 100%);
-                z-index: 2; pointer-events: none; mix-blend-mode: multiply; transition: height 0.1s;">
-            </div>
-        </div>
-    </div>
-
-    <!-- Visualization Container -->
-    <div id="visualization-container" style="height: 100vh; width: 100vw; position: fixed; z-index: -1000;"></div>
-
-    <!-- Main Content -->
     <div class="main">
-        <div class="card rounded scorecard-container">
-            <!-- Scoreboard Cards -->
-            <div class="row">
-                <div class="col-sm-6">
-                    <div class="card rounded player-card">
-                        <div class="card-header player-header">
-                            <div class="d-flex justify-content-center align-items-center">
-                                <img id="player-H-pic" class="player-pic" src="../resources/icon_user_default.png" alt="../resources/icon_user_default.png">
-                                <div>
-                                    <p id="player-H-nickname" class="player-nickname">_nickname</p>
-                                    <p id="player-H-name" class="player-name">_fullName</p>
-                                </div>
+
+
+        <div class="row">
+            <div class="col-sm-6">
+                <!-- card-title player-title player-title-reverse -->
+                <div class="card ctrl-score" id="ctrl-score-H">
+                    <div class="card-title player-title reverse">
+                        <img class="player-title-pp" src="../resources/images/pp_UV_0.png" id="player-pp-H">
+                        <div class="player-title-dn" id="player-dn-H">Display Name</div>
+                    </div>
+                    <div class="card-body ctrl-score-body">
+                        <div class="row">
+                            <div class="col col-3">
+                                <button class="btn-score-input score-input-special" id="ctrl-score-H-special-bf">B/F</button>
+                                <button class="btn-score-input score-input-special rf" id="ctrl-score-H-special-rf">R/F</button>
+                                <button class="btn-score-input score-input-special" id="ctrl-score-H-special-gb">GB</button>
                             </div>
-                        </div>
-                        <div class="card-body player-body">
-                            <div class="row">
-                                <div class="col-4"></div>
-                                <div class="col-4">
-                                    <p id="player-H-score" class="player-score">99</p>
-                                </div>
-                                <div class="col-4">
-                                    <div id="player-H-break-indicator-container" class="break-indicator-container">                                   
-                                        <img id="player-H-break-indicator" class="break-indicator" src="../resources/icon_break.png">
-                                        <p id="player-H-break" class="player-break">Break</p>
-                                    </div>
-                                </div>
+                            <div class="col col-6">
+                                <p class="ctrl-score-main" id="ctrl-score-H-score">0</p>
                             </div>
-                            <div class="row">
-                                <div class="col-6">
-                                    <p id="player-H-bf" class="player-bf">B/F : 0</p>
-                                </div>
-                                <div class="col-6">
-                                    <p id="player-H-rf" class="player-rf">R/F : 0</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div style="display: none;" class="card-footer player-footer">
-                            <div class="d-flex justify-content-center align-items-center">
-                                <div>
-                                    <button id="btn-player-H-point" class="btn btn-primary player-point-btn">Point</button>
-                                    <button id="btn-player-H-bf" class="btn btn-warning player-bf-btn">B/F</button>
-                                    <button id="btn-player-H-gb" class="btn btn-warning player-gb-btn">GB</button>
-                                    <button id="btn-player-H-rf" class="btn btn-success player-rf-btn">R/F</button>
-                                </div>
-                                <div style="color: white; font-size: clamp(1cap, 1.5vw, 2cap); font-family: 'Segoe UI'; margin-left: 1cap;" id="player-H-BreakInfo-container">
-                                    <div class="d-flex justify-content-around">
-                                        <label class="form-check justify-content-center break-radio-btn" style="margin-right: 2cap; cursor: pointer;">
-                                            <input class="form-check-input" type="radio" name="player-H-option" id="player-H-dry" value="dry" style="cursor: pointer;">
-                                            <span class="form-check-label" for="player-H-dry">dry</span>
-                                        </label>
-                                    </div>
-                                    <div class="d-flex justify-content-around">
-                                        <label class="form-check break-radio-btn" style="margin-right: 2cap; cursor: pointer;">
-                                            <input class="form-check-input" type="radio" name="player-H-option" id="player-H-scratch" value="scr" style="cursor: pointer;">
-                                            <span class="form-check-label" for="player-H-scratch">scr</span>
-                                        </label>
-                                        <label class="form-check break-radio-btn" style="cursor: pointer;">
-                                            <input class="form-check-input" type="radio" name="player-H-option" id="player-H-in" value="in" style="cursor: pointer;">
-                                            <span class="form-check-label" for="player-H-in">in</span>
-                                        </label>
-                                    </div>
-                                </div>
+                            <div class="col col-3">
+                                <button class="btn-score-input" id="ctrl-score-H-point">+</button>
                             </div>
                         </div>
                     </div>
+                    <div class="card-footer">
+                        <div class="ctrl-score-break-input" id="ctrl-score-H-break-input">
+                            <img class="icon-break" src="../resources/icons/icon_break.svg">                                
+                            <button class="btn-score-input btn-break" id="ctrl-score-H-break-dry">Dry</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-H-break-in">In</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-H-break-scr">Scr</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-H-break-foul">Foul</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-sm-6">
-                    <div class="card rounded player-card">
-                        <div class="card-header player-header">
-                            <div class="d-flex justify-content-center align-items-center">
-                                <img id="player-A-pic" class="player-pic" src="../resources/icon_user_default.png">
-                                <div>
-                                    <p id="player-A-nickname" class="player-nickname">_nickname</p>
-                                    <p id="player-A-name" class="player-name">_fullName</p>
-                                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="card ctrl-score" id="ctrl-score-A">
+                    <div class="card-title player-title">
+                        <img class="player-title-pp" src="../resources/images/pp_UV_0.png" id="player-pp-A">
+                        <div class="player-title-dn" id="player-dn-A">Display Name</div>
+                    </div>
+                    <div class="card-body ctrl-score-body">
+                        <div class="row">
+                            <div class="col col-3">
+                                <button class="btn-score-input score-input-special" id="ctrl-score-A-special-bf">B/F</button>
+                                <button class="btn-score-input score-input-special rf" id="ctrl-score-A-special-rf">R/F</button>
+                                <button class="btn-score-input score-input-special" id="ctrl-score-A-special-gb">GB</button>
+                            </div>
+                            <div class="col col-6">
+                                <p class="ctrl-score-main" id="ctrl-score-A-score">0</p>
+                            </div>
+                            <div class="col col-3">
+                                <button class="btn-score-input" id="ctrl-score-A-point">+</button>
                             </div>
                         </div>
-                        <div class="card-body player-body">
-                            <div class="row">
-                                <div class="col-4"></div>
-                                <div class="col-4">
-                                    <p id="player-A-score" class="player-score">99</p>
-                                </div>
-                                <div class="col-4">                                    
-                                    <div id="player-A-break-indicator-container" class="break-indicator-container">                                   
-                                        <img id="player-A-break-indicator" class="break-indicator" src="../resources/icon_break.png">
-                                        <p id="player-A-break" class="player-break">Break</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-6">
-                                    <p id="player-A-bf" class="player-bf">B/F : 0</p>
-                                </div>
-                                <div class="col-6">
-                                    <p id="player-A-rf" class="player-rf">R/F : 0</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div style="display: none;" class="card-footer player-footer">
-                            <div class="d-flex justify-content-center align-items-center">
-                                <div>
-                                    <button id="btn-player-A-point" class="btn btn-primary player-point-btn">Point</button>
-                                    <button id="btn-player-A-bf" class="btn btn-warning player-bf-btn">B/F</button>
-                                    <button id="btn-player-A-gb" class="btn btn-warning player-gb-btn">GB</button>
-                                    <button id="btn-player-A-rf" class="btn btn-success player-rf-btn">R/F</button>
-                                </div>
-                                <div style="color: white; font-size: clamp(1cap, 1.5vw, 2cap); font-family: 'Segoe UI'; margin-left: 1cap;" id="player-A-BreakInfo-container">
-                                    <div class="d-flex justify-content-around">
-                                        <label class="form-check justify-content-center break-radio-btn" style="margin-right: 2cap; cursor: pointer;">
-                                            <input class="form-check-input" type="radio" name="player-A-option" id="player-A-dry" value="dry" style="cursor: pointer;">
-                                            <span class="form-check-label" for="player-A-dry">dry</span>
-                                        </label>
-                                    </div>
-                                    <div class="d-flex justify-content-around">
-                                        <label class="form-check break-radio-btn" style="margin-right: 2cap; cursor: pointer;">
-                                            <input class="form-check-input" type="radio" name="player-A-option" id="player-A-scratch" value="scr" style="cursor: pointer;">
-                                            <span class="form-check-label" for="player-A-scratch">scr</span>
-                                        </label>
-                                        <label class="form-check break-radio-btn" style="cursor: pointer;">
-                                            <input class="form-check-input" type="radio" name="player-A-option" id="player-A-in" value="in" style="cursor: pointer;">
-                                            <span class="form-check-label" for="player-A-in">in</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="ctrl-score-break-input" id="ctrl-score-A-break-input"> 
+                            <img class="icon-break" src="../resources/icons/icon_break.svg">                               
+                            <button class="btn-score-input btn-break" id="ctrl-score-A-break-dry">Dry</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-A-break-in">In</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-A-break-scr">Scr</button>
+                            <button class="btn-score-input btn-break" id="ctrl-score-A-break-foul">Foul</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Match Timer -->
-        <div class="card rounded timer-container card-component">
-            <h2 class="text-center">Match Timer</h2>
-            <h2 class="timer-display text-center">
-                <span id="timer-hours">00</span>:<span id="timer-minutes">00</span>:<span id="timer-seconds">00</span>
-            </h2>
-            <p id="timer-listFrameTimes" class="text-center">00, 00, 00, 00</p>
-        </div>
-
-        <!-- Match Timeline -->
-        <div id="timeline-chart" class="card rounded timeline-container" style="padding-bottom: 1cap; min-height: 45vh;">
-            <h2 class="text-center">Timing</h2>
-            <div id="timelineChart" style="width: 100%; height: 100%;"></div>
-        </div>
-
-        <!-- Match Summary -->
-        <div class="card rounded match-summary-container">
-            <div class="summary-content">
-
-                <h2 class="text-center">
-                    Match Summary 
-                    <button style="display: none;" id="btn-correction" class="btn btn-danger">
-                        <i class="bi bi-arrow-left"></i>
-                    </button>
-                </h2>
-
-                <table class="table table-bordered" style="font-size: 50%; text-align: center;">
-                    <thead>
-                    </thead>
-                    <tbody id="scorecard-table-body">
-                        <!-- Dummy data -->
-                        <tr>
-                            <td class="cell-tight">Player H</td>
-                        </tr>
-                        <tr>
-                            <td class="cell-tight">Player A</td>
-                        </tr>
-                    </tbody>
-                </table>
+        <div class="card" id="scorecard-horizontal">
+            <table class="tbl-scorecard">
+                <th>
+                    <tr>
+                        <td></td>
+                        <td>F1</td>
+                        <td>F2</td>
+                        <td>F3</td>
+                        <td>F4</td>
+                        <td>F5</td>
+                        <td>F6</td>
+                        <td>F7</td>
+                        <td>F8</td>
+                        <td>F9 <i class="bi bi-x tag"></i></td>
+                        <td>Total</td>
+                    </tr>
+                </th>
+                <tr>
+                    <td>Player H *</td>
+                    <td>
+                        <select id="f1-player-h-dropdown" class="form-select" aria-label="F1 Player H selection">
+                            <option value="">0</option>
+                            <option value="opt1">1</option>
+                            <option value="opt2">B/F</option>
+                            <option value="opt3">R/F</option>
+                            <option value="opt4">GB</option>
+                        </select>
+                    </td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>0</td>
+                </tr>
+                <tr>
+                    <td>Player A</td>
+                    <td>
+                        <select id="f1-player-h-dropdown" class="form-select" aria-label="F1 Player H selection">
+                            <option value="">0</option>
+                            <option value="opt1">1</option>
+                            <option value="opt2">B/F</option>
+                            <option value="opt3">R/F</option>
+                            <option value="opt4">GB</option>
+                        </select>
+                    </td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>0</td>
+                </tr>
                 
-                <table class="table table-bordered" id="match-summary-table">
-                    
-                </table>
+                <tr>
+                    <td>Break</td>
+                    <td>
+                        <select id="f1-player-h-dropdown" class="form-select" aria-label="F1 Player H selection">
+                            <option value="">-</option>
+                            <option value="opt1">dry</option>
+                            <option value="opt2">in</option>
+                            <option value="opt3">scratch</option>
+                            <option value="opt4">foul</option>
+                        </select>
+                    </td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
 
-                <table class="table table-bordered" id="match-information-table">
-                    <tbody>
-                        <tr>
-                            <td>Start Time</td>
-                            <td id="match-start-time">Loading...</td>
-                        </tr>
-                        <tr>
-                            <td>End Time</td>
-                            <td id="match-end-time">Loading...</td>
-                        </tr>
-                        <tr>
-                            <td>Match Duration</td>
-                            <td id="match-duration">Loading...</td>
-                        </tr>
-                        <tr>
-                            <td>Average Frame Time</td>
-                            <td id="match-average-frame-time">Loading...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+                <tr>
+                    <td>Duration</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>0</td>
+                </tr>
+            </table>
         </div>
+        
+        
+        <div class="card" id="scorecard-vertical" style="display: none;">
+            <table class="tbl-scorecard">
+                <th>
+                    <tr>
+                        <td></td>
+                        <td>Player H *</td>
+                        <td>Player A</td>
+                        <td>Break</td>
+                        <td>Duration</td>
+                    </tr>
+                </th>
+                <tr>
+                    <td>F1</td>
+                    <td>
+                        <select id="f1-player-h-dropdown" class="form-select" aria-label="F1 Player H selection">
+                            <option value="">0</option>
+                            <option value="opt1">1</option>
+                            <option value="opt2">B/F</option>
+                            <option value="opt3">R/F</option>
+                            <option value="opt4">GB</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select id="f1-player-h-dropdown" class="form-select" aria-label="F1 Player H selection">
+                            <option value="">0</option>
+                            <option value="opt1">1</option>
+                            <option value="opt2">B/F</option>
+                            <option value="opt3">R/F</option>
+                            <option value="opt4">GB</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select id="f1-player-h-dropdown" class="form-select" aria-label="F1 Player H selection">
+                            <option value="">-</option>
+                            <option value="opt1">dry</option>
+                            <option value="opt2">in</option>
+                            <option value="opt3">scratch</option>
+                            <option value="opt4">foul</option>
+                        </select>
+                    </td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>F2</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>F3</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>F4</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>F5</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>F6</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>F7</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>F8</td>
+                    <td>-</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>F9</td>
+                    <td>-*</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tfoot>
+                    <tr>
+                        <td>Total</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td></td>
+                        <td>0</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="card">            
+            <div id="timeline_h" class="match-timeline-container"></div>
+        </div>
+
+        <style>
+            .card
+            {
+                padding: 0rem;
+                margin: 0.75rem;
+                color: var(--color-base-10);
+            }
+
+            /* Settings Card */
+            #card-match-settings .card-title
+            {
+                padding: 0.5rem;
+                margin: auto 0rem;
+                font-family: 'Font_TDC';
+                font-size: 1.5rem;
+            }
+
+            .settings-title
+            {
+                text-align: center;
+                font-size: 1.5rem;
+                margin: 0.5rem auto;
+                font-family: 'Font_TDC';
+            }
+
+            #card-match-settings label, #card-match-settings .form-select
+            {
+                padding: 0.5rem;
+            }
+
+            #card-match-settings .col-sm-6
+            {
+                padding: 0.25rem;
+                margin: auto;
+            }
+
+            #card-match-settings label
+            {
+                width: 100%;
+                text-align: center !important;
+            }
+
+            #card-match-settings #advanced-break-label
+            {
+                padding: 0rem;
+                margin: auto 0.25rem;
+            }
+
+            #card-match-settings #match-time-settings-label, #card-match-settings #frame-time-settings-label
+            {
+                text-align: center;
+                font-size: 4rem;
+                margin: auto;
+                font-family: 'Font_TDC';
+            }
+
+            .timer-buttons-container
+            {
+                display: flex;
+                justify-content: center;
+            }
+
+            #card-match-settings .timer-button
+            {
+                background-color: transparent;
+                border: none;
+                padding: 0.5rem;
+                font-size: 2rem;
+                color: var(--color-base-10);
+            }
+
+            #card-match-settings .form-control
+            {
+                margin: auto 0rem;
+            }
+
+            #btn-match-timer-start, #btn-frame-timer-start
+            {
+                box-shadow: inset 0px -48px 48px -48px var(--color-accent-0);
+            }            
+
+            #btn-match-timer-pause, #btn-frame-timer-pause
+            {
+                box-shadow: inset 0px -48px 48px -48px var(--color-highlight-0);
+            }            
+
+            #btn-match-timer-reset, #btn-frame-timer-reset
+            {
+                box-shadow: inset 0px -48px 48px -48px var(--color-secondary-00);
+            }
+
+            /* Score Control Cards */
+
+            .ctrl-score
+            {
+                margin-left: 0rem;
+                margin-right: 0rem;
+            }
+
+            table
+            {
+                text-align: center;
+                margin: 0rem;
+                width: 100%;
+            }
+
+            .row
+            {
+                width: 100%;
+                padding: 0rem !important;
+                margin: 0rem !important;
+            }
+
+            /* Score Input Header */
+            .player-title
+            {
+                display: flex;
+                padding: 1rem;
+                margin: 0rem;
+                backdrop-filter: blur(96px);
+            }
+
+            .reverse
+            {
+                flex-direction: row-reverse;
+            }
+
+            .player-title-dn
+            {
+                margin: auto 1rem;
+                font-size: 2.5rem;
+                font-family: 'Font_TDC';
+                white-space: nowrap;
+                overflow: hidden;
+                color: var(--color-base-10);
+            }
+
+            .player-title-pp
+            {
+                width: 100%;
+                max-width: 3em;
+                object-fit: contain;
+                box-shadow: 0px 0px 12px 0px var(--color-base-00), inset 0px 0px 12px 0px var(--color-base-00);
+                border-radius: 50%;
+                margin: auto 0rem;
+            }
+
+            /* Score Input Body */
+            .ctrl-score-body
+            {
+                padding: 0rem;
+                box-shadow: inset 0px 0px 96px 12px rgba(0,0,0,0.75);
+                overflow-y: hidden;
+            }
+
+            .ctrl-score-main
+            {
+                font-size: 6rem; 
+                text-align: center; 
+                margin: auto; 
+                padding-top: 1rem;
+                color: var(--color-base-10);
+                font-family: 'Font_TDC';
+            }
+
+            .btn-score-input
+            {
+                background-color: transparent;
+                border: none;
+                color: var(--color-base-10);
+                padding: auto;
+
+                font-family: 'Font_TDC';
+            }
+            
+            .btn-score-input:hover
+            {
+                box-shadow: inset 0px 0px 48px -24px var(--color-primary-00) !important;
+                color: var(--color-base-10);
+            }
+
+            .btn-score-input:active
+            {
+                box-shadow: inset 0px 0px 24px 0px var(--color-primary-00) !important;
+                color: var(--color-base-10);
+            }
+
+            .btn-score-input
+            {
+                width: 100%;
+                height: 100%;
+                font-size: 6rem;
+                box-shadow: inset 48px 0px 48px -48px var(--color-primary-00);
+            }
+
+            .btn-score-input.score-input-special
+            {
+                width: 100%;
+                height: 33.3%;
+                font-size: 2rem;
+                box-shadow: inset -48px 0px 48px -48px var(--color-highlight-0);
+            }
+
+            .btn-score-input.score-input-special.rf
+            {
+                box-shadow: inset -48px 0px 48px -48px var(--color-accent-0);
+            }
+
+            /* Score Input Footer */
+            .card-footer
+            {
+                display: flex;
+                padding: 0rem 1rem;
+                backdrop-filter: blur(96px);
+                margin: 0rem;
+            }
+
+            .icon-break
+            {
+                height: 100%;
+                max-height: 3em;
+                object-fit: contain;
+                margin: auto 1rem;
+            }
+
+            .ctrl-score-break-input
+            {
+                display: flex;
+                width: 100%;
+                padding: 0rem 1rem;
+                justify-content: center;
+                width: 100%;
+            }
+
+            .btn-score-input.btn-break
+            {
+                font-size: 1.5rem;
+                box-shadow: inset 0px 48px 48px -48px var(--color-secondary-00);
+                margin: 0rem 0.1rem;
+                padding: 0.5rem;
+            }
+
+            /* Scorecard */
+            .form-select, .form-select:focus
+            {
+                background-color: transparent;
+                color: var(--color-base-10);
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                appearance: none;
+
+                text-align: center;
+                padding: 0rem;
+                border: none;
+                outline: none;
+
+                /* Hide native dropdown arrow across browsers */
+                background-image: none !important;
+                background-repeat: no-repeat;
+                background-position: right 0.5rem center;
+                padding-right: 0.5rem;
+
+                box-shadow: inset 0px 0px 12px 0px rgba(0,0,0,0.5);
+            }
+
+            /* Ensure focus state remains visible on dark background */
+            .form-select:hover, .form-select:active {
+                border-color: var(--color-primary-00);
+                box-shadow: 0 0 12px 0px var(--color-primary-00);
+                outline: none;
+                border: none;
+            }
+
+            /* Options shown in the native dropdown */
+            .form-select option {
+                background-color: var(--color-base-03);
+                color: var(--color-base-10);
+            }
+
+            /* Hide default IE/Edge arrow if you plan to supply a custom caret */
+            .form-select::-ms-expand {
+                display: none;
+            }
+
+            .tbl-scorecard .form-select
+            {
+                padding: 0.5rem 0rem !important;
+            }
+
+            sup
+            {
+                color: var(--color-highlight-0);
+                vertical-align: super;
+                font-size: 2rem;
+            }
+        </style>
+
+        <style>
+            .match-timeline-container
+            {
+                width: 100%;
+                min-height: 20vh;
+                box-shadow: inset 0px 0px 12px 0px rgba(0,0,0,0.5);
+                margin: 0rem;
+                padding: 0rem;
+            }
+        </style>
     </div>
 
-    <!-- Footer -->
-    <footer>        
-        <img src="../resources/icon_theDiveClub_alpha.svg">
-    </footer>
-
-    <script src="../scripts/supabase/supaBase_client.js"></script>
-    <script src="../TopDeadCenter/backgroundAnimation.js"></script>
-    <script src="../stylesheets/loadingOverlay.js"></script>
-    <script src="../stylesheets/backgroundAnimation.js"></script>
-
-    <script src="../matches/match_data.js" type="module"></script>
-    <script src="../matches/match_summary.js" type="module"></script>
-    <script src="../matches/match_timingGraph.js" type="module"></script>
-    <script src="../matches/match_inputs.js" type="module"></script>
     
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+
+    <div id="component-siteMap"></div>
+
+    <div id="component-footer"></div>
+
+    <!-- Supabase -->
+    <script src="../scripts/supabase/supaBase_client.js"></script>
+
+    <!-- Accounts -->
+    <script src="../scripts/accounts/google_authRedirect.js"></script>
+    <script src="../scripts/accounts/login_email.js"></script>
+    <script src="../scripts/accounts/login_google.js"></script>
+    <script src="../scripts/accounts/session_restore.js"></script>
+    <script src="../scripts/accounts/signOut.js"></script>
+
+    <!--Scripts-->
+    <script src="../scripts/browserHelpers/script_includeComponents.js"></script>
+    <script src="../scripts/UIControllers/nav-bar_controller.js"></script>
+
+    <script src="../scripts/VFX/bg_anim_ColorGradient.js"></script>
+    <script src="../scripts/VFX/bg_anim_PoolVisualization.js"></script>
+
+    <!-- Match Scripts -->
+    <script src="../scripts/matches/match_data.js" type="module"></script>
 </body>
 </html>
