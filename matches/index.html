@@ -432,6 +432,20 @@
         </div>
 
         <div class="card">            
+            <div id="chartControls">
+                <label class="form-label d-block">View Mode</label>
+                <div class="btn-group" role="radiogroup" aria-label="Line type">
+                    <input type="radio" class="btn-check" name="chartMode" id="line-type-straight" value="default" autocomplete="off" checked>
+                    <label class="btn btn-outline-primary" for="line-type-straight">Default</label>
+
+                    <input type="radio" class="btn-check" name="chartMode" id="line-type-arc" value="base_h" autocomplete="off">
+                    <label class="btn btn-outline-primary" for="line-type-arc">Base H</label>
+                    
+
+                    <input type="radio" class="btn-check" name="chartMode" id="line-type-fluid" value="base_a" autocomplete="off">
+                    <label class="btn btn-outline-primary" for="line-type-fluid">Base A</label>
+                </div>
+            </div>
             <div id="timeline_h" class="match-timeline-container"></div>
         </div>
 
@@ -477,8 +491,9 @@
 
             #card-match-settings .col-sm-6
             {
-                padding: 0.25rem;
+                padding: 1rem 0.25rem;
                 margin: auto;
+                box-shadow: inset 0px 0px 48px -24px var(--color-secondary-00) !important;
             }
 
             #card-match-settings label
@@ -756,7 +771,6 @@
             .match-timeline-container
             {
                 width: 100%;
-                min-height: 20vh;
                 box-shadow: inset 0px 0px 12px 0px rgba(0,0,0,0.5);
                 margin: 0rem;
                 padding: 0rem;

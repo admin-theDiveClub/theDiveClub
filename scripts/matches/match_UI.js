@@ -62,6 +62,8 @@ const e_ctrl_A =
 var player_H = null;
 var player_A = null;
 
+var _match = null;
+
 //Initialize
 
 export async function Initialize_MatchUI(match)
@@ -151,6 +153,7 @@ export async function UpdateMatchUI (match)
     //console.log("UI match updated: ", match);
     if (match)
     {
+        _match = match;
         await PopulateUI(match);
         PrepTimeLineData(match);
 
@@ -387,9 +390,15 @@ function PopulateScorecard (match, mode, playerH, playerA)
             e_td.innerText = '?';
         } else {
             const totalSeconds = Math.floor(Number(value));
-            const mins = Math.floor(totalSeconds / 60);
-            const secs = totalSeconds % 60;
-            e_td.innerHTML = `${mins}<sub>m</sub> ${secs}<sub>s</sub>`;
+            const hours = Math.floor(totalSeconds / 3600);
+            const remainder = totalSeconds % 3600;
+            const mins = Math.floor(remainder / 60);
+            const secs = remainder % 60;
+            if (hours > 0) {
+                e_td.innerHTML = `${hours}<sub>h</sub> ${mins}<sub>m</sub> ${secs}<sub>s</sub>`;
+            } else {
+                e_td.innerHTML = `${mins}"${secs}'`;
+            }
         }
         return e_td;
     };    
@@ -421,6 +430,29 @@ function PopulateScorecard (match, mode, playerH, playerA)
     const history = match.history ? match.history : [];
     const cell_0 = e_cell_header('Frames', null);
     const frameIndexCells = history.map((f, i) => e_cell_frame(i));
+
+    const totals =
+    {
+        fw_h: 0,
+        fw_a: 0,
+        duration: 0
+    }
+
+    for (let i = 0; i < history.length; i++)
+    {
+        const frame = history[i];
+        if (frame['winner-player'] == 'h')
+        {
+            totals.fw_h ++;
+        } else if (frame['winner-player'] == 'a')
+        {
+            totals.fw_a ++;
+        }
+        if (frame.duration)
+        {
+            totals.duration += frame.duration;
+        }
+    }
 
     if (mode == 'vertical')
     {
@@ -463,7 +495,20 @@ function PopulateScorecard (match, mode, playerH, playerA)
             e_frameRow.appendChild(e_duration);
 
             e_table.appendChild(e_frameRow);
-        }
+        }        
+
+        const e_totalsRow = document.createElement('tr');
+        const e_totalsCell = e_cell_header('Totals', null);    
+        e_totalsRow.appendChild(e_totalsCell);    
+        const e_totalsB = e_cell_header('', null);
+        e_totalsRow.appendChild(e_totalsB);
+        const e_totalsH = e_cell_header(totals.fw_h, 'var(--color-primary-00)');
+        e_totalsRow.appendChild(e_totalsH);
+        const e_totalsA = e_cell_header(totals.fw_a, 'var(--color-secondary-00)');
+        e_totalsRow.appendChild(e_totalsA);
+        const e_totalsD = e_cell_duration(totals.duration);
+        e_totalsRow.appendChild(e_totalsD);
+        e_table.appendChild(e_totalsRow);
     } else if (mode == 'horizontal')
     {
         const e_headerRow = document.createElement('tr');
@@ -524,8 +569,21 @@ function PopulateScorecard (match, mode, playerH, playerA)
             const e_duration = e_cell_duration(duration);
             e_durationRow.appendChild(e_duration);
         }
+
+        const e_totalsH = e_cell_header("Totals", null);
+        e_headerRow.appendChild(e_totalsH);
+        const e_totalsB = e_cell_header('', null);
+        e_breakRow.appendChild(e_totalsB);
+        const e_totalsScoreH = e_cell_header(totals.fw_h, 'var(--color-primary-00)');
+        e_playerHRow.appendChild(e_totalsScoreH);
+        const e_totalsScoreA = e_cell_header(totals.fw_a, 'var(--color-secondary-00)');
+        e_playerARow.appendChild(e_totalsScoreA);
+        const e_totalsD = e_cell_duration(totals.duration);
+        e_durationRow.appendChild(e_totalsD);
     }
 }
+
+import { DrawMatchTimeLine } from '../charts/chart_line.js';
 
 function PrepTimeLineData (match)
 {
@@ -534,172 +592,25 @@ function PrepTimeLineData (match)
         return null;
     }
 
-    var historyMeta = 
-    {
-        totalFrames: match.history.length,
-        totalPoints: {h: 0, a: 0},
-        totalDuration: 0,
-    }
+    const orientation = window.innerWidth < 768 ? 'vertical' : 'horizontal';
 
-    for (var i = 0; i < match.history.length; i++)
-    {
-        const frame = match.history[i];
-        if (frame.duration && frame.duration > 0)
-        {
-            historyMeta.totalDuration += frame.duration;
-        }
-        if (frame['winner-player'] == 'h')
-        {
-            historyMeta.totalPoints.h ++;
-        } else if (frame['winner-player'] == 'a')
-        {
-            historyMeta.totalPoints.a ++;
-        }
-    }
 
-    console.log(match.history, player_H, player_A, historyMeta);
-
-    DrawMatchTimeLine(match.history, player_H, player_A, historyMeta);
+    const mode = document.querySelector('input[name="chartMode"]:checked')?.value || 'default';
+    DrawMatchTimeLine(match.history, player_H, player_A, mode, orientation);
 }
 
-function DrawMatchTimeLine (history, player_H, player_A, historyMeta) 
-{
-    const timelineContainerH = document.getElementById('timeline_h');
-    if (!timelineContainerH || !history || history.length === 0) return;
-
-    // build series
-    const times = [0];
-    const scoreH = [0];
-    const scoreA = [0];
-    const frameWinsH = [0];
-    const frameWinsA = [0];
-    const breaksH = [];
-    const breaksA = [];
-    let t = 0, h = 0, a = 0;
-    for (const f of history) {
-        t += f.duration || 0;
-        const winner = f['winner-player'];
-        if (winner === 'h') h++; else if (winner === 'a') a++;
-        if (winner === 'h') frameWinsH.push(1); else frameWinsH.push(0);
-        if (winner === 'a') frameWinsA.push(1); else frameWinsA.push(0);
-        times.push(t);
-        scoreH.push(h);
-        // keep A negative like original to visually separate on same chart
-        scoreA.push(a);
-        breaksH.push(f['break-player'] === 'h' ? 1 : 0);
-        breaksA.push(f['break-player'] === 'a' ? 1 : 0);
-    }
-
-    // ensure a canvas element exists inside container and return it
-    function ensureCanvas(container, id) {
-        let canvas = container.querySelector('canvas');
-        if (!canvas) {
-            canvas = document.createElement('canvas');
-            if (id) canvas.id = id;
-            container.style.position = 'relative';
-            container.appendChild(canvas);
-        }
-        return canvas;
-    }
-
-    // destroy previous chart if present helper
-    function destroyChartIfAny(canvas) {
-        if (canvas && canvas._chart) {
-            try { canvas._chart.destroy(); } catch (e) { /* ignore */ }
-            canvas._chart = null;
-        }
-    }
-
-    // build point color arrays from breaks array
-    function pointColorsFromHistory(breaksArray, pointsArray, color) {
-        if (!Array.isArray(breaksArray)) return color;
-        const bg = pointsArray.map(b => b ? color : 'black');
-        const border = breaksArray.map(b => b ? color : 'white');
-        return { background: bg, border: border };
-    }
-
-    // prepare points as {x,y} so linear x axis positions correctly
-    const pointsH = times.map((time, i) => ({ x: time, y: scoreH[i] }));
-    const pointsA = times.map((time, i) => ({ x: time, y: scoreA[i] }));
-
-    // canvas (single chart in timeline_h)
-    const canvas = ensureCanvas(timelineContainerH, 'chart-timeline');
-    destroyChartIfAny(canvas);
-
-    // colors
-    const colorH = 'rgba(229,21,119,0.6)';
-    const colorA = 'rgba(2,200,237,0.6)';
-
-    const pColH = pointColorsFromHistory(breaksH, frameWinsH, colorH);
-    const pColA = pointColorsFromHistory(breaksA, frameWinsA, colorA);
-
-    const ctx = canvas.getContext('2d');
-    canvas._chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            // note: when using objects {x,y} the labels array is unnecessary for linear x
-            datasets: [
-                {
-                    label: (player_H && player_H.displayName) || 'H',
-                    data: pointsH,
-                    borderColor: colorH,
-                    backgroundColor: colorH,
-                    fill: scoreH[scoreH.length - 1] < scoreA[scoreA.length - 1], // fill if H is winning
-                    tension: 0.2,
-                    pointRadius: 6,
-                    pointHoverRadius: 8,
-                    pointBackgroundColor: pColH.background,
-                    pointBorderColor: pColH.border,
-                    pointBorderWidth: 1,
-                    zIndex: scoreH[scoreH.length - 1] < scoreA[scoreA.length - 1] ? 1 : 2 // keep on top if winning
-                },
-                {
-                    label: (player_A && player_A.displayName) || 'A',
-                    data: pointsA,
-                    borderColor: colorA,
-                    backgroundColor: colorA,
-                    fill: scoreA[scoreA.length - 1] < scoreH[scoreH.length - 1], // fill if A is winning
-                    tension: 0.2,
-                    pointRadius: 6,
-                    pointHoverRadius: 8,
-                    pointBackgroundColor: pColA.background,
-                    pointBorderColor: pColA.border,
-                    pointBorderWidth: 1,
-                    zIndex: scoreH[scoreH.length - 1] > scoreA[scoreA.length - 1] ? 1 : 2 // keep on top if winning
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            layout: { padding: { left: 0, right: 0, top: 0, bottom: 0 } },
-            plugins: { legend: { display: false } },
-            scales: {
-                x: {
-                    type: 'linear',
-                    title: { display: false, text: 'Time (min)' },
-                    beginAtZero: true,
-                    ticks: { display: false, padding: 6 },
-                    grid: { drawBorder: false, offset: true }
-                },
-                y: {
-                    title: { display: false, text: 'Running Score' },
-                    beginAtZero: true,
-                    precision: 0,
-                    ticks: { display: false, padding: 6 },
-                    grid: { drawBorder: false }
-                }
-            },
-            elements: {
-                point: {
-                    radius: 6,
-                    hoverRadius: 8,
-                    borderColor: '#ffffff',
-                    borderWidth: 1
-                }
-            }
-        }
+document.querySelectorAll('input[name="chartMode"]').forEach((elem) => {
+    elem.addEventListener("change", function() 
+    {
+        PrepTimeLineData(_match);
     });
+});
 
-    return canvas._chart;
-}
+window.addEventListener('resize', () =>
+{
+    if (_match)
+    {
+        PrepTimeLineData(_match);
+        UpdateScorecard(_match);
+    }
+});
