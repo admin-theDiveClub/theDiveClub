@@ -430,10 +430,90 @@
                 </tfoot>
             </table>
         </div>
+        
 
-        <div class="card">            
+        <div class="card" id="match-summary-scores">
+            <table>
+                <th>
+                    <tr>
+                        <td colspan="4">Player H Player</td>
+                        <td></td>
+                        <td colspan="4">Player A Player</td>
+                    </tr>
+                </th>
+                <tr>
+                    <td colspan="4">0</td>
+                    <td>FW</td>
+                    <td colspan="4">0</td>
+                </tr>
+                <tr>
+                    <td colspan="4">0</td>
+                    <td>B/F</td>
+                    <td colspan="4">0</td>
+                </tr>
+                <tr>
+                    <td colspan="4">0</td>
+                    <td>R/F</td>
+                    <td colspan="4">0</td>
+                </tr>
+                <tr>
+                    <td colspan="4">0</td>
+                    <td>GB</td>
+                    <td colspan="4">0</td>
+                </tr>
+                <tr>
+                    <td>dry</td>
+                    <td>in</td>
+                    <td>scr</td>
+                    <td>foul</td>
+                    <td>Breaks</td>
+                    <td>dry</td>
+                    <td>in</td>
+                    <td>scr</td>
+                    <td>foul</td>
+                </tr>
+                <tr>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0 | 0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                </tr>
+            </table>
+
+            <table>
+                <tr>
+                    <td>Start Time:</td>
+                    <td id="match-summary-start-time">-</td>
+                </tr>
+                <tr>
+                    <td>End Time:</td>
+                    <td id="match-summary-end-time">-</td>
+                </tr>
+                <tr>
+                    <td>Match Duration:</td>
+                    <td id="match-summary-duration">-</td>
+                </tr>
+                <tr>
+                    <td>Average Frame Time:</td>
+                    <td id="match-summary-average-frame-time">-</td>
+                </tr>
+            </table>
+
+            <style>
+                #match-summary-scores td
+                {
+                    border: 0.1px solid var(--color-base-06);
+                }
+            </style>
+        </div>
+
+        <div class="card" id="match-timeline">
             <div id="chartControls">
-                <label class="form-label d-block">View Mode</label>
                 <div class="btn-group" role="radiogroup" aria-label="Line type">
                     <input type="radio" class="btn-check" name="chartMode" id="line-type-straight" value="default" autocomplete="off" checked>
                     <label class="btn btn-outline-primary" for="line-type-straight">Default</label>
@@ -711,7 +791,7 @@
                 -moz-appearance: none;
                 appearance: none;
 
-                text-align: center;
+                text-align: center !important;
                 padding: 0rem;
                 border: none;
                 outline: none;

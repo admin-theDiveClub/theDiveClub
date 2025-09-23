@@ -155,7 +155,7 @@ export async function UpdateMatchUI (match)
     {
         _match = match;
         await PopulateUI(match);
-        PrepTimeLineData(match);
+        DrawTimeLine(match);
 
         UpdateScorecard(match);
     } else 
@@ -585,7 +585,7 @@ function PopulateScorecard (match, mode, playerH, playerA)
 
 import { DrawMatchTimeLine } from '../charts/chart_line.js';
 
-function PrepTimeLineData (match)
+function DrawTimeLine (match)
 {
     if (!match || !match.history || match.history.length == 0)
     {
@@ -602,7 +602,7 @@ function PrepTimeLineData (match)
 document.querySelectorAll('input[name="chartMode"]').forEach((elem) => {
     elem.addEventListener("change", function() 
     {
-        PrepTimeLineData(_match);
+        DrawTimeLine(_match);
     });
 });
 
@@ -610,7 +610,7 @@ window.addEventListener('resize', () =>
 {
     if (_match)
     {
-        PrepTimeLineData(_match);
+        DrawTimeLine(_match);
         UpdateScorecard(_match);
     }
 });
