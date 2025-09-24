@@ -66,15 +66,20 @@ async function GetSession ()
 
 async function GetUserProfile (username)
 {
-    var userProfile = JSON.parse(localStorage.getItem('userProfile')) || JSON.parse(sessionStorage.getItem('userProfile'));
-    if (userProfile && userProfile.id && userProfile.username && userProfile.username == username)
+    var s_userProfile = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile');
+    if (s_userProfile)
     {
-        if (!userProfile.pp)
+        var userProfile = JSON.parse(s_userProfile);
+        if (userProfile && userProfile.id && userProfile.username && userProfile.username == username)
         {
-            userProfile = await UpdatePlayerProfilePicture(userProfile);
+            if (!userProfile.pp)
+            {
+                userProfile = await UpdatePlayerProfilePicture(userProfile);
+            }
+            return userProfile;
         }
-        return userProfile;
-    } else
+    }
+     else
     {
         const response = await supabase.from('tbl_players').select('*').eq('username', username).single();
         userProfile = response.data;
