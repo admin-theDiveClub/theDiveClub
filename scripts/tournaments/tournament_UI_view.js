@@ -15,7 +15,7 @@ export function UpdateTournamentUI(tournament, log, rounds, players)
     } else
     {        
         const target = document.getElementById('progressionChart');
-        target.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 }
 
