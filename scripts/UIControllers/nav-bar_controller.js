@@ -40,14 +40,28 @@ window.addEventListener('sessionRestored', (event) =>
     userProfile = event.detail.userProfile;
     if (userProfile && userProfile.pp)
     {
-        const e_icon = document.getElementById('icon-profile-menu');
-        if (e_icon) 
-        {
-            UpdateProfileIcon(e_icon);
-            UpdateMiniProfile(userProfile);
-        }
+        UI_Initialize();
     }
 });
+
+function Initialize ()
+{
+    const userProfile = JSON.parse(localStorage.getItem('userProfile')) || JSON.parse(sessionStorage.getItem('userProfile'));
+    if (userProfile && userProfile.pp)
+    {
+        UI_Initialize();
+    }
+}
+
+function UI_Initialize ()
+{    
+    const e_icon = document.getElementById('icon-profile-menu');
+    if (e_icon) 
+    {
+        UpdateProfileIcon(e_icon);
+        UpdateMiniProfile(userProfile);
+    }
+}
 
 function UpdateProfileIcon(e_icon)
 {

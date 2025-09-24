@@ -12,25 +12,28 @@ Setup Update call with log information.
 
 */
 
-import { Initialize_MatchUI } from '../matches/match_UI.js';
-import { UpdateMatchUI } from '../matches/match_UI.js';
-
-window.addEventListener('sessionRestored', async () =>
+Initialize();
+function Initialize ()
 {
-    await Start_MatchData();
-});
-
-window.addEventListener('sessionAnonymous', async () =>
-{
-    const matchID = _matchID();
-    if (matchID)
+    const session = JSON.parse(localStorage.getItem('session')) || JSON.parse(sessionStorage.getItem('session'));
+    if (session && session.user && session.user.email)
     {
-        window.location.href = `../matches/scoreboard.html?matchID=${matchID}`;
+        Start_MatchData();
     } else 
     {
-        window.location.href = "../matches/create.html";
+        const matchID = _matchID();
+        if (matchID)
+        {
+            window.location.href = `../matches/scoreboard.html?matchID=${matchID}`;
+        } else 
+        {
+            window.location.href = "../matches/create.html";
+        }
     }
-});
+}
+
+import { Initialize_MatchUI } from '../matches/match_UI.js';
+import { UpdateMatchUI } from '../matches/match_UI.js';
 
 async function Start_MatchData ()
 {
@@ -79,7 +82,8 @@ async function _userID ()
         const response = await supabase.from('tbl_players').select('id').eq('username', session.user.email).single();
         if (response.data && response.data.id)
         {
-            return response.data.id;
+            const playerID = response.data.id;
+            return playerID;
         } else 
         {
             return null;

@@ -20,23 +20,30 @@ async function Initialize ()
     }
 }
 
+var sessionEvent = null;
+
 function Post_Success (userProfile)
 {
     console.log("Session Restored. Welcome back ", userProfile.username);
-    const event = new CustomEvent('sessionRestored', { detail: { userProfile } });
-    const r = window.dispatchEvent(event);
+    sessionEvent = new CustomEvent('sessionRestored', { detail: { userProfile } });
+    window.dispatchEvent(sessionEvent);
 }
 
 function Post_Anonymous ()
 {
     console.log("Session Anonymous");
-    const event = new CustomEvent('sessionAnonymous');
-    window.dispatchEvent(event);
+    sessionEvent = new CustomEvent('sessionAnonymous');
+    window.dispatchEvent(sessionEvent);
 }
 
 async function GetSession ()
 {
-    var session = JSON.parse(localStorage.getItem('session')) || JSON.parse(sessionStorage.getItem('session'));
+    var s_session = localStorage.getItem('session') || sessionStorage.getItem('session');
+    if (!s_session)
+    {
+        return null;
+    }
+    var session = JSON.parse(s_session);
     if (session && session.user && session.user.email)
     {
         return session;
