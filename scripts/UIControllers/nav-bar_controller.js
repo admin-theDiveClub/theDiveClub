@@ -19,12 +19,7 @@ const navbarObserver = new MutationObserver(() =>
     if (allElementsLoaded) 
     {
         navbarObserver.disconnect();
-
-        if (userProfile)
-        {
-            UpdateProfileIcon(e_icon);
-            UpdateMiniProfile(userProfile);
-        }
+        Initialize_NavBar();
 
         ControlNavBar();
         ControlNavMenu();
@@ -35,31 +30,25 @@ const navbarObserver = new MutationObserver(() =>
 });
 navbarObserver.observe(document.body, { childList: true, subtree: true });
 
-window.addEventListener('sessionRestored', (event) =>
+function Initialize_NavBar ()
 {
-    userProfile = event.detail.userProfile;
+    const s_userProfile = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile');
+    if (!s_userProfile)
+    {
+        return;
+    }
+    userProfile = JSON.parse(s_userProfile);
     if (userProfile && userProfile.pp)
     {
-        UI_Initialize();
-    }
-});
-
-function Initialize ()
-{
-    const userProfile = JSON.parse(localStorage.getItem('userProfile')) || JSON.parse(sessionStorage.getItem('userProfile'));
-    if (userProfile && userProfile.pp)
-    {
-        UI_Initialize();
-    }
-}
-
-function UI_Initialize ()
-{    
-    const e_icon = document.getElementById('icon-profile-menu');
-    if (e_icon) 
-    {
-        UpdateProfileIcon(e_icon);
         UpdateMiniProfile(userProfile);
+        if (userProfile.pp)
+        {            
+            const e_icon = document.getElementById('icon-profile-menu');
+            if (e_icon) 
+            {
+                UpdateProfileIcon(e_icon);
+            }
+        }
     }
 }
 

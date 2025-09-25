@@ -20,20 +20,19 @@ async function Initialize ()
     }
 }
 
-var sessionEvent = null;
 
 function Post_Success (userProfile)
 {
     console.log("Session Restored. Welcome back ", userProfile.username);
-    sessionEvent = new CustomEvent('sessionRestored', { detail: { userProfile } });
-    window.dispatchEvent(sessionEvent);
 }
 
 function Post_Anonymous ()
 {
+    localStorage.removeItem("session");
+    sessionStorage.removeItem("session");
+    localStorage.removeItem("userProfile");
+    sessionStorage.removeItem("userProfile");
     console.log("Session Anonymous");
-    sessionEvent = new CustomEvent('sessionAnonymous');
-    window.dispatchEvent(sessionEvent);
 }
 
 async function GetSession ()
