@@ -223,7 +223,7 @@ export function DrawMatchTimeLine(history, player_H, player_A, mode, orientation
         timelineContainerH.style.height = '80vh';
     } else 
     {
-        timelineContainerH.style.height = '40vh';
+        timelineContainerH.style.height = '60vh';
     }
 
     if (!timelineContainerH) return null;

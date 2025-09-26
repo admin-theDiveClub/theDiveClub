@@ -438,30 +438,30 @@
             <table>
                 <th>
                     <tr>
-                        <td colspan="4">Player H Player</td>
+                        <td id="match-summary-player-h" colspan="4">Player H Player</td>
                         <td></td>
-                        <td colspan="4">Player A Player</td>
+                        <td id="match-summary-player-a" colspan="4">Player A Player</td>
                     </tr>
                 </th>
                 <tr>
-                    <td colspan="4">0</td>
+                    <td id="match-summary-player-h-score" colspan="4">0</td>
                     <td>FW</td>
-                    <td colspan="4">0</td>
+                    <td id="match-summary-player-a-score" colspan="4">0</td>
                 </tr>
                 <tr>
-                    <td colspan="4">0</td>
+                    <td id="match-summary-player-h-bf" colspan="4">0</td>
                     <td>B/F</td>
-                    <td colspan="4">0</td>
+                    <td id="match-summary-player-a-bf" colspan="4">0</td>
                 </tr>
                 <tr>
-                    <td colspan="4">0</td>
+                    <td id="match-summary-player-h-rf" colspan="4">0</td>
                     <td>R/F</td>
-                    <td colspan="4">0</td>
+                    <td id="match-summary-player-a-rf" colspan="4">0</td>
                 </tr>
                 <tr>
-                    <td colspan="4">0</td>
+                    <td id="match-summary-player-h-gb" colspan="4">0</td>
                     <td>GB</td>
-                    <td colspan="4">0</td>
+                    <td id="match-summary-player-a-gb" colspan="4">0</td>
                 </tr>
                 <tr>
                     <td>dry</td>
@@ -475,15 +475,15 @@
                     <td>foul</td>
                 </tr>
                 <tr>
-                    <td>0</td>
-                    <td>0</td>
-                    <td>0</td>
-                    <td>0</td>
-                    <td>0 | 0</td>
-                    <td>0</td>
-                    <td>0</td>
-                    <td>0</td>
-                    <td>0</td>
+                    <td id="match-summary-player-h-break-dry">0</td>
+                    <td id="match-summary-player-h-break-in">0</td>
+                    <td id="match-summary-player-h-break-scr">0</td>
+                    <td id="match-summary-player-h-break-foul">0</td>
+                    <td id="match-summary-player-h-breaks">0 | 0</td>
+                    <td id="match-summary-player-a-break-dry">0</td>
+                    <td id="match-summary-player-a-break-in">0</td>
+                    <td id="match-summary-player-a-break-scr">0</td>
+                    <td id="match-summary-player-a-break-foul">0</td>
                 </tr>
             </table>
 
@@ -510,6 +510,7 @@
                 #match-summary-scores td
                 {
                     border: 0.1px solid var(--color-base-06);
+                    padding: 0.25rem;
                 }
             </style>
         </div>

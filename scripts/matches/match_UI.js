@@ -110,7 +110,7 @@ async function PlayerProfile (player)
     if (player.id)
     {
         playerProfile = await supabase.from('tbl_players').select('*').eq('id', player.id).single();
-    } else if (player.username)
+    } else if (player.username && player.username.includes('@'))
     {
         playerProfile = await supabase.from('tbl_players').select('*').eq('username', player.username).single();
     }
@@ -158,6 +158,7 @@ export async function UpdateMatchUI (match)
         DrawTimeLine(match);
 
         UpdateScorecard(match);
+        PopulateMatchSummary(match, player_H, player_A);
 
         document.getElementById('component-loading-overlay').style.display = 'none';
     } else 
@@ -594,7 +595,7 @@ function DrawTimeLine (match)
         return null;
     }
 
-    const orientation = window.innerWidth < 768 ? 'vertical' : 'horizontal';
+    const orientation = window.innerWidth < window.innerHeight ? 'vertical' : 'horizontal';
 
 
     const mode = document.querySelector('input[name="chartMode"]:checked')?.value || 'default';
@@ -616,3 +617,108 @@ window.addEventListener('resize', () =>
         UpdateScorecard(_match);
     }
 });
+
+function PopulateMatchSummary(match, playerH, playerA)
+{
+    var matchSummary =
+    {
+        playerH: playerH.displayName,
+        playerA: playerA.displayName,
+        scoreH: match.results && match.results.h ? match.results.h.fw : 0,
+        scoreA: match.results && match.results.a ? match.results.a.fw : 0,
+        bfH: match.results && match.results.h ? match.results.h.bf : 0,
+        bfA: match.results && match.results.a ? match.results.a.bf : 0,
+        gbH: match.results && match.results.h ? match.results.h.gb : 0,
+        gbA: match.results && match.results.a ? match.results.a.gb : 0,
+        rfH: match.results && match.results.h ? match.results.h.rf : 0,
+        rfA: match.results && match.results.a ? match.results.a.rf : 0,
+        startTime: match.time && match.time.start ? new Date(match.time.start) : null,
+        endTime: match.time && match.time.end ? new Date(match.time.end) : null,
+        matchDuration: null,
+        averageFrameDuration: null,
+    }
+
+    const history = match.history ? match.history : null;
+    if (history)
+    {
+        let totalDuration = 0;
+        let averageFrameDuration = 0;
+
+        for (let i = 0; i < history.length; i++)
+        {
+            const frame = history[i];
+            if (frame.duration)
+            {
+                totalDuration += frame.duration;
+            }
+        }
+
+        matchSummary.matchDuration = totalDuration;
+        matchSummary.averageFrameDuration =  totalDuration / history.length;
+    }
+
+    // compute break stats per side
+    const breaks = { h: { dry: 0, in: 0, scr: 0, foul: 0, total: 0 }, a: { dry: 0, in: 0, scr: 0, foul: 0, total: 0 } };
+    const settings = match.settings || {};
+    const lagWinner = settings.lagWinner;
+    const lagType = settings.lagType;
+
+    let breaker = lagWinner;
+    for (let i = 0; i < history.length; i++) {
+        if (lagType === 'alternate') {
+            breaker = (i % 2 === 0) ? lagWinner : (lagWinner === 'h' ? 'a' : 'h');
+        } else if (lagType === 'winner') {
+            breaker = (i === 0) ? lagWinner : (history[i - 1]['winner-player'] || history[i - 1].winner || breaker);
+        }
+        const evRaw = history[i]['break-event'];
+        const ev = evRaw === 'scratch' ? 'scr' : evRaw;
+        if ((ev === 'dry' || ev === 'in' || ev === 'scr' || ev === 'foul') && (breaker === 'h' || breaker === 'a')) {
+            breaks[breaker][ev]++;
+            breaks[breaker].total++;
+        }
+    }
+    matchSummary.breaks = breaks;
+
+    // helpers
+    const gid = (id) => document.getElementById(id);
+    const fmtDate = (d) => d ? d.toLocaleString() : '-';
+    const fmtDur = (s) => {
+        if (s == null || isNaN(s)) return '-';
+        const total = Math.floor(Number(s));
+        const h = Math.floor(total / 3600);
+        const m = Math.floor((total % 3600) / 60);
+        const sec = total % 60;
+        return h > 0 ? `${h}h ${m}m ${sec}s` : `${m}m ${sec}s`;
+    };
+
+    // names and scores
+    gid('match-summary-player-h').innerText = matchSummary.playerH;
+    gid('match-summary-player-a').innerText = matchSummary.playerA;
+    gid('match-summary-player-h-score').innerText = matchSummary.scoreH ?? 0;
+    gid('match-summary-player-a-score').innerText = matchSummary.scoreA ?? 0;
+    gid('match-summary-player-h-bf').innerText = matchSummary.bfH ?? 0;
+    gid('match-summary-player-a-bf').innerText = matchSummary.bfA ?? 0;
+    gid('match-summary-player-h-rf').innerText = matchSummary.rfH ?? 0;
+    gid('match-summary-player-a-rf').innerText = matchSummary.rfA ?? 0;
+    gid('match-summary-player-h-gb').innerText = matchSummary.gbH ?? 0;
+    gid('match-summary-player-a-gb').innerText = matchSummary.gbA ?? 0;
+
+    // breaks
+    gid('match-summary-player-h-break-dry').innerText = breaks.h.dry;
+    gid('match-summary-player-h-break-in').innerText = breaks.h.in;
+    gid('match-summary-player-h-break-scr').innerText = breaks.h.scr;
+    gid('match-summary-player-h-break-foul').innerText = breaks.h.foul;
+    gid('match-summary-player-a-break-dry').innerText = breaks.a.dry;
+    gid('match-summary-player-a-break-in').innerText = breaks.a.in;
+    gid('match-summary-player-a-break-scr').innerText = breaks.a.scr;
+    gid('match-summary-player-a-break-foul').innerText = breaks.a.foul;
+    gid('match-summary-player-h-breaks').innerText = `${breaks.h.total} | ${breaks.a.total}`;
+
+    // times
+    gid('match-summary-start-time').innerText = fmtDate(matchSummary.startTime);
+    gid('match-summary-end-time').innerText = fmtDate(matchSummary.endTime);
+    gid('match-summary-duration').innerText = fmtDur(matchSummary.matchDuration);
+    gid('match-summary-average-frame-time').innerText = fmtDur(matchSummary.averageFrameDuration);
+
+    return matchSummary;
+}
