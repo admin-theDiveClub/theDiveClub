@@ -903,6 +903,88 @@ async function LoadRound1 ()
     }
 }
 
+const btn_load_RoundRobin = document.getElementById('btn-load-roundRobin');
+if (btn_load_RoundRobin)
+{
+    btn_load_RoundRobin.addEventListener('click', () =>
+    {
+        LoadRoundRobin();
+    });
+}
+
+async function LoadRoundRobin ()
+{
+    var playersList = GetConfirmedPlayers(tournamentPlayers);
+    console.log('Players for Round Robin:', playersList);
+    if (shuffledList)
+    {
+        playersList = shuffledList;
+    }
+
+    var allNewMatches = [];
+
+    for (var i = 0; i < playersList.length; i ++)
+    {
+        const playerH = playersList[i].displayName;
+        for (var j = i + 1; j < playersList.length; j ++)
+        {
+            const playerA = playersList[j].displayName;
+            const newMatch = 
+            {
+                competitions: { tournamentID: tournament.id },
+                info: { round: i + 1, status: 'New' },
+                players: { h: { username: playerH }, a: { username: playerA } }
+            };
+            allNewMatches.push(newMatch);
+        }
+    }
+
+    console.log('All new matches:', allNewMatches);
+
+    if (allNewMatches.length === 0) return;
+
+    const response = await supabase
+        .from('tbl_matches')
+        .insert(allNewMatches)
+        .select();
+    
+    console.log('Insert response:', response);
+}
+
+const btn_ClearTournamentMatches = document.getElementById('btn-clearAllMatches');
+if (btn_ClearTournamentMatches)
+{
+    btn_ClearTournamentMatches.addEventListener('click', () =>
+    {
+        ClearAllTournamentMatches();
+    });
+}
+async function ClearAllTournamentMatches ()
+{
+    var allMatches = [];
+    for (var round in tournamentRounds)
+    {
+        const matches = tournamentRounds[round];
+        for (var i = 0; i < matches.length; i ++)
+        {
+            const m = matches[i].match;
+            if (m && m.id)
+            {
+                allMatches.push(m.id);
+            }
+        }
+    }
+    if (allMatches.length === 0) return;
+
+    if (confirm(`This will delete ALL ${allMatches.length} matches associated with this tournament. This action cannot be undone. Proceed?`))
+    {
+        const response = await supabase
+            .from('tbl_matches')
+            .delete()
+            .in('id', allMatches);
+    }
+}
+
 //Rounds
 function UpdateTournamentRounds(rounds)
 {

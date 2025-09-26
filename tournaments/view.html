@@ -115,6 +115,51 @@
         <div id="progressionChart" class="card">
         </div>
 
+        <div class="card">
+            <table id="roundRobinTable">
+                <tr>
+                    <td>-</td>
+                    <td>Player 1</td>
+                    <td>Player 2</td>
+                    <td>Player 3</td>
+                </tr>
+                <tr>
+                    <td>Player 1</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                </tr>
+                <tr>
+                    <td>Player 2</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                </tr>
+                <tr>
+                    <td>Player 3</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                </tr>
+            </table>
+
+            <style>
+                #roundRobinTable
+                {
+                    text-align: center;
+                }
+
+                #roundRobinTable td
+                {
+                    padding: 0.25rem;
+                    border: 1px solid var(--color-base-05);
+                    overflow-wrap: anywhere;
+                    word-break: break-word;
+                    white-space: normal;
+                }
+            </style>
+        </div>
+
         <div id="log" class="card">
             <table>
                 <thead>

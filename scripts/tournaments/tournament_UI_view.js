@@ -1,11 +1,19 @@
 export function UpdateTournamentUI(tournament, log, rounds, players)
 {
     //console.log('UI: Tournament UI Update', tournament, log, rounds, players);
+    tournament = tournament;
     tournamentRounds = rounds;
     tournamentPlayers = players;
 
     PopulateLog(log, players);
-    DrawChart(tournamentRounds);
+
+    if (tournament.format === 'Knock-Out')
+    {
+        DrawChart(tournamentRounds);
+    } else if (tournament.format === 'Round Robin')
+    {
+        DrawRoundRobinTable (tournamentRounds);
+    }
 
     
     if (window.location.href.includes('multi_view.html'))
@@ -19,6 +27,144 @@ export function UpdateTournamentUI(tournament, log, rounds, players)
     }
 }
 
+function DrawRoundRobinTable (rounds)
+{
+    const container = document.getElementById('roundRobinTable');
+    container.innerHTML = '';
+
+    var allMatches = [];
+    var players = tournamentPlayers;
+    var playerMatches = [];
+    var playerScores = [[]];
+
+    for (let i = 1; i < rounds.length; i ++)
+    {
+        const matches = rounds[i];
+        for (let j = 0; j < matches.length; j ++)
+        {
+            allMatches.push(matches[j].match);
+        }
+    }
+
+    for (let i = 0; i < players.length; i ++)
+    {
+        var p = players[i].displayName;
+        var p_matches = allMatches.filter(m => (m.players.h?.username === players[i].username || m.players.a?.username === players[i].username));
+        playerMatches.push(p_matches);
+    }
+
+    //console.log(players, playerMatches);
+
+    for (let i = 0; i < players.length; i ++)
+    {
+        playerScores[i] = [];
+        for (let j = 0; j < players.length; j ++)
+        {
+            if (i === j)
+            {
+                playerScores[i][j] = 'X';
+            } else 
+            {
+                const oppPlayer = players[j].username;
+                const match = playerMatches[i].find(m => (m.players.a?.username === oppPlayer));
+                if (match)
+                {
+                    var scoreH = null;
+
+                    if (match.info.status === 'Complete')
+                    {
+                        if (match.results && match.results.h && match.results.h.fw > 0)
+                        {
+                            scoreH = match.results.h.fw;
+                        } else 
+                        {
+                            scoreH = 0;
+                        }
+                    } else 
+                    {
+                        if (match.results && match.results.h && match.results.h.fw > 0)
+                        {
+                            scoreH = match.results.h.fw;
+                        } else 
+                        {
+                            scoreH = null;
+                        }
+                    }
+
+                    playerScores[i][j] = scoreH;
+                }
+
+                const match2 = playerMatches[i].find(m => (m.players.h?.username === oppPlayer));
+                if (match2)
+                {
+                    var scoreA = null;
+
+                    if (match2.info.status === 'Complete')
+                    {
+                        if (match2.results && match2.results.a && match2.results.a.fw > 0)
+                        {
+                            scoreA = match2.results.a.fw;
+                        } else 
+                        {
+                            scoreA = 0;
+                        }
+                    } else 
+                    {
+                        if (match2.results && match2.results.a && match2.results.a.fw > 0)
+                        {
+                            scoreA = match2.results.a.fw;
+                        } else 
+                        {
+                            scoreA = null;
+                        }
+                    }
+
+                    playerScores[i][j] = scoreA;
+                }
+            }
+        }
+    }
+    //console.log(players, playerScores);
+
+    var e_tr = document.createElement('tr');
+    const e_td_zero = document.createElement('td');
+    e_td_zero.textContent = '';
+    e_tr.appendChild(e_td_zero);
+    for (let i = 0; i < players.length; i ++)
+    {
+        var e_td = document.createElement('td');
+        e_td.textContent = players[i].displayName || players[i].username;
+        e_tr.appendChild(e_td);
+    }
+    container.appendChild(e_tr);
+
+    for (let i = 0; i < players.length; i ++)
+    {
+        var e_tr = document.createElement('tr');
+
+        if (i % 2 === 0)
+        {
+            e_tr.style.backgroundColor = 'var(--color-base-02)';
+        } else 
+        {
+            e_tr.style.backgroundColor = 'var(--color-base-04)';
+        }
+
+        var e_td = document.createElement('td');
+        e_td.textContent = players[i].displayName || players[i].username;
+        e_tr.appendChild(e_td);
+        for (let j = 0; j < players.length; j ++)
+        {
+            var e_td = document.createElement('td');
+            const score = playerScores[i][j] == null ? '' : playerScores[i][j];
+            e_td.textContent = score;
+            e_tr.appendChild(e_td);
+        }
+        container.appendChild(e_tr);
+    }
+}
+
+var tournament = null;
 var tournamentRounds = null;
 var tournamentPlayers = null;
 

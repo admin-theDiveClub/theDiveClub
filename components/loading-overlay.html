@@ -3,11 +3,11 @@
     <img class="loading-image logo-body" src="../resources/loadingOverlay/icon_TDC_Logo_LogoBody.svg">
 
     <!-- Diver + mask -->
-    <svg class="mask-wrapper" viewBox="0 0 1000 1414.28515625" preserveAspectRatio="xMidYMid meet">
+    <svg class="mask-wrapper" viewBox="0 600 2048 10000" preserveAspectRatio="xMidYMid meet">
         <defs>
             <!-- Use the mask image -->
             <mask id="diverMask">
-                <image href="../resources/loadingOverlay/Mask_Pool.svg" 
+                <image href="../resources/loadingOverlay/Mask_rect.svg" 
                        width="100%" height="100%" preserveAspectRatio="xMidYMid meet" />
             </mask>
         </defs>
@@ -23,7 +23,7 @@
 <style>
 :root
 {
-    --overlay-size: 50%; /* Size of the loading overlay elements */
+    --overlay-size: 30vw; /* Size of the loading overlay elements */
 }
 
 .loading-overlay-container {
@@ -37,7 +37,7 @@
     justify-content: center;
     align-items: center;
     z-index: 995;
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(8px);
 }
 
 /* Logo stays centered and unaffected */
@@ -58,15 +58,20 @@
 /* Diver animation */
 .diver {
     animation: diverMove 2s ease-in infinite;
-    position: relative; /* needed inside SVG */
 }
 
-@keyframes diverMove {
+@keyframes diverMove 
+{
     0% {
-        y: -100%;
+        y: -50%;
+        opacity: 0%;
+    }
+    75% {
+        opacity: 100%;
     }
     100% {
-        y: 100%;
+        y: 40%;
+        opacity: 100%;
     }
 }
 </style>

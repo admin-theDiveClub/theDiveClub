@@ -89,7 +89,8 @@ async function GetTournamentMatches (_tournamentID)
         .select('*')
         .eq('competitions->>tournamentID', _tournamentID)
         .order('info->>round', { ascending: true })
-        .order('createdAt', { ascending: true });
+        .order('createdAt', { ascending: true })
+        .order('id', { ascending: true });
     return response.data;
 }
 

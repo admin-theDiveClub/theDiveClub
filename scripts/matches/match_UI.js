@@ -158,6 +158,8 @@ export async function UpdateMatchUI (match)
         DrawTimeLine(match);
 
         UpdateScorecard(match);
+
+        document.getElementById('component-loading-overlay').style.display = 'none';
     } else 
     {        
         console.log("No match data to populate UI");
