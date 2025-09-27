@@ -51,6 +51,16 @@
                         <option value="Race">Race To / Best Of</option>
                         <option value="Fixed">Fixed Frame Count</option>
                     </select>
+                    <div id="win-type-race-settings">
+                        <label for="input-race-to" class="form-label" id="win-condition-label">Race To:</label>
+                        <input type="number" id="input-race-to" class="form-control" placeholder="frames">
+                        <label for="input-best-of" class="form-label" id="win-condition-label">Best Of:</label>
+                        <input type="number" id="input-best-of" class="form-control" placeholder="frames">
+                    </div>
+                    <div id="win-type-fixed-settings">
+                        <label for="input-fixed-frames" class="form-label" id="win-condition-label">Fixed Frames:</label>
+                        <input type="number" id="input-fixed-frames" class="form-control" placeholder="frames">
+                    </div>
                 </div>
 
                 <div class="col-sm-6 col-lg-3">
@@ -790,9 +800,6 @@
             {
                 background-color: transparent;
                 color: var(--color-base-10);
-                -webkit-appearance: none;
-                -moz-appearance: none;
-                appearance: none;
 
                 text-align: center !important;
                 padding: 0rem;

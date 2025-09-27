@@ -159,8 +159,9 @@ export async function UpdateMatchUI (match)
 
         UpdateScorecard(match);
         PopulateMatchSummary(match, player_H, player_A);
+        UpdateMatchSettingsUI(match);
 
-        document.getElementById('component-loading-overlay').style.display = 'none';
+        //document.getElementById('component-loading-overlay').style.display = 'none';
     } else 
     {        
         console.log("No match data to populate UI");
@@ -721,4 +722,69 @@ function PopulateMatchSummary(match, playerH, playerA)
     gid('match-summary-average-frame-time').innerText = fmtDur(matchSummary.averageFrameDuration);
 
     return matchSummary;
+}
+
+function UpdateMatchSettingsUI (match)
+{
+    const s = match && match.settings ? match.settings : {};
+    const gid = (id) => document.getElementById(id);
+
+    // Win Type
+    const winTypeEl = gid('win-type-select');
+    if (winTypeEl) {
+        const map = { freeplay: 'Freeplay', race: 'Race', fixed: 'Fixed' };
+        const val = map[(s.winType || '').toLowerCase()] || 'Freeplay';
+        winTypeEl.value = val;
+
+        if (val === 'Freeplay') 
+        {
+            gid('win-type-race-settings').style.display = 'none';
+            gid('win-type-fixed-settings').style.display = 'none';
+        } else if (val === 'Race') 
+        {
+            gid('win-type-race-settings').style.display = 'block';
+            gid('win-type-fixed-settings').style.display = 'none';
+
+            gid('input-race-to').value = s.winCondition || '';
+            gid('input-best-of').value = s.winCondition ? (s.winCondition * 2 - 1) : '';
+        } else if (val === 'Fixed') 
+        {
+            gid('win-type-race-settings').style.display = 'none';
+            gid('win-type-fixed-settings').style.display = 'block';
+            gid('input-fixed-frames').value = s.winCondition || '';
+        }
+    }
+
+    // Lag Winner (update option labels to player names and select value)
+    const lagWinnerEl = gid('lag-winner-select');
+    if (lagWinnerEl) {
+        const optH = lagWinnerEl.querySelector('option[value="player_h"]');
+        const optA = lagWinnerEl.querySelector('option[value="player_a"]');
+        const h = match && match.players && match.players.h ? match.players.h : {};
+        const a = match && match.players && match.players.a ? match.players.a : {};
+        const displayName = (p, fallback) => (p.nickname && p.nickname !== 'Guest') ? p.nickname : (p.fullName || p.username || fallback);
+        if (optH) optH.textContent = displayName(h, 'Player_H');
+        if (optA) optA.textContent = displayName(a, 'Player_A');
+
+        const lw = (s.lagWinner || '').toLowerCase();
+        lagWinnerEl.value = lw === 'h' ? 'player_h' : lw === 'a' ? 'player_a' : '';
+    }
+
+    // Lag Type
+    const lagTypeEl = gid('lag-type-select');
+    if (lagTypeEl) {
+        const map = { alternate: 'Alternate', winner: 'Winner' };
+        const val = map[(s.lagType || '').toLowerCase()] || '';
+        lagTypeEl.value = val;
+    }
+
+    // Advanced Break Recording
+    const advToggle = gid('advanced-break-toggle');
+    if (advToggle) {
+        advToggle.checked = !!s.advancedBreaks;
+        const label = gid('advanced-break-label');
+        if (label) {
+            label.textContent = advToggle.checked ? 'Advanced Break Recording: On' : 'Advanced Break Recording';
+        }
+    }
 }

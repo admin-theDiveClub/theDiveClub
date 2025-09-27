@@ -13,10 +13,10 @@
         </defs>
 
         <!-- Diver image with mask applied -->
-        <image class="diver" 
-               href="../resources/loadingOverlay/icon_TDC_Logo_Diver.svg" 
-               width="100%" height="100%" 
-               mask="url(#diverMask)" />
+        <g class="diver-wrapper" mask="url(#diverMask)">
+            <image class="diver" href="../resources/loadingOverlay/icon_TDC_Logo_Diver.svg" width="100%" height="100%"/>
+        </g>
+
     </svg>
 </div>
 
@@ -56,22 +56,26 @@
 }
 
 /* Diver animation */
-.diver {
+.diver 
+{
     animation: diverMove 2s ease-in infinite;
+    will-change: transform, opacity;
+    transform-box: fill-box;
+    transform-origin: center;
 }
 
-@keyframes diverMove 
-{
+@keyframes diverMove {
     0% {
-        y: -50%;
-        opacity: 0%;
+        transform: translateY(-50%);
+        opacity: 0;
     }
     75% {
-        opacity: 100%;
+        opacity: 1;
     }
     100% {
-        y: 40%;
-        opacity: 100%;
+        transform: translateY(40%);
+        opacity: 1;
     }
 }
+
 </style>
