@@ -129,6 +129,8 @@
                 const diverImg = document.getElementById('diverImage');
                 const diverMaskImg = document.getElementById('diverMaskImage');
 
+                logoWrapper.style.width = window.innerWidth > window.innerHeight ? '20vw' : '60vw';
+
                 // Compute diver intrinsic aspect ratio from the source
                 const diverSrc = '../resources/loadingOverlay/icon_TDC_Logo_Diver.svg';
                 const probe = new Image();
@@ -169,6 +171,11 @@
                     window.addEventListener(evt, () => requestAnimationFrame(update))
                 );
                 })();
+
+                window.addEventListener('resize', () => {
+                    const logoWrapper = document.querySelector('.logo-wrapper');
+                    logoWrapper.style.width = window.innerWidth > window.innerHeight ? '20vw' : '60vw';
+                });
             </script>
 
         </div>

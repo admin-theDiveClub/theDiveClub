@@ -102,7 +102,7 @@ function ControlNavBar() {
     let lastY = window.scrollY || 0;
     let hidden = false;
     let ticking = false;
-    const deltaThreshold = 4; // ignore tiny scrolls
+    const deltaThreshold = 0; // ignore tiny scrolls
 
     const show = () => {
         if (hidden) {
