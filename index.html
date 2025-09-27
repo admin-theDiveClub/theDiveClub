@@ -13,7 +13,9 @@
     <!-- Browser Helpers -->
     <script src="../scripts/browserHelpers/script_mobile_hideToolBar.js"></script>
     <!--Custom CSS-->
-    <link href="../stylesheets/stylesheet_main.css" rel="stylesheet">    
+    <link href="../stylesheets/stylesheet_main.css" rel="stylesheet">   
+
+    <script src="https://cdn.jsdelivr.net/npm/leader-line@1.0.7/leader-line.min.js"></script> 
 
     <title>The Dive Club</title>
     <link rel="icon" href="../resources/icon_TDC.ico">
@@ -33,10 +35,9 @@
 
     <div id="component-login"></div>
 
-    <div class="main">
-        
+    <div class="main">      
 
-        <div id="component-home-hero-vis">
+        <div id="home-hero-vis">
 
             <!-- Scrolls with the page -->
             <div class="logo-wrapper">
@@ -180,8 +181,72 @@
 
         </div>
 
+        <div class="card" id="interactive-site-map">
+            <div class="row">
+                <div class="col">
+                    <div class="card">
+                        <p class="link-content">Leagues</p>
+                    </div>
+                    <div class="card">
+                        <p class="link-content">Tournaments</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card">
+                        <p class="link-content">Ranked Matches</p>
+                    </div>
+                    <div class="card">
+                        <p class="link-content">Social Matches</p>
+                    </div>
+                    <div class="card">
+                        <p class="link-content">Offline Matches</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card">
+                        <p class="link-content">User Profile</p>
+                    </div>
+                    <div class="card">
+                        <p class="link-content">Timers</p>
+                    </div>
+                    <div class="card">
+                        <p class="link-content">Scoreboards</p>
+                    </div>
+                </div>
+            </div>
 
-        <a href="../tournaments/view.html?tournamentID=86027776-3cc5-47fc-8aa6-dbe076b1bf93" target="_blank" rel="noopener noreferrer">View Tournament</a>
+            <style>
+                /* #interactive-site-map 
+                {
+
+                } */
+
+                #interactive-site-map .col 
+                {
+                    padding: 2rem;
+                    margin: auto;
+                }
+
+                #interactive-site-map .card 
+                {
+                    margin: 2rem auto;
+                }
+
+                #interactive-site-map .card:hover
+                {
+                    transform: scale(1.05);
+                }
+
+                .link-content 
+                {
+                    font-size: 2rem;
+                    text-align: center;
+                    cursor: pointer;
+                    margin: auto;
+                    font-family: 'Font_TDC';
+                }
+            </style>
+        </div>
     </div>
 
     <div id="component-siteMap"></div>
