@@ -20,7 +20,11 @@
 </head>
 
 <body>
-    <div id="visualization-container" ></div>
+    <div id="visualization-container"></div>
+
+    
+
+
     <div id="component-nav-bar"></div>
 
     <div id="component-nav-menu"></div>
@@ -30,6 +34,146 @@
     <div id="component-login"></div>
 
     <div class="main">
+        
+
+        <div id="component-home-hero-vis">
+
+            <!-- Scrolls with the page -->
+            <div class="logo-wrapper">
+                <img class="logo-body" src="../resources/loadingOverlay/icon_TDC_Logo_LogoBody.svg" alt="The Dive Club logo">
+
+                <!-- Visual mask placeholder (same size as logo), used to position the diver's real mask -->
+                <svg class="mask-wrapper" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <defs>
+                    <mask id="scrollMaskPlaceholder">
+                    <rect width="100%" height="100%" fill="white"></rect>
+                    </mask>
+                </defs>
+                </svg>
+            </div>
+
+            <!-- Diver fixed to the top of the screen; still masked -->
+            <div class="diver-fixed-layer" aria-hidden="true">
+                <svg id="diverOverlaySvg">
+                <defs>
+                    <!-- Real mask that clips the diver; positioned via JS to match .mask-wrapper on the page -->
+                    <mask id="diverMask" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
+                    <rect x="0" y="0" width="100%" height="100%" fill="black"></rect>
+                    <image id="diverMaskImage"
+                        href="../resources/loadingOverlay/Mask_rect.svg"
+                        x="0" y="0" width="0" height="0"
+                        preserveAspectRatio="xMidYMid meet" />
+                    </mask>
+                </defs>
+
+                <!-- Diver image (fixed); centered at the top, masked by #diverMask -->
+                <image id="diverImage"
+                    href="../resources/loadingOverlay/icon_TDC_Logo_Diver_alt.svg"
+                    x="0" y="0" width="0" height="0"
+                    mask="url(#diverMask)" />
+                </svg>
+            </div>
+
+            <style>
+
+                /* Scroll layer (logo + placeholder mask) */
+                .logo-wrapper {
+                position: relative;
+                width: 40vw;
+                margin: 0 auto;
+                top: 0vh;
+                }
+
+                .logo-body {
+                display: block;
+                width: 100%;
+                height: auto;
+                object-fit: contain;
+                }
+
+                .mask-wrapper {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 97%;
+                pointer-events: none;
+                top: -8vh;
+                }
+
+                /* Fixed diver layer */
+                .diver-fixed-layer {
+                position: fixed;
+                top: 8vh;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                pointer-events: none;
+                }
+
+                #diverOverlaySvg {
+                width: 100%;
+                height: 100%;
+                display: block;
+                }
+
+                /* No animation; diver stays fixed */
+                #diverImage {
+                will-change: transform;
+                }
+            </style>
+
+            <script>
+                (function () {
+                const logoWrapper = document.querySelector('.logo-wrapper');
+                const maskWrapper = document.querySelector('.mask-wrapper');
+                const diverImg = document.getElementById('diverImage');
+                const diverMaskImg = document.getElementById('diverMaskImage');
+
+                // Compute diver intrinsic aspect ratio from the source
+                const diverSrc = '../resources/loadingOverlay/icon_TDC_Logo_Diver.svg';
+                const probe = new Image();
+                let ratio = 1;
+
+                function update() {
+                    const vw = window.innerWidth;
+
+                    // Use the on-page logo's computed width as our reference size
+                    const overlaySize = logoWrapper.getBoundingClientRect().width || vw * 0.3;
+                    const x = Math.round((vw - overlaySize) / 2);
+
+                    // Size diver to match --overlay-size, keep aspect ratio from probe
+                    const h = Math.max(1, Math.round(overlaySize * ratio));
+                    diverImg.setAttribute('width', Math.round(overlaySize));
+                    diverImg.setAttribute('height', h);
+                    diverImg.setAttribute('x', x);
+                    diverImg.setAttribute('y', 0);
+
+                    // Position the mask image to the same on-screen rect as the scrolling mask wrapper
+                    const r = maskWrapper.getBoundingClientRect();
+                    diverMaskImg.setAttribute('x', Math.round(r.left));
+                    diverMaskImg.setAttribute('y', Math.round(r.top));
+                    diverMaskImg.setAttribute('width', Math.max(1, Math.round(r.width)));
+                    diverMaskImg.setAttribute('height', Math.max(1, Math.round(r.height)));
+                }
+
+                probe.onload = () => {
+                    // Prefer natural sizes if available
+                    const w = probe.naturalWidth || 1;
+                    const h = probe.naturalHeight || 1;
+                    ratio = h / w;
+                    requestAnimationFrame(update);
+                };
+                probe.src = diverSrc;
+
+                ['load', 'resize', 'scroll'].forEach(evt =>
+                    window.addEventListener(evt, () => requestAnimationFrame(update))
+                );
+                })();
+            </script>
+
+        </div>
+
+
         <a href="../tournaments/view.html?tournamentID=86027776-3cc5-47fc-8aa6-dbe076b1bf93" target="_blank" rel="noopener noreferrer">View Tournament</a>
     </div>
 

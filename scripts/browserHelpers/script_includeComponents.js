@@ -16,7 +16,7 @@ addEventListener("DOMContentLoaded", () =>
         "footer",
         "profile-menu",
         "login", 
-        "loading-overlay"
+        "loading-overlay",
     ]
 
     for (const component of components) 
