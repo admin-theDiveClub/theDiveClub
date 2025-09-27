@@ -3,7 +3,7 @@
     <img class="loading-image logo-body" src="../resources/loadingOverlay/icon_TDC_Logo_LogoBody.svg">
 
     <!-- Diver + mask -->
-    <svg class="mask-wrapper" viewBox="0 600 2048 10000" preserveAspectRatio="xMidYMid meet">
+    <svg class="mask-wrapper" viewBox="0 590 2048 20000" preserveAspectRatio="xMidYMid meet">
         <defs>
             <!-- Use the mask image -->
             <mask id="diverMask">
@@ -58,7 +58,7 @@
 /* Diver animation */
 .diver 
 {
-    animation: diverMove 2s ease-in infinite;
+    animation: diverMove 2.5s ease-in infinite;
     will-change: transform, opacity;
     transform-box: fill-box;
     transform-origin: center;
@@ -67,14 +67,9 @@
 @keyframes diverMove {
     0% {
         transform: translateY(-50%);
-        opacity: 0;
-    }
-    75% {
-        opacity: 1;
     }
     100% {
-        transform: translateY(40%);
-        opacity: 1;
+        transform: translateY(30%);
     }
 }
 
