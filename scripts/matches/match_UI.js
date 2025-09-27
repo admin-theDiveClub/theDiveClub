@@ -161,7 +161,7 @@ export async function UpdateMatchUI (match)
         PopulateMatchSummary(match, player_H, player_A);
         UpdateMatchSettingsUI(match);
 
-        // document.getElementById('component-loading-overlay').style.display = 'none';
+        document.getElementById('component-loading-overlay').style.display = 'none';
     } else 
     {        
         console.log("No match data to populate UI");
