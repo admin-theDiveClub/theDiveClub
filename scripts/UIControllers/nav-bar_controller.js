@@ -177,6 +177,7 @@ function ControlNavMenu() {
     // Start closed (off-screen to the left)
     let open = false;
     menu.style.transform = 'translateX(-105vw)';
+    menu.style.display = 'block'; // Ensure it's in the layout for measurements
     btn.setAttribute('aria-expanded', 'false');
 
     const openMenu = () => {
