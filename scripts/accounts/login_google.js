@@ -15,6 +15,9 @@ googleLoginObserver.observe(document.body, { childList: true, subtree: true });
 //Sign in using email and password (credentials)
 async function SignInWithGoogle()
 {
+    const currentUrl = window.location.href;
+    localStorage.setItem("redirectTo", currentUrl);
+
     //Sign in using email and password
     const signInResponse = await supabase.auth.signInWithOAuth({
         provider: 'google',

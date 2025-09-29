@@ -19,7 +19,6 @@ const navbarObserver = new MutationObserver(() =>
     if (allElementsLoaded) 
     {
         navbarObserver.disconnect();
-        Initialize_NavBar();
 
         ControlNavBar();
         ControlNavMenu();
@@ -30,7 +29,7 @@ const navbarObserver = new MutationObserver(() =>
 });
 navbarObserver.observe(document.body, { childList: true, subtree: true });
 
-function Initialize_NavBar ()
+export function Initialize_NavBar ()
 {
     const s_userProfile = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile');
     if (!s_userProfile)

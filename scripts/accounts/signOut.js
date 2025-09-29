@@ -5,14 +5,12 @@ const signOutObserver = new MutationObserver(() => {
         signOutObserver.disconnect();
         document.getElementById('btn-signOut').addEventListener('click', () => 
         {
-            SignOut();
+            localStorage.removeItem("session");
+            sessionStorage.removeItem("session");
+            localStorage.removeItem("userProfile");
+            sessionStorage.removeItem("userProfile");
+            window.location.href = "../index.html";
         });
     }
 });
 signOutObserver.observe(document.body, { childList: true, subtree: true });
-
-async function SignOut() 
-{
-    console.log("Dispatching Sign Out Event...");
-    window.dispatchEvent(new CustomEvent('sessionSignOut', {}));
-}

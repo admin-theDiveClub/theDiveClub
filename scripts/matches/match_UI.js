@@ -255,7 +255,7 @@ function GetBreakSide (match)
         }
 
         const lastFrame = history[history.length - 1];
-        const winner = lastFrame.winner;
+        const winner = lastFrame['winner-player'];
         if (!winner)
         {
             return match.settings.lagWinner;
