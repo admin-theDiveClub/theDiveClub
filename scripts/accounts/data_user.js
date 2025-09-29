@@ -91,12 +91,12 @@ async function GetUserProfile (session)
     const user = session.user ? session.user : null;
     const username = user && user.email ? user.email : null;
 
-    const s_userProfile = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile');
+    /*const s_userProfile = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile');
     const j_userProfile = s_userProfile ? JSON.parse(s_userProfile) : null;
     if (j_userProfile && j_userProfile.username && j_userProfile.username == username)
     {
         return j_userProfile;
-    }
+    }*/
 
     var profile = 
     {
@@ -158,7 +158,7 @@ async function GetUserProfile (session)
                     profile.pp = r_pic.data.publicUrl;
                 } catch (error)
                 {
-                    //console.log("Error loading profile picture:", error);
+                    console.log("Error loading profile picture:", error);
                 }
             }
 

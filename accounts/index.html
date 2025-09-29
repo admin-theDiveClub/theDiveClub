@@ -22,209 +22,285 @@
 </head>
 
 <body>
+    <div id="visualization-container" ></div>
+
     <div id="component-nav-bar"></div>
 
     <div id="component-nav-menu"></div>
+
+    <div id="component-login"></div>
+
+    <div id="component-loading-overlay"></div>
 
     <div class="main">
 
         <div class="d-flex flex-row justify-content-center align-items-center">
             <div id="profile-pic-container" style="padding: 1cap;">
-                <img src="../resources/icon_theDiveClub.png" alt="TDC Icon" style="max-height: 20vh; max-width: 20vh; object-fit: contain; padding: 0cap 0cap; border-radius: 50%; box-shadow: 0 0 12px 0px rgba(0, 0, 0, 1); background-color: transparent;">
+                <img id="user-profile-pic" src="../resources/icons/icon_player.svg" alt="TDC Icon" style="max-height: 20vh; max-width: 20vh; object-fit: contain; padding: 0cap 0cap; border-radius: 50%; box-shadow: 0 0 12px 0px rgba(0, 0, 0, 1); background-color: transparent;">
             </div>
 
             <div id="user-info-container" style="padding: 1cap;">
-                <p id="user-nickname" class="user-info-text">UV</p>
+                <p id="user-displayName" class="user-info-text">UV</p>
                 <p id="user-name" class="user-info-text">Yuvan Naidoo</p>
                 <p id="user-username" class="user-info-text">admin@thediveclub.org</p>
                 <p id="user-id" class="user-info-text">XXXX-XXXX-XXXX-XXXX</p>
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-md-6">
-                <div id="leagues" class="card stats-summary">
-                    <div class="card-title" style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#leaguesCardBody" aria-expanded="false" aria-controls="leaguesCardBody">
+        <div id="userStats">
+
+            <div class="row">
+                <div id="card-matches" class="card">
+                    <div class="card-title" style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#matchesCardBody" aria-expanded="false" aria-controls="matchesCardBody">
                         <div class="d-flex justify-content-between align-items-center">
-                            <span>Leagues</span>
-                            <span>(0)</span>
+                            <span>Matches</span>
+                            <span id="matches-count">(0)</span>
                         </div>
                     </div>
-                    <div id="leaguesCardBody" class="card-body collapse">
-                        <div class="component-league-mini">
-                            <img src="../resources/icon_theDiveClub_alpha.svg"></img>
-                            <p>League Name</p>
-                            <p>0/000</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div id="stats-unranked" class="card stats-summary">
-                    <div class="card-title" style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#tournamentsCardBody" aria-expanded="false" aria-controls="tournamentsCardBody">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span>Tournaments</span>
-                            <span>(0)</span>
-                        </div>
-                    </div>
-                    <div id="tournamentsCardBody" class="card-body collapse" style="overflow-x: auto;">
-                        <table id="tbl-tournaments" style="width: 100%;">
+                    <div id="matchesCardBody" class="card-body collapse" style="overflow-x: auto;">
+                        <table id="tbl-matches" style="width: 100%;">
                             <thead>
                                 <tr>
-                                    <th>Tournament</th>
-                                    <th>Venue</th>
                                     <th>Date</th>
                                     <th>Opponent</th>
+                                    <th>League</th>
+                                    <th>Tournament</th>
                                     <th>Result</th>
+                                    <th>Match Link</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>Tournament Name</td>
-                                    <td>Test Venue</td>
                                     <td>01/01/2023</td>
                                     <td>Test Opponent</td>
+                                    <td><a href="#"><i class="bi bi-link"></i></a></td>
+                                    <td><a href="#"><i class="bi bi-link"></i></a></td>
                                     <td>9-0</td>
+                                    <td><a href="#"><i class="bi bi-link"></i></a></td>
                                 </tr>
                             </tbody>
                         </table>
-
-                        <style>
-                            #tbl-tournaments th, #tbl-tournaments td 
-                            {
-                                padding: 1cap;
-                                font-size: small;
-                            }
-                        </style>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="row">
-            <div class="col-md-6">
-                <div id="stats-ranked" class="card stats-summary">
-                    <div class="card-title" style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#rankedCardBody" aria-expanded="false" aria-controls="rankedCardBody">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span>Ranked Stats</span>
-                            <span>00.0%</span>
+            <div class="row">
+                <div class="col-md-6">
+                    <div id="leagues" class="card stats-summary">
+                        <div class="card-title" style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#leaguesCardBody" aria-expanded="false" aria-controls="leaguesCardBody">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Leagues</span>
+                                <span>(0)</span>
+                            </div>
+                        </div>
+                        <div id="leaguesCardBody" class="card-body collapse">
+                            <div class="component-league-mini">
+                                <img src="../resources/icon_theDiveClub_alpha.svg"></img>
+                                <p>League Name</p>
+                                <p>0/000</p>
+                            </div>
                         </div>
                     </div>
-                    <div id="rankedCardBody" class="card-body collapse">
-                        <table id="tbl-ranked-stats" class="table-stats">
-                            <thead>
-                                <tr>
-                                    <th>MP</th>
-                                    <th>MW</th>
-                                    <th>M%</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>0</td>
-                                    <td>0</td>
-                                    <td>0.0%</td>
-                                </tr>
-                            </tbody>
-                            <thead>
-                                <tr>
-                                    <th>FP</th>
-                                    <th>FW</th>
-                                    <th>F%</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>0</td>
-                                    <td>0</td>
-                                    <td>0.0%</td>
-                                </tr>
-                            </tbody>
-                            <thead>
-                                <tr>
-                                    <th>Avg <i class="bi bi-clock"></i></th>
-                                    <th>B-In</th>
-                                    <th>B/F</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>0'00"</td>
-                                    <td>0</td>
-                                    <td>0</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
-            </div>
-            <div class="col-md-6">
-                <div id="stats-unranked" class="card stats-summary">
-                    <div class="card-title" style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#unrankedCardBody" aria-expanded="false" aria-controls="unrankedCardBody">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span>Unranked Stats</span>
-                            <span>00.0%</span>
+                <div class="col-md-6">
+                    <div id="stats-unranked" class="card stats-summary">
+                        <div class="card-title" style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#tournamentsCardBody" aria-expanded="false" aria-controls="tournamentsCardBody">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Tournaments</span>
+                                <span>(0)</span>
+                            </div>
+                        </div>
+                        <div id="tournamentsCardBody" class="card-body collapse" style="overflow-x: auto;">
+                            <table id="tbl-tournaments" style="width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th>Tournament</th>
+                                        <th>Venue</th>
+                                        <th>Date</th>
+                                        <th>Tournament Link</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Tournament Name</td>
+                                        <td>Test Venue</td>
+                                        <td>01/01/2023</td>
+                                        <td><i class="bi bi-link"></i></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <style>
+                                #tbl-tournaments th, #tbl-tournaments td 
+                                {
+                                    padding: 1cap;
+                                    font-size: small;
+                                }
+                            </style>
                         </div>
                     </div>
-                    <div id="unrankedCardBody" class="card-body collapse">
-                        <table id="tbl-unranked-stats" class="table-stats">
-                            <thead>
-                                <tr>
-                                    <th>MP</th>
-                                    <th>MW</th>
-                                    <th>M%</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>0</td>
-                                    <td>0</td>
-                                    <td>0.0%</td>
-                                </tr>
-                            </tbody>
-                            <thead>
-                                <tr>
-                                    <th>FP</th>
-                                    <th>FW</th>
-                                    <th>F%</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>0</td>
-                                    <td>0</td>
-                                    <td>0.0%</td>
-                                </tr>
-                            </tbody>
-                            <thead>
-                                <tr>
-                                    <th>Avg <i class="bi bi-clock"></i></th>
-                                    <th>B-In</th>
-                                    <th>B/F</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>0'00"</td>
-                                    <td>0</td>
-                                    <td>0</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div id="stats-ranked" class="card stats-summary">
+                        <div class="card-title" style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#rankedCardBody" aria-expanded="false" aria-controls="rankedCardBody">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Ranked Stats</span>
+                                <span>00.0%</span>
+                            </div>
+                        </div>
+                        <div id="rankedCardBody" class="card-body collapse">
+                            <table id="tbl-ranked-stats" class="table-stats">
+                                <thead>
+                                    <tr>
+                                        <th>MP</th>
+                                        <th>MW</th>
+                                        <th>M%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.0%</td>
+                                    </tr>
+                                </tbody>
+                                <thead>
+                                    <tr>
+                                        <th>FP</th>
+                                        <th>FW</th>
+                                        <th>F%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.0%</td>
+                                    </tr>
+                                </tbody>
+                                <thead>
+                                    <tr>
+                                        <th>Avg <i class="bi bi-clock"></i></th>
+                                        <th>B-In</th>
+                                        <th>B/F</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>0'00"</td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div id="stats-unranked" class="card stats-summary">
+                        <div class="card-title" style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#unrankedCardBody" aria-expanded="false" aria-controls="unrankedCardBody">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Unranked Stats</span>
+                                <span>00.0%</span>
+                            </div>
+                        </div>
+                        <div id="unrankedCardBody" class="card-body collapse">
+                            <table id="tbl-unranked-stats" class="table-stats">
+                                <thead>
+                                    <tr>
+                                        <th>MP</th>
+                                        <th>MW</th>
+                                        <th>M%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.0%</td>
+                                    </tr>
+                                </tbody>
+                                <thead>
+                                    <tr>
+                                        <th>FP</th>
+                                        <th>FW</th>
+                                        <th>F%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.0%</td>
+                                    </tr>
+                                </tbody>
+                                <thead>
+                                    <tr>
+                                        <th>Avg <i class="bi bi-clock"></i></th>
+                                        <th>B-In</th>
+                                        <th>B/F</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>0'00"</td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-
-        
+        </div>        
 
         <style>
+
+            .score-strong
+            {
+                font-weight: bold;
+                color: var(--color-primary-01);
+            }
+
+            .player-strong
+            {
+                font-weight: bold;
+                font-style: italic;
+            }
+
+            .match-link-complete a, .match-link-complete i
+            {
+                color: var(--color-accent-0) !important;
+            }
+
+            #userStats .row
+            {
+                padding: 0.25rem 0.5rem;
+                margin: 1rem;
+            }
+
+            #userStats .card
+            {
+                width: 100%;
+                margin: auto;
+            }
+
+            #tbl-matches th, #tbl-matches td 
+            {
+                text-align: center;
+                padding: 0.25rem;
+            }
+
             .stats-summary
             {
                 padding: 1cap;
             }
 
-            .card-title
+            #userStats .card-title
             {
                 font-family: 'Font_TDC';
                 padding: 0.5cap;
@@ -288,8 +364,24 @@
 
     <div id="component-footer"></div>
 
+    <!-- Supabase -->
+    <script src="../scripts/supabase/supaBase_client.js"></script>
+
+    <!-- Accounts -->
+    <script src="../scripts/accounts/login_email.js"></script>
+    <script src="../scripts/accounts/login_google.js"></script>
+    <script src="../scripts/accounts/signOut.js"></script>  
+
+    <script src="../scripts/accounts/data_user.js" type="module"></script>
+
     <!--Scripts-->
     <script src="../scripts/browserHelpers/script_includeComponents.js"></script>
     <script src="../scripts/UIControllers/nav-bar_controller.js" type="module"></script>
+
+    <script src="../scripts/VFX/bg_anim_ColorGradient.js"></script>
+    <script src="../scripts/VFX/bg_anim_PoolVisualization.js"></script>
+    
+    <script src="../scripts/accounts/profile.js"></script>
+    
 </body>
 </html>
