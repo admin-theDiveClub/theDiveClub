@@ -1,63 +1,41 @@
 //Player Scores Input Cards
-const e_card_H = document.getElementById('ctrl-score-H');
-const e_player_pp_H = document.getElementById('player-pp-H');
-const e_player_dn_H = document.getElementById('player-dn-H');
-const e_ctrl_score_H_score = document.getElementById('ctrl-score-H-score');
-const e_ctrl_score_H_score_bf = document.getElementById('ctrl-score-H-special-bf');
-const e_ctrl_score_H_score_rf = document.getElementById('ctrl-score-H-special-rf');
-const e_ctrl_score_H_score_gb = document.getElementById('ctrl-score-H-special-gb');
-const e_ctrl_score_H_point = document.getElementById('ctrl-score-H-point');
-const e_ctrl_score_H_break_input = document.getElementById('ctrl-score-H-break-input');
-const e_ctrl_score_H_break_dry = document.getElementById('ctrl-score-H-break-dry');
-const e_ctrl_score_H_break_in = document.getElementById('ctrl-score-H-break-in');
-const e_ctrl_score_H_break_scr = document.getElementById('ctrl-score-H-break-scr');
-const e_ctrl_score_H_break_foul = document.getElementById('ctrl-score-H-break-foul');
 const e_ctrl_H = 
 {
-    e_card: e_card_H, 
-    e_player_pp: e_player_pp_H,
-    e_player_dn: e_player_dn_H,
-    e_ctrl_score: e_ctrl_score_H_score,
-    e_ctrl_score_bf: e_ctrl_score_H_score_bf,
-    e_ctrl_score_rf: e_ctrl_score_H_score_rf,
-    e_ctrl_score_gb: e_ctrl_score_H_score_gb,
-    e_ctrl_score_point: e_ctrl_score_H_point,
-    e_ctrl_score_break_input: e_ctrl_score_H_break_input,
-    e_ctrl_score_break_dry: e_ctrl_score_H_break_dry,
-    e_ctrl_score_break_in: e_ctrl_score_H_break_in,
-    e_ctrl_score_break_scr: e_ctrl_score_H_break_scr,
-    e_ctrl_score_break_foul: e_ctrl_score_H_break_foul
+    e_card: gid('ctrl-score-H'), 
+    e_player_pp: gid('player-pp-H'),
+    e_player_dn: gid('player-dn-H'),
+    e_ctrl_score: gid('ctrl-score-H-score'),
+    e_ctrl_score_bf: gid('ctrl-score-H-special-bf'),
+    e_ctrl_score_rf: gid('ctrl-score-H-special-rf'),
+    e_ctrl_score_gb: gid('ctrl-score-H-special-gb'),
+    e_ctrl_score_point: gid('ctrl-score-H-point'),
+    e_ctrl_score_break_input: gid('ctrl-score-H-break-input'),
+    e_ctrl_score_break_dry: gid('ctrl-score-H-break-dry'),
+    e_ctrl_score_break_in: gid('ctrl-score-H-break-in'),
+    e_ctrl_score_break_scr: gid('ctrl-score-H-break-scr'),
+    e_ctrl_score_break_foul: gid('ctrl-score-H-break-foul')
 };
-
-const e_card_A = document.getElementById('ctrl-score-A');
-const e_player_pp_A = document.getElementById('player-pp-A');
-const e_player_dn_A = document.getElementById('player-dn-A');
-const e_ctrl_score_A_score = document.getElementById('ctrl-score-A-score');
-const e_ctrl_score_A_score_bf = document.getElementById('ctrl-score-A-special-bf');
-const e_ctrl_score_A_score_rf = document.getElementById('ctrl-score-A-special-rf');
-const e_ctrl_score_A_score_gb = document.getElementById('ctrl-score-A-special-gb');
-const e_ctrl_score_A_point = document.getElementById('ctrl-score-A-point');
-const e_ctrl_score_A_break_input = document.getElementById('ctrl-score-A-break-input');
-const e_ctrl_score_A_break_dry = document.getElementById('ctrl-score-A-break-dry');
-const e_ctrl_score_A_break_in = document.getElementById('ctrl-score-A-break-in');
-const e_ctrl_score_A_break_scr = document.getElementById('ctrl-score-A-break-scr');
-const e_ctrl_score_A_break_foul = document.getElementById('ctrl-score-A-break-foul');
 const e_ctrl_A = 
 {
-    e_card: e_card_A,
-    e_player_pp: e_player_pp_A,
-    e_player_dn: e_player_dn_A,
-    e_ctrl_score: e_ctrl_score_A_score,
-    e_ctrl_score_bf: e_ctrl_score_A_score_bf,
-    e_ctrl_score_rf: e_ctrl_score_A_score_rf,
-    e_ctrl_score_gb: e_ctrl_score_A_score_gb,
-    e_ctrl_score_point: e_ctrl_score_A_point,
-    e_ctrl_score_break_input: e_ctrl_score_A_break_input,
-    e_ctrl_score_break_dry: e_ctrl_score_A_break_dry,
-    e_ctrl_score_break_in: e_ctrl_score_A_break_in,
-    e_ctrl_score_break_scr: e_ctrl_score_A_break_scr,
-    e_ctrl_score_break_foul: e_ctrl_score_A_break_foul
+    e_card: gid('ctrl-score-A'),
+    e_player_pp: gid('player-pp-A'),
+    e_player_dn: gid('player-dn-A'),
+    e_ctrl_score: gid('ctrl-score-A-score'),
+    e_ctrl_score_bf: gid('ctrl-score-A-special-bf'),
+    e_ctrl_score_rf: gid('ctrl-score-A-special-rf'),
+    e_ctrl_score_gb: gid('ctrl-score-A-special-gb'),
+    e_ctrl_score_point: gid('ctrl-score-A-point'),
+    e_ctrl_score_break_input: gid('ctrl-score-A-break-input'),
+    e_ctrl_score_break_dry: gid('ctrl-score-A-break-dry'),
+    e_ctrl_score_break_in: gid('ctrl-score-A-break-in'),
+    e_ctrl_score_break_scr: gid('ctrl-score-A-break-scr'),
+    e_ctrl_score_break_foul: gid('ctrl-score-A-break-foul')
 };
+
+function gid (id)
+{
+    return document.getElementById(id);
+}
 
 var player_H = null;
 var player_A = null;
@@ -68,7 +46,7 @@ var _match = null;
 
 export async function Initialize_MatchUI(match)
 {    
-    console.log("Initializing UI");
+    //console.log("Initializing UI");
 
     //Populate Player Profiles
     player_H = await PlayerProfile(match.players.h);
@@ -170,7 +148,7 @@ export async function UpdateMatchUI (match)
 
 async function PopulateUI (match)
 {
-    console.log("Populating UI");
+    //console.log("Populating UI");
 
     //Players
     if (match.players.h.username != player_H.username)
@@ -254,8 +232,8 @@ function GetBreakSide (match)
             return match.settings.lagWinner;
         }
 
-        const lastFrame = history[history.length - 1];
-        const winner = lastFrame['winner-player'];
+        const lastFrame = history[history.length - 2];
+        const winner = lastFrame ? lastFrame['winner-player'] : match.settings.lagWinner;
         if (!winner)
         {
             return match.settings.lagWinner;
@@ -296,6 +274,9 @@ function UpdateScorecard (match)
     PopulateScorecard(match, mode, player_H, player_A);
 }
 
+import { UpdateFrame } from './match_Controls.js';
+import { _liveFrameIndex } from './match_Controls.js';
+
 function PopulateScorecard (match, mode, playerH, playerA)
 {
 
@@ -316,10 +297,24 @@ function PopulateScorecard (match, mode, playerH, playerA)
         const e_td = document.createElement('td');
         e_td.className = 'scorecard-frame';
         e_td.innerText = "F" + (index + 1);
+
+        if (index == _liveFrameIndex() - 1)
+        {
+            const e_button_deleteFrame = document.createElement('button');
+            e_button_deleteFrame.innerHTML = '<i class="bi bi-x"></i>';
+            e_button_deleteFrame.className = 'btn-delete-frame';
+            e_button_deleteFrame.addEventListener('click', () =>
+            {
+                // Handle delete frame action
+                UpdateFrame(index, null);
+            });
+            e_td.appendChild(e_button_deleteFrame);
+        }
+
         return e_td;
     }
 
-    const e_cell_score = (value) =>
+    const e_cell_score = (value, frameIndex) =>
     {
         const e_td = document.createElement('td');
         const e_select = document.createElement('select');
@@ -342,6 +337,9 @@ function PopulateScorecard (match, mode, playerH, playerA)
                 } else if (value == "C" && e_opt.value == "R/F")
                 {
                     e_opt.selected = true;
+                } else if (value == "G" && e_opt.value == "GB")
+                {
+                    e_opt.selected = true;
                 }
             }
 
@@ -354,16 +352,65 @@ function PopulateScorecard (match, mode, playerH, playerA)
             }
             e_select.appendChild(e_opt);
         }
+
+        e_select.addEventListener('change', async () =>
+        {
+            var newValue = e_select.value;
+            switch (newValue)
+            {
+                case '0':
+                    newValue = 0;
+                    break;
+                case '1':
+                    newValue = 1;
+                    break;
+                case 'B/F':
+                    newValue = "A";
+                    break;
+                case 'R/F':
+                    newValue = "C";
+                    break;
+                case 'GB':
+                    newValue = "G";
+                    break;
+            }
+
+            var frameData = match.history[frameIndex];
+            frameData['winner-result'] = newValue;
+
+            if (newValue == 0)
+            {
+                frameData['winner-player'] = frameData['winner-player'] == 'h' ? 'a' : 'h';
+                frameData['winner-result'] = 1;
+            }
+
+            if (value == 0 && newValue != 0)
+            {
+                frameData['winner-player'] = frameData['winner-player'] == 'h' ? 'a' : 'h';
+            }
+
+            UpdateFrame(frameIndex, frameData);
+        });
+
         e_td.appendChild(e_select);
         return e_td;
     };
 
-    const e_cell_break = (value) =>
+    const e_cell_break = (value, frameIndex, breakPlayer) =>
     {
         const e_td = document.createElement('td');
         const e_select = document.createElement('select');
         e_select.className = 'form-select';
         e_select.setAttribute('aria-label', 'Frame Break Selection');
+
+        if (breakPlayer == 'h')
+        {
+            e_select.classList.add('color-h');
+        } else if (breakPlayer == 'a')
+        {
+            e_select.classList.add('color-a');
+        }
+
         const options = ['', 'dry', 'in', 'scratch', 'foul'];
         for (const opt of options)
         {
@@ -382,6 +429,22 @@ function PopulateScorecard (match, mode, playerH, playerA)
             }
             e_select.appendChild(e_opt);
         }
+
+        e_select.addEventListener('change', async () =>
+        {
+            var newValue = e_select.value;
+            if (newValue == '')
+            {
+                newValue = null;
+            } else if (newValue == 'scratch')
+            {
+                newValue = 'scr';
+            }
+            var frameData = match.history[frameIndex];
+            frameData['break-event'] = newValue;
+            UpdateFrame(frameIndex, frameData);
+        });
+
         e_td.appendChild(e_select);
         return e_td;
     };
@@ -475,7 +538,7 @@ function PopulateScorecard (match, mode, playerH, playerA)
             e_frameRow.appendChild(e_cell_frame(i));            
 
             const breakEvent = frame['break-event'] ? frame['break-event'] : null;
-            const e_break = e_cell_break(breakEvent);
+            const e_break = e_cell_break(breakEvent, i, frame['break-player']);
             e_frameRow.appendChild(e_break);
 
             var score_H = 0;
@@ -489,8 +552,8 @@ function PopulateScorecard (match, mode, playerH, playerA)
                 score_A = frame['winner-result'];
                 score_H = 0;
             }
-            const e_score_H = e_cell_score(score_H);
-            const e_score_A = e_cell_score(score_A);
+            const e_score_H = e_cell_score(score_H, i);
+            const e_score_A = e_cell_score(score_A, i);
             e_frameRow.appendChild(e_score_H);
             e_frameRow.appendChild(e_score_A);
 
@@ -548,6 +611,10 @@ function PopulateScorecard (match, mode, playerH, playerA)
         {
             const frame = history[i];
 
+            const breakEvent = frame['break-event'] ? frame['break-event'] : null;
+            const e_break = e_cell_break(breakEvent, i, frame['break-player']);
+            e_breakRow.appendChild(e_break);
+
             var score_H = 0;
             var score_A = 0;
             if (frame['winner-player'] == 'h')
@@ -559,15 +626,11 @@ function PopulateScorecard (match, mode, playerH, playerA)
                 score_A = frame['winner-result'];
                 score_H = 0;
             }
-            const e_score_H = e_cell_score(score_H);
+            const e_score_H = e_cell_score(score_H, i);
             e_playerHRow.appendChild(e_score_H);
 
-            const e_score_A = e_cell_score(score_A);
+            const e_score_A = e_cell_score(score_A, i);
             e_playerARow.appendChild(e_score_A);
-
-            const breakEvent = frame['break-event'] ? frame['break-event'] : null;
-            const e_break = e_cell_break(breakEvent);
-            e_breakRow.appendChild(e_break);
 
             const duration = frame.duration ? frame.duration : null;
             const e_duration = e_cell_duration(duration);
@@ -675,8 +738,8 @@ function PopulateMatchSummary(match, playerH, playerA)
         const ev = evRaw === 'scratch' ? 'scr' : evRaw;
         if ((ev === 'dry' || ev === 'in' || ev === 'scr' || ev === 'foul') && (breaker === 'h' || breaker === 'a')) {
             breaks[breaker][ev]++;
-            breaks[breaker].total++;
         }
+        breaks[breaker].total++;
     }
     matchSummary.breaks = breaks;
 

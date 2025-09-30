@@ -1,15 +1,15 @@
 function animateBackground() {
     const body = document.body;
-    const lastStop = 250; // Fixed value for last stop
     const interpolationFactor = 0.005; // Interpolation factor for smooth animation
 
     let circleAtX = 0; // Initial value for circle-at x
-    let firstStop = -25; // Initial value for first stop
+    let firstStop = -50; // Initial value for first stop
     let secondStop = 40; // Initial value for second stop
 
     let targetCircleAtX = 50; // Target value for circle-at x
     let targetFirstStop = 0; // Target value for first stop
-    let targetSecondStop = 80; // Target value for second stop
+    let targetSecondStop = 50; // Target value for second stop
+    const lastStop = 250; // Fixed value for last stop
 
     function getRandomTarget(min, max) {
         return Math.random() * (max - min) + min;

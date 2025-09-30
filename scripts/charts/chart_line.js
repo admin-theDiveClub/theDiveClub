@@ -53,7 +53,7 @@ function buildSeriesFromHistory(history, mode = 'default') {
 
     let t = 0, h = 0, a = 0;
     for (const f of history) {
-        t += f.duration || 0;
+        t += f.duration || 1;
         const winner = f['winner-player'];
         if (winner === 'h') h++; else if (winner === 'a') a++;
         frameWinsH.push(winner === 'h' ? 1 : 0);

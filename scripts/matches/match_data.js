@@ -35,6 +35,8 @@ function Initialize ()
 import { Initialize_MatchUI } from '../matches/match_UI.js';
 import { UpdateMatchUI } from '../matches/match_UI.js';
 
+import { UpdateMatchControls } from '../matches/match_Controls.js';
+
 async function Start_MatchData ()
 {
     const matchID = _matchID();
@@ -50,9 +52,10 @@ async function Start_MatchData ()
             //console.log("Approved List: ", approvedList);
 
             const userID = await _userID();
+            const username = await _username();
             //console.log("User ID: ", userID);
 
-            if (userID && approvedList.includes(userID))
+            if (approvedList.includes(userID) || approvedList.includes(username))
             {
                 match = matchRef;
                 console.log("User Approved to Edit Match:", match);
@@ -76,18 +79,24 @@ async function Start_MatchData ()
 
 async function _userID ()
 {
-    var session = JSON.parse(localStorage.getItem('session')) || JSON.parse(sessionStorage.getItem('session'));
-    if (session && session.user && session.user.email)
+    const s_userProfile = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile');
+    const userProfile = s_userProfile ? JSON.parse(s_userProfile) : null;
+    if (userProfile && userProfile.id)
     {
-        const response = await supabase.from('tbl_players').select('id').eq('username', session.user.email).single();
-        if (response.data && response.data.id)
-        {
-            const playerID = response.data.id;
-            return playerID;
-        } else 
-        {
-            return null;
-        }
+        return userProfile.id;
+    } else 
+    {
+        return null;
+    }
+}
+
+async function _username ()
+{
+    const s_userProfile = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile');
+    const userProfile = s_userProfile ? JSON.parse(s_userProfile) : null;
+    if (userProfile && userProfile.username)
+    {
+        return userProfile.username;
     } else 
     {
         return null;
@@ -129,13 +138,13 @@ async function _match (matchID)
 
 async function _matchApprovedList (match)
 {
-    var approvedListIDs = [];
+    var approvedList = [];
     if (match.competitions && match.competitions.leagueID)
     {
         const response = await supabase.from('tbl_leagues').select('coordinatorID').eq('id', match.competitions.leagueID).single();
         if (response.data && response.data.coordinatorID)
         {
-            approvedListIDs.push(response.data.coordinatorID);
+            approvedList.push(response.data.coordinatorID);
         }
     }
 
@@ -144,7 +153,7 @@ async function _matchApprovedList (match)
         const response = await supabase.from('tbl_tournaments').select('coordinatorID').eq('id', match.competitions.tournamentID).single();
         if (response.data && response.data.coordinatorID)
         {
-            approvedListIDs.push(response.data.coordinatorID);
+            approvedList.push(response.data.coordinatorID);
         }
     }
 
@@ -152,7 +161,12 @@ async function _matchApprovedList (match)
     {
         if (match.players.h.id)
         {
-            approvedListIDs.push(match.players.h.id);
+            approvedList.push(match.players.h.id);
+        }
+
+        if (match.players.h.username)
+        {
+            approvedList.push(match.players.h.username);
         }
     }
 
@@ -160,11 +174,16 @@ async function _matchApprovedList (match)
     {
         if (match.players.a.id)
         {
-            approvedListIDs.push(match.players.a.id);
+            approvedList.push(match.players.a.id);
+        }
+
+        if (match.players.a.username)
+        {
+            approvedList.push(match.players.a.username);
         }
     }
 
-    return approvedListIDs;
+    return approvedList;
 }
 
 async function SubscribeToUpdates (_matchID)
@@ -188,4 +207,5 @@ var match = null;
 function OnPayloadReceived (payload)
 {
     UpdateMatchUI(payload);
+    UpdateMatchControls(payload);
 }

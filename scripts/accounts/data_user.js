@@ -79,7 +79,7 @@ async function _session ()
         const j_session = JSON.parse(s_session);
         if (j_session)
         {
-            const response = await supabase.auth.refreshSession( { refresh_token: j_session.refresh_token } );
+            const response = await supabase.auth.refreshSession();
             session = response.data && response.data.session ? response.data.session : null;
             return session;
         }
