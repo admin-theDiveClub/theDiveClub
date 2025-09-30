@@ -37,7 +37,7 @@ export function UpdateMatchControls (_match)
 
 export function _liveFrameIndex ()
 {
-    const liveFrameIndex = match.history.length - 1 > 0 ? match.history.length - 1 : 0;
+    const liveFrameIndex = match.history.length - 1;
     return liveFrameIndex;
 }
 
@@ -195,7 +195,7 @@ function _newFrameBreakPlayer (lagType, lagWinner, history)
     var breakPlayer = null;
     if (lagType === "winner")
     {
-        const completedFrameIndex = _liveFrameIndex() - 1;
+        const completedFrameIndex = _liveFrameIndex();
         const completedFrame = history[completedFrameIndex];
         console.log("Completed Frame", completedFrame);
         if (completedFrame && completedFrame["winner-player"])
