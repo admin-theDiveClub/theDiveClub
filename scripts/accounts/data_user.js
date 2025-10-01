@@ -141,26 +141,33 @@ async function GetUserProfile (session)
             profile.nickname = dbProfile.nickname;
             profile.contact = dbProfile.contact;
             profile.displayName = dbProfile.nickname || dbProfile.name || profile.displayName || dbProfile.username || "Guest";
+            profile.pp = dbProfile.pp || profile.pp || null;
 
-
-            const r_pic = await supabase.storage.from('bucket-profile-pics').getPublicUrl(profile.id);
-            if (r_pic.data.publicUrl)
+            if (!dbProfile.pp)
             {
-                try 
+                const r_pic = await supabase.storage.from('bucket-profile-pics').getPublicUrl(profile.id);
+                if (r_pic.data.publicUrl)
                 {
-                    const img = new Image();
-                    await new Promise((resolve, reject) => 
+                    try 
                     {
-                        img.onload = () => resolve();
-                        img.onerror = () => reject(new Error('Failed to load profile picture'));
-                        img.src = r_pic.data.publicUrl;
-                    });
-                    profile.pp = r_pic.data.publicUrl;
-                } catch (error)
-                {
-                    console.log("Error loading profile picture:", error);
+                        const img = new Image();
+                        await new Promise((resolve, reject) => 
+                        {
+                            img.onload = () => resolve();
+                            img.onerror = () => reject(new Error('Failed to load profile picture from DB storage.'));
+                            img.src = r_pic.data.publicUrl;
+                        });
+                        profile.pp = r_pic.data.publicUrl;
+                    } catch (error)
+                    {
+                        console.log("Error loading profile picture from DB storage:", error);
+                    }
                 }
+
+                const updateResponse = await supabase.from('tbl_players').update({ pp: profile.pp }).eq('id', profile.id).select().single();
+                console.log("Updated profile picture:", updateResponse);
             }
+            
 
         } else 
         {
@@ -171,7 +178,8 @@ async function GetUserProfile (session)
                 name: profile.name,
                 surname: profile.surname,
                 nickname: profile.nickname,
-                contact: profile.contact
+                contact: profile.contact,
+                pp: profile.pp
             }
             const insertResponse = await supabase.from('tbl_players').insert([newDBProfile]).select().single();
             console.log("Inserted new DB profile:", insertResponse);

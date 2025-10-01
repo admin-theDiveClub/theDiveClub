@@ -61,19 +61,9 @@ async function PopulateControlCardPlayerInfo (e, player)
     e.e_player_dn.innerText = player.displayName;
     e.e_player_pp.src = '../resources/icons/icon_player.svg';
 
-    if (player.id) 
+    if (player.pp) 
     {
-        const r = await supabase.storage.from('bucket-profile-pics').getPublicUrl(player.id);
-        if (r && r.data && r.data.publicUrl && !r.data.publicUrl.endsWith('null')) 
-        {
-            const imgEl = e.e_player_pp;
-            if (imgEl) 
-            {
-                const img = new Image();
-                img.onload = () => { imgEl.src = r.data.publicUrl; };
-                img.src = r.data.publicUrl;
-            }
-        }
+        e.e_player_pp.src = player.pp;
     }
 }
 
@@ -96,7 +86,7 @@ async function PlayerProfile (player)
     if (!playerProfile || playerProfile.error)
     {
         //console.log("Error Getting Player Profile:", playerProfile.error.message);
-        return {username: player.username, displayName: player.username, name: username};
+        return {username: player.username, displayName: player.username, name: player.username};
     } else 
     {
         const p = playerProfile.data;
@@ -119,6 +109,7 @@ async function PlayerProfile (player)
             displayName: displayName,
             name: p.name,
             surname: p.surname ? p.surname : null,
+            pp: p.pp ? p.pp : null,
         }
 
         return playerData;
@@ -740,20 +731,24 @@ function PopulateMatchSummary(match, playerH, playerA)
     const lagWinner = settings.lagWinner;
     const lagType = settings.lagType;
 
-    let breaker = lagWinner;
-    for (let i = 0; i < history.length; i++) {
-        if (lagType === 'alternate') {
-            breaker = (i % 2 === 0) ? lagWinner : (lagWinner === 'h' ? 'a' : 'h');
-        } else if (lagType === 'winner') {
-            breaker = (i === 0) ? lagWinner : (history[i - 1]['winner-player'] || history[i - 1].winner || breaker);
+    if (lagWinner && lagType)
+    {
+        let breaker = lagWinner;
+        for (let i = 0; i < history.length; i++) {
+            if (lagType === 'alternate') {
+                breaker = (i % 2 === 0) ? lagWinner : (lagWinner === 'h' ? 'a' : 'h');
+            } else if (lagType === 'winner') {
+                breaker = (i === 0) ? lagWinner : (history[i - 1]['winner-player'] || history[i - 1].winner || breaker);
+            }
+            const evRaw = history[i]['break-event'];
+            const ev = evRaw === 'scratch' ? 'scr' : evRaw;
+            if ((ev === 'dry' || ev === 'in' || ev === 'scr' || ev === 'foul') && (breaker === 'h' || breaker === 'a')) {
+                breaks[breaker][ev]++;
+            }
+            breaks[breaker].total++;
         }
-        const evRaw = history[i]['break-event'];
-        const ev = evRaw === 'scratch' ? 'scr' : evRaw;
-        if ((ev === 'dry' || ev === 'in' || ev === 'scr' || ev === 'foul') && (breaker === 'h' || breaker === 'a')) {
-            breaks[breaker][ev]++;
-        }
-        breaks[breaker].total++;
     }
+    
     matchSummary.breaks = breaks;
 
     // helpers
