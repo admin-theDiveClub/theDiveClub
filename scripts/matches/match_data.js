@@ -1,17 +1,3 @@
-/*
-Get User from session and match to match players.
-    If no user in session and 
-    user is not league or tournament coordinator, 
-        redirect to scoreboard view.
-
-Get Match ID from URL.
-    Get Match Data from supabase using Match ID and subscribe to live updates.
-
-Setup Update call with log information.
-
-
-*/
-
 Initialize();
 function Initialize ()
 {

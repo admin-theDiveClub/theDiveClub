@@ -91,6 +91,7 @@ a:hover
 {
     font-family: 'Font_TDC';
     text-align: center;
+text-align-last: center;
     margin: 1.2em;
     font-size: 2em;
 }
