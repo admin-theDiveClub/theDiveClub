@@ -42,4 +42,4 @@ function animateBackground() {
 }
 
 // Call the function to start the animation
-animateBackground();
+//animateBackground();
