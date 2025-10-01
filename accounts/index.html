@@ -90,15 +90,15 @@
                         <div class="card-title" style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#leaguesCardBody" aria-expanded="false" aria-controls="leaguesCardBody">
                             <div class="d-flex justify-content-between align-items-center">
                                 <span>Leagues</span>
-                                <span>(0)</span>
+                                <span id="leagues-count">(0)</span>
                             </div>
                         </div>
                         <div id="leaguesCardBody" class="card-body collapse">
-                            <div class="component-league-mini">
+                            <a class="component-league-mini" href="#">
                                 <img src="../resources/icon_theDiveClub_alpha.svg"></img>
                                 <p>League Name</p>
                                 <p>0/000</p>
-                            </div>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -107,7 +107,7 @@
                         <div class="card-title" style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#tournamentsCardBody" aria-expanded="false" aria-controls="tournamentsCardBody">
                             <div class="d-flex justify-content-between align-items-center">
                                 <span>Tournaments</span>
-                                <span>(0)</span>
+                                <span id="tournaments-count">(0)</span>
                             </div>
                         </div>
                         <div id="tournamentsCardBody" class="card-body collapse" style="overflow-x: auto;">
@@ -162,9 +162,9 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>0</td>
-                                        <td>0</td>
-                                        <td>0.0%</td>
+                                        <td id="ranked-mp">0</td>
+                                        <td id="ranked-mw">0</td>
+                                        <td id="ranked-mp-percentage">0.0%</td>
                                     </tr>
                                 </tbody>
                                 <thead>
@@ -176,9 +176,9 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>0</td>
-                                        <td>0</td>
-                                        <td>0.0%</td>
+                                        <td id="ranked-fp-value">0</td>
+                                        <td id="ranked-fw-value">0</td>
+                                        <td id="ranked-fp-percentage-value">0.0%</td>
                                     </tr>
                                 </tbody>
                                 <thead>
@@ -190,9 +190,9 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>0'00"</td>
-                                        <td>0</td>
-                                        <td>0</td>
+                                        <td id="ranked-tavg">0'00"</td>
+                                        <td id="ranked-b-in">0</td>
+                                        <td id="ranked-bf">0</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -218,9 +218,9 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>0</td>
-                                        <td>0</td>
-                                        <td>0.0%</td>
+                                        <td id="unranked-mp">0</td>
+                                        <td id="unranked-mw">0</td>
+                                        <td id="unranked-mp-percentage">0.0%</td>
                                     </tr>
                                 </tbody>
                                 <thead>
@@ -232,9 +232,9 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>0</td>
-                                        <td>0</td>
-                                        <td>0.0%</td>
+                                        <td id="unranked-fp-value">0</td>
+                                        <td id="unranked-fw-value">0</td>
+                                        <td id="unranked-fp-percentage-value">0.0%</td>
                                     </tr>
                                 </tbody>
                                 <thead>
@@ -246,9 +246,9 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>0'00"</td>
-                                        <td>0</td>
-                                        <td>0</td>
+                                        <td id="unranked-tavg">0'00"</td>
+                                        <td id="unranked-b-in">0</td>
+                                        <td id="unranked-bf">0</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -335,7 +335,8 @@ text-align-last: center;
             }
 
             .component-league-mini
-            {                
+            {             
+                display: inline-block;   
                 width: 20%;
                 border-radius: 1cap;
                 padding: 0.5cap;
@@ -357,7 +358,7 @@ text-align-last: center;
             .component-league-mini p
             {
                 text-align: center;
-text-align-last: center;
+                text-align-last: center;
             }
 
         </style>
