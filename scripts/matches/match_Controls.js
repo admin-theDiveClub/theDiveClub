@@ -32,7 +32,8 @@ var match = null;
 
 export function UpdateMatchControls (_match)
 {
-    match = _match;
+    match = _match;    
+    ResetBreakButtons();
 }
 
 export function _liveFrameIndex ()
@@ -56,6 +57,8 @@ function GetLiveFrame ()
     }
     return liveFrame;
 }
+
+import { OnPayloadReceived } from "./match_data.js";
 
 export async function UpdateFrame (frameIndex, frameData)
 {
@@ -83,6 +86,9 @@ export async function UpdateFrame (frameIndex, frameData)
     {
         alert("Error Updating Match Frame: " + response.error.message);
         console.error("Error Updating Match Frame: ", response.error);
+    } else 
+    {
+        OnPayloadReceived(match);
     }
 }
 
@@ -222,6 +228,45 @@ function _newFrameBreakPlayer (lagType, lagWinner, history)
 
 WireLiveFrameControls ();
 
+function ResetBreakButtons ()
+{
+    for (let i = 4; i <= 7; i++)
+    {
+        if (buttons_liveFrame[i])
+        {
+            buttons_liveFrame[i].classList.remove('active');
+        }
+    }
+
+    for (let i = 12; i <= 15; i++)
+    {
+        if (buttons_liveFrame[i])
+        {
+            buttons_liveFrame[i].classList.remove('active');
+        }
+    }
+
+    const liveFrame = GetLiveFrame();
+    if (liveFrame && liveFrame["break-event"])
+    {
+        switch (liveFrame["break-event"])
+        {
+            case "dry":
+                buttons_liveFrame[liveFrame["break-player"] === "h" ? 4 : 12].classList.add('active');
+                break;
+            case "in":
+                buttons_liveFrame[liveFrame["break-player"] === "h" ? 5 : 13].classList.add('active');
+                break;
+            case "scr":
+                buttons_liveFrame[liveFrame["break-player"] === "h" ? 6 : 14].classList.add('active');
+                break;
+            case "foul":
+                buttons_liveFrame[liveFrame["break-player"] === "h" ? 7 : 15].classList.add('active');
+                break;
+        }
+    }
+}
+
 function WireLiveFrameControls ()
 {
     var allButtonsPresent = true;
@@ -293,6 +338,8 @@ function WireLiveFrameControls ()
             liveFrame["break-event"] = "dry";
 
             UpdateFrame(liveFrameIndex, liveFrame);
+            ResetBreakButtons();
+            buttons_liveFrame[4].classList.add('active');
         });
 
         buttons_liveFrame[5].addEventListener('click', () =>
@@ -305,6 +352,8 @@ function WireLiveFrameControls ()
             liveFrame["break-event"] = "in";
 
             UpdateFrame(liveFrameIndex, liveFrame);
+            ResetBreakButtons();
+            buttons_liveFrame[5].classList.add('active');
         });
 
         buttons_liveFrame[6].addEventListener('click', () =>
@@ -317,6 +366,8 @@ function WireLiveFrameControls ()
             liveFrame["break-event"] = "scr";
 
             UpdateFrame(liveFrameIndex, liveFrame);
+            ResetBreakButtons();
+            buttons_liveFrame[6].classList.add('active');
         });
 
         buttons_liveFrame[7].addEventListener('click', () =>
@@ -329,6 +380,8 @@ function WireLiveFrameControls ()
             liveFrame["break-event"] = "foul";
 
             UpdateFrame(liveFrameIndex, liveFrame);
+            ResetBreakButtons();
+            buttons_liveFrame[7].classList.add('active');   
         });
 
 
@@ -394,6 +447,8 @@ function WireLiveFrameControls ()
             liveFrame["break-event"] = "dry";
 
             UpdateFrame(liveFrameIndex, liveFrame);
+            ResetBreakButtons();
+            buttons_liveFrame[12].classList.add('active');
         });
 
         buttons_liveFrame[13].addEventListener('click', () =>
@@ -406,6 +461,8 @@ function WireLiveFrameControls ()
             liveFrame["break-event"] = "in";
 
             UpdateFrame(liveFrameIndex, liveFrame);
+            ResetBreakButtons();
+            buttons_liveFrame[13].classList.add('active');
         });
 
         buttons_liveFrame[14].addEventListener('click', () =>
@@ -418,6 +475,8 @@ function WireLiveFrameControls ()
             liveFrame["break-event"] = "scr";
 
             UpdateFrame(liveFrameIndex, liveFrame);
+            ResetBreakButtons();
+            buttons_liveFrame[14].classList.add('active');
         });
 
         buttons_liveFrame[15].addEventListener('click', () =>
@@ -430,6 +489,8 @@ function WireLiveFrameControls ()
             liveFrame["break-event"] = "foul";
 
             UpdateFrame(liveFrameIndex, liveFrame);
+            ResetBreakButtons();
+            buttons_liveFrame[15].classList.add('active');
         });
     } else 
     {

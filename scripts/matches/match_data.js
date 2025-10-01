@@ -204,7 +204,7 @@ async function SubscribeToUpdates (_matchID)
 
 var match = null;
 
-function OnPayloadReceived (payload)
+export function OnPayloadReceived (payload)
 {
     UpdateMatchUI(payload);
     UpdateMatchControls(payload);
