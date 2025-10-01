@@ -53,7 +53,7 @@ function buildSeriesFromHistory(history, mode = 'default') {
 
     let t = 0, h = 0, a = 0;
     for (const f of history) {
-        t += f.duration || 1;
+        t += f.duration || 60;
         const winner = f['winner-player'];
         if (winner === 'h') h++; else if (winner === 'a') a++;
         frameWinsH.push(winner === 'h' ? 1 : 0);
@@ -95,11 +95,13 @@ function createChartConfig({ pointsH, pointsA, scoreH, scoreA, pColH, pColA, pla
     const dsPointsH = isVertical ? pointsH.map(p => ({ x: p.y, y: p.x })) : pointsH;
     const dsPointsA = isVertical ? pointsA.map(p => ({ x: p.y, y: p.x })) : pointsA;
 
+    const stepSizeForTime = 1;
+
     const xScaleForTime = {
         type: 'linear',
         title: { display: false, text: 'Time (min)' },
         beginAtZero: true,
-        ticks: { display: true, padding: 6, stepSize: 5 },
+        ticks: { display: true, padding: 6, stepSize: stepSizeForTime },
         grid: { drawBorder: false, offset: true }
     };
 
@@ -116,7 +118,7 @@ function createChartConfig({ pointsH, pointsA, scoreH, scoreA, pColH, pColA, pla
         type: 'linear',
         title: { display: false, text: 'Time (min)' },
         beginAtZero: true,
-        ticks: { display: true, padding: 6, stepSize: 5 },
+        ticks: { display: true, padding: 6, stepSize: stepSizeForTime },
         grid: { drawBorder: false, offset: true }
     };
 

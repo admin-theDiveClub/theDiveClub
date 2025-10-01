@@ -96,7 +96,7 @@ async function PlayerProfile (player)
     if (!playerProfile || playerProfile.error)
     {
         //console.log("Error Getting Player Profile:", playerProfile.error.message);
-        return {username: player.username, displayName: player.username};
+        return {username: player.username, displayName: player.username, name: username};
     } else 
     {
         const p = playerProfile.data;
@@ -699,8 +699,8 @@ function PopulateMatchSummary(match, playerH, playerA)
 {
     var matchSummary =
     {
-        playerH: playerH.displayName,
-        playerA: playerA.displayName,
+        playerH: playerH.name ? playerH.name : playerH.displayName,
+        playerA: playerA.name ? playerA.name : playerA.displayName,
         scoreH: match.results && match.results.h ? match.results.h.fw : 0,
         scoreA: match.results && match.results.a ? match.results.a.fw : 0,
         bfH: match.results && match.results.h ? match.results.h.bf : 0,
