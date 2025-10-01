@@ -188,6 +188,12 @@ text-align-last: center;
     box-shadow:  0px 0px 8px 2px var(--color-primary-00);    
 }
 
+button
+{
+    text-align: center;
+    text-align-last: center;
+}
+
 .btn-outline-primary
 {
     border-color: var(--color-primary-00);
