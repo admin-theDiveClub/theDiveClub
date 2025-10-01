@@ -488,4 +488,7 @@ function PopulateStats (stats_all)
     document.getElementById("unranked-tavg").textContent = `${mm}"${ss}"`;
     document.getElementById("unranked-b-in").textContent = stats.b_in || 0;
     document.getElementById("unranked-bf").textContent = stats.bf || 0;
+
+    document.getElementById("ranked-percentage").textContent = stats_all.stats_ranked.fwr ? `${stats_all.stats_ranked.fwr}%` : "0.0%";
+    document.getElementById("unranked-percentage").textContent = stats_all.stats_social.fwr ? `${stats_all.stats_social.fwr}%` : "0.0%";
 }
