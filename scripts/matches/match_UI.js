@@ -270,7 +270,7 @@ function UpdateBreakIndicators(e_ctrl, breaking, advancedBreaking)
 
 function UpdateScorecard (match)
 {
-    const mode = window.innerWidth < 768 ? 'vertical' : 'horizontal';
+    const mode = window.innerWidth < window.innerHeight ? 'vertical' : 'horizontal';
     PopulateScorecard(match, mode, player_H, player_A);
 }
 
@@ -309,6 +309,9 @@ function PopulateScorecard (match, mode, playerH, playerA)
                 UpdateFrame(index, null);
             });
             e_td.appendChild(e_button_deleteFrame);
+        } else if (index == _liveFrameIndex())
+        {
+            e_td.classList.add('scorecard-frame-live');
         }
 
         return e_td;
@@ -491,6 +494,10 @@ function PopulateScorecard (match, mode, playerH, playerA)
         e_cell_header('Duration', null)
     ];
 
+
+    headerCells[1].classList.add('scorecard-player-name');
+    headerCells[2].classList.add('scorecard-player-name');
+
     const e_table = e_scorecardContainer.querySelector('table');
     e_table.innerHTML = '';
 
@@ -570,8 +577,10 @@ function PopulateScorecard (match, mode, playerH, playerA)
         const e_totalsB = e_cell_header('', null);
         e_totalsRow.appendChild(e_totalsB);
         const e_totalsH = e_cell_header(totals.fw_h, 'var(--color-primary-00)');
+        e_totalsH.classList.add('scorecard-totals');
         e_totalsRow.appendChild(e_totalsH);
         const e_totalsA = e_cell_header(totals.fw_a, 'var(--color-secondary-00)');
+        e_totalsA.classList.add('scorecard-totals');
         e_totalsRow.appendChild(e_totalsA);
         const e_totalsD = e_cell_duration(totals.duration);
         e_totalsRow.appendChild(e_totalsD);
@@ -588,10 +597,12 @@ function PopulateScorecard (match, mode, playerH, playerA)
 
         const e_playerHRow = document.createElement('tr');
         const e_playerHCell = e_cell_header(playerH.name ? playerH.name : playerH.username, 'var(--color-primary-00)');
+        e_playerHCell.classList.add('scorecard-player-name');
         e_playerHRow.appendChild(e_playerHCell);
 
         const e_playerARow = document.createElement('tr');
         const e_playerACell = e_cell_header(playerA.name ? playerA.name : playerA.username, 'var(--color-secondary-00)');
+        e_playerACell.classList.add('scorecard-player-name');
         e_playerARow.appendChild(e_playerACell);
 
         const e_breakRow = document.createElement('tr');
@@ -642,8 +653,10 @@ function PopulateScorecard (match, mode, playerH, playerA)
         const e_totalsB = e_cell_header('', null);
         e_breakRow.appendChild(e_totalsB);
         const e_totalsScoreH = e_cell_header(totals.fw_h, 'var(--color-primary-00)');
+        e_totalsScoreH.classList.add('scorecard-totals');
         e_playerHRow.appendChild(e_totalsScoreH);
         const e_totalsScoreA = e_cell_header(totals.fw_a, 'var(--color-secondary-00)');
+        e_totalsScoreA.classList.add('scorecard-totals');
         e_playerARow.appendChild(e_totalsScoreA);
         const e_totalsD = e_cell_duration(totals.duration);
         e_durationRow.appendChild(e_totalsD);

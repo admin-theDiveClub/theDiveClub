@@ -828,6 +828,7 @@ text-align-last: center;
             .form-select.score-win
             {
                 color: var(--color-accent-0) !important;
+                box-shadow: inset 0px 0px 12px 0px var(--color-accent-0);
             }
 
             .form-select.score-loss
@@ -873,11 +874,11 @@ text-align-last: center;
                 background-color: transparent;
                 color: var(--color-base-10);
                 border: 0.1px solid red;
-                margin: 0.5rem 1rem;
+                margin: 0rem 0.25rem;
                 border-radius: 0.5rem;
-                padding: 0.5rem;
+                padding: 0rem;
                 text-align: center;
-text-align-last: center;
+                text-align-last: center;
 
                 font-family: 'Font_TDC';
                 font-size: 2rem;
@@ -888,17 +889,42 @@ text-align-last: center;
             .color-h
             {
                 color: var(--color-primary-00);
+                box-shadow: inset 0px 0px 12px 0px var(--color-primary-00);
             }
 
             .color-a
             {
                 color: var(--color-secondary-00);
+                box-shadow: inset 0px 0px 12px 0px var(--color-secondary-00);
             }
 
             .btn-break.active
             {
                 color: var(--color-accent-0);
                 box-shadow: inset 0px 0px 12px 0px var(--color-accent-0);
+            }
+
+            .scorecard-frame-live
+            {
+                box-shadow: inset 0px 0px 12px 0px var(--color-highlight-0);
+                border-radius: 0.5rem;
+            }
+
+            .scorecard-totals
+            {
+                font-size: 2.5rem;
+                font-family: 'Font_TDC';
+            }
+
+            .scorecard-player-name
+            {
+                font-size: 1.5rem;
+                font-family: 'Font_TDC';
+            }
+
+            #scorecard-horizontal, #scorecard-vertical
+            {
+                padding: 0.5rem;
             }
         </style>
 
