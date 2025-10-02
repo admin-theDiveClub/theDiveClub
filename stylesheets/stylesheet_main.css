@@ -106,11 +106,18 @@ text-align-last: center;
     box-shadow: 0px 0px 16px 4px var(--color-base-00);
     color: var(--color-base-09);
     padding: 1rem;
+    border-radius: 0.5rem !important;
 }
 
 .card-body
 {
     padding: 0rem;
+}
+
+.card-title
+{
+    font-family: 'Font_TDC';
+    font-weight: normal !important;
 }
 
 .form-label

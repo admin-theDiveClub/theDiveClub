@@ -1,5 +1,3 @@
-import { UpdateTournamentData } from '../tournaments/tournament_data.js';
-
 function OutputResponse(response) 
 {
     if (response.error) 
@@ -46,4 +44,14 @@ export async function DB_Insert(tbl, data)
     OutputResponse(response);
     UpdateTournamentData();
     return response;
+}
+
+export async function SearchPlayers (searchTerm)
+{
+    const response = await supabase
+    .from('tbl_players')
+    .select('*')
+    .or(`username.ilike.%${searchTerm}%,name.ilike.%${searchTerm}%,surname.ilike.%${searchTerm}%,nickname.ilike.%${searchTerm}%`)
+    .limit(4);
+    return response.data;
 }

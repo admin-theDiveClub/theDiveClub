@@ -38,7 +38,7 @@ export function UpdateMatchControls (_match)
 
 export function _liveFrameIndex ()
 {
-    const liveFrameIndex = match.history.length - 1;
+    const liveFrameIndex = match.history ? match.history.length - 1 : null;
     return liveFrameIndex;
 }
 
@@ -52,6 +52,7 @@ function GetLiveFrame ()
     } else 
     {
         var newFrame = _newFrame();
+        if (!match.history) match.history = [];
         match.history.push(newFrame);
         liveFrame = newFrame;
     }
@@ -186,9 +187,9 @@ function GetEmptyFrame ()
 
 function _newFrame ()
 {
-    const lagType = match.settings.lagType;
-    const lagWinner = match.settings.lagWinner;
-    const history = match.history;
+    const lagType = match.settings ? match.settings.lagType ? match.settings.lagType : null : null;
+    const lagWinner =  match.settings ? match.settings.lagWinner ? match.settings.lagWinner : null : null;
+    const history = match.history ? match.history : [];
 
     var newFrame = GetEmptyFrame();
     newFrame["break-player"] = _newFrameBreakPlayer(lagType, lagWinner, history);
@@ -572,7 +573,7 @@ function WireMatchSettingsControls ()
         controls_settings[8].addEventListener('change', (event) =>
         {
             const newSettings = match.settings;
-            newSettings.advancedBreak = event.target.checked;
+            newSettings.advancedBreaks = event.target.checked;
             UpdateMatchSettings(newSettings);
         });
     }
@@ -590,6 +591,7 @@ async function UpdateMatchSettings (newSettings)
         console.error("Error Updating Match Settings: ", response.error);
     } else 
     {
+        console.log("Match Settings Updated");
         OnPayloadReceived(match);
     }
 }

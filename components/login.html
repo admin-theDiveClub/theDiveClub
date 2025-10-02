@@ -24,24 +24,32 @@
                     <label class="form-check-label" for="login-rememberMe">Keep me signed in</label>
                 </div>
 
-                <div id="grp-login-output" style="display: block;">
+                <div id="grp-login-output" style="display: none;">
                     <div class="card card-message">
                         <p id="login-outputMessage" class="inputText" style="text-align: center;">Message</p>
                     </div>
                 </div>
                 
-                <button type="submit" class="btn btn-primary" id="btn-login">Login</button>                
+                <div style="width: 100%; display: flex; justify-content: center;">
+                    <button type="submit" class="btn-standard" id="btn-login">Login</button>
+                </div>                
                 
                 <p class="input-label" style="text-align: center;">Log in with:</p>
-                <button type="button btnHolder" class="btn btn-primary" id="btn-login-google">
-                    Google
-                    <img src="../resources/icon_google.svg" alt="">
-                </button>
+                
+                <div style="width: 100%; display: flex; justify-content: center;">
+                    <button type="button btnHolder" class="btn btn-standard" id="btn-login-google">
+                        Google
+                        <img src="../resources/icon_google.svg" alt="">
+                    </button>
+                </div>                 
 
                 <hr>
                 
                 <p class="link-label" style="text-align: center;">Don't have account?</p>
-                <a href="../accounts/signUp.html" class="link" style="text-align: center;">Sign Up now.</a>
+                <div style="width: 100%; display: flex; justify-content: center;">
+                    <a href="../accounts/signUp.html" class="link" style="text-align: center; width: 100%;">Sign Up now.</a>
+                </div>  
+                
             </div>
         </div>
         <div class="col-sm-3 col-lg-4"></div>

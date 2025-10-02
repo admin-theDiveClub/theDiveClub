@@ -50,6 +50,7 @@ export async function Initialize_MatchUI(match)
 
     //Populate Player Profiles
     player_H = await PlayerProfile(match.players.h);
+    if (!match.results){ match.results = {"h": {}, "a": {}}; }
     await PopulateControlCardPlayerInfo(e_ctrl_H, player_H, match.results.h);
 
     player_A = await PlayerProfile(match.players.a);
@@ -161,7 +162,7 @@ async function PopulateUI (match)
 
         //Break Indicators
     const breakSide = GetBreakSide(match);
-    const advancedBreaking = match.settings && match.settings.advancedBreaks;
+    const advancedBreaking = match.settings && (match.settings.advancedBreaks);
     UpdateBreakIndicators(e_ctrl_H, breakSide == 'h', advancedBreaking);
     UpdateBreakIndicators(e_ctrl_A, breakSide == 'a', advancedBreaking);
 }
@@ -896,6 +897,6 @@ function UpdateMatchSettingsUI (match)
     const advToggle = gid('advanced-break-toggle');
     if (advToggle) 
     {
-        advToggle.checked = s.advancedBreak;
+        advToggle.checked = s.advancedBreaks;
     }
 }

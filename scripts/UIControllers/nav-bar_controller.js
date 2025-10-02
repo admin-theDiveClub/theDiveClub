@@ -24,7 +24,13 @@ const navbarObserver = new MutationObserver(() =>
         ControlNavMenu();
         
         const btn_profile = document.querySelector('#btn-profile-menu-toggle');
-        btn_profile.addEventListener('click', ControlProfileMenu);
+        btn_profile.addEventListener('click', ControlProfileMenu);        
+
+        if (window.location.hash == '#login')
+        {
+            document.getElementById('login-container').dataset.open = 'false';
+            ControlProfileMenu();
+        }
     }
 });
 navbarObserver.observe(document.body, { childList: true, subtree: true });

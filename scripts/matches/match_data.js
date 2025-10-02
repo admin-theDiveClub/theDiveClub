@@ -117,8 +117,44 @@ async function _match (matchID)
         console.log("Error Getting Match:", response.error.message);
         return null;
     } else 
-    {
-        return response.data;
+    {  
+        const match = response.data;
+
+        if (!match.players)
+        {
+            match.players =
+            {
+                h: {"username": null},
+                a: {"username": null}
+            }
+        }
+        
+        if (!match.settings)
+        {
+            match.settings =
+            {
+                winType: null,
+                winCondition: null,
+                lagWinner: null,
+                lagType: null,
+                advancedBreak: false
+            }
+        }
+
+        if (!match.info)
+        {
+            match.info =
+            {
+                status: "new"
+            }
+        }
+
+        if (!match.history)
+        {
+            match.history = [];
+        }
+
+        return match;
     }
 }
 

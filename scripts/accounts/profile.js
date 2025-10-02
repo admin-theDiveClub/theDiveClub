@@ -165,10 +165,10 @@ async function PopulateMatchesTable (matches)
 
         e_tr.appendChild(e_td_date);
         e_tr.appendChild(e_td_opponent);
-        e_tr.appendChild(e_td_league);
-        e_tr.appendChild(e_td_tournament);
         e_tr.appendChild(e_td_result);
         e_tr.appendChild(e_td_link);
+        e_tr.appendChild(e_td_league);
+        e_tr.appendChild(e_td_tournament);
 
         e_tbody.appendChild(e_tr);
     }
