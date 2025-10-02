@@ -47,15 +47,15 @@
                     <p class="settings-title">Win Type</p>
                     <label for="win-type-select" class="form-label">Select Win Type</label>
                     <select id="win-type-select" class="form-select" aria-label="Select Win Type">
-                        <option value="Freeplay" selected>Free Play</option>
-                        <option value="Race">Race To / Best Of</option>
-                        <option value="Fixed">Fixed Frame Count</option>
+                        <option value="freeplay" selected>Free Play</option>
+                        <option value="race">Race To / Best Of</option>
+                        <option value="fixed">Fixed Frame Count</option>
                     </select>
                     <div id="win-type-race-settings">
                         <label for="input-race-to" class="form-label" id="win-condition-label">Race To:</label>
-                        <input type="number" id="input-race-to" class="form-control" placeholder="frames">
+                        <input type="number" id="input-race-to" class="form-control" inputmode="numeric" pattern="[0-9]*" min="0" step="1" placeholder="frames">
                         <label for="input-best-of" class="form-label" id="win-condition-label">Best Of:</label>
-                        <input type="number" id="input-best-of" class="form-control" placeholder="frames">
+                        <input type="number" id="input-best-of" class="form-control" inputmode="numeric" pattern="[0-9]*" min="0" step="1" placeholder="frames">
                     </div>
                     <div id="win-type-fixed-settings">
                         <label for="input-fixed-frames" class="form-label" id="win-condition-label">Fixed Frames:</label>
@@ -68,8 +68,8 @@
                     <label for="lag-winner-select" class="form-label">Select Lag Winner</label>
                     <select id="lag-winner-select" class="form-select" aria-label="Select Lag Winner">
                         <option value="" selected>Select player</option>
-                        <option value="player_h">Player_H</option>
-                        <option value="player_a">Player_A</option>
+                        <option value="h" id="lag-winner-h">Player_H</option>
+                        <option value="a" id="lag-winner-a">Player_A</option>
                     </select>
 
 
@@ -77,8 +77,8 @@
                     <label for="lag-type-select" class="form-label">Select Lag Type</label>
                     <select id="lag-type-select" class="form-select" aria-label="Select Lag Type">
                         <option value="" selected>Select type</option>
-                        <option value="Alternate">Alternate Break</option>
-                        <option value="Winner">Winner Break</option>
+                        <option value="alternate">Alternate Break</option>
+                        <option value="winner">Winner Break</option>
                     </select>
 
                     
@@ -519,7 +519,7 @@
             <style>
                 #match-summary-scores td
                 {
-                    border: 0.1px solid var(--color-base-06);
+                    border: 1px solid var(--color-base-04);
                     padding: 0.25rem;
                 }
             </style>
@@ -572,7 +572,7 @@
             .settings-title
             {
                 text-align: center;
-text-align-last: center;
+                text-align-last: center;
                 font-size: 1.5rem;
                 margin: 0.5rem auto;
                 font-family: 'Font_TDC';
@@ -605,7 +605,7 @@ text-align-last: center;
             #card-match-settings #match-time-settings-label, #card-match-settings #frame-time-settings-label
             {
                 text-align: center;
-text-align-last: center;
+                text-align-last: center;
                 font-size: 4rem;
                 margin: auto;
                 font-family: 'Font_TDC';
@@ -657,7 +657,7 @@ text-align-last: center;
             table
             {
                 text-align: center;
-text-align-last: center;
+                text-align-last: center;
                 margin: 0rem;
                 width: 100%;
             }

@@ -477,11 +477,25 @@ function PopulateScorecard (match, mode, playerH, playerA)
         document.getElementById('scorecard-vertical').style.display = 'none';
     }
 
+    var name_h = playerH.name ? playerH.name : playerH.username;
+    var name_a = playerA.name ? playerA.name : playerA.username;
+
+    if (match.settings && match.settings.lagWinner)
+    {
+        if (match.settings.lagWinner == 'h')
+        {
+            name_h = name_h + " *";
+        } else if (match.settings.lagWinner == 'a')
+        {
+            name_a = name_a + " *";
+        }
+    }
+
     const headerCells = 
     [
         e_cell_header('Break', null),
-        e_cell_header(playerH.name ? playerH.name : playerH.username, 'var(--color-primary-00)'),
-        e_cell_header(playerA.name ? playerA.name : playerA.username, 'var(--color-secondary-00)'),
+        e_cell_header(name_h, 'var(--color-primary-00)'),
+        e_cell_header(name_a, 'var(--color-secondary-00)'),
         e_cell_header('Duration', null)
     ];
 
@@ -706,6 +720,17 @@ function PopulateMatchSummary(match, playerH, playerA)
         averageFrameDuration: null,
     }
 
+    if (match.settings && match.settings.lagWinner)
+    {
+        if (match.settings.lagWinner == 'h')
+        {
+            matchSummary.playerH = matchSummary.playerH + " *";
+        } else if (match.settings.lagWinner == 'a')
+        {
+            matchSummary.playerA = matchSummary.playerA + " *";
+        }
+    }
+
     const history = match.history ? match.history : null;
     if (history)
     {
@@ -802,23 +827,31 @@ function UpdateMatchSettingsUI (match)
 
     // Win Type
     const winTypeEl = gid('win-type-select');
-    if (winTypeEl) {
-        const map = { freeplay: 'Freeplay', race: 'Race', fixed: 'Fixed' };
-        const val = map[(s.winType || '').toLowerCase()] || 'Freeplay';
-        winTypeEl.value = val;
+    if (winTypeEl) 
+    {
+        for (const opt of winTypeEl.options)
+        {
+            if (opt.value === s.winType)
+            {
+                opt.selected = true;
+            } else 
+            {
+                opt.selected = false;
+            }
+        }
 
-        if (val === 'Freeplay') 
+        if (s.winType === 'freeplay') 
         {
             gid('win-type-race-settings').style.display = 'none';
             gid('win-type-fixed-settings').style.display = 'none';
-        } else if (val === 'Race') 
+        } else if (s.winType === 'race') 
         {
             gid('win-type-race-settings').style.display = 'block';
             gid('win-type-fixed-settings').style.display = 'none';
 
             gid('input-race-to').value = s.winCondition || '';
             gid('input-best-of').value = s.winCondition ? (s.winCondition * 2 - 1) : '';
-        } else if (val === 'Fixed') 
+        } else if (s.winType === 'fixed') 
         {
             gid('win-type-race-settings').style.display = 'none';
             gid('win-type-fixed-settings').style.display = 'block';
@@ -827,35 +860,42 @@ function UpdateMatchSettingsUI (match)
     }
 
     // Lag Winner (update option labels to player names and select value)
-    const lagWinnerEl = gid('lag-winner-select');
-    if (lagWinnerEl) {
-        const optH = lagWinnerEl.querySelector('option[value="player_h"]');
-        const optA = lagWinnerEl.querySelector('option[value="player_a"]');
-        const h = match && match.players && match.players.h ? match.players.h : {};
-        const a = match && match.players && match.players.a ? match.players.a : {};
-        const displayName = (p, fallback) => (p.nickname && p.nickname !== 'Guest') ? p.nickname : (p.fullName || p.username || fallback);
-        if (optH) optH.textContent = displayName(h, 'Player_H');
-        if (optA) optA.textContent = displayName(a, 'Player_A');
+    const optH = gid('lag-winner-h');
+    const optA = gid('lag-winner-a');
+    const h = player_H;
+    const a = player_A;
+    const displayName = (p) => p.displayName ? p.displayName : p.username ? p.username : null;
+    if (optH) optH.textContent = displayName(h) ? displayName(h) : 'Player H';
+    if (optA) optA.textContent = displayName(a) ? displayName(a) : 'Player A';
 
-        const lw = (s.lagWinner || '').toLowerCase();
-        lagWinnerEl.value = lw === 'h' ? 'player_h' : lw === 'a' ? 'player_a' : '';
+    const lw = s.lagWinner;
+    for (const opt of gid('lag-winner-select').options)
+    {
+        if (opt.value === lw)
+        {
+            opt.selected = true;
+        } else 
+        {
+            opt.selected = false;
+        }
     }
 
     // Lag Type
-    const lagTypeEl = gid('lag-type-select');
-    if (lagTypeEl) {
-        const map = { alternate: 'Alternate', winner: 'Winner' };
-        const val = map[(s.lagType || '').toLowerCase()] || '';
-        lagTypeEl.value = val;
+    for (const opt of gid('lag-type-select').options)
+    {
+        if (opt.value === s.lagType)
+        {
+            opt.selected = true;
+        } else 
+        {
+            opt.selected = false;
+        }
     }
 
     // Advanced Break Recording
     const advToggle = gid('advanced-break-toggle');
-    if (advToggle) {
-        advToggle.checked = !!s.advancedBreaks;
-        const label = gid('advanced-break-label');
-        if (label) {
-            label.textContent = advToggle.checked ? 'Advanced Break Recording: On' : 'Advanced Break Recording';
-        }
+    if (advToggle) 
+    {
+        advToggle.checked = s.advancedBreak;
     }
 }

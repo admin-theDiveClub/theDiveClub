@@ -498,3 +498,98 @@ function WireLiveFrameControls ()
     }
 }
 
+const controls_settings = 
+[
+    gid("win-type-select"),
+
+    gid("win-type-race-settings"),
+    gid("input-race-to"),
+    gid("input-best-of"),
+
+    gid("win-type-fixed-settings"),
+    gid("input-fixed-frames"),
+
+    gid("lag-winner-select"),
+    gid("lag-type-select"),
+
+    gid("advanced-break-toggle")
+]
+
+WireMatchSettingsControls ();
+
+function WireMatchSettingsControls ()
+{
+    var allControlsPresent = true;
+    for (let control of controls_settings)
+    {
+        if (!control) allControlsPresent = false;
+    }
+
+    if (allControlsPresent)
+    {
+        controls_settings[0].addEventListener('change', (event) =>
+        {
+            const newSettings = match.settings;
+            newSettings.winType = event.target.value;
+            UpdateMatchSettings(newSettings);
+        });
+
+        controls_settings[2].addEventListener('change', (event) =>
+        {
+            const newSettings = match.settings;
+            newSettings.winCondition = parseInt(event.target.value);
+            UpdateMatchSettings(newSettings);
+        });
+
+        controls_settings[3].addEventListener('change', (event) =>
+        {
+            const bestOf = parseInt(event.target.value);
+            var raceTo = Math.ceil((bestOf + 1) / 2);
+            controls_settings[2].value = raceTo;
+        });
+
+        controls_settings[5].addEventListener('change', (event) =>
+        {
+            const newSettings = match.settings;
+            newSettings.winCondition = parseInt(event.target.value);
+            UpdateMatchSettings(newSettings);
+        });
+
+        controls_settings[6].addEventListener('change', (event) =>
+        {
+            const newSettings = match.settings;
+            newSettings.lagWinner = event.target.value;
+            UpdateMatchSettings(newSettings);
+        });
+
+        controls_settings[7].addEventListener('change', (event) =>
+        {
+            const newSettings = match.settings;
+            newSettings.lagType = event.target.value;
+            UpdateMatchSettings(newSettings);
+        });
+
+        controls_settings[8].addEventListener('change', (event) =>
+        {
+            const newSettings = match.settings;
+            newSettings.advancedBreak = event.target.checked;
+            UpdateMatchSettings(newSettings);
+        });
+    }
+}
+
+async function UpdateMatchSettings (newSettings)
+{
+    var tempMatch = match;
+    tempMatch.settings = newSettings;
+    const response = await supabase.from('tbl_matches').update(tempMatch).eq('id', tempMatch.id);
+
+    if (response.error)
+    {
+        alert("Error Updating Match Settings: " + response.error.message);
+        console.error("Error Updating Match Settings: ", response.error);
+    } else 
+    {
+        OnPayloadReceived(match);
+    }
+}
