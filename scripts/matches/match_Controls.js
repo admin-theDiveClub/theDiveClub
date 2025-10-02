@@ -516,6 +516,8 @@ const controls_settings =
     gid("advanced-break-toggle")
 ]
 
+import { UpdateMatchUI } from "./match_UI.js";
+
 WireMatchSettingsControls ();
 
 function WireMatchSettingsControls ()
@@ -556,10 +558,47 @@ function WireMatchSettingsControls ()
             UpdateMatchSettings(newSettings);
         });
 
-        controls_settings[6].addEventListener('change', (event) =>
+        controls_settings[6].addEventListener('change', async (event) =>
         {
             const newSettings = match.settings;
             newSettings.lagWinner = event.target.value;
+            if (match.settings && match.settings.lagWinner)
+            {
+                const history = match.history ? match.history : [];
+                for (let i = 0; i < history.length; i++)
+                {
+                    if (match.lagType === "alternate")
+                    {
+                        if (i % 2 === 0)
+                        {
+                            history[i]["break-player"] = match.settings.lagWinner;
+                        } else 
+                        {
+                            history[i]["break-player"] = match.settings.lagWinner === "h" ? "a" : "h";
+                        }
+                    } else if (match.lagType === "winner")
+                    {
+                        if (i == 0)
+                        {
+                            history[i]["break-player"] = match.settings.lagWinner;
+                        } else 
+                        {
+                            const prevFrame = history[i - 1];
+                            history[i]["break-player"] = prevFrame ? prevFrame["break-player"] : match.settings.lagWinner;
+                        }
+                    }
+                }
+                match.history = history;
+                const response = await supabase.from('tbl_matches').update(match).eq('id', match.id);
+                if (response.error)
+                {
+                    alert("Error Updating Match Frame: " + response.error.message);
+                    console.error("Error Updating Match Frame: ", response.error);
+                } else 
+                {
+                    UpdateMatchUI(match);
+                }
+            }
             UpdateMatchSettings(newSettings);
         });
 

@@ -554,7 +554,12 @@ function PopulateScorecard (match, mode, playerH, playerA)
             e_frameRow.appendChild(e_cell_frame(i));            
 
             const breakEvent = frame['break-event'] ? frame['break-event'] : null;
-            const e_break = e_cell_break(breakEvent, i, frame['break-player'] ? frame['break-player'] : match.settings.lagWinner ? match.settings.lagWinner : null);
+            var breakPlayer = frame['break-player'] ? frame['break-player'] : match.settings.lagWinner ? match.settings.lagWinner : null;
+            if (i == 0)
+            {
+                breakPlayer = match.settings.lagWinner ? match.settings.lagWinner : null;
+            }
+            const e_break = e_cell_break(breakEvent, i, breakPlayer);
             e_frameRow.appendChild(e_break);
 
             var score_H = 0;
@@ -605,12 +610,12 @@ function PopulateScorecard (match, mode, playerH, playerA)
         e_table.appendChild(e_headerRow);
 
         const e_playerHRow = document.createElement('tr');
-        const e_playerHCell = e_cell_header(playerH.name ? playerH.name : playerH.username, 'var(--color-primary-00)');
+        const e_playerHCell = e_cell_header(name_h, 'var(--color-primary-00)');
         e_playerHCell.classList.add('scorecard-player-name');
         e_playerHRow.appendChild(e_playerHCell);
 
         const e_playerARow = document.createElement('tr');
-        const e_playerACell = e_cell_header(playerA.name ? playerA.name : playerA.username, 'var(--color-secondary-00)');
+        const e_playerACell = e_cell_header(name_a, 'var(--color-secondary-00)');
         e_playerACell.classList.add('scorecard-player-name');
         e_playerARow.appendChild(e_playerACell);
 
@@ -632,7 +637,12 @@ function PopulateScorecard (match, mode, playerH, playerA)
             const frame = history[i];
 
             const breakEvent = frame['break-event'] ? frame['break-event'] : null;
-            const e_break = e_cell_break(breakEvent, i, frame['break-player'] ? frame['break-player'] : match.settings.lagWinner ? match.settings.lagWinner : null);
+            var breakPlayer = frame['break-player'] ? frame['break-player'] : match.settings.lagWinner ? match.settings.lagWinner : null;
+            if (i == 0)
+            {
+                breakPlayer = match.settings.lagWinner ? match.settings.lagWinner : null;
+            }
+            const e_break = e_cell_break(breakEvent, i, breakPlayer);
             e_breakRow.appendChild(e_break);
 
             var score_H = 0;
