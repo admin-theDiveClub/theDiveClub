@@ -137,7 +137,7 @@ async function _match (matchID)
                 winCondition: null,
                 lagWinner: null,
                 lagType: null,
-                advancedBreak: false
+                advancedBreaks: false
             }
         }
 

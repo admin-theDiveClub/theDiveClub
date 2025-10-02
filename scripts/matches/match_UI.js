@@ -222,6 +222,9 @@ function GetBreakSide (match)
         if (!history || history.length == 0)
         {
             return match.settings.lagWinner;
+        } else if (history[0]['winner-player'] == null)
+        {
+            return match.settings.lagWinner;
         }
 
         const lastFrame = history[history.length - 2];
@@ -551,7 +554,7 @@ function PopulateScorecard (match, mode, playerH, playerA)
             e_frameRow.appendChild(e_cell_frame(i));            
 
             const breakEvent = frame['break-event'] ? frame['break-event'] : null;
-            const e_break = e_cell_break(breakEvent, i, frame['break-player']);
+            const e_break = e_cell_break(breakEvent, i, frame['break-player'] ? frame['break-player'] : match.settings.lagWinner ? match.settings.lagWinner : null);
             e_frameRow.appendChild(e_break);
 
             var score_H = 0;
@@ -629,7 +632,7 @@ function PopulateScorecard (match, mode, playerH, playerA)
             const frame = history[i];
 
             const breakEvent = frame['break-event'] ? frame['break-event'] : null;
-            const e_break = e_cell_break(breakEvent, i, frame['break-player']);
+            const e_break = e_cell_break(breakEvent, i, frame['break-player'] ? frame['break-player'] : match.settings.lagWinner ? match.settings.lagWinner : null);
             e_breakRow.appendChild(e_break);
 
             var score_H = 0;
