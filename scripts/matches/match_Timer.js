@@ -52,7 +52,7 @@ export function UpdateTimingData (match)
         timingData.prev_f_duration = prev_duration;
     }
 
-    console.log(timingData, m_timingData);
+    // console.log(timingData, m_timingData);
     SaveTimingData();
 }
 
@@ -78,13 +78,13 @@ function SaveTimingData ()
     sessionStorage.setItem('m_timingData', mData);
 
     
-    console.log(timingData, m_timingData);
+    // console.log(timingData, m_timingData);
 }
 
 function GetCurrentTime ()
 {
     const currentTime = new Date().toISOString();
-    console.log("Current Time:", currentTime);
+    // console.log("Current Time:", currentTime);
     return currentTime;
 }
 
@@ -101,8 +101,6 @@ export function SetFrameStartTime (time)
         : null;
 
     timingData.f_duration = new Date() - timingData.f_startTime;
-
-
 
     SaveTimingData();
 }

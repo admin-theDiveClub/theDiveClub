@@ -650,8 +650,9 @@ function WireMatchSettingsControls ()
                     } else 
                     {
                         const prevFrame = history[i - 1];
-                        history[i]["break-player"] = prevFrame ? prevFrame["break-player"] : newSettings.lagWinner;
+                        history[i]["break-player"] = prevFrame ? prevFrame["winner-player"] : newSettings.lagWinner;
                     }
+                    console.log(history[i]["break-player"]);
                 }
             }
 
@@ -671,10 +672,54 @@ function WireMatchSettingsControls ()
             UpdateMatchSettings(newSettings);
         });
 
-        controls_settings[7].addEventListener('change', (event) =>
+        controls_settings[7].addEventListener('change', async (event) =>
         {
             const newSettings = match.settings;
-            newSettings.lagType = event.target.value;
+            newSettings.lagWinner = match.settings.lagWinner == "" ? null : match.settings.lagWinner;
+            newSettings.lagType = event.target.value == "" ? null : event.target.value;
+            const history = match.history ? match.history : [];
+
+            for (let i = 0; i < history.length; i++)
+            {
+                if (!newSettings.lagWinner && !newSettings.lagType)
+                {
+                    history[i]["break-player"] = null;
+                } else if (newSettings.lagType === "alternate" || !newSettings.lagType)
+                {
+                    if (i % 2 === 0)
+                    {
+                        history[i]["break-player"] = newSettings.lagWinner;
+                    } else 
+                    {
+                        history[i]["break-player"] = newSettings.lagWinner === "h" ? "a" : "h";
+                    }
+                } else if (newSettings.lagType === "winner")
+                {
+                    if (i == 0)
+                    {
+                        history[i]["break-player"] = newSettings.lagWinner;
+                    } else 
+                    {
+                        const prevFrame = history[i - 1];
+                        history[i]["break-player"] = prevFrame ? prevFrame["winner-player"] : newSettings.lagWinner;
+                    }
+                    console.log(history[i]["break-player"]);
+                }
+            }
+
+            match.history = history;
+            match.settings = newSettings;
+
+            const response = await supabase.from('tbl_matches').update(match).eq('id', match.id).select().single();
+            if (response.error)
+            {
+                alert("Error Updating Match Frame: " + response.error.message);
+                console.error("Error Updating Match Frame: ", response.error);
+            } else 
+            {
+                UpdateMatchUI(response.data);
+            }
+
             UpdateMatchSettings(newSettings);
         });
 
