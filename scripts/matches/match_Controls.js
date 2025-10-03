@@ -1,4 +1,3 @@
-
 const buttons_liveFrame = 
 [
     gid("ctrl-score-H-special-bf"),
@@ -34,6 +33,7 @@ export function UpdateMatchControls (_match)
 {
     match = _match;    
     ResetBreakButtons();
+    UpdateLiveFrameButtons();
 }
 
 export function _liveFrameIndex ()
@@ -204,7 +204,6 @@ function _newFrameBreakPlayer (lagType, lagWinner, history)
     {
         const completedFrameIndex = _liveFrameIndex();
         const completedFrame = history[completedFrameIndex];
-        console.log("Completed Frame", completedFrame);
         if (completedFrame && completedFrame["winner-player"])
         {
             breakPlayer = completedFrame["winner-player"];
@@ -299,6 +298,8 @@ function WireLiveFrameControls ()
 
             liveFrame["winner-player"] = "h";
             liveFrame["winner-result"] = "A";
+            liveFrame["break-event"] = "in";
+            liveFrame["break-player"] = "h";
 
             UpdateFrame(liveFrameIndex, liveFrame);
         });
@@ -325,6 +326,8 @@ function WireLiveFrameControls ()
 
             liveFrame["winner-player"] = "h";
             liveFrame["winner-result"] = "G";
+            liveFrame["break-event"] = "in";
+            liveFrame["break-player"] = "h";
 
             UpdateFrame(liveFrameIndex, liveFrame);
         });
@@ -408,6 +411,8 @@ function WireLiveFrameControls ()
 
             liveFrame["winner-player"] = "a";
             liveFrame["winner-result"] = "A";
+            liveFrame["break-event"] = "in";
+            liveFrame["break-player"] = "a";
 
             UpdateFrame(liveFrameIndex, liveFrame);
         });
@@ -434,6 +439,8 @@ function WireLiveFrameControls ()
 
             liveFrame["winner-player"] = "a";
             liveFrame["winner-result"] = "G";
+            liveFrame["break-event"] = "in";
+            liveFrame["break-player"] = "a";
 
             UpdateFrame(liveFrameIndex, liveFrame);
         });
@@ -499,6 +506,60 @@ function WireLiveFrameControls ()
     }
 }
 
+function UpdateLiveFrameButtons ()
+{
+    //0 1 2 , 8 9 10
+    for (let i = 0; i <= 2; i++)
+    {
+        const button = buttons_liveFrame[i];
+        if (button)
+        {
+            button.disabled = false;
+        }
+    }
+
+    for (let i = 8; i <= 10; i++)
+    {
+        const button = buttons_liveFrame[i];
+        if (button)
+        {
+            button.disabled = false;
+        }
+    }
+
+    const lf = GetLiveFrame();
+    if (lf["break-player"] == "h")
+    {
+        buttons_liveFrame[8].disabled = true;
+        buttons_liveFrame[10].disabled = true;
+        buttons_liveFrame[1].disabled = true;
+    } else if (lf["break-player"] == "a")
+    {
+        buttons_liveFrame[0].disabled = true;
+        buttons_liveFrame[2].disabled = true;
+        buttons_liveFrame[9].disabled = true;
+    }
+
+    if (lf["break-event"] == "in")
+    {
+        if (lf["break-player"] == "h")
+        {
+            buttons_liveFrame[9].disabled = true;
+        } else if (lf["break-player"] == "a")
+        {
+            buttons_liveFrame[1].disabled = true;
+        }
+    }
+
+    if (lf["break-event"] && (lf["break-event"] != "in"))
+    {                
+        buttons_liveFrame[0].disabled = true;
+        buttons_liveFrame[2].disabled = true;
+        buttons_liveFrame[8].disabled = true;
+        buttons_liveFrame[10].disabled = true;
+    }
+}
+
 const controls_settings = 
 [
     gid("win-type-select"),
@@ -561,44 +622,50 @@ function WireMatchSettingsControls ()
         controls_settings[6].addEventListener('change', async (event) =>
         {
             const newSettings = match.settings;
-            newSettings.lagWinner = event.target.value;
-            if (match.settings && match.settings.lagWinner)
+            newSettings.lagWinner = event.target.value == "" ? null : event.target.value;
+            newSettings.lagType = match.settings.lagType == "" ? null : match.settings.lagType;
+            const history = match.history ? match.history : [];
+
+            for (let i = 0; i < history.length; i++)
             {
-                const history = match.history ? match.history : [];
-                for (let i = 0; i < history.length; i++)
+                if (!newSettings.lagWinner && !newSettings.lagType)
                 {
-                    if (match.lagType === "alternate")
+                    history[i]["break-player"] = null;
+                } else if (newSettings.lagType === "alternate" || !newSettings.lagType)
+                {
+                    if (i % 2 === 0)
                     {
-                        if (i % 2 === 0)
-                        {
-                            history[i]["break-player"] = match.settings.lagWinner;
-                        } else 
-                        {
-                            history[i]["break-player"] = match.settings.lagWinner === "h" ? "a" : "h";
-                        }
-                    } else if (match.lagType === "winner")
+                        history[i]["break-player"] = newSettings.lagWinner;
+                    } else 
                     {
-                        if (i == 0)
-                        {
-                            history[i]["break-player"] = match.settings.lagWinner;
-                        } else 
-                        {
-                            const prevFrame = history[i - 1];
-                            history[i]["break-player"] = prevFrame ? prevFrame["break-player"] : match.settings.lagWinner;
-                        }
+                        history[i]["break-player"] = newSettings.lagWinner === "h" ? "a" : "h";
+                    }
+                } else if (newSettings.lagType === "winner")
+                {
+                    if (i == 0)
+                    {
+                        history[i]["break-player"] = newSettings.lagWinner;
+                    } else 
+                    {
+                        const prevFrame = history[i - 1];
+                        history[i]["break-player"] = prevFrame ? prevFrame["break-player"] : newSettings.lagWinner;
                     }
                 }
-                match.history = history;
-                const response = await supabase.from('tbl_matches').update(match).eq('id', match.id);
-                if (response.error)
-                {
-                    alert("Error Updating Match Frame: " + response.error.message);
-                    console.error("Error Updating Match Frame: ", response.error);
-                } else 
-                {
-                    UpdateMatchUI(match);
-                }
             }
+
+            match.history = history;
+            match.settings = newSettings;
+
+            const response = await supabase.from('tbl_matches').update(match).eq('id', match.id).select().single();
+            if (response.error)
+            {
+                alert("Error Updating Match Frame: " + response.error.message);
+                console.error("Error Updating Match Frame: ", response.error);
+            } else 
+            {
+                UpdateMatchUI(response.data);
+            }
+
             UpdateMatchSettings(newSettings);
         });
 
@@ -630,7 +697,6 @@ async function UpdateMatchSettings (newSettings)
         console.error("Error Updating Match Settings: ", response.error);
     } else 
     {
-        console.log("Match Settings Updated");
         OnPayloadReceived(match);
     }
 }
