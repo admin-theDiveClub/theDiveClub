@@ -23,6 +23,8 @@ import { UpdateMatchUI } from '../matches/match_UI.js';
 
 import { UpdateMatchControls } from '../matches/match_Controls.js';
 
+import { UpdateTimingData } from './match_Timer.js';
+
 async function Start_MatchData ()
 {
     const matchID = _matchID();
@@ -230,4 +232,5 @@ export function OnPayloadReceived (payload)
 {
     UpdateMatchUI(payload);
     UpdateMatchControls(payload);
+    UpdateTimingData(payload);
 }

@@ -60,6 +60,7 @@ function GetLiveFrame ()
 }
 
 import { OnPayloadReceived } from "./match_data.js";
+import { SetFrameStartTime } from "./match_Timer.js";
 
 export async function UpdateFrame (frameIndex, frameData)
 {
@@ -90,6 +91,7 @@ export async function UpdateFrame (frameIndex, frameData)
     } else 
     {
         OnPayloadReceived(match);
+        SetFrameStartTime();
     }
 }
 
