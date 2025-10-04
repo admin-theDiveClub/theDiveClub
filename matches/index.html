@@ -95,6 +95,7 @@
                         <label for="match-time-limit" class="form-label" style="text-align: right !important; margin: auto 0rem !important;">Match Time Limit:</label>
                         <input type="number" id="match-time-limit" class="form-control" placeholder="Time Limit (minutes)">
                     </div>
+                    <p id="match-time-settings-label-start">00:00</p>
                     <p id="match-time-settings-label">00:00</p>
                     <div class="timer-buttons-container">
                         <button id="btn-match-timer-start" class="timer-button"><i class="bi bi-play"></i></button>
@@ -609,6 +610,16 @@
                 font-size: 4rem;
                 margin: auto;
                 font-family: 'Font_TDC';
+            }
+
+            #match-time-settings-label-start
+            {
+                text-align: center;
+                text-align-last: center;
+                font-size: 1.5rem;
+                margin: auto;
+                font-family: 'Font_TDC';
+                color: var(--color-base-08);
             }
 
             .timer-buttons-container

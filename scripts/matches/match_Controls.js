@@ -34,6 +34,7 @@ export function UpdateMatchControls (_match)
     match = _match;    
     ResetBreakButtons();
     UpdateLiveFrameButtons();
+    UpdateTimerUI(match.time);
 }
 
 export function _liveFrameIndex ()
@@ -98,8 +99,6 @@ export async function UpdateFrame (frameIndex, frameData)
 
 function GetFrameDuration (prevFrame, currentFrame)
 {
-    console.log("GetFrameDuration", prevFrame, currentFrame.endTime);
-
     const parseTime = (val) =>
     {
         if (val == null) return null;
@@ -127,6 +126,7 @@ function WireMatchTimerControls ()
     const btn_StartMatch = gid("btn-match-timer-start");
     btn_StartMatch.addEventListener('click', async () =>
     {
+        if (!match.time) match.time = {};
         match.time.start = new Date().toISOString();
         const response = await supabase.from('tbl_matches').update(match).eq('id', match.id).select().single();
         if (response.error)
@@ -138,6 +138,47 @@ function WireMatchTimerControls ()
             OnPayloadReceived(response.data);
         }
     });
+}
+
+function UpdateTimerUI (time)
+{
+    const display_StartTime = gid("match-time-settings-label-start");
+
+    if (time && time.start)
+    {
+        const startTime = new Date(time.start);
+        display_StartTime.textContent = "Started at: " + startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+
+    const display_Time = gid("match-time-settings-label");
+    setInterval(() => {
+        if (time && time.start)
+        {
+            const startTime = new Date(time.start);
+            const currentTime = new Date();
+            const elapsedMs = currentTime - startTime;
+            const elapsedMinutes = Math.floor(elapsedMs / 60000);
+            const elapsedSeconds = Math.floor((elapsedMs % 60000) / 1000);
+            display_Time.textContent = `${String(elapsedMinutes).padStart(2, '0')}:${String(elapsedSeconds).padStart(2, '0')}`;
+        }
+
+        const display_TimeSinceLastFrame = gid("frame-time-settings-label");
+        const lastFrameEndTime = match.history && match.history.length > 0 ? match.history[match.history.length - 1].endTime : null;
+        const timeSinceLastFrame = lastFrameEndTime ? (new Date() - new Date(lastFrameEndTime)) / 1000 : null;
+
+
+        if (timeSinceLastFrame !== null)
+        {
+            const minutes = Math.floor(timeSinceLastFrame / 60);
+            const seconds = Math.floor(timeSinceLastFrame % 60);
+            display_TimeSinceLastFrame.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        } 
+    }, 1000);
+
+    const lastFrameEndTime = match.history && match.history.length > 0 ? match.history[match.history.length - 1].endTime : null;
+    const timeSinceLastFrame = lastFrameEndTime ? (new Date() - new Date(lastFrameEndTime)) / 1000 : null;
+
+    
 }
 
 function UpdateMatchResults (match)
