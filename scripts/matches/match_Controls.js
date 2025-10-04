@@ -60,7 +60,6 @@ function GetLiveFrame ()
 }
 
 import { OnPayloadReceived } from "./match_data.js";
-import { SetFrameStartTime } from "./match_Timer.js";
 
 export async function UpdateFrame (frameIndex, frameData)
 {
@@ -73,8 +72,11 @@ export async function UpdateFrame (frameIndex, frameData)
         }
     } else 
     {
-        match.history[frameIndex] = frameData;
+        frameData.endTime = new Date().toISOString();
+        frameData.duration = GetFrameDuration(match.history[frameIndex - 1] ? match.history[frameIndex - 1] : null, frameData);
 
+        match.history[frameIndex] = frameData;
+        console.log(frameData);
         if (frameIndex == _liveFrameIndex() && (frameData["winner-player"] || frameData["winner-result"]))
         {
             var newFrame = _newFrame();
@@ -91,8 +93,51 @@ export async function UpdateFrame (frameIndex, frameData)
     } else 
     {
         OnPayloadReceived(match);
-        SetFrameStartTime();
     }
+}
+
+function GetFrameDuration (prevFrame, currentFrame)
+{
+    console.log("GetFrameDuration", prevFrame, currentFrame.endTime);
+
+    const parseTime = (val) =>
+    {
+        if (val == null) return null;
+        if (typeof val === 'number') return val;
+        const d = new Date(val);
+        return isNaN(d.getTime()) ? null : d.getTime();
+    };
+
+    const t_prev = prevFrame && prevFrame.endTime
+        ? parseTime(prevFrame.endTime)
+        : (match.time && match.time.start ? parseTime(match.time.start) : null);
+    const t_curr = currentFrame && currentFrame.endTime ? parseTime(currentFrame.endTime) : null;
+
+    if (t_prev != null && t_curr != null)
+    {
+        return (t_curr - t_prev) / 1000; // duration in seconds
+    }
+    return null;
+}
+
+WireMatchTimerControls ();
+
+function WireMatchTimerControls ()
+{
+    const btn_StartMatch = gid("btn-match-timer-start");
+    btn_StartMatch.addEventListener('click', async () =>
+    {
+        match.time.start = new Date().toISOString();
+        const response = await supabase.from('tbl_matches').update(match).eq('id', match.id).select().single();
+        if (response.error)
+        {
+            alert("Error Starting Match: " + response.error.message);
+            console.error("Error Starting Match: ", response.error);
+        } else
+        {
+            OnPayloadReceived(response.data);
+        }
+    });
 }
 
 function UpdateMatchResults (match)
