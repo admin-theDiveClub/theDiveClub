@@ -117,6 +117,19 @@ async function PlayerProfile (player)
     }   
 }
 
+export function GetPlayerDisplayName(player)
+{
+    if (player == 'h')
+    {
+        return player_H.displayName;
+    }
+    else if (player == 'a')
+    {
+        return player_A.displayName;
+    }
+    return null;
+}
+
 //Update
 export async function UpdateMatchUI (match)
 {

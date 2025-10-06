@@ -32,6 +32,11 @@ async function Start_MatchData ()
     {
         const matchRef = await _match(matchID);
 
+        if (matchRef && matchRef.info && matchRef.info.status == "Complete")
+        {
+            window.location.href = `../matches/scoreboard.html?matchID=${matchID}`;
+        }
+
         if (matchRef)
         {
             const approvedList = await _matchApprovedList(matchRef);

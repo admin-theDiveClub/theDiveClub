@@ -18,12 +18,15 @@
     <!-- Chart.js CDN (UMD build to avoid "import" in non-module scripts) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
 
-    <title>The Dive Club</title>
+    <title>TDC: Scoreboard</title>
     <link rel="icon" href="../resources/icon_TDC.ico">
 </head>
 
 <body>
+    <div id="component-loading-overlay"></div>
+
     <div id="visualization-container" ></div>
+
     <div id="component-nav-bar"></div>
 
     <div id="component-nav-menu"></div>
@@ -34,602 +37,178 @@
 
     <div class="main">
 
+        <div class="card" id="head-to-head">
+            <div class="row">
+                <div class="col-sm-3">
+                    <img id="teamH_icon" class="team-icon" src="../resources/icons/icon_player.svg" alt="Team H Logo">
+                    <p id="teamH_name" class="team-name color-h">Team H</p>
+                </div>
+                <div class="col-sm-6">
+                    <div id="match-summary">
+                        <table>
+                            <th>
+                                <tr>
+                                    <td id="match-summary-player-h" colspan="4" class="scorecard-player-name color-h">Player H Player</td>
+                                    <td></td>
+                                    <td id="match-summary-player-a" colspan="4" class="scorecard-player-name color-a">Player A Player</td>
+                                </tr>
+                            </th>
+                            <tr>
+                                <td id="match-summary-player-h-score" colspan="4" class="scorecard-totals color-h">0</td>
+                                <td>FW</td>
+                                <td id="match-summary-player-a-score" colspan="4" class="scorecard-totals color-a">0</td>
+                            </tr>
+                            <tr>
+                                <td id="match-summary-player-h-bf" colspan="4">0</td>
+                                <td>B/F</td>
+                                <td id="match-summary-player-a-bf" colspan="4">0</td>
+                            </tr>
+                            <tr>
+                                <td id="match-summary-player-h-rf" colspan="4">0</td>
+                                <td>R/F</td>
+                                <td id="match-summary-player-a-rf" colspan="4">0</td>
+                            </tr>
+                            <tr>
+                                <td id="match-summary-player-h-gb" colspan="4">0</td>
+                                <td>GB</td>
+                                <td id="match-summary-player-a-gb" colspan="4">0</td>
+                            </tr>
+                            <tr>
+                                <td>dry</td>
+                                <td>in</td>
+                                <td>scr</td>
+                                <td>foul</td>
+                                <td>Breaks</td>
+                                <td>dry</td>
+                                <td>in</td>
+                                <td>scr</td>
+                                <td>foul</td>
+                            </tr>
+                            <tr>
+                                <td id="match-summary-player-h-break-dry">0</td>
+                                <td id="match-summary-player-h-break-in">0</td>
+                                <td id="match-summary-player-h-break-scr">0</td>
+                                <td id="match-summary-player-h-break-foul">0</td>
+                                <td id="match-summary-player-h-breaks">0 | 0</td>
+                                <td id="match-summary-player-a-break-dry">0</td>
+                                <td id="match-summary-player-a-break-in">0</td>
+                                <td id="match-summary-player-a-break-scr">0</td>
+                                <td id="match-summary-player-a-break-foul">0</td>
+                            </tr>
+                        </table>
 
-        <div class="row">
-            <div class="col-sm-6">
-                <!-- card-title player-title player-title-reverse -->
-                <div class="card ctrl-score" id="ctrl-score-H">
-                    <div class="card-title player-title reverse">
-                        <img class="player-title-pp" src="../resources/images/pp_UV_0.png" id="player-pp-H">
-                        <div class="player-title-dn" id="player-dn-H">Display Name</div>
-                    </div>
-                    <div class="card-body ctrl-score-body">
-                        <div class="row">
-                            <div class="col col-3">
-                                <button class="btn-score-input score-input-special" id="ctrl-score-H-special-bf">B/F</button>
-                                <button class="btn-score-input score-input-special rf" id="ctrl-score-H-special-rf">R/F</button>
-                                <button class="btn-score-input score-input-special" id="ctrl-score-H-special-gb">GB</button>
-                            </div>
-                            <div class="col col-6">
-                                <p class="ctrl-score-main" id="ctrl-score-H-score">0</p>
-                            </div>
-                            <div class="col col-3">
-                                <button class="btn-score-input" id="ctrl-score-H-point">+</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-footer">
-                        <div class="ctrl-score-break-input" id="ctrl-score-H-break-input">
-                            <img class="icon-break" src="../resources/icons/icon_break.svg">                                
-                            <button class="btn-score-input btn-break" id="ctrl-score-H-break-dry">Dry</button>
-                            <button class="btn-score-input btn-break" id="ctrl-score-H-break-in">In</button>
-                            <button class="btn-score-input btn-break" id="ctrl-score-H-break-scr">Scr</button>
-                            <button class="btn-score-input btn-break" id="ctrl-score-H-break-foul">Foul</button>
-                        </div>
+                        <table>
+                            <tr>
+                                <td>Start Time:</td>
+                                <td id="match-summary-start-time">-</td>
+                            </tr>
+                            <tr>
+                                <td>End Time:</td>
+                                <td id="match-summary-end-time">-</td>
+                            </tr>
+                            <tr>
+                                <td>Match Duration:</td>
+                                <td id="match-summary-duration">-</td>
+                            </tr>
+                            <tr>
+                                <td>Average Frame Time:</td>
+                                <td id="match-summary-average-frame-time">-</td>
+                            </tr>
+                        </table>
                     </div>
                 </div>
-            </div>
-            <div class="col-sm-6">
-                <div class="card ctrl-score" id="ctrl-score-A">
-                    <div class="card-title player-title">
-                        <img class="player-title-pp" src="../resources/images/pp_UV_0.png" id="player-pp-A">
-                        <div class="player-title-dn" id="player-dn-A">Display Name</div>
-                    </div>
-                    <div class="card-body ctrl-score-body">
-                        <div class="row">
-                            <div class="col col-3">
-                                <button class="btn-score-input score-input-special" id="ctrl-score-A-special-bf">B/F</button>
-                                <button class="btn-score-input score-input-special rf" id="ctrl-score-A-special-rf">R/F</button>
-                                <button class="btn-score-input score-input-special" id="ctrl-score-A-special-gb">GB</button>
-                            </div>
-                            <div class="col col-6">
-                                <p class="ctrl-score-main" id="ctrl-score-A-score">0</p>
-                            </div>
-                            <div class="col col-3">
-                                <button class="btn-score-input" id="ctrl-score-A-point">+</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-footer">
-                        <div class="ctrl-score-break-input" id="ctrl-score-A-break-input"> 
-                            <img class="icon-break" src="../resources/icons/icon_break.svg">                               
-                            <button class="btn-score-input btn-break" id="ctrl-score-A-break-dry">Dry</button>
-                            <button class="btn-score-input btn-break" id="ctrl-score-A-break-in">In</button>
-                            <button class="btn-score-input btn-break" id="ctrl-score-A-break-scr">Scr</button>
-                            <button class="btn-score-input btn-break" id="ctrl-score-A-break-foul">Foul</button>
-                        </div>
-                    </div>
+                <div class="col-sm-3">
+                    <img id="teamA_icon" class="team-icon" src="../resources/icons/icon_player.svg" alt="Team A Logo">
+                    <p id="teamA_name" class="team-name color-a">Team A</p>
                 </div>
             </div>
         </div>
-
-        <div class="card" id="scorecard-horizontal">
-            <table class="tbl-scorecard">
+        
+        <div class="card" id="scorecard-h">
+            <table id="scorecard-h-table">
                 <th>
                     <tr>
-                        <td></td>
+                        <td>X</td>
                         <td>F1</td>
                         <td>F2</td>
-                        <td>F3</td>
-                        <td>F4</td>
-                        <td>F5</td>
-                        <td>F6</td>
-                        <td>F7</td>
-                        <td>F8</td>
-                        <td>F9 <i class="bi bi-x tag"></i></td>
-                        <td>Total</td>
+                        <td>Final Score</td>
                     </tr>
                 </th>
                 <tr>
-                    <td>Player H *</td>
-                    <td>
-                        <select id="f1-player-h-dropdown" class="form-select" aria-label="F1 Player H selection">
-                            <option value="">0</option>
-                            <option value="opt1">1</option>
-                            <option value="opt2">B/F</option>
-                            <option value="opt3">R/F</option>
-                            <option value="opt4">GB</option>
-                        </select>
-                    </td>
-                    <td>-</td>
-                    <td>-*</td>
-                    <td>-</td>
-                    <td>-*</td>
-                    <td>-</td>
-                    <td>-*</td>
-                    <td>-</td>
-                    <td>-*</td>
+                    <td>Player H</td>
+                    <td>0</td>
+                    <td>0</td>
                     <td>0</td>
                 </tr>
                 <tr>
                     <td>Player A</td>
-                    <td>
-                        <select id="f1-player-h-dropdown" class="form-select" aria-label="F1 Player H selection">
-                            <option value="">0</option>
-                            <option value="opt1">1</option>
-                            <option value="opt2">B/F</option>
-                            <option value="opt3">R/F</option>
-                            <option value="opt4">GB</option>
-                        </select>
-                    </td>
-                    <td>-*</td>
-                    <td>-</td>
-                    <td>-*</td>
-                    <td>-</td>
-                    <td>-*</td>
-                    <td>-</td>
-                    <td>-*</td>
-                    <td>-</td>
                     <td>0</td>
-                </tr>
-                
-                <tr>
-                    <td>Break</td>
-                    <td>
-                        <select id="f1-player-h-dropdown" class="form-select" aria-label="F1 Player H selection">
-                            <option value="">-</option>
-                            <option value="opt1">dry</option>
-                            <option value="opt2">in</option>
-                            <option value="opt3">scratch</option>
-                            <option value="opt4">foul</option>
-                        </select>
-                    </td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                </tr>
-
-                <tr>
-                    <td>Duration</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
+                    <td>0</td>
                     <td>0</td>
                 </tr>
             </table>
         </div>
-        
-        
-        <div class="card" id="scorecard-vertical" style="display: none;">
-            <table class="tbl-scorecard">
-                <th>
-                    <tr>
-                        <td></td>
-                        <td>Player H *</td>
-                        <td>Player A</td>
-                        <td>Break</td>
-                        <td>Duration</td>
-                    </tr>
-                </th>
-                <tr>
-                    <td>F1</td>
-                    <td>
-                        <select id="f1-player-h-dropdown" class="form-select" aria-label="F1 Player H selection">
-                            <option value="">0</option>
-                            <option value="opt1">1</option>
-                            <option value="opt2">B/F</option>
-                            <option value="opt3">R/F</option>
-                            <option value="opt4">GB</option>
-                        </select>
-                    </td>
-                    <td>
-                        <select id="f1-player-h-dropdown" class="form-select" aria-label="F1 Player H selection">
-                            <option value="">0</option>
-                            <option value="opt1">1</option>
-                            <option value="opt2">B/F</option>
-                            <option value="opt3">R/F</option>
-                            <option value="opt4">GB</option>
-                        </select>
-                    </td>
-                    <td>
-                        <select id="f1-player-h-dropdown" class="form-select" aria-label="F1 Player H selection">
-                            <option value="">-</option>
-                            <option value="opt1">dry</option>
-                            <option value="opt2">in</option>
-                            <option value="opt3">scratch</option>
-                            <option value="opt4">foul</option>
-                        </select>
-                    </td>
-                    <td>-</td>
-                </tr>
-                <tr>
-                    <td>F2</td>
-                    <td>-</td>
-                    <td>-*</td>
-                    <td>-</td>
-                    <td>-</td>
-                </tr>
-                <tr>
-                    <td>F3</td>
-                    <td>-*</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                </tr>
-                <tr>
-                    <td>F4</td>
-                    <td>-</td>
-                    <td>-*</td>
-                    <td>-</td>
-                    <td>-</td>
-                </tr>
-                <tr>
-                    <td>F5</td>
-                    <td>-*</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                </tr>
-                <tr>
-                    <td>F6</td>
-                    <td>-</td>
-                    <td>-*</td>
-                    <td>-</td>
-                    <td>-</td>
-                </tr>
-                <tr>
-                    <td>F7</td>
-                    <td>-*</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                </tr>
-                <tr>
-                    <td>F8</td>
-                    <td>-</td>
-                    <td>-*</td>
-                    <td>-</td>
-                    <td>-</td>
-                </tr>
-                <tr>
-                    <td>F9</td>
-                    <td>-*</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                </tr>
-                <tfoot>
-                    <tr>
-                        <td>Total</td>
-                        <td>0</td>
-                        <td>0</td>
-                        <td></td>
-                        <td>0</td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-
-        <div class="card">            
-            <div id="timeline_h" class="match-timeline-container"></div>
-        </div>
-
-        <style>
-            .card
-            {
-                padding: 0rem;
-                margin: 0.75rem;
-                color: var(--color-base-10);
-            }
-
-            /* Settings Card */
-            #card-match-settings .card-title
-            {
-                padding: 0.5rem;
-                margin: auto 0rem;
-                font-family: 'Font_TDC';
-                font-size: 1.5rem;
-            }
-
-            .settings-title
-            {
-                text-align: center;
-text-align-last: center;
-                font-size: 1.5rem;
-                margin: 0.5rem auto;
-                font-family: 'Font_TDC';
-            }
-
-            #card-match-settings label, #card-match-settings .form-select
-            {
-                padding: 0.5rem;
-            }
-
-            #card-match-settings .col-sm-6
-            {
-                padding: 0.25rem;
-                margin: auto;
-            }
-
-            #card-match-settings label
-            {
-                width: 100%;
-                text-align: center !important;
-            }
-
-            #card-match-settings #advanced-break-label
-            {
-                padding: 0rem;
-                margin: auto 0.25rem;
-            }
-
-            #card-match-settings #match-time-settings-label, #card-match-settings #frame-time-settings-label
-            {
-                text-align: center;
-text-align-last: center;
-                font-size: 4rem;
-                margin: auto;
-                font-family: 'Font_TDC';
-            }
-
-            .timer-buttons-container
-            {
-                display: flex;
-                justify-content: center;
-            }
-
-            #card-match-settings .timer-button
-            {
-                background-color: transparent;
-                border: none;
-                padding: 0.5rem;
-                font-size: 2rem;
-                color: var(--color-base-10);
-            }
-
-            #card-match-settings .form-control
-            {
-                margin: auto 0rem;
-            }
-
-            #btn-match-timer-start, #btn-frame-timer-start
-            {
-                box-shadow: inset 0px -48px 48px -48px var(--color-accent-0);
-            }            
-
-            #btn-match-timer-pause, #btn-frame-timer-pause
-            {
-                box-shadow: inset 0px -48px 48px -48px var(--color-highlight-0);
-            }            
-
-            #btn-match-timer-reset, #btn-frame-timer-reset
-            {
-                box-shadow: inset 0px -48px 48px -48px var(--color-secondary-00);
-            }
-
-            /* Score Control Cards */
-
-            .ctrl-score
-            {
-                margin-left: 0rem;
-                margin-right: 0rem;
-            }
-
-            table
-            {
-                text-align: center;
-text-align-last: center;
-                margin: 0rem;
-                width: 100%;
-            }
-
-            .row
-            {
-                width: 100%;
-                padding: 0rem !important;
-                margin: 0rem !important;
-            }
-
-            /* Score Input Header */
-            .player-title
-            {
-                display: flex;
-                padding: 1rem;
-                margin: 0rem;
-                backdrop-filter: blur(96px);
-            }
-
-            .reverse
-            {
-                flex-direction: row-reverse;
-            }
-
-            .player-title-dn
-            {
-                margin: auto 1rem;
-                font-size: 2.5rem;
-                font-family: 'Font_TDC';
-                white-space: nowrap;
-                overflow: hidden;
-                color: var(--color-base-10);
-            }
-
-            .player-title-pp
-            {
-                width: 100%;
-                max-width: 3em;
-                object-fit: contain;
-                box-shadow: 0px 0px 12px 0px var(--color-base-00), inset 0px 0px 12px 0px var(--color-base-00);
-                border-radius: 50%;
-                margin: auto 0rem;
-            }
-
-            /* Score Input Body */
-            .ctrl-score-body
-            {
-                padding: 0rem;
-                box-shadow: inset 0px 0px 96px 12px rgba(0,0,0,0.75);
-                overflow-y: hidden;
-            }
-
-            .ctrl-score-main
-            {
-                font-size: 6rem; 
-                text-align: center;
-text-align-last: center; 
-                margin: auto; 
-                padding-top: 1rem;
-                color: var(--color-base-10);
-                font-family: 'Font_TDC';
-            }
-
-            .btn-score-input
-            {
-                background-color: transparent;
-                border: none;
-                color: var(--color-base-10);
-                padding: auto;
-
-                font-family: 'Font_TDC';
-            }
-            
-            .btn-score-input:hover
-            {
-                box-shadow: inset 0px 0px 48px -24px var(--color-primary-00) !important;
-                color: var(--color-base-10);
-            }
-
-            .btn-score-input:active
-            {
-                box-shadow: inset 0px 0px 24px 0px var(--color-primary-00) !important;
-                color: var(--color-base-10);
-            }
-
-            .btn-score-input
-            {
-                width: 100%;
-                height: 100%;
-                font-size: 6rem;
-                box-shadow: inset 48px 0px 48px -48px var(--color-primary-00);
-            }
-
-            .btn-score-input.score-input-special
-            {
-                width: 100%;
-                height: 33.3%;
-                font-size: 2rem;
-                box-shadow: inset -48px 0px 48px -48px var(--color-highlight-0);
-            }
-
-            .btn-score-input.score-input-special.rf
-            {
-                box-shadow: inset -48px 0px 48px -48px var(--color-accent-0);
-            }
-
-            /* Score Input Footer */
-            .card-footer
-            {
-                display: flex;
-                padding: 0rem 1rem;
-                backdrop-filter: blur(96px);
-                margin: 0rem;
-            }
-
-            .icon-break
-            {
-                height: 100%;
-                max-height: 3em;
-                object-fit: contain;
-                margin: auto 1rem;
-            }
-
-            .ctrl-score-break-input
-            {
-                display: flex;
-                width: 100%;
-                padding: 0rem 1rem;
-                justify-content: center;
-                width: 100%;
-            }
-
-            .btn-score-input.btn-break
-            {
-                font-size: 1.5rem;
-                box-shadow: inset 0px 48px 48px -48px var(--color-secondary-00);
-                margin: 0rem 0.1rem;
-                padding: 0.5rem;
-            }
-
-            /* Scorecard */
-            .form-select, .form-select:focus
-            {
-                background-color: transparent;
-                color: var(--color-base-10);
-                -webkit-appearance: none;
-                -moz-appearance: none;
-                appearance: none;
-
-                text-align: center;
-text-align-last: center;
-                padding: 0rem;
-                border: none;
-                outline: none;
-
-                /* Hide native dropdown arrow across browsers */
-                background-image: none !important;
-                background-repeat: no-repeat;
-                background-position: right 0.5rem center;
-                padding-right: 0.5rem;
-
-                box-shadow: inset 0px 0px 12px 0px rgba(0,0,0,0.5);
-            }
-
-            /* Ensure focus state remains visible on dark background */
-            .form-select:hover, .form-select:active {
-                border-color: var(--color-primary-00);
-                box-shadow: 0 0 12px 0px var(--color-primary-00);
-                outline: none;
-                border: none;
-            }
-
-            /* Options shown in the native dropdown */
-            .form-select option {
-                background-color: var(--color-base-03);
-                color: var(--color-base-10);
-            }
-
-            /* Hide default IE/Edge arrow if you plan to supply a custom caret */
-            .form-select::-ms-expand {
-                display: none;
-            }
-
-            .tbl-scorecard .form-select
-            {
-                padding: 0.5rem 0rem !important;
-            }
-
-            sup
-            {
-                color: var(--color-highlight-0);
-                vertical-align: super;
-                font-size: 2rem;
-            }
-        </style>
-
-        <style>
-            .match-timeline-container
-            {
-                width: 100%;
-                min-height: 20vh;
-                box-shadow: inset 0px 0px 12px 0px rgba(0,0,0,0.5);
-                margin: 0rem;
-                padding: 0rem;
-            }
-        </style>
     </div>
-
     
+    <style>
+        .color-h
+        {
+            color: var(--color-primary-00);
+        }
+
+        .color-a
+        {
+            color: var(--color-secondary-00);
+        }
+
+        .team-icon
+        {
+            width: 100%;
+            max-width: 30vw;
+            height: auto;
+            object-fit: contain;
+            border-radius: 50%;
+            box-shadow: 0 4px 24px var(--color-base-00);
+            margin: auto;
+            display: flex;
+        }
+
+        .team-name
+        {
+            text-align: center;
+            font-size: 4rem;
+            font-weight: bold;
+            font-family: 'Font_TDC';
+        }
+
+        #match-summary, #scorecard-h
+        {
+            text-align: center;
+        }
+
+        #match-summary td, #scorecard-h td
+        {
+            border: 1px solid var(--color-base-03);
+            padding: 1rem 0.25rem;
+        }
+
+        .scorecard-player-name, .scorecard-totals
+        {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        .score-win
+        {
+            color: var(--color-accent-0);
+            box-shadow: inset 0px 0px 12px 0px var(--color-accent-0);
+        }
+
+        .score-lose
+        {
+            color: var(--color-base-05);
+        }
+    </style>
 
     <div id="component-siteMap"></div>
 
@@ -650,10 +229,10 @@ text-align-last: center;
     <script src="../scripts/VFX/bg_anim_ColorGradient.js"></script>
     <script src="../scripts/VFX/bg_anim_PoolVisualization.js"></script>
 
-    <!-- Match Scripts -->
-    <script src="../scripts/matches/match_data.js" type="module"></script>
+    <script src="../scripts/accounts/data_user.js" type="module"></script>
 
-    
-    
+    <!-- Match Scripts -->
+    <script src="../scripts/matches/scoreboard.js"></script>
+
 </body>
 </html>

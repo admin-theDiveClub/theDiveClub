@@ -34,6 +34,7 @@ export function UpdateMatchControls (_match)
     match = _match;    
     ResetBreakButtons();
     UpdateLiveFrameButtons();
+    UpdateMatchStatus();
 
     clearInterval(UpdateTimerUI.interval);
     UpdateTimerUI(match);
@@ -90,7 +91,7 @@ export async function UpdateFrame (frameIndex, frameData)
 
             var newFrame = _newFrame();
             match.history.push(newFrame);
-        }
+        }        
     }
 
     match.results = UpdateMatchResults(match);
@@ -102,6 +103,73 @@ export async function UpdateFrame (frameIndex, frameData)
     } else 
     {
         OnPayloadReceived(match);
+        UpdateMatchStatus();
+    }
+    
+}
+
+import { GetPlayerDisplayName } from "./match_UI.js";
+
+async function UpdateMatchStatus ()
+{  
+    const winCondition = match.settings ? match.settings.winCondition ? match.settings.winCondition : null : null;
+    const winType = match.settings ? match.settings.winType ? match.settings.winType : null : null;
+
+    if (winCondition && winType)
+    {
+        var matchCompleted = false;
+        if (winType === "race")
+        {
+            const results = match.results ? match.results : null;
+            if (results && results.h && results.a && results.h.fw != null && results.a.fw != null)
+            {
+                if (results.h.fw >= winCondition || results.a.fw >= winCondition)
+                {
+                    matchCompleted = true;
+                }
+            }
+        } else if (winType === "fixed")
+        {
+            const results = match.results ? match.results : null;
+            if (results && results.h && results.a && results.h.fw != null && results.a.fw != null)
+            {
+                if (results.h.fw + results.a.fw >= winCondition)
+                {
+                    matchCompleted = true;
+                }
+            }
+        }
+
+        if (matchCompleted)
+        {
+            var winnerPlayer = null;
+            const results = match.results ? match.results : null;
+            if (results.h.fw > results.a.fw)
+            {
+                winnerPlayer = GetPlayerDisplayName('h');
+            } else 
+            {
+                winnerPlayer = GetPlayerDisplayName('a');
+            }
+
+            if (confirm("Winner: " + winnerPlayer + ". Do you want to end the match?"))
+            {
+                if (!match.info) match.info = {};
+                match.info.status = "Complete";
+                if (!match.time) match.time = {};
+                match.time.end = new Date().toISOString();
+                
+                const response = await supabase.from('tbl_matches').update(match).eq('id', match.id);
+                if (response.error)
+                {
+                    alert("Error Ending Match: " + response.error.message);
+                    console.error("Error Ending Match: ", response.error);
+                } else 
+                {
+                    window.location.href = `../matches/scoreboard.html?matchID=${match.id}`;
+                }
+            }
+        }
     }
 }
 

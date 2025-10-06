@@ -178,10 +178,19 @@ async function GetDisplayName (username)
 {
     if (username.includes("@"))
     {
+        if (profilesLoaded.find(p => p.username === username))
+        {
+            const profile = profilesLoaded.find(p => p.username === username);
+            return `<span class='player-strong'>${profile.nickname || profile.name}</span>`;
+        }
+
         const response = await supabase.from('tbl_players').select('name,nickname').eq('username', username).single();
 
         if (response.data)
         {
+            var profile = response.data;
+            profile.username = username;
+            profilesLoaded.push(profile);
             if (response.data.nickname || response.data.name)
             {
                 return `<span class='player-strong'>${response.data.nickname || response.data.name}</span>`;
@@ -193,6 +202,8 @@ async function GetDisplayName (username)
     }
     return username;
 }
+
+var profilesLoaded = [];
 
 function GetAssociatedLeagues (matches)
 {
