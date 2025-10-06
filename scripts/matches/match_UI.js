@@ -578,8 +578,20 @@ function PopulateScorecard (match, mode, playerH, playerA)
             e_frameRow.appendChild(e_score_H);
             e_frameRow.appendChild(e_score_A);
 
-            const duration = frame.duration ? frame.duration : null;
-            const e_duration = e_cell_duration(duration);
+            var duration = frame.duration ? frame.duration : null;
+            var e_duration = null;
+            if (duration)
+            {
+                e_duration = e_cell_duration(duration);
+            } else 
+            {
+                if (frame.startTime)
+                {
+                    duration = GetFrameDuration(frame.startTime, new Date().toISOString());
+                    e_duration = e_cell_duration(duration);
+                    e_duration.id = 'scorecard-frame-duration-live';
+                }
+            }
             e_frameRow.appendChild(e_duration);
 
             e_table.appendChild(e_frameRow);
@@ -662,9 +674,24 @@ function PopulateScorecard (match, mode, playerH, playerA)
             const e_score_A = e_cell_score(score_A, i);
             e_playerARow.appendChild(e_score_A);
 
-            const duration = frame.duration ? frame.duration : null;
-            const e_duration = e_cell_duration(duration);
-            e_durationRow.appendChild(e_duration);
+            var duration = frame.duration ? frame.duration : null;
+            var e_duration = null;
+            if (duration)
+            {
+                e_duration = e_cell_duration(duration);
+            } else 
+            {
+                if (frame.startTime)
+                {
+                    duration = GetFrameDuration(frame.startTime, new Date().toISOString());
+                    e_duration = e_cell_duration(duration);
+                    e_duration.id = 'scorecard-frame-duration-live';
+                }
+            }
+            if (e_duration)
+            {
+                e_durationRow.appendChild(e_duration);
+            }
         }
 
         const e_totalsH = e_cell_header("Totals", null);
@@ -680,6 +707,17 @@ function PopulateScorecard (match, mode, playerH, playerA)
         const e_totalsD = e_cell_duration(totals.duration);
         e_durationRow.appendChild(e_totalsD);
     }
+}
+
+function GetFrameDuration (startTime, endTime)
+{
+    if (startTime && endTime)
+    {
+        const start = new Date(startTime);
+        const end = new Date(endTime);
+        return (end - start) / 1000; // duration in seconds
+    }
+    return null;
 }
 
 import { DrawMatchTimeLine } from '../charts/chart_line.js';

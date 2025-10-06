@@ -34,7 +34,10 @@ export function UpdateMatchControls (_match)
     match = _match;    
     ResetBreakButtons();
     UpdateLiveFrameButtons();
-    UpdateTimerUI(match.time);
+
+    clearInterval(UpdateTimerUI.interval);
+    UpdateTimerUI(match);
+    UpdateTimerUI.interval = setInterval(() => {UpdateTimerUI(match);}, 1000);
 }
 
 export function _liveFrameIndex ()
@@ -66,20 +69,25 @@ export async function UpdateFrame (frameIndex, frameData)
 {
     if (frameData == null)
     {
+        match.history[frameIndex + 1].startTime = match.history[frameIndex].startTime;
         match.history.splice(frameIndex, 1);
         if (match.history.length == 1)
         {
             match.history[0]["break-player"] = match.settings.lagWinner;
+            match.history[0].startTime = match.time.start ? match.time.start : new Date().toISOString();
         }
     } else 
     {
-        frameData.endTime = new Date().toISOString();
-        frameData.duration = GetFrameDuration(match.history[frameIndex - 1] ? match.history[frameIndex - 1] : null, frameData);
-
         match.history[frameIndex] = frameData;
-        console.log(frameData);
+
         if (frameIndex == _liveFrameIndex() && (frameData["winner-player"] || frameData["winner-result"]))
-        {
+        {            
+            if (!frameData.endTime && !frameData.duration)
+            {            
+                frameData.endTime = new Date().toISOString();
+                frameData.duration = GetFrameDuration(frameData.startTime, frameData.endTime);
+            }
+
             var newFrame = _newFrame();
             match.history.push(newFrame);
         }
@@ -97,29 +105,31 @@ export async function UpdateFrame (frameIndex, frameData)
     }
 }
 
-function GetFrameDuration (prevFrame, currentFrame)
+function GetFrameDuration (startTime, endTime)
 {
-    const parseTime = (val) =>
+    if (startTime && endTime)
     {
-        if (val == null) return null;
-        if (typeof val === 'number') return val;
-        const d = new Date(val);
-        return isNaN(d.getTime()) ? null : d.getTime();
-    };
-
-    const t_prev = prevFrame && prevFrame.endTime
-        ? parseTime(prevFrame.endTime)
-        : (match.time && match.time.start ? parseTime(match.time.start) : null);
-    const t_curr = currentFrame && currentFrame.endTime ? parseTime(currentFrame.endTime) : null;
-
-    if (t_prev != null && t_curr != null)
-    {
-        return (t_curr - t_prev) / 1000; // duration in seconds
+        const start = new Date(startTime);
+        const end = new Date(endTime);
+        return (end - start) / 1000; // duration in seconds
     }
     return null;
 }
 
 WireMatchTimerControls ();
+
+async function PushMatchUpdate (match)
+{
+    const response = await supabase.from('tbl_matches').update(match).eq('id', match.id).select().single();
+    if (response.error)
+    {
+        alert("Error Starting Match: " + response.error.message);
+        console.error("Error Starting Match: ", response.error);
+    } else
+    {
+        OnPayloadReceived(response.data);
+    }
+}
 
 function WireMatchTimerControls ()
 {
@@ -128,57 +138,76 @@ function WireMatchTimerControls ()
     {
         if (!match.time) match.time = {};
         match.time.start = new Date().toISOString();
-        const response = await supabase.from('tbl_matches').update(match).eq('id', match.id).select().single();
-        if (response.error)
+
+        if (match.history && match.history.length == 1)
         {
-            alert("Error Starting Match: " + response.error.message);
-            console.error("Error Starting Match: ", response.error);
-        } else
+            match.history[0].startTime = match.time.start;
+        }
+        await PushMatchUpdate(match);
+    });
+
+    const btn_FrameTimerReset = gid("btn-frame-timer-reset");
+    btn_FrameTimerReset.addEventListener('click', async () =>
+    {
+        const liveFrame = GetLiveFrame();
+        if (liveFrame)
         {
-            OnPayloadReceived(response.data);
+            liveFrame.startTime = new Date().toISOString();
+            const liveFrameIndex = _liveFrameIndex();
+            match.history[liveFrameIndex] = liveFrame;
+            await PushMatchUpdate(match);
         }
     });
 }
 
-function UpdateTimerUI (time)
+function formatTime (time)
 {
-    const display_StartTime = gid("match-time-settings-label-start");
+    var seconds = Math.floor(time / 1000);
+    var minutes = Math.floor(seconds / 60);
+    var hours = Math.floor(minutes / 60);
+    seconds = seconds % 60;
+    minutes = minutes % 60;
+    const pad = (n) => (n < 10 ? "0" : "") + n;
+    var formattedTime;
+    if (hours === 0) {
+        formattedTime = pad(minutes) + ":" + pad(seconds);
+    } else {
+        formattedTime = pad(hours) + ":" + pad(minutes) + ":" + pad(seconds);
+    }
+    return formattedTime;
+}
 
-    if (time && time.start)
+function UpdateTimerUI (match)
+{
+    const m_startTime = match.time.start ? new Date(match.time.start) : null;
+    if (m_startTime)
     {
-        const startTime = new Date(time.start);
-        display_StartTime.textContent = "Started at: " + startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        var m_duration = new Date() - m_startTime;
+        m_duration = formatTime(m_duration);
     }
 
-    const display_Time = gid("match-time-settings-label");
-    setInterval(() => {
-        if (time && time.start)
-        {
-            const startTime = new Date(time.start);
-            const currentTime = new Date();
-            const elapsedMs = currentTime - startTime;
-            const elapsedMinutes = Math.floor(elapsedMs / 60000);
-            const elapsedSeconds = Math.floor((elapsedMs % 60000) / 1000);
-            display_Time.textContent = `${String(elapsedMinutes).padStart(2, '0')}:${String(elapsedSeconds).padStart(2, '0')}`;
-        }
+    const liveFrame = GetLiveFrame();
+    if (liveFrame && liveFrame.startTime)
+    {
+        const f_startTime = new Date(liveFrame.startTime);
+        var f_duration = new Date() - f_startTime;
+        f_duration = formatTime(f_duration);
+    }
 
-        const display_TimeSinceLastFrame = gid("frame-time-settings-label");
-        const lastFrameEndTime = match.history && match.history.length > 0 ? match.history[match.history.length - 1].endTime : null;
-        const timeSinceLastFrame = lastFrameEndTime ? (new Date() - new Date(lastFrameEndTime)) / 1000 : null;
+    const matchTimeLabelStart = gid("match-time-settings-label-start");
+    matchTimeLabelStart.textContent = m_startTime ? "Start Time: " +m_startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "Match Not Started";
 
+    const matchTimeLabel = gid("match-time-settings-label");
+    matchTimeLabel.textContent = m_duration ? m_duration : "00:00:00";
 
-        if (timeSinceLastFrame !== null)
-        {
-            const minutes = Math.floor(timeSinceLastFrame / 60);
-            const seconds = Math.floor(timeSinceLastFrame % 60);
-            display_TimeSinceLastFrame.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-        } 
-    }, 1000);
+    const frameTimeLabel = gid("frame-time-settings-label");
+    frameTimeLabel.textContent = f_duration ? f_duration : "00:00";
 
-    const lastFrameEndTime = match.history && match.history.length > 0 ? match.history[match.history.length - 1].endTime : null;
-    const timeSinceLastFrame = lastFrameEndTime ? (new Date() - new Date(lastFrameEndTime)) / 1000 : null;
-
-    
+    const liveFrameScorecardDuration = document.getElementById("scorecard-frame-duration-live");
+    if (liveFrameScorecardDuration)
+    {
+        liveFrameScorecardDuration.innerHTML = f_duration ? `<i class="bi bi-clock"></i> ${f_duration}` : "00:00";
+    }
 }
 
 function UpdateMatchResults (match)
@@ -268,7 +297,9 @@ function GetEmptyFrame ()
         "break-player": null,
         "break-event": null,
         "winner-player": null,
-        "winner-result": null
+        "winner-result": null,
+        "startTime": null,
+        "endTime": null
     }
     return emptyFrame;
 }
@@ -281,6 +312,7 @@ function _newFrame ()
 
     var newFrame = GetEmptyFrame();
     newFrame["break-player"] = _newFrameBreakPlayer(lagType, lagWinner, history);
+    newFrame.startTime = new Date().toISOString();
 
     return newFrame;
 }
@@ -738,7 +770,6 @@ function WireMatchSettingsControls ()
                         const prevFrame = history[i - 1];
                         history[i]["break-player"] = prevFrame ? prevFrame["winner-player"] : newSettings.lagWinner;
                     }
-                    console.log(history[i]["break-player"]);
                 }
             }
 
@@ -789,7 +820,6 @@ function WireMatchSettingsControls ()
                         const prevFrame = history[i - 1];
                         history[i]["break-player"] = prevFrame ? prevFrame["winner-player"] : newSettings.lagWinner;
                     }
-                    console.log(history[i]["break-player"]);
                 }
             }
 
