@@ -79,7 +79,10 @@ async function createMatch(opponentName)
     {
         const players = {"h": {"username": username}, "a": {"username": opponentName}};
         const info = {"status": "new"};
-        const match = {"players": players, "info": info};
+        const settings = {"lagType": "alternate", "advancedBreaks": true, "winType":"race"};
+        const time = {"start": new Date().toISOString()};
+        const results = {"h": {"fw":0}, "a": {"fw":0}};
+        const match = {"players": players, "info": info, "settings": settings, "time": time, "results": results};
         const response = await supabase.from('tbl_matches').insert(match).select().single();
         console.log("Create Match Response:", response);
         if (response.error)
@@ -87,7 +90,15 @@ async function createMatch(opponentName)
             alert('Error creating match: ' + response.error.message);
             return;
         } else 
-        {
+        {  
+            localStorage.removeItem('matchID');
+            localStorage.removeItem('m_timingData');
+            localStorage.removeItem('timingData');
+
+            sessionStorage.removeItem('matchID');
+            sessionStorage.removeItem('m_timingData');
+            sessionStorage.removeItem('timingData');
+
             alert('Match created successfully!');
             window.location.href = `../matches/index.html?matchID=${response.data.id}`;
         }
@@ -106,10 +117,19 @@ Initialize ();
 function Initialize ()
 {
     const user = _user();
-    const displayName = user.nickname ? user.nickname : (user.name ? user.name : (user.username ? user.username : "?"));
-    var message = "Welcome back, " + displayName;
-    document.getElementById('user-welcome').innerText = message;
+    if (user)
+    {
+        const displayName = user.nickname ? user.nickname : (user.name ? user.name : (user.username ? user.username : "?"));
+        var message = "Welcome back, " + displayName;
+        document.getElementById('user-welcome').innerText = message;
 
-    const pp = user.pp ? user.pp : "../resources/icons/icon_player.svg";
-    document.getElementById('user-profile-pic').src = pp;
+        const pp = user.pp ? user.pp : "../resources/icons/icon_player.svg";
+        document.getElementById('user-profile-pic').src = pp;
+
+        document.getElementById('component-loading-overlay').style.display = 'none';
+    } else 
+    {
+        alert('Please Log In before creating a match. All matches can be found on your user profile later on.');
+        window.location.href = "../index.html";
+    }
 }

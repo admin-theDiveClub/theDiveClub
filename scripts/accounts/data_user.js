@@ -14,13 +14,6 @@ async function Start ()
             //console.log("User Profile:", userProfile);
             console.log("Welcome back: " + userProfile.displayName);
             Initialize_NavBar();
-
-            if (localStorage.getItem('redirectTo'))
-            {
-                const redirectTo = localStorage.getItem('redirectTo');
-                localStorage.removeItem('redirectTo');
-                window.location.href = redirectTo;
-            }
         }
     } else 
     {

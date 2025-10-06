@@ -35,85 +35,99 @@
     <div id="component-login"></div>
 
     <div class="main">
-        <div class="card" id="card-match-settings">
+        <div class="card match-settings-card" id="card-match-settings">
             <div class="card-title" id="card-match-settings-toggle" role="button" tabindex="0" aria-expanded="true" aria-controls="card-match-settings-body" style="display:flex;align-items:center;cursor:pointer;">
                 <i class="bi bi-gear"></i>
                 <span style="margin-left:0.5rem;">Match Settings</span>
             </div>
             <div class="card-body" id="card-match-settings-body">
-            <div class="row">                
+                <div class="row">
 
-                <div class="col-sm-6 col-lg-3">
-                    <p class="settings-title">Win Type</p>
-                    <label for="win-type-select" class="form-label">Select Win Type</label>
-                    <select id="win-type-select" class="form-select" aria-label="Select Win Type">
-                        <option value="freeplay" selected>Free Play</option>
-                        <option value="race">Race To / Best Of</option>
-                        <option value="fixed">Fixed Frame Count</option>
-                    </select>
-                    <div id="win-type-race-settings">
-                        <label for="input-race-to" class="form-label" id="win-condition-label">Race To:</label>
-                        <input type="number" id="input-race-to" class="form-control" inputmode="numeric" pattern="[0-9]*" min="0" step="1" placeholder="frames">
-                        <label for="input-best-of" class="form-label" id="win-condition-label">Best Of:</label>
-                        <input type="number" id="input-best-of" class="form-control" inputmode="numeric" pattern="[0-9]*" min="0" step="1" placeholder="frames">
+                    <div class="col-sm-6 col-lg-3">
+                        <p class="settings-title">Win Type</p>
+                        <label for="win-type-select" class="form-label">Select Win Type</label>
+                        <select id="win-type-select" class="form-select" aria-label="Select Win Type">
+                            <option value="freeplay" selected>Free Play</option>
+                            <option value="race">Race To / Best Of</option>
+                            <option value="fixed">Fixed Frame Count</option>
+                        </select>
+                        <div id="win-type-race-settings" style="display: none;">
+                            <label for="input-race-to" class="form-label" id="win-condition-label">Race To:</label>
+                            <input type="number" id="input-race-to" class="form-control" inputmode="numeric" pattern="[0-9]*" min="0" step="1" placeholder="frames">
+                            <label for="input-best-of" class="form-label" id="win-condition-label">Best Of:</label>
+                            <input type="number" id="input-best-of" class="form-control" inputmode="numeric" pattern="[0-9]*" min="0" step="1" placeholder="frames">
+                        </div>
+                        <div id="win-type-fixed-settings" style="display: none;">
+                            <label for="input-fixed-frames" class="form-label" id="win-condition-label">Fixed Frames:</label>
+                            <input type="number" id="input-fixed-frames" class="form-control" placeholder="frames">
+                        </div>
                     </div>
-                    <div id="win-type-fixed-settings">
-                        <label for="input-fixed-frames" class="form-label" id="win-condition-label">Fixed Frames:</label>
-                        <input type="number" id="input-fixed-frames" class="form-control" placeholder="frames">
-                    </div>
-                </div>
 
-                <div class="col-sm-6 col-lg-3">
-                    <p class="settings-title">Lag Winner</p>
-                    <label for="lag-winner-select" class="form-label">Select Lag Winner</label>
-                    <select id="lag-winner-select" class="form-select" aria-label="Select Lag Winner">
-                        <option value="" selected>Select player</option>
-                        <option value="h" id="lag-winner-h">Player_H</option>
-                        <option value="a" id="lag-winner-a">Player_A</option>
-                    </select>
+                    <div class="col-sm-6 col-lg-3">
+                        <p class="settings-title">Lag Winner</p>
+                        <label for="lag-winner-select" class="form-label">Select Lag Winner</label>
+                        <select id="lag-winner-select" class="form-select" aria-label="Select Lag Winner">
+                            <option value="" selected>Select player</option>
+                            <option value="h" id="lag-winner-h">Player_H</option>
+                            <option value="a" id="lag-winner-a">Player_A</option>
+                        </select>
 
 
-                    <p class="settings-title">Lag Type</p>
-                    <label for="lag-type-select" class="form-label">Select Lag Type</label>
-                    <select id="lag-type-select" class="form-select" aria-label="Select Lag Type">
-                        <option value="" selected>Select type</option>
-                        <option value="alternate">Alternate Break</option>
-                        <option value="winner">Winner Break</option>
-                    </select>
+                        <p class="settings-title">Lag Type</p>
+                        <label for="lag-type-select" class="form-label">Select Lag Type</label>
+                        <select id="lag-type-select" class="form-select" aria-label="Select Lag Type">
+                            <option value="" selected>Select type</option>
+                            <option value="alternate">Alternate Break</option>
+                            <option value="winner">Winner Break</option>
+                        </select>
 
-                    
-                    <p class="settings-title">Advanced Break Recording</p>
-                    <div style="display: flex;">
-                        <input class="form-check-input" type="checkbox" id="advanced-break-toggle">
-                        <p for="advanced-break-toggle" class="form-label" id="advanced-break-label">Advanced Break Recording</p>
-                    </div>
-                </div>
-
-                <div class="col-sm-6 col-lg-3">
-                    <p class="settings-title">Match Timer</p>
-                    <div style="display: flex; justify-content: center; align-items: center; padding: 0.5rem;">
-                        <label for="match-time-limit" class="form-label" style="text-align: right !important; margin: auto 0rem !important;">Match Time Limit:</label>
-                        <input type="number" id="match-time-limit" class="form-control" placeholder="Time Limit (minutes)">
-                    </div>
-                    <p id="match-time-settings-label-start">00:00</p>
-                    <p id="match-time-settings-label">00:00</p>
-                    <div class="timer-buttons-container">
-                        <button id="btn-match-timer-start" class="timer-button"><i class="bi bi-play"></i></button>
-                        <button id="btn-match-timer-pause" class="timer-button"><i class="bi bi-pause"></i></button>
-                        <button id="btn-match-timer-reset" class="timer-button"><i class="bi bi-arrow-clockwise"></i></button>
-                    </div>
-                </div>
-
-                <div class="col-sm-6 col-lg-3">
-                    <p class="settings-title">Frame Timer</p>                    
-                    <p id="frame-time-settings-label">00:00</p>
-                    <div class="timer-buttons-container">
-                        <button id="btn-frame-timer-start" class="timer-button"><i class="bi bi-play"></i></button>
-                        <button id="btn-frame-timer-pause" class="timer-button"><i class="bi bi-pause"></i></button>
-                        <button id="btn-frame-timer-reset" class="timer-button"><i class="bi bi-arrow-clockwise"></i></button>
+                        
+                        <p class="settings-title">Advanced Break Recording</p>
+                        <div style="display: flex;">
+                            <input class="form-check-input" type="checkbox" id="advanced-break-toggle">
+                            <p for="advanced-break-toggle" class="form-label" id="advanced-break-label">Advanced Break Recording</p>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div class="card match-settings-card" id="card-match-timers">
+            <div class="card-title" id="card-match-timers-toggle" role="button" tabindex="0" aria-expanded="true" aria-controls="card-match-timers-body" style="display:flex;align-items:center;cursor:pointer;">
+                <i class="bi bi-gear"></i>
+                <span style="margin-left:0.5rem;">Match Timers</span>
+            </div>
+            <div class="card-body" id="card-match-timers-body">
+                <div class="row">
+                    <div class="col-sm-6 col-lg-3">
+                        <p class="settings-title">Match Timer</p>
+                        <div style="display: flex; justify-content: center; align-items: center; padding: 0.5rem; display: none;">
+                            <label for="match-time-limit" class="form-label" style="text-align: right !important; margin: auto 0rem !important;">Match Time Limit:</label>
+                            <input type="number" id="match-time-limit" class="form-control" placeholder="Time Limit (minutes)">
+                        </div>
+                        <p id="match-time-settings-label-start">00:00</p>
+                        <div style="display:flex; align-items:center; justify-content:center; gap: 1rem;">
+                            <p id="match-time-settings-label" style="margin:0;">00:00</p>
+                            <div class="timer-buttons-container">
+                                <button id="btn-match-timer-start" class="timer-button"><i class="bi bi-play"></i></button>
+                                <button id="btn-match-timer-pause" class="timer-button" style="display: none;"><i class="bi bi-pause"></i></button>
+                                <button id="btn-match-timer-reset" class="timer-button" style="display: none;"><i class="bi bi-arrow-clockwise"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6 col-lg-3">
+                        <p class="settings-title">Frame Timer</p>                    
+                        <div style="display:flex; align-items:center; justify-content:center; gap: 1rem;">
+                            <p id="frame-time-settings-label" style="margin:0;">00:00</p>
+                            <div class="timer-buttons-container" style="margin:0;">
+                                <button id="btn-frame-timer-start" class="timer-button" style="display: none;"><i class="bi bi-play"></i></button>
+                                <button id="btn-frame-timer-pause" class="timer-button" style="display: none;"><i class="bi bi-pause"></i></button>
+                                <button id="btn-frame-timer-reset" class="timer-button"><i class="bi bi-arrow-clockwise"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -166,7 +180,54 @@
             })();
         </script>
 
+        <script>
+            (function(){
+                const toggle = document.getElementById('card-match-timers-toggle');
+                const card = document.getElementById('card-match-timers');
+                const body = document.getElementById('card-match-timers-body');
+                const icon = toggle.querySelector('.bi-gear');
 
+                // prepare transition
+                body.style.overflow = 'hidden';
+                body.style.transition = 'max-height .22s ease';
+
+                // initialize max-height to allow transition on first collapse
+                function setBodyMax() 
+                {
+                    body.style.maxHeight = body.scrollHeight + 'px';
+                }
+                setBodyMax();
+
+                let collapsed = false;
+
+                function updateState() {
+                    if (collapsed) 
+                    {
+                        body.style.maxHeight = '0';
+                        toggle.setAttribute('aria-expanded', 'false');
+                        card.classList.add('collapsed');
+                    } else 
+                    {
+                        setBodyMax();
+                        toggle.setAttribute('aria-expanded', 'true');
+                        card.classList.remove('collapsed');
+                    }
+                }
+
+                // toggle on click and keyboard (Enter / Space)
+                toggle.addEventListener('click', () => { collapsed = !collapsed; updateState(); });
+                toggle.addEventListener('keydown', (e) => 
+                {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); collapsed = !collapsed; updateState(); }
+                });
+
+                // keep max-height correct on resize when expanded
+                window.addEventListener('resize', () => { if (!collapsed) setBodyMax(); });
+
+                // if you want the card to start collapsed by default, uncomment:
+                collapsed = true; updateState();
+            })();
+        </script>
 
         <div class="row">
             <div class="col-sm-6">
@@ -562,7 +623,7 @@
             }
 
             /* Settings Card */
-            #card-match-settings .card-title
+            .match-settings-card .card-title
             {
                 padding: 0.5rem;
                 margin: auto 0rem;
@@ -579,31 +640,31 @@
                 font-family: 'Font_TDC';
             }
 
-            #card-match-settings label, #card-match-settings .form-select
+            .match-settings-card label, .match-settings-card .form-select
             {
                 padding: 0.5rem;
             }
 
-            #card-match-settings .col-sm-6
+            .match-settings-card .col-sm-6
             {
                 padding: 1rem 0.25rem;
                 margin: auto;
                 box-shadow: inset 0px 0px 48px -24px var(--color-secondary-00) !important;
             }
 
-            #card-match-settings label
+            .match-settings-card label
             {
                 width: 100%;
                 text-align: center !important;
             }
 
-            #card-match-settings #advanced-break-label
+            .match-settings-card #advanced-break-label
             {
                 padding: 0rem;
                 margin: auto 0.25rem;
             }
 
-            #card-match-settings #match-time-settings-label, #card-match-settings #frame-time-settings-label
+            .match-settings-card #match-time-settings-label, .match-settings-card #frame-time-settings-label
             {
                 text-align: center;
                 text-align-last: center;
@@ -619,7 +680,7 @@
                 font-size: 1.5rem;
                 margin: auto;
                 font-family: 'Font_TDC';
-                color: var(--color-base-08);
+                color: var(--color-accent-0);
             }
 
             .timer-buttons-container
@@ -628,7 +689,7 @@
                 justify-content: center;
             }
 
-            #card-match-settings .timer-button
+            .match-settings-card .timer-button
             {
                 background-color: transparent;
                 border: none;
@@ -637,7 +698,7 @@
                 color: var(--color-base-10);
             }
 
-            #card-match-settings .form-control
+            .match-settings-card .form-control
             {
                 margin: auto 0rem;
             }
@@ -936,6 +997,14 @@
             #scorecard-horizontal, #scorecard-vertical
             {
                 padding: 0.5rem;
+            }
+        </style>
+
+        <style>
+            #scorecard-frame-duration-live
+            {
+                font-size: 1.5rem;
+                color: var(--color-accent-0);
             }
         </style>
 

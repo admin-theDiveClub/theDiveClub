@@ -5,10 +5,8 @@ const signOutObserver = new MutationObserver(() => {
         signOutObserver.disconnect();
         document.getElementById('btn-signOut').addEventListener('click', () => 
         {
-            localStorage.removeItem("session");
-            sessionStorage.removeItem("session");
-            localStorage.removeItem("userProfile");
-            sessionStorage.removeItem("userProfile");
+            localStorage.clear();
+            sessionStorage.clear();
             window.location.href = "../index.html";
         });
     }

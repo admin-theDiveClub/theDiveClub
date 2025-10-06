@@ -89,7 +89,8 @@ function createChartConfig({ pointsH, pointsA, scoreH, scoreA, pColH, pColA, pla
     const hWinning = scoreH[lastIndex] > scoreA[lastIndex];
     const aWinning = scoreA[lastIndex] > scoreH[lastIndex];
 
-    const isVertical = orientation === 'vertical';
+    // const isVertical = orientation === 'vertical';
+    const isVertical = false;
 
     // If vertical, swap x/y on the points so x becomes score and y becomes time
     const dsPointsH = isVertical ? pointsH.map(p => ({ x: p.y, y: p.x })) : pointsH;

@@ -74,7 +74,7 @@ export async function UpdateFrame (frameIndex, frameData)
         if (match.history.length == 1)
         {
             match.history[0]["break-player"] = match.settings.lagWinner;
-            match.history[0].startTime = match.time.start ? match.time.start : new Date().toISOString();
+            match.history[0].startTime = match.time && match.time.start ? match.time.start : new Date().toISOString();
         }
     } else 
     {
@@ -179,7 +179,7 @@ function formatTime (time)
 
 function UpdateTimerUI (match)
 {
-    const m_startTime = match.time.start ? new Date(match.time.start) : null;
+    const m_startTime = match.time && match.time.start ? new Date(match.time.start) : null;
     if (m_startTime)
     {
         var m_duration = new Date() - m_startTime;

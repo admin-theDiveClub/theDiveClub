@@ -120,7 +120,7 @@ async function PlayerProfile (player)
 //Update
 export async function UpdateMatchUI (match)
 {
-    //console.log("UI match updated: ", match);
+    // console.log("UI match updated: ", match);
     if (match)
     {
         _match = match;
@@ -205,10 +205,10 @@ function GetBreakSide (match)
         const results = match.results;
         if (!results || !results.h || !results.a)
         {
-            return null;
+            return match.settings.lagWinner;
         }
 
-        const totalFrames = results.h.fw + results.a.fw;
+        const totalFrames = results.h && results.a && results.h.fw && results.a.fw ? results.h.fw + results.a.fw : 0;
         if (totalFrames % 2 == 0)
         {
             return match.settings.lagWinner;
@@ -578,6 +578,8 @@ function PopulateScorecard (match, mode, playerH, playerA)
             e_frameRow.appendChild(e_score_H);
             e_frameRow.appendChild(e_score_A);
 
+            
+
             var duration = frame.duration ? frame.duration : null;
             var e_duration = null;
             if (duration)
@@ -589,10 +591,19 @@ function PopulateScorecard (match, mode, playerH, playerA)
                 {
                     duration = GetFrameDuration(frame.startTime, new Date().toISOString());
                     e_duration = e_cell_duration(duration);
+
+                    if (gid('scorecard-frame-duration-live'))
+                    {
+                        gid('scorecard-frame-duration-live').id = '';
+                    }
+                    
                     e_duration.id = 'scorecard-frame-duration-live';
                 }
             }
-            e_frameRow.appendChild(e_duration);
+            if (e_duration)
+            {
+                e_frameRow.appendChild(e_duration);
+            }
 
             e_table.appendChild(e_frameRow);
         }        
@@ -685,6 +696,11 @@ function PopulateScorecard (match, mode, playerH, playerA)
                 {
                     duration = GetFrameDuration(frame.startTime, new Date().toISOString());
                     e_duration = e_cell_duration(duration);
+
+                    if (gid('scorecard-frame-duration-live'))
+                    {
+                        gid('scorecard-frame-duration-live').id = '';
+                    }
                     e_duration.id = 'scorecard-frame-duration-live';
                 }
             }
@@ -747,7 +763,7 @@ window.addEventListener('resize', () =>
 {
     if (_match)
     {
-        DrawTimeLine(_match);
+        //DrawTimeLine(_match);
         UpdateScorecard(_match);
     }
 });
@@ -949,5 +965,15 @@ function UpdateMatchSettingsUI (match)
     if (advToggle) 
     {
         advToggle.checked = s.advancedBreaks;
+    }
+
+    // Timer Buttons
+    const m_history = match && match.history ? match.history : null;
+    if (m_history && m_history.length > 1)
+    {
+        gid('btn-match-timer-start').style.display = 'none';
+    } else 
+    {
+        gid('btn-match-timer-start').style.display = 'block';
     }
 }
