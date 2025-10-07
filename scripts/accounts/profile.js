@@ -254,7 +254,7 @@ function PopulateLeaguesTable (leagues)
         const leagueID = league.id || null;
         if (leagueID)
         {
-            const link = `../leagues/view.html?leagueID=${leagueID}`;
+            const link = `../leagues/index.html?leagueID=${leagueID}`;
             e_div.href = link;
         }
         const e_img = document.createElement("img");
