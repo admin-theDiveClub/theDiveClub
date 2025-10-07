@@ -3,205 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script>
-        // Mobile-only helper (keeps desktop unaffected)
-        function hideIosChromeToolbar() {
-          // run only on iOS browsers
-          if (/iphone|ipod|ipad/i.test(navigator.userAgent)) {
-            // give the browser a tick to finish the first layout,
-            // then scroll the viewport by one pixel
-            setTimeout(() => window.scrollTo(0, 1), 0);
-          }
-        }
-      
-        // call once the DOM is ready
-        window.addEventListener('load', hideIosChromeToolbar);
-    </script>
-    
-    <title>TDC: Leagues</title>
-
-    <!-- Import Supabase resources via CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     
     <!-- Bootstrap CSS -->     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Import Supabase resources via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>    
+    <!-- Browser Helpers -->
+    <script src="../scripts/browserHelpers/script_mobile_hideToolBar.js"></script>
+    <!--Custom CSS-->
+    <link href="../stylesheets/stylesheet_main.css" rel="stylesheet">   
 
-    <!-- Custom CSS -->
-    <link href="../TopDeadCenter/styleSheet.css" rel="stylesheet">
-    <link href="../stylesheets/styles_TDC.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/leader-line@1.0.7/leader-line.min.js"></script> 
+
+    <title>The Dive Club</title>
+    <link rel="icon" href="../resources/icon_TDC.ico">
 </head>
 
-<body>    
-    <!-- Nav -->
-    <div id="nav-container" class="row" >
-        <div class="d-flex justify-content-between">
-            <a href="..">
-                <img src="../resources/icon_theDiveClub_alpha.svg" style="height: 5cap; object-fit: contain;"></img>
-            </a>
-            <!-- Navbar Button -->
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav-links-container" aria-controls="nav-links-container" aria-expanded="false" aria-label="Toggle navigation">
-                <i id="navbar-icon" class="bi bi-list"></i>
-            </button>
-        </div>
-        
-        <!-- Main Navbar Menu -->
-        <div class="collapse navbar-collapse" id="nav-links-container">
-            <ul class="nav-links list-unstyled d-flex justify-content-around flex-wrap">
-                <li>
-                    <button class="btn btn-link nav-link active" onclick="location.href='../index.html'">
-                        <i class="bi bi-house-door"></i> Home
-                    </button>
-                </li>
-                <li>
-                    <button class="btn btn-link nav-link" onclick="location.href='../accounts/profile.html'">
-                        <i class="bi bi-person"></i> Profile
-                    </button>
-                </li>
-                <li>
-                    <button class="btn btn-link nav-link" onclick="location.href='../matches/create.html'">
-                        <i class="bi bi-card-checklist"></i> Scorecard
-                    </button>
-                </li>
-                <li class="dropdown">
-                    <button class="btn btn-link nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-trophy"></i> Competitions
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li>
-                            <button class="dropdown-item" onclick="location.href='#leagues'">
-                                <i class="bi bi-award"></i> Leagues
-                            </button>
-                        </li>
-                        <li>
-                            <button class="dropdown-item" onclick="location.href='#tournaments'">
-                                <i class="bi bi-calendar-event"></i> Tournaments
-                            </button>
-                        </li>
-                        <li>
-                            <button class="dropdown-item" onclick="location.href='#matches'">
-                                <i class="bi bi-flag"></i> Matches
-                            </button>
-                        </li>
-                    </ul>
-                </li>
-                <li>
-                    <button class="btn btn-link nav-link" onclick="location.href='../index.html'">
-                        <i class="bi bi-envelope"></i> Contact
-                    </button>
-                </li>
-            </ul>
-        </div>
-    </div>
+<body>
+    <div id="visualization-container"></div>
 
-    
-    <!-- Visualization Container -->
-    <div id="visualization-container" style="height: 100vh; width: 100vw; position: fixed; z-index: -1000;"></div>
-    
-    <div class="main" style="position: relative;">
-        
-        <!-- Log -->
-        <div class="card rounded card-component">
-            <div class="card-header">
-                <h3 id="league-name">League Name</h3>
+    <div id="component-nav-bar"></div>
+
+    <div id="component-nav-menu"></div>
+
+    <div id="component-profile-menu"></div>
+
+    <div id="component-login"></div>
+
+    <div class="main">      
+        <div class="card" id="container-log">
+            <table id="table-log">
+                <thead>
+                    <tr>
+                        <th>Rnk</th>
+                        <th>Player</th>
+                        <th>MP</th>
+                        <th>MW</th>
+                        <th>FP</th>
+                        <th>FW</th>
+                        <th>F%</th>
+                        <th>B/F</th>
+                        <th>Pts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>Player 1</td>
+                        <td>10</td>
+                        <td>8</td>
+                        <td>50</td>
+                        <td>20</td>
+                        <td>40%</td>
+                        <td>1</td>
+                        <td>21</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card" id="container-filter-controls">
+            <div class="p-3">
+                <form class="row g-3" id="filter-form" role="region" aria-label="Filters">
+                    <div class="col-md-4">
+                        <label for="filter-rounds" class="form-label">Rounds</label>
+                        <select id="filter-rounds" name="round" class="form-select" aria-label="Filter by Rounds">
+                            <option value="" selected>Loading…</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="filter-players" class="form-label">Players</label>
+                        <select id="filter-players" name="player" class="form-select" aria-label="Filter by Players">
+                            <option value="" selected>Loading…</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="filter-status" class="form-label">Status</label>
+                        <select id="filter-status" name="status" class="form-select" aria-label="Filter by Status">
+                            <option value= "null" selected>Any</option>
+                            <option value="new">New</option>
+                            <option value="Live">Live</option>
+                            <option value="Complete">Complete</option>
+                        </select>
+                    </div>
+                </form>
             </div>
-            <div class="card-body">
-                <table class="table" style="text-align: center;">
+        </div>
+
+        <div class="card" id="container-rounds">
+            <div class="container-round">
+                <p class="round-heading">Round 1</p>
+                <table id="table-rounds">
                     <thead>
                         <tr>
-                            <th></th>
-                            <th>Rank</th>
-                            <th>Player</th>
-                            <th>Frames-P</th>
-                            <th>Frames-W</th>
-                            <th>Frames-L</th>
-                            <th>Frames Win %</th>
+                            <th>Home</th>
+                            <th>FW</th>
                             <th>B/F</th>
-                            <th>Lags %</th>
                             <th>Pts</th>
+                            <th>|</th>
+                            <th>Pts</th>
+                            <th>B/F</th>
+                            <th>FW</th>
+                            <th>Away</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>-</td>
-                            <td>00</td>
-                            <td>Player Name</td>
-                            <td>00</td>
-                            <td>00</td>
-                            <td>00</td>
-                            <td>00.0%</td>
-                            <td>00</td>
-                            <td>00.0%</td>
-                            <td>00</td>
+                            <td>Player_Home</td>
+                            <td>0</td>
+                            <td>0</td>
+                            <td>0</td>
+                            <td><a href="#"><i class="bi bi-link"></i></a></td>
+                            <td>0</td>
+                            <td>0</td>
+                            <td>0</td>
+                            <td>Player_Away</td>
                         </tr>
-                        <tr>
-                            <td>-</td>
-                            <td>01</td>
-                            <td>Player Name</td>
-                            <td>00</td>
-                            <td>00</td>
-                            <td>00</td>
-                            <td>00.0%</td>
-                            <td>00</td>
-                            <td>00.0%</td>
-                            <td>00</td>
-                        </tr>                                  
                     </tbody>
                 </table>
             </div>
         </div>
+    </div>    
 
-        <!-- League Matches -->
-        <div id="rounds-container">
-            <div class="card rounded card-component">
-                <div class="card-header">
-                    <h3>Round 1</h3>
-                </div>
-                <div class="card-body">
-                    <table class="table" style="text-align: center;">
-                        <thead>
-                            <tr>
-                                <th>Home</th>
-                                <th>FW</th>
-                                <th>B/F</th>
-                                <th><b>Pts</b></th>
-                                <th>|</th>
-                                <th><b>Pts</b></th>
-                                <th>B/F</th>
-                                <th>FW</th>
-                                <th>Away</th>
-                            </tr>
-                        </thead>
-                        <tbody id="round-1-matches">
-                            <tr>
-                                <td>Player_Home</td>
-                                <td>0</td>
-                                <td>0</td>
-                                <td><b>0</b></td>
-                                <td>|</td>
-                                <td><b>0</b></td>
-                                <td>0</td>
-                                <td>0</td>
-                                <td>Player_Away</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+    <style>
+        .round-heading
+        {
+            text-align: center;
+            font-family: 'Font_TDC';
+            font-size: 2rem;
+        }
 
-        
+        #table-log, #table-rounds
+        {
+            text-align: center;
+        }
+    </style>
 
-    </div>
-    
-    
+    <div id="component-siteMap"></div>
 
+    <div id="component-footer"></div>
+
+    <!-- Supabase -->
     <script src="../scripts/supabase/supaBase_client.js"></script>
-    <script src="../scripts_OLD/league_log.js"></script>
-    
-    <!-- Bootstrap JS (Optional) -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+
+    <!-- Accounts -->
+    <script src="../scripts/accounts/login_email.js"></script>
+    <script src="../scripts/accounts/login_google.js"></script>
+    <script src="../scripts/accounts/signOut.js"></script>
+
+    <!--Scripts-->
+    <script src="../scripts/browserHelpers/script_includeComponents.js"></script>
+    <script src="../scripts/UIControllers/nav-bar_controller.js" type="module"></script>
+
+    <script src="../scripts/VFX/bg_anim_ColorGradient.js"></script>
+    <script src="../scripts/VFX/bg_anim_PoolVisualization.js"></script>
+
+    <script src="../scripts/accounts/data_user.js" type="module"></script>
+
+    <script src="../scripts/leagues/league_data.js" type="module"></script>
 </body>
 </html>
