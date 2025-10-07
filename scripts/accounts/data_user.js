@@ -200,12 +200,3 @@ async function GetUserProfile (session)
         }
     }
 }
-
-document.addEventListener("visibilitychange", () => 
-{
-  if (document.visibilityState === "visible") 
-{
-    // Page became visible again (likely after unlock)
-    location.reload(); // Force refresh
-  }
-});

@@ -236,3 +236,12 @@ export function OnPayloadReceived (payload)
     UpdateMatchUI(payload);
     UpdateMatchControls(payload);
 }
+
+document.addEventListener("visibilitychange", () => 
+{
+    if (document.visibilityState === "visible") 
+    {
+        // Page became visible again (likely after unlock)
+        location.reload(); // Force refresh
+    }
+});
