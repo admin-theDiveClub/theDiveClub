@@ -1,21 +1,13 @@
 <div class="nav-bar-container">
-    <div class="row" style="height: 100%;">        
-        <div class="col-4" id="icon-container-menu">
-            <button id="btn-nav-menu-toggle" class="nav-bar-button">
-                <img id="icon-nav-menu" src="../resources/icons/icon_menu.svg">
-            </button>
-        </div>
-        <div class="col-4" id="icon-container-TDC">
-            <a id="home-link" class="nav-bar-link" href="../index.html" aria-label="The Dive Club home">
-                <img id="icon-home" src="../resources/icon_theDiveClub_alpha.svg" >
-            </a>
-        </div>
-        <div class="col-4" id="icon-container-profile">
-            <button id="btn-profile-menu-toggle" class="nav-bar-button">
-                <img id="icon-profile-menu" src="../resources/icons/icon_player.svg">
-            </button>
-        </div>
-    </div>
+    <button id="btn-nav-menu-toggle" class="nav-bar-button">
+        <img id="icon-nav-menu" src="../resources/icons/icon_menu.svg">
+    </button>
+    <a id="home-link" class="nav-bar-link" href="../index.html" aria-label="The Dive Club home">
+        <img id="icon-home" src="../resources/icon_theDiveClub_alpha.svg" >
+    </a>
+    <button id="btn-profile-menu-toggle" class="nav-bar-button">
+        <img id="icon-profile-menu" src="../resources/icons/icon_player.svg">
+    </button>
 </div>
 
 <style>
@@ -27,60 +19,45 @@
         z-index: 1000;
         width: 100vw;
         height: 4rem;
+        display: flex;
+        justify-content: space-between;
     }
 
-    #icon-container-TDC
+    .nav-bar-container button
     {
-        display: flex;
-        justify-content: center;
-        align-items: center;
         height: 100%;
     }
 
-    #home-link, #icon-home
+    .nav-bar-container img
     {
-        max-height: 3.75rem;
-    }
-
-    #icon-container-menu, #icon-container-profile
-    {
-        margin: auto;
-        padding: 0rem 1rem;
-    }
-
-    #icon-container-profile
-    {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-    }
-
-    #btn-profile-menu-toggle
-    {
-        border-radius: 50%;
-        box-shadow: 0 0 24px 0px var(--color-base-00);
-        aspect-ratio: 1 / 1;
-        margin-right: 1rem;
-        padding: 0rem;
-        overflow: hidden;
-    }
-
-    .nav-bar-button
-    {
-        background-color: transparent;
-        border: none;
-    }
-    
-    #icon-nav-menu, #icon-profile-menu
-    {
-        max-height: 6vh;
-        width: 100%;
+        height: 100%;
         object-fit: contain;
-        padding: 0rem;
+        padding: 0.25rem;
     }
 
     #icon-nav-menu
     {
+        padding: 0.75rem;
+    }
+
+    #icon-profile-menu
+    {
+        padding: 0rem;
+        border-radius: 50%;
+        box-shadow: 0 0 12px var(--color-base-00);
+    }
+
+    #btn-profile-menu-toggle
+    {
         padding: 0.5rem;
+        margin-right: 1rem;
+    }
+
+    .nav-bar-container button
+    {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0rem 1rem;
     }
 </style>

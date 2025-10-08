@@ -53,6 +53,7 @@ export function Initialize_NavBar ()
             if (e_icon) 
             {
                 e_icon.src = userProfile.pp;
+                e_icon.style.boxShadow = '0 0 12px var(--color-primary-00)';
             }
         }
     }
