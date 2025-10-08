@@ -22,6 +22,7 @@ const navbarObserver = new MutationObserver(() =>
 
         ControlNavBar();
         ControlNavMenu();
+        Initialize_NavBar();
         
         const btn_profile = document.querySelector('#btn-profile-menu-toggle');
         btn_profile.addEventListener('click', ControlProfileMenu);        
