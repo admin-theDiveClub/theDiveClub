@@ -1,13 +1,13 @@
 <div class="nav-bar-container">
-    <div class="row">        
+    <div class="row" style="height: 100%;">        
         <div class="col-4" id="icon-container-menu">
             <button id="btn-nav-menu-toggle" class="nav-bar-button">
                 <img id="icon-nav-menu" src="../resources/icons/icon_menu.svg">
             </button>
         </div>
         <div class="col-4" id="icon-container-TDC">
-            <a id="nav-link" class="nav-bar-link" href="../index.html" aria-label="The Dive Club home">
-                <img id="icon-nav-bar" src="../resources/icon_theDiveClub_alpha.svg" >
+            <a id="home-link" class="nav-bar-link" href="../index.html" aria-label="The Dive Club home">
+                <img id="icon-home" src="../resources/icon_theDiveClub_alpha.svg" >
             </a>
         </div>
         <div class="col-4" id="icon-container-profile">
@@ -26,7 +26,7 @@
         position: fixed;
         z-index: 1000;
         width: 100vw;
-        height: 8vh;
+        height: 4rem;
     }
 
     #icon-container-TDC
@@ -34,11 +34,18 @@
         display: flex;
         justify-content: center;
         align-items: center;
+        height: 100%;
     }
 
-    #icon-container-menu
+    #home-link, #icon-home
     {
-        padding: 0.5cap 1cap;
+        max-height: 3.75rem;
+    }
+
+    #icon-container-menu, #icon-container-profile
+    {
+        margin: auto;
+        padding: 0rem 1rem;
     }
 
     #icon-container-profile
@@ -58,18 +65,10 @@
         overflow: hidden;
     }
 
-    .nav-bar-link, .nav-bar-button
+    .nav-bar-button
     {
         background-color: transparent;
         border: none;
-    }
-
-    #icon-nav-bar 
-    {
-        max-height: 8vh;
-        max-width: 100%;
-        object-fit: contain;
-        padding: 0.5cap;
     }
     
     #icon-nav-menu, #icon-profile-menu
