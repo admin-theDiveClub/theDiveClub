@@ -52,8 +52,21 @@ function buildSeriesFromHistory(history, mode = 'default') {
     const breaksA = [];
 
     let t = 0, h = 0, a = 0;
-    for (const f of history) {
-        t += f.duration || 60;
+    for (const f of history) 
+    {
+        if (f.duration)
+        {
+            t += f.duration;
+        } else if (f.startTime)
+        {
+            const start = new Date(f.startTime);
+            const end = f.endTime ? new Date(f.endTime) : new Date();
+            const delta = (end - start) / 1000;
+            t += delta;
+        } else 
+        {
+            t ++;
+        }
         const winner = f['winner-player'];
         if (winner === 'h') h++; else if (winner === 'a') a++;
         frameWinsH.push(winner === 'h' ? 1 : 0);

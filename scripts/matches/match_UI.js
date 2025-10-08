@@ -221,7 +221,10 @@ function GetBreakSide (match)
             return match.settings.lagWinner;
         }
 
-        const totalFrames = results.h && results.a && results.h.fw && results.a.fw ? results.h.fw + results.a.fw : 0;
+        const fw_h = results.h.fw ? results.h.fw : 0;
+        const fw_a = results.a.fw ? results.a.fw : 0;
+        const totalFrames = fw_h + fw_a;
+
         if (totalFrames % 2 == 0)
         {
             return match.settings.lagWinner;
@@ -469,13 +472,13 @@ function PopulateScorecard (match, mode, playerH, playerA)
         } else {
             const totalSeconds = Math.floor(Number(value));
             const hours = Math.floor(totalSeconds / 3600);
-            const remainder = totalSeconds % 3600;
-            const mins = Math.floor(remainder / 60);
-            const secs = remainder % 60;
+            const mins = Math.floor((totalSeconds % 3600) / 60);
+            const secs = totalSeconds % 60;
+            const pad = (n) => n.toString().padStart(2, '0');
             if (hours > 0) {
-                e_td.innerHTML = `${hours}<sub>h</sub> ${mins}<sub>m</sub> ${secs}<sub>s</sub>`;
+                e_td.innerText = `${pad(hours)}:${pad(mins)}:${pad(secs)}`;
             } else {
-                e_td.innerHTML = `${mins}"${secs}'`;
+                e_td.innerText = `${pad(mins)}:${pad(secs)}`;
             }
         }
         return e_td;
@@ -611,6 +614,7 @@ function PopulateScorecard (match, mode, playerH, playerA)
                     }
                     
                     e_duration.id = 'scorecard-frame-duration-live';
+                    e_duration.innerHTML = '<i class="bi bi-clock"></i> ' + e_duration.innerText;
                 }
             }
             if (e_duration)
@@ -705,7 +709,7 @@ function PopulateScorecard (match, mode, playerH, playerA)
                 e_duration = e_cell_duration(duration);
             } else 
             {
-                if (frame.startTime)
+                if ((i == history.length - 1) && frame.startTime)
                 {
                     duration = GetFrameDuration(frame.startTime, new Date().toISOString());
                     e_duration = e_cell_duration(duration);
@@ -715,6 +719,7 @@ function PopulateScorecard (match, mode, playerH, playerA)
                         gid('scorecard-frame-duration-live').id = '';
                     }
                     e_duration.id = 'scorecard-frame-duration-live';
+                    e_duration.innerHTML = '<i class="bi bi-clock"></i> ' + e_duration.innerText;
                 }
             }
             if (e_duration)
@@ -770,15 +775,6 @@ document.querySelectorAll('input[name="chartMode"]').forEach((elem) => {
     {
         DrawTimeLine(_match);
     });
-});
-
-window.addEventListener('resize', () =>
-{
-    if (_match)
-    {
-        //DrawTimeLine(_match);
-        UpdateScorecard(_match);
-    }
 });
 
 function PopulateMatchSummary(match, playerH, playerA)
@@ -990,3 +986,15 @@ function UpdateMatchSettingsUI (match)
         gid('btn-match-timer-start').style.display = 'block';
     }
 }
+
+var currentOrientation = window.innerWidth < window.innerHeight ? 'vertical' : 'horizontal';
+window.addEventListener('resize', () => 
+{
+    const newOrientation = window.innerWidth < window.innerHeight ? 'vertical' : 'horizontal';
+    if (newOrientation !== currentOrientation) 
+    {
+        currentOrientation = newOrientation;
+        // Handle orientation change
+        UpdateScorecard(_match);
+    }
+});
