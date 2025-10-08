@@ -24,6 +24,6 @@ async function CreateMatch (_match)
     } else {
         alert('Match created successfully!');        
         sessionStorage.setItem('frameStartTime', 0);
-        window.location.href = "../matches/index.html?matchID=" + response.data[0].id;
+        window.location.href = "/matches/index.html?matchID=" + response.data[0].id;
     }
 }

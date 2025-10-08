@@ -1,4 +1,4 @@
-import { Initialize_NavBar } from "../UIControllers/nav-bar_controller.js";
+import { Initialize_NavBar } from "/scripts/UIControllers/nav-bar_controller.js";
 
 Start ();
 

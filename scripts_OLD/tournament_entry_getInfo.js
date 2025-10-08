@@ -13,7 +13,7 @@ async function Start ()
     var tournament = await GetTournament(tournamentID);
     if (!tournamentID || !tournament.id)
     {
-        window.location.href = '../tournaments/index.html';
+        window.location.href = '/tournaments/index.html';
     }
     console.log("Tournament:", tournament);
     var entries = await GetEntries(tournamentID);

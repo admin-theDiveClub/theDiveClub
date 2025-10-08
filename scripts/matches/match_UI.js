@@ -60,7 +60,7 @@ export async function Initialize_MatchUI(match)
 async function PopulateControlCardPlayerInfo (e, player)
 {
     e.e_player_dn.innerText = player.displayName;
-    e.e_player_pp.src = '../resources/icons/icon_player.svg';
+    e.e_player_pp.src = '/resources/icons/icon_player.svg';
 
     if (player.pp) 
     {
@@ -285,8 +285,8 @@ function UpdateScorecard (match)
     PopulateScorecard(match, mode, player_H, player_A);
 }
 
-import { UpdateFrame } from './match_Controls.js';
-import { _liveFrameIndex } from './match_Controls.js';
+import { UpdateFrame } from '/scripts/matches/match_Controls.js';
+import { _liveFrameIndex } from '/scripts/matches/match_Controls.js';
 
 function PopulateScorecard (match, mode, playerH, playerA)
 {
@@ -754,7 +754,7 @@ function GetFrameDuration (startTime, endTime)
     return null;
 }
 
-import { DrawMatchTimeLine } from '../charts/chart_line.js';
+import { DrawMatchTimeLine } from '/scripts/charts/chart_line.js';
 
 function DrawTimeLine (match)
 {

@@ -40,7 +40,7 @@ async function Login (_credentials, _persistance)
                 sessionStorage.setItem('supabase_session', session);
             }
                         
-            window.location.href = '../accounts/profile.html';        
+            window.location.href = '/accounts/profile.html';        
         }
     }
 }

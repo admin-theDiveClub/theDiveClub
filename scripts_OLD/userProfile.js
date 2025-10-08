@@ -20,7 +20,7 @@ async function Start ()
     } else 
     {
         console.log("No user profile found.");
-        window.location.href = "../accounts/login.html";
+        window.location.href = "/accounts/login.html";
     }
 
     var profilePic = await GetPlayerProfilePic(userProfile.id);
@@ -245,10 +245,10 @@ async function PopulateUserMatchesTable()
         const link = document.createElement("a");
         if (status === "Complete")
         {
-            link.href = `../matches/scoreboard.html?matchID=${match.id}`;
+            link.href = `/matches/scoreboard.html?matchID=${match.id}`;
         } else 
         {
-            link.href = `../matches/index.html?matchID=${match.id}`;
+            link.href = `/matches/index.html?matchID=${match.id}`;
         }
         const icon = document.createElement("i");
         icon.className = "bi bi-arrow-right"; // Bootstrap bi right arrow icon

@@ -1,20 +1,20 @@
 <div class="loading-overlay-container">
     <!-- Logo body stays normal, not masked -->
-    <img class="loading-image logo-body" src="../resources/loadingOverlay/icon_TDC_Logo_LogoBody.svg">
+    <img class="loading-image logo-body" src="/resources/loadingOverlay/icon_TDC_Logo_LogoBody.svg">
 
     <!-- Diver + mask -->
     <svg class="mask-wrapper" viewBox="0 590 2048 20000" preserveAspectRatio="xMidYMid meet">
         <defs>
             <!-- Use the mask image -->
             <mask id="diverMask">
-                <image href="../resources/loadingOverlay/Mask_rect.svg" 
+                <image href="/resources/loadingOverlay/Mask_rect.svg" 
                        width="100%" height="100%" preserveAspectRatio="xMidYMid meet" />
             </mask>
         </defs>
 
         <!-- Diver image with mask applied -->
         <g class="diver-wrapper" mask="url(#diverMask)">
-            <image class="diver" href="../resources/loadingOverlay/icon_TDC_Logo_Diver.svg" width="100%" height="100%"/>
+            <image class="diver" href="/resources/loadingOverlay/icon_TDC_Logo_Diver.svg" width="100%" height="100%"/>
         </g>
 
     </svg>

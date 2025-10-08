@@ -29,7 +29,7 @@
 @font-face 
 {
     font-family: 'Font_TDC';
-    src: url('../resources/Rushfordclean-rgz89.otf') format('opentype');
+    src: url('/resources/Rushfordclean-rgz89.otf') format('opentype');
     font-display: swap; /* Ensures text is displayed immediately */
     ascent-override: 60%; /* Adjusts the ascent to reduce extra space */
     descent-override: 0%; /* Adjusts the descent to reduce extra space */

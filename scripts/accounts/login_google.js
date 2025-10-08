@@ -20,7 +20,7 @@ async function SignInWithGoogle()
         provider: 'google',
         options: 
         {
-            redirectTo: `../accounts/profile.html`
+            redirectTo: `/accounts/profile.html`
         }
     });
 }

@@ -1,7 +1,7 @@
-import { UpdateTournamentUI_Control } from "../tournaments/tournament_UI_control.js";
-import { UpdateTournamentUI } from "./tournament_UI_view.js";
+import { UpdateTournamentUI_Control } from "/scripts/tournaments/tournament_UI_control.js";
+import { UpdateTournamentUI } from "/scripts/tournaments/tournament_UI_view.js";
 
-import { DB_Update } from "../supabase/supaBase_db_helpers.js";
+import { DB_Update } from "/scripts/supabase/supabase_db_helpers.js";
 
 var tournamentID = null;
 var tournament = null;

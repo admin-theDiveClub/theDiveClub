@@ -38,7 +38,7 @@ async function Start ()
         }
     } else
     {
-        window.location.href = "../index.html#login";
+        window.location.href = "/index.html#login";
     }
 }
 
@@ -142,23 +142,23 @@ async function PopulateMatchesTable (matches)
         const leagueID = match.competitions && match.competitions.leagueID ? match.competitions.leagueID : null;
         if (leagueID)
         {
-            const link = `../leagues/view.html?leagueID=${leagueID}`;
+            const link = `/leagues/view.html?leagueID=${leagueID}`;
             e_td_league.innerHTML = `<a href="${link}"><i class="bi bi-link"></i></a>` || "N/A";
         }
         
         const tournamentID = match.competitions && match.competitions.tournamentID ? match.competitions.tournamentID : null;
         if (tournamentID)
         {
-            const link = `../tournaments/view.html?tournamentID=${tournamentID}`;
+            const link = `/tournaments/view.html?tournamentID=${tournamentID}`;
             e_td_tournament.innerHTML = `<a href="${link}"><i class="bi bi-link"></i></a>` || "N/A";
         }
 
         const matchID = match.id || null;
-        var link = matchID ? `../matches/index.html?matchID=${matchID}` : null;
+        var link = matchID ? `/matches/index.html?matchID=${matchID}` : null;
         if (match.info && match.info.status === "Complete")
         {
             e_td_link.classList.add("match-link-complete");
-            link = `../matches/scoreboard.html?matchID=${matchID}`;
+            link = `/matches/scoreboard.html?matchID=${matchID}`;
         }
         
         e_td_link.innerHTML = `<a href="${link}"><i class="bi bi-link"></i></a>` || "N/A";
@@ -254,11 +254,11 @@ function PopulateLeaguesTable (leagues)
         const leagueID = league.id || null;
         if (leagueID)
         {
-            const link = `../leagues/index.html?leagueID=${leagueID}`;
+            const link = `/leagues/index.html?leagueID=${leagueID}`;
             e_div.href = link;
         }
         const e_img = document.createElement("img");
-        e_img.src = league.pp || "../resources/icon_theDiveClub_alpha.svg";
+        e_img.src = league.pp || "/resources/icon_theDiveClub_alpha.svg";
         const e_name = document.createElement("p");
         e_name.textContent = league.name || "N/A";
         const e_members = document.createElement("p");
@@ -343,7 +343,7 @@ function PopulateTournamentsTable (tournaments)
         const tournamentDate = tournament.date ? new Date(tournament.date).toLocaleDateString() : "N/A";
         e_td_date.textContent = tournamentDate;
         const tournamentID = tournament.id || null;
-        const link = tournamentID ? `../tournaments/view.html?tournamentID=${tournamentID}` : null;
+        const link = tournamentID ? `/tournaments/view.html?tournamentID=${tournamentID}` : null;
         e_td_link.innerHTML = `<a href="${link}"><i class="bi bi-link"></i></a>` || "N/A";
 
         e_tr.appendChild(e_td_name);

@@ -11,14 +11,14 @@
     <!-- Import Supabase resources via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>    
     <!-- Browser Helpers -->
-    <script src="../scripts/browserHelpers/script_mobile_hideToolBar.js"></script>
+    <script src="/scripts/browserHelpers/script_mobile_hideToolBar.js"></script>
     <!--Custom CSS-->
-    <link href="../stylesheets/stylesheet_main.css" rel="stylesheet">   
+    <link href="/stylesheets/stylesheet_main.css" rel="stylesheet">   
 
     <script src="https://cdn.jsdelivr.net/npm/leader-line@1.0.7/leader-line.min.js"></script> 
 
     <title>The Dive Club</title>
-    <link rel="icon" href="../resources/icon_TDC.ico">
+    <link rel="icon" href="/resources/icon_TDC.ico">
 </head>
 
 <body>
@@ -41,7 +41,7 @@
 
             <!-- Scrolls with the page -->
             <div class="logo-wrapper">
-                <img class="logo-body" src="../resources/loadingOverlay/icon_TDC_Logo_LogoBody.svg" alt="The Dive Club logo">
+                <img class="logo-body" src="/resources/loadingOverlay/icon_TDC_Logo_LogoBody.svg" alt="The Dive Club logo">
 
                 <!-- Visual mask placeholder (same size as logo), used to position the diver's real mask -->
                 <svg class="mask-wrapper" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
@@ -61,7 +61,7 @@
                     <mask id="diverMask" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
                     <rect x="0" y="0" width="100%" height="100%" fill="black"></rect>
                     <image id="diverMaskImage"
-                        href="../resources/loadingOverlay/Mask_rect.svg"
+                        href="/resources/loadingOverlay/Mask_rect.svg"
                         x="0" y="0" width="0" height="0"
                         preserveAspectRatio="xMidYMid meet" />
                     </mask>
@@ -69,7 +69,7 @@
 
                 <!-- Diver image (fixed); centered at the top, masked by #diverMask -->
                 <image id="diverImage"
-                    href="../resources/loadingOverlay/icon_TDC_Logo_Diver_alt.svg"
+                    href="/resources/loadingOverlay/icon_TDC_Logo_Diver_alt.svg"
                     x="0" y="0" width="0" height="0"
                     mask="url(#diverMask)" />
                 </svg>
@@ -133,7 +133,7 @@
                 logoWrapper.style.width = window.innerWidth > window.innerHeight ? '20vw' : '60vw';
 
                 // Compute diver intrinsic aspect ratio from the source
-                const diverSrc = '../resources/loadingOverlay/icon_TDC_Logo_Diver.svg';
+                const diverSrc = '/resources/loadingOverlay/icon_TDC_Logo_Diver.svg';
                 const probe = new Image();
                 let ratio = 1;
 
@@ -255,20 +255,20 @@ text-align-last: center;
     <div id="component-footer"></div>
 
     <!-- Supabase -->
-    <script src="../scripts/supabase/supaBase_client.js"></script>
+    <script src="/scripts/supabase/supaBase_client.js"></script>
 
     <!-- Accounts -->
-    <script src="../scripts/accounts/login_email.js"></script>
-    <script src="../scripts/accounts/login_google.js"></script>
-    <script src="../scripts/accounts/signOut.js"></script>
+    <script src="/scripts/accounts/login_email.js"></script>
+    <script src="/scripts/accounts/login_google.js"></script>
+    <script src="/scripts/accounts/signOut.js"></script>
 
     <!--Scripts-->
-    <script src="../scripts/browserHelpers/script_includeComponents.js"></script>
-    <script src="../scripts/UIControllers/nav-bar_controller.js" type="module"></script>
+    <script src="/scripts/browserHelpers/script_includeComponents.js"></script>
+    <script src="/scripts/UIControllers/nav-bar_controller.js" type="module"></script>
 
-    <script src="../scripts/VFX/bg_anim_ColorGradient.js"></script>
-    <script src="../scripts/VFX/bg_anim_PoolVisualization.js"></script>
+    <script src="/scripts/VFX/bg_anim_ColorGradient.js"></script>
+    <script src="/scripts/VFX/bg_anim_PoolVisualization.js"></script>
 
-    <script src="../scripts/accounts/data_user.js" type="module"></script>
+    <script src="/scripts/accounts/data_user.js" type="module"></script>
 </body>
 </html>

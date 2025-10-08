@@ -66,7 +66,7 @@ function UpdateMiniProfile(userProfile)
     const fullnameEl = document.getElementById('profile-m-fullname');
     const usernameEl = document.getElementById('profile-m-username');
 
-    const pp = userProfile.pp || '../resources/icons/icon_player.svg';
+    const pp = userProfile.pp || '/resources/icons/icon_player.svg';
     const nickname = userProfile.nickname || userProfile.name || '';
     const fullname = [userProfile.name, userProfile.surname].filter(Boolean).join(' ');
     const username = userProfile.username || '';

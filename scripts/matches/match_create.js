@@ -1,4 +1,4 @@
-import { SearchPlayers } from "../supabase/supaBase_db_helpers.js";
+import { SearchPlayers } from "/supabase/supaBase_db_helpers.js";
 
 const searchBar = document.getElementById('input-search');
 const searchResultsContainer = document.getElementById('search-results-container');
@@ -25,7 +25,7 @@ function displaySearchResults(results)
         const playerRow = document.createElement('tr');
         playerRow.classList.add('search-result');
         playerRow.innerHTML = `
-            <td class="td-icon"><img src="${player.pp ? player.pp : '../resources/icons/icon_player.svg'}" alt="${player.name}" class="search-result-icon"></td>
+            <td class="td-icon"><img src="${player.pp ? player.pp : '/resources/icons/icon_player.svg'}" alt="${player.name}" class="search-result-icon"></td>
             <td class="td-info">
                 <p class="search-result-name">${player.nickname ? player.nickname : player.name} (${player.name ? player.name : ''} ${player.surname ? player.surname : ''})</p>
                 <p class="search-result-username">${player.username}</p>
@@ -100,7 +100,7 @@ async function createMatch(opponentName)
             sessionStorage.removeItem('timingData');
 
             alert('Match created successfully!');
-            window.location.href = `../matches/index.html?matchID=${response.data.id}`;
+            window.location.href = `/matches/index.html?matchID=${response.data.id}`;
         }
     }
 }
@@ -123,13 +123,13 @@ function Initialize ()
         var message = "Welcome back, " + displayName;
         document.getElementById('user-welcome').innerText = message;
 
-        const pp = user.pp ? user.pp : "../resources/icons/icon_player.svg";
+        const pp = user.pp ? user.pp : "/resources/icons/icon_player.svg";
         document.getElementById('user-profile-pic').src = pp;
 
         document.getElementById('component-loading-overlay').style.display = 'none';
     } else 
     {
         alert('Please Log In before creating a match. All matches can be found on your user profile later on.');
-        window.location.href = "../index.html";
+        window.location.href = "/index.html";
     }
 }

@@ -10,18 +10,18 @@ function Initialize ()
         const matchID = _matchID();
         if (matchID)
         {
-            window.location.href = `../matches/scoreboard.html?matchID=${matchID}`;
+            window.location.href = `/matches/scoreboard.html?matchID=${matchID}`;
         } else 
         {
-            window.location.href = "../matches/create.html";
+            window.location.href = "/matches/create.html";
         }
     }
 }
 
-import { Initialize_MatchUI } from '../matches/match_UI.js';
-import { UpdateMatchUI } from '../matches/match_UI.js';
+import { Initialize_MatchUI } from '/scripts/matches/match_UI.js';
+import { UpdateMatchUI } from '/scripts/matches/match_UI.js';
 
-import { UpdateMatchControls } from '../matches/match_Controls.js';
+import { UpdateMatchControls } from '/scripts/matches/match_Controls.js';
 
 async function Start_MatchData ()
 {
@@ -34,7 +34,7 @@ async function Start_MatchData ()
 
         if (matchRef && matchRef.info && matchRef.info.status == "Complete")
         {
-            window.location.href = `../matches/scoreboard.html?matchID=${matchID}`;
+            window.location.href = `/matches/scoreboard.html?matchID=${matchID}`;
         }
 
         if (matchRef)
@@ -62,7 +62,7 @@ async function Start_MatchData ()
                 //console.log("Subscribed to Match Updates:", subResponse);
             } else 
             {
-                window.location.href = `../matches/scoreboard.html?matchID=${matchID}`;
+                window.location.href = `/matches/scoreboard.html?matchID=${matchID}`;
             }
         }
     }
@@ -109,7 +109,7 @@ function _matchID ()
     return matchID;
   } else 
   {
-    window.location.href = "../matches/create.html";
+    window.location.href = "/matches/create.html";
     return null;
   }
 }

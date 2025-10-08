@@ -175,7 +175,7 @@ function PopulateLogData (_log, _leagueMatches)
     }
 
     // Rank by pts, then frames_w, then bf, then lags_rate (dense ranking)
-    const sorted = [..._log].sort((a, b) => {
+    const sorted = [._log].sort((a, b) => {
         if (b.pts !== a.pts) return b.pts - a.pts;
         if (b.frames_w !== a.frames_w) return b.frames_w - a.frames_w;
         if (b.bf !== a.bf) return b.bf - a.bf;

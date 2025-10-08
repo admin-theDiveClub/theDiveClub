@@ -7,7 +7,7 @@ const signOutObserver = new MutationObserver(() => {
         {
             localStorage.clear();
             sessionStorage.clear();
-            window.location.href = "../index.html";
+            window.location.href = "/index.html";
         });
     }
 });

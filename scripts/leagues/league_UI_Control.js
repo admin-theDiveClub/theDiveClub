@@ -330,15 +330,15 @@ function PopulateRounds (rounds)
                 {
                     if (matchStatus === 'Complete')
                     {
-                        a.href = `../matches/scoreboard.html?matchID=${match.id}`;
+                        a.href = `/matches/scoreboard.html?matchID=${match.id}`;
                         a.classList.add('link-complete');
                     } else if (matchStatus === 'Live')
                     {
-                        a.href = `../matches/index.html?matchID=${match.id}`;
+                        a.href = `/matches/index.html?matchID=${match.id}`;
                         a.classList.add('link-live');
                     } else
                     {
-                        a.href = `../matches/index.html?matchID=${match.id}`;
+                        a.href = `/matches/index.html?matchID=${match.id}`;
                         a.classList.add('link-new');
                     }
 

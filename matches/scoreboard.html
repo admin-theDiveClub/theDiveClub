@@ -11,15 +11,15 @@
     <!-- Import Supabase resources via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>    
     <!-- Browser Helpers -->
-    <script src="../scripts/browserHelpers/script_mobile_hideToolBar.js"></script>
+    <script src="/scripts/browserHelpers/script_mobile_hideToolBar.js"></script>
     <!--Custom CSS-->
-    <link href="../stylesheets/stylesheet_main.css" rel="stylesheet">    
+    <link href="/stylesheets/stylesheet_main.css" rel="stylesheet">    
 
     <!-- Chart.js CDN (UMD build to avoid "import" in non-module scripts) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
 
     <title>TDC: Scoreboard</title>
-    <link rel="icon" href="../resources/icon_TDC.ico">
+    <link rel="icon" href="/resources/icon_TDC.ico">
 </head>
 
 <body>
@@ -40,7 +40,7 @@
         <div class="card" id="head-to-head">
             <div class="row">
                 <div class="col-sm-3">
-                    <img id="teamH_icon" class="team-icon" src="../resources/icons/icon_player.svg" alt="Team H Logo">
+                    <img id="teamH_icon" class="team-icon" src="/resources/icons/icon_player.svg" alt="Team H Logo">
                     <p id="teamH_name" class="team-name color-h">Team H</p>
                 </div>
                 <div class="col-sm-6">
@@ -118,7 +118,7 @@
                     </div>
                 </div>
                 <div class="col-sm-3">
-                    <img id="teamA_icon" class="team-icon" src="../resources/icons/icon_player.svg" alt="Team A Logo">
+                    <img id="teamA_icon" class="team-icon" src="/resources/icons/icon_player.svg" alt="Team A Logo">
                     <p id="teamA_name" class="team-name color-a">Team A</p>
                 </div>
             </div>
@@ -215,24 +215,24 @@
     <div id="component-footer"></div>
 
     <!-- Supabase -->
-    <script src="../scripts/supabase/supaBase_client.js"></script>
+    <script src="/scripts/supabase/supaBase_client.js"></script>
 
     <!-- Accounts -->
-    <script src="../scripts/accounts/login_email.js"></script>
-    <script src="../scripts/accounts/login_google.js"></script>
-    <script src="../scripts/accounts/signOut.js"></script>
+    <script src="/scripts/accounts/login_email.js"></script>
+    <script src="/scripts/accounts/login_google.js"></script>
+    <script src="/scripts/accounts/signOut.js"></script>
 
     <!--Scripts-->
-    <script src="../scripts/browserHelpers/script_includeComponents.js"></script>
-    <script src="../scripts/UIControllers/nav-bar_controller.js" type="module"></script>
+    <script src="/scripts/browserHelpers/script_includeComponents.js"></script>
+    <script src="/scripts/UIControllers/nav-bar_controller.js" type="module"></script>
 
-    <script src="../scripts/VFX/bg_anim_ColorGradient.js"></script>
-    <script src="../scripts/VFX/bg_anim_PoolVisualization.js"></script>
+    <script src="/scripts/VFX/bg_anim_ColorGradient.js"></script>
+    <script src="/scripts/VFX/bg_anim_PoolVisualization.js"></script>
 
-    <script src="../scripts/accounts/data_user.js" type="module"></script>
+    <script src="/scripts/accounts/data_user.js" type="module"></script>
 
     <!-- Match Scripts -->
-    <script src="../scripts/matches/scoreboard.js"></script>
+    <script src="/scripts/matches/scoreboard.js"></script>
 
 </body>
 </html>

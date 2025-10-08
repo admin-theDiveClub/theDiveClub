@@ -21,6 +21,6 @@ addEventListener("DOMContentLoaded", () =>
 
     for (const component of components) 
     {
-        inject(`#component-${component}`, `../components/${component}.html`);
+        inject(`#component-${component}`, `/components/${component}.html`);
     }
 });

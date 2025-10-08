@@ -42,7 +42,7 @@ function _matchID ()
     return matchID;
   } else 
   {
-    window.location.href = "../matches/create.html";
+    window.location.href = "/matches/create.html";
     return null;
   }
 }
@@ -296,7 +296,7 @@ function PopulateMatchScorecard(match)
     for (let i = 0; i < frameCount; i++) header.push(`F${i + 1}`);
     header.push('Final Score');
 
-    // Build rows as arrays of cell objects: { text: string, classes: [..] }
+    // Build rows as arrays of cell objects: { text: string, classes: [] }
     const rows = [];
 
     // Breaks row

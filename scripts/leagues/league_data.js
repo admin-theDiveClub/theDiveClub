@@ -63,7 +63,7 @@ function _leagueID ()
     } else 
     {
         alert("No League ID Specified");
-        window.location.href = "../index.html";
+        window.location.href = "/index.html";
         return null;
     }
 }

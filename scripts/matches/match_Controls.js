@@ -166,7 +166,7 @@ async function UpdateMatchStatus ()
                     console.error("Error Ending Match: ", response.error);
                 } else 
                 {
-                    window.location.href = `../matches/scoreboard.html?matchID=${match.id}`;
+                    window.location.href = `/matches/scoreboard.html?matchID=${match.id}`;
                 }
             }
         }

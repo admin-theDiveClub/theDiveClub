@@ -1,6 +1,4 @@
-import { DB_Update } from '../supabase/supaBase_db_helpers.js';
-import { DB_Delete } from '../supabase/supaBase_db_helpers.js';
-import { DB_Insert } from '../supabase/supaBase_db_helpers.js';
+import { DB_Update, DB_Delete, DB_Insert } from "/scripts/supabase/supabase_db_helpers.js";
 
 export function UpdateTournamentUI_Control(_tournament, _tournamentPlayers, _tournamentLog, _tournamentRounds)
 {
@@ -581,7 +579,7 @@ async function GetPlayerProfiles(_searchTerm)
     if (!container) return null;
     container.innerHTML = '';
 
-    const defaultImg = '../resources/icon_theDiveClub_alpha.svg';
+    const defaultImg = '/resources/icon_theDiveClub_alpha.svg';
 
     for (let i = (response.data || []).length - 1; i >= 0; i--) 
     {
