@@ -46,7 +46,15 @@
         display: flex;
         justify-content: flex-end;
         align-items: center;
-        padding-right: 1.5rem;
+    }
+
+    #btn-profile-menu-toggle
+    {
+        border-radius: 50%;
+        box-shadow: 0 0 24px 0px var(--color-base-00);
+        aspect-ratio: 1 / 1;
+        margin-right: 1rem;
+        padding: 0rem;
     }
 
     .nav-bar-link, .nav-bar-button
@@ -66,8 +74,13 @@
     #icon-nav-menu, #icon-profile-menu
     {
         max-height: 6vh;
-        max-width: 100%;
+        width: auto;
         object-fit: contain;
-        padding: clamp(0.4rem, 1vh, 0.75rem);
+        padding: 0rem;
+    }
+
+    #icon-nav-menu
+    {
+        padding: 0.5rem;
     }
 </style>

@@ -44,7 +44,7 @@ export function Initialize_NavBar ()
         return;
     }
     userProfile = JSON.parse(s_userProfile);
-    if (userProfile && userProfile.pp)
+    if (userProfile)
     {
         UpdateMiniProfile(userProfile);
         if (userProfile.pp)
@@ -52,18 +52,10 @@ export function Initialize_NavBar ()
             const e_icon = document.getElementById('icon-profile-menu');
             if (e_icon) 
             {
-                UpdateProfileIcon(e_icon);
+                e_icon.src = userProfile.pp;
             }
         }
     }
-}
-
-function UpdateProfileIcon(e_icon)
-{
-    e_icon.style.borderRadius = '50%';
-    e_icon.style.boxShadow = '0 0 24px 0px rgba(0,0,0,1)';
-    e_icon.style.padding = '0rem';
-    e_icon.src = userProfile.pp;
 }
 
 function UpdateMiniProfile(userProfile)
