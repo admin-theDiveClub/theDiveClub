@@ -57,7 +57,40 @@ async function _match (matchID)
     } else 
     {  
         const match = response.data;
+        const subResponse = await SubscribeToUpdates(matchID);
+        if (subResponse.error)
+        {
+            console.log("Error Subscribing to Updates:", subResponse.error.message);
+        }
         return match;
+    }
+}
+
+async function SubscribeToUpdates (_matchID)
+{
+  const channels = supabase.channel('custom-update-channel')
+  .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'tbl_matches', filter: `id=eq.${_matchID}` },
+      (payload) => 
+      {
+        //console.log('Source: Change Received!', payload.new);
+        OnPayloadReceived(payload.new);
+      }
+  )
+  .subscribe();
+  return channels;
+}
+
+async function OnPayloadReceived (match)
+{
+    if (match)
+    {
+        PopulateHeadToHeadPlayerInfo(playerH, playerA);
+        PopulateMatchSummary(match);
+        PopulateMatchScorecard(match);
+
+        gid('component-loading-overlay').style.display = 'none';
     }
 }
 
@@ -220,7 +253,7 @@ function PopulateMatchScorecard(match)
     const history = match.history || [];
 
     // Ignore history entries that do not have a truthy "winner-result"
-    const filteredHistory = history.filter(h => h && h['winner-result']);
+    const filteredHistory = history.filter(h => h);
     const frameCount = filteredHistory.length;
 
     // orientation: landscape -> keep table as-is; portrait -> transpose

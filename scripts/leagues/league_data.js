@@ -1,4 +1,4 @@
-import { UpdateLeagueUI } from "./league_UI.js";
+import { UpdateLeagueUI } from "./league_UI_Control.js";
 
 Initialize ();
 
@@ -21,7 +21,7 @@ async function Initialize ()
             if (l_matches)
             {
                 matches = l_matches;
-                console.log("League Matches:", matches);
+                //console.log("League Matches:", matches);
 
                 const l_rounds = await _leagueRounds(matches);
                 if (l_rounds)

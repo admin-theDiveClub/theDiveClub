@@ -1,3 +1,28 @@
+const userAdmin = (coordinatorID) =>
+{
+    const userID = _userID();
+    if (userID && coordinatorID && userID === coordinatorID)
+    {
+        return true;
+    } else 
+    {
+        return false;
+    }
+}
+
+function _userID ()
+{
+    const s_userProfile = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile');
+    const userProfile = s_userProfile ? JSON.parse(s_userProfile) : null;
+    if (userProfile && userProfile.id)
+    {
+        return userProfile.id;
+    } else 
+    {
+        return null;
+    }
+}
+
 var _league, _log, _rounds = null;
 export function UpdateLeagueUI (league, log, rounds)
 {
@@ -198,8 +223,7 @@ function GetFilteredMatches (round, player, status)
 
 function PopulateRounds (rounds)
 {
-    console.log("PopulateRounds:", rounds);
-
+    const uA = userAdmin(_league.coordinatorID);
     const roundsContainer = gid('container-rounds');
     roundsContainer.innerHTML = '';
 
@@ -233,6 +257,94 @@ function PopulateRounds (rounds)
         {
             for (const match of round.matches)
             {
+
+                async function UpdateMatch (match)
+                {
+                    const response = await supabase.from('tbl_matches').update(match).eq('id', match.id).select().single();
+                    if (response.error)
+                    {
+                        console.log("Error Updating Match:", response.error.message);
+                        return null;
+                    } else 
+                    {
+                        return response.data;
+                    }
+                }
+
+                const _cell_score = (cell, side, type) =>
+                {
+                    if (!uA) return cell;
+                    cell.addEventListener('click', () =>
+                    {
+                        const e_input = document.createElement('input');
+                        //<input class="form-control t-info-item" type="number" inputmode="numeric" pattern="[0-9]*" min="0" step="1" placeholder="-"></input>
+                        e_input.type = 'number';
+                        e_input.className = 'form-control';
+                        e_input.inputMode = 'numeric';
+                        e_input.pattern = '[0-9]*';
+                        e_input.min = '0';
+                        e_input.step = '1';
+                        e_input.placeholder = '-';
+                        e_input.value = cell.textContent || '';
+                        cell.innerHTML = '';
+                        cell.appendChild(e_input);
+                        e_input.focus();
+
+                        e_input.addEventListener('change', async () =>
+                        {
+                            const newValue = parseInt(e_input.value);
+                            console.log("New Score Value:", newValue);
+
+                            if (!isNaN(newValue))
+                            {
+                                if (!match.results) match.results = { h: { fw: 0, bf: 0}, a: { fw: 0, bf: 0} };
+                                if (!match.results[side]) match.results[side] = { fw: 0, bf: 0};
+                                match.results[side][type] = newValue;
+                                const updatedMatch = await UpdateMatch(match);
+                                if (updatedMatch)
+                                {
+                                    cell.textContent = newValue;
+                                    e_input.remove();
+                                } else 
+                                {
+                                    cell.textContent = cell.textContent || '0';
+                                    e_input.remove();
+                                }
+                            }
+                        });
+
+                        e_input.addEventListener('blur', async () =>
+                        {
+                            e_input.remove();
+                            cell.textContent = cell.textContent || '0';
+                        });
+                    });
+
+                    cell.title = 'Click to edit score';
+                    cell.classList.add('editable-cell');
+
+                    return cell;
+                }
+
+                const formattedLink = (a, matchStatus) =>
+                {
+                    if (matchStatus === 'Complete')
+                    {
+                        a.href = `../matches/scoreboard.html?matchID=${match.id}`;
+                        a.classList.add('link-complete');
+                    } else if (matchStatus === 'Live')
+                    {
+                        a.href = `../matches/index.html?matchID=${match.id}`;
+                        a.classList.add('link-live');
+                    } else
+                    {
+                        a.href = `../matches/index.html?matchID=${match.id}`;
+                        a.classList.add('link-new');
+                    }
+
+                    return a;
+                }
+
                 const tr = document.createElement('tr');
                 const results = match.results || { h: { fw: 0, bf: 0, pts: 0 }, a: { fw: 0, bf: 0, pts: 0 } };
 
@@ -240,27 +352,31 @@ function PopulateRounds (rounds)
                 const p_h = _log.find(log => log.username === match.players.h.username);
                 tdHome.textContent = p_h ? p_h.displayName : 'Home';
 
-                const tdHFW = document.createElement('td');
+                var tdHFW = document.createElement('td');
                 tdHFW.textContent = results.h.fw || 0;
-                const tdHBF = document.createElement('td');
+                tdHFW = _cell_score(tdHFW, 'h', 'fw');
+                var tdHBF = document.createElement('td');
                 tdHBF.textContent = results.h.bf || 0;
+                tdHBF = _cell_score(tdHBF, 'h', 'bf');
 
                 const tdHPts = document.createElement('td');
                 tdHPts.textContent = results.h.fw + results.h.bf || 0;
 
                 const tdSep = document.createElement('td');
-                const iLink = document.createElement('a');
+                var iLink = document.createElement('a');
+                iLink = formattedLink(iLink, match.info && match.info.status ? match.info.status : null);
                 iLink.innerHTML = '<i class="bi bi-link"></i>';
-                iLink.href = `/matches/index.html?matchID=${match.id}`;
                 tdSep.appendChild(iLink);
 
                 const tdAPts = document.createElement('td');
                 tdAPts.textContent = results.a.fw + results.a.bf || 0;
 
-                const tdABF = document.createElement('td');
+                var tdABF = document.createElement('td');
                 tdABF.textContent = results.a.bf || 0;
-                const tdAFW = document.createElement('td');
+                tdABF = _cell_score(tdABF, 'a', 'bf');
+                var tdAFW = document.createElement('td');
                 tdAFW.textContent = results.a.fw || 0;
+                tdAFW = _cell_score(tdAFW, 'a', 'fw');
 
                 const tdAway = document.createElement('td');
                 const p_a = _log.find(log => log.username === match.players.a.username);

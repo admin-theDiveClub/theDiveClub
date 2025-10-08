@@ -78,7 +78,7 @@ async function createMatch(opponentName)
     } else 
     {
         const players = {"h": {"username": username}, "a": {"username": opponentName}};
-        const info = {"status": "new"};
+        const info = {"status": "New"};
         const settings = {"lagType": "alternate", "advancedBreaks": true, "winType":"race"};
         const time = {"start": new Date().toISOString()};
         const results = {"h": {"fw":0}, "a": {"fw":0}};
