@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Bootstrap CSS -->     
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Import Supabase resources via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>    
+    <!-- Browser Helpers -->
+    <script src="/scripts/browserHelpers/script_mobile_hideToolBar.js"></script>
+    <!--Custom CSS-->
+    <link href="/stylesheets/stylesheet_main.css" rel="stylesheet">   
+
+    <script src="https://cdn.jsdelivr.net/npm/leader-line@1.0.7/leader-line.min.js"></script> 
+
+    <title>The Dive Club</title>
+    <link rel="icon" href="/resources/icon_TDC.ico">
+</head>
+
+<body>
+    <div id="visualization-container"></div>
+
+    <div id="component-nav-bar"></div>
+
+    <div id="component-nav-menu"></div>
+
+    <div id="component-profile-menu"></div>
+
+    <div id="component-login"></div>
+
+    <div class="main">      
+
+        <div class="row" style="width: 100%;">
+            <div class="col-md-3">
+                <div id="container-profile">
+                    <div class="row">
+                        <div class="col-4 col-md-12" id="container-profile-pp">
+                            <img id="user-pp" src="/resources/icons/icon_player.svg" alt="Profile Picture">
+                        </div>
+                        <div class="col-8 col-md-12" id="container-profile-info">
+                            <p id="user-displayName">Display Name</p>
+                            <p id="user-name">Full Name</p>
+                            <p id="user-username">Username</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div id="container-data">
+                    <div id="container-matches">
+                        <table id="tbl-matches">
+                            <thead>
+                                <tr>
+                                    <th>Matches</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="match-row">
+                                    <td>
+                                        <div class="match-entry row">
+                                            <div class="col-1 match-status-bullet"></div>
+                                            <div class="col-2 match-date">
+                                                <p id="match-date">00/00</p>
+                                            </div>
+                                            <div class="col-2 match-opponent-pp"><img src="/resources/icons/icon_player.svg" alt="Opponent Profile Picture"></div>
+                                            <div class="col-5 match-opponent-info">
+                                                <p class="match-opponent-displayName">Display Name</p>
+                                                <p class="match-opponent-username">Username</p>
+                                            </div>
+                                            <div class="col-2 match-score">
+                                                <p id="match-score">0 - 0</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th id="matches-pagination-controls">
+                                        <a><i class="bi bi-arrow-left"></i></a>
+                                        <p id="matches-pagination">1-10 of 100</p>
+                                        <a><i class="bi bi-arrow-right"></i></a>
+                                    </th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <style>
+        #container-profile
+        {
+            min-height: 20vh;
+            padding: 1rem;
+        }
+
+        #container-profile-pp
+        {
+            padding: 1rem;
+            margin: auto;
+        }
+
+        #user-pp
+        {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+            border-radius: 50%;
+            box-shadow: 0 0 24px var(--color-base-00);
+        }
+
+        #container-profile-info
+        {
+            text-align: center;
+        }
+
+        #user-displayName
+        {
+            font-family: 'Font_TDC';
+            font-size: 2rem;
+            margin-top: 1rem;
+            margin-bottom: 0rem;
+        }
+        #user-name, #user-username
+        {
+            margin: 0rem;
+        }
+
+        #user-username
+        {
+            color: var(--color-base-08);
+            font-style: italic;
+            font-size: 0.75rem;
+        }
+    </style>
+
+    <style>        
+
+        #matches-pagination-controls
+        {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        #matches-pagination
+        {
+            margin: 0rem 0.5rem;
+        }
+    </style>
+
+    <style>
+        #tbl-matches
+        {
+            margin: 0rem;
+            padding: 0rem;
+        }
+
+        #tbl-matches th
+        {
+            padding: 0.5rem;
+        }
+
+        #tbl-matches td
+        {
+            margin: 0rem;
+            padding: 0rem;
+        }
+
+        .match-row
+        {
+            cursor: pointer;
+        }
+
+        .match-row:hover
+        {
+            box-shadow: inset 0 0 12px var(--color-primary-00);
+        }
+
+        .match-entry
+        {
+            padding: 0.25rem 0rem;
+        }
+
+        .match-entry .match-status-bullet
+        {
+            background-color: var(--color-primary-00);
+            max-width: 1rem;
+            padding: 0rem;
+            margin: 0rem;
+        }
+
+        .match-entry .match-opponent-pp
+        {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            max-width: 4rem;
+        }
+
+        .match-entry .match-opponent-pp img
+        {
+            width: 100%;
+            max-height: 4rem;
+            border-radius: 50%;
+            box-shadow: 0 0 12px var(--color-base-00);
+        }
+
+        .match-entry .match-opponent-info
+        {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .match-entry .match-opponent-info p
+        {
+            margin: 0rem;
+        }
+
+        .match-entry .match-opponent-displayName
+        {
+            font-family: 'Font_TDC';
+            font-size: 1.25rem;
+        }
+
+        .match-entry .match-opponent-username
+        {
+            font-size: 0.75rem;
+            color: var(--color-base-08);
+            font-style: italic;
+        }
+
+        .match-entry .match-date, .match-entry .match-score
+        {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .match-entry .match-date p, .match-entry .match-score p
+        {
+            margin: 0rem;
+        }
+
+        #match-score
+        {
+            font-family: 'Font_TDC';
+            font-size: 1.5rem;
+        }
+    </style>
+
+    <div id="component-siteMap"></div>
+
+    <div id="component-footer"></div>
+
+    <!-- Supabase -->
+    <script src="/scripts/supabase/supaBase_client.js"></script>
+
+    <!-- Accounts -->
+    <script src="/scripts/accounts/login_email.js"></script>
+    <script src="/scripts/accounts/login_google.js"></script>
+    <script src="/scripts/accounts/signOut.js"></script>
+
+    <!--Scripts-->
+    <script src="/scripts/browserHelpers/script_includeComponents.js"></script>
+    <script src="/scripts/UIControllers/nav-bar_controller.js" type="module"></script>
+
+    <script src="/scripts/VFX/bg_anim_ColorGradient.js"></script>
+    <script src="/scripts/VFX/bg_anim_PoolVisualization.js"></script>
+
+    <script src="/scripts/accounts/data_user.js" type="module"></script>
+</body>
+</html>
