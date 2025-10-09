@@ -1,4 +1,4 @@
-import { SearchPlayers } from "/supabase/supaBase_db_helpers.js";
+import { SearchPlayers } from "/scripts/supabase/supaBase_db_helpers.js";
 
 const searchBar = document.getElementById('input-search');
 const searchResultsContainer = document.getElementById('search-results-container');
