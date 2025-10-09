@@ -55,35 +55,35 @@
                         <table id="tbl-matches">
                             <thead>
                                 <tr>
-                                    <th>Matches</th>
+                                    <th colspan="5">Matches</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr class="match-row">
-                                    <td>
-                                        <div class="match-entry row">
-                                            <div class="col-1 match-status-bullet"></div>
-                                            <div class="col-2 match-date">
-                                                <p id="match-date">00/00</p>
-                                            </div>
-                                            <div class="col-2 match-opponent-pp"><img src="/resources/icons/icon_player.svg" alt="Opponent Profile Picture"></div>
-                                            <div class="col-5 match-opponent-info">
-                                                <p class="match-opponent-displayName">Display Name</p>
-                                                <p class="match-opponent-username">Username</p>
-                                            </div>
-                                            <div class="col-2 match-score">
-                                                <p id="match-score">0 - 0</p>
-                                            </div>
-                                        </div>
+                                    <td class="match-status-bullet"></td>
+                                    <td class="match-date">
+                                        <p id="match-date">00/00</p>
+                                    </td>
+                                    <td class="match-opponent-pp">
+                                        <img src="/resources/icons/icon_player.svg" alt="Opponent Profile Picture">
+                                    </td>
+                                    <td class="match-opponent-info">
+                                        <p class="match-opponent-displayName">Display Name</p>
+                                        <p class="match-opponent-username">Username</p>
+                                    </td>
+                                    <td class="match-score">
+                                        <p id="match-score">0 - 0</p>
                                     </td>
                                 </tr>
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <th id="matches-pagination-controls">
-                                        <a><i class="bi bi-arrow-left"></i></a>
-                                        <p id="matches-pagination">1-10 of 100</p>
-                                        <a><i class="bi bi-arrow-right"></i></a>
+                                    <th colspan="5">
+                                        <div id="matches-pagination-controls">                                            
+                                            <a><i class="bi bi-arrow-left"></i></a>
+                                            <p id="matches-pagination">1-10 of 100</p>
+                                            <a><i class="bi bi-arrow-right"></i></a>
+                                        </div>
                                     </th>
                                 </tr>
                             </tfoot>
@@ -148,7 +148,6 @@
         {
             display: flex;
             justify-content: center;
-            width: 100%;
         }
 
         #matches-pagination
@@ -172,12 +171,14 @@
         #tbl-matches td
         {
             margin: 0rem;
-            padding: 0rem;
+            padding: 0.25rem 0.25rem;
+            text-align: center;
         }
 
         .match-row
         {
             cursor: pointer;
+            background-color: var(--color-base-04);
         }
 
         .match-row:hover
@@ -190,64 +191,48 @@
             padding: 0.25rem 0rem;
         }
 
-        .match-entry .match-status-bullet
+        .match-status-bullet
         {
             background-color: var(--color-primary-00);
-            max-width: 1rem;
             padding: 0rem;
             margin: 0rem;
+            width: 1rem;
         }
 
-        .match-entry .match-opponent-pp
+        .match-opponent-pp
         {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            max-width: 4rem;
+            width: 3rem;
         }
 
-        .match-entry .match-opponent-pp img
+        .match-opponent-pp img
         {
-            width: 100%;
-            max-height: 4rem;
+            max-height: 3rem;
+            max-width: 3rem;
             border-radius: 50%;
             box-shadow: 0 0 12px var(--color-base-00);
         }
 
-        .match-entry .match-opponent-info
-        {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: flex-start;
-        }
-
-        .match-entry .match-opponent-info p
+        .match-opponent-info p
         {
             margin: 0rem;
+            text-align: left;
+            padding-left: 0.5rem;
         }
 
-        .match-entry .match-opponent-displayName
+        .match-opponent-displayName
         {
             font-family: 'Font_TDC';
             font-size: 1.25rem;
         }
 
-        .match-entry .match-opponent-username
+        .match-opponent-username
         {
             font-size: 0.75rem;
             color: var(--color-base-08);
             font-style: italic;
         }
 
-        .match-entry .match-date, .match-entry .match-score
-        {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .match-entry .match-date p, .match-entry .match-score p
+        .match-date p, .match-score p
         {
             margin: 0rem;
         }
@@ -279,5 +264,7 @@
     <script src="/scripts/VFX/bg_anim_PoolVisualization.js"></script>
 
     <script src="/scripts/accounts/data_user.js" type="module"></script>
+
+    <script src="/scripts/accounts/profile_new.js" type="module"></script>
 </body>
 </html>
