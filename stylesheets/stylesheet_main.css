@@ -49,7 +49,7 @@ body
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
     min-height: 100vh;
-    padding-top: 8vh;
+    padding-top: 4rem;
 }
 
 #component-loading-overlay
@@ -91,7 +91,7 @@ a:hover
 {
     font-family: 'Font_TDC';
     text-align: center;
-text-align-last: center;
+    text-align-last: center;
     margin: 1.2em;
     font-size: 2em;
 }
