@@ -179,8 +179,8 @@ async function GetStrippedMatches (matches, username)
 
     if (strippedMatches.length > 0)
     {
-        //Sort by createdAt desc
-        strippedMatches.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        //Sort by startTime desc
+        strippedMatches.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
         return strippedMatches;
     } else 
     {
