@@ -48,6 +48,54 @@
                             <p id="user-name">Full Name</p>
                             <p id="user-username">Username</p>
                         </div>
+
+                        <div class="col-4 col-md-12">
+                            <table class="tbl-user-stats">
+                                <tbody>
+                                    <tr>
+                                        <th>FP:</th>
+                                        <th>FW:</th>
+                                    </tr>
+                                    <tr>
+                                        <td id="user-fp">0</td>
+                                        <td id="user-fw">0</td>
+                                    </tr>
+                                    <tr>
+                                        <th>F%:</th>
+                                        <td id="user-fpercent">0.00%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="col-4 col-md-12">
+                            <table class="tbl-user-stats">
+                                <tbody>
+                                    <tr>
+                                        <th>MP:</th>
+                                        <th>MW:</th>
+                                    </tr>
+                                    <tr>
+                                        <td id="user-mp">0</td>
+                                        <td id="user-mw">0</td>
+                                    </tr>
+                                    <tr>
+                                        <th>M%:</th>
+                                        <td id="user-mpercent">0.00%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-4 col-md-12">
+                            <table class="tbl-user-stats">
+                                <tbody>
+                                    <tr>
+                                        <th >Avg. F <i class="bi bi-clock"></i>  :</th>
+                                        <td id="user-avg-frame-time">00:00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -102,8 +150,8 @@
     <style>
         #container-profile
         {
-            min-height: 20vh;
-            padding: 1rem;
+            padding: 0rem;
+            margin: 0rem;
         }
 
         #container-profile-pp
@@ -143,6 +191,37 @@
             color: var(--color-base-08);
             font-style: italic;
             font-size: 0.75rem;
+        }
+    </style>
+
+    <style>
+        .tbl-user-stats
+        {
+            text-align: center;
+            font-family: 'Font_TDC';
+            font-size: 1.25rem;
+            margin: auto;
+        }
+
+        .tbl-user-stats td
+        {
+            border: 1px solid var(--color-base-04);
+            width: 50%;
+            padding: 0.5rem;
+        }
+
+        .tbl-user-stats th
+        {
+            border: 1px solid var(--color-base-04);
+            width: 50%;
+            padding: 0.5rem;
+            font-weight: lighter;
+        }
+
+        #user-fpercent, #user-mpercent, #user-avg-frame-time
+        {
+            font-size: 1.5rem;
+            color: var(--color-primary-00);
         }
     </style>
 

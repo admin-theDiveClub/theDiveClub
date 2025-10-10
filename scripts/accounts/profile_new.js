@@ -16,8 +16,10 @@ async function Start ()
             if (matches)
             {
                 _matches = matches;
-                console.log("User Matches:", _matches);
                 PopulateMatchesTable(_matches, 0);
+
+                const stats = GetUserStats(_matches, userProfile.username);
+                PopulateUserStats(stats);
             }
         }
 
@@ -162,7 +164,8 @@ async function GetStrippedMatches (matches, username)
             status: status,
             opponent: opponentProfile,
             userResults: userResults,
-            opponentResults: opponentResults
+            opponentResults: opponentResults,
+            history: match.history ? match.history : []
         };
         strippedMatches.push(strippedMatch);
     }
@@ -176,6 +179,80 @@ async function GetStrippedMatches (matches, username)
     {
         return null;
     }
+}
+
+function GetUserStats (matches)
+{
+    var stats =
+    {
+        fp: 0,
+        fw: 0,
+        mp: 0,
+        mw: 0,
+        avgDuration: 0
+    }
+
+    var totalDuration = 0;
+    var durationsCount = 0;
+    for (let i = 0; i < matches.length; i++)
+    {
+        const match = matches[i];
+        stats.mp ++;
+        if (match.status === "Complete")
+        {
+            if (match.userResults.fw > match.opponentResults.fw)
+            {
+                stats.mw ++;
+            }
+        }
+
+        stats.fp += match.userResults.fw + match.opponentResults.fw;
+        stats.fw += match.userResults.fw;
+
+        if (!match.history)
+        {
+            match.history = [];
+        }
+
+        for (let j = 0; j < match.history.length; j++)
+        {
+            const h = match.history[j];
+            if (h.duration)
+            {
+                totalDuration += h.duration;
+                durationsCount ++;
+            }
+        }
+    }
+    stats.avgDuration = durationsCount > 0 ? (totalDuration / durationsCount).toFixed(2) : 0;
+
+    return stats;
+}
+
+function PopulateUserStats (stats)
+{
+    gid("user-fp").textContent = stats.fp;
+    gid("user-fw").textContent = stats.fw;
+    const fPercent = stats.fp > 0 ? ((stats.fw / stats.fp) * 100).toFixed(2) : "0.00";
+    gid("user-fpercent").textContent = fPercent + "%";
+
+    gid("user-mp").textContent = stats.mp;
+    gid("user-mw").textContent = stats.mw;
+    const mPercent = stats.mp > 0 ? ((stats.mw / stats.mp) * 100).toFixed(2) : "0.00";
+    gid("user-mpercent").textContent = mPercent + "%";
+    const avgFrameTime = (() => {
+        const avgSec = Number(stats.avgDuration);
+        if (!avgSec || avgSec <= 0) return "00:00";
+        const hours = Math.floor(avgSec / 3600);
+        const minutes = Math.floor((avgSec % 3600) / 60);
+        const seconds = Math.floor(avgSec % 60);
+        const mm = String(minutes).padStart(2, '0');
+        const ss = String(seconds).padStart(2, '0');
+        if (hours === 0) return `${mm}:${ss}`;
+        const hh = String(hours).padStart(2, '0');
+        return `${hh}:${mm}:${ss}`;
+    })();
+    gid("user-avg-frame-time").textContent = avgFrameTime;
 }
 
 const gid = (id) => document.getElementById(id);
