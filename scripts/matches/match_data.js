@@ -250,8 +250,6 @@ document.addEventListener("visibilitychange", async () =>
             window.location.reload();
         } else 
         {
-            console.log("Re-subscribed to Match Updates:", subResponse);
-            alert("Re-subscribed to Match Updates:", subResponse);
             const matchRef = await _match(id);
             if (matchRef)
             {
