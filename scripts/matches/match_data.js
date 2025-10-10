@@ -248,9 +248,7 @@ document.addEventListener("visibilitychange", async () =>
         if (subResponse.error)
         {
             console.log("Subscription Error:", subResponse.error.message);
-        } else 
-        {
-            console.log("Re-subscribed to Match Updates:", subResponse);
+            window.location.reload();
         }
     }
 });
