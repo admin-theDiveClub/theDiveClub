@@ -30,6 +30,7 @@ async function Start_MatchData ()
 
     if (matchID)
     {
+        global_matchID = matchID;
         const matchRef = await _match(matchID);
 
         if (matchRef && matchRef.info && matchRef.info.status == "Complete")
@@ -67,6 +68,8 @@ async function Start_MatchData ()
         }
     }
 }
+
+var global_matchID = null;
 
 async function _userID ()
 {
@@ -237,11 +240,17 @@ export function OnPayloadReceived (payload)
     UpdateMatchControls(payload);
 }
 
-document.addEventListener("visibilitychange", () => 
+document.addEventListener("visibilitychange", async () => 
 {
     if (document.visibilityState === "visible") 
     {
-        // Page became visible again (likely after unlock)
-        location.reload(); // Force refresh
+        const subResponse = await SubscribeToUpdates(global_matchID);
+        if (subResponse.error)
+        {
+            console.log("Subscription Error:", subResponse.error.message);
+        } else 
+        {
+            console.log("Re-subscribed to Match Updates:", subResponse);
+        }
     }
 });
