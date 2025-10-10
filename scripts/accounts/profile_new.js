@@ -291,7 +291,7 @@ function PopulateMatchesTable (matches, index)
             status = "Live";
         }
 
-        const color = (status === "Complete") ? "var(--color-primary-00)" : (status === "New") ? "var(--color-base-06)" : "var(--color-accent-0)"; 
+        const color = (status === "Complete") ? "var(--color-accent-0)" : (status === "New") ? "var(--color-secondary-00)" : "var(--color-primary-00)"; 
         td_status.style.backgroundColor = color;
         tr.appendChild(td_status);
 
