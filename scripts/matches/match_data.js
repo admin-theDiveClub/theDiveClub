@@ -30,7 +30,6 @@ async function Start_MatchData ()
 
     if (matchID)
     {
-        global_matchID = matchID;
         const matchRef = await _match(matchID);
 
         if (matchRef && matchRef.info && matchRef.info.status == "Complete")
@@ -68,8 +67,6 @@ async function Start_MatchData ()
         }
     }
 }
-
-var global_matchID = null;
 
 async function _userID ()
 {
@@ -240,18 +237,29 @@ export function OnPayloadReceived (payload)
     UpdateMatchControls(payload);
 }
 
+
 document.addEventListener("visibilitychange", async () => 
 {
     if (document.visibilityState === "visible") 
     {
-        const subResponse = await SubscribeToUpdates(global_matchID);
+        const id = _matchID();
+        const subResponse = await SubscribeToUpdates(id);
         if (subResponse.error)
         {
             console.log("Subscription Error:", subResponse.error.message);
             window.location.reload();
         } else 
         {
+            console.log("Re-subscribed to Match Updates:", subResponse);
             alert("Re-subscribed to Match Updates:", subResponse);
+            const matchRef = await _match(id);
+            if (matchRef)
+            {
+                OnPayloadReceived(matchRef);
+            } else 
+            {
+                window.location.reload();
+            }
         }
     }
 });
