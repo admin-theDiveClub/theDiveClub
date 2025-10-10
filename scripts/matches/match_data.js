@@ -213,20 +213,26 @@ async function _matchApprovedList (match)
     return approvedList;
 }
 
+var matchChannel = null;
 async function SubscribeToUpdates (_matchID)
-{
-  const channels = supabase.channel('custom-update-channel')
-  .on(
-      'postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'tbl_matches', filter: `id=eq.${_matchID}` },
-      (payload) => 
-      {
-        //console.log('Source: Change Received!', payload.new);
-        OnPayloadReceived(payload.new);
-      }
-  )
-  .subscribe();
-  return channels;
+{    
+    if (matchChannel)
+    {
+        const unsubResponse = await supabase.removeChannel(matchChannel);
+    }
+
+    matchChannel = supabase.channel('custom-update-channel')
+    .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'tbl_matches', filter: `id=eq.${_matchID}` },
+        (payload) => 
+        {
+            //console.log('Source: Change Received!', payload.new);
+            OnPayloadReceived(payload.new);
+        }
+    )
+    .subscribe();
+    return matchChannel;
 }
 
 var match = null;
