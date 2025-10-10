@@ -145,8 +145,49 @@
                             </tfoot>
                         </table>
                     </div>
+
+                    <div id="container-competitions">
+
+                        <div class="row">
+                            <div class="col-12 col-md-6">
+                                <table id="tbl-user-leagues">
+                                    <thead>
+                                        <tr>
+                                            <th colspan="5">Leagues</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="league-status-bullet"></td>
+                                            <td class="league-dates">
+                                                <p class="league-date" id="league-date-start">00/00/00</p>
+                                                <p class="league-date" id="league-date-end">00/00/00</p>
+                                            </td>
+                                            <td class="league-pp">
+                                                <img src="/resources/icon_theDiveClub_alpha.svg" alt="League Profile Picture">
+                                            </td>
+                                            <td class="league-info">
+                                                <p class="league-name">League Name</p>
+                                                <p class="league-coordinator">Coordinator Name</p>
+                                            </td>
+                                            <td class="league-players-count">
+                                                <p class="league-players">0 Players</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="col-12 col-md-6">
+
+                            </div>
+                        </div>
+
+                    </div>
+                        
                 </div>
             </div>
+
+
         </div>
 
     </div>
@@ -251,7 +292,7 @@
             padding: 0rem;
         }
 
-        #tbl-matches th
+        #tbl-matches th, #tbl-user-leagues th
         {
             padding: 0.5rem;
             text-align: center;
@@ -358,6 +399,54 @@
         {
             color: var(--color-base-08);
             padding-left: 0.25rem;
+        }
+    </style>
+
+    <style>
+        #tbl-user-leagues td
+        {
+            padding: 0.5rem;
+            text-align: center;
+        }
+
+        .league-status-bullet
+        {
+            background-color: var(--color-primary-00);
+            padding: 0rem;
+            margin: 0rem;
+            width: 1rem;
+        }
+
+        .league-date
+        {
+            margin: 0rem;
+        }
+
+        .league-pp img
+        {
+            max-height: 3rem;
+            max-width: 3rem;
+        }
+
+        .league-info p
+        {
+            margin: 0rem;
+            text-align: left;
+        }
+
+        .league-name
+        {
+            font-family: 'Font_TDC';
+            font-size: 1.25rem;
+            margin: 0rem;
+        }
+
+        .league-coordinator
+        {
+            font-size: 0.75rem;
+            color: var(--color-base-08);
+            font-style: italic;
+            margin: 0rem;
         }
     </style>
 

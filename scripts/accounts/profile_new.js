@@ -21,7 +21,14 @@ async function Start ()
                 const stats = GetUserStats(_matches, userProfile.username);
                 PopulateUserStats(stats);
             }
+        }        
+
+        const leagues = await _userLeagues(userProfile);
+        if (leagues && leagues.length > 0)
+        {
+            PopulateLeaguesTable(leagues);
         }
+        console.log("User Leagues:", leagues);
 
         gid("component-loading-overlay").style.display = "none";
     }
@@ -267,7 +274,7 @@ function PopulateMatchesTable (matches, index)
     const e_tbody = e_table.querySelector("tbody");
     e_tbody.innerHTML = "";
 
-    const lowerIndex = index < matches.length ? index : matches.length - indexShift;
+    const lowerIndex = matches ? (index < matches.length ? index : matches.length - indexShift) : 0;
 
     gid("matches-pagination").textContent = `${lowerIndex + 1}-${(lowerIndex + indexShift) > matches.length ? matches.length : (lowerIndex + indexShift)} of ${matches.length}`;
 
@@ -355,8 +362,142 @@ gid('matches-pagination-prev').onclick = () =>
 window.addEventListener('resize', () =>
 {
     const newIndexShift = window.innerWidth < 600 ? 5 : 10;
-   if (newIndexShift !== indexShift) {
-       indexShift = newIndexShift;
-       PopulateMatchesTable(_matches, index);
-   }
+    if (newIndexShift !== indexShift) 
+    {
+        indexShift = newIndexShift;
+        PopulateMatchesTable(_matches, index);
+    }
 });
+
+async function _userLeagues (userprofile)
+{
+    const response_player = await supabase
+        .from('tbl_leagues')
+        .select('*')
+        .contains('players', JSON.stringify([userprofile.username]))
+        .order('date_start', { ascending: false });
+
+    if (response_player.error) {
+        console.error("Error Getting User Leagues:", response_player.error);
+        return null;
+    }
+
+    const response_coordinator = await supabase
+        .from('tbl_leagues')
+        .select('*')
+        .eq('coordinatorID', userprofile.id)
+        .order('date_start', { ascending: false });
+
+    if (response_coordinator.error) 
+    {
+        console.error("Error Getting Coordinated Leagues:", response_coordinator.error);
+        return null;
+    }
+
+    const combinedLeagues = [...response_player.data, ...response_coordinator.data];
+    const uniqueLeagues = Array.from(new Set(combinedLeagues.map(league => league.id)))
+        .map(id => combinedLeagues.find(league => league.id === id));
+
+    return uniqueLeagues;
+}
+
+function PopulateLeaguesTable (leagues)
+{
+    /*  <table id="tbl-user-leagues">
+            <thead>
+                <tr>
+                    <th colspan="5">Leagues</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="league-status-bullet"></td>
+                    <td class="league-dates">
+                        <p class="league-date" id="league-date-start">00/00/00</p>
+                        <p class="league-date" id="league-date-end">00/00/00</p>
+                    </td>
+                    <td class="league-pp">
+                        <img src="/resources/icon_theDiveClub_alpha.svg" alt="League Profile Picture">
+                    </td>
+                    <td class="league-info">
+                        <p class="league-name">League Name</p>
+                        <p class="league-coordinator">Coordinator Name</p>
+                    </td>
+                    <td class="league-players-count">
+                        <p class="league-players">0 Players</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table> */
+
+    const e_table = gid("tbl-user-leagues");
+    const e_tbody = e_table.querySelector("tbody");
+    e_tbody.innerHTML = "";
+
+    for (let i = 0; i < leagues.length; i++)
+    {  
+        const league = leagues[i];
+        const tr = document.createElement("tr");
+        tr.classList.add("league-row");
+        tr.onclick = () => { window.location.href = `/leagues/index.html?leagueID=${league.id}`; };
+        e_tbody.appendChild(tr);
+
+        // Determine active state: prefer explicit field, otherwise infer from date_end (null => ongoing/active)
+        const isActive = (typeof league.active === 'boolean') ? league.active : (league.date_end ? false : true);
+
+        const td_status = document.createElement("td");
+        td_status.classList.add("league-status-bullet");
+        const color = isActive ? "var(--color-primary-00)" : "var(--color-base-06)"; 
+        td_status.style.backgroundColor = color;
+        tr.appendChild(td_status);
+
+        const td_dates = document.createElement("td");
+        td_dates.classList.add("league-dates");
+        const e_date_start = document.createElement("p");
+        e_date_start.classList.add("league-date");
+        let startDate = league.date_start ? new Date(league.date_start) : null;
+        e_date_start.textContent = startDate && !isNaN(startDate) 
+            ? startDate.toLocaleDateString(undefined, { year: '2-digit', month: 'numeric', day: 'numeric' }) 
+            : "TBD";
+        td_dates.appendChild(e_date_start);
+
+        const e_date_end = document.createElement("p");
+        e_date_end.classList.add("league-date");
+        let endDate = league.date_end ? new Date(league.date_end) : null;
+        e_date_end.textContent = endDate && !isNaN(endDate) 
+            ? endDate.toLocaleDateString(undefined, { year: '2-digit', month: 'numeric', day: 'numeric' }) 
+            : "Ongoing";
+        td_dates.appendChild(e_date_end);
+        tr.appendChild(td_dates);
+
+        const td_pp = document.createElement("td");
+        td_pp.classList.add("league-pp");
+        const e_pp = document.createElement("img");
+        e_pp.src = league.pp ? league.pp : "/resources/icons/icon_theDiveClub_alpha.svg";
+        e_pp.alt = '';
+        td_pp.appendChild(e_pp);
+        tr.appendChild(td_pp);
+
+        const td_info = document.createElement("td");
+        td_info.classList.add("league-info");
+        const e_name = document.createElement("p");
+        e_name.classList.add("league-name");
+        e_name.textContent = league.name || "Unnamed League";
+        td_info.appendChild(e_name);
+        const e_coordinator = document.createElement("p");
+        e_coordinator.classList.add("league-coordinator");
+        // JSON may not include coordinatorName; fall back to coordinatorID or blank
+        e_coordinator.textContent = league.coordinatorName || league.coordinator || league.coordinatorID || "";
+        td_info.appendChild(e_coordinator);
+        tr.appendChild(td_info);
+
+        const td_players_count = document.createElement("td");
+        td_players_count.classList.add("league-players-count");
+        const e_players = document.createElement("p");
+        e_players.classList.add("league-players");
+        const playersCount = Array.isArray(league.players) ? league.players.length : 0;
+        e_players.textContent = `${playersCount} Player${playersCount === 1 ? "" : "s"}`;
+        td_players_count.appendChild(e_players);
+        tr.appendChild(td_players_count);
+    }
+}
