@@ -198,15 +198,7 @@ function PopulateMatchesTable (matches, index)
         const tr = document.createElement("tr");
         tr.classList.add("match-row");
         const link = m.status === "Complete" ? 'scoreboard' : 'index';
-        // Make the row act like a real link so users can middle-click / open in new tab / use context menu
-        tr.style.position = "relative";
-        const a = document.createElement("a");
-        a.href = `/matches/${link}.html?matchID=${m.id}`;
-        a.className = "match-row-link";
-        // cover the whole row visually but keep semantics of a link
-        a.style.cssText = "position:absolute;inset:0;z-index:1;text-decoration:none;color:inherit;";
-        a.setAttribute("aria-label", `Open match ${m.id}`);
-        tr.appendChild(a);
+        tr.onclick = () => { window.location.href = `/matches/${link}.html?matchID=${m.id}`; };
         e_tbody.appendChild(tr);
 
         const td_status = document.createElement("td");
