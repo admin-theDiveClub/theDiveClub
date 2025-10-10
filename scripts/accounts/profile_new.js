@@ -189,7 +189,8 @@ function GetUserStats (matches)
         fw: 0,
         mp: 0,
         mw: 0,
-        avgDuration: 0
+        avgDuration: 0,
+        bf: 0
     }
 
     var totalDuration = 0;
@@ -208,6 +209,8 @@ function GetUserStats (matches)
 
         stats.fp += match.userResults.fw + match.opponentResults.fw;
         stats.fw += match.userResults.fw;
+
+        stats.bf += match.userResults.bf ? match.userResults.bf : 0;
 
         if (!match.history)
         {
@@ -253,6 +256,7 @@ function PopulateUserStats (stats)
         return `${hh}:${mm}:${ss}`;
     })();
     gid("user-avg-frame-time").textContent = avgFrameTime;
+    gid("user-bf").textContent = stats.bf;
 }
 
 const gid = (id) => document.getElementById(id);
@@ -323,7 +327,9 @@ function PopulateMatchesTable (matches, index)
         td_results.classList.add("match-score");
         const e_results = document.createElement("p");
         e_results.id = "match-score";
-        e_results.textContent = `${m.opponentResults.fw} - ${m.userResults.fw}`;
+        e_results.style.display = "flex";
+        const className = (m.userResults.fw > m.opponentResults.fw) ? "match-user-fw-win" : (m.userResults.fw < m.opponentResults.fw) ? "match-user-fw-loss" : "match-user-fw-draw";
+        e_results.innerHTML = `${m.opponentResults.fw} - <div class="${className}">${m.userResults.fw}</div>`;
         td_results.appendChild(e_results);
         tr.appendChild(td_results);
     }

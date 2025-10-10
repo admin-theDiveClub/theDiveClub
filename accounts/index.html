@@ -93,6 +93,10 @@
                                         <th >Avg. F <i class="bi bi-clock"></i>  :</th>
                                         <td id="user-avg-frame-time">00:00</td>
                                     </tr>
+                                    <tr>
+                                        <th >B/F</th>
+                                        <td id="user-bf">0</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -199,7 +203,7 @@
         {
             text-align: center;
             font-family: 'Font_TDC';
-            font-size: 1.25rem;
+            font-size: 0.75rem;
             margin: auto;
             margin-top: 0.5rem;
         }
@@ -219,7 +223,7 @@
             font-weight: lighter;
         }
 
-        #user-fpercent, #user-mpercent, #user-avg-frame-time
+        #user-fpercent, #user-mpercent, #user-avg-frame-time, #user-bf
         {
             font-size: 1.5rem;
             color: var(--color-primary-00);
@@ -330,10 +334,22 @@
             font-size: 1.5rem;
         }
 
-        .unstyled
+        .match-user-fw-win
         {
-            text-decoration: none;
-            color: inherit;
+            color: var(--color-primary-00);
+            padding-left: 0.25rem;
+        }
+
+        .match-user-fw-loss
+        {
+            color: var(--color-secondary-00);
+            padding-left: 0.25rem;
+        }
+
+        .match-user-fw-draw
+        {
+            color: var(--color-base-08);
+            padding-left: 0.25rem;
         }
     </style>
 
