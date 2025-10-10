@@ -243,21 +243,20 @@ document.addEventListener("visibilitychange", async () =>
     if (document.visibilityState === "visible") 
     {
         const id = _matchID();
-        const subResponse = await SubscribeToUpdates(id);
-        if (subResponse.error)
+        const matchRef = await _match(id);
+        if (matchRef)
         {
-            console.log("Subscription Error:", subResponse.error.message);
-            window.location.reload();
-        } else 
-        {
-            const matchRef = await _match(id);
-            if (matchRef)
+            OnPayloadReceived(matchRef);
+
+            const subResponse = await SubscribeToUpdates(id);
+            if (subResponse.error)
             {
-                OnPayloadReceived(matchRef);
-            } else 
-            {
+                console.log("Subscription Error:", subResponse.error.message);
                 window.location.reload();
             }
+        } else 
+        {
+            window.location.reload();
         }
     }
 });
