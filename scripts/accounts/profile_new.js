@@ -30,6 +30,13 @@ async function Start ()
         }
         console.log("User Leagues:", leagues);
 
+        const tournaments = await _userTournaments(userProfile);
+        if (tournaments && tournaments.length > 0)
+        {
+            PopulateTournamentsTable(tournaments);
+        }
+        console.log("User Tournaments:", tournaments);
+
         gid("component-loading-overlay").style.display = "none";
     }
 }
@@ -496,6 +503,114 @@ function PopulateLeaguesTable (leagues)
         const e_players = document.createElement("p");
         e_players.classList.add("league-players");
         const playersCount = Array.isArray(league.players) ? league.players.length : 0;
+        e_players.textContent = `${playersCount} Player${playersCount === 1 ? "" : "s"}`;
+        td_players_count.appendChild(e_players);
+        tr.appendChild(td_players_count);
+    }
+}
+
+async function _userTournaments (userprofile)
+{
+    const response_player = await supabase
+        .from('tbl_tournaments')
+        .select('*')
+        .contains('players', JSON.stringify([userprofile.username]))
+        .order('date', { ascending: false });
+
+    if (response_player.error) {
+        console.error("Error Getting User Leagues:", response_player.error);
+        return null;
+    }
+
+    const response_coordinator = await supabase
+        .from('tbl_tournaments')
+        .select('*')
+        .eq('coordinatorID', userprofile.id)
+        .order('date', { ascending: false });
+
+    if (response_coordinator.error) 
+    {
+        console.error("Error Getting Coordinated Leagues:", response_coordinator.error);
+        return null;
+    }
+
+    const combinedLeagues = [...response_player.data, ...response_coordinator.data];
+    const uniqueLeagues = Array.from(new Set(combinedLeagues.map(league => league.id)))
+        .map(id => combinedLeagues.find(league => league.id === id));
+
+    return uniqueLeagues;
+}
+
+function PopulateTournamentsTable (tournaments)
+{
+    const e_table = gid("tbl-user-tournaments");
+    const e_tbody = e_table.querySelector("tbody");
+    e_tbody.innerHTML = "";
+
+    for (let i = 0; i < tournaments.length; i++)
+    {
+        const tournament = tournaments[i];
+        if (tournament.leagueID) continue; // Skip tournaments that are part of a league
+        const tr = document.createElement("tr");
+        tr.classList.add("tournament-row");
+        tr.onclick = () => { window.location.href = `/tournaments/view.html?tournamentID=${tournament.id}`; };
+        e_tbody.appendChild(tr);
+
+        // Determine active state: prefer explicit status, otherwise infer from date (future => active)
+        const statusText = tournament.status ? String(tournament.status).toLowerCase() : null;
+        const isActive = statusText ? (statusText === "live" || statusText === "active") : (tournament.date ? (new Date(tournament.date) >= new Date()) : true);
+
+        const td_status = document.createElement("td");
+        td_status.classList.add("tournament-status-bullet");
+        td_status.style.backgroundColor = isActive ? "var(--color-primary-00)" : "var(--color-base-06)";
+        tr.appendChild(td_status);
+
+        const td_start = document.createElement("td");
+        td_start.classList.add("tournament-start");
+
+        // Build date/time display
+        let startDate = null;
+        if (tournament.date && tournament.time) {
+            const iso = `${tournament.date}T${tournament.time}`;
+            startDate = new Date(iso);
+            if (isNaN(startDate)) startDate = new Date(tournament.date);
+        } else if (tournament.date) {
+            startDate = new Date(tournament.date);
+        }
+
+        const e_date = document.createElement("p");
+        e_date.classList.add("tournament-date");
+        e_date.textContent = startDate && !isNaN(startDate)
+            ? startDate.toLocaleDateString(undefined, { year: '2-digit', month: 'numeric', day: 'numeric' })
+            : "TBD";
+        td_start.appendChild(e_date);
+
+        const e_time = document.createElement("p");
+        e_time.classList.add("tournament-date");
+        e_time.textContent = startDate && !isNaN(startDate)
+            ? startDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+            : (tournament.time ? tournament.time : "TBD");
+        td_start.appendChild(e_time);
+
+        tr.appendChild(td_start);
+
+        const td_info = document.createElement("td");
+        td_info.classList.add("tournament-info");
+        const e_name = document.createElement("p");
+        e_name.classList.add("tournament-name");
+        e_name.textContent = tournament.name || "Unnamed Tournament";
+        td_info.appendChild(e_name);
+        const e_coordinator = document.createElement("p");
+        e_coordinator.classList.add("tournament-coordinator");
+        e_coordinator.textContent = tournament.coordinatorName || tournament.coordinator || tournament.coordinatorID || "";
+        td_info.appendChild(e_coordinator);
+        tr.appendChild(td_info);
+
+        const td_players_count = document.createElement("td");
+        td_players_count.classList.add("tournament-players-count");
+        const e_players = document.createElement("p");
+        e_players.classList.add("tournament-players");
+        const playersCount = Array.isArray(tournament.players) ? tournament.players.length : 0;
         e_players.textContent = `${playersCount} Player${playersCount === 1 ? "" : "s"}`;
         td_players_count.appendChild(e_players);
         tr.appendChild(td_players_count);

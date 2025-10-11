@@ -34,12 +34,12 @@
 
     <div id="component-login"></div>
 
-    <div class="main">      
+    <div class="main" style="color: var(--color-base-10);">      
 
-        <div class="row" style="width: 100%;">
-            <div class="col-md-3">
+        <div class="row" style="width: 100vw; padding: 0rem;">
+            <div class="col-md-3" style="padding: 0rem;">
                 <div id="container-profile">
-                    <div class="row">
+                    <div class="row" style="padding-left: 1rem !important;">
                         <div class="col-4 col-md-12" id="container-profile-pp">
                             <img id="user-pp" src="/resources/icons/icon_player.svg" alt="Profile Picture">
                         </div>
@@ -49,7 +49,7 @@
                             <p id="user-username">Username</p>
                         </div>
 
-                        <div class="col-4 col-md-12">
+                        <div class="col-6 col-md-12">
                             <table class="tbl-user-stats">
                                 <tbody>
                                     <tr>
@@ -68,7 +68,7 @@
                             </table>
                         </div>
                         
-                        <div class="col-4 col-md-12">
+                        <div class="col-6 col-md-12">
                             <table class="tbl-user-stats">
                                 <tbody>
                                     <tr>
@@ -86,15 +86,13 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div class="col-4 col-md-12">
+                        <div class="col-12 col-md-12">
                             <table class="tbl-user-stats">
                                 <tbody>
                                     <tr>
                                         <th >Avg. F <i class="bi bi-clock"></i>  :</th>
                                         <td id="user-avg-frame-time">00:00</td>
-                                    </tr>
-                                    <tr>
-                                        <th >B/F</th>
+                                        <th >B/F:</th>
                                         <td id="user-bf">0</td>
                                     </tr>
                                 </tbody>
@@ -178,7 +176,29 @@
                                 </table>
                             </div>
                             <div class="col-12 col-md-6">
-
+                                <table id="tbl-user-tournaments">
+                                    <thead>
+                                        <tr>
+                                            <th colspan="5">Tournaments</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="tournament-status-bullet"></td>
+                                            <td class="tournament-start">
+                                                <p class="tournament-date" id="tournament-date">00/00/00</p>
+                                                <p class="tournament-date" id="tournament-time">00/00/00</p>
+                                            </td>
+                                            <td class="tournament-info">
+                                                <p class="tournament-name">Tournament Name</p>
+                                                <p class="tournament-coordinator">Coordinator Name</p>
+                                            </td>
+                                            <td class="tournament-players-count">
+                                                <p class="tournament-players">0 Players</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
 
@@ -197,12 +217,14 @@
         {
             padding: 0rem;
             margin: 0rem;
+            width: 100%;
         }
 
         #container-profile-pp
         {
             padding: 1rem;
             margin: auto;
+            padding-right: 0rem;
         }
 
         #user-pp
@@ -216,7 +238,8 @@
 
         #container-profile-info
         {
-            text-align: center;
+            text-align: left;
+            padding-left: 1rem;
         }
 
         #user-displayName
@@ -244,7 +267,7 @@
         {
             text-align: center;
             font-family: 'Font_TDC';
-            font-size: 0.75rem;
+            font-size: 1.25rem;
             margin: auto;
             margin-top: 0.5rem;
         }
@@ -264,10 +287,32 @@
             font-weight: lighter;
         }
 
-        #user-fpercent, #user-mpercent, #user-avg-frame-time, #user-bf
+        #user-fw, #user-mw
+        {
+            font-size: 1.5rem;
+            color: var(--color-accent-0);
+            padding: 0.5rem 1rem;
+        }
+
+        #user-fpercent, #user-mpercent, #user-bf
         {
             font-size: 1.5rem;
             color: var(--color-primary-00);
+            padding: 0.5rem;
+        }
+
+        #user-bf
+        {
+            font-size: 1.5rem;
+            color: var(--color-highlight-0);
+            padding: 0.5rem 1rem;
+        }
+
+        #user-avg-frame-time
+        {
+            font-size: 1.5rem;
+            color: var(--color-secondary-00);
+            padding: 0.5rem 1rem;
         }
     </style>
 
@@ -403,13 +448,13 @@
     </style>
 
     <style>
-        #tbl-user-leagues td
+        #tbl-user-leagues td, #tbl-user-tournaments td
         {
             padding: 0.5rem;
             text-align: center;
         }
 
-        .league-status-bullet
+        .league-status-bullet, .tournament-status-bullet
         {
             background-color: var(--color-primary-00);
             padding: 0rem;
@@ -417,7 +462,7 @@
             width: 1rem;
         }
 
-        .league-date
+        .league-date, .tournament-date, .tournament-time
         {
             margin: 0rem;
         }
@@ -428,20 +473,20 @@
             max-width: 3rem;
         }
 
-        .league-info p
+        .league-info p, .tournament-info p
         {
             margin: 0rem;
             text-align: left;
         }
 
-        .league-name
+        .league-name, .tournament-name
         {
             font-family: 'Font_TDC';
             font-size: 1.25rem;
             margin: 0rem;
         }
 
-        .league-coordinator
+        .league-coordinator, .tournament-coordinator
         {
             font-size: 0.75rem;
             color: var(--color-base-08);
@@ -449,6 +494,8 @@
             margin: 0rem;
         }
     </style>
+
+
 
     <div id="component-siteMap"></div>
 
