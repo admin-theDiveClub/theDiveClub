@@ -1,63 +1,41 @@
-import { UpdateTournamentUI_Control } from "/scripts/tournaments/tournament_UI_control.js";
-import { UpdateTournamentUI } from "/scripts/tournaments/tournament_UI_view.js";
+var t_ID = null;
+var t = null;
+var t_matches = null;
+var t_log = null;
 
-import { DB_Update } from "/scripts/supabase/supabase_db_helpers.js";
-
-var tournamentID = null;
-var tournament = null;
-var tournamentMatches = null;
-var tournamentRounds = null;
-var tournamentLog = null;
-var tournamentPlayers = null;
+import { UpdateTournamentUI } from "/scripts/tournaments/tournament_UI.js";
 
 Start ();
 
 async function Start ()
 {
-    tournamentID = GetTournamentID();
-    if (tournamentID)
+    t_ID = _tournamentID();
+    if (t_ID)
     {
-        tournament = await GetTournament(tournamentID);
-        console.warn('Source: Tournament', tournament);
-        tournamentPlayers = await PopulatePlayerInfo(tournament.players);
-        console.warn('Source: Tournament Players', tournamentPlayers);
-        if (tournament)
+        t = await _tournament(t_ID);
+        console.log("Tournament Data:", t);
+
+        const players = t.players || [];
+
+        if (t && t.players.length > 0)
         {
-            tournamentMatches = await GetTournamentMatches(tournamentID);
-            SubscribeToUpdates(tournamentID);
-            tournamentLog = CompileTournamentLog(GetConfirmedPlayers(tournamentPlayers), tournamentMatches);
-            tournamentRounds = await CompileTournamentRounds(tournamentMatches);
-            console.warn('Source: Tournament Rounds', tournamentRounds);
-            console.warn('Source: Tournament Log', tournamentLog);
+            t_log = await _playerProfiles(players);
+
+            t_matches = await _tournamentMatches(t_ID);
+            console.log("Tournament Matches:", t_matches);
+            
+            t_log = CompileLog(t_log, t_matches);
+            console.log("Tournament Log & Matches:", t_log);
+
+            UpdateTournamentUI(t_log);
+
+            SubscribeToTournamentUpdates(t_ID);
+            SubscribeToTournamentMatchesUpdates(t_ID);
         }
     }
-
-    if (window.location.href && window.location.href.toLowerCase().includes('view.html')) 
-    {
-        UpdateTournamentUI(tournament, tournamentLog, tournamentRounds, tournamentPlayers);
-    } else 
-    {
-        UpdateTournamentUI_Control(tournament, tournamentPlayers, tournamentLog, tournamentRounds);
-    }
 }
 
-export async function UpdateTournamentData ()
-{
-    tournamentPlayers = await PopulatePlayerInfo(tournament.players);
-    tournamentMatches = await GetTournamentMatches(tournamentID);
-    tournamentLog = CompileTournamentLog(GetConfirmedPlayers(tournamentPlayers), tournamentMatches);
-    tournamentRounds = await CompileTournamentRounds(tournamentMatches);
-
-    if (window.location.href && window.location.href.toLowerCase().includes('view.html')) 
-    {
-        UpdateTournamentUI(tournament, tournamentLog, tournamentRounds, tournamentPlayers);
-    } else 
-    {
-        UpdateTournamentUI_Control(tournament, tournamentPlayers, tournamentLog, tournamentRounds);
-    }
-}
-
-function GetTournamentID()
+function _tournamentID()
 {
     var t_ID = new URLSearchParams(window.location.search).get('tournamentID');
     if (!t_ID)
@@ -76,13 +54,13 @@ function GetTournamentID()
     }
 }
 
-async function GetTournament (_tournamentID)
+async function _tournament (_tournamentID)
 {
     const response = await supabase.from('tbl_tournaments').select('*').eq('id', _tournamentID);
     return response.data[0];
 }
 
-async function GetTournamentMatches (_tournamentID)
+async function _tournamentMatches (_tournamentID)
 {
     const response = await supabase
         .from('tbl_matches')
@@ -92,15 +70,6 @@ async function GetTournamentMatches (_tournamentID)
         .order('createdAt', { ascending: true })
         .order('id', { ascending: true });
     return response.data;
-}
-
-async function SubscribeToUpdates (_tournamentID)
-{
-    const subscriptionResponse_tournament = await SubscribeToTournamentUpdates(_tournamentID);
-    //console.log('Source: Subscription Response Tournaments', subscriptionResponse_tournament);
-
-    const subscriptionResponse_tournamentMatches = await SubscribeToTournamentMatchesUpdates(_tournamentID);
-    //console.log('Source: Subscription Response Tournament Matches', subscriptionResponse_tournamentMatches);
 }
 
 async function SubscribeToTournamentUpdates (_tournamentID)
@@ -121,257 +90,168 @@ async function SubscribeToTournamentUpdates (_tournamentID)
 async function SubscribeToTournamentMatchesUpdates (_tournamentID)
 {
     const channels = supabase
-        .channel('realtime:tbl_matches')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'tbl_matches' }, (payload) => 
+    .channel('realtime:tbl_matches')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'tbl_matches' }, (payload) => 
+    {
+        if (payload.new.competitions && payload.new.competitions.tournamentID === _tournamentID)
         {
-            if (payload.new.competitions && payload.new.competitions.tournamentID === _tournamentID)
-            {
-                OnPayloadReceived_tournamentMatches(payload.new);
-            } else if (payload.eventType === 'DELETE')
-            {
-                OnPayloadReceived_tournamentMatches(payload.new);
-            }
-        })
-        .subscribe();
+            OnPayloadReceived_tournamentMatches(payload.new);
+        } else if (payload.eventType === 'DELETE')
+        {
+            OnPayloadReceived_tournamentMatches(payload.new);
+        }
+    })
+    .subscribe();
     return channels;
 }
 
-function OnPayloadReceived_tournament (_tournament)
+async function _playerProfiles (players)
 {
-    console.log('Tournament Data Updated:', _tournament);
-    tournament = _tournament;
-    UpdateTournamentData();
-}
+    const response = await supabase.from('tbl_players').select('*').in('username', players.map(p => p.username));
+    var allProfiles = [];
 
-function OnPayloadReceived_tournamentMatches (_match)
-{
-    console.log('Tournament Match Data Updated:', _match);
-
-    const idx = tournamentMatches.findIndex(m => m && m.id === _match.id);
-    if (idx !== -1) 
+    for (let i = 0; i < players.length; i++)
     {
-        tournamentMatches[idx] = _match;
-    }
-    UpdateTournamentData();
-}
-
-
-async function PopulatePlayerInfo (t_players)
-{
-    if (!t_players || t_players.length === 0)
-    {
-        console.log('No players to populate.');
-        return;
-    }
-
-    // collect unique, non-empty usernames
-    const usernames = [...new Set(t_players.map(p => p && p.username).filter(Boolean))];
-
-    // fetch all profiles in one call
-    const profiles = await GetPlayerProfiles(usernames);
-    const profileMap = {};
-    if (profiles && profiles.length)
-    {
-        profiles.forEach(p => {
-            if (p && p.username) profileMap[p.username] = p;
-        });
-    }
-
-    // update player entries by comparing with fetched profiles
-    for (let i = 0; i < t_players.length; i++)
-    {
-        const player = t_players[i] || {};
-        const uname = player.username;
-        const playerInfo = uname ? profileMap[uname] : null;
-
-        if (playerInfo)
+        if (players[i].confirmed)
         {
-            t_players[i].username = playerInfo.username;
-            let displayName = playerInfo.username;
-            if (playerInfo.nickname && playerInfo.nickname !== "Guest")
+            var profile = null;
+            const existingProfile = response.data.find(p => p.username === players[i].username);
+            if (existingProfile)
             {
-                displayName = playerInfo.nickname;
-            }
-            else
+                profile = 
+                {
+                    username: players[i].username,
+                    displayName: existingProfile.nickname || existingProfile.name || players[i].username.split('@')[0],
+                    name: existingProfile.name || players[i].username.split('@')[0],
+                    pp: existingProfile.pp || null,
+                    id: existingProfile.id || null,
+                }
+            } else 
             {
-                displayName = playerInfo.name || playerInfo.username;
+                profile =
+                {
+                    username: players[i].username,
+                    displayName: players[i].username.split('@')[0],
+                    name: players[i].username.split('@')[0],
+                    pp: null,
+                    id: null,
+                }
             }
-            t_players[i].displayName = displayName;
-            // preserve the original confirmed flag from the incoming player object
-            t_players[i].confirmed = player.confirmed;
-            t_players[i].playerProfile = playerInfo;
 
-            const response_pic = await supabase.storage.from('bucket-profile-pics').getPublicUrl(playerInfo.id);
-            if (response_pic.data && response_pic.data.publicUrl && !response_pic.data.publicUrl.endsWith('null')) 
-            {
-                /*const imgElement_H = document.getElementById('player-H-pic');
-                if (imgElement_H) {
-                    const img = new Image();
-                    img.onload = () => {
-                        imgElement_H.src = response_pic.data.publicUrl;
-                    };
-                    img.src = response_pic.data.publicUrl;
-                }*/
-                t_players[i].pp = response_pic.data.publicUrl;
-            }
-        }
-        else
+            allProfiles.push(profile);
+        }        
+    }
+
+    return allProfiles;
+}
+
+function CompileLog (players, matches)
+{
+    var log = players;
+    for (let i = 0; i < log.length; i++)
+    {
+        log[i].results = 
         {
-            // no profile found — preserve what we have or fall back
-            t_players[i].username = player.username;
-            t_players[i].displayName = player.username;
-            t_players[i].confirmed = player.confirmed;
-            t_players[i].playerProfile = null;
-        }
-    }
-    
-    return t_players;
-}
-
-async function GetPlayerProfiles (usernames)
-{
-    if (!usernames || usernames.length === 0) return [];
-
-    const response = await supabase.from('tbl_players').select('*').in('username', usernames);
-    return response.data || [];
-}
-
-var tournamentRounds = null
-
-function GetConfirmedPlayers (players)
-{
-    if (!players || players.length === 0) return [];
-
-    const confirmed = players.filter(p => p && p.confirmed);
-
-    const maxEntries = tournament && tournament.maxEntries !== undefined
-        ? Number(tournament.maxEntries)
-        : null;
-
-    if (Number.isFinite(maxEntries) && maxEntries >= 0) {
-        return confirmed.slice(0, maxEntries);
-    }
-
-    return confirmed;
-}
-
-function CompileTournamentLog (players, matches)
-{
-    const log = players.map(p => {
-        const uname = p.username || 'Unknown';
-        let MP = 0, MW = 0, ML = 0, FP = 0, FW = 0, BF = 0;
-
-        for (const m of matches || []) {
-            if (!m || !m.players) continue;
-
-            let side = null;
-            if (m.players.a && m.players.a.username === uname) side = 'a';
-            else if (m.players.h && m.players.h.username === uname) side = 'h';
-            if (!side) continue;
-
-            const status = m.info && m.info.status;
-            MP++;
-            const results = m.results || {};
-            const pRes = results[side] || {};
-            const oRes = results[side === 'a' ? 'h' : 'a'] || {};
-
-            const pFW = Number(pRes.fw) || 0;
-            const oFW = Number(oRes.fw) || 0;
-            const pBF = Number(pRes.bf) || 0;
-
-            FP += pFW + oFW;
-            FW += pFW;
-            BF += pBF;
-            
-            if (status !== 'Complete') continue;
-
-            if (pFW > oFW) MW++;
-            else if (pFW < oFW) ML++;
+            rnk: 0,
+            mp: 0,
+            mw: 0,
+            mwr: 0,
+            fp: 0,
+            fw: 0,
+            fwr: 0,
+            bf: 0,
         }
 
-        const FPercent = FP > 0 ? ((FW / FP) * 100).toFixed(2) : "0.00";
+        log[i].matches = [];
+    }
 
-        return {
-            username: uname,
-            Player: p.displayName,
-            MP,
-            MW,
-            ML,
-            FP,
-            FW,
-            'F%': FPercent,
-            'B/F': BF
-        };
+    for (let i = 0; i < matches.length; i++)
+    {
+        const match = matches[i];
+        const matchPlayers = match.players || {h: {username: null}, a: {username: null}};
+        match.results.h = match.results.h || {fw: 0};
+        match.results.a = match.results.a || {fw: 0};
+        const matchResults = match.results  ? match.results : {h: {fw: 0}, a: {fw: 0}};
+        const matchStatus = match.info ? match.info.status : "New";
+        const matchRound = match.info ? match.info.round || 0 : 0;
+
+        const log_player_h = log.find(p => p.username === matchPlayers.h.username);
+        if (log_player_h)
+        {
+            const lhr = log_player_h.results;
+            lhr.mp += matchStatus === "Complete" ? 1 : 0;
+            lhr.mw += matchResults.h.fw > matchResults.a.fw ? 1 : 0;
+            lhr.fp += matchResults.h.fw + matchResults.a.fw;
+            lhr.fw += matchResults.h.fw;
+            lhr.bf += matchResults.h.bf || 0;
+            log_player_h.matches[matchRound] = match;
+        }
+
+        const log_player_a = log.find(p => p.username === matchPlayers.a.username);
+        if (log_player_a)
+        {
+            const lar = log_player_a.results;
+            lar.mp += matchStatus === "Complete" ? 1 : 0;
+            lar.mw += matchResults.a.fw > matchResults.h.fw ? 1 : 0;
+            lar.fp += matchResults.h.fw + matchResults.a.fw;
+            lar.fw += matchResults.a.fw;
+            lar.bf += matchResults.a.bf || 0;
+            log_player_a.matches[matchRound] = match;
+        }
+    }
+
+    log.sort((a, b) => 
+    {
+        const ra = a.results || {};
+        const rb = b.results || {};
+        const keys = ['mw', 'fw', 'mp', 'fp', 'bf'];
+        for (const k of keys) {
+            const va = Number(ra[k]) || 0;
+            const vb = Number(rb[k]) || 0;
+            const diff = vb - va; // descending
+            if (diff !== 0) return diff;
+        }
+        return 0;
     });
 
-    // sort by MW desc, then FW desc, then F% desc, then B/F desc, then username
-    log.sort((a, b) => {
-        const aMW = Number(a.MW) || 0, bMW = Number(b.MW) || 0;
-        if (bMW !== aMW) return bMW - aMW;
-
-        const aFW = Number(a.FW) || 0, bFW = Number(b.FW) || 0;
-        if (bFW !== aFW) return bFW - aFW;
-
-        const aF = Number(a['F%']) || 0, bF = Number(b['F%']) || 0;
-        if (bF !== aF) return bF - aF;
-
-        const aBF = Number(a['B/F']) || 0, bBF = Number(b['B/F']) || 0;
-        if (bBF !== aBF) return bBF - aBF;
-
-        return (a.username || '').localeCompare(b.username || '');
-    });
-
-    const finalLog = log.map((entry, idx) => ({
-        Rank: idx + 1,
-        username: entry.username,
-        MP: entry.MP,
-        MW: entry.MW,
-        ML: entry.ML,
-        FP: entry.FP,
-        FW: entry.FW,
-        'F%': entry['F%'],
-        'B/F': entry['B/F']
-    }));
-
-    return finalLog;
-}
-
-async function CompileTournamentRounds (matches)
-{
-    var allRounds = [];
-
-    for (var i = 0; i < matches.length; i++)
+    for (let i = 0; i < log.length; i++)
     {
-        const m_round = (() => {
-            const r = matches[i]?.info?.round;
-            if (Number.isInteger(r)) return r;
-            const n = parseInt(String(r ?? '0'), 10);
-            return Number.isNaN(n) ? 0 : n;
-        })();
-        allRounds[m_round] = allRounds[m_round] || [];
-        const matchRef = 
-        {
-            match: matches[i],
-            round: m_round,
-            id: allRounds[m_round].length,
-            precedingRound: m_round > 0 ? m_round - 1 : null,
-            precedingMatches: m_round > 1 ? [allRounds[m_round].length * 2, allRounds[m_round].length * 2 + 1] : []
-        }
-
-        if (m_round > 1)
-        {
-            const prevRound = allRounds[m_round - 1] || [];
-            const m = matchRef.match || null;
-            const prevMatch_0 = prevRound[matchRef.precedingMatches[0]]?.match || null;
-            const prevMatch_1 = prevRound[matchRef.precedingMatches[1]]?.match || null;
-            if (m && prevMatch_0 && prevMatch_1)
-            {
-                //matchRef.match = await AutoUpdateMatchPlayers(m, prevMatch_0, prevMatch_1);
-            }
-        }
-
-        allRounds[m_round].push(matchRef);
+        const r = log[i].results;
+        r.mwr = r.mp > 0 ? (r.mw / r.mp * 100).toFixed(0) + "%" : "0%";
+        r.fwr = r.fp > 0 ? (r.fw / r.fp * 100).toFixed(0) + "%" : "0%";
+        r.rnk = i + 1;
     }
 
-    return allRounds;
+    return log;
+}
+
+async function OnPayloadReceived_tournament (newTournamentData)
+{
+    t = newTournamentData;
+    const players = t.players || [];
+
+    if (t && t.players.length > 0)
+    {
+        const playerUsernames = players.map(player => player.username);
+        t_log = await _playerProfiles(playerUsernames);
+
+        t_matches = await _tournamentMatches(t_ID);
+        
+        t_log = CompileLog(t_log, t_matches);
+
+        UpdateTournamentUI(t_log);
+    }
+}
+
+async function OnPayloadReceived_tournamentMatches (newMatchData)
+{
+    const matchIndex = t_matches.findIndex(m => m.id === newMatchData.id);
+
+    if (newMatchData && newMatchData.id && matchIndex === -1)
+    {
+        t_matches[matchIndex] = newMatchData;
+        t_log = CompileLog(t_log, t_matches);
+
+        UpdateTournamentUI(t_log);
+    }
 }

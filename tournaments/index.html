@@ -34,46 +34,6 @@
 
     <div class="main">
 
-        <div id="log">
-            <table id="tbl-log">
-                <thead>
-                    <tr>
-                        <th rowspan="2">#</th>
-                        <th rowspan="2" colspan="2">Player</th>
-                        <th colspan="3">Matches</th>
-                        <th colspan="4">Frames</th>
-                    </tr>
-                    <tr>
-                        <th>P</th>
-                        <th>W</th>
-                        <th>%</th>
-                        <th>P</th>
-                        <th>W</th>
-                        <th>%</th>
-                        <th>B/F</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td class="log-pp">
-                            <img src="/resources/icons/icon_player.svg">
-                        </td>
-                        <td class="log-dn">
-                            <p>Display Name</p>
-                        </td>
-                        <td>10</td>
-                        <td>8</td>
-                        <td>80.0%</td>
-                        <td>30</td>
-                        <td>20</td>
-                        <td>66.7%</td>
-                        <td>1</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
         <div id="chart-prog">
             <table class="tbl-match match-compact">
                 <tr>
@@ -126,6 +86,44 @@
             </table>
         </div>
 
+        <div id="log">
+            <table id="tbl-log">
+                <thead>
+                    <tr>
+                        <th rowspan="2" class="col-rank"></th>
+                        <th rowspan="2" colspan="2">Player</th>
+                        <th colspan="2" class="col-match-win">Matches</th>
+                        <th colspan="4" class="col-frame-win">Frames</th>
+                    </tr>
+                    <tr>
+                        <th>P</th>
+                        <th class="col-match-win">W</th>
+                        <th>P</th>
+                        <th class="col-frame-win">W</th>
+                        <th>%</th>
+                        <th class="col-frame-bf">B/F</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td class="log-pp">
+                            <img src="/resources/icons/icon_player.svg">
+                        </td>
+                        <td class="log-dn">
+                            <p>Display Name</p>
+                        </td>
+                        <td>10</td>
+                        <td>8</td>
+                        <td>30</td>
+                        <td>20</td>
+                        <td>66.7%</td>
+                        <td>1</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
     </div>
 
     <style id="style-log">
@@ -140,8 +138,14 @@
         #tbl-log th, #tbl-log td
         {
             text-align: center;
+            padding: 0rem 0.5rem;
+        }
+
+        #tbl-log th
+        {
             border: 1px solid var(--color-base-04);
-            padding: 0.25rem 0.5rem;
+            font-family: 'Font_TDC';
+            font-size: 1rem;
         }
 
         .log-pp
@@ -163,20 +167,77 @@
             margin: 0rem;
             font-family: 'Font_TDC';
             font-size: 1.5rem;
+            font-weight: lighter;
+        }
+
+        .col-rank
+        {
+            font-family: 'Font_TDC';
+            font-weight: lighter;
+            font-size: 0.75rem;
+            padding: 0rem !important;
+        }
+
+        .col-match-win
+        {
+            color: var(--color-secondary-00);
+        }
+
+        .col-frame-win
+        {
+            color: var(--color-primary-00);
+        }
+
+        .col-frame-bf
+        {
+            color: var(--color-highlight-0);
+        }
+    </style>
+
+    <style id="style-prog-chart">
+        .tournament-column
+        {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 0rem var(--sep-h);
+            padding: 0rem;
+        }
+
+        .tbl-match
+        {
+            margin: var(--sep-v) 0rem;
+            padding: 0rem;
+        }
+
+        .tournament-round-title
+        {
+            font-family: 'Font_TDC';
+            font-size: 1rem;
+            font-weight: lighter;
+            text-align: center;
         }
     </style>
 
     <style id="style-matches">
         :root
         {
-            --sep-h: 2rem;
-            --sep-v: 2rem;
-            --font-size: 2rem;
+            --sep-h: 0rem;
+            --sep-v: 0.1rem;
+            --font-size: 0.75rem;
         }
 
         #chart-prog
         {
             overflow: scroll;
+            -ms-overflow-style: none; /* IE/Edge legacy */
+            scrollbar-width: none; /* Firefox */
+        }
+
+        #chart-prog .row
+        {
+            overflow: auto;
             -ms-overflow-style: none; /* IE/Edge legacy */
             scrollbar-width: none; /* Firefox */
         }
@@ -229,5 +290,7 @@
     <script src="/scripts/VFX/bg_anim_PoolVisualization.js"></script>
 
     <script src="/scripts/accounts/data_user.js" type="module"></script>
+    
+    <script src="/scripts/tournaments/tournament_data.js" type="module"></script>
 </body>
 </html>
