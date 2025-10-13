@@ -9,7 +9,10 @@ function UpdateUI (log)
 {
     PopulateLog(log);
     const rounds = _allRounds(log);
-    PopulateChart(rounds, log, "linear", "vertical");
+    const view = "championship"; //linear | championship
+    const orientation = "vertical"; //horizontal | vertical
+    const matchMode = "compact"; //compact | vertical | horizontal
+    PopulateChart(rounds, view, orientation, matchMode);
 }
 
 function PopulateLog (log)
@@ -112,19 +115,58 @@ function _allRounds (log)
                     resultH: matches[j].results.h.fw || 0,
                     resultA: matches[j].results.a.fw || 0,
                     status: matches[j].info.status || "New",
-                    round: roundIndex
+                    round: roundIndex,
+                    createdAt: new Date(matches[j].createdAt).getTime() || 0,
                 }
                 rounds[roundIndex].push(match);
             }
         }
     }
 
-    console.log("All Rounds:", rounds);
+    for (let i = 0; i < rounds.length; i++)
+    {
+        if (rounds[i] && rounds[i].length > 0)
+        {
+            rounds[i].sort((a, b) => a.createdAt - b.createdAt);
+        }
+    }
+
+    console.log("All Sorted Rounds:", rounds);
     return rounds;
 }
 
 const _matchTable = (match, mode) =>
 {
+    const e_cell_pp = (src) =>
+    {
+        const td = document.createElement("td");
+        td.className = "match-player-pp";
+        if (src)
+        {
+            const img = document.createElement("img");
+            img.src = src;
+            img.alt = "player";
+            td.appendChild(img);
+        }
+        return td;
+    }
+
+    const e_cell_dn = (text) =>
+    {
+        const td = document.createElement("td");
+        td.className = "match-player-dn";
+        td.textContent = text || "Player";
+        return td;
+    }
+
+    const e_cell_score = (score) =>
+    {
+        const td = document.createElement("td");
+        td.className = "match-player-score";
+        td.textContent = score !== undefined ? score : "-";
+        return td;
+    }
+
     var table = document.createElement("table");
     table.className = "tbl-match";
 
@@ -132,224 +174,162 @@ const _matchTable = (match, mode) =>
     {
         table.classList.add("match-compact");
 
-        var tr1 = document.createElement("tr");
+        //Players Row
+        var e_tr_players = document.createElement("tr");
 
-        var td1 = document.createElement("td");
-        td1.className = "match-player-pp";
         if (match.playerHpp)
         {
-            var img1 = document.createElement("img");
-            img1.src = match.playerHpp ? match.playerHpp : "/resources/icons/icon_player.svg";
-            img1.alt = "player";
-            td1.appendChild(img1);
-            tr1.appendChild(td1);
+            const e_td_pp_H = e_cell_pp(match.playerHpp);
+            e_tr_players.appendChild(e_td_pp_H);
         }
+        const e_td_dn_H = e_cell_dn(match.playerH);
+        e_tr_players.appendChild(e_td_dn_H);
 
-        var td2 = document.createElement("td");
-        td2.className = "match-player-dn";
-        td2.textContent = match.playerH ? match.playerH : "Player H";
-        tr1.appendChild(td2);
-
-        var td3 = document.createElement("td");
-        td3.className = "match-player-pp";        
         if (match.playerApp)
         {
-            var img2 = document.createElement("img");
-            img2.src = match.playerApp ? match.playerApp : "/resources/icons/icon_player.svg";
-            img2.alt = "player";
-            td3.appendChild(img2);            
-            tr1.appendChild(td3);
+            const e_td_pp_A = e_cell_pp(match.playerApp);
+            e_tr_players.appendChild(e_td_pp_A);
         }
+        const e_td_dn_A = e_cell_dn(match.playerA);
+        e_tr_players.appendChild(e_td_dn_A);
 
-        var td4 = document.createElement("td");
-        td4.className = "match-player-dn";
-        td4.textContent = match.playerA ? match.playerA : "Player A";
-        tr1.appendChild(td4);
+        table.appendChild(e_tr_players);
 
-        table.appendChild(tr1);
-
-        var tr2 = document.createElement("tr");
-        var td5 = document.createElement("td");
-        td5.className = "match-player-score";
+        //Scores Row
+        var e_tr_scores = document.createElement("tr");
+        var e_td_score_H = e_cell_score(match.resultH);
         if (match.playerHpp)
         {
-            td5.colSpan = 2;
+            e_td_score_H.colSpan = 2;
         }
-        td5.textContent = match.resultH !== undefined ? match.resultH : "-";
-        tr2.appendChild(td5);
+        e_tr_scores.appendChild(e_td_score_H);
 
-        var td6 = document.createElement("td");
-        td6.className = "match-player-score";
+        var e_td_score_A = e_cell_score(match.resultA);
         if (match.playerApp)
         {
-            td6.colSpan = 2;
+            e_td_score_A.colSpan = 2;
         }
-        td6.textContent = match.resultA !== undefined ? match.resultA : "-";
-        tr2.appendChild(td6);
+        e_tr_scores.appendChild(e_td_score_A);
 
-        table.appendChild(tr2);
+        table.appendChild(e_tr_scores);
     } else if (mode === "vertical")
     {
         table.classList.add("match-vertical");
 
-        var tr1 = document.createElement("tr");
-        
-        var td1 = document.createElement("td");
-        td1.className = "match-player-pp";
+        var e_tr_player_H = document.createElement("tr");
+
         if (match.playerHpp)
         {
-            var img1 = document.createElement("img");
-            img1.src = match.playerHpp ? match.playerHpp : "/resources/icons/icon_player.svg";
-            img1.alt = "player";
-            td1.appendChild(img1);
-            tr1.appendChild(td1);
+            const e_td_pp_H = e_cell_pp(match.playerHpp);
+            e_tr_player_H.appendChild(e_td_pp_H);
         }
 
-        var td2 = document.createElement("td");
-        td2.className = "match-player-dn";
-        td2.textContent = match.playerH ? match.playerH : "Player H";
+        const e_td_dn_H = e_cell_dn(match.playerH);
         if (!match.playerHpp)
         {
-            td2.colSpan = 2;
+            e_td_dn_H.colSpan = 2;
         }
-        tr1.appendChild(td2);
 
-        var td3 = document.createElement("td");
-        td3.className = "match-player-score";
-        td3.textContent = match.resultH !== undefined ? match.resultH : "-";
-        tr1.appendChild(td3);
+        e_tr_player_H.appendChild(e_td_dn_H);
 
-        var tr2 = document.createElement("tr");
+        const e_td_score_H = e_cell_score(match.resultH);
+        e_tr_player_H.appendChild(e_td_score_H);
 
+        table.appendChild(e_tr_player_H);
 
-        var td4 = document.createElement("td");
-        td4.className = "match-player-pp";
+        var e_tr_player_A = document.createElement("tr");
+
         if (match.playerApp)
         {
-            var img2 = document.createElement("img");
-            img2.src = match.playerApp ? match.playerApp : "/resources/icons/icon_player.svg";
-            img2.alt = "player";
-            td4.appendChild(img2);
-            tr2.appendChild(td4);
+            const e_td_pp_A = e_cell_pp(match.playerApp);
+            e_tr_player_A.appendChild(e_td_pp_A);
         }
 
-        var td5 = document.createElement("td");
-        td5.className = "match-player-dn";
-        td5.textContent = match.playerA ? match.playerA : "Player A";
+        const e_td_dn_A = e_cell_dn(match.playerA);
         if (!match.playerApp)
         {
-            td5.colSpan = 2;
+            e_td_dn_A.colSpan = 2;
         }
-        tr2.appendChild(td5);
 
-        var td6 = document.createElement("td");
-        td6.className = "match-player-score";
-        td6.textContent = match.resultA !== undefined ? match.resultA : "-";
-        tr2.appendChild(td6);
+        e_tr_player_A.appendChild(e_td_dn_A);
 
-        table.appendChild(tr1);
-        table.appendChild(tr2);
+        const e_td_score_A = e_cell_score(match.resultA);
+        e_tr_player_A.appendChild(e_td_score_A);
+
+        table.appendChild(e_tr_player_A);
     } else if (mode === "horizontal")
     {
         table.classList.add("match-horizontal");
-        var tr1 = document.createElement("tr");
+        var e_tr_main = document.createElement("tr");
 
-
-        var td1 = document.createElement("td");
-        td1.className = "match-player-pp";
         if (match.playerHpp)
         {
-            var img1 = document.createElement("img");
-            img1.src = match.playerHpp ? match.playerHpp : "/resources/icons/icon_player.svg";
-            img1.alt = "player";
-            td1.appendChild(img1);
-            tr1.appendChild(td1);
+            const e_td_pp_H = e_cell_pp(match.playerHpp);
+            e_tr_main.appendChild(e_td_pp_H);
         }
 
-        var td2 = document.createElement("td");
-        td2.className = "match-player-dn";
-        td2.textContent = match.playerH ? match.playerH : "Player H";
-        tr1.appendChild(td2);
+        const e_td_dn_H = e_cell_dn(match.playerH);
+        e_tr_main.appendChild(e_td_dn_H);
 
-        var td3 = document.createElement("td");
-        td3.className = "match-player-score";
-        td3.textContent = match.resultH !== undefined ? match.resultH : "-";
-        tr1.appendChild(td3);
+        const e_td_score_H = e_cell_score(match.resultH);
+        e_tr_main.appendChild(e_td_score_H);
 
-        var td4 = document.createElement("td");
-        td4.className = "match-player-score";
-        td4.textContent = match.resultA !== undefined ? match.resultA : "-";
-        tr1.appendChild(td4);
+        const e_td_score_A = e_cell_score(match.resultA);
+        e_tr_main.appendChild(e_td_score_A);
 
-        var td5 = document.createElement("td");
-        td5.className = "match-player-dn";
-        td5.textContent = match.playerA ? match.playerA : "Player A";
-        tr1.appendChild(td5);
+        const e_td_dn_A = e_cell_dn(match.playerA);
+        e_tr_main.appendChild(e_td_dn_A);
 
-        var td6 = document.createElement("td");
-        td6.className = "match-player-pp";
         if (match.playerApp)
         {
-            var img2 = document.createElement("img");
-            img2.src = match.playerApp ? match.playerApp : "/resources/icons/icon_player.svg";
-            img2.alt = "player";
-            td6.appendChild(img2);
-            tr1.appendChild(td6);
+            const e_td_pp_A = e_cell_pp(match.playerApp);
+            e_tr_main.appendChild(e_td_pp_A);
         }
 
-        table.appendChild(tr1);
+        table.appendChild(e_tr_main);
     }
 
     return table;
 }
 
-function PopulateChart (rounds, log, mode, matchMode)
+function PopulateChart (rounds, mode, orientation, matchMode)
 {
-    const chartProg = document.getElementById("chart-prog");
-    chartProg.innerHTML = "";
+    const tbl_progChart = document.getElementById("tbl-progChart");
+    tbl_progChart.innerHTML = "";
 
-    const rowDiv = document.createElement("div");
-    rowDiv.className = "tournament-row row";
-    chartProg.appendChild(rowDiv);
-
+    var transformedRounds = rounds;
     if (mode === "championship")
     {
-        var splitRounds = [];
-        for (let i = 0; i < rounds.length; i++)
-        {
-            if (rounds[i] && rounds[i].length > 0)
-            {
-                for (let j = 0; j < rounds[i].length; j++)
-                {
-                    if (j % 2 === 0)
-                    {
-                        if (!splitRounds[i])
-                        {
-                            splitRounds[i] = [];
-                        }
-                        splitRounds[i].push(rounds[i][j]);
-                    }
-                }
-            }
-        }
+        transformedRounds = _splitRounds(rounds);
+    }
 
-        for (let i = rounds.length - 1; i >= 0; i--)
+    if (orientation === "vertical")
+    {
+        for (let i = 0; i < transformedRounds.length; i++)
         {
-            if (rounds[i] && rounds[i].length > 0)
+            const e_tr_round = document.createElement("tr");
+            e_tr_round.className = "tr-matches";
+            tbl_progChart.appendChild(e_tr_round);            
+
+            const round = transformedRounds[i] || [];
+            if (round && round.length > 0)
             {
-                for (let j = 0; j < rounds[i].length; j++)
+                for (let j = 0; j < round.length; j++)
                 {
-                    if (j % 2 !== 0)
-                    {
-                        if (!splitRounds[rounds.length * 2 - 2 - i])
-                        {
-                            splitRounds[rounds.length * 2 - 2 - i] = [];
-                        }
-                        splitRounds[rounds.length * 2 - 2 - i].push(rounds[i][j]);
-                    }
+                    const e_td_match = document.createElement("td");
+                    const match = round[j];
+                    const matchDiv = _matchTable(match, matchMode);
+                    e_td_match.appendChild(matchDiv);
+                    e_tr_round.appendChild(e_td_match);
                 }
             }
         }
+    }
+
+    /*if (mode === "championship")
+    {
+        var splitRounds = rounds;
+        
         
         
         for (let i = 0; i < splitRounds.length; i++)
@@ -408,5 +388,41 @@ function PopulateChart (rounds, log, mode, matchMode)
                 rowDiv.appendChild(colDiv);
             }
         }
-    }    
+    }*/    
+}
+
+function _splitRounds (rounds)
+{
+    var splitRounds = [];
+
+    splitRounds[rounds.length - 1] = rounds[rounds.length - 1];
+
+    for (let i = rounds.length - 2; i >= 0; i--)
+    {
+        splitRounds[i] = rounds[i];
+        splitRounds[rounds.length * 2 - 2 - i] = rounds[i];
+    }
+
+    const lastRoundIndex = rounds.length % 2 === 0 ? rounds.length : rounds.length - 1;
+    for (let i = 0; i < lastRoundIndex; i++)
+    {
+        if (splitRounds[i] && splitRounds[i].length > 0)
+        {
+            const matchesCount = splitRounds[i].length;
+            const half = Math.ceil(matchesCount / 2);
+            splitRounds[i] = splitRounds[i].slice(0, half);
+        }
+    }
+
+    for (let i = lastRoundIndex + 1; i < splitRounds.length; i++)
+    {
+        if (splitRounds[i] && splitRounds[i].length > 0)
+        {
+            const matchesCount = splitRounds[i].length;
+            const half = Math.floor(matchesCount / 2);
+            splitRounds[i] = splitRounds[i].slice(-half);
+        }
+    }
+
+    return splitRounds;
 }

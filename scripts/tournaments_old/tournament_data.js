@@ -1,5 +1,5 @@
-import { UpdateTournamentUI_Control } from "/scripts/tournaments/tournament_UI_control.js";
-import { UpdateTournamentUI } from "/scripts/tournaments/tournament_UI_view.js";
+import { UpdateTournamentUI_Control } from "/scripts/tournaments_old/tournament_UI_control.js";
+import { UpdateTournamentUI } from "/scripts/tournaments_old/tournament_UI_view.js";
 
 import { DB_Update } from "/scripts/supabase/supabase_db_helpers.js";
 
