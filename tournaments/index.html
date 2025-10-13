@@ -162,14 +162,30 @@
             justify-content: center;
             align-items: center;
         }
+
+        .tbl-round
+        {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #tbl-progChart
+        {
+            display: flex;
+            flex-direction: row; /* Will Change */
+            justify-content: center;
+            align-items: center;
+        }
     </style>
 
     <style id="style-matches">
         :root
         {
-            --sep-h: 0.1rem;
-            --sep-v: 0.5rem;
-            --font-size: 1rem;
+            --sep-h: 1rem;
+            --sep-v: 2rem;
+            --font-size: 2rem;
         }
 
         #chart-prog
@@ -191,11 +207,17 @@
             width: auto;
         }
 
+        .tbl-match:hover
+        {
+            box-shadow: 0 0 10px var(--color-highlight-0);
+            transition: box-shadow 0.1s ease-in-out;
+        }
+
         .tbl-match td
         {
             text-align: center;
             border: 1px solid var(--color-base-04);
-            padding: 0.25rem 0.1rem;
+            padding: 0rem 0.5rem;
             font-family: 'Font_TDC';
             font-size: var(--font-size);
             text-align: center;

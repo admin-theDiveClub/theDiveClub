@@ -10,9 +10,9 @@ function UpdateUI (log)
     PopulateLog(log);
     const rounds = _allRounds(log);
     const view = "championship"; //linear | championship
-    const orientation = "vertical"; //horizontal | vertical
-    const matchMode = "compact"; //compact | vertical | horizontal
-    PopulateChart(rounds, view, orientation, matchMode);
+    const orientation = "horizontal"; //horizontal | vertical
+    const matchMode = "vertical"; //compact | vertical | horizontal
+    PopulateChart(rounds, log, view, orientation, matchMode);
 }
 
 function PopulateLog (log)
@@ -131,7 +131,6 @@ function _allRounds (log)
         }
     }
 
-    console.log("All Sorted Rounds:", rounds);
     return rounds;
 }
 
@@ -151,19 +150,21 @@ const _matchTable = (match, mode) =>
         return td;
     }
 
-    const e_cell_dn = (text) =>
+    const e_cell_dn = (text, side) =>
     {
         const td = document.createElement("td");
         td.className = "match-player-dn";
         td.textContent = text || "Player";
+        td.id = `match-${side}-player-${match.id}`;
         return td;
     }
 
-    const e_cell_score = (score) =>
+    const e_cell_score = (score, side) =>
     {
         const td = document.createElement("td");
         td.className = "match-player-score";
         td.textContent = score !== undefined ? score : "-";
+        td.id = `match-${side}-score-${match.id}`;
         return td;
     }
 
@@ -182,7 +183,7 @@ const _matchTable = (match, mode) =>
             const e_td_pp_H = e_cell_pp(match.playerHpp);
             e_tr_players.appendChild(e_td_pp_H);
         }
-        const e_td_dn_H = e_cell_dn(match.playerH);
+        const e_td_dn_H = e_cell_dn(match.playerH, 'h');
         e_tr_players.appendChild(e_td_dn_H);
 
         if (match.playerApp)
@@ -190,21 +191,21 @@ const _matchTable = (match, mode) =>
             const e_td_pp_A = e_cell_pp(match.playerApp);
             e_tr_players.appendChild(e_td_pp_A);
         }
-        const e_td_dn_A = e_cell_dn(match.playerA);
+        const e_td_dn_A = e_cell_dn(match.playerA, 'a');
         e_tr_players.appendChild(e_td_dn_A);
 
         table.appendChild(e_tr_players);
 
         //Scores Row
         var e_tr_scores = document.createElement("tr");
-        var e_td_score_H = e_cell_score(match.resultH);
+        var e_td_score_H = e_cell_score(match.resultH, 'h');
         if (match.playerHpp)
         {
             e_td_score_H.colSpan = 2;
         }
         e_tr_scores.appendChild(e_td_score_H);
 
-        var e_td_score_A = e_cell_score(match.resultA);
+        var e_td_score_A = e_cell_score(match.resultA, 'a');
         if (match.playerApp)
         {
             e_td_score_A.colSpan = 2;
@@ -224,7 +225,7 @@ const _matchTable = (match, mode) =>
             e_tr_player_H.appendChild(e_td_pp_H);
         }
 
-        const e_td_dn_H = e_cell_dn(match.playerH);
+        const e_td_dn_H = e_cell_dn(match.playerH, 'h');
         if (!match.playerHpp)
         {
             e_td_dn_H.colSpan = 2;
@@ -232,7 +233,7 @@ const _matchTable = (match, mode) =>
 
         e_tr_player_H.appendChild(e_td_dn_H);
 
-        const e_td_score_H = e_cell_score(match.resultH);
+        const e_td_score_H = e_cell_score(match.resultH, 'h');
         e_tr_player_H.appendChild(e_td_score_H);
 
         table.appendChild(e_tr_player_H);
@@ -245,7 +246,7 @@ const _matchTable = (match, mode) =>
             e_tr_player_A.appendChild(e_td_pp_A);
         }
 
-        const e_td_dn_A = e_cell_dn(match.playerA);
+        const e_td_dn_A = e_cell_dn(match.playerA, 'a');
         if (!match.playerApp)
         {
             e_td_dn_A.colSpan = 2;
@@ -253,7 +254,7 @@ const _matchTable = (match, mode) =>
 
         e_tr_player_A.appendChild(e_td_dn_A);
 
-        const e_td_score_A = e_cell_score(match.resultA);
+        const e_td_score_A = e_cell_score(match.resultA, 'a');
         e_tr_player_A.appendChild(e_td_score_A);
 
         table.appendChild(e_tr_player_A);
@@ -268,16 +269,16 @@ const _matchTable = (match, mode) =>
             e_tr_main.appendChild(e_td_pp_H);
         }
 
-        const e_td_dn_H = e_cell_dn(match.playerH);
+        const e_td_dn_H = e_cell_dn(match.playerH, 'h');
         e_tr_main.appendChild(e_td_dn_H);
 
-        const e_td_score_H = e_cell_score(match.resultH);
+        const e_td_score_H = e_cell_score(match.resultH, 'h');
         e_tr_main.appendChild(e_td_score_H);
 
-        const e_td_score_A = e_cell_score(match.resultA);
+        const e_td_score_A = e_cell_score(match.resultA, 'a');
         e_tr_main.appendChild(e_td_score_A);
 
-        const e_td_dn_A = e_cell_dn(match.playerA);
+        const e_td_dn_A = e_cell_dn(match.playerA, 'a');
         e_tr_main.appendChild(e_td_dn_A);
 
         if (match.playerApp)
@@ -292,7 +293,7 @@ const _matchTable = (match, mode) =>
     return table;
 }
 
-function PopulateChart (rounds, mode, orientation, matchMode)
+function PopulateChart (rounds, log, mode, orientation, matchMode)
 {
     const tbl_progChart = document.getElementById("tbl-progChart");
     tbl_progChart.innerHTML = "";
@@ -305,6 +306,8 @@ function PopulateChart (rounds, mode, orientation, matchMode)
 
     if (orientation === "vertical")
     {
+        tbl_progChart.style.flexDirection = "column";
+
         for (let i = 0; i < transformedRounds.length; i++)
         {
             const e_tr_round = document.createElement("tr");
@@ -316,79 +319,46 @@ function PopulateChart (rounds, mode, orientation, matchMode)
             {
                 for (let j = 0; j < round.length; j++)
                 {
-                    const e_td_match = document.createElement("td");
                     const match = round[j];
-                    const matchDiv = _matchTable(match, matchMode);
-                    e_td_match.appendChild(matchDiv);
+                    const e_td_match = _matchTable(match, matchMode);
+                    e_td_match.id = `match-${match.id}`;
+                    match.progChartElement = e_td_match;
                     e_tr_round.appendChild(e_td_match);
+                }
+            }
+        }
+    } else if (orientation === "horizontal")
+    {
+        tbl_progChart.style.flexDirection = "row";
+
+        for (let i = 0; i < transformedRounds.length; i++)
+        {
+            if (transformedRounds[i] && transformedRounds[i].length > 0)
+            {
+                const e_round_table = document.createElement("table");
+                e_round_table.className = "tbl-round";
+                tbl_progChart.appendChild(e_round_table);
+
+                if (transformedRounds[i] && transformedRounds[i].length > 0)
+                {
+                    for (let j = 0; j < transformedRounds[i].length; j++)
+                    {
+                        const e_tr_matchRow = document.createElement("tr");
+                        const e_td_match = document.createElement("td");
+                        const match = transformedRounds[i][j];
+                        e_td_match.id = `match-${match.id}`;
+                        const matchTable = _matchTable(match, matchMode);
+                        match.progChartElement = e_td_match;
+                        e_td_match.appendChild(matchTable);
+                        e_tr_matchRow.appendChild(e_td_match);
+                        e_round_table.appendChild(e_tr_matchRow);
+                    }
                 }
             }
         }
     }
 
-    /*if (mode === "championship")
-    {
-        var splitRounds = rounds;
-        
-        
-        
-        for (let i = 0; i < splitRounds.length; i++)
-        {
-            if (splitRounds[i] && splitRounds[i].length > 0)
-            {
-                const round = splitRounds[i] || [];
-                const colDiv = document.createElement("div");
-                colDiv.className = "tournament-column col";
-                rowDiv.appendChild(colDiv);
-
-                const roundTitle = document.createElement("p");
-                if (i < rounds.length)
-                {
-                    roundTitle.textContent = `Round ${i}`;
-                } else if (i >= rounds.length)
-                {
-                    roundTitle.textContent = `Round ${rounds.length * 2 - 2 - i}`;
-                }
-                roundTitle.className = "tournament-round-title";
-                colDiv.appendChild(roundTitle);
-
-                for (let j = 0; j < round.length; j++)
-                {
-                    const match = round[j];
-                    const matchDiv = document.createElement("div");
-                    matchDiv.className = "tournament-match";
-                    matchDiv.appendChild(_matchTable(match, matchMode));
-                    colDiv.appendChild(matchDiv);
-                }
-            }
-        }
-    } else if (mode === "linear")
-    {
-        for (let i = 0; i < rounds.length; i++)
-        {
-            if (rounds[i] && rounds[i].length > 0)
-            {
-                const round = rounds[i] || [];
-                const colDiv = document.createElement("div");
-                colDiv.className = "tournament-column col";
-
-                const roundTitle = document.createElement("p");
-                roundTitle.textContent = `Round ${i}`;
-                colDiv.appendChild(roundTitle);
-
-                for (let j = 0; j < round.length; j++)
-                {
-                    const match = round[j];
-                    const matchDiv = document.createElement("div");
-                    matchDiv.className = "tournament-match";
-                    matchDiv.appendChild(_matchTable(match, matchMode));
-                    colDiv.appendChild(matchDiv);
-                }
-
-                rowDiv.appendChild(colDiv);
-            }
-        }
-    }*/    
+    DrawProgArrows(rounds, log, mode, orientation);
 }
 
 function _splitRounds (rounds)
@@ -425,4 +395,228 @@ function _splitRounds (rounds)
     }
 
     return splitRounds;
+}
+
+function DrawProgArrows (rounds, log, mode, orientation)
+{
+    for (let i = 0; i < rounds.length; i++)
+    {
+        const round = rounds[i] || [];
+        if (round && round.length > 0)
+        {
+            for (let j = 0; j < round.length; j++)
+            {
+                const match = round[j];
+                for (let k = 0; k < log.length; k++)
+                {
+                    const player = log[k];
+                    const idx = player.matches.findIndex(m => m && m.id === match.id);
+                    if (idx !== -1)
+                    {
+                        player.matches[idx] = match;
+                        const e_score_h = document.getElementById(`match-h-score-${match.id}`);
+                        const e_score_a = document.getElementById(`match-a-score-${match.id}`);
+                        player.matches[idx].scoreElements = {h: e_score_h, a: e_score_a};
+                    }
+                }
+            }
+        }
+    }
+
+    DrawArrows(log, orientation, mode);
+}
+
+function DrawArrows (log, orientation, mode)
+{
+    // clear previous lines
+    if (Array.isArray(window._tournamentLeaderLines))
+    {
+        window._tournamentLeaderLines.forEach(l => { try { l.remove(); } catch (_) {} });
+    }
+    window._tournamentLeaderLines = [];
+
+    const isElement = (el) => !!(el && el.nodeType === 1);
+
+    const centerOf = (el) =>
+    {
+        if (!isElement(el)) return null;
+        const r = el.getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    };
+
+    const getSide = (player, match) =>
+    {
+        const name = player?.displayName;
+        if (!match || !name) return null;
+        if (match.playerH === name) return "h";
+        if (match.playerA === name) return "a";
+        return null;
+    };
+
+    const getScoreEl = (player, match) =>
+    {
+        const side = getSide(player, match);
+        if (!side) return null;
+        const elFromCache = match?.scoreElements?.[side];
+        if (isElement(elFromCache)) return elFromCache;
+        // fallback by id
+        const byId = document.getElementById(`match-${side}-score-${match.id}`);
+        return isElement(byId) ? byId : null;
+    };
+
+    const getNameEl = (player, match) =>
+    {
+        const side = getSide(player, match);
+        if (!side) return null;
+        const dnEl = document.getElementById(`match-${side}-player-${match.id}`);
+        return isElement(dnEl) ? dnEl : null;
+    };
+
+    const fallbackEl = (match) => isElement(match?.progChartElement) ? match.progChartElement : null;
+
+    for (let p = 0; p < log.length; p++)
+    {
+        const player = log[p];
+        if (!player || !Array.isArray(player.matches)) continue;
+
+        const entries = player.matches
+            .filter(Boolean)
+            .map(m => ({
+                m,
+                createdAt: m.createdAt || 0,
+                round: m.round ?? 0
+            }))
+            .sort((a, b) => (a.round - b.round) || (a.createdAt - b.createdAt));
+
+        for (let i = 1; i < entries.length; i++)
+        {
+            const prevMatch = entries[i - 1].m;
+            const nextMatch = entries[i].m;
+
+            // preferred anchors
+            const prevScore = getScoreEl(player, prevMatch) || getNameEl(player, prevMatch) || fallbackEl(prevMatch);
+            const prevName  = getNameEl(player, prevMatch)  || getScoreEl(player, prevMatch) || fallbackEl(prevMatch);
+            const nextName  = getNameEl(player, nextMatch)  || getScoreEl(player, nextMatch) || fallbackEl(nextMatch);
+            const nextScore = getScoreEl(player, nextMatch) || getNameEl(player, nextMatch) || fallbackEl(nextMatch);
+
+            if (!isElement(prevScore) && !isElement(prevName)) continue;
+            if (!isElement(nextName) && !isElement(nextScore)) continue;
+
+            let fromEl, toEl, startSocket, endSocket;
+
+            if (mode === "linear")
+            {
+                // Always score -> name
+                fromEl = isElement(prevScore) ? prevScore : (isElement(prevName) ? prevName : null);
+                toEl   = isElement(nextName)  ? nextName  : (isElement(nextScore) ? nextScore : null);
+                if (!isElement(fromEl) || !isElement(toEl)) continue;
+
+                if (orientation === "horizontal")
+                {
+                    startSocket = "right";
+                    endSocket = "left";
+                }
+                else // vertical
+                {
+                    startSocket = "bottom";
+                    endSocket = "top";
+                }
+            }
+            else // championship
+            {
+                // Determine based on positions
+                const cPrevScore = isElement(prevScore) ? centerOf(prevScore) : null;
+                const cNextName  = isElement(nextName)  ? centerOf(nextName)  : null;
+                const cPrevName  = isElement(prevName)  ? centerOf(prevName)  : null;
+                const cNextScore = isElement(nextScore) ? centerOf(nextScore) : null;
+
+                // Candidate A: score(prev) -> name(next)
+                const aValid = !!(cPrevScore && cNextName);
+                // Candidate B: name(prev) -> score(next)
+                const bValid = !!(cPrevName && cNextScore);
+
+                const chooseA = () =>
+                {
+                    fromEl = prevScore;
+                    toEl = nextName;
+                    if (orientation === "horizontal") { startSocket = "right"; endSocket = "left"; }
+                    else { startSocket = "bottom"; endSocket = "top"; }
+                };
+                const chooseB = () =>
+                {
+                    fromEl = prevName;
+                    toEl = nextScore;
+                    if (orientation === "horizontal") { startSocket = "left"; endSocket = "right"; }
+                    else { startSocket = "top"; endSocket = "bottom"; }
+                };
+
+                if (orientation === "horizontal")
+                {
+                    if (aValid && bValid)
+                    {
+                        if (cPrevScore.x <= cNextName.x) chooseA();
+                        else chooseB();
+                    }
+                    else if (aValid) chooseA();
+                    else if (bValid) chooseB();
+                    else
+                    {
+                        // Fallback to available elements
+                        fromEl = isElement(prevScore) ? prevScore : prevName;
+                        toEl   = isElement(nextName)  ? nextName  : nextScore;
+                        if (!isElement(fromEl) || !isElement(toEl)) continue;
+
+                        const cf = centerOf(fromEl), ct = centerOf(toEl);
+                        if (!cf || !ct || cf.x <= ct.x) { startSocket = "right"; endSocket = "left"; }
+                        else { startSocket = "left"; endSocket = "right"; }
+                    }
+                }
+                else // vertical
+                {
+                    if (aValid && bValid)
+                    {
+                        if (cPrevScore.y <= cNextName.y) chooseA();
+                        else chooseB();
+                    }
+                    else if (aValid) chooseA();
+                    else if (bValid) chooseB();
+                    else
+                    {
+                        fromEl = isElement(prevScore) ? prevScore : prevName;
+                        toEl   = isElement(nextName)  ? nextName  : nextScore;
+                        if (!isElement(fromEl) || !isElement(toEl)) continue;
+
+                        const cf = centerOf(fromEl), ct = centerOf(toEl);
+                        if (!cf || !ct || cf.y <= ct.y) { startSocket = "bottom"; endSocket = "top"; }
+                        else { startSocket = "top"; endSocket = "bottom"; }
+                    }
+                }
+            }
+
+            try
+            {
+                const line = new LeaderLine(fromEl, toEl, {
+                    color: "rgba(0, 255, 0, 0.75)",
+                    size: 2,
+                    path: "magnet",
+                    startSocket,
+                    endSocket,
+                    startPlug: "disc",
+                    endPlug: "arrow1"
+                });
+                window._tournamentLeaderLines.push(line);
+            } catch (_) {}
+        }
+    }
+
+    // refresh positions on resize
+    if (window._tournamentLeaderLinesResizeHandler)
+    {
+        window.removeEventListener("resize", window._tournamentLeaderLinesResizeHandler);
+    }
+    window._tournamentLeaderLinesResizeHandler = () =>
+    {
+        (window._tournamentLeaderLines || []).forEach(l => { try { l.position(); } catch (_) {} });
+    };
+    window.addEventListener("resize", window._tournamentLeaderLinesResizeHandler);
 }

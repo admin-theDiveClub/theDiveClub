@@ -553,7 +553,7 @@ function PopulateTournamentsTable (tournaments)
         if (tournament.leagueID) continue; // Skip tournaments that are part of a league
         const tr = document.createElement("tr");
         tr.classList.add("tournament-row");
-        tr.onclick = () => { window.location.href = `/tournaments/view.html?tournamentID=${tournament.id}`; };
+        tr.onclick = () => { window.location.href = `/tournaments/index.html?tournamentID=${tournament.id}`; };
         e_tbody.appendChild(tr);
 
         // Determine active state: prefer explicit status, otherwise infer from date (future => active)
