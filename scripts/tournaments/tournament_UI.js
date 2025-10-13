@@ -10,8 +10,8 @@ function UpdateUI (log)
     PopulateLog(log);
     const rounds = _allRounds(log);
     const view = "championship"; //linear | championship
-    const orientation = "horizontal"; //horizontal | vertical
-    const matchMode = "vertical"; //compact | vertical | horizontal
+    const orientation = "vertical"; //horizontal | vertical
+    const matchMode = "compact"; //compact | vertical | horizontal
     PopulateChart(rounds, log, view, orientation, matchMode);
 }
 
