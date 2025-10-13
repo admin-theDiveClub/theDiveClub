@@ -10,8 +10,8 @@ function UpdateUI (log)
     PopulateLog(log);
     const rounds = _allRounds(log);
     const view = "championship"; //linear | championship
-    const orientation = "vertical"; //horizontal | vertical
-    const matchMode = "compact"; //compact | vertical | horizontal
+    const orientation = "horizontal"; //horizontal | vertical
+    const matchMode = "vertical"; //compact | vertical | horizontal
     PopulateChart(rounds, log, view, orientation, matchMode);
 }
 
@@ -399,6 +399,11 @@ function _splitRounds (rounds)
 
 function DrawProgArrows (rounds, log, mode, orientation)
 {
+    
+
+    UpdateSizes();
+
+
     for (let i = 0; i < rounds.length; i++)
     {
         const round = rounds[i] || [];
@@ -598,11 +603,13 @@ function DrawArrows (log, orientation, mode)
                 const line = new LeaderLine(fromEl, toEl, {
                     color: "rgba(0, 255, 0, 0.75)",
                     size: 2,
-                    path: "magnet",
+                    path: "fluid",
                     startSocket,
                     endSocket,
                     startPlug: "disc",
-                    endPlug: "arrow1"
+                    endPlug: "arrow1",
+                    startSocketGravity: 35,
+                    endSocketGravity: 40,
                 });
                 window._tournamentLeaderLines.push(line);
             } catch (_) {}
@@ -619,4 +626,36 @@ function DrawArrows (log, orientation, mode)
         (window._tournamentLeaderLines || []).forEach(l => { try { l.position(); } catch (_) {} });
     };
     window.addEventListener("resize", window._tournamentLeaderLinesResizeHandler);
+}
+
+function UpdateSizes ()
+{
+    const root = document.documentElement;
+    const container = document.getElementById("chart-prog");
+    if (!root || !container) return;
+
+    const toRem = v => `${v}rem`;
+    const step = 0.1;
+    const max = 4;
+    const viewportH = window.innerHeight * 0.8;
+
+    // reset to zero
+    root.style.setProperty("--sep-h", toRem(0));
+    root.style.setProperty("--sep-v", toRem(0));
+    root.style.setProperty("--font-size", toRem(0));
+
+    let v = 0;
+    let guard = 1000; // safety
+
+    while (v < max && guard-- > 0)
+    {
+        v = Math.min(max, Math.round((v + step) * 10) / 10);
+
+        root.style.setProperty("--sep-h", toRem(v));
+        root.style.setProperty("--sep-v", toRem(v));
+        root.style.setProperty("--font-size", toRem(v * 2));
+
+        const h = container.getBoundingClientRect().height;
+        if (h >= viewportH) break;
+    }
 }
