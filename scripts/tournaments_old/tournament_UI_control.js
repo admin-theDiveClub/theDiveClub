@@ -1,4 +1,4 @@
-import { DB_Update, DB_Delete, DB_Insert } from "/scripts/supabase/supabase_db_helpers.js";
+import { DB_Update, DB_Delete, DB_Insert } from "/scripts/supabase/supaBase_db_helpers.js";
 
 export function UpdateTournamentUI_Control(_tournament, _tournamentPlayers, _tournamentLog, _tournamentRounds)
 {
