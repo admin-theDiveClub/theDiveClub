@@ -3,7 +3,7 @@ var t = null;
 var t_matches = null;
 var t_log = null;
 
-import { UpdateTournamentUI } from "/scripts/tournaments_old/tournament_UI.js";
+import { UpdateTournamentUI } from "/scripts/tournaments/tournament_UI.js";
 
 Start ();
 
