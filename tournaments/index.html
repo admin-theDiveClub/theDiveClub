@@ -173,11 +173,11 @@
 
         #tbl-progChart
         {
+            width: auto;
             display: flex;
             flex-direction: row; /* Will Change */
             justify-content: center;
             align-items: center;
-            width: auto;
         }
     </style>
 
@@ -185,7 +185,7 @@
         :root
         {
             --sep-h: 0.1rem;
-            --sep-v: 1rem;
+            --sep-v: 0.1rem;
             --font-size: 0.75rem;
         }
 
@@ -196,7 +196,7 @@
             scrollbar-width: none; /* Firefox */
         }
 
-        #chart-prog .row
+        #chart-prog td, #chart-prog tr
         {
             overflow: auto;
             -ms-overflow-style: none; /* IE/Edge legacy */

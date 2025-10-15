@@ -10,8 +10,13 @@ function UpdateUI (log)
     PopulateLog(log);
     const rounds = _allRounds(log);
     const view = "championship"; //linear | championship
-    const orientation = "horizontal"; //horizontal | vertical
-    const matchMode = "vertical"; //compact | vertical | horizontal
+    const orientation = window.innerWidth > window.innerHeight ? "horizontal" : "vertical"; //horizontal | vertical
+
+    var matchMode = orientation === "vertical" ? "compact" : "vertical"; //compact | vertical | horizontal
+    if (view == "linear")
+    {
+        matchMode = orientation === "vertical" ? "compact" : "vertical";
+    }
     PopulateChart(rounds, log, view, orientation, matchMode);
 }
 
@@ -399,8 +404,6 @@ function _splitRounds (rounds)
 
 function DrawProgArrows (rounds, log, mode, orientation)
 {
-    
-
     UpdateSizes();
 
 
@@ -600,9 +603,21 @@ function DrawArrows (log, orientation, mode)
 
             try
             {
+                const container = document.getElementById("tbl-chart-prog");
+
+                // Ensure container can host absolutely positioned children
+                if (container)
+                {
+                    const cs = window.getComputedStyle(container);
+                    // if (cs.position === "static") container.style.position = "relative";
+                }
+
+                const lineSize = Math.max(window.innerWidth, window.innerHeight) / 250;
+
+                // Prefer built-in container option if supported by LeaderLine
                 const line = new LeaderLine(fromEl, toEl, {
                     color: "rgba(0, 255, 0, 0.75)",
-                    size: 2,
+                    size: lineSize,
                     path: "fluid",
                     startSocket,
                     endSocket,
@@ -610,15 +625,53 @@ function DrawArrows (log, orientation, mode)
                     endPlug: "arrow1",
                     startSocketGravity: 35,
                     endSocketGravity: 40,
+                    ...(container ? { container } : {})
                 });
+
+                // Fallback: try to reparent created DOM node into chart-prog
+                if (container)
+                {
+                    try
+                    {
+                        // Try known/internal handles first
+                        const el = line.svg || line.element || line._element || null;
+                        if (el && el.parentNode !== container) container.appendChild(el);
+                    } catch (_) {}
+
+                    try
+                    {
+                        // Generic fallback: move the last created leader-line root
+                        const els = document.querySelectorAll(".leader-line");
+                        const last = els[els.length - 1];
+                        if (last && last.parentNode !== container) container.appendChild(last);
+                    } catch (_) {}
+                }
+
                 window._tournamentLeaderLines.push(line);
             } catch (_) {}
         }
     }
 
+    // ensure lines are children of #chart-prog so they move when chart-prog scrolls
+    (function ensureLinesInChartProg() {
+        const chartProg = document.getElementById("chart-prog");
+        if (chartProg) {
+            try {
+                const cs = window.getComputedStyle(chartProg);
+                if (cs.position === "static") chartProg.style.position = "relative";
+            } catch (_) {}
+
+            (window._tournamentLeaderLines || []).forEach(l => {
+                try {
+                    const el = l.svg || l.element || l._element || null;
+                    if (el && el.parentNode !== chartProg) chartProg.appendChild(el);
+                } catch (_) {}
+            });
+        }
+    })();
+
     // refresh positions on resize
-    if (window._tournamentLeaderLinesResizeHandler)
-    {
+    if (window._tournamentLeaderLinesResizeHandler) {
         window.removeEventListener("resize", window._tournamentLeaderLinesResizeHandler);
     }
     window._tournamentLeaderLinesResizeHandler = () =>
@@ -626,6 +679,28 @@ function DrawArrows (log, orientation, mode)
         (window._tournamentLeaderLines || []).forEach(l => { try { l.position(); } catch (_) {} });
     };
     window.addEventListener("resize", window._tournamentLeaderLinesResizeHandler);
+
+    // also refresh on scroll of the chart container so lines stay aligned while scrolling
+    const _chartProgScrollHandlerAttach = () =>
+    {
+        const chartProg = document.getElementById("chart-prog");
+        if (!chartProg) return;
+
+        if (window._tournamentLeaderLinesScrollHandler)
+        {
+            try { chartProg.removeEventListener("scroll", window._tournamentLeaderLinesScrollHandler); } catch (_) {}
+        }
+        window._tournamentLeaderLinesScrollHandler = () =>
+        {
+            // position() can be expensive; batch with rAF
+            window.requestAnimationFrame(() =>
+            {
+                (window._tournamentLeaderLines || []).forEach(l => { try { l.position(); } catch (_) {} });
+            });
+        };
+        chartProg.addEventListener("scroll", window._tournamentLeaderLinesScrollHandler, { passive: true });
+    };
+    _chartProgScrollHandlerAttach();
 }
 
 function UpdateSizes ()
@@ -635,9 +710,10 @@ function UpdateSizes ()
     if (!root || !container) return;
 
     const toRem = v => `${v}rem`;
-    const step = 0.1;
-    const max = 4;
+    const step = 0.2;
+    const max = 2;
     const viewportH = window.innerHeight * 0.8;
+    const viewportW = window.innerWidth * 0.8;
 
     // reset to zero
     root.style.setProperty("--sep-h", toRem(0));
@@ -651,11 +727,20 @@ function UpdateSizes ()
     {
         v = Math.min(max, Math.round((v + step) * 10) / 10);
 
-        root.style.setProperty("--sep-h", toRem(v));
-        root.style.setProperty("--sep-v", toRem(v));
-        root.style.setProperty("--font-size", toRem(v * 2));
+        if (window.innerWidth > window.innerHeight)
+        {
+            root.style.setProperty("--sep-h", toRem(v * 0.2));
+            root.style.setProperty("--sep-v", toRem(v * 0.1));
+        } else 
+        {
+            root.style.setProperty("--sep-h", toRem(v * 0.1));
+            root.style.setProperty("--sep-v", toRem(v * 0.8));
+        }
+        root.style.setProperty("--font-size", toRem(v * 0.75));
 
-        const h = container.getBoundingClientRect().height;
-        if (h >= viewportH) break;
+        const rect = container.getBoundingClientRect();
+        const heightHit = rect.height >= viewportH;
+        const widthHit = rect.width >= viewportW;
+        if (heightHit) break;
     }
 }
