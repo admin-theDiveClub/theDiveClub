@@ -514,7 +514,7 @@ async function _userTournaments (userprofile)
     const response_player = await supabase
         .from('tbl_tournaments')
         .select('*')
-        .contains('players', JSON.stringify([userprofile.username]))
+        .contains('players', JSON.stringify([{ username: userprofile.username }]))
         .order('date', { ascending: false });
 
     if (response_player.error) {
@@ -541,7 +541,7 @@ async function _userTournaments (userprofile)
     return uniqueLeagues;
 }
 
-function PopulateTournamentsTable (tournaments)
+function PopulateTournamentsTable (tournaments, userId)
 {
     const e_table = gid("tbl-user-tournaments");
     const e_tbody = e_table.querySelector("tbody");
@@ -553,7 +553,10 @@ function PopulateTournamentsTable (tournaments)
         if (tournament.leagueID) continue; // Skip tournaments that are part of a league
         const tr = document.createElement("tr");
         tr.classList.add("tournament-row");
-        tr.onclick = () => { window.location.href = `/tournaments/index.html?tournamentID=${tournament.id}`; };
+        tr.onclick = () => 
+        { 
+            window.location.href = `/tournaments/index.html?tournamentID=${tournament.id}`;
+        };
         e_tbody.appendChild(tr);
 
         // Determine active state: prefer explicit status, otherwise infer from date (future => active)

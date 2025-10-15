@@ -1,14 +1,15 @@
 var _log = null;
-export function UpdateTournamentUI (log)
+export function UpdateTournamentUI (log, allMatches)
 {
     _log = log;
-    UpdateUI(_log);
+    console.log("Updating Tournament UI", log, allMatches);
+    UpdateUI(_log, allMatches);
 }
 
-function UpdateUI (log)
+function UpdateUI (log, allMatches)
 {
     PopulateLog(log);
-    const rounds = _allRounds(log);
+    const rounds = _allRounds(log, allMatches);
     const view = "championship"; //linear | championship
     const orientation = window.innerWidth > window.innerHeight ? "horizontal" : "vertical"; //horizontal | vertical
 
@@ -94,7 +95,7 @@ function PopulateLog (log)
     }
 }
 
-function _allRounds (log)
+function _allRounds (log, allMatches)
 {
     var rounds = [];
 
@@ -128,6 +129,35 @@ function _allRounds (log)
         }
     }
 
+    // Include any matches that might not be in the log (e.g. unplayed matches)
+    for (let i = 0; i < allMatches.length; i++)
+    {
+        const matchData = allMatches[i];
+        const roundIndex = matchData.info.round;
+        const match =
+        {
+            id: matchData.id,
+            playerH: log.find(p => p.username === matchData.players.h.username)?.displayName,
+            playerHpp: log.find(p => p.username === matchData.players.h.username)?.pp || null,
+            playerA: log.find(p => p.username === matchData.players.a.username)?.displayName,
+            playerApp: log.find(p => p.username === matchData.players.a.username)?.pp || null,
+            resultH: matchData.results.h.fw || null,
+            resultA: matchData.results.a.fw || null,
+            status: matchData.info.status || "New",
+            round: roundIndex,
+            createdAt: new Date(matchData.createdAt).getTime() || 0,
+        }
+
+        if (!rounds[roundIndex])
+        {
+            rounds[roundIndex] = [];
+        }
+        if (!rounds[roundIndex].find(m => m.id === matchData.id))
+        {
+            rounds[roundIndex].push(match);
+        }
+    }
+
     for (let i = 0; i < rounds.length; i++)
     {
         if (rounds[i] && rounds[i].length > 0)
@@ -141,6 +171,20 @@ function _allRounds (log)
 
 const _matchTable = (match, mode) =>
 {
+    const status = (match) =>
+    {
+        const st = (match.status || "").toString().toLowerCase();
+        if (st === "complete") return "Complete";
+
+        const bothPlayers = match.playerH && match.playerA;
+        const scoresExist = (match.resultH > 0) || (match.resultA > 0);
+        if (bothPlayers || scoresExist) return "Live";
+        
+        return "New";
+    }
+
+    const matchStatus = status(match);
+
     const e_cell_pp = (src) =>
     {
         const td = document.createElement("td");
@@ -159,8 +203,24 @@ const _matchTable = (match, mode) =>
     {
         const td = document.createElement("td");
         td.className = "match-player-dn";
-        td.textContent = text || "Player";
+        td.textContent = text || "-";
         td.id = `match-${side}-player-${match.id}`;
+
+        if (matchStatus === "Complete")
+        {
+            const winner = match.resultH > match.resultA ? 'h' : (match.resultA > match.resultH ? 'a' : null);
+            if (winner === side)
+            {
+                td.classList.add("match-score-win");
+            } else 
+            {
+                td.classList.add("match-score-lose");
+            }
+        } else if (matchStatus === "Live")
+        {
+            td.classList.add("match-score-live");
+        }
+
         return td;
     }
 
@@ -170,6 +230,22 @@ const _matchTable = (match, mode) =>
         td.className = "match-player-score";
         td.textContent = score !== undefined ? score : "-";
         td.id = `match-${side}-score-${match.id}`;
+
+        if (matchStatus === "Complete")
+        {
+            const winner = match.resultH > match.resultA ? 'h' : (match.resultA > match.resultH ? 'a' : null);
+            if (winner === side)
+            {
+                td.classList.add("match-score-win");
+            } else 
+            {
+                td.classList.add("match-score-lose");
+            }
+        } else if (matchStatus === "Live")
+        {
+            td.classList.add("match-score-live");
+        }
+
         return td;
     }
 
@@ -378,24 +454,28 @@ function _splitRounds (rounds)
         splitRounds[rounds.length * 2 - 2 - i] = rounds[i];
     }
 
-    const lastRoundIndex = rounds.length % 2 === 0 ? rounds.length : rounds.length - 1;
-    for (let i = 0; i < lastRoundIndex; i++)
+    
+    for (let i = 0; i < splitRounds.length; i++)
     {
         if (splitRounds[i] && splitRounds[i].length > 0)
         {
+            const middleRoundIndex = Math.floor((splitRounds.length - 1) / 2);
             const matchesCount = splitRounds[i].length;
             const half = Math.ceil(matchesCount / 2);
-            splitRounds[i] = splitRounds[i].slice(0, half);
-        }
-    }
 
-    for (let i = lastRoundIndex + 1; i < splitRounds.length; i++)
-    {
-        if (splitRounds[i] && splitRounds[i].length > 0)
-        {
-            const matchesCount = splitRounds[i].length;
-            const half = Math.floor(matchesCount / 2);
-            splitRounds[i] = splitRounds[i].slice(-half);
+            if (i < middleRoundIndex)
+            {
+                splitRounds[i] = splitRounds[i].slice(0, half);
+            } else if (i > middleRoundIndex)
+            {
+                if (splitRounds[i].length > 1)
+                {
+                    splitRounds[i] = splitRounds[i].slice(-half);
+                } else 
+                {
+                    splitRounds[i] = [];
+                }
+            }
         }
     }
 
@@ -410,6 +490,7 @@ function DrawProgArrows (rounds, log, mode, orientation)
     for (let i = 0; i < rounds.length; i++)
     {
         const round = rounds[i] || [];
+
         if (round && round.length > 0)
         {
             for (let j = 0; j < round.length; j++)
@@ -428,13 +509,13 @@ function DrawProgArrows (rounds, log, mode, orientation)
                     }
                 }
             }
-        }
+        }           
     }
 
-    DrawArrows(log, orientation, mode);
+    DrawArrows(log, orientation, mode, rounds);
 }
 
-function DrawArrows (log, orientation, mode)
+function DrawArrows (log, orientation, mode, rounds)
 {
     // clear previous lines
     if (Array.isArray(window._tournamentLeaderLines))
@@ -482,10 +563,28 @@ function DrawArrows (log, orientation, mode)
 
     const fallbackEl = (match) => isElement(match?.progChartElement) ? match.progChartElement : null;
 
+
+    for (let i = 1; i < rounds.length; i++)
+    {
+        for (let j = 0; j < rounds[i].length; j++)
+        {
+            const match = rounds[i][j];
+
+            if (rounds[i - 1])
+            {
+                match.prevH = rounds[i - 1][j * 2] || null;
+                match.prevA = rounds[i - 1][j * 2 + 1] || null;
+            }
+
+            rounds[i][j] = match;
+        }
+    }
+    
+    console.log(rounds);
+
     for (let p = 0; p < log.length; p++)
     {
         const player = log[p];
-        if (!player || !Array.isArray(player.matches)) continue;
 
         const entries = player.matches
             .filter(Boolean)
@@ -612,11 +711,32 @@ function DrawArrows (log, orientation, mode)
                     // if (cs.position === "static") container.style.position = "relative";
                 }
 
-                const lineSize = Math.max(window.innerWidth, window.innerHeight) / 250;
+                const lineSize = Math.max(window.innerWidth, window.innerHeight) / 400;
+
+                const status = (match) =>
+                {
+                    const st = (match.status || "").toString().toLowerCase();
+                    if (st === "complete") return "Complete";
+
+                    const bothPlayers = match.playerH && match.playerA;
+                    const scoresExist = (match.resultH > 0) || (match.resultA > 0);
+                    if (bothPlayers || scoresExist) return "Live";
+                    
+                    return "New";
+                }
+
+                const lineColor = () =>
+                {
+                    const matchStatusPrev = status(prevMatch);
+
+                    if (matchStatusPrev === "Live") return "rgb(229, 21, 119)";
+                    if (matchStatusPrev === "Complete") return "rgba(0, 255, 0, 0.75)";
+                    return "grey";
+                }
 
                 // Prefer built-in container option if supported by LeaderLine
                 const line = new LeaderLine(fromEl, toEl, {
-                    color: "rgba(0, 255, 0, 0.75)",
+                    color: lineColor(),
                     size: lineSize,
                     path: "fluid",
                     startSocket,
@@ -625,6 +745,7 @@ function DrawArrows (log, orientation, mode)
                     endPlug: "arrow1",
                     startSocketGravity: 35,
                     endSocketGravity: 40,
+                    dash: { animation: true },
                     ...(container ? { container } : {})
                 });
 
@@ -652,23 +773,169 @@ function DrawArrows (log, orientation, mode)
         }
     }
 
-    // ensure lines are children of #chart-prog so they move when chart-prog scrolls
-    (function ensureLinesInChartProg() {
-        const chartProg = document.getElementById("chart-prog");
-        if (chartProg) {
-            try {
-                const cs = window.getComputedStyle(chartProg);
-                if (cs.position === "static") chartProg.style.position = "relative";
-            } catch (_) {}
+    try {
+        // draw guideline arrows from pairs of matches in round N to the corresponding match in round N+1
+        const container = document.getElementById("tbl-chart-prog");
+        const lineSize = Math.max(window.innerWidth, window.innerHeight) / 600;
 
-            (window._tournamentLeaderLines || []).forEach(l => {
-                try {
-                    const el = l.svg || l.element || l._element || null;
-                    if (el && el.parentNode !== chartProg) chartProg.appendChild(el);
-                } catch (_) {}
-            });
+        // helper to detect completed matches (status-based or scores present)
+        const isCompleted = (m) => {
+            if (!m) return false;
+            const st = (m.status || "").toString().toLowerCase();
+            if (["complete"].includes(st)) return true;
+
+            return false;
+        };
+
+        for (let ri = 0; ri < rounds.length - 1; ri++) {
+            const prevRound = rounds[ri] || [];
+            const nextRound = rounds[ri + 1] || [];
+            if (!prevRound.length || !nextRound.length) continue;
+
+            // iterate previous round pairwise: (0,1) -> next[0], (2,3) -> next[1], ...
+            for (let pi = 0; pi < prevRound.length; pi += 2) {
+                const fromMatchA = prevRound[pi] || null;
+                const fromMatchB = prevRound[pi + 1] || null;
+                const targetIndex = Math.floor(pi / 2);
+                const toMatch = nextRound[targetIndex] || null;
+                if (!toMatch) continue;
+
+                // skip if the target is already completed
+                if (isCompleted(toMatch)) continue;
+
+                // pick only matches that are "candidates" (new or missing players) and not completed
+                const candidates = [fromMatchA, fromMatchB].filter(m => m && !isCompleted(m) && (m.status === "New" || !m.playerH || !m.playerA));
+                if (!candidates.length) continue;
+
+                for (let c = 0; c < candidates.length; c++) {
+                    const fromMatch = candidates[c];
+
+                    // gather possible anchor elements (score/name/fallback)
+                    const fromScoreCandidate = getScoreEl(null, fromMatch);
+                    const fromNameCandidate = getNameEl(null, fromMatch);
+                    const toNameCandidate = getNameEl(null, toMatch);
+                    const toScoreCandidate = getScoreEl(null, toMatch);
+
+                    // prefer fallback only if no better anchors exist
+                    const fallbackFrom = fallbackEl(fromMatch);
+                    const fallbackTo = fallbackEl(toMatch);
+
+                    // compute centers for position-based decisions
+                    const cFromScore = isElement(fromScoreCandidate) ? centerOf(fromScoreCandidate) : null;
+                    const cFromName  = isElement(fromNameCandidate)  ? centerOf(fromNameCandidate)  : null;
+                    const cToName    = isElement(toNameCandidate)    ? centerOf(toNameCandidate)    : null;
+                    const cToScore   = isElement(toScoreCandidate)   ? centerOf(toScoreCandidate)   : null;
+
+                    // Candidate A: score(from) -> name(to)
+                    const aValid = !!(cFromScore && cToName);
+                    // Candidate B: name(from) -> score(to)
+                    const bValid = !!(cFromName && cToScore);
+
+                    let fromEl = null;
+                    let toEl = null;
+                    let startSocket = null;
+                    let endSocket = null;
+
+                    const chooseA = () => {
+                        fromEl = fromScoreCandidate || fallbackFrom || fromNameCandidate;
+                        toEl = toNameCandidate || fallbackTo || toScoreCandidate;
+                        if (orientation === "horizontal") { startSocket = "right"; endSocket = "left"; }
+                        else { startSocket = "bottom"; endSocket = "top"; }
+                    };
+                    const chooseB = () => {
+                        fromEl = fromNameCandidate || fallbackFrom || fromScoreCandidate;
+                        toEl = toScoreCandidate || fallbackTo || toNameCandidate;
+                        if (orientation === "horizontal") { startSocket = "left"; endSocket = "right"; }
+                        else { startSocket = "top"; endSocket = "bottom"; }
+                    };
+
+                    if (orientation === "horizontal") {
+                        if (aValid && bValid) {
+                            if (cFromScore.x <= cToName.x) chooseA(); else chooseB();
+                        } else if (aValid) chooseA();
+                        else if (bValid) chooseB();
+                        else {
+                            // fallback: prefer score->name ordering but decide sockets by positions
+                            fromEl = fromScoreCandidate || fromNameCandidate || fallbackFrom;
+                            toEl = toNameCandidate || toScoreCandidate || fallbackTo;
+                            if (!isElement(fromEl) || !isElement(toEl) || fromEl === toEl) continue;
+                            const cf = centerOf(fromEl), ct = centerOf(toEl);
+                            if (!cf || !ct || cf.x <= ct.x) { startSocket = "right"; endSocket = "left"; }
+                            else { startSocket = "left"; endSocket = "right"; }
+                        }
+                    } else { // vertical
+                        if (aValid && bValid) {
+                            if (cFromScore.y <= cToName.y) chooseA(); else chooseB();
+                        } else if (aValid) chooseA();
+                        else if (bValid) chooseB();
+                        else {
+                            fromEl = fromScoreCandidate || fromNameCandidate || fallbackFrom;
+                            toEl = toNameCandidate || toScoreCandidate || fallbackTo;
+                            if (!isElement(fromEl) || !isElement(toEl) || fromEl === toEl) continue;
+                            const cf = centerOf(fromEl), ct = centerOf(toEl);
+                            if (!cf || !ct || cf.y <= ct.y) { startSocket = "bottom"; endSocket = "top"; }
+                            else { startSocket = "top"; endSocket = "bottom"; }
+                        }
+                    }
+
+                    if (!isElement(fromEl) || !isElement(toEl) || fromEl === toEl) continue;
+
+                    try {
+
+                        const status = (match) =>
+                        {
+                            const st = (match.status || "").toString().toLowerCase();
+                            if (st === "complete") return "Complete";
+
+                            const bothPlayers = match.playerH && match.playerA;
+                            const scoresExist = (match.resultH > 0) || (match.resultA > 0);
+                            if (bothPlayers || scoresExist) return "Live";
+                            
+                            return "New";
+                        }
+
+                        const lineColor = () =>
+                        {
+                            const matchStatusPrev = status(fromMatch);
+
+                            if (matchStatusPrev === "Live") return "rgb(229, 21, 119)";
+                            if (matchStatusPrev === "Complete") return "rgba(0, 255, 0, 0.75)";
+                            return "grey";
+                        }
+
+                        const line = new LeaderLine(fromEl, toEl, {
+                            color: lineColor(),
+                            size: lineSize,
+                            path: "fluid",
+                            dash: { animation: true },
+                            startPlug: "disc",
+                            endPlug: "arrow1",
+                            startSocket,
+                            endSocket,
+                            startSocketGravity: 20,
+                            endSocketGravity: 20,
+                            ...(container ? { container } : {})
+                        });
+
+                        // try to reparent visual element into container
+                        if (container) {
+                            try {
+                                const el = line.svg || line.element || line._element || null;
+                                if (el && el.parentNode !== container) container.appendChild(el);
+                            } catch (_) {}
+                            try {
+                                const els = document.querySelectorAll(".leader-line");
+                                const last = els[els.length - 1];
+                                if (last && last.parentNode !== container) container.appendChild(last);
+                            } catch (_) {}
+                        }
+
+                        window._tournamentLeaderLines.push(line);
+                    } catch (_) {}
+                }
+            }
         }
-    })();
+    } catch (_) {}
 
     // refresh positions on resize
     if (window._tournamentLeaderLinesResizeHandler) {
@@ -736,7 +1003,14 @@ function UpdateSizes ()
             root.style.setProperty("--sep-h", toRem(v * 0.1));
             root.style.setProperty("--sep-v", toRem(v * 0.8));
         }
-        root.style.setProperty("--font-size", toRem(v * 0.75));
+
+        if (window.innerWidth > 1200)
+        {
+            root.style.setProperty("--font-size", toRem(v * 1.5));
+        } else 
+        {
+            root.style.setProperty("--font-size", toRem(v * 0.75));
+        }
 
         const rect = container.getBoundingClientRect();
         const heightHit = rect.height >= viewportH;

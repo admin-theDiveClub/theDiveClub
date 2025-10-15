@@ -244,6 +244,8 @@ function GetConfirmedPlayers (players)
 
     const confirmed = players.filter(p => p && p.confirmed);
 
+    console.log('Confirmed Players:', confirmed);
+
     const maxEntries = tournament && tournament.maxEntries !== undefined
         ? Number(tournament.maxEntries)
         : null;

@@ -743,6 +743,8 @@ function UpdateEligiblePlayers(players, log, multiLife)
         return ml < maxLives;
     });
 
+    console.log('Eligible players:', eligible);
+
     
     eligible.forEach((p, i) => {
         const tr = document.createElement('tr');
@@ -840,7 +842,26 @@ async function LoadRound1 ()
     {
         playersList = shuffledList;
     }
-    const roundMatches = tournamentRounds[1];
+    // build a single array of matches for round 1 (handles array or object shapes)
+    let roundMatches = [];
+    for (let i = 0; i < tournamentRounds.length; i ++)
+    {
+        const round = tournamentRounds[i];
+        if (round && round.length > 0)
+        {
+            if (i > 1)
+            {
+                roundMatches = roundMatches.concat(round.slice(1, round.length));
+            } else 
+            {
+                roundMatches = roundMatches.concat(round);
+            }
+        }
+    }
+
+    
+    console.log('Round 1 matches before update:', roundMatches);
+
     console.log(playersList, roundMatches);
 
     for (var i = 0; i < roundMatches.length; i ++)
@@ -876,8 +897,10 @@ async function LoadRound1 ()
     // Persist all updated matches for this round in a single batch call
     const matchesToUpdate = (roundMatches || [])
         .map(m => m && m.match ? m.match : null)
-        .filter(Boolean)
+        .filter(m => m.players && ((m.players.h && m.players.h.username) || (m.players.a && m.players.a.username)))
         .filter(m => m.id);
+
+    console.log('Matches to update:', matchesToUpdate);
 
     if (matchesToUpdate.length) 
     {

@@ -27,11 +27,35 @@ async function Start ()
             t_log = CompileLog(t_log, t_matches);
             console.log("Tournament Log & Matches:", t_log);
 
-            UpdateTournamentUI(t_log);
+            UpdateTournamentUI(t_log, t_matches);
 
             SubscribeToTournamentUpdates(t_ID);
             SubscribeToTournamentMatchesUpdates(t_ID);
         }
+
+        const coordinatorID = t.coordinatorID || null;
+        if (coordinatorID)
+        {
+            RedirectCoordinator(coordinatorID);
+        }
+    }
+}
+
+function RedirectCoordinator (coordinatorID)
+{
+    const s_userProfile = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile');
+    const userProfile = s_userProfile ? JSON.parse(s_userProfile) : null;
+    const id = userProfile ? userProfile.id : null;
+
+    if (id && coordinatorID === id) 
+    {
+        if (confirm("You are listed as the coordinator for this tournament. Do you want to go to the tournament management page?"))
+        {
+            window.location.href = `/tournaments_old/index.html?tournamentID=${t_ID}`;
+        }
+    } else 
+    {
+        console.log("User is not the coordinator, no redirect.");
     }
 }
 
@@ -169,6 +193,9 @@ function CompileLog (players, matches)
     {
         const match = matches[i];
         const matchPlayers = match.players || {h: {username: null}, a: {username: null}};
+        matchPlayers.h = matchPlayers.h || {username: null};
+        matchPlayers.a = matchPlayers.a || {username: null};
+        if (!match.results) match.results = {"h": {fw: 0}, "a": {fw: 0}};
         match.results.h = match.results.h || {fw: 0};
         match.results.a = match.results.a || {fw: 0};
         const matchResults = match.results  ? match.results : {h: {fw: 0}, a: {fw: 0}};
@@ -239,7 +266,7 @@ async function OnPayloadReceived_tournament (newTournamentData)
         
         t_log = CompileLog(t_log, t_matches);
 
-        UpdateTournamentUI(t_log);
+        UpdateTournamentUI(t_log, t_matches);
     }
 }
 
@@ -247,11 +274,17 @@ async function OnPayloadReceived_tournamentMatches (newMatchData)
 {
     const matchIndex = t_matches.findIndex(m => m.id === newMatchData.id);
 
-    if (newMatchData && newMatchData.id && matchIndex === -1)
+    if (newMatchData && newMatchData.id)
     {
-        t_matches[matchIndex] = newMatchData;
+        if (matchIndex !== -1)
+        {
+            t_matches[matchIndex] = newMatchData;
+        } else 
+        {
+            t_matches.push(newMatchData);
+        }
         t_log = CompileLog(t_log, t_matches);
 
-        UpdateTournamentUI(t_log);
+        UpdateTournamentUI(t_log, t_matches);
     }
 }
