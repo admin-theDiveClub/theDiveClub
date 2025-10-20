@@ -15,7 +15,9 @@
     <!--Custom CSS-->
     <link href="/stylesheets/stylesheet_main.css" rel="stylesheet">   
 
-    <script src="https://cdn.jsdelivr.net/npm/leader-line@1.0.7/leader-line.min.js"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/leader-line@1.0.7/leader-line.min.js"></script>
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <title>The Dive Club</title>
     <link rel="icon" href="/resources/icon_TDC.ico">
@@ -101,18 +103,60 @@
                     </div>
                 </div>
             </div>
+
             <div class="col-md-9">
-                <div id="container-data">
-                    <div id="container-matches">
-                        <table id="tbl-matches">
-                            <thead>
-                                <tr>
-                                    <th colspan="5">Matches</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr class="match-row">
-                                    <a class="unstyled">
+                <ul class="nav nav-tabs" id="competitionTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="matches-tab" data-bs-toggle="tab" data-bs-target="#matches-content" type="button" role="tab">Matches</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="leagues-tab" data-bs-toggle="tab" data-bs-target="#leagues-content" type="button" role="tab">Leagues</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tournaments-tab" data-bs-toggle="tab" data-bs-target="#tournaments-content" type="button" role="tab">Tournaments</button>
+                    </li>
+                </ul>
+
+                <style>
+                    .nav-tabs
+                    {
+                        border-bottom: 1px solid var(--color-base-04);
+                    }
+
+                    .nav-link
+                    {
+                        border-color: none;
+                    }
+
+                    .nav-link
+                    {
+                        font-family: 'Font_TDC';
+                        color: var(--color-primary-00) !important;
+                        font-size: 1.5rem;
+                        border-color: none;
+                    }
+
+                    .nav-link.active
+                    {
+                        background-color: var(--color-base-02) !important;
+                        color: var(--color-accent-0) !important;
+                        box-shadow: inset 0 -2rem 1rem -2rem var(--color-accent-0);
+                        border: none !important;
+                    }
+
+                    .nav-link:hover
+                    {
+                        border: solid 1px var(--color-primary-00) !important;
+                        box-shadow: inset 0 -2rem 1rem -2rem var(--color-primary-00);
+                    }
+                </style>
+
+                <div class="tab-content" id="competitionTabsContent">
+                    <div class="tab-pane fade show active" id="matches-content" role="tabpanel">
+                        <div id="container-matches">
+                            <table id="tbl-matches">
+                                <tbody>
+                                    <tr class="match-row unstyled">
                                         <td class="match-status-bullet"></td>
                                         <td class="match-date">
                                             <p id="match-date">00/00</p>
@@ -127,87 +171,67 @@
                                         <td class="match-score">
                                             <p id="match-score">0 - 0</p>
                                         </td>
-                                    </a>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="5">
+                                            <div id="matches-pagination-controls">                                            
+                                                <a id="matches-pagination-prev"><i class="bi bi-arrow-left"></i></a>
+                                                <p id="matches-pagination">1-10 of 100</p>
+                                                <a id="matches-pagination-next"><i class="bi bi-arrow-right"></i></a>
+                                            </div>
+                                        </th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="leagues-content" role="tabpanel">
+                        <table id="tbl-user-leagues">
+                            <tbody>
+                                <tr>
+                                    <td class="league-status-bullet"></td>
+                                    <td class="league-dates">
+                                        <p class="league-date" id="league-date-start">00/00/00</p>
+                                        <p class="league-date" id="league-date-end">00/00/00</p>
+                                    </td>
+                                    <td class="league-pp">
+                                        <img src="/resources/icon_theDiveClub_alpha.svg" alt="League Profile Picture">
+                                    </td>
+                                    <td class="league-info">
+                                        <p class="league-name">League Name</p>
+                                        <p class="league-coordinator">Coordinator Name</p>
+                                    </td>
+                                    <td class="league-players-count">
+                                        <p class="league-players">0 Players</p>
+                                    </td>
                                 </tr>
                             </tbody>
-                            <tfoot>
-                                <tr>
-                                    <th colspan="5">
-                                        <div id="matches-pagination-controls">                                            
-                                            <a id="matches-pagination-prev"><i class="bi bi-arrow-left"></i></a>
-                                            <p id="matches-pagination">1-10 of 100</p>
-                                            <a id="matches-pagination-next"><i class="bi bi-arrow-right"></i></a>
-                                        </div>
-                                    </th>
-                                </tr>
-                            </tfoot>
                         </table>
                     </div>
-
-                    <div id="container-competitions">
-
-                        <div class="row">
-                            <div class="col-12 col-md-6">
-                                <table id="tbl-user-leagues">
-                                    <thead>
-                                        <tr>
-                                            <th colspan="5">Leagues</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td class="league-status-bullet"></td>
-                                            <td class="league-dates">
-                                                <p class="league-date" id="league-date-start">00/00/00</p>
-                                                <p class="league-date" id="league-date-end">00/00/00</p>
-                                            </td>
-                                            <td class="league-pp">
-                                                <img src="/resources/icon_theDiveClub_alpha.svg" alt="League Profile Picture">
-                                            </td>
-                                            <td class="league-info">
-                                                <p class="league-name">League Name</p>
-                                                <p class="league-coordinator">Coordinator Name</p>
-                                            </td>
-                                            <td class="league-players-count">
-                                                <p class="league-players">0 Players</p>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <table id="tbl-user-tournaments">
-                                    <thead>
-                                        <tr>
-                                            <th colspan="5">Tournaments</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td class="tournament-status-bullet"></td>
-                                            <td class="tournament-start">
-                                                <p class="tournament-date" id="tournament-date">00/00/00</p>
-                                                <p class="tournament-date" id="tournament-time">00/00/00</p>
-                                            </td>
-                                            <td class="tournament-info">
-                                                <p class="tournament-name">Tournament Name</p>
-                                                <p class="tournament-coordinator">Coordinator Name</p>
-                                            </td>
-                                            <td class="tournament-players-count">
-                                                <p class="tournament-players">0 Players</p>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
+                    <div class="tab-pane fade" id="tournaments-content" role="tabpanel">
+                        <table id="tbl-user-tournaments">
+                            <tbody>
+                                <tr>
+                                    <td class="tournament-status-bullet"></td>
+                                    <td class="tournament-start">
+                                        <p class="tournament-date" id="tournament-date">00/00/00</p>
+                                        <p class="tournament-date" id="tournament-time">00/00/00</p>
+                                    </td>
+                                    <td class="tournament-info">
+                                        <p class="tournament-name">Tournament Name</p>
+                                        <p class="tournament-coordinator">Coordinator Name</p>
+                                    </td>
+                                    <td class="tournament-players-count">
+                                        <p class="tournament-players">0 Players</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                        
                 </div>
             </div>
-
-
         </div>
 
     </div>
@@ -357,14 +381,8 @@
 
         .match-row
         {
-            cursor: pointer;
             background-color: var(--color-base-03);
             border: 1px solid var(--color-base-02);
-        }
-
-        .match-row:hover
-        {
-            box-shadow: inset 0 0 12px var(--color-primary-00);
         }
 
         .match-entry
@@ -422,13 +440,22 @@
             white-space: normal;
             overflow-wrap: anywhere;
             word-wrap: break-word;
-            font-size: 0.75rem;
+            font-size: 0.5rem;
         }
 
         #match-score
         {
             font-family: 'Font_TDC';
             font-size: 1.5rem;
+            padding: 0rem 0.5rem;
+        }
+
+        .match-score:hover
+        {
+            cursor: pointer;
+            box-shadow: inset 0 0 0.5rem var(--color-highlight-0);
+            transition: box-shadow 0.1s ease-in-out;
+            border-radius: 0.5rem;
         }
 
         .match-user-fw-win

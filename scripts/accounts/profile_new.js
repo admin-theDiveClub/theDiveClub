@@ -293,7 +293,7 @@ function PopulateMatchesTable (matches, index)
         const tr = document.createElement("tr");
         tr.classList.add("match-row");
         const link = m.status === "Complete" ? 'scoreboard' : 'index';
-        tr.onclick = () => { window.location.href = `/matches/${link}.html?matchID=${m.id}`; };
+        //tr.onclick = () => { window.location.href = `/matches/${link}.html?matchID=${m.id}`; };
         e_tbody.appendChild(tr);
 
         const td_status = document.createElement("td");
@@ -322,7 +322,33 @@ function PopulateMatchesTable (matches, index)
         const e_opponent_pp = document.createElement("img");
         e_opponent_pp.src = m.opponent.pp ? m.opponent.pp : "/resources/icons/icon_player.svg";
         e_opponent_pp.alt = '';
-        td_opponent_pp.appendChild(e_opponent_pp);
+
+        if (m.opponent.username != m.opponent.displayName)
+        {
+            td_opponent_pp.addEventListener('click', (event) =>
+            {
+                window.open(`/accounts/index.html?username=${encodeURIComponent(m.opponent.username)}`, '_blank');
+            });
+
+            td_opponent_pp.style.cursor = "pointer";
+            
+            td_opponent_pp.addEventListener('mouseenter', () => 
+            {
+                td_opponent_pp.style.boxShadow = "inset 0 0 12px var(--color-accent-0) !important";
+                td_opponent_pp.style.transition = "box-shadow 0.1s ease-in-out";
+                td_opponent_pp.style.borderRadius = "0.5rem";
+            });
+            td_opponent_pp.addEventListener('mouseleave', () => 
+            {
+                td_opponent_pp.style.boxShadow = "";
+            });
+
+            if (m.opponent.pp)
+            {
+                td_opponent_pp.appendChild(e_opponent_pp);
+            }
+        }
+
         tr.appendChild(td_opponent_pp);
 
         const td_opponent_info = document.createElement("td");
@@ -344,6 +370,10 @@ function PopulateMatchesTable (matches, index)
         e_results.style.display = "flex";
         const className = (m.userResults.fw > m.opponentResults.fw) ? "match-user-fw-win" : (m.userResults.fw < m.opponentResults.fw) ? "match-user-fw-loss" : "match-user-fw-draw";
         e_results.innerHTML = `${m.opponentResults.fw} - <div class="${className}">${m.userResults.fw}</div>`;
+        e_results.addEventListener('click', (event) =>
+        {
+            window.open(`/matches/${link}.html?matchID=${m.id}`, '_blank');
+        });
         td_results.appendChild(e_results);
         tr.appendChild(td_results);
     }
@@ -410,33 +440,6 @@ async function _userLeagues (userprofile)
 
 function PopulateLeaguesTable (leagues)
 {
-    /*  <table id="tbl-user-leagues">
-            <thead>
-                <tr>
-                    <th colspan="5">Leagues</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td class="league-status-bullet"></td>
-                    <td class="league-dates">
-                        <p class="league-date" id="league-date-start">00/00/00</p>
-                        <p class="league-date" id="league-date-end">00/00/00</p>
-                    </td>
-                    <td class="league-pp">
-                        <img src="/resources/icon_theDiveClub_alpha.svg" alt="League Profile Picture">
-                    </td>
-                    <td class="league-info">
-                        <p class="league-name">League Name</p>
-                        <p class="league-coordinator">Coordinator Name</p>
-                    </td>
-                    <td class="league-players-count">
-                        <p class="league-players">0 Players</p>
-                    </td>
-                </tr>
-            </tbody>
-        </table> */
-
     const e_table = gid("tbl-user-leagues");
     const e_tbody = e_table.querySelector("tbody");
     e_tbody.innerHTML = "";
@@ -446,7 +449,7 @@ function PopulateLeaguesTable (leagues)
         const league = leagues[i];
         const tr = document.createElement("tr");
         tr.classList.add("league-row");
-        tr.onclick = () => { window.location.href = `/leagues/index.html?leagueID=${league.id}`; };
+        tr.onclick = () => { window.open(`/leagues/index.html?leagueID=${league.id}`, '_blank'); };
         e_tbody.appendChild(tr);
 
         // Determine active state: prefer explicit field, otherwise infer from date_end (null => ongoing/active)
@@ -555,7 +558,7 @@ function PopulateTournamentsTable (tournaments, userId)
         tr.classList.add("tournament-row");
         tr.onclick = () => 
         { 
-            window.location.href = `/tournaments/index.html?tournamentID=${tournament.id}`;
+            window.open(`/tournaments/index.html?tournamentID=${tournament.id}`, '_blank');
         };
         e_tbody.appendChild(tr);
 
