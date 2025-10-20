@@ -52,8 +52,16 @@ function buildSeriesFromHistory(history, mode = 'default') {
     const breaksA = [];
 
     let t = 0, h = 0, a = 0;
-    for (const f of history) 
+    for (let i = 0; i < history.length; i++) 
     {
+        const f = history[i];
+        const isLastFrame = i === history.length - 1;
+        
+        // Skip last frame if duration is not set
+        if (isLastFrame && !f.duration) {
+            continue;
+        }
+        
         if (f.duration)
         {
             t += f.duration;
