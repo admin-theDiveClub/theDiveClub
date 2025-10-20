@@ -18,6 +18,7 @@ async function Start ()
             PopulateHeadToHeadPlayerInfo(playerH, playerA);
             PopulateMatchSummary(match);
             PopulateMatchScorecard(match);
+            DrawMatchGraph(match);
 
             gid('component-loading-overlay').style.display = 'none';
         }
@@ -84,11 +85,14 @@ async function SubscribeToUpdates (_matchID)
 
 async function OnPayloadReceived (match)
 {
+    matchRef = match;
     if (match)
     {
         PopulateHeadToHeadPlayerInfo(playerH, playerA);
         PopulateMatchSummary(match);
         PopulateMatchScorecard(match);
+        DrawMatchGraph(match);
+
 
         gid('component-loading-overlay').style.display = 'none';
     }
@@ -232,12 +236,12 @@ function PopulateMatchSummary(match)
     gid('match-summary-average-frame-time').innerText = avgFrameMs ? fmtDurationMs(avgFrameMs) : '-';
 
     // Optionally populate player name cells if global profiles are available
-    if (typeof playerH !== 'undefined' && playerH && playerH.displayName) {
-        gid('match-summary-player-h').innerText = playerH.displayName;
-    }
-    if (typeof playerA !== 'undefined' && playerA && playerA.displayName) {
-        gid('match-summary-player-a').innerText = playerA.displayName;
-    }
+    // if (typeof playerH !== 'undefined' && playerH && playerH.displayName) {
+    //     gid('match-summary-player-h').innerText = playerH.displayName;
+    // }
+    // if (typeof playerA !== 'undefined' && playerA && playerA.displayName) {
+    //     gid('match-summary-player-a').innerText = playerA.displayName;
+    // }
 }
 
 window.addEventListener('resize', () => {
@@ -247,7 +251,7 @@ window.addEventListener('resize', () => {
 function PopulateMatchScorecard(match)
 {
     if (!match) return;
-    const table = gid('scorecard-h-table');
+    const table = gid('scorecard-table');
     if (!table) return;
 
     const history = match.history || [];
@@ -335,7 +339,10 @@ function PopulateMatchScorecard(match)
 
         const scoreFromResults = match.results && match.results[playerKey] && Number.isFinite(match.results[playerKey].fw) ? match.results[playerKey].fw : null;
         const computedScore = filteredHistory.filter(h => h && h['winner-player'] === playerKey).length;
-        cells.push({ text: (scoreFromResults !== null ? String(scoreFromResults) : String(computedScore)), classes: [] });
+        const finalCell = { text: (scoreFromResults !== null ? String(scoreFromResults) : String(computedScore)), classes: ['scorecard-totals'] };
+        if (playerKey === 'h') finalCell.classes.push('color-h');
+        else if (playerKey === 'a') finalCell.classes.push('color-a');
+        cells.push(finalCell);
 
         return { label: playerDisplayName(playerKey, profile), cells };
     }
@@ -437,11 +444,13 @@ function PopulateMatchScorecard(match)
         const thH = document.createElement('th');
         thH.innerText = playerDisplayName('h', playerH);
         thH.classList.add('color-h');
+        thH.classList.add('scorecard-player-name');
         headRow.appendChild(thH);
 
         const thA = document.createElement('th');
         thA.innerText = playerDisplayName('a', playerA);
         thA.classList.add('color-a');
+        thA.classList.add('scorecard-player-name');
         headRow.appendChild(thA);
 
         const thDur = document.createElement('th');
@@ -491,6 +500,7 @@ function PopulateMatchScorecard(match)
         const finalRow = document.createElement('tr');
         const finalLabelTd = document.createElement('td');
         finalLabelTd.innerText = 'Total';
+        finalLabelTd.classList.add('scorecard-player-name');
         finalRow.appendChild(finalLabelTd);
 
         const finalBreaks = rows[0].cells[frameCount] || { text: '', classes: [] };
@@ -503,12 +513,16 @@ function PopulateMatchScorecard(match)
         const tdFinalH = document.createElement('td');
         tdFinalH.innerText = finalH.text;
         finalH.classes.forEach(cl => tdFinalH.classList.add(cl));
+        tdFinalH.classList.add('color-h');
+        tdFinalH.classList.add('scorecard-player-name');
         finalRow.appendChild(tdFinalH);
 
         const finalA = rows[2].cells[frameCount] || { text: '', classes: [] };
         const tdFinalA = document.createElement('td');
         tdFinalA.innerText = finalA.text;
         finalA.classes.forEach(cl => tdFinalA.classList.add(cl));
+        tdFinalA.classList.add('color-a');
+        tdFinalA.classList.add('scorecard-player-name');
         finalRow.appendChild(tdFinalA);
 
         const finalDur = rows[3].cells[frameCount] || { text: '', classes: [] };
@@ -520,3 +534,31 @@ function PopulateMatchScorecard(match)
         table.appendChild(tbody);
     }
 }
+
+
+import { DrawMatchTimeLine } from '/scripts/charts/chart_line.js';
+
+function DrawMatchGraph(match)
+{
+    DrawTimeLine(match);
+
+}
+
+function DrawTimeLine (match)
+{
+    if (!match || !match.history || match.history.length == 0)
+    {
+        return null;
+    }
+
+    const orientation = window.innerWidth < window.innerHeight ? 'vertical' : 'horizontal';
+    const mode = document.querySelector('input[name="chartMode"]:checked')?.value || 'default';
+    DrawMatchTimeLine(match.history, playerH, playerA, mode, orientation);
+}
+
+document.querySelectorAll('input[name="chartMode"]').forEach((elem) => {
+    elem.addEventListener("change", function() 
+    {
+        DrawTimeLine(matchRef);
+    });
+});

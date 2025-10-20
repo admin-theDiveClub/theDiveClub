@@ -34,7 +34,6 @@ export function UpdateMatchControls (_match)
     match = _match;    
     ResetBreakButtons();
     UpdateLiveFrameButtons();
-    UpdateMatchStatus();
 
     clearInterval(UpdateTimerUI.interval);
     UpdateTimerUI(match);
@@ -159,7 +158,7 @@ async function UpdateMatchStatus ()
                 if (!match.time) match.time = {};
                 match.time.end = new Date().toISOString();
                 
-                const response = await supabase.from('tbl_matches').update(match).eq('id', match.id);
+                const response = await supabase.from('tbl_matches').update(match).eq('id', match.id).select().single();
                 if (response.error)
                 {
                     alert("Error Ending Match: " + response.error.message);

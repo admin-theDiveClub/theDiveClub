@@ -1,0 +1,75 @@
+<div class="row" id="mini-profile-container" style="display: none;">
+    <div class="card" id="profile-card">
+
+        <button id="btn-close-mini-profile"><i class="bi bi-x"></i></button>
+
+        <div class="row">
+            <div class="col-md-4" id="profile-mini-info-container">                            
+                <img src="/resources/icons/icon_player.svg" alt="Profile Picture" id="user-mini-profile-pic"></img>
+                <p id="profile-mini-nickname">Nickname</p>
+                <p id="profile-mini-fullname">Full Name</p>
+                <p id="profile-mini-username">Username</p>
+            </div>
+            <div class="col-md-8">
+                
+            </div>
+        </div>
+
+        <hr>
+
+        <div style="display: flex; justify-content: space-between;">                    
+            <a id="btn-link-userProfile" class="btn btn-standard" href="/accounts/index.html">User Profile</a>            
+            <a id="btn-link-addFriend" class="btn btn-standard" href="#addFriend">Add Friend</a>
+            <a id="btn-link-follow" class="btn btn-standard" href="#follow">Follow</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    #btn-close-mini-profile
+    {
+        position: absolute; 
+        top: 0rem; 
+        right: 0rem; 
+        font-size: 3rem; 
+        background-color: transparent;
+        border: none;
+        padding-right: 0.5rem;
+        margin: 0rem;
+        color: var(--color-base-10);
+    }
+
+    #mini-profile-container
+    {
+        position: fixed;
+        top: 0rem;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    #user-mini-profile-pic
+    {
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+        margin: auto;
+        border-radius: 50% !important;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+
+
+    #profile-mini-info-container
+    {
+        text-align: center;
+        text-align-last: center;
+    }
+
+    #profile-mini-nickname
+    {
+        font-size: 2.5rem;
+        font-weight: bold;
+        font-family: 'Font_TDC';
+        margin-top: 0.5rem;
+        padding: 0rem;
+    }
+</style>

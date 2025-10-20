@@ -765,7 +765,6 @@ function DrawTimeLine (match)
 
     const orientation = window.innerWidth < window.innerHeight ? 'vertical' : 'horizontal';
 
-
     const mode = document.querySelector('input[name="chartMode"]:checked')?.value || 'default';
     DrawMatchTimeLine(match.history, player_H, player_A, mode, orientation);
 }

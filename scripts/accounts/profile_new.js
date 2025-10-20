@@ -137,17 +137,23 @@ async function GetStrippedMatches (matches, username)
         var strippedProfile = null;
         var displayName = opponent_un;
         var pp = null;
+        var name = null;
 
         if (profile)
         {
             displayName = profile.nickname ? profile.nickname : (profile.name ? profile.name : displayName);
             pp = profile.pp ? profile.pp : null;
+            name = profile.name ? profile.name : null;
+            if (profile.surname)
+            {
+                name = name ? (name + " " + profile.surname) : profile.surname;
+            }
         } else 
         {
             displayName = opponent_un.split('@')[0];
         }
 
-        var opponentProfile = {username: opponent_un, displayName: displayName, pp: pp};
+        var opponentProfile = {username: opponent_un, displayName: displayName, pp: pp, name: name};
         opponentsData.push(opponentProfile);
     }
 
@@ -327,7 +333,8 @@ function PopulateMatchesTable (matches, index)
         {
             td_opponent_pp.addEventListener('click', (event) =>
             {
-                window.open(`/accounts/index.html?username=${encodeURIComponent(m.opponent.username)}`, '_blank');
+                //window.open(`/accounts/index.html?username=${encodeURIComponent(m.opponent.username)}`, '_blank');
+                UpdateMiniProfile(m.opponent);
             });
 
             td_opponent_pp.style.cursor = "pointer";
@@ -378,6 +385,8 @@ function PopulateMatchesTable (matches, index)
         tr.appendChild(td_results);
     }
 }
+
+import { UpdateMiniProfile } from "../UIControllers/profile-mini-controller.js";
 
 var index = 0;
 var indexShift = window.innerWidth < 600 ? 5 : 10;
@@ -622,3 +631,4 @@ function PopulateTournamentsTable (tournaments, userId)
         tr.appendChild(td_players_count);
     }
 }
+

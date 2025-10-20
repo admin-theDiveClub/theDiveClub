@@ -3,8 +3,8 @@ document.getElementById('btn-match-create').addEventListener('click', () =>
 {
     var match = 
     {
-        player_H: document.getElementById('player_H').value,
-        player_A: document.getElementById('player_A').value,
+        player_H: {username: document.getElementById('player_H').value},
+        player_A: {username: document.getElementById('player_A').value},
     }
     CreateMatch(match);
 });

@@ -38,94 +38,88 @@
     <div class="main">
 
         <div class="card" id="head-to-head">
-            <div class="row">
-                <div class="col-sm-3">
-                    <img id="teamH_icon" class="team-icon" src="/resources/icons/icon_player.svg" alt="Team H Logo">
-                    <p id="teamH_name" class="team-name color-h">Team H</p>
-                </div>
-                <div class="col-sm-6">
-                    <div id="match-summary">
-                        <table>
-                            <th>
-                                <tr>
-                                    <td id="match-summary-player-h" colspan="4" class="scorecard-player-name color-h">Player H Player</td>
-                                    <td></td>
-                                    <td id="match-summary-player-a" colspan="4" class="scorecard-player-name color-a">Player A Player</td>
-                                </tr>
-                            </th>
-                            <tr>
-                                <td id="match-summary-player-h-score" colspan="4" class="scorecard-totals color-h">0</td>
-                                <td>FW</td>
-                                <td id="match-summary-player-a-score" colspan="4" class="scorecard-totals color-a">0</td>
-                            </tr>
-                            <tr>
-                                <td id="match-summary-player-h-bf" colspan="4">0</td>
-                                <td>B/F</td>
-                                <td id="match-summary-player-a-bf" colspan="4">0</td>
-                            </tr>
-                            <tr>
-                                <td id="match-summary-player-h-rf" colspan="4">0</td>
-                                <td>R/F</td>
-                                <td id="match-summary-player-a-rf" colspan="4">0</td>
-                            </tr>
-                            <tr>
-                                <td id="match-summary-player-h-gb" colspan="4">0</td>
-                                <td>GB</td>
-                                <td id="match-summary-player-a-gb" colspan="4">0</td>
-                            </tr>
-                            <tr>
-                                <td>dry</td>
-                                <td>in</td>
-                                <td>scr</td>
-                                <td>foul</td>
-                                <td>Breaks</td>
-                                <td>dry</td>
-                                <td>in</td>
-                                <td>scr</td>
-                                <td>foul</td>
-                            </tr>
-                            <tr>
-                                <td id="match-summary-player-h-break-dry">0</td>
-                                <td id="match-summary-player-h-break-in">0</td>
-                                <td id="match-summary-player-h-break-scr">0</td>
-                                <td id="match-summary-player-h-break-foul">0</td>
-                                <td id="match-summary-player-h-breaks">0 | 0</td>
-                                <td id="match-summary-player-a-break-dry">0</td>
-                                <td id="match-summary-player-a-break-in">0</td>
-                                <td id="match-summary-player-a-break-scr">0</td>
-                                <td id="match-summary-player-a-break-foul">0</td>
-                            </tr>
-                        </table>
+            <div id="match-summary">
+                <table>
+                    <th>
+                        <tr>
+                            <td id="match-summary-player-h" colspan="4" class="scorecard-player-name color-h">                                        
+                                <img id="teamH_icon" class="team-icon" src="/resources/icons/icon_player.svg" alt="Team H Logo">
+                                <p id="teamH_name" class="team-name color-h">Team H</p>
+                            </td>
+                            <td></td>
+                            <td id="match-summary-player-a" colspan="4" class="scorecard-player-name color-a">
+                                <img id="teamA_icon" class="team-icon" src="/resources/icons/icon_player.svg" alt="Team A Logo">
+                                <p id="teamA_name" class="team-name color-a">Team A</p>
+                            </td>
+                        </tr>
+                    </th>
+                    <tr>
+                        <td id="match-summary-player-h-score" colspan="4" class="scorecard-totals color-h">0</td>
+                        <td>FW</td>
+                        <td id="match-summary-player-a-score" colspan="4" class="scorecard-totals color-a">0</td>
+                    </tr>
+                    <tr>
+                        <td id="match-summary-player-h-bf" colspan="4">0</td>
+                        <td>B/F</td>
+                        <td id="match-summary-player-a-bf" colspan="4">0</td>
+                    </tr>
+                    <tr>
+                        <td id="match-summary-player-h-rf" colspan="4">0</td>
+                        <td>R/F</td>
+                        <td id="match-summary-player-a-rf" colspan="4">0</td>
+                    </tr>
+                    <tr>
+                        <td id="match-summary-player-h-gb" colspan="4">0</td>
+                        <td>GB</td>
+                        <td id="match-summary-player-a-gb" colspan="4">0</td>
+                    </tr>
+                    <tr>
+                        <td>dry</td>
+                        <td>in</td>
+                        <td>scr</td>
+                        <td>foul</td>
+                        <td>Breaks</td>
+                        <td>dry</td>
+                        <td>in</td>
+                        <td>scr</td>
+                        <td>foul</td>
+                    </tr>
+                    <tr>
+                        <td id="match-summary-player-h-break-dry">0</td>
+                        <td id="match-summary-player-h-break-in">0</td>
+                        <td id="match-summary-player-h-break-scr">0</td>
+                        <td id="match-summary-player-h-break-foul">0</td>
+                        <td id="match-summary-player-h-breaks">0 | 0</td>
+                        <td id="match-summary-player-a-break-dry">0</td>
+                        <td id="match-summary-player-a-break-in">0</td>
+                        <td id="match-summary-player-a-break-scr">0</td>
+                        <td id="match-summary-player-a-break-foul">0</td>
+                    </tr>
+                </table>
 
-                        <table>
-                            <tr>
-                                <td>Start Time:</td>
-                                <td id="match-summary-start-time">-</td>
-                            </tr>
-                            <tr>
-                                <td>End Time:</td>
-                                <td id="match-summary-end-time">-</td>
-                            </tr>
-                            <tr>
-                                <td>Match Duration:</td>
-                                <td id="match-summary-duration">-</td>
-                            </tr>
-                            <tr>
-                                <td>Average Frame Time:</td>
-                                <td id="match-summary-average-frame-time">-</td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-                <div class="col-sm-3">
-                    <img id="teamA_icon" class="team-icon" src="/resources/icons/icon_player.svg" alt="Team A Logo">
-                    <p id="teamA_name" class="team-name color-a">Team A</p>
-                </div>
+                <table>
+                    <tr>
+                        <td>Start Time:</td>
+                        <td id="match-summary-start-time">-</td>
+                    </tr>
+                    <tr>
+                        <td>End Time:</td>
+                        <td id="match-summary-end-time">-</td>
+                    </tr>
+                    <tr>
+                        <td>Match Duration:</td>
+                        <td id="match-summary-duration">-</td>
+                    </tr>
+                    <tr>
+                        <td>Average Frame Time:</td>
+                        <td id="match-summary-average-frame-time">-</td>
+                    </tr>
+                </table>
             </div>
         </div>
         
-        <div class="card" id="scorecard-h">
-            <table id="scorecard-h-table">
+        <div class="card" id="scorecard">
+            <table id="scorecard-table">
                 <th>
                     <tr>
                         <td>X</td>
@@ -148,6 +142,23 @@
                 </tr>
             </table>
         </div>
+
+        <div class="card" id="graph">            
+            <div id="chartControls">
+                <div class="btn-group" role="radiogroup" aria-label="Line type">
+                    <input type="radio" class="btn-check" name="chartMode" id="line-type-straight" value="default" autocomplete="off" checked>
+                    <label class="btn btn-outline-primary" for="line-type-straight">Default</label>
+
+                    <input type="radio" class="btn-check" name="chartMode" id="line-type-arc" value="base_h" autocomplete="off">
+                    <label class="btn btn-outline-primary" for="line-type-arc">Base H</label>
+                    
+
+                    <input type="radio" class="btn-check" name="chartMode" id="line-type-fluid" value="base_a" autocomplete="off">
+                    <label class="btn btn-outline-primary" for="line-type-fluid">Base A</label>
+                </div>
+            </div>
+            <div id="timeline_h" class="match-timeline-container"></div>
+        </div>
     </div>
     
     <style>
@@ -164,7 +175,7 @@
         .team-icon
         {
             width: 100%;
-            max-width: 30vw;
+            max-width: 20vw;
             height: auto;
             object-fit: contain;
             border-radius: 50%;
@@ -176,25 +187,25 @@
         .team-name
         {
             text-align: center;
-            font-size: 4rem;
-            font-weight: bold;
+            font-size: 2rem;
             font-family: 'Font_TDC';
         }
 
-        #match-summary, #scorecard-h
+        #match-summary, #scorecard
         {
             text-align: center;
         }
 
-        #match-summary td, #scorecard-h td
+        #match-summary td, #scorecard td
         {
             border: 1px solid var(--color-base-03);
-            padding: 1rem 0.25rem;
+            padding: 0.5rem 0.25rem;
         }
 
         .scorecard-player-name, .scorecard-totals
         {
             font-weight: bold;
+            font-family: 'Font_TDC';
             font-size: 1.5rem;
         }
 
@@ -232,7 +243,7 @@
     <script src="/scripts/accounts/data_user.js" type="module"></script>
 
     <!-- Match Scripts -->
-    <script src="/scripts/matches/scoreboard.js"></script>
+    <script src="/scripts/matches/scoreboard.js" type="module"></script>
 
 </body>
 </html>

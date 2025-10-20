@@ -229,7 +229,8 @@ function createChartConfig({ pointsH, pointsA, scoreH, scoreA, pColH, pColA, pla
     };
 }
 
-export function DrawMatchTimeLine(history, player_H, player_A, mode, orientation) {
+export function DrawMatchTimeLine(history, player_H, player_A, mode, orientation) 
+{
     if (!history || history.length === 0) return null;
 
     const timelineContainerH = document.getElementById('timeline_h');

@@ -263,6 +263,7 @@ button
     border-radius: 3cap;
     padding-right: 2rem;
     padding-left: 2rem;
+    margin: 0.5rem;
 }
 
 .btn-warning:hover
