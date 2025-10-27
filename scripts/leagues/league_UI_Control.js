@@ -273,55 +273,49 @@ function PopulateRounds (rounds)
 
                 const _cell_score = (cell, side, type) =>
                 {
+                    cell.title = 'Click to edit score';
+                    cell.classList.add('editable-cell');
+
                     if (!uA) return cell;
                     cell.addEventListener('click', () =>
                     {
+                        const originalValue = cell.textContent || '0';
                         const e_input = document.createElement('input');
-                        //<input class="form-control t-info-item" type="number" inputmode="numeric" pattern="[0-9]*" min="0" step="1" placeholder="-"></input>
+                        e_input.id = `input-${side}-${type}-${match.id}`;
                         e_input.type = 'number';
-                        e_input.className = 'form-control';
+                        e_input.className = 'form-control score-input';
                         e_input.inputMode = 'numeric';
                         e_input.pattern = '[0-9]*';
                         e_input.min = '0';
                         e_input.step = '1';
-                        e_input.placeholder = '-';
-                        e_input.value = cell.textContent || '';
+                        e_input.value = originalValue;
+                        
                         cell.innerHTML = '';
                         cell.appendChild(e_input);
                         e_input.focus();
+                        e_input.select();
 
-                        e_input.addEventListener('change', async () =>
+                        const handleChange = async () =>
                         {
                             const newValue = parseInt(e_input.value);
-                            console.log("New Score Value:", newValue);
-
-                            if (!isNaN(newValue))
+                            if (!isNaN(newValue) && newValue !== parseInt(originalValue))
                             {
                                 if (!match.results) match.results = { h: { fw: 0, bf: 0}, a: { fw: 0, bf: 0} };
                                 if (!match.results[side]) match.results[side] = { fw: 0, bf: 0};
                                 match.results[side][type] = newValue;
                                 const updatedMatch = await UpdateMatch(match);
-                                if (updatedMatch)
-                                {
-                                    cell.textContent = newValue;
-                                    e_input.remove();
-                                } else 
-                                {
-                                    cell.textContent = cell.textContent || '0';
-                                    e_input.remove();
-                                }
+                                cell.textContent = updatedMatch ? newValue : originalValue;
+                            } else {
+                                cell.textContent = originalValue;
                             }
-                        });
-
-                        e_input.addEventListener('blur', async () =>
-                        {
                             e_input.remove();
-                            cell.textContent = cell.textContent || '0';
-                        });
-                    });
+                            cell.title = 'Click to edit score';
+                            cell.classList.add('editable-cell');
+                        };
 
-                    cell.title = 'Click to edit score';
-                    cell.classList.add('editable-cell');
+                        e_input.addEventListener('change', handleChange);
+                        e_input.addEventListener('blur', handleChange);
+                    });
 
                     return cell;
                 }
