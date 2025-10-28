@@ -2,69 +2,82 @@ Start ();
 
 async function Start ()
 {
-    const userProfile = _userProfile();
+    const userProfile = await _userProfile();
+    console.log("User Profile:", userProfile);
+
     if (userProfile)
     {
-        UpdateProfileInfo(userProfile);
-        const username = userProfile.username;
-        if (username)
+        PopulateUserProfile(userProfile);
+        var matches = await _userMatches(userProfile.username);
+
+        if (matches && matches.length > 0)
         {
-            const userMatches = await _userMatches(username);
-            if (userMatches)
+            matches = await GetStrippedMatches(matches, userProfile.username);
+            if (matches)
             {
-                await PopulateMatchesTable(userMatches);
+                _matches = matches;
+                PopulateMatchesTable(_matches, 0);
 
-
-                const leagueIDs = GetAssociatedLeagues(userMatches);
-                const leagueDetails = await GetAllLeaguesDetails(leagueIDs);
-                if (leagueDetails)
-                {
-                    PopulateLeaguesTable(leagueDetails);
-                }
-
-                const tournamentIDs = GetAssociatedTournaments(userMatches);
-                const tournamentDetails = await GetAllTournamentsDetails(tournamentIDs);
-                if (tournamentDetails)
-                {
-                    PopulateTournamentsTable(tournamentDetails);
-                }
-
-                const stats_ranked = GetPlayerStats(userMatches);
-                PopulateStats(stats_ranked);
+                const stats = GetUserStats(_matches, userProfile.username);
+                PopulateUserStats(stats);
             }
+        }        
 
-            //Loading Done
-            document.getElementById("component-loading-overlay").style.display = "none";
+        const leagues = await _userLeagues(userProfile);
+        if (leagues && leagues.length > 0)
+        {
+            PopulateLeaguesTable(leagues);
         }
-    } else
-    {
-        window.location.href = "/index.html#login";
+        console.log("User Leagues:", leagues);
+
+        const tournaments = await _userTournaments(userProfile);
+        if (tournaments && tournaments.length > 0)
+        {
+            PopulateTournamentsTable(tournaments);
+        }
+        console.log("User Tournaments:", tournaments);
+
+        gid("component-loading-overlay").style.display = "none";
     }
 }
 
-function _userProfile ()
+var _matches = null;
+
+async function _userProfile ()
 {
+    var username = new URLSearchParams(window.location.search).get('username');
+    if (username) 
+    {        
+        const response = await supabase.from('tbl_players').select('*').eq('username', username).single();
+        if (response.error)
+        {
+            alert("Error Getting User Profile: " + response.error.message);
+            window.location.href = "/index.html";
+            return null;
+        } else 
+        {
+            document.getElementById("link-edit-profile").style.display = "none";
+            return response.data;
+        }
+    }
+
     const s_userProfile = localStorage.getItem("userProfile") || sessionStorage.getItem("userProfile");
     const userProfile = s_userProfile ? JSON.parse(s_userProfile) : null;
+    if (!userProfile)
+    {
+        alert("Error Getting User Profile: User profile not found");
+        window.location.href = "/index.html";
+    }
     return userProfile;
 }
 
-function UpdateProfileInfo (userProfile)
+function PopulateUserProfile (userProfile)
 {
-    const e_displayName = document.getElementById("user-displayName");
-    const e_name = document.getElementById("user-name");
-    const e_username = document.getElementById("user-username");
-    const e_id = document.getElementById("user-id");
-    const e_profilePic = document.getElementById("user-profile-pic");
-
-    e_displayName.textContent = userProfile.displayName || "N/A";
-    e_name.textContent = userProfile.name  + " " + (userProfile.surname ? userProfile.surname : "");
-    e_username.textContent = userProfile.username || "N/A";
-    e_id.textContent = userProfile.id || "N/A";
-    if (userProfile.pp)
-    {
-        e_profilePic.src = userProfile.pp;
-    }
+    gid("user-pp").src = userProfile.pp ? userProfile.pp : "/resources/icons/icon_player.svg";
+    const displayName = userProfile.nickname ? userProfile.nickname : (userProfile.name ? userProfile.name : userProfile.username);
+    gid("user-displayName").textContent = displayName;
+    gid("user-name").textContent = userProfile.name + (userProfile.surname ? (" " + userProfile.surname) : "");
+    gid("user-username").textContent = userProfile.username;
 }
 
 async function _userMatches (username)
@@ -72,14 +85,11 @@ async function _userMatches (username)
     const response = await supabase
         .from('tbl_matches')
         .select('*')
-        .or(
-            `players->h->>username.eq."${username}",players->a->>username.eq."${username}"`
-        )
+        .or(`players->h->>username.eq."${username}",players->a->>username.eq."${username}"`)
         .order('createdAt', { ascending: false });
 
     if (response.data)
     {
-        console.log("User Matches Response:", response.data);
         return response.data;
     } else 
     {
@@ -87,419 +97,539 @@ async function _userMatches (username)
     }
 }
 
-async function PopulateMatchesTable (matches)
+async function GetStrippedMatches (matches, username)
 {
-    document.getElementById("matches-count").textContent = `(${matches.length})`;
+    //Get all opponents
+    var allOpponents = [];
+    for (let i = 0; i < matches.length; i++)
+    {
+        const match = matches[i];
+        var opponent_un = null;
 
-    const e_table_matches = document.getElementById("tbl-matches");
-    const e_tbody = e_table_matches.querySelector("tbody");
+        if (match.players.h.username === username)
+        {
+            opponent_un = match.players.a.username;
+        } else if (match.players.a.username === username)
+        {
+            opponent_un = match.players.h.username;
+        }
+
+        if (opponent_un && !allOpponents.includes(opponent_un))
+        {
+            allOpponents.push(opponent_un);
+        }
+    }
+
+    //Get All Profiles with @ in username
+    var checkOpponents = allOpponents.filter(opponent_un => opponent_un.includes('@'));
+    const response = await supabase.from('tbl_players').select('*').in('username', checkOpponents);
+    var profilesFound = null;
+    if (!response.error)
+    {
+        profilesFound = response.data.length > 0 ? response.data : null;
+    } 
+
+    //Prep Opponents Data
+    var opponentsData = [];
+    for (let i = 0; i < allOpponents.length; i++)
+    {
+        const opponent_un = allOpponents[i];
+        const profile = (profilesFound ? profilesFound.find(profile => profile.username === opponent_un) : null);
+        var strippedProfile = null;
+        var displayName = opponent_un;
+        var pp = null;
+        var name = null;
+
+        if (profile)
+        {
+            displayName = profile.nickname ? profile.nickname : (profile.name ? profile.name : displayName);
+            pp = profile.pp ? profile.pp : null;
+            name = profile.name ? profile.name : null;
+            if (profile.surname)
+            {
+                name = name ? (name + " " + profile.surname) : profile.surname;
+            }
+        } else 
+        {
+            displayName = opponent_un.split('@')[0];
+        }
+
+        var opponentProfile = {username: opponent_un, displayName: displayName, pp: pp, name: name};
+        opponentsData.push(opponentProfile);
+    }
+
+    //Strip Match Data
+    var strippedMatches = [];
+    for (let i = 0; i < matches.length; i++)
+    {
+        const match = matches[i];
+
+        const opponent_un = (match.players.h.username === username) ? match.players.a.username : match.players.h.username;
+        const opponentProfile = opponentsData.find(opponent => opponent.username === opponent_un);
+        const userSide = (match.players.h.username === username) ? 'h' : 'a';
+
+        const results = match.results ? match.results : {h: 0, a: 0};
+        const userResults = results[userSide];
+        const opponentResults = (userSide === 'h') ? results.a : results.h;
+
+        var startTime = match.createdAt;
+        startTime = match.time && match.time.start ? match.time.start : startTime;
+
+        var status = (match.info && match.info.status) ? match.info.status.toLowerCase() : "new";
+        status = status.charAt(0).toUpperCase() + status.slice(1); 
+
+        var strippedMatch = 
+        {
+            id: match.id,
+            startTime: startTime,
+            status: status,
+            opponent: opponentProfile,
+            userResults: userResults,
+            opponentResults: opponentResults,
+            history: match.history ? match.history : []
+        };
+        strippedMatches.push(strippedMatch);
+    }
+
+    if (strippedMatches.length > 0)
+    {
+        //Sort by startTime desc
+        strippedMatches.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+        return strippedMatches;
+    } else 
+    {
+        return null;
+    }
+}
+
+function GetUserStats (matches)
+{
+    var stats =
+    {
+        fp: 0,
+        fw: 0,
+        mp: 0,
+        mw: 0,
+        avgDuration: 0,
+        bf: 0
+    }
+
+    var totalDuration = 0;
+    var durationsCount = 0;
+    for (let i = 0; i < matches.length; i++)
+    {
+        const match = matches[i];
+        stats.mp ++;
+        if (match.status === "Complete")
+        {
+            if (match.userResults.fw > match.opponentResults.fw)
+            {
+                stats.mw ++;
+            }
+        }
+
+        stats.fp += match.userResults.fw + match.opponentResults.fw;
+        stats.fw += match.userResults.fw;
+
+        stats.bf += match.userResults.bf ? match.userResults.bf : 0;
+
+        if (!match.history)
+        {
+            match.history = [];
+        }
+
+        for (let j = 0; j < match.history.length; j++)
+        {
+            const h = match.history[j];
+            if (h.duration)
+            {
+                totalDuration += h.duration;
+                durationsCount ++;
+            }
+        }
+    }
+    stats.avgDuration = durationsCount > 0 ? (totalDuration / durationsCount).toFixed(2) : 0;
+
+    return stats;
+}
+
+function PopulateUserStats (stats)
+{
+    gid("user-fp").textContent = stats.fp;
+    gid("user-fw").textContent = stats.fw;
+    const fPercent = stats.fp > 0 ? ((stats.fw / stats.fp) * 100).toFixed(2) : "0.00";
+    gid("user-fpercent").textContent = fPercent + "%";
+
+    gid("user-mp").textContent = stats.mp;
+    gid("user-mw").textContent = stats.mw;
+    const mPercent = stats.mp > 0 ? ((stats.mw / stats.mp) * 100).toFixed(2) : "0.00";
+    gid("user-mpercent").textContent = mPercent + "%";
+    const avgFrameTime = (() => {
+        const avgSec = Number(stats.avgDuration);
+        if (!avgSec || avgSec <= 0) return "00:00";
+        const hours = Math.floor(avgSec / 3600);
+        const minutes = Math.floor((avgSec % 3600) / 60);
+        const seconds = Math.floor(avgSec % 60);
+        const mm = String(minutes).padStart(2, '0');
+        const ss = String(seconds).padStart(2, '0');
+        if (hours === 0) return `${mm}:${ss}`;
+        const hh = String(hours).padStart(2, '0');
+        return `${hh}:${mm}:${ss}`;
+    })();
+    gid("user-avg-frame-time").textContent = avgFrameTime;
+    gid("user-bf").textContent = stats.bf;
+}
+
+const gid = (id) => document.getElementById(id);
+
+function PopulateMatchesTable (matches, index)
+{
+    const e_table = gid("tbl-matches");
+    const e_tbody = e_table.querySelector("tbody");
     e_tbody.innerHTML = "";
 
-    for (var i = 0; i < matches.length; i++)
-    {
-        const match = matches[i];
-        const e_tr = document.createElement("tr");
-        const e_td_date = document.createElement("td");
-        const e_td_opponent = document.createElement("td");
-        const e_td_league = document.createElement("td");
-        const e_td_tournament = document.createElement("td");
-        const e_td_result = document.createElement("td");
-        const e_td_link = document.createElement("td");
+    const lowerIndex = matches ? (index < matches.length ? index : matches.length - indexShift) : 0;
 
-        const matchDate = match.createdAt ? new Date(match.createdAt).toLocaleDateString() : "N/A";
-        e_td_date.textContent = matchDate;
+    gid("matches-pagination").textContent = `${lowerIndex + 1}-${(lowerIndex + indexShift) > matches.length ? matches.length : (lowerIndex + indexShift)} of ${matches.length}`;
 
-        const username = _userProfile().username;
+    for (let i = lowerIndex; i < lowerIndex + indexShift; i++)
+    {  
+        if (i < 0 || i >= matches.length) continue;
+        const m = matches[i];
 
-        var homePlayer = match.players.h.username ? match.players.h.username : "X";
-        var awayPlayer = match.players.a.username ? match.players.a.username : "X";
+        const tr = document.createElement("tr");
+        tr.classList.add("match-row");
+        const link = m.status === "Complete" ? 'scoreboard' : 'index';
+        //tr.onclick = () => { window.location.href = `/matches/${link}.html?matchID=${m.id}`; };
+        e_tbody.appendChild(tr);
 
-        const score_h = match.results && match.results.h && match.results.h.fw ? match.results.h.fw : '?';
-        const score_a = match.results && match.results.a && match.results.a.fw ? match.results.a.fw : '?';
+        const td_status = document.createElement("td");
+        td_status.classList.add("match-status-bullet");
 
-        if (username === homePlayer)
+        var status = m.status;
+        if (status != "Complete" && (m.userResults.fw > 0 || m.opponentResults.fw > 0))
         {
-            const opponentName = await GetDisplayName(awayPlayer);
-            e_td_opponent.innerHTML = opponentName || "N/A";
-
-            const resultText = `<span class='score-strong'>${score_h}</span> : ${score_a}`;
-            e_td_result.innerHTML = resultText;
-        } else if (username === awayPlayer)
-        {
-            const opponentName = await GetDisplayName(homePlayer);
-            e_td_opponent.innerHTML = opponentName || "N/A";
-
-            const resultText = `${score_h} : <span class='score-strong'>${score_a}</span>`;
-            e_td_result.innerHTML = resultText;
-        } else
-        {
-            e_td_opponent.textContent = "N/A";
-
-            const resultText = "?-?";
-            e_td_result.textContent = resultText;
+            status = "Live";
         }
 
-        const leagueID = match.competitions && match.competitions.leagueID ? match.competitions.leagueID : null;
-        if (leagueID)
+        const color = (status === "Complete") ? "var(--color-primary-00)" : (status === "New") ? "var(--color-base-06)" : "var(--color-secondary-00)"; 
+        td_status.style.backgroundColor = color;
+        tr.appendChild(td_status);
+
+        const td_date = document.createElement("td");
+        td_date.classList.add("match-date");
+        const date = new Date(m.startTime);
+        const e_dateLabel = document.createElement("p");
+        e_dateLabel.textContent = date.toLocaleDateString(undefined, { year: '2-digit', month: 'numeric', day: 'numeric' });
+        td_date.appendChild(e_dateLabel);
+        tr.appendChild(td_date);
+
+        const td_opponent_pp = document.createElement("td");
+        td_opponent_pp.classList.add("match-opponent-pp");
+        const e_opponent_pp = document.createElement("img");
+        e_opponent_pp.src = m.opponent.pp ? m.opponent.pp : "/resources/icons/icon_player.svg";
+        e_opponent_pp.alt = '';
+
+        if (m.opponent.username != m.opponent.displayName)
         {
-            const link = `/leagues/view.html?leagueID=${leagueID}`;
-            e_td_league.innerHTML = `<a href="${link}"><i class="bi bi-link"></i></a>` || "N/A";
-        }
-        
-        const tournamentID = match.competitions && match.competitions.tournamentID ? match.competitions.tournamentID : null;
-        if (tournamentID)
-        {
-            const link = `/tournaments/view.html?tournamentID=${tournamentID}`;
-            e_td_tournament.innerHTML = `<a href="${link}"><i class="bi bi-link"></i></a>` || "N/A";
-        }
-
-        const matchID = match.id || null;
-        var link = matchID ? `/matches/index.html?matchID=${matchID}` : null;
-        if (match.info && match.info.status === "Complete")
-        {
-            e_td_link.classList.add("match-link-complete");
-            link = `/matches/scoreboard.html?matchID=${matchID}`;
-        }
-        
-        e_td_link.innerHTML = `<a href="${link}"><i class="bi bi-link"></i></a>` || "N/A";
-
-        e_tr.appendChild(e_td_date);
-        e_tr.appendChild(e_td_opponent);
-        e_tr.appendChild(e_td_result);
-        e_tr.appendChild(e_td_link);
-        e_tr.appendChild(e_td_league);
-        e_tr.appendChild(e_td_tournament);
-
-        e_tbody.appendChild(e_tr);
-    }
-}
-
-async function GetDisplayName (username)
-{
-    if (username.includes("@"))
-    {
-        if (profilesLoaded.find(p => p.username === username))
-        {
-            const profile = profilesLoaded.find(p => p.username === username);
-            return `<span class='player-strong'>${profile.nickname || profile.name}</span>`;
-        }
-
-        const response = await supabase.from('tbl_players').select('name,nickname').eq('username', username).single();
-
-        if (response.data)
-        {
-            var profile = response.data;
-            profile.username = username;
-            profilesLoaded.push(profile);
-            if (response.data.nickname || response.data.name)
+            td_opponent_pp.addEventListener('click', (event) =>
             {
-                return `<span class='player-strong'>${response.data.nickname || response.data.name}</span>`;
-            } else 
+                //window.open(`/accounts/index.html?username=${encodeURIComponent(m.opponent.username)}`, '_blank');
+                UpdateMiniProfile(m.opponent);
+            });
+
+            td_opponent_pp.style.cursor = "pointer";
+            
+            td_opponent_pp.addEventListener('mouseenter', () => 
             {
-                return username;
+                td_opponent_pp.style.boxShadow = "inset 0 0 12px var(--color-accent-0) !important";
+                td_opponent_pp.style.transition = "box-shadow 0.1s ease-in-out";
+                td_opponent_pp.style.borderRadius = "0.5rem";
+            });
+            td_opponent_pp.addEventListener('mouseleave', () => 
+            {
+                td_opponent_pp.style.boxShadow = "";
+            });
+
+            if (m.opponent.pp)
+            {
+                td_opponent_pp.appendChild(e_opponent_pp);
             }
         }
+
+        tr.appendChild(td_opponent_pp);
+
+        const td_opponent_info = document.createElement("td");
+        td_opponent_info.classList.add("match-opponent-info");
+        const e_opponent_name = document.createElement("p");
+        e_opponent_name.classList.add("match-opponent-displayName");
+        e_opponent_name.textContent = m.opponent.displayName;
+        td_opponent_info.appendChild(e_opponent_name);
+        const e_opponent_username = document.createElement("p");
+        e_opponent_username.classList.add("match-opponent-username");
+        e_opponent_username.textContent = m.opponent.username;
+        td_opponent_info.appendChild(e_opponent_username);
+        tr.appendChild(td_opponent_info);
+
+        const td_results = document.createElement("td");
+        td_results.classList.add("match-score");
+        const e_results = document.createElement("p");
+        e_results.id = "match-score";
+        e_results.style.display = "flex";
+        const className = (m.userResults.fw > m.opponentResults.fw) ? "match-user-fw-win" : (m.userResults.fw < m.opponentResults.fw) ? "match-user-fw-loss" : "match-user-fw-draw";
+        e_results.innerHTML = `${m.opponentResults.fw} - <div class="${className}">${m.userResults.fw}</div>`;
+        e_results.addEventListener('click', (event) =>
+        {
+            window.open(`/matches/${link}.html?matchID=${m.id}`, '_blank');
+        });
+        td_results.appendChild(e_results);
+        tr.appendChild(td_results);
     }
-    return username;
 }
 
-var profilesLoaded = [];
+import { UpdateMiniProfile } from "../UIControllers/profile-mini-controller.js";
 
-function GetAssociatedLeagues (matches)
+var index = 0;
+var indexShift = window.innerWidth < 600 ? 5 : 10;
+
+gid('matches-pagination-next').onclick = () =>
 {
-    var leagueIDs = [];
-    for (var i = 0; i < matches.length; i++)
-    {
-        const match = matches[i];
-        if (match.competitions && match.competitions.leagueID)
-        {
-            const leagueID = match.competitions.leagueID;
-            if (!leagueIDs.includes(leagueID))
-            {
-                leagueIDs.push(leagueID);
-            }
-        }
-    }
-    return leagueIDs;
+    if (index + indexShift >= _matches.length) return;
+    index += indexShift;
+    PopulateMatchesTable(_matches, index);
 }
 
-async function GetAllLeaguesDetails (leagueIDs)
+gid('matches-pagination-prev').onclick = () =>
 {
-    var leagues = [];
-    for (var i = 0; i < leagueIDs.length; i++)
+    if (index - indexShift < 0) return;
+    index -= indexShift;
+    PopulateMatchesTable(_matches, index);
+}
+
+window.addEventListener('resize', () =>
+{
+    const newIndexShift = window.innerWidth < 600 ? 5 : 10;
+    if (newIndexShift !== indexShift) 
     {
-        const leagueID = leagueIDs[i];
-        const response = await supabase.from('tbl_leagues').select('*').eq('id', leagueID).single();
-        if (response.data)
-        {
-            leagues.push(response.data);
-        }
+        indexShift = newIndexShift;
+        PopulateMatchesTable(_matches, index);
     }
-    return leagues;
+});
+
+async function _userLeagues (userprofile)
+{
+    const response_player = await supabase
+        .from('tbl_leagues')
+        .select('*')
+        .contains('players', JSON.stringify([userprofile.username]))
+        .order('date_start', { ascending: false });
+
+    if (response_player.error) {
+        console.error("Error Getting User Leagues:", response_player.error);
+        return null;
+    }
+
+    const response_coordinator = await supabase
+        .from('tbl_leagues')
+        .select('*')
+        .eq('coordinatorID', userprofile.id)
+        .order('date_start', { ascending: false });
+
+    if (response_coordinator.error) 
+    {
+        console.error("Error Getting Coordinated Leagues:", response_coordinator.error);
+        return null;
+    }
+
+    const combinedLeagues = [...response_player.data, ...response_coordinator.data];
+    const uniqueLeagues = Array.from(new Set(combinedLeagues.map(league => league.id)))
+        .map(id => combinedLeagues.find(league => league.id === id));
+
+    return uniqueLeagues;
 }
 
 function PopulateLeaguesTable (leagues)
 {
-
-   document.getElementById("leagues-count").textContent = `(${leagues.length})`;
-
-    const e_card_body = document.getElementById("leaguesCardBody");
-    e_card_body.innerHTML = "";
-
-    for (var i = 0; i < leagues.length; i++)
-    {
-        const league = leagues[i];
-        const e_div = document.createElement("a");
-        e_div.classList.add("component-league-mini");
-        const leagueID = league.id || null;
-        if (leagueID)
-        {
-            const link = `/leagues/index.html?leagueID=${leagueID}`;
-            e_div.href = link;
-        }
-        const e_img = document.createElement("img");
-        e_img.src = league.pp || "/resources/icon_theDiveClub_alpha.svg";
-        const e_name = document.createElement("p");
-        e_name.textContent = league.name || "N/A";
-        const e_members = document.createElement("p");
-        e_members.textContent = league.members && league.members.length ? `0/${league.members.length}` : "0/000";
-        e_div.appendChild(e_img);
-        e_div.appendChild(e_name);
-        e_div.appendChild(e_members);
-        e_card_body.appendChild(e_div);
-    }
-}
-
-function GetAssociatedTournaments (matches)
-{
-    var tournamentIDs = [];
-    for (var i = 0; i < matches.length; i++)
-    {
-        const match = matches[i];
-        if (match.competitions && match.competitions.tournamentID)
-        {
-            const tournamentID = match.competitions.tournamentID;
-            if (!tournamentIDs.includes(tournamentID))
-            {
-                tournamentIDs.push(tournamentID);
-            }
-        }
-    }
-    return tournamentIDs;
-}
-
-async function GetAllTournamentsDetails (tournamentIDs)
-{
-    var tournaments = [];
-    for (var i = 0; i < tournamentIDs.length; i++)
-    {
-        const tournamentID = tournamentIDs[i];
-        const response = await supabase.from('tbl_tournaments').select('*').eq('id', tournamentID).single();
-        if (response.data)
-        {
-            tournaments.push(response.data);
-        }
-    }
-    return tournaments;
-}
-
-function PopulateTournamentsTable (tournaments)
-{
-    /*<table id="tbl-tournaments" style="width: 100%;">
-        <thead>
-            <tr>
-                <th>Tournament</th>
-                <th>Venue</th>
-                <th>Date</th>
-                <th>Tournament Link</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Tournament Name</td>
-                <td>Test Venue</td>
-                <td>01/01/2023</td>
-                <td><i class="bi bi-link"></i></td>
-            </tr>
-        </tbody>
-    </table>*/
-
-    document.getElementById("tournaments-count").textContent = `(${tournaments.length})`;
-
-    const e_table_tournaments = document.getElementById("tbl-tournaments");
-    const e_tbody = e_table_tournaments.querySelector("tbody");
+    const e_table = gid("tbl-user-leagues");
+    const e_tbody = e_table.querySelector("tbody");
     e_tbody.innerHTML = "";
 
-    for (var i = 0; i < tournaments.length; i++)
+    for (let i = 0; i < leagues.length; i++)
+    {  
+        const league = leagues[i];
+        const tr = document.createElement("tr");
+        tr.classList.add("league-row");
+        tr.onclick = () => { window.open(`/leagues/index.html?leagueID=${league.id}`, '_blank'); };
+        e_tbody.appendChild(tr);
+
+        // Determine active state: prefer explicit field, otherwise infer from date_end (null => ongoing/active)
+        const isActive = (typeof league.active === 'boolean') ? league.active : (league.date_end ? false : true);
+
+        const td_status = document.createElement("td");
+        td_status.classList.add("league-status-bullet");
+        const color = isActive ? "var(--color-primary-00)" : "var(--color-base-06)"; 
+        td_status.style.backgroundColor = color;
+        tr.appendChild(td_status);
+
+        const td_dates = document.createElement("td");
+        td_dates.classList.add("league-dates");
+        const e_date_start = document.createElement("p");
+        e_date_start.classList.add("league-date");
+        let startDate = league.date_start ? new Date(league.date_start) : null;
+        e_date_start.textContent = startDate && !isNaN(startDate) 
+            ? startDate.toLocaleDateString(undefined, { year: '2-digit', month: 'numeric', day: 'numeric' }) 
+            : "TBD";
+        td_dates.appendChild(e_date_start);
+
+        const e_date_end = document.createElement("p");
+        e_date_end.classList.add("league-date");
+        let endDate = league.date_end ? new Date(league.date_end) : null;
+        e_date_end.textContent = endDate && !isNaN(endDate) 
+            ? endDate.toLocaleDateString(undefined, { year: '2-digit', month: 'numeric', day: 'numeric' }) 
+            : "Ongoing";
+        td_dates.appendChild(e_date_end);
+        tr.appendChild(td_dates);
+
+        const td_pp = document.createElement("td");
+        td_pp.classList.add("league-pp");
+        const e_pp = document.createElement("img");
+        e_pp.src = league.pp ? league.pp : "/resources/icons/icon_theDiveClub_alpha.svg";
+        e_pp.alt = '';
+        td_pp.appendChild(e_pp);
+        tr.appendChild(td_pp);
+
+        const td_info = document.createElement("td");
+        td_info.classList.add("league-info");
+        const e_name = document.createElement("p");
+        e_name.classList.add("league-name");
+        e_name.textContent = league.name || "Unnamed League";
+        td_info.appendChild(e_name);
+        const e_coordinator = document.createElement("p");
+        e_coordinator.classList.add("league-coordinator");
+        // JSON may not include coordinatorName; fall back to coordinatorID or blank
+        e_coordinator.textContent = league.coordinatorName || league.coordinator || league.coordinatorID || "";
+        td_info.appendChild(e_coordinator);
+        tr.appendChild(td_info);
+
+        const td_players_count = document.createElement("td");
+        td_players_count.classList.add("league-players-count");
+        const e_players = document.createElement("p");
+        e_players.classList.add("league-players");
+        const playersCount = Array.isArray(league.players) ? league.players.length : 0;
+        e_players.textContent = `${playersCount} Player${playersCount === 1 ? "" : "s"}`;
+        td_players_count.appendChild(e_players);
+        tr.appendChild(td_players_count);
+    }
+}
+
+async function _userTournaments (userprofile)
+{
+    const response_player = await supabase
+        .from('tbl_tournaments')
+        .select('*')
+        .contains('players', JSON.stringify([{ username: userprofile.username }]))
+        .order('date', { ascending: false });
+
+    if (response_player.error) {
+        console.error("Error Getting User Leagues:", response_player.error);
+        return null;
+    }
+
+    const response_coordinator = await supabase
+        .from('tbl_tournaments')
+        .select('*')
+        .eq('coordinatorID', userprofile.id)
+        .order('date', { ascending: false });
+
+    if (response_coordinator.error) 
+    {
+        console.error("Error Getting Coordinated Leagues:", response_coordinator.error);
+        return null;
+    }
+
+    const combinedLeagues = [...response_player.data, ...response_coordinator.data];
+    const uniqueLeagues = Array.from(new Set(combinedLeagues.map(league => league.id)))
+        .map(id => combinedLeagues.find(league => league.id === id));
+
+    return uniqueLeagues;
+}
+
+function PopulateTournamentsTable (tournaments, userId)
+{
+    const e_table = gid("tbl-user-tournaments");
+    const e_tbody = e_table.querySelector("tbody");
+    e_tbody.innerHTML = "";
+
+    for (let i = 0; i < tournaments.length; i++)
     {
         const tournament = tournaments[i];
-        const e_tr = document.createElement("tr");
-        const e_td_name = document.createElement("td");
-        const e_td_venue = document.createElement("td");
-        const e_td_date = document.createElement("td");
-        const e_td_link = document.createElement("td");
-        e_td_name.textContent = tournament.name || "N/A";
-        e_td_venue.textContent = tournament.location || "N/A";
-        const tournamentDate = tournament.date ? new Date(tournament.date).toLocaleDateString() : "N/A";
-        e_td_date.textContent = tournamentDate;
-        const tournamentID = tournament.id || null;
-        const link = tournamentID ? `/tournaments/view.html?tournamentID=${tournamentID}` : null;
-        e_td_link.innerHTML = `<a href="${link}"><i class="bi bi-link"></i></a>` || "N/A";
+        if (tournament.leagueID) continue; // Skip tournaments that are part of a league
+        const tr = document.createElement("tr");
+        tr.classList.add("tournament-row");
+        tr.onclick = () => 
+        { 
+            window.open(`/tournaments/index.html?tournamentID=${tournament.id}`, '_blank');
+        };
+        e_tbody.appendChild(tr);
 
-        e_tr.appendChild(e_td_name);
-        e_tr.appendChild(e_td_venue);
-        e_tr.appendChild(e_td_date);
-        e_tr.appendChild(e_td_link);
-        e_tbody.appendChild(e_tr);
-    }
-}
+        // Determine active state: prefer explicit status, otherwise infer from date (future => active)
+        const statusText = tournament.status ? String(tournament.status).toLowerCase() : null;
+        const isActive = statusText ? (statusText === "live" || statusText === "active") : (tournament.date ? (new Date(tournament.date) >= new Date()) : true);
 
-function GetPlayerStats (matches)
-{
-    var stats_ranked = 
-    {
-        mp: 0,
-        mw: 0,
-        mwr: 0,
+        const td_status = document.createElement("td");
+        td_status.classList.add("tournament-status-bullet");
+        td_status.style.backgroundColor = isActive ? "var(--color-primary-00)" : "var(--color-base-06)";
+        tr.appendChild(td_status);
 
-        fp: 0,
-        fw: 0,
-        fwr: 0,
+        const td_start = document.createElement("td");
+        td_start.classList.add("tournament-start");
 
-        tavg: 0,
-        b_in: 0,
-        bf: 0,
-    }
-
-    var stats_social =
-    {
-        mp: 0,
-        mw: 0,
-        mwr: 0,
-
-        fp: 0,
-        fw: 0,
-        fwr: 0,
-
-        tavg: 0,
-        b_in: 0,
-        bf: 0,
-    }
-
-    for (var i = 0; i < matches.length; i++)
-    {
-        const match = matches[i];
-        const ranked = match.competitions && (match.competitions.leagueID || match.competitions.tournamentID) ? true : false;
-        if (ranked) stats_ranked.mp++;
-        stats_social.mp++;
-        const username = _userProfile().username;
-        const homePlayer = match.players.h.username ? match.players.h.username : "X";
-        const awayPlayer = match.players.a.username ? match.players.a.username : "X";
-        const score_h = match.results && match.results.h && match.results.h.fw ? match.results.h.fw : 0;
-        const score_a = match.results && match.results.a && match.results.a.fw ? match.results.a.fw : 0;
-        if (ranked) stats_ranked.fp += score_h + score_a;
-        stats_social.fp += score_h + score_a;
-        var playerSide = null;
-        if (username === homePlayer)
-        {
-            playerSide = "h";
-            if (ranked) stats_ranked.fw += score_h;
-            stats_social.fw += score_h;
-            if (score_h > score_a && match.info && match.info.status === "Complete")
-            {
-                if (ranked) stats_ranked.mw++;
-                stats_social.mw++;
-            }
-        } else if (username === awayPlayer)
-        {
-            playerSide = "a";
-            if (ranked) stats_ranked.fw += score_a;
-            stats_social.fw += score_a;
-            if (score_a > score_h && match.info && match.info.status === "Complete")
-            {
-                if (ranked) stats_ranked.mw++;
-                stats_social.mw++;
-            }
+        // Build date/time display
+        let startDate = null;
+        if (tournament.date && tournament.time) {
+            const iso = `${tournament.date}T${tournament.time}`;
+            startDate = new Date(iso);
+            if (isNaN(startDate)) startDate = new Date(tournament.date);
+        } else if (tournament.date) {
+            startDate = new Date(tournament.date);
         }
 
-        if (ranked) stats_ranked.mwr = stats_ranked.mp ? ((stats_ranked.mw / stats_ranked.mp) * 100).toFixed(2) : 0;
-        stats_social.mwr = stats_social.mp ? ((stats_social.mw / stats_social.mp) * 100).toFixed(2) : 0;
-        if (ranked) stats_ranked.fwr = stats_ranked.fp ? ((stats_ranked.fw / stats_ranked.fp) * 100).toFixed(2) : 0;
-        stats_social.fwr = stats_social.fp ? ((stats_social.fw / stats_social.fp) * 100).toFixed(2) : 0;
+        const e_date = document.createElement("p");
+        e_date.classList.add("tournament-date");
+        e_date.textContent = startDate && !isNaN(startDate)
+            ? startDate.toLocaleDateString(undefined, { year: '2-digit', month: 'numeric', day: 'numeric' })
+            : "TBD";
+        td_start.appendChild(e_date);
 
-        if (match.history && match.history.length > 0)
-        {
-            var totalDuration = 0;
-            var totalBreaksIn = 0;
-            var totalBF = 0;
-            for (var j = 0; j < match.history.length; j++)
-            {
-                const historyEntry = match.history[j];
-                if (historyEntry.duration)
-                {
-                    totalDuration += historyEntry.duration;
-                }
-                
-                if (historyEntry['break-event'])
-                {
-                    if (historyEntry['break-event'] === "in")
-                    {
-                        totalBreaksIn++;
-                    }
-                }
+        const e_time = document.createElement("p");
+        e_time.classList.add("tournament-date");
+        e_time.textContent = startDate && !isNaN(startDate)
+            ? startDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+            : (tournament.time ? tournament.time : "TBD");
+        td_start.appendChild(e_time);
 
-                if (historyEntry['winner-player'] == playerSide)
-                {
-                    if (historyEntry['winner-result'] == 'A')
-                    {
-                        totalBF++;
-                    }
-                }
-            }
-            if (ranked) stats_ranked.tavg = match.history.length ? (totalDuration / match.history.length).toFixed(2) / 60 : 0;
-            stats_social.tavg = match.history.length ? (totalDuration / match.history.length).toFixed(2) / 60 : 0;
-            if (ranked) stats_ranked.b_in += totalBreaksIn;
-            stats_social.b_in += totalBreaksIn;
-            if (ranked) stats_ranked.bf += totalBF;
-            stats_social.bf += totalBF;
-        }
+        tr.appendChild(td_start);
+
+        const td_info = document.createElement("td");
+        td_info.classList.add("tournament-info");
+        const e_name = document.createElement("p");
+        e_name.classList.add("tournament-name");
+        e_name.textContent = tournament.name || "Unnamed Tournament";
+        td_info.appendChild(e_name);
+        const e_coordinator = document.createElement("p");
+        e_coordinator.classList.add("tournament-coordinator");
+        e_coordinator.textContent = tournament.coordinatorName || tournament.coordinator || tournament.coordinatorID || "";
+        td_info.appendChild(e_coordinator);
+        tr.appendChild(td_info);
+
+        const td_players_count = document.createElement("td");
+        td_players_count.classList.add("tournament-players-count");
+        const e_players = document.createElement("p");
+        e_players.classList.add("tournament-players");
+        const playersCount = Array.isArray(tournament.players) ? tournament.players.length : 0;
+        e_players.textContent = `${playersCount} Player${playersCount === 1 ? "" : "s"}`;
+        td_players_count.appendChild(e_players);
+        tr.appendChild(td_players_count);
     }
-
-    return {stats_ranked, stats_social};
 }
 
-function PopulateStats (stats_all)
-{
-    let stats = stats_all.stats_ranked;
-    document.getElementById("ranked-mp").textContent = stats.mp || 0;
-    document.getElementById("ranked-mw").textContent = stats.mw || 0;
-    document.getElementById("ranked-mp-percentage").textContent = stats.mwr ? `${stats.mwr}%` : "0.0%";
-    document.getElementById("ranked-fp-value").textContent = stats.fp || 0;
-    document.getElementById("ranked-fw-value").textContent = stats.fw || 0;
-    document.getElementById("ranked-fp-percentage-value").textContent = stats.fwr ? `${stats.fwr}%` : "0.0%";
-    const tavg_r = Number(stats.tavg) || 0;
-    const totalSeconds_r = Math.round(tavg_r * 60);
-    const mm_r = String(Math.floor(totalSeconds_r / 60)).padStart(2, '0');
-    const ss_r = String(totalSeconds_r % 60).padStart(2, '0');
-    document.getElementById("ranked-tavg").textContent = `${mm_r}"${ss_r}"`;
-    document.getElementById("ranked-b-in").textContent = stats.b_in || 0;
-    document.getElementById("ranked-bf").textContent = stats.bf || 0;
-
-    stats = stats_all.stats_social;
-    document.getElementById("unranked-mp").textContent = stats.mp || 0;
-    document.getElementById("unranked-mw").textContent = stats.mw || 0;
-    document.getElementById("unranked-mp-percentage").textContent = stats.mwr ? `${stats.mwr}%` : "0.0%";
-    document.getElementById("unranked-fp-value").textContent = stats.fp || 0;
-    document.getElementById("unranked-fw-value").textContent = stats.fw || 0;
-    document.getElementById("unranked-fp-percentage-value").textContent = stats.fwr ? `${stats.fwr}%` : "0.0%";
-    const tavg = Number(stats.tavg) || 0;
-    const totalSeconds = Math.round(tavg * 60);
-    const mm = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
-    const ss = String(totalSeconds % 60).padStart(2, '0');
-    document.getElementById("unranked-tavg").textContent = `${mm}"${ss}"`;
-    document.getElementById("unranked-b-in").textContent = stats.b_in || 0;
-    document.getElementById("unranked-bf").textContent = stats.bf || 0;
-
-    document.getElementById("ranked-percentage").textContent = stats_all.stats_ranked.fwr ? `${stats_all.stats_ranked.fwr}%` : "0.0%";
-    document.getElementById("unranked-percentage").textContent = stats_all.stats_social.fwr ? `${stats_all.stats_social.fwr}%` : "0.0%";
-}

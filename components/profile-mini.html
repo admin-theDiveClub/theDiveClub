@@ -1,6 +1,5 @@
 <div class="row" id="mini-profile-container" style="display: none;">
     <div class="card" id="profile-card">
-
         <button id="btn-close-mini-profile"><i class="bi bi-x"></i></button>
 
         <div class="row">
@@ -17,10 +16,16 @@
 
         <hr>
 
-        <div style="display: flex; justify-content: space-between;">                    
-            <a id="btn-link-userProfile" class="btn btn-standard" href="/accounts/index.html">User Profile</a>            
-            <a id="btn-link-addFriend" class="btn btn-standard" href="#addFriend">Add Friend</a>
-            <a id="btn-link-follow" class="btn btn-standard" href="#follow">Follow</a>
+        <div class="row" style="display: flex; justify-content: center; text-align: center;">
+            <div class="col-md-4">
+                <a id="btn-link-profile" class="btn btn-standard" href="/accounts/index.html">User Profile</a>
+            </div>
+            <div class="col-md-4">
+                <a id="btn-link-addFriend" class="btn btn-standard" href="#addFriend">Add Friend</a>
+            </div>
+            <div class="col-md-4">
+                <a id="btn-link-follow" class="btn btn-standard" href="#follow">Follow</a>
+            </div>
         </div>
     </div>
 </div>
@@ -50,6 +55,7 @@
     #user-mini-profile-pic
     {
         width: 100%;
+        max-width: 6rem;
         height: auto;
         object-fit: contain;
         margin: auto;

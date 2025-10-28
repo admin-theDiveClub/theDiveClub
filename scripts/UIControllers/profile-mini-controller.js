@@ -46,4 +46,10 @@ export function UpdateMiniProfile(userProfile)
     if (e_nickname) { e_nickname.textContent = userProfile.displayName || "No Nickname"; }
     if (e_fullname) { e_fullname.textContent = userProfile.name || "No Full Name"; }
     if (e_username) { e_username.textContent = userProfile.username || "No Username"; }
+
+    const e_edit_profile_link = document.getElementById("btn-link-profile");
+    if (e_edit_profile_link)
+    {
+        e_edit_profile_link.href = `/accounts/index.html?username=${encodeURIComponent(userProfile.username)}`;
+    }
 }
