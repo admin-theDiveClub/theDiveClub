@@ -51,6 +51,7 @@
                             <p id="user-displayName">Display Name</p>
                             <p id="user-name">Full Name</p>
                             <p id="user-username">Username</p>
+                            <a id="link-edit-profile" href="/accounts/edit.html">Edit Profile</a>
                         </div>
 
                         <div class="col-6 col-md-12">
@@ -248,7 +249,6 @@
 
         #container-profile-pp
         {
-            padding: 1rem;
             margin: auto;
         }
 
@@ -270,9 +270,10 @@
         {
             font-family: 'Font_TDC';
             font-size: 2rem;
-            margin-top: 1rem;
+            margin-top: 0.25rem;
             margin-bottom: 0rem;
         }
+
         #user-name, #user-username
         {
             margin: 0rem;
@@ -283,6 +284,15 @@
             color: var(--color-base-08);
             font-style: italic;
             font-size: 0.75rem;
+        }
+
+        #link-edit-profile
+        {
+            display: block;
+            margin: 1rem;
+            background-color: var(--color-primary-00);
+            color: var(--color-base-10);
+            border-radius: 0.5rem;
         }
     </style>
 
