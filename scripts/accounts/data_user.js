@@ -57,7 +57,12 @@ async function _session ()
     const tokens = _tokens();
     if (tokens)
     {
-        const response = await supabase.auth.setSession({ access_token: tokens.accessToken, refresh_token: tokens.refreshToken });
+        const client = window.supabaseClient;
+        if (!client || !client.auth) {
+            console.error('Supabase client not initialized (setSession). Ensure scripts/supabase/supaBase_client.js loads first.');
+            return null;
+        }
+        const response = await client.auth.setSession({ access_token: tokens.accessToken, refresh_token: tokens.refreshToken });
         session = response.data && response.data.session ? response.data.session : null;
         if (session)
         {
@@ -72,7 +77,12 @@ async function _session ()
         const j_session = JSON.parse(s_session);
         if (j_session)
         {
-            const response = await supabase.auth.refreshSession();
+            const client = window.supabaseClient;
+            if (!client || !client.auth) {
+                console.error('Supabase client not initialized (refreshSession). Ensure scripts/supabase/supaBase_client.js loads first.');
+                return null;
+            }
+            const response = await client.auth.refreshSession();
             session = response.data && response.data.session ? response.data.session : null;
             return session;
         }
@@ -123,7 +133,12 @@ async function GetUserProfile (session)
     //Database Profile
     if (username)
     {
-        const response = await supabase.from('tbl_players').select('*').eq('username', username).single();
+        const client = window.supabaseClient;
+        if (!client) {
+            console.error('Supabase client not initialized (DB select).');
+            return null;
+        }
+        const response = await client.from('tbl_players').select('*').eq('username', username).single();
         const dbProfile = response.data ? response.data : null;
         if (dbProfile)
         {
@@ -138,7 +153,7 @@ async function GetUserProfile (session)
 
             if (!dbProfile.pp)
             {
-                const r_pic = await supabase.storage.from('bucket-profile-pics').getPublicUrl(profile.id);
+                const r_pic = await client.storage.from('bucket-profile-pics').getPublicUrl(profile.id);
                 if (r_pic.data.publicUrl)
                 {
                     try 
@@ -157,7 +172,7 @@ async function GetUserProfile (session)
                     }
                 }
 
-                const updateResponse = await supabase.from('tbl_players').update({ pp: profile.pp }).eq('id', profile.id).select().single();
+                const updateResponse = await client.from('tbl_players').update({ pp: profile.pp }).eq('id', profile.id).select().single();
                 console.log("Updated profile picture:", updateResponse);
             }
             
@@ -174,7 +189,7 @@ async function GetUserProfile (session)
                 contact: profile.contact,
                 pp: profile.pp
             }
-            const insertResponse = await supabase.from('tbl_players').insert([newDBProfile]).select().single();
+            const insertResponse = await client.from('tbl_players').insert([newDBProfile]).select().single();
             console.log("Inserted new DB profile:", insertResponse);
             if (insertResponse.data)
             {

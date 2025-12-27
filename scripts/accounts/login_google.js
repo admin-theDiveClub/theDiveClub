@@ -15,8 +15,13 @@ googleLoginObserver.observe(document.body, { childList: true, subtree: true });
 //Sign in using email and password (credentials)
 async function SignInWithGoogle()
 {
-    //Sign in using email and password
-    const signInResponse = await supabase.auth.signInWithOAuth({
+    // Use the shared Supabase client
+    const client = window.supabaseClient;
+    if (!client || !client.auth) {
+        console.error('Supabase client not initialized. Ensure scripts/supabase/supaBase_client.js is loaded before login_google.js');
+        return;
+    }
+    const signInResponse = await client.auth.signInWithOAuth({
         provider: 'google',
         options: 
         {
