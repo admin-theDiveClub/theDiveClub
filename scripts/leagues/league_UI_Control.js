@@ -273,10 +273,11 @@ function PopulateRounds (rounds)
 
                 const _cell_score = (cell, side, type) =>
                 {
+                    if (!uA) return cell;
+                    
                     cell.title = 'Click to edit score';
                     cell.classList.add('editable-cell');
 
-                    if (!uA) return cell;
                     cell.addEventListener('click', () =>
                     {
                         const originalValue = cell.textContent || '0';
