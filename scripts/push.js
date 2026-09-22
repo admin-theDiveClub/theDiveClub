@@ -80,13 +80,13 @@ document.getElementById('enable-notifications').addEventListener('click', async 
 	}
 });
 
-async function sendNotification(title, body) {
+async function sendNotification(title, body, icon) {
 	const statusEl = document.getElementById('notif-status');
 	statusEl.textContent = 'Sending...';
-	console.log('[Push] Sending notification:', { title, body });
+	console.log('[Push] Sending notification:', { title, body, icon });
 
 	const { data, error } = await supabaseClient.functions.invoke('send-test-notification', {
-		body: { title, body },
+		body: { title, body, icon },
 	});
 
 	if (error) {
@@ -108,15 +108,5 @@ async function sendNotification(title, body) {
 }
 
 document.getElementById('notif-preset-1').addEventListener('click', () => {
-	sendNotification('Match Starting', 'Your match on Table 3 starts in 10 minutes.');
-});
-
-document.getElementById('notif-preset-2').addEventListener('click', () => {
-	sendNotification('League Update', 'New standings have been posted for this week.');
-});
-
-document.getElementById('notif-custom-send').addEventListener('click', () => {
-	const title = document.getElementById('custom-title').value.trim();
-	const body = document.getElementById('custom-body').value.trim();
-	sendNotification(title, body); // if empty, the Edge Function's TDC fallback will kick in — good for testing that path too
+	sendNotification('Match Starting', 'Your match on Table 3 starts in 10 minutes.', '/resources/icons/notifications/test.png');
 });

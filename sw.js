@@ -49,11 +49,11 @@ self.addEventListener('push', (event) => {
 	console.log('[SW] Push received:', { title, body, raw: data });
 
 	const options = {
-		body: body,
-		icon: '/resources/icons/icon-192.png',
-		badge: '/resources/icons/icon-192.png',
-		data: { url: data.url || '/' }
-	};
+        body: body,
+        icon: data.icon || '/resources/icons/icon-192.png',
+        badge: '/resources/icons/icon-192.png',
+        data: { url: data.url || '/' }
+    };
 
 	event.waitUntil(self.registration.showNotification(title, options));
 });
