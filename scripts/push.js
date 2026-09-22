@@ -79,3 +79,28 @@ document.getElementById('enable-notifications').addEventListener('click', async 
 		statusEl.textContent = 'TDC (Error): ' + err.message;
 	}
 });
+
+document.getElementById('send-test-notification').addEventListener('click', async () => {
+	const statusEl = document.getElementById('notif-status');
+	statusEl.textContent = 'Sending...';
+	console.log('[Push] Send Test Notification clicked.');
+
+	const { data, error } = await supabaseClient.functions.invoke('send-test-notification');
+
+	if (error) {
+		console.error('[Push] Error invoking send-test-notification:', error);
+		statusEl.textContent = 'TDC (Error): ' + error.message;
+		return;
+	}
+
+	console.log('[Push] send-test-notification response:', data);
+
+	if (data.error) {
+		statusEl.textContent = data.error;
+		return;
+	}
+
+	const sentCount = data.results.filter(r => r.status === 'sent').length;
+	const failedCount = data.results.filter(r => r.status === 'failed').length;
+	statusEl.textContent = `Sent to ${sentCount} device(s)${failedCount ? `, ${failedCount} failed` : ''}.`;
+});
