@@ -1,3 +1,14 @@
+(async () => {
+	const { data: { session } } = await supabaseClient.auth.getSession();
+	const notifBtn = document.getElementById('enable-notifications');
+	const loginLink = document.getElementById('login-link');
+	if (session) {
+		if (loginLink) loginLink.style.display = 'none';
+	} else {
+		if (notifBtn) notifBtn.style.display = 'none';
+	}
+})();
+
 const VAPID_PUBLIC_KEY = 'BENdnENh5pBAg7H09U_01mIC_PFgg3DxfS3DBsMKz0YZ1-nEhA-xid2FLLPnY7eRbImKWT851SyLwqrmBzDg_OI';
 
 function urlBase64ToUint8Array(base64String) {
