@@ -33,3 +33,35 @@ self.addEventListener('fetch', (event) => {
     caches.match(event.request).then((cached) => cached || fetch(event.request))
   );
 });
+
+self.addEventListener('push', (event) => {
+	let data = {};
+	try {
+		data = event.data ? event.data.json() : {};
+	} catch (err) {
+		console.error('[SW] Push payload was not valid JSON:', err);
+		data = {};
+	}
+
+	const title = data.title || 'TDC (No Title)';
+	const body = data.body || 'TDC (No Body)';
+
+	console.log('[SW] Push received:', { title, body, raw: data });
+
+	const options = {
+		body: body,
+		icon: '/resources/icons/icon-192.png',
+		badge: '/resources/icons/icon-192.png',
+		data: { url: data.url || '/' }
+	};
+
+	event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+	console.log('[SW] Notification clicked:', event.notification);
+	event.notification.close();
+	event.waitUntil(
+		clients.openWindow(event.notification.data.url || '/')
+	);
+});

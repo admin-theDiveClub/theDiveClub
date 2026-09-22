@@ -49,10 +49,12 @@
 <body>
 	<div class="wrap">
 		<img src="/resources/branding/logo-primary-dark.svg" alt="The Dive Club">
-		<p>Coming soon</p>
+		<button id="enable-notifications">Enable Notifications</button>
+        <div id="notif-status" style="margin-top: 1rem;"></div>
 	</div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <script src="/scripts/supabaseClient.js"></script>
+    <script src="/scripts/push.js"></script>
 	<script>
 		if ('serviceWorker' in navigator) {
 			window.addEventListener('load', () => {
