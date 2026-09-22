@@ -80,12 +80,14 @@ document.getElementById('enable-notifications').addEventListener('click', async 
 	}
 });
 
-document.getElementById('send-test-notification').addEventListener('click', async () => {
+async function sendNotification(title, body) {
 	const statusEl = document.getElementById('notif-status');
 	statusEl.textContent = 'Sending...';
-	console.log('[Push] Send Test Notification clicked.');
+	console.log('[Push] Sending notification:', { title, body });
 
-	const { data, error } = await supabaseClient.functions.invoke('send-test-notification');
+	const { data, error } = await supabaseClient.functions.invoke('send-test-notification', {
+		body: { title, body },
+	});
 
 	if (error) {
 		console.error('[Push] Error invoking send-test-notification:', error);
@@ -103,4 +105,18 @@ document.getElementById('send-test-notification').addEventListener('click', asyn
 	const sentCount = data.results.filter(r => r.status === 'sent').length;
 	const failedCount = data.results.filter(r => r.status === 'failed').length;
 	statusEl.textContent = `Sent to ${sentCount} device(s)${failedCount ? `, ${failedCount} failed` : ''}.`;
+}
+
+document.getElementById('notif-preset-1').addEventListener('click', () => {
+	sendNotification('Match Starting', 'Your match on Table 3 starts in 10 minutes.');
+});
+
+document.getElementById('notif-preset-2').addEventListener('click', () => {
+	sendNotification('League Update', 'New standings have been posted for this week.');
+});
+
+document.getElementById('notif-custom-send').addEventListener('click', () => {
+	const title = document.getElementById('custom-title').value.trim();
+	const body = document.getElementById('custom-body').value.trim();
+	sendNotification(title, body); // if empty, the Edge Function's TDC fallback will kick in — good for testing that path too
 });
