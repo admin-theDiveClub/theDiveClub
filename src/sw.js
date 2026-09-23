@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dive-club-v2.2';
+const CACHE_NAME = 'dive-club-v2.3';
 const CORE_ASSETS = [
   '/',
   '/index.html',
@@ -29,9 +29,28 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
-  );
+	const req = event.request;
+
+	if (req.mode === 'navigate') {
+		// Page loads: always try the network first, so visitors get the
+		// current version. Fall back to cache only when offline.
+		event.respondWith(
+			fetch(req)
+				.then((res) => {
+					const resClone = res.clone();
+					caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
+					return res;
+				})
+				.catch(() => caches.match(req))
+		);
+		return;
+	}
+
+	// Everything else (CSS, images, etc.): cache-first is fine, these
+	// change rarely and benefit from instant loading.
+	event.respondWith(
+		caches.match(req).then((cached) => cached || fetch(req))
+	);
 });
 
 self.addEventListener('push', (event) => {

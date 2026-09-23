@@ -1,69 +1,38 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>The Dive Club</title>
-	<meta name="description" content="The Dive Club — Johannesburg.">
+---
+layout: layout.html
+title: Home
+description: The Dive Club — Johannesburg.
+extraScripts:
+  - /scripts/push.js
+---
+<style>
+	.wrap {
+		min-height: calc(100vh - 60px);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		padding: 2rem;
+	}
+	.wrap img {
+		max-width: 240px;
+		width: 60vw;
+		height: auto;
+	}
+	.wrap p {
+		margin-top: 1.5rem;
+		color: var(--color-primary);
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		font-size: 0.9rem;
+	}
+</style>
 
-	<link rel="manifest" href="/site.webmanifest">
-	<meta name="theme-color" content="#2b9fa6">
-
-	<link rel="icon" href="/favicon.ico" sizes="any">
-	<link rel="apple-touch-icon" href="/resources/icons/apple-touch-icon.png">
-
-	<meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-	<meta name="apple-mobile-web-app-title" content="TDC">
-
-	<style>
-		body {
-			margin: 0;
-			min-height: 100vh;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			background: #181818;
-			color: #f2f2f2;
-			font-family: system-ui, -apple-system, sans-serif;
-		}
-		.wrap {
-			text-align: center;
-			padding: 2rem;
-		}
-		.wrap img {
-			max-width: 240px;
-			width: 60vw;
-			height: auto;
-		}
-		.wrap p {
-			margin-top: 1.5rem;
-			color: #2b9fa6;
-			letter-spacing: 0.05em;
-			text-transform: uppercase;
-			font-size: 0.9rem;
-		}
-	</style>
-</head>
-<body>
-	<div class="wrap">
-		<img src="/resources/branding/logo-primary-dark.svg" alt="The Dive Club">
-        <a href="/accounts/" id="login-link">Log In / Sign Up</a>
-		<button id="enable-notifications">Enable Notifications</button>
-        <br><br>
-        <button id="notif-preset-1">Simulate: Match Starting</button>
-        <div id="notif-status" style="margin-top: 1rem;"></div>
-	</div>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-    <script src="/scripts/supabaseClient.js"></script>
-    <script src="/scripts/push.js"></script>
-	<script>
-		if ('serviceWorker' in navigator) {
-			window.addEventListener('load', () => {
-				navigator.serviceWorker.register('/sw.js');
-			});
-		}
-	</script>
-</body>
-</html>
+<div class="wrap">
+	<img src="/resources/branding/logo-primary-dark.svg" alt="The Dive Club">
+	<button id="enable-notifications">Enable Notifications</button>
+	<br><br>
+	<button id="notif-preset-1">Simulate: Match Starting</button>
+	<div id="notif-status" style="margin-top: 1rem;"></div>
+</div>

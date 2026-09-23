@@ -1,0 +1,34 @@
+:root {
+  /* Brand */
+  --color-primary: #2b9fa6;
+
+  /* Backgrounds */
+  --bg-base: #181818;
+  --bg-surface: rgba(36, 36, 36, 0.7);
+
+  /* Text */
+  --text-primary: #f2f2f2;
+  --text-muted: #a0a0a0;
+
+  /* Borders */
+  --border-color: #444444;
+
+  /* Status */
+  --color-success: #6bff9e;
+  --color-error: #ff6b6b;
+}
+
+[data-theme="light"] {
+  --color-primary: #2b9fa6;
+
+  --bg-base: #f5f5f5;
+  --bg-surface: rgba(255, 255, 255, 0.7);
+
+  --text-primary: #181818;
+  --text-muted: #666666;
+
+  --border-color: #dddddd;
+
+  --color-success: #1f8a4c;
+  --color-error: #c62828;
+}

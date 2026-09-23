@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en" data-theme>
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>{{ title }} — The Dive Club</title>
+	<meta name="description" content="{{ description }}">
+
+	<link rel="manifest" href="/site.webmanifest">
+	<meta name="theme-color" content="#2b9fa6">
+
+	<link rel="icon" href="/favicon.ico" sizes="any">
+	<link rel="apple-touch-icon" href="/resources/icons/apple-touch-icon.png">
+
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="apple-mobile-web-app-title" content="TDC">
+
+	<link rel="stylesheet" href="/stylesheets/variables.css">
+	<link rel="stylesheet" href="/stylesheets/global.css">
+	<link rel="stylesheet" href="/stylesheets/nav.css">
+</head>
+<body>
+	{% unless hideNav %}
+		{% include "nav.html" %}
+	{% endunless %}
+
+	<main>
+		{{ content }}
+	</main>
+
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+	<script src="/scripts/supabaseClient.js"></script>
+	{% unless hideNav %}
+		<script src="/scripts/nav.js"></script>
+	{% endunless %}
+
+	<script>
+        if ('serviceWorker' in navigator && !['localhost', '127.0.0.1'].includes(location.hostname)) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js');
+            });
+        }
+    </script>
+</body>
+</html>
