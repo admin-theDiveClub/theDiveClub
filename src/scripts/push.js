@@ -98,7 +98,17 @@ async function sendNotification(title, body, icon) {
 
 	if (error) {
 		console.error('[Push] Error invoking send-test-notification:', error);
-		statusEl.textContent = 'TDC (Error): ' + error.message;
+		// For error replies, the function's own message (e.g. "TDC (No subscriptions found)") is in the response body.
+		let message = 'TDC (Error): ' + error.message;
+		try {
+			if (error.context && typeof error.context.json === 'function') {
+				const details = await error.context.json();
+				if (details && details.error) message = details.error;
+			}
+		} catch (readErr) {
+			console.error('[Push] Could not read the error details:', readErr);
+		}
+		statusEl.textContent = message;
 		return;
 	}
 
