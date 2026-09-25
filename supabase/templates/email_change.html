@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="x-apple-disable-message-reformatting">
+	<meta name="color-scheme" content="dark">
+	<meta name="supported-color-schemes" content="dark">
+	<title>Confirm your new email</title>
+	<style>
+		@media (max-width: 600px) {
+			.dive-hero-box { width: 60% !important; }
+			.dive-gif { width: 100% !important; max-width: 100% !important; }
+			.content { padding-left: 20px !important; padding-right: 20px !important; }
+		}
+	</style>
+</head>
+<body style="margin:0; padding:0; background-color:#181818;">
+	<!-- Preheader: inbox preview text, hidden in the email itself -->
+	<div style="display:none; max-height:0; overflow:hidden; mso-hide:all; font-size:1px; line-height:1px; color:#181818; opacity:0;">
+		Confirm the new email address for your Dive Club account. The link expires in 1 hour.
+	</div>
+
+	<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#181818;">
+		<tr>
+			<td align="center" style="padding:0px 12px;">
+				<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">
+
+					<!-- Diver animation over the wordmark. The wordmark is the box's background, fitted (contain).
+					     Box = card width on desktop, GIF width (60%) on phones. -->
+					<tr>
+						<td align="center">
+							<table class="dive-hero-box" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+								<tr>
+									<td align="center" background="https://thediveclub.org/resources/branding/email-wordmark.png" style="padding:0px 0; background-image:url('https://thediveclub.org/resources/branding/email-wordmark.png'); background-size:contain; background-position:center center; background-repeat:no-repeat;">
+										<img class="dive-gif" src="https://thediveclub.org/resources/branding/email-dive.gif" width="200" alt="The Dive Club" style="display:block; width:200px; max-width:100%; height:auto; margin:0 auto; border:0; outline:none; text-decoration:none; color:#f2f2f2; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size:20px; font-weight:bold;">
+									</td>
+								</tr>
+							</table>
+						</td>
+					</tr>
+					<tr><td style="height:8px; line-height:8px; font-size:8px;">&nbsp;</td></tr>
+
+					<!-- Card -->
+					<tr>
+						<td class="content" align="center" style="text-align:center; background-color:#242424; border:1px solid #444444; border-radius:12px; padding:32px 40px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#f2f2f2;">
+							<h1 style="margin:0 0 16px 0; font-size:24px; line-height:1.3; font-weight:700; color:#f2f2f2;">Confirm your new email</h1>
+							<p style="margin:0 0 16px 0; font-size:16px; line-height:1.6; color:#f2f2f2;">{{ if .Data.display_name }}Hi {{ .Data.display_name }},{{ else }}Hi there,{{ end }}</p>
+							<p style="margin:0 0 24px 0; font-size:16px; line-height:1.6; color:#f2f2f2;">You asked to change your Dive Club account email from <strong style="color:#f2f2f2;">{{ .Email }}</strong> to <strong style="color:#f2f2f2;">{{ .NewEmail }}</strong>. Tap the button below to confirm the new address.</p>
+
+							<!-- Bulletproof button -->
+							<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 24px auto;">
+								<tr>
+									<td align="center" bgcolor="#2b9fa6" style="border-radius:8px; background-color:#2b9fa6;">
+										<a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block; padding:14px 28px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size:16px; font-weight:700; line-height:1; color:#ffffff; text-decoration:none; border-radius:8px;">Confirm my new email</a>
+									</td>
+								</tr>
+							</table>
+
+							<p style="margin:0 0 8px 0; font-size:14px; line-height:1.6; color:#a0a0a0;">Or copy this link into your browser:</p>
+							<p style="margin:0 0 24px 0; font-size:13px; line-height:1.5; word-break:break-all;"><a href="{{ .ConfirmationURL }}" target="_blank" style="color:#2b9fa6; text-decoration:underline;">{{ .ConfirmationURL }}</a></p>
+
+							<p style="margin:0 0 8px 0; font-size:14px; line-height:1.6; color:#a0a0a0;">This link expires in 1 hour.</p>
+							<p style="margin:0; font-size:14px; line-height:1.6; color:#a0a0a0;">If you didn't ask for this change, you can ignore this email. Your account email won't change.</p>
+						</td>
+					</tr>
+
+					<!-- Footer -->
+					<tr>
+						<td align="center" style="padding:24px 20px 0 20px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size:12px; line-height:1.6; color:#a0a0a0;">
+							The Dive Club &middot; Lonehill, Fourways, Johannesburg<br>
+							<a href="https://thediveclub.org" target="_blank" style="color:#a0a0a0; text-decoration:underline;">thediveclub.org</a><br>
+							This address doesn't accept replies.
+						</td>
+					</tr>
+
+				</table>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
