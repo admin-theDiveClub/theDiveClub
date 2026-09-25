@@ -140,3 +140,22 @@
 	color: var(--text-primary);
 }
 .tile-link .sub { display: block; margin-top: 0.25rem; font-size: 0.85rem; color: var(--text-muted); }
+/* Staff hub: a glow shows which tier a tool belongs to.
+   tile-staff = any staff member. tile-admin = owners and admins only. */
+.tile-link.tile-staff {
+	border-color: color-mix(in srgb, var(--color-success) 55%, var(--border-color));
+	box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-success) 20%, transparent),
+	            0 0 14px color-mix(in srgb, var(--color-success) 20%, transparent);
+}
+.tile-link.tile-admin {
+	border-color: color-mix(in srgb, var(--color-primary) 55%, var(--border-color));
+	box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 25%, transparent),
+	            0 0 16px color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+/* Credits page */
+.balance-line {
+	font-size: 1.3rem;
+	font-weight: 600;
+	margin: 0 0 1.25rem;
+	font-variant-numeric: tabular-nums;
+}

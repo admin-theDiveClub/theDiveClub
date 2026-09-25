@@ -19,16 +19,17 @@
 	if (!roles) return;
 	area.hidden = false;
 
-	// The Verifications tool is for owners and admins only (the database checks again).
-	const tile = el('verifications-tile');
-	if (!tile) {
-		TDC.error(AREA, 'staff page is missing the verifications tile.');
+	// The Verifications and Credits tools are for owners and admins only (the database checks again).
+	const adminTiles = [el('verifications-tile'), el('credits-tile')];
+	if (adminTiles.some((t) => !t)) {
+		TDC.error(AREA, 'staff page is missing an owner/admin tile.');
 		return;
 	}
-	const showTile = () => {
+	const showTiles = () => {
 		const r = roles.find((x) => x.venue_id === els.selectEl.value);
-		tile.hidden = !(r && ['owner', 'admin'].includes(r.role));
+		const isAdmin = !!(r && ['owner', 'admin'].includes(r.role));
+		for (const t of adminTiles) t.hidden = !isAdmin;
 	};
-	els.selectEl.addEventListener('change', showTile);
-	showTile();
+	els.selectEl.addEventListener('change', showTiles);
+	showTiles();
 })();
