@@ -18,32 +18,43 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
 - `11ty-setup` is merged and can be deleted. `propertyModel` is a separate branch.
 
 ## File map (src/)
-- `_includes/layout.html` is the shared shell (head, PWA meta, nav, Supabase CDN + client, per-page scripts, SW registration).
+- `_includes/layout.html` is the shared shell (head, PWA meta, nav, Supabase library + client, `tdc.js`, `forms.css`, per-page scripts, SW registration).
   - Pages opt in with front matter: `layout: layout.html`, `title`, `description`, optional `extraScripts: [...]` (loaded after `supabaseClient.js`), optional `hideNav: true`.
 - `_includes/nav.html` + `scripts/nav.js` + `stylesheets/nav.css` make up the shared nav. Nav items live in `_data/navLinks.json`.
   - Note: `src/navLinks.json` is a stray duplicate and can be removed.
 - `.eleventy.js` handles passthrough copy (stylesheets, resources, scripts, components, sw.js, manifest, CNAME, robots, sitemap, favicon, Google verification file).
   - Any new top-level static file must be added there.
 - `404.html`, `privacypolicy.html`, `termsofservice.html` and `google07470aafc2664052.html` must keep their **exact flat URLs**. Use permalinks for these, not pretty URLs.
+- **Supabase library:** `@supabase/supabase-js` is pinned to an exact version in `package.json` and served from our own site at `/scripts/vendor/supabase.js` (copied from `node_modules` by `.eleventy.js`). Upgrade deliberately: `npm install @supabase/supabase-js@<version> --save-exact`, test, commit.
 - `scripts/supabaseClient.js` creates the global `supabaseClient` (publishable key, custom domain).
-- `accounts/index.html` + `scripts/auth.js` are the login and signup page.
-- `index.html` + `scripts/push.js` are the home page, with the test notification buttons.
-- `sw.js` + `site.webmanifest` make the PWA installable (iOS confirmed).
+- `scripts/tdc.js` holds the shared helpers (`TDC.error`, `TDC.status`, `TDC.showSupabaseError`, `TDC.getSession`, `TDC.requireSession`, `TDC.safeNext`, `TDC.getMyPlayer`). Use these on every page.
+- `stylesheets/forms.css` holds the shared card, field, button, status and badge styles (`.tdc-card`, `.field`, `.btn-primary`, `.btn-secondary`, `.status`, `.badge`).
+- Pages:
+  - `index.html`: placeholder home page (logo, "Opening soon", My Account button) until the Phase 4 site.
+  - `accounts/index.html` + `scripts/auth.js`: login and signup (display name, password rules, `?next=` return to the previous page).
+  - `accounts/reset/index.html` + `scripts/reset.js`: request a reset email, then set a new password.
+  - `accounts/profile/index.html` + `scripts/profile.js` + `scripts/push.js`: details, ID entry and verification badges, notifications, change password, log out.
+  - `staff/verify/index.html` + `scripts/staff-verify.js`: staff find a player and verify their ID from the physical document.
+- `sw.js` + `site.webmanifest` make the PWA installable (iOS confirmed). **Bump `CACHE_NAME` in `sw.js` whenever anything in `scripts/`, `stylesheets/` or `resources/` changes before a deploy** (those are cached cache-first; pages are network-first).
+- Eleventy's watcher sometimes misses new folders: if a new page gives a 404 locally, restart `npx eleventy --serve`.
 
 ## Status (as of 25 Sep 2026)
 - Phase 0 (HTTPS, DNS cleanup) is **done**.
 - Phase 1 (installable PWA shell) is **done**.
-- Phase 2 (login + push notifications) is **in progress**:
-  - Email/password and Google OAuth login both work end-to-end. The Google consent screen shows `db.thediveclub.org`.
+- Phase 2 (login + push notifications) is **live, with leftovers**:
+  - Email/password and Google login work on the live site, including signup with display name, email confirmation, password reset and change password. The Google consent screen shows `db.thediveclub.org`.
   - Auth emails go through **Resend** SMTP from `no-reply@thediveclub.org` (domain verified; SPF, DKIM and DMARC pass). `no-reply@` is not a real mailbox, so replies bounce.
-  - Auth settings: confirm email on, leaked-password protection on, minimum 8 characters with letters and digits, secure email change and secure password change on, current password required to change it. Anonymous sign-ins off.
-  - Push subscribe works (`tbl_push_subscriptions`), and the Edge Function `send-test-notification` sends test pushes. Its source is copied into `supabase/functions/`, but the live version was deployed from the dashboard and hasn't been redeployed with the CLI yet.
-  - Built with migrations: `tbl_push_subscriptions`, `tbl_players` (plus the signup trigger), `tbl_venues`, `tbl_venue_staff` (plus `private.tdc_has_venue_role`), and a permissions hardening pass.
+  - Auth settings: confirm email on, leaked-password protection on, minimum 8 characters with letters and digits, secure email change and secure password change on, current password required to change it (reset links are exempt, tested). Anonymous sign-ins off. Redirect URLs: `https://thediveclub.org/**` and `http://localhost:8080/**`.
+  - Push: subscribe and test push work from the profile page on the installed iPhone app. The Edge Function `send-test-notification` source is in `supabase/functions/`, but the live version was deployed from the dashboard and hasn't been redeployed with the CLI yet.
+  - Database (all via migrations): `tbl_push_subscriptions`, `tbl_players` (plus signup trigger), `tbl_venues`, `tbl_venue_staff`, permissions hardening, `tbl_player_identifiers`, `tbl_identifier_verifications`, and the functions `tdc_add_my_identifier`, `tdc_verify_identifier`, `tdc_revoke_verification`.
+  - ID verification works end to end: a player adds their SA ID or passport on the profile page; staff verify it on `/staff/verify/` by typing the number from the document. UV's personal account is verified at The Dive Club.
   - Seed data: venue The Dive Club (`the-dive-club`); `admin@thediveclub.org` is owner, `yuvannaidoo@gmail.com` is staff.
   - **Still to do:**
-    - Identifiers and ID verification (private identifiers table, SA ID verified in store by staff, walk-in claim/merge).
-    - Push leftovers: deep link to the match URL, deploy the Edge Function via the CLI, restrict its CORS to `https://thediveclub.org`, iPhone login persistence check, Android testing, and the real "score changed" trigger once match tables exist.
-    - Pages: login (min length 8, display name field), profile, reset password, branded auth email templates. Replace the test pages.
+    - Walk-ins and claim/merge: staff create players for people without an account (`walk_in`/`guest`), and a later signup claims the existing row.
+    - Revoke-verification UI for owners/admins (the function exists).
+    - Push leftovers: deploy the Edge Function via the CLI, restrict its CORS to `https://thediveclub.org`, iPhone login persistence check, Android testing, and the real "score changed" trigger + deep link once match tables exist.
+    - Branded auth email templates (confirm, reset, email change).
+    - Account deletion: deleting an auth user leaves the `tbl_players` row (by design, for match history). A proper "delete my account" flow needs deciding (POPIA).
     - Phone login: probably dropped in favour of SA ID verification, not decided.
 - Eleventy migration is **done and live** (shared layout and nav, Actions deploy).
 - Phase 4 is the real website pages, with SEO/JSON-LD per page. It is gated on photography once the property opens (~1 Oct).
@@ -79,12 +90,15 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
 - Auth settings (passwords, SMTP, providers) are set in the dashboard, not in migrations.
 
 ## How to work with UV
-- **Explain and propose; don't bulk-edit.**
-  - UV implements changes himself, one step at a time, and verifies each step (often with screenshots) before moving on.
-  - Ask before editing files. Show exact find/replace blocks with file paths.
+- **Claude may write files directly in the repo; UV reviews, runs and commits.**
+  - Claude writes/edits files (pages, scripts, styles, migrations, this file) and explains each change briefly.
+  - UV reviews the changes in Fork, runs terminal commands (`npx eleventy --serve`, `npx supabase db push`), tests, and commits/pushes. Claude never commits or pushes.
+  - Still one step at a time, with a test after each. Dashboard settings (Supabase, Google, Resend, Squarespace) are done by UV.
+  - Files use CRLF line endings and tabs.
 - Plain language, no unexplained jargon. One concern per step, and don't open several threads at once.
 - **Built-in debugging:**
-  - When expected data or a response is missing, show a visible marker (e.g. `TDC (Error): …`) and `console.error` with a `[Area]` prefix, following the pattern in `push.js`.
+  - When expected data or a response is missing, show a visible marker (e.g. `TDC (Error): …`) and `console.error` with a `[Area]` prefix, using the helpers in `scripts/tdc.js`.
   - Never fall back silently.
 - Security matters. Never put secrets (VAPID private key, service-role key) in client code or the repo.
 - Test locally with `npx eleventy --serve` before pushing, then check the live site after a deploy.
+- UV won't remember implementation details later: keep this file, migration comments and commit messages clear enough to be the record.
