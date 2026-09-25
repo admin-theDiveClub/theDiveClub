@@ -42,6 +42,10 @@
 	}
 
 	// Following the emailed link logs the person in for this one purpose and fires PASSWORD_RECOVERY.
+	// The address also says type=recovery, which is checked too in case the event fired before this script loaded.
+	if (hashParams.get('type') === 'recovery') {
+		showUpdateStep();
+	}
 	supabaseClient.auth.onAuthStateChange((event) => {
 		if (event === 'PASSWORD_RECOVERY') {
 			showUpdateStep();
