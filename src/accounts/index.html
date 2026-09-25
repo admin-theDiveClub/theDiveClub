@@ -5,32 +5,40 @@ description: Log in to The Dive Club.
 extraScripts:
   - /scripts/auth.js
 ---
-<style>
-	.auth-box { width: 100%; max-width: 360px; padding: 2rem; margin: 0 auto; }
-	.auth-box h1 { font-size: 1.5rem; margin-bottom: 1.5rem; }
-	.auth-box input { width: 100%; padding: 0.75rem; margin-bottom: 1rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary); box-sizing: border-box; }
-	.auth-box button { width: 100%; padding: 0.75rem; margin-bottom: 0.75rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; }
-	.btn-primary { background: var(--color-primary); color: #fff; }
-	.btn-google { background: #fff; color: #222; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
-	.toggle-link { text-align: center; margin-top: 1rem; font-size: 0.9rem; color: var(--color-primary); cursor: pointer; }
-	.status { text-align: center; margin-top: 1rem; font-size: 0.9rem; min-height: 1.2em; }
-	.status.error { color: var(--color-error); }
-	.status.success { color: var(--color-success); }
-</style>
-
-<div class="auth-box">
+<div class="tdc-card">
 	<h1 id="form-title">Log In</h1>
 
-	<button class="btn-google" id="google-signin">Continue with Google</button>
+	<button type="button" class="btn-google" id="google-signin">Continue with Google</button>
 
-	<div style="text-align:center; margin: 1rem 0; color: var(--text-muted);">— or —</div>
+	<div class="link-row" style="margin: 0.5rem 0 1rem; color: var(--text-muted);">— or —</div>
 
-	<form id="auth-form">
-		<input type="email" id="email" placeholder="Email" required>
-		<input type="password" id="password" placeholder="Password" required minlength="6">
+	<form id="auth-form" novalidate>
+		<div class="field" id="display-name-field" hidden>
+			<label for="display-name">Display name</label>
+			<input type="text" id="display-name" autocomplete="nickname" maxlength="100">
+			<div class="hint">How other players will see you. You can change it later.</div>
+		</div>
+
+		<div class="field">
+			<label for="email">Email</label>
+			<input type="email" id="email" autocomplete="email" required>
+		</div>
+
+		<div class="field">
+			<label for="password">Password</label>
+			<input type="password" id="password" autocomplete="current-password" required minlength="8">
+			<div class="hint" id="password-hint" hidden>At least 8 characters, with letters and numbers.</div>
+		</div>
+
 		<button type="submit" class="btn-primary" id="submit-btn">Log In</button>
 	</form>
 
-	<div class="toggle-link" id="toggle-mode">Don't have an account? Sign up</div>
+	<div class="link-row">
+		<button type="button" class="link" id="toggle-mode">Don't have an account? Sign up</button>
+	</div>
+	<div class="link-row" id="forgot-row">
+		<a href="/accounts/reset/">Forgot password?</a>
+	</div>
+
 	<div class="status" id="status-msg"></div>
 </div>
