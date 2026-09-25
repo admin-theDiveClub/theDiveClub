@@ -15,3 +15,8 @@ a {
 	color: var(--color-primary);
 	text-decoration: none;
 }
+
+/* Anything marked hidden stays hidden, even if its class sets display (e.g. .tile-link, .nav-dropdown-link). */
+[hidden] {
+	display: none !important;
+}

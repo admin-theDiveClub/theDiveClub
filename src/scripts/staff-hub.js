@@ -18,4 +18,17 @@
 	const roles = await TDCStaff.loadVenues(AREA, session.user.id, els);
 	if (!roles) return;
 	area.hidden = false;
+
+	// The Verifications tool is for owners and admins only (the database checks again).
+	const tile = el('verifications-tile');
+	if (!tile) {
+		TDC.error(AREA, 'staff page is missing the verifications tile.');
+		return;
+	}
+	const showTile = () => {
+		const r = roles.find((x) => x.venue_id === els.selectEl.value);
+		tile.hidden = !(r && ['owner', 'admin'].includes(r.role));
+	};
+	els.selectEl.addEventListener('change', showTile);
+	showTile();
 })();

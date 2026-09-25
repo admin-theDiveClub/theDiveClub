@@ -1,0 +1,32 @@
+---
+layout: layout.html
+title: Verifications
+description: "Owners and admins: review and revoke ID verifications."
+extraScripts:
+  - /scripts/staff-common.js
+  - /scripts/staff-verifications.js
+---
+<div class="tdc-card">
+	<h1>Verifications</h1>
+	<p class="muted" id="venue-line"></p>
+
+	<div id="staff-area" hidden>
+		<div class="field" id="venue-field" hidden>
+			<label for="venue-select">Venue</label>
+			<select id="venue-select"></select>
+		</div>
+
+		<div class="field">
+			<label for="filter">Show</label>
+			<select id="filter">
+				<option value="active">Active</option>
+				<option value="revoked">Revoked</option>
+				<option value="all">All</option>
+			</select>
+		</div>
+
+		<div id="list"></div>
+	</div>
+
+	<div class="status" id="status-msg"></div>
+</div>
