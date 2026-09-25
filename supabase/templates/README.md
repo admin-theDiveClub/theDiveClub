@@ -8,14 +8,14 @@ These files are the record; the dashboard is where they actually live.
 
 | File | Supabase template | Subject |
 |---|---|---|
-| `confirmation.html` | Confirm sign up | Confirm your email. |
-| `recovery.html` | Reset password | Reset your password. |
-| `email_change.html` | Change email address | Confirm your new email. |
-| `reauthentication.html` | Reauthentication | Your verification code. |
-| `password_changed_notification.html` | Password changed (security notification) | Your password was changed. |
-| `email_changed_notification.html` | Email address changed (security notification) | Your account email was changed. |
-| `identity_linked_notification.html` | Sign-in method linked (security notification) | A sign-in method was added. |
-| `identity_unlinked_notification.html` | Sign-in method removed (security notification) | A sign-in method was removed. |
+| `confirmation.html` | Confirm sign up | Confirm your email |
+| `recovery.html` | Reset password | Reset your password |
+| `email_change.html` | Change email address | Confirm your new email |
+| `reauthentication.html` | Reauthentication | Your verification code |
+| `password_changed_notification.html` | Password changed (security notification) | Your password was changed |
+| `email_changed_notification.html` | Email address changed (security notification) | Your account email was changed |
+| `identity_linked_notification.html` | Sign-in method linked (security notification) | A sign-in method was added |
+| `identity_unlinked_notification.html` | Sign-in method removed (security notification) | A sign-in method was removed |
 
 Not used (left as Supabase defaults): Invite user, Magic link, phone changed, MFA added/removed.
 

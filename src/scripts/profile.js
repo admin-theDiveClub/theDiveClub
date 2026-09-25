@@ -29,6 +29,12 @@
 		confirmPw:      el('pw-confirm'),
 		passwordBtn:    el('password-btn'),
 		passwordStatus: el('password-status'),
+		pwCodeField:    el('pw-code-field'),
+		pwCode:         el('pw-code'),
+		emailForm:      el('email-form'),
+		newEmail:       el('new-email'),
+		emailBtn:       el('email-btn'),
+		emailStatus:    el('email-status'),
 		logoutBtn:      el('logout-btn'),
 		claimSection:   el('claim-section'),
 		claimList:      el('claim-list'),
@@ -65,8 +71,10 @@
 		? providers.map((p) => providerLabels[p] || p).join(', ')
 		: 'TDC (No sign-in methods)';
 
-	// Only accounts that have a password can change it here.
+	// Only accounts that sign in with email and password can change their password or email here.
+	// (Google-only accounts manage these with Google.)
 	els.passwordForm.hidden = !providers.includes('email');
+	els.emailForm.hidden = !providers.includes('email');
 
 	els.passwordForm.addEventListener('submit', async (e) => {
 		e.preventDefault();
@@ -86,20 +94,83 @@
 			return;
 		}
 
+		// If the code box is showing, the emailed code is required.
+		const codeNeeded = !els.pwCodeField.hidden;
+		const nonce = els.pwCode.value.replace(/\s/g, '');
+		if (codeNeeded && !nonce) {
+			TDC.status(els.passwordStatus, 'Please enter the code we emailed you.', 'error');
+			return;
+		}
+
 		els.passwordBtn.disabled = true;
 		TDC.status(els.passwordStatus, 'Saving…', '');
 		try {
-			const { error } = await supabaseClient.auth.updateUser({ password, currentPassword: current });
+			const attributes = { password, currentPassword: current };
+			if (codeNeeded) attributes.nonce = nonce;
+
+			const { error } = await supabaseClient.auth.updateUser(attributes);
+
+			if (error && error.code === 'reauthentication_needed') {
+				// Last login was more than 24 hours ago: Supabase wants an emailed code first.
+				const { error: reauthErr } = await supabaseClient.auth.reauthenticate();
+				if (reauthErr) {
+					TDC.showSupabaseError(AREA, reauthErr, els.passwordStatus);
+					return;
+				}
+				els.pwCodeField.hidden = false;
+				els.pwCode.focus();
+				TDC.status(els.passwordStatus, 'For your security, we\'ve emailed you a verification code. Enter it above and tap Change Password again.', '');
+				return;
+			}
+			if (error && error.code === 'reauthentication_not_valid') {
+				TDC.status(els.passwordStatus, 'That code is wrong or has expired. Check the latest email, or reload the page to get a new code.', 'error');
+				return;
+			}
 			if (error) {
 				TDC.showSupabaseError(AREA, error, els.passwordStatus);
 				return;
 			}
 			els.passwordForm.reset();
+			els.pwCodeField.hidden = true;
 			TDC.status(els.passwordStatus, 'Password changed.', 'success');
 		} catch (err) {
 			TDC.error(AREA, 'unexpected problem changing your password.', err, els.passwordStatus);
 		} finally {
 			els.passwordBtn.disabled = false;
+		}
+	});
+
+	// ─── Change email ───
+	els.emailForm.addEventListener('submit', async (e) => {
+		e.preventDefault();
+		const newEmail = els.newEmail.value.trim();
+
+		if (!newEmail || !els.newEmail.checkValidity()) {
+			TDC.status(els.emailStatus, 'Please enter a valid email address.', 'error');
+			return;
+		}
+		if (newEmail.toLowerCase() === (user.email || '').toLowerCase()) {
+			TDC.status(els.emailStatus, 'That\'s already your email address.', 'error');
+			return;
+		}
+
+		els.emailBtn.disabled = true;
+		TDC.status(els.emailStatus, 'Sending…', '');
+		try {
+			const { error } = await supabaseClient.auth.updateUser(
+				{ email: newEmail },
+				{ emailRedirectTo: location.origin + '/accounts/profile/' }
+			);
+			if (error) {
+				TDC.showSupabaseError(AREA, error, els.emailStatus);
+				return;
+			}
+			els.emailForm.reset();
+			TDC.status(els.emailStatus, `Check both ${user.email} and ${newEmail} for a confirmation link. Your email changes once both are confirmed.`, 'success');
+		} catch (err) {
+			TDC.error(AREA, 'unexpected problem changing your email.', err, els.emailStatus);
+		} finally {
+			els.emailBtn.disabled = false;
 		}
 	});
 

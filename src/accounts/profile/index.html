@@ -111,9 +111,26 @@ extraScripts:
 				<label for="pw-confirm">Confirm new password</label>
 				<input type="password" id="pw-confirm" autocomplete="new-password" required minlength="8">
 			</div>
+			<!-- Shown only when Supabase asks for an emailed code (last login more than 24 hours ago) -->
+			<div class="field" id="pw-code-field" hidden>
+				<label for="pw-code">Verification code</label>
+				<input type="text" id="pw-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10">
+				<div class="hint">We've emailed you a code. Enter it here, then tap Change Password again.</div>
+			</div>
 			<button type="submit" class="btn-primary" id="password-btn">Change Password</button>
 		</form>
 		<div class="status" id="password-status"></div>
+
+		<form id="email-form" novalidate hidden style="margin-top: 1rem;">
+			<h2 style="margin-top: 1rem;">Change email</h2>
+			<div class="field">
+				<label for="new-email">New email address</label>
+				<input type="email" id="new-email" autocomplete="email" required>
+				<div class="hint">We'll email a confirmation link to both your current and your new address. The change happens once both are confirmed.</div>
+			</div>
+			<button type="submit" class="btn-primary" id="email-btn">Change Email</button>
+		</form>
+		<div class="status" id="email-status"></div>
 
 		<button type="button" class="btn-secondary" id="logout-btn" style="margin-top: 1rem;">Log Out</button>
 	</div>
