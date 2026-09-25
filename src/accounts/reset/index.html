@@ -1,0 +1,40 @@
+---
+layout: layout.html
+title: Reset Password
+description: Reset your The Dive Club password.
+extraScripts:
+  - /scripts/reset.js
+---
+<div class="tdc-card">
+	<h1 id="reset-title">Reset Password</h1>
+
+	<!-- Step 1: ask for a reset link -->
+	<form id="request-form" novalidate>
+		<p style="color: var(--text-muted); margin-top: 0;">Enter your account email and we'll send you a link to choose a new password.</p>
+		<div class="field">
+			<label for="request-email">Email</label>
+			<input type="email" id="request-email" autocomplete="email" required>
+		</div>
+		<button type="submit" class="btn-primary" id="request-btn">Send Reset Link</button>
+	</form>
+
+	<!-- Step 2: shown after following the link in the email -->
+	<form id="update-form" novalidate hidden>
+		<div class="field">
+			<label for="new-password">New password</label>
+			<input type="password" id="new-password" autocomplete="new-password" required minlength="8">
+			<div class="hint">At least 8 characters, with letters and numbers.</div>
+		</div>
+		<div class="field">
+			<label for="confirm-password">Confirm new password</label>
+			<input type="password" id="confirm-password" autocomplete="new-password" required minlength="8">
+		</div>
+		<button type="submit" class="btn-primary" id="update-btn">Save New Password</button>
+	</form>
+
+	<div class="link-row">
+		<a href="/accounts/">Back to log in</a>
+	</div>
+
+	<div class="status" id="status-msg"></div>
+</div>
