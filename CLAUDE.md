@@ -30,39 +30,53 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
 - `index.html` + `scripts/push.js` are the home page, with the test notification buttons.
 - `sw.js` + `site.webmanifest` make the PWA installable (iOS confirmed).
 
-## Status (as of 23 Sep 2026)
+## Status (as of 25 Sep 2026)
 - Phase 0 (HTTPS, DNS cleanup) is **done**.
 - Phase 1 (installable PWA shell) is **done**.
-- Phase 2 (login + push notifications) is **partly done**:
+- Phase 2 (login + push notifications) is **in progress**:
   - Email/password and Google OAuth login both work end-to-end. The Google consent screen shows `db.thediveclub.org`.
-  - Push subscribe works. Subscriptions are upserted into `tbl_push_subscriptions` (`user_id`, `endpoint`, `p256dh`, `auth`; conflict on `endpoint`).
-  - The Edge Function `send-test-notification` sends test pushes, custom icon included, and this works.
-    - The Edge Function code and the VAPID private key live in Supabase (dashboard/secrets), **not in this repo**.
+  - Auth emails go through **Resend** SMTP from `no-reply@thediveclub.org` (domain verified; SPF, DKIM and DMARC pass). `no-reply@` is not a real mailbox, so replies bounce.
+  - Auth settings: confirm email on, leaked-password protection on, minimum 8 characters with letters and digits, secure email change and secure password change on, current password required to change it. Anonymous sign-ins off.
+  - Push subscribe works (`tbl_push_subscriptions`), and the Edge Function `send-test-notification` sends test pushes. Its source is copied into `supabase/functions/`, but the live version was deployed from the dashboard and hasn't been redeployed with the CLI yet.
+  - Built with migrations: `tbl_push_subscriptions`, `tbl_players` (plus the signup trigger), `tbl_venues`, `tbl_venue_staff` (plus `private.tdc_has_venue_role`), and a permissions hardening pass.
+  - Seed data: venue The Dive Club (`the-dive-club`); `admin@thediveclub.org` is owner, `yuvannaidoo@gmail.com` is staff.
   - **Still to do:**
-    - Real trigger: a DB webhook on match/score changes that calls an Edge Function, which pushes to the right player.
-    - Deep link from a notification to the match URL.
-    - Long-term login persistence check on iPhone.
-    - Testing on Android.
-    - Phone/SMS login. This needs Twilio, and whether to add it hasn't been decided.
-    - SMTP for auth emails is deferred. Mailgun is the candidate; that account is kept but unsubscribed.
-- Next after that: user profiles + RLS policies, and cleaning up the test pages.
+    - Identifiers and ID verification (private identifiers table, SA ID verified in store by staff, walk-in claim/merge).
+    - Push leftovers: deep link to the match URL, deploy the Edge Function via the CLI, restrict its CORS to `https://thediveclub.org`, iPhone login persistence check, Android testing, and the real "score changed" trigger once match tables exist.
+    - Pages: login (min length 8, display name field), profile, reset password, branded auth email templates. Replace the test pages.
+    - Phone login: probably dropped in favour of SA ID verification, not decided.
 - Eleventy migration is **done and live** (shared layout and nav, Actions deploy).
 - Phase 4 is the real website pages, with SEO/JSON-LD per page. It is gated on photography once the property opens (~1 Oct).
 - NAP/JSON-LD for the Google Business Profile is drafted. The phone number and image URL are still missing.
+- DNS note: the TXT record named `thediveclub.org` (google-site-verification) has the doubled-domain problem and isn't visible to Google. Sort it out during the SEO work.
 
 <!-- UV: update the status lines above as things progress -->
 
-## Data architecture (decided, not yet built)
+## Data architecture
 - One Supabase project for everything, never one project per venue.
-- A global `players` table is the hub. Other domains reference it through an optional `player_id`.
+- **`tbl_players` is the hub.** One row per person, with or without a login:
+  - `user_id` links to `auth.users`. It can be empty and is unique. It's empty for guests and for walk-ins who haven't signed up.
+  - `player_type` is `member`, `walk_in` or `guest`. `guest_of_player_id` records whose guest someone is.
+  - Signups create a `member` row automatically (trigger). A walk-in claims their existing row later, through the identifiers step.
+  - Only non-private info goes here (display name, first and last name), and all signed-in users can read it.
+- **Private identifiers** (SA ID, passport, phone, email) go in a separate protected table, never in `tbl_players`.
+  - Verification belongs to the ID, and is done in store by staff (verified_by, verified_at).
+  - Blocking rules per business track are enforced in the database, not only in the UI. Cannabis: everything is blocked until verified. Pool: league entry requires verification.
 - Domains:
   - **Global:** Identity, Ranking & Competition (WST-style points), Gamification (XP, raffles, fantasy league, hall of fame, top trumps).
   - **Venue-scoped via `venue_id`:** Commerce (closed-loop credits, working name "Cuedits"), Venue Ops (bookings, stock, table scheduling).
   - **Cross-cutting:** Platform (audit log, roles).
 - Commerce and Ranking never share tables. `player_id` on a transaction is nullable (cash sales with no linked member are valid).
-- Next design step: the Identity domain tables.
-- Table naming so far: `tbl_` prefix.
-- UV currently works in the Supabase UI, not with migrations. Save any SQL we write into the repo (e.g. `supabase/sql/`) for reference.
+
+## Database conventions
+- Table names use the `tbl_` prefix. Our own functions use the `tdc_` prefix.
+- Helper functions for access rules live in the `private` schema, so they can't be called through the API.
+- **Every schema change is a Supabase CLI migration** in `supabase/migrations/`. Never make schema changes in the dashboard.
+  - `npx supabase migration new <name>` → write the SQL → `npx supabase db push --dry-run` → `npx supabase db push` → commit the file.
+  - **Never edit a migration that's already been applied.** Corrections go in a new migration.
+  - **Never run `npx supabase config push`.** It would overwrite the live auth settings with local test values.
+- Every table has RLS on and explicit grants. New tables are not auto-exposed to the API, and default privileges no longer give `anon` or `authenticated` TRUNCATE, REFERENCES, TRIGGER or MAINTAIN.
+- Auth settings (passwords, SMTP, providers) are set in the dashboard, not in migrations.
 
 ## How to work with UV
 - **Explain and propose; don't bulk-edit.**
