@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dive-club-v2.5';
+const CACHE_NAME = 'dive-club-v2.6';
 const CORE_ASSETS = [
   '/',
   '/index.html',
@@ -34,8 +34,10 @@ self.addEventListener('fetch', (event) => {
 	if (req.mode === 'navigate') {
 		// Page loads: always try the network first, so visitors get the
 		// current version. Fall back to cache only when offline.
+		// cache: 'no-cache' makes the browser check with the server every time instead of reusing
+		// its own stored copy (GitHub Pages allows 10 minutes), so a deploy shows up on the next page load.
 		event.respondWith(
-			fetch(req)
+			fetch(req, { cache: 'no-cache' })
 				.then((res) => {
 					const resClone = res.clone();
 					caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
