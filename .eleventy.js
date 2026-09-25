@@ -2,6 +2,11 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy("src/stylesheets");
   eleventyConfig.addPassthroughCopy("src/resources");
   eleventyConfig.addPassthroughCopy("src/scripts");
+
+  // Supabase library, pinned in package.json and served from our own site
+  eleventyConfig.addPassthroughCopy({
+    "node_modules/@supabase/supabase-js/dist/umd/supabase.js": "scripts/vendor/supabase.js"
+  });
   eleventyConfig.addPassthroughCopy("src/components");
   eleventyConfig.addPassthroughCopy("src/robots.txt");
   eleventyConfig.addPassthroughCopy("src/sitemap.xml");

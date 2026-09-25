@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dive-club-v2.3';
+const CACHE_NAME = 'dive-club-v2.4';
 const CORE_ASSETS = [
   '/',
   '/index.html',
