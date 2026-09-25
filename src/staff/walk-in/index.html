@@ -1,0 +1,98 @@
+---
+layout: layout.html
+title: Add Walk-in
+description: "Staff: add a walk-in or guest player."
+extraScripts:
+  - /scripts/staff-common.js
+  - /scripts/staff-walk-in.js
+---
+<div class="tdc-card">
+	<h1>Add Walk-in or Guest</h1>
+	<p class="muted" id="venue-line"></p>
+
+	<div id="staff-area" hidden>
+		<div class="field" id="venue-field" hidden>
+			<label for="venue-select">Venue</label>
+			<select id="venue-select"></select>
+		</div>
+
+		<p class="muted">Search first to make sure they're not already a player.</p>
+		<div class="field">
+			<label for="existing-search">Check for an existing player</label>
+			<input type="search" id="existing-search" autocomplete="off" placeholder="Name or display name">
+		</div>
+		<div class="results" id="existing-results"></div>
+
+		<form id="walkin-form" novalidate>
+			<div class="field">
+				<label for="player-type">Type</label>
+				<select id="player-type">
+					<option value="walk_in">Walk-in</option>
+					<option value="guest">Guest of a player</option>
+				</select>
+			</div>
+
+			<div id="host-area" hidden>
+				<div class="field">
+					<label for="host-search">Guest of</label>
+					<input type="search" id="host-search" autocomplete="off" placeholder="Search the host player">
+				</div>
+				<div class="results" id="host-results"></div>
+				<div class="selected-player" id="host-selected" hidden>
+					<div id="host-name"></div>
+					<div class="sub" id="host-sub"></div>
+				</div>
+			</div>
+
+			<div class="field">
+				<label for="display-name">Display name *</label>
+				<input type="text" id="display-name" maxlength="100" autocomplete="off">
+			</div>
+			<div class="field">
+				<label for="first-name">First name</label>
+				<input type="text" id="first-name" maxlength="100" autocomplete="off">
+			</div>
+			<div class="field">
+				<label for="last-name">Surname</label>
+				<input type="text" id="last-name" maxlength="100" autocomplete="off">
+			</div>
+
+			<h2>Identifiers (optional)</h2>
+			<p class="muted">An email lets them link this record to their account themselves when they sign up. An ID can be verified straight away if you have the document.</p>
+
+			<div class="field">
+				<label for="doc-kind">ID document</label>
+				<select id="doc-kind">
+					<option value="">None</option>
+					<option value="sa_id">South African ID</option>
+					<option value="passport">Passport</option>
+				</select>
+			</div>
+			<div class="field" id="doc-number-field" hidden>
+				<label for="doc-number" id="doc-number-label">ID number</label>
+				<input type="text" id="doc-number" autocomplete="off" maxlength="30">
+			</div>
+			<div class="field" id="doc-country-field" hidden>
+				<label for="doc-country">Issuing country code</label>
+				<input type="text" id="doc-country" maxlength="2" autocomplete="off" placeholder="e.g. ZW, GB">
+			</div>
+			<div class="field">
+				<label for="phone">Phone</label>
+				<input type="tel" id="phone" autocomplete="off" placeholder="082 123 4567">
+			</div>
+			<div class="field">
+				<label for="email">Email</label>
+				<input type="email" id="email" autocomplete="off">
+			</div>
+
+			<button type="submit" class="btn-primary" id="save-btn">Add Player</button>
+		</form>
+
+		<div id="done-area" hidden>
+			<a class="tile-link" id="verify-now-link" href="#" hidden>Verify their ID now<span class="sub">Opens Verify ID with this player selected.</span></a>
+			<button type="button" class="btn-secondary" id="another-btn">Add Another</button>
+		</div>
+	</div>
+
+	<div class="status" id="status-msg"></div>
+</div>

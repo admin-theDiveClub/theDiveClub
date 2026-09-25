@@ -64,7 +64,7 @@
 		loggedIn = true;
 		profileEmail.textContent = session.user.email || 'TDC (No Email)';
 
-		// Show "Verify ID" only to venue staff. The page and the database check again for real.
+		// Show the "Staff" link only to venue staff. The page and the database check again for real.
 		const { data, error } = await supabaseClient
 			.from('tbl_venue_staff')
 			.select('venue_id')

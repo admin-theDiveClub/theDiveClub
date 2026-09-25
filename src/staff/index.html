@@ -1,0 +1,24 @@
+---
+layout: layout.html
+title: Staff
+description: Staff tools.
+extraScripts:
+  - /scripts/staff-common.js
+  - /scripts/staff-hub.js
+---
+<div class="tdc-card">
+	<h1>Staff</h1>
+	<p class="muted" id="venue-line"></p>
+	<div class="field" id="venue-field" hidden>
+		<label for="venue-select">Venue</label>
+		<select id="venue-select"></select>
+	</div>
+
+	<div id="staff-area" hidden>
+		<a class="tile-link" href="/staff/verify/">Verify ID<span class="sub">Check a player's ID document and mark it verified.</span></a>
+		<a class="tile-link" href="/staff/walk-in/">Add Walk-in or Guest<span class="sub">Create a player for someone without an account.</span></a>
+		<a class="tile-link" href="/staff/link/">Link Walk-in to Account<span class="sub">Join an earlier walk-in record to a player who has signed up.</span></a>
+	</div>
+
+	<div class="status" id="status-msg"></div>
+</div>

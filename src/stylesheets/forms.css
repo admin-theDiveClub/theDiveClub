@@ -109,3 +109,34 @@
 	border-color: var(--color-success);
 	color: var(--color-success);
 }
+/* Staff pages: player search results and selected player */
+.results { margin: 0.5rem 0 1rem; }
+.tdc-card button.result {
+	display: block;
+	text-align: left;
+	padding: 0.75rem;
+	margin-bottom: 0.5rem;
+	border: 1px solid var(--border-color);
+	background: var(--bg-surface);
+	color: var(--text-primary);
+	font-weight: normal;
+}
+.result .sub,
+.selected-player .sub { font-size: 0.85rem; color: var(--text-muted); }
+.selected-player {
+	padding: 0.75rem;
+	border: 1px solid var(--color-primary);
+	border-radius: 6px;
+	margin-bottom: 1rem;
+}
+.muted { color: var(--text-muted); font-size: 0.85rem; }
+.tile-link {
+	display: block;
+	padding: 1rem;
+	margin-bottom: 0.75rem;
+	border: 1px solid var(--border-color);
+	border-radius: 6px;
+	background: var(--bg-surface);
+	color: var(--text-primary);
+}
+.tile-link .sub { display: block; margin-top: 0.25rem; font-size: 0.85rem; color: var(--text-muted); }

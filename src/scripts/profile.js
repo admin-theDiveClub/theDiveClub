@@ -29,7 +29,10 @@
 		confirmPw:      el('pw-confirm'),
 		passwordBtn:    el('password-btn'),
 		passwordStatus: el('password-status'),
-		logoutBtn:      el('logout-btn')
+		logoutBtn:      el('logout-btn'),
+		claimSection:   el('claim-section'),
+		claimList:      el('claim-list'),
+		claimStatus:    el('claim-status')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -274,4 +277,47 @@
 	});
 
 	await loadIdentity();
+
+	// ─── Earlier walk-in record with my confirmed email ───
+	const { data: walkIns, error: findErr } = await supabaseClient.rpc('tdc_find_my_walk_in');
+	if (findErr) {
+		TDC.error(AREA, 'could not check for an earlier walk-in record.', findErr);
+		return;
+	}
+	if (!walkIns || walkIns.length === 0) return;
+
+	els.claimSection.hidden = false;
+	for (const w of walkIns) {
+		const row = document.createElement('div');
+		row.className = 'id-row';
+
+		const name = document.createElement('div');
+		name.textContent = w.display_name;
+		const sub = document.createElement('div');
+		sub.className = 'muted';
+		const full = [w.first_name, w.last_name].filter(Boolean).join(' ');
+		const added = new Date(w.created_at).toLocaleDateString();
+		sub.textContent = [full, 'added ' + added].filter(Boolean).join(' · ');
+
+		const btn = document.createElement('button');
+		btn.type = 'button';
+		btn.className = 'btn-primary';
+		btn.style.marginTop = '0.5rem';
+		btn.textContent = 'Link to My Account';
+		btn.addEventListener('click', async () => {
+			btn.disabled = true;
+			TDC.status(els.claimStatus, 'Linking…', '');
+			const { error } = await supabaseClient.rpc('tdc_claim_my_walk_in', { p_walk_in_player_id: w.player_id });
+			if (error) {
+				btn.disabled = false;
+				TDC.showSupabaseError(AREA, error, els.claimStatus);
+				return;
+			}
+			TDC.status(els.claimStatus, '✓ Linked. Reloading…', 'success');
+			location.reload();
+		});
+
+		row.append(name, sub, btn);
+		els.claimList.appendChild(row);
+	}
 })();

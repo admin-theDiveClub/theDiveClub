@@ -1,0 +1,57 @@
+---
+layout: layout.html
+title: Link Walk-in
+description: "Staff: link a walk-in record to a player's account."
+extraScripts:
+  - /scripts/staff-common.js
+  - /scripts/staff-link.js
+---
+<div class="tdc-card">
+	<h1>Link Walk-in to Account</h1>
+	<p class="muted" id="venue-line"></p>
+
+	<div id="staff-area" hidden>
+		<div class="field" id="venue-field" hidden>
+			<label for="venue-select">Venue</label>
+			<select id="venue-select"></select>
+		</div>
+
+		<p class="muted">Only do this with the person in front of you, after checking their ID. Their account takes over the walk-in record and its history.</p>
+
+		<!-- 1. Walk-in record -->
+		<div id="step-walkin">
+			<div class="field">
+				<label for="walkin-search">1. Walk-in or guest record</label>
+				<input type="search" id="walkin-search" autocomplete="off" placeholder="Name on the walk-in record">
+			</div>
+			<div class="results" id="walkin-results"></div>
+		</div>
+		<div class="selected-player" id="walkin-selected" hidden>
+			<div class="muted">Walk-in record</div>
+			<div id="walkin-name"></div>
+			<div class="sub" id="walkin-sub"></div>
+		</div>
+
+		<!-- 2. Account -->
+		<div id="step-account" hidden>
+			<div class="field">
+				<label for="account-search">2. Their account</label>
+				<input type="search" id="account-search" autocomplete="off" placeholder="Name they signed up with">
+			</div>
+			<div class="results" id="account-results"></div>
+		</div>
+		<div class="selected-player" id="account-selected" hidden>
+			<div class="muted">Account</div>
+			<div id="account-name"></div>
+			<div class="sub" id="account-sub"></div>
+		</div>
+
+		<!-- 3. Confirm -->
+		<div id="step-confirm" hidden>
+			<button type="button" class="btn-primary" id="link-btn">Link Them</button>
+		</div>
+		<button type="button" class="btn-secondary" id="restart-btn" hidden>Start Over</button>
+	</div>
+
+	<div class="status" id="status-msg"></div>
+</div>

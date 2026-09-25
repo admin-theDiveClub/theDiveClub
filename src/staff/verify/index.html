@@ -3,31 +3,9 @@ layout: layout.html
 title: Verify ID
 description: Staff ID verification.
 extraScripts:
+  - /scripts/staff-common.js
   - /scripts/staff-verify.js
 ---
-<style>
-	.results { margin: 0.5rem 0 1rem; }
-	.result {
-		display: block;
-		width: 100%;
-		text-align: left;
-		padding: 0.75rem;
-		margin-bottom: 0.5rem;
-		border: 1px solid var(--border-color) !important;
-		background: var(--bg-surface) !important;
-		color: var(--text-primary) !important;
-		font-weight: normal !important;
-	}
-	.result .sub { font-size: 0.85rem; color: var(--text-muted); }
-	.selected-player {
-		padding: 0.75rem;
-		border: 1px solid var(--color-primary);
-		border-radius: 6px;
-		margin-bottom: 1rem;
-	}
-	.muted { color: var(--text-muted); font-size: 0.85rem; }
-</style>
-
 <div class="tdc-card">
 	<h1>Verify ID</h1>
 	<p class="muted" id="venue-line"></p>
@@ -52,7 +30,7 @@ extraScripts:
 		<form id="verify-form" novalidate hidden>
 			<div class="selected-player">
 				<div id="selected-name"></div>
-				<div class="muted" id="selected-sub"></div>
+				<div class="sub" id="selected-sub"></div>
 			</div>
 
 			<div class="field">

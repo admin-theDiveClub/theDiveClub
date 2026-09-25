@@ -34,7 +34,12 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
   - `accounts/index.html` + `scripts/auth.js`: login and signup (display name, password rules, `?next=` return to the previous page).
   - `accounts/reset/index.html` + `scripts/reset.js`: request a reset email, then set a new password.
   - `accounts/profile/index.html` + `scripts/profile.js` + `scripts/push.js`: details, ID entry and verification badges, notifications, change password, log out.
-  - `staff/verify/index.html` + `scripts/staff-verify.js`: staff find a player and verify their ID from the physical document.
+  - Staff pages all load `scripts/staff-common.js` (`TDCStaff`: venue check, player search, results list) before their own script:
+    - `staff/index.html` + `scripts/staff-hub.js`: staff hub linking the tools below (nav "Staff" link, staff only).
+    - `staff/verify/index.html` + `scripts/staff-verify.js`: find a player and verify their ID from the physical document. `?player=<id>` preselects a player.
+    - `staff/walk-in/index.html` + `scripts/staff-walk-in.js`: add a walk-in or guest (optional ID, phone, email).
+    - `staff/link/index.html` + `scripts/staff-link.js`: link a walk-in/guest record to a player's account (in store, after checking ID).
+- Front matter: put `description:` (and any value containing a colon) in quotes, or the build fails.
 - `sw.js` + `site.webmanifest` make the PWA installable (iOS confirmed). **Bump `CACHE_NAME` in `sw.js` whenever anything in `scripts/`, `stylesheets/` or `resources/` changes before a deploy** (those are cached cache-first; pages are network-first).
 - Eleventy's watcher sometimes misses new folders: if a new page gives a 404 locally, restart `npx eleventy --serve`.
 
@@ -46,11 +51,13 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
   - Auth emails go through **Resend** SMTP from `no-reply@thediveclub.org` (domain verified; SPF, DKIM and DMARC pass). `no-reply@` is not a real mailbox, so replies bounce.
   - Auth settings: confirm email on, leaked-password protection on, minimum 8 characters with letters and digits, secure email change and secure password change on, current password required to change it (reset links are exempt, tested). Anonymous sign-ins off. Redirect URLs: `https://thediveclub.org/**` and `http://localhost:8080/**`.
   - Push: subscribe and test push work from the profile page on the installed iPhone app. The Edge Function `send-test-notification` source is in `supabase/functions/`, but the live version was deployed from the dashboard and hasn't been redeployed with the CLI yet.
-  - Database (all via migrations): `tbl_push_subscriptions`, `tbl_players` (plus signup trigger), `tbl_venues`, `tbl_venue_staff`, permissions hardening, `tbl_player_identifiers`, `tbl_identifier_verifications`, and the functions `tdc_add_my_identifier`, `tdc_verify_identifier`, `tdc_revoke_verification`.
+  - Database (all via migrations): `tbl_push_subscriptions`, `tbl_players` (plus signup trigger), `tbl_venues`, `tbl_venue_staff`, permissions hardening, `tbl_player_identifiers`, `tbl_identifier_verifications`, and the functions `tdc_add_my_identifier`, `tdc_verify_identifier`, `tdc_revoke_verification`, `tdc_create_walk_in`, `tdc_staff_link_account`, `tdc_find_my_walk_in`, `tdc_claim_my_walk_in`.
   - ID verification works end to end: a player adds their SA ID or passport on the profile page; staff verify it on `/staff/verify/` by typing the number from the document. UV's personal account is verified at The Dive Club.
+  - Walk-ins and claim work (migration `walk_ins_and_claim`): staff add walk-ins/guests (`tdc_create_walk_in`); a signup whose **confirmed** email matches a walk-in's email sees "We found your earlier record" on the profile and claims it (`tdc_find_my_walk_in`, `tdc_claim_my_walk_in`); otherwise staff link in store (`tdc_staff_link_account`). Claiming keeps the walk-in's player id (history stays attached), keeps the signup display name, prefers staff-entered first/last names, and deletes the empty signup record. Two different SA IDs block the join.
+  - ⚠ `private.tdc_merge_players` must be updated whenever a new table references `tbl_players` (matches, credits, XP…), so nothing is left on the deleted record.
   - Seed data: venue The Dive Club (`the-dive-club`); `admin@thediveclub.org` is owner, `yuvannaidoo@gmail.com` is staff.
   - **Still to do:**
-    - Walk-ins and claim/merge: staff create players for people without an account (`walk_in`/`guest`), and a later signup claims the existing row.
+    - Audit log: record who linked, verified or revoked what (staff can link any walk-in to any account; there is no log yet).
     - Revoke-verification UI for owners/admins (the function exists).
     - Push leftovers: deploy the Edge Function via the CLI, restrict its CORS to `https://thediveclub.org`, iPhone login persistence check, Android testing, and the real "score changed" trigger + deep link once match tables exist.
     - Branded auth email templates (confirm, reset, email change).
