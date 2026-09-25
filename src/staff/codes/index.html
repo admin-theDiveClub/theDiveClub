@@ -1,0 +1,66 @@
+---
+layout: layout.html
+title: Redeem Codes
+description: "Generate and void cash redeem codes."
+extraScripts:
+  - /scripts/staff-common.js
+  - /scripts/staff-codes.js
+---
+<div class="tdc-card">
+	<h1 class="no-print">Redeem Codes</h1>
+	<p class="muted no-print" id="venue-line"></p>
+
+	<div id="staff-area" hidden>
+		<div class="field no-print" id="venue-field" hidden>
+			<label for="venue-select">Venue</label>
+			<select id="venue-select"></select>
+		</div>
+
+		<div id="generate-area" class="no-print">
+			<h2>Generate codes</h2>
+			<form id="generate-form" novalidate>
+				<div class="field">
+					<label for="gen-credits">Credits per code</label>
+					<input type="number" id="gen-credits" inputmode="numeric" min="1" step="1" autocomplete="off">
+				</div>
+				<div class="field">
+					<label for="gen-quantity">How many codes</label>
+					<input type="number" id="gen-quantity" inputmode="numeric" min="1" max="200" step="1" value="1" autocomplete="off">
+					<div class="hint">Up to 200 at a time.</div>
+				</div>
+				<div class="field">
+					<label for="gen-note">Note (optional)</label>
+					<input type="text" id="gen-note" maxlength="200" autocomplete="off" placeholder="e.g. Till printout, 25 Sep">
+				</div>
+				<div class="field">
+					<label for="gen-expiry">Expires in (days, optional)</label>
+					<input type="number" id="gen-expiry" inputmode="numeric" min="1" step="1" autocomplete="off" placeholder="Never">
+				</div>
+
+				<button type="submit" class="btn-primary" id="generate-btn">Generate codes</button>
+			</form>
+		</div>
+
+		<div id="result-area" hidden>
+			<h2 class="no-print">New codes<span class="sub" id="result-sub"></span></h2>
+			<p class="hint no-print">These codes are shown once. They aren't stored anywhere as plain text, so if this list is lost, the credits it printed can no longer be redeemed.</p>
+			<div id="code-list" class="code-list"></div>
+			<button type="button" class="btn-primary no-print" id="print-btn">Print this list</button>
+			<button type="button" class="btn-secondary no-print" id="new-batch-btn">Generate Another Batch</button>
+		</div>
+
+		<div id="void-area" class="no-print" hidden>
+			<h2>Void a code</h2>
+			<p class="hint">For a code that was printed in error or lost before use. Already-redeemed codes can't be voided.</p>
+			<form id="void-form" novalidate>
+				<div class="field">
+					<label for="void-code">Code</label>
+					<input type="text" id="void-code" autocomplete="off" placeholder="XXXX-XXXX-XXXX">
+				</div>
+				<button type="submit" class="btn-secondary" id="void-btn">Void code</button>
+			</form>
+		</div>
+	</div>
+
+	<div class="status no-print" id="status-msg"></div>
+</div>

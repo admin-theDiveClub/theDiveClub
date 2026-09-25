@@ -159,3 +159,35 @@
 	margin: 0 0 1.25rem;
 	font-variant-numeric: tabular-nums;
 }
+/* Redeem codes page */
+#result-sub { font-weight: normal; font-size: 0.9rem; color: var(--text-muted); }
+.code-list {
+	display: grid;
+	gap: 0.5rem;
+	margin: 1rem 0 1.5rem;
+}
+.code-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 0.75rem;
+	padding: 0.75rem 1rem;
+	border: 1px solid var(--border-color);
+	border-radius: 6px;
+	background: var(--bg-surface);
+}
+.code-value {
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-size: 1.15rem;
+	letter-spacing: 0.05em;
+}
+.code-value-credits {
+	font-size: 0.85rem;
+	color: var(--text-muted);
+	white-space: nowrap;
+}
+@media print {
+	.tdc-card { max-width: none; padding: 0; }
+	.code-item { border-color: #000; background: #fff; break-inside: avoid; }
+	.code-value-credits { color: #000; }
+}

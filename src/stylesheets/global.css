@@ -20,3 +20,15 @@ a {
 [hidden] {
 	display: none !important;
 }
+
+/* Printing (e.g. a batch of redeem codes): drop the nav, buttons and anything marked .no-print,
+   and print in plain black on white regardless of the on-screen theme. */
+@media print {
+	nav, .no-print {
+		display: none !important;
+	}
+	body {
+		background: #fff;
+		color: #000;
+	}
+}
