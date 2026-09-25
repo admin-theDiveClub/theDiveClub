@@ -133,3 +133,16 @@ body {
 	cursor: pointer;
 	font-weight: 600;
 }
+
+.nav-dropdown-link {
+	display: block;
+	padding: 0.5rem;
+	border-radius: 6px;
+	color: var(--text-primary);
+}
+.nav-dropdown-link:hover {
+	background: rgba(255, 255, 255, 0.05);
+}
+.nav-dropdown-link[hidden] {
+	display: none;
+}

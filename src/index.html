@@ -1,9 +1,7 @@
 ---
 layout: layout.html
 title: Home
-description: The Dive Club — Johannesburg.
-extraScripts:
-  - /scripts/push.js
+description: The Dive Club — pool lounge in Lonehill, Fourways, Johannesburg. Opening soon.
 ---
 <style>
 	.wrap {
@@ -20,19 +18,26 @@ extraScripts:
 		width: 60vw;
 		height: auto;
 	}
-	.wrap p {
+	.wrap .tagline {
 		margin-top: 1.5rem;
 		color: var(--color-primary);
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
 		font-size: 0.9rem;
 	}
+	.wrap .account-btn {
+		display: inline-block;
+		margin-top: 2rem;
+		padding: 0.75rem 1.5rem;
+		border-radius: 6px;
+		background: var(--color-primary);
+		color: #fff;
+		font-weight: 600;
+	}
 </style>
 
 <div class="wrap">
 	<img src="/resources/branding/logo-primary-dark.svg" alt="The Dive Club">
-	<button id="enable-notifications">Enable Notifications</button>
-	<br><br>
-	<button id="notif-preset-1">Simulate: Match Starting</button>
-	<div id="notif-status" style="margin-top: 1rem;"></div>
+	<p class="tagline">Lonehill, Fourways · Opening soon</p>
+	<a class="account-btn" href="/accounts/profile/">My Account</a>
 </div>
