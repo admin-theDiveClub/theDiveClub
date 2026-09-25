@@ -40,7 +40,8 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
     - `staff/walk-in/index.html` + `scripts/staff-walk-in.js`: add a walk-in or guest (optional ID, phone, email).
     - `staff/link/index.html` + `scripts/staff-link.js`: link a walk-in/guest record to a player's account (in store, after checking ID).
 - Front matter: put `description:` (and any value containing a colon) in quotes, or the build fails.
-- `sw.js` + `site.webmanifest` make the PWA installable (iOS confirmed). **Bump `CACHE_NAME` in `sw.js` whenever anything in `scripts/`, `stylesheets/` or `resources/` changes before a deploy** (those are cached cache-first; pages are network-first).
+- `sw.js` + `site.webmanifest` make the PWA installable (iOS confirmed). The service worker caches only its `CORE_ASSETS` list (cache-first); pages are network-first. **Bump `CACHE_NAME` when a file in `CORE_ASSETS` changes** (logo, icons, manifest).
+- **Cache-busting:** GitHub Pages lets browsers reuse CSS/JS for 10 minutes. `layout.html` adds `?v={{ build.version }}` (from `_data/build.js`, new on every build) to every stylesheet and script, including `extraScripts`, so each deploy's pages load that deploy's files. New stylesheets/scripts must be linked through `layout.html` or `extraScripts` to get the stamp.
 - Eleventy's watcher sometimes misses new folders: if a new page gives a 404 locally, restart `npx eleventy --serve`.
 
 ## Status (as of 25 Sep 2026)
