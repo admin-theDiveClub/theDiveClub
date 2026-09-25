@@ -1,5 +1,6 @@
-// Staff redeem-codes page (/staff/codes/). Generating is open to all staff; voiding is owners/admins only
-// (the database checks both again). Generated codes are shown once, for printing, then never seen again.
+// Staff redeem-codes page (/staff/codes/). Redeeming and generating are open to all staff;
+// voiding is owners/admins only (the database checks all of this again).
+// Generated codes are shown once, for printing, then never seen again.
 // Needs: supabaseClient.js, tdc.js, staff-common.js.
 
 (async () => {
@@ -8,7 +9,17 @@
 	const el = (id) => document.getElementById(id);
 	const els = {
 		lineEl: el('venue-line'), fieldEl: el('venue-field'), selectEl: el('venue-select'), statusEl: el('status-msg'),
-		staffArea:    el('staff-area'),
+		staffArea:        el('staff-area'),
+		redeemArea:       el('redeem-area'),
+		redeemSearchStep: el('redeem-search-step'),
+		redeemSearch:     el('redeem-player-search'),
+		redeemResults:    el('redeem-results'),
+		redeemForm:       el('redeem-form'),
+		redeemSelectedName: el('redeem-selected-name'),
+		redeemSelectedSub:  el('redeem-selected-sub'),
+		redeemCode:       el('redeem-code'),
+		redeemBtn:        el('redeem-btn'),
+		redeemBackBtn:    el('redeem-back-btn'),
 		generateArea: el('generate-area'),
 		generateForm: el('generate-form'),
 		credits:      el('gen-credits'),
@@ -48,6 +59,71 @@
 	}
 	els.selectEl.addEventListener('change', updateVoidVisibility);
 	updateVoidVisibility();
+
+	// ─── Redeem a code for a player (members and walk-ins; guests never hold credits) ───
+	let redeemPlayer = null;
+
+	function redeemBackToSearch() {
+		redeemPlayer = null;
+		els.redeemForm.hidden = true;
+		els.redeemSearchStep.hidden = false;
+	}
+
+	TDCStaff.attachSearch(AREA, els.redeemSearch, els.redeemResults, els.statusEl, { types: ['member', 'walk_in'] }, (p) => {
+		redeemPlayer = p;
+		const label = TDCStaff.playerLabel(p);
+		els.redeemSelectedName.textContent = label.name;
+		els.redeemSelectedSub.textContent = label.sub;
+		els.redeemSearchStep.hidden = true;
+		els.redeemForm.hidden = false;
+		TDC.status(els.statusEl, '', '');
+		els.redeemCode.focus();
+	});
+
+	els.redeemBackBtn.addEventListener('click', () => {
+		TDC.status(els.statusEl, '', '');
+		redeemBackToSearch();
+		els.redeemSearch.focus();
+	});
+
+	els.redeemForm.addEventListener('submit', async (e) => {
+		e.preventDefault();
+		if (!redeemPlayer) {
+			TDC.error(AREA, 'no player selected.', null, els.statusEl);
+			return;
+		}
+		const code = els.redeemCode.value.trim();
+		if (!code) {
+			TDC.status(els.statusEl, 'Please enter a code.', 'error');
+			return;
+		}
+
+		els.redeemBtn.disabled = true;
+		TDC.status(els.statusEl, 'Redeeming…', '');
+		try {
+			const { data, error } = await supabaseClient.rpc('tdc_redeem_code', {
+				p_venue_id: els.selectEl.value,
+				p_code: code,
+				p_player_id: redeemPlayer.id
+			});
+
+			if (error) {
+				TDC.showSupabaseError(AREA, error, els.statusEl);
+				return;
+			}
+
+			const row = (data || [])[0];
+			const who = redeemPlayer.display_name;
+			redeemBackToSearch();
+			els.redeemSearch.value = '';
+			els.redeemResults.textContent = '';
+			TDC.status(els.statusEl, `✓ ${row ? row.credits_added : ''} credits added for ${who}. New balance: ${row ? row.new_balance : '?'}.`, 'success');
+		} catch (err) {
+			TDC.error(AREA, 'unexpected problem redeeming that code.', err, els.statusEl);
+		} finally {
+			els.redeemBtn.disabled = false;
+		}
+	});
 
 	// ─── Generate ───
 	els.generateForm.addEventListener('submit', async (e) => {
@@ -121,6 +197,7 @@
 		if (note) bits.push(note);
 		els.resultSub.textContent = ' · ' + bits.join(' · ');
 
+		els.redeemArea.hidden = true;
 		els.generateArea.hidden = true;
 		els.voidArea.hidden = true;
 		els.resultArea.hidden = false;
@@ -133,6 +210,7 @@
 		els.codeList.textContent = '';
 		els.generateForm.reset();
 		els.quantity.value = '1';
+		els.redeemArea.hidden = false;
 		els.generateArea.hidden = false;
 		updateVoidVisibility();
 		TDC.status(els.statusEl, '', '');

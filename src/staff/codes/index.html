@@ -1,7 +1,7 @@
 ---
 layout: layout.html
 title: Redeem Codes
-description: "Generate and void cash redeem codes."
+description: "Redeem or generate cash redeem codes."
 extraScripts:
   - /scripts/staff-common.js
   - /scripts/staff-codes.js
@@ -14,6 +14,33 @@ extraScripts:
 		<div class="field no-print" id="venue-field" hidden>
 			<label for="venue-select">Venue</label>
 			<select id="venue-select"></select>
+		</div>
+
+		<div id="redeem-area" class="no-print">
+			<h2>Redeem a code</h2>
+			<p class="hint">For a player without the app open, such as a walk-in. A player can also redeem their own code from their profile.</p>
+
+			<div id="redeem-search-step">
+				<div class="field">
+					<label for="redeem-player-search">Find player</label>
+					<input type="search" id="redeem-player-search" autocomplete="off" placeholder="Name or display name">
+					<div class="hint">Type at least 2 letters.</div>
+				</div>
+				<div class="results" id="redeem-results"></div>
+			</div>
+
+			<form id="redeem-form" novalidate hidden>
+				<div class="selected-player">
+					<div id="redeem-selected-name"></div>
+					<div class="sub" id="redeem-selected-sub"></div>
+				</div>
+				<div class="field">
+					<label for="redeem-code">Code</label>
+					<input type="text" id="redeem-code" autocomplete="off" placeholder="XXXX-XXXX-XXXX">
+				</div>
+				<button type="submit" class="btn-primary" id="redeem-btn">Redeem</button>
+				<button type="button" class="btn-secondary" id="redeem-back-btn">Choose a Different Player</button>
+			</form>
 		</div>
 
 		<div id="generate-area" class="no-print">

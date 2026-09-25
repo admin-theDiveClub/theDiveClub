@@ -51,6 +51,26 @@ extraScripts:
 		<div class="status" id="details-status"></div>
 	</div>
 
+	<!-- Credits -->
+	<div class="section">
+		<h2>Credits</h2>
+		<div id="credits-list"></div>
+
+		<form id="redeem-form" novalidate style="margin-top: 1rem;">
+			<div class="field" id="redeem-venue-field" hidden>
+				<label for="redeem-venue">Venue</label>
+				<select id="redeem-venue"></select>
+			</div>
+			<div class="field">
+				<label for="redeem-code">Redeem a code</label>
+				<input type="text" id="redeem-code" autocomplete="off" placeholder="XXXX-XXXX-XXXX">
+				<div class="hint">Given to you by staff after a cash payment in the club.</div>
+			</div>
+			<button type="submit" class="btn-primary" id="redeem-btn">Redeem</button>
+		</form>
+		<div class="status" id="credits-status"></div>
+	</div>
+
 	<!-- ID verification (private) -->
 	<div class="section">
 		<h2>ID verification</h2>

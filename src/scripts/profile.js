@@ -38,7 +38,14 @@
 		logoutBtn:      el('logout-btn'),
 		claimSection:   el('claim-section'),
 		claimList:      el('claim-list'),
-		claimStatus:    el('claim-status')
+		claimStatus:    el('claim-status'),
+		creditsList:    el('credits-list'),
+		redeemForm:     el('redeem-form'),
+		redeemVenueField: el('redeem-venue-field'),
+		redeemVenue:    el('redeem-venue'),
+		redeemCode:     el('redeem-code'),
+		redeemBtn:      el('redeem-btn'),
+		creditsStatus:  el('credits-status')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -222,6 +229,91 @@
 			els.detailsBtn.disabled = false;
 		}
 	});
+
+	// ─── Credits ───
+	// Every active venue you could hold credits at. Today there's one venue, but this works for more later:
+	// a venue picker only appears once there's a choice to make.
+	async function loadCredits() {
+		els.creditsList.textContent = '';
+
+		const { data: venues, error: venErr } = await supabaseClient
+			.from('tbl_venues')
+			.select('id, name')
+			.eq('active', true)
+			.order('name');
+
+		if (venErr) {
+			TDC.error(AREA, 'could not load venues.', venErr, els.creditsStatus);
+			return;
+		}
+		if (!venues || venues.length === 0) {
+			els.creditsList.textContent = 'No venues yet.';
+			els.redeemForm.hidden = true;
+			return;
+		}
+
+		els.redeemVenue.innerHTML = '';
+		for (const v of venues) {
+			const opt = document.createElement('option');
+			opt.value = v.id;
+			opt.textContent = v.name;
+			els.redeemVenue.appendChild(opt);
+		}
+		els.redeemVenueField.hidden = venues.length < 2;
+
+		for (const v of venues) {
+			const { data: balance, error: balErr } = await supabaseClient.rpc('tdc_my_credit_balance', { p_venue_id: v.id });
+			const row = document.createElement('div');
+			row.className = 'kv';
+			const label = document.createElement('span');
+			label.className = 'k';
+			label.textContent = v.name;
+			const value = document.createElement('span');
+			value.className = 'v';
+			if (balErr) {
+				TDC.error(AREA, `could not load your balance at ${v.name}.`, balErr);
+				value.textContent = 'TDC (Error)';
+			} else {
+				value.textContent = `${balance} credit${balance === 1 ? '' : 's'}`;
+			}
+			row.append(label, value);
+			els.creditsList.appendChild(row);
+		}
+	}
+
+	els.redeemForm.addEventListener('submit', async (e) => {
+		e.preventDefault();
+		const code = els.redeemCode.value.trim();
+		if (!code) {
+			TDC.status(els.creditsStatus, 'Please enter a code.', 'error');
+			return;
+		}
+
+		els.redeemBtn.disabled = true;
+		TDC.status(els.creditsStatus, 'Redeeming…', '');
+		try {
+			const { data, error } = await supabaseClient.rpc('tdc_redeem_code', {
+				p_venue_id: els.redeemVenue.value,
+				p_code: code
+			});
+
+			if (error) {
+				TDC.showSupabaseError(AREA, error, els.creditsStatus);
+				return;
+			}
+
+			const row = (data || [])[0];
+			els.redeemForm.reset();
+			TDC.status(els.creditsStatus, `✓ ${row ? row.credits_added : ''} credits added.`, 'success');
+			await loadCredits();
+		} catch (err) {
+			TDC.error(AREA, 'unexpected problem redeeming that code.', err, els.creditsStatus);
+		} finally {
+			els.redeemBtn.disabled = false;
+		}
+	});
+
+	await loadCredits();
 
 	// ─── ID verification ───
 	function maskValue(identifier) {
