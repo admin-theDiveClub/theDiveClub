@@ -43,6 +43,13 @@ document.getElementById('enable-notifications').addEventListener('click', async 
 	}
 
 	try {
+		// The service worker is switched off on localhost, and 'ready' would then wait forever.
+		const existing = await navigator.serviceWorker.getRegistration();
+		if (!existing) {
+			console.error('[Push] No service worker registered (it is switched off on localhost).');
+			statusEl.textContent = 'TDC (Error): no service worker. Notifications only work on the live site.';
+			return;
+		}
 		const registration = await navigator.serviceWorker.ready;
 		console.log('[Push] Service worker ready:', registration);
 

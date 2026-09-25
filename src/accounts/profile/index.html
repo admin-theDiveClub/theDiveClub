@@ -1,0 +1,112 @@
+---
+layout: layout.html
+title: Profile
+description: Your The Dive Club profile.
+extraScripts:
+  - /scripts/profile.js
+  - /scripts/push.js
+---
+<style>
+	.section { border-top: 1px solid var(--border-color); padding-top: 0.5rem; margin-top: 2rem; }
+	.section:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
+	.kv { display: flex; justify-content: space-between; gap: 1rem; padding: 0.4rem 0; font-size: 0.95rem; }
+	.kv .k { color: var(--text-muted); }
+	.kv .v { text-align: right; word-break: break-all; }
+	.id-row { padding: 0.75rem 0; }
+	.id-row .id-value { font-family: ui-monospace, monospace; letter-spacing: 0.05em; }
+	.id-row .badges { margin-top: 0.4rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+	.muted { color: var(--text-muted); font-size: 0.85rem; }
+</style>
+
+<div class="tdc-card">
+	<h1>Profile</h1>
+
+	<!-- Player details (visible to other players) -->
+	<div class="section">
+		<h2>Your details</h2>
+		<form id="details-form" novalidate>
+			<div class="field">
+				<label for="display-name">Display name</label>
+				<input type="text" id="display-name" maxlength="100" autocomplete="nickname" required>
+				<div class="hint">How other players see you.</div>
+			</div>
+			<div class="field">
+				<label for="first-name">First name</label>
+				<input type="text" id="first-name" maxlength="100" autocomplete="given-name">
+			</div>
+			<div class="field">
+				<label for="last-name">Surname</label>
+				<input type="text" id="last-name" maxlength="100" autocomplete="family-name">
+			</div>
+			<button type="submit" class="btn-primary" id="details-btn">Save Details</button>
+		</form>
+		<div class="status" id="details-status"></div>
+	</div>
+
+	<!-- ID verification (private) -->
+	<div class="section">
+		<h2>ID verification</h2>
+		<p class="muted">Only you can see this. Some activities, like leagues, need a verified ID. Staff verify it in person by checking your ID document.</p>
+
+		<div id="id-list"></div>
+
+		<form id="id-form" novalidate hidden>
+			<div class="field">
+				<label for="id-kind">Document</label>
+				<select id="id-kind">
+					<option value="sa_id">South African ID</option>
+					<option value="passport">Passport</option>
+				</select>
+			</div>
+			<div class="field">
+				<label for="id-value" id="id-value-label">ID number</label>
+				<input type="text" id="id-value" autocomplete="off" inputmode="numeric" maxlength="30">
+			</div>
+			<div class="field" id="id-country-field" hidden>
+				<label for="id-country">Issuing country code</label>
+				<input type="text" id="id-country" maxlength="2" autocomplete="off" placeholder="e.g. ZW, GB">
+				<div class="hint">The two-letter code printed on your passport.</div>
+			</div>
+			<div class="hint" style="margin-bottom: 1rem;">This can't be changed once saved. Please check it carefully.</div>
+			<button type="submit" class="btn-primary" id="id-btn">Save ID</button>
+		</form>
+		<div class="status" id="id-status"></div>
+	</div>
+
+	<!-- Notifications -->
+	<div class="section">
+		<h2>Notifications</h2>
+		<p class="muted">On iPhone, add this site to your Home Screen first, then enable notifications from there.</p>
+		<button type="button" class="btn-primary" id="enable-notifications">Enable Notifications</button>
+		<button type="button" class="btn-secondary" id="notif-preset-1">Send Test Notification</button>
+		<div class="status" id="notif-status"></div>
+	</div>
+
+	<!-- Account (login details) -->
+	<div class="section">
+		<h2>Account</h2>
+		<div class="kv"><span class="k">Email</span><span class="v" id="account-email"></span></div>
+		<div class="kv"><span class="k">Sign-in methods</span><span class="v" id="account-methods"></span></div>
+
+		<form id="password-form" novalidate hidden style="margin-top: 1rem;">
+			<h2 style="margin-top: 1rem;">Change password</h2>
+			<div class="field">
+				<label for="current-password">Current password</label>
+				<input type="password" id="current-password" autocomplete="current-password" required>
+			</div>
+			<div class="field">
+				<label for="pw-new">New password</label>
+				<input type="password" id="pw-new" autocomplete="new-password" required minlength="8">
+				<div class="hint">At least 8 characters, with letters and numbers.</div>
+			</div>
+			<div class="field">
+				<label for="pw-confirm">Confirm new password</label>
+				<input type="password" id="pw-confirm" autocomplete="new-password" required minlength="8">
+			</div>
+			<button type="submit" class="btn-primary" id="password-btn">Change Password</button>
+		</form>
+		<div class="status" id="password-status"></div>
+
+		<button type="button" class="btn-secondary" id="logout-btn" style="margin-top: 1rem;">Log Out</button>
+	</div>
+</div>
