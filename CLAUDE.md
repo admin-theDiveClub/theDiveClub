@@ -100,6 +100,10 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
 - Every table has RLS on and explicit grants. New tables are not auto-exposed to the API, and default privileges no longer give `anon` or `authenticated` TRUNCATE, REFERENCES, TRIGGER or MAINTAIN.
 - Auth settings (passwords, SMTP, providers) are set in the dashboard, not in migrations.
 
+## Project board
+- The task list for the business and the website lives on a Claude artifact: https://claude.ai/artifact/PMACuEGdQGJh2LfHjq2S38. Its source and data model are recorded in `tools/project-board/` (see its README). It is not part of the site and sits outside `src/`, so Eleventy never publishes it.
+- The board is the high-level list; this file stays the detailed record for the website. When a website item here is finished or added, the board should be updated too (in the Claude app, not from VS Code).
+
 ## How to work with UV
 - **Claude may write files directly in the repo; UV reviews, runs and commits.**
   - Claude writes/edits files (pages, scripts, styles, migrations, this file) and explains each change briefly.

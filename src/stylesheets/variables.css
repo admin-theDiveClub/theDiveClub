@@ -16,6 +16,9 @@
   /* Status */
   --color-success: #6bff9e;
   --color-error: #ff6b6b;
+
+  /* Owner-only tools (staff hub glow) */
+  --color-owner: #e0b04a;
 }
 
 [data-theme="light"] {
@@ -31,4 +34,6 @@
 
   --color-success: #1f8a4c;
   --color-error: #c62828;
+
+  --color-owner: #a8751a;
 }

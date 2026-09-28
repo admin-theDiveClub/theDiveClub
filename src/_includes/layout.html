@@ -21,6 +21,11 @@
 	<link rel="stylesheet" href="/stylesheets/global.css?v={{ build.version }}">
 	<link rel="stylesheet" href="/stylesheets/nav.css?v={{ build.version }}">
 	<link rel="stylesheet" href="/stylesheets/forms.css?v={{ build.version }}">
+	{% if extraStyles %}
+		{% for style in extraStyles %}
+			<link rel="stylesheet" href="{{ style }}?v={{ build.version }}">
+		{% endfor %}
+	{% endif %}
 	<!-- ?v= build stamp: changes on every build, so browsers fetch fresh styles and scripts after each deploy -->
 </head>
 <body>

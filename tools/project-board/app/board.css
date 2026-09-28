@@ -1,0 +1,8 @@
+/* Project Board (/staff/board/). Uses the site's colour variables from variables.css. */
+
+.pm {
+	width: 100%;
+	max-width: 960px;
+	margin: 0 auto;
+	padding: 1.5rem 1rem 3rem;
+}

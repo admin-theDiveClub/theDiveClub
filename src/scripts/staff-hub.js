@@ -25,10 +25,17 @@
 		TDC.error(AREA, 'staff page is missing an owner/admin tile.');
 		return;
 	}
+	// The Project Board is for owners only (the database checks again).
+	const boardTile = el('board-tile');
+	if (!boardTile) {
+		TDC.error(AREA, 'staff page is missing the Project Board tile.');
+		return;
+	}
 	const showTiles = () => {
 		const r = roles.find((x) => x.venue_id === els.selectEl.value);
 		const isAdmin = !!(r && ['owner', 'admin'].includes(r.role));
 		for (const t of adminTiles) t.hidden = !isAdmin;
+		boardTile.hidden = !(r && r.role === 'owner');
 	};
 	els.selectEl.addEventListener('change', showTiles);
 	showTiles();

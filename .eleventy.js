@@ -8,6 +8,11 @@ module.exports = function (eleventyConfig) {
     "node_modules/@supabase/supabase-js/dist/umd/supabase.js": "scripts/vendor/supabase.js"
   });
   eleventyConfig.addPassthroughCopy("src/components");
+
+  // Project board: its code lives outside src/ in tools/project-board/app/ and is published
+  // at /staff/board/app/. The page itself is src/staff/board/index.html.
+  eleventyConfig.addPassthroughCopy({ "tools/project-board/app": "staff/board/app" });
+  eleventyConfig.addWatchTarget("tools/project-board/app/");
   eleventyConfig.addPassthroughCopy("src/robots.txt");
   eleventyConfig.addPassthroughCopy("src/sitemap.xml");
   eleventyConfig.addPassthroughCopy("src/site.webmanifest");
