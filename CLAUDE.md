@@ -19,7 +19,7 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
 
 ## File map (src/)
 - `_includes/layout.html` is the shared shell (head, PWA meta, nav, Supabase library + client, `tdc.js`, `forms.css`, per-page scripts, SW registration).
-  - Pages opt in with front matter: `layout: layout.html`, `title`, `description`, optional `extraScripts: [...]` (loaded after `supabaseClient.js`), optional `hideNav: true`.
+  - Pages opt in with front matter: `layout: layout.html`, `title`, `description`, optional `extraScripts: [...]` (loaded after `supabaseClient.js`), optional `extraStyles: [...]` (extra stylesheets, with the build stamp), optional `hideNav: true`.
 - `_includes/nav.html` + `scripts/nav.js` + `stylesheets/nav.css` make up the shared nav. Nav items live in `_data/navLinks.json`.
   - Note: `src/navLinks.json` is a stray duplicate and can be removed.
 - `.eleventy.js` handles passthrough copy (stylesheets, resources, scripts, components, sw.js, manifest, CNAME, robots, sitemap, favicon, Google verification file).
@@ -40,6 +40,7 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
     - `staff/walk-in/index.html` + `scripts/staff-walk-in.js`: add a walk-in or guest (optional ID, phone, email).
     - `staff/link/index.html` + `scripts/staff-link.js`: link a walk-in/guest record to a player's account (in store, after checking ID).
     - `staff/verifications/index.html` + `scripts/staff-verifications.js`: owners/admins review the venue's ID verifications and revoke mistakes (reason required). Its hub tile shows only for owners/admins.
+  - `staff/board/index.html`: the **Project Board** (owners only, gold hub tile). A thin page; its code lives outside `src/` in `tools/project-board/app/` (see "Project board" below).
 - `stylesheets/global.css` has `[hidden] { display: none !important; }`, so the `hidden` attribute always wins over classes that set `display`.
 - Front matter: put `description:` (and any value containing a colon) in quotes, or the build fails.
 - `sw.js` + `site.webmanifest` make the PWA installable (iOS confirmed). The service worker caches only its `CORE_ASSETS` list (cache-first); pages are network-first and always revalidated with the server (`cache: 'no-cache'`), so a deploy shows on the next page load. **Bump `CACHE_NAME` when a file in `CORE_ASSETS` changes** (logo, icons, manifest).
@@ -101,8 +102,13 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
 - Auth settings (passwords, SMTP, providers) are set in the dashboard, not in migrations.
 
 ## Project board
-- The task list for the business and the website lives on a Claude artifact: https://claude.ai/artifact/PMACuEGdQGJh2LfHjq2S38. Its source and data model are recorded in `tools/project-board/` (see its README). It is not part of the site and sits outside `src/`, so Eleventy never publishes it.
-- The board is the high-level list; this file stays the detailed record for the website. When a website item here is finished or added, the board should be updated too (in the Claude app, not from VS Code).
+- The owner's task list for the business and the website, at **`/staff/board/`**. Owners only: the hub tile shows for owners, and the tables' access rules allow only `owner` at the venue (UV uses admin@thediveclub.org; his personal account is staff and can't see it).
+- Kept separate from the rest of the site on purpose:
+  - Code: `tools/project-board/app/board.js` and `board.css` (outside `src/`). `.eleventy.js` publishes that folder at `/staff/board/app/`. Only `app/` is published; the README stays private.
+  - Page: `src/staff/board/index.html` is only front matter and an empty box the script fills.
+  - Database: `tbl_pm_items`, `tbl_pm_groups`, `tbl_pm_people`, `tbl_pm_links` (migration `project_board`), all scoped by `venue_id`. Details in `tools/project-board/README.md`.
+- It uses the site's colour variables and `TDC` helpers, and loads everything on open, then reloads after each change and when the tab is shown again (no Realtime).
+- The board is the high-level list; this file stays the detailed record for the website. When a website item here is finished or added, update the board too.
 
 ## How to work with UV
 - **Claude may write files directly in the repo; UV reviews, runs and commits.**
