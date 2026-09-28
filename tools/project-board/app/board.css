@@ -161,3 +161,79 @@
 @media (prefers-reduced-motion: reduce) {
 	.pm-chev, .pm-row { transition: none; }
 }
+
+/* ─── Dates and overdue ─── */
+.pm-chip.pm-due { background: transparent; box-shadow: inset 0 0 0 1px var(--pm-line); font-weight: 500; }
+.pm-chip.pm-overdue { color: var(--color-error); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-error) 60%, transparent); background: color-mix(in srgb, var(--color-error) 12%, transparent); font-weight: 700; }
+.pm-count.pm-count-overdue { cursor: pointer; color: var(--color-error); border-color: color-mix(in srgb, var(--color-error) 60%, var(--pm-line)); font: inherit; font-size: 0.8rem; }
+.pm-count.pm-count-overdue b { color: var(--color-error); }
+.pm-hint { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
+.pm-stamp { text-align: right; }
+.pm-form input[type="date"], .pm-form input[type="time"] { color-scheme: dark; }
+[data-theme="light"] .pm-form input[type="date"], [data-theme="light"] .pm-form input[type="time"] { color-scheme: light; }
+
+/* ─── Tabs row with the List / Timeline switch ─── */
+.pm-tabbar { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 0.5rem; border-bottom: 1px solid var(--pm-line); }
+.pm-tabbar .pm-tabs { border-bottom: 0; }
+.pm-views { display: flex; align-items: center; gap: 0.25rem; padding-bottom: 0.4rem; }
+.pm-view { background: none; border: 1px solid var(--pm-line); border-radius: 6px; padding: 0.3rem 0.7rem; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); cursor: pointer; }
+.pm-view[aria-pressed="true"] { background: color-mix(in srgb, var(--color-primary) 20%, transparent); border-color: var(--color-primary); color: var(--text-primary); }
+#pm-zoom { background: var(--bg-surface); border: 1px solid var(--pm-line); border-radius: 6px; padding: 0.3rem 0.4rem; font-size: 0.85rem; }
+
+/* ─── Timeline ─── */
+.pm-tl-scroll { overflow-x: auto; border: 1px solid var(--pm-line); border-radius: 8px; background: var(--bg-surface); }
+.pm-tl-canvas { --pm-tl-label: 220px; --pm-weekend: color-mix(in srgb, var(--text-muted) 7%, transparent); position: relative; width: calc(var(--pm-tl-label) + var(--w)); }
+.pm-tl-head, .pm-tl-row, .pm-tl-sec { display: flex; width: 100%; border-top: 1px solid var(--pm-line); }
+.pm-tl-head { border-top: 0; height: 2rem; }
+.pm-tl-row { height: 2.4rem; }
+.pm-tl-sec { height: 2rem; }
+.pm-tl-label {
+	position: sticky; left: 0; z-index: 2; flex: 0 0 var(--pm-tl-label); width: var(--pm-tl-label);
+	display: flex; flex-wrap: wrap; align-content: center; gap: 0 0.4rem; overflow: hidden;
+	padding: 0 0.6rem; background: var(--bg-base); border: 0; border-right: 1px solid var(--pm-line); text-align: left;
+}
+button.pm-tl-label { cursor: pointer; }
+button.pm-tl-label:hover .pm-tl-title { color: var(--color-primary); }
+.pm-tl-label .pm-crumb { font-size: 0.65rem; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pm-tl-title { font-size: 0.85rem; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.pm-tl-label .pm-chip { font-size: 0.6rem; }
+.pm-tl-sec .pm-tl-label { display: block; line-height: 2rem; white-space: nowrap; text-overflow: ellipsis; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+.pm-done .pm-tl-title { text-decoration: line-through; color: var(--text-muted); }
+.pm-tl-lane {
+	position: relative; flex: 0 0 var(--w); width: var(--w);
+	background: repeating-linear-gradient(90deg, transparent 0 calc(var(--px) * 5), var(--pm-weekend) calc(var(--px) * 5) calc(var(--px) * 7));
+}
+.pm-tl-sec .pm-tl-lane { background: color-mix(in srgb, var(--text-muted) 5%, transparent); }
+.pm-tl-tick { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--pm-line); padding: 0.45rem 0 0 0.3rem; font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
+.pm-tl-tick:not(.pm-tl-major) { border-left-style: dotted; }
+.pm-tl-today { position: absolute; top: 0; bottom: 0; left: calc(var(--pm-tl-label) + var(--x)); width: 2px; background: var(--color-error); opacity: 0.75; z-index: 1; pointer-events: none; }
+
+.pm-tl-bar {
+	position: absolute; top: 50%; transform: translateY(-50%); height: 0.9rem; border: 0; border-radius: 4px; padding: 0; cursor: pointer;
+	background: var(--text-muted);
+}
+.pm-tl-bar[data-s="next"]     { background: var(--color-primary); }
+.pm-tl-bar[data-s="progress"] { background: var(--pm-blue); }
+.pm-tl-bar[data-s="todo"]     { background: color-mix(in srgb, var(--text-muted) 70%, transparent); }
+.pm-tl-bar[data-s="waiting"]  { background: var(--pm-amber); }
+.pm-tl-bar[data-s="done"]     { background: color-mix(in srgb, var(--text-muted) 30%, transparent); }
+.pm-tl-bar.pm-overdue         { background: var(--color-error); box-shadow: 0 0 8px color-mix(in srgb, var(--color-error) 50%, transparent); }
+.pm-tl-milestone { width: 14px; height: 14px; border-radius: 2px; transform: translateY(-50%) rotate(45deg); }
+.pm-tl-openend { -webkit-mask-image: linear-gradient(90deg, #000 40%, transparent); mask-image: linear-gradient(90deg, #000 40%, transparent); }
+.pm-tl-when { position: absolute; top: 50%; transform: translateY(-50%); font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; pointer-events: none; }
+.pm-tl-when.pm-overdue { color: var(--color-error); font-weight: 700; }
+
+.pm-tl-undated { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.5rem; width: 100%; text-align: left; background: none; border: 0; border-top: 1px solid var(--pm-line); padding: 0.5rem 0.75rem; cursor: pointer; }
+.pm-list > .pm-tl-undated:first-child { border-top: 0; }
+.pm-tl-undated:hover { color: var(--color-primary); }
+.pm-tl-undated .pm-crumb { width: auto; }
+.pm-tl-dot { width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--text-muted); align-self: center; }
+.pm-tl-dot[data-s="next"] { background: var(--color-primary); }
+.pm-tl-dot[data-s="progress"] { background: var(--pm-blue); }
+.pm-tl-dot[data-s="waiting"] { background: var(--pm-amber); }
+
+@media (max-width: 560px) {
+	.pm-tl-canvas { --pm-tl-label: 130px; }
+	.pm-tl-label .pm-crumb, .pm-tl-label .pm-chip { display: none; }
+	.pm-tl-title { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+}

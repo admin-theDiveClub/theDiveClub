@@ -6,7 +6,10 @@
 // How it works: loadAll() reads the whole board for the venue into `data`, render() draws it from `data` and `ui`.
 // Every change is written to Supabase, then the board is reloaded. It also reloads when you come back to the tab.
 //
-// Sections: constants · state · model helpers · rendering · writes · events · start.
+// Views: List (grouped, nested tasks) and Timeline (Gantt bars from start to due date).
+// Overdue is worked out here, not stored: a due date in the past on a task that isn't Done.
+//
+// Sections: constants · state · model helpers · dates · rendering (list, timeline) · writes · events · start.
 
 (() => {
 	const AREA = 'Board';
@@ -20,13 +23,17 @@
 	const LINK_IN = { waiting_on: 'Holding up', blocks: 'Blocked by', related: 'Related to' };
 	const TRACKS = { business: 'Business', website: 'Website' };
 	const UI_KEY = 'tdc-board-ui';
+	const DAY = 86400000;
+	const ZOOMS = { week: 28, month: 10 };     // timeline pixels per day
+	const END_OF_DAY = '23:59';                // a due time left blank is saved as 23:59 and shown as just the date
+	const START_OF_DAY = '00:00';              // a start time left blank is saved as 00:00
 
 	// ─── State ───
 	const root = document.getElementById('pm-board');
 	const statusEl = document.getElementById('pm-status');
 	let venueId = null;
 	let data = { items: {}, groups: [], people: [], links: [] };
-	let ui = { track: 'business', q: '', fStatus: '', fPerson: '', fGroup: '', groupBy: 'group', showDone: false, expanded: [] };
+	let ui = { track: 'business', view: 'list', zoom: 'week', q: '', fStatus: '', fPerson: '', fGroup: '', groupBy: 'group', showDone: false, expanded: [] };
 	let editing = null;      // item id, 'new:<track>:<groupId>', 'kid:<parentId>' or 'newgroup'
 	let renaming = null;     // 'group:<id>' or 'person:<id>'
 	let pendingRender = false;
@@ -70,11 +77,49 @@
 	const groupsFor = (t) => data.groups.filter((g) => g.track === t).sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
 	const peopleSorted = () => [...data.people].sort((a, b) => a.name.localeCompare(b.name));
 	const filtering = () => !!(ui.q || ui.fStatus || ui.fPerson || ui.fGroup);
-	const treeMode = () => ui.groupBy === 'group' && !filtering();
+	const treeMode = () => ui.view === 'list' && ui.groupBy === 'group' && !filtering();
+	const isOverdue = (i) => !!i.due_at && i.status !== 'done' && Date.parse(i.due_at) < Date.now();
 	const hasOpenDescendant = (id) => descendants(id).some((d) => d.status !== 'done');
 	const visibleInTree = (it) => ui.showDone || it.status !== 'done' || hasOpenDescendant(it.id) || editing === it.id;
 	const linksFrom = (id) => data.links.filter((l) => l.from_id === id);
 	const linksTo = (id) => data.links.filter((l) => l.to_id === id);
+
+	// ─── Dates ───
+	// Dates are stored as timestamps and shown in this device's local time (South Africa for us).
+	const pad = (n) => String(n).padStart(2, '0');
+	const hm = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+	// "1 Oct", "1 Oct 14:00", "3 Jan 2027". kind 'due' hides 23:59, kind 'start' hides 00:00.
+	function fmtDate(iso, kind) {
+		if (!iso) return '';
+		const d = new Date(iso);
+		const opts = { day: 'numeric', month: 'short' };
+		if (d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
+		let out = d.toLocaleDateString('en-ZA', opts);
+		const t = hm(d);
+		if (!((kind === 'due' && t === END_OF_DAY) || (kind === 'start' && t === START_OF_DAY))) out += ' ' + t;
+		return out;
+	}
+	const fmtStamp = (iso) => (iso ? new Date(iso).toLocaleString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
+
+	// Timestamp → the form's separate date and time boxes (time left blank when it's the day's default).
+	function toInputs(iso, kind) {
+		if (!iso) return { date: '', time: '' };
+		const d = new Date(iso);
+		const t = hm(d);
+		const hide = (kind === 'due' && t === END_OF_DAY) || (kind === 'start' && t === START_OF_DAY);
+		return { date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, time: hide ? '' : t };
+	}
+	// The form's date and time boxes → timestamp, or null when there's no date.
+	function fromInputs(date, time, fallbackTime) {
+		if (!date) return null;
+		const [y, m, d] = date.split('-').map(Number);
+		const [hh, mm] = (time || fallbackTime).split(':').map(Number);
+		const out = new Date(y, m - 1, d, hh, mm);
+		if (isNaN(out)) throw new Error('TDC (Error): that date could not be read.');
+		return out.toISOString();
+	}
+	const startOfDay = (ms) => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
 
 	// ─── Rendering ───
 	function renderShell() {
@@ -86,8 +131,15 @@
 				</div>
 				<div class="pm-counts" id="pm-counts"></div>
 			</header>
-			<div class="pm-tabs" role="tablist">
-				${[['business', 'Business'], ['website', 'Website'], ['all', 'All']].map(([t, l]) => `<button type="button" class="pm-tab" role="tab" data-track="${t}">${l}</button>`).join('')}
+			<div class="pm-tabbar">
+				<div class="pm-tabs" role="tablist">
+					${[['business', 'Business'], ['website', 'Website'], ['all', 'All']].map(([t, l]) => `<button type="button" class="pm-tab" role="tab" data-track="${t}">${l}</button>`).join('')}
+				</div>
+				<div class="pm-views">
+					<button type="button" class="pm-view" data-view="list">List</button>
+					<button type="button" class="pm-view" data-view="timeline">Timeline</button>
+					<select id="pm-zoom" aria-label="Timeline scale"><option value="week">Weeks</option><option value="month">Months</option></select>
+				</div>
 			</div>
 			<div class="pm-filters">
 				<label class="pm-search">Search<input type="search" id="pm-q" placeholder="Find a task" autocomplete="off"></label>
@@ -106,10 +158,13 @@
 
 	function renderControls() {
 		root.querySelectorAll('.pm-tab').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.track === ui.track)));
+		root.querySelectorAll('.pm-view').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === ui.view)));
+		$('#pm-zoom').hidden = ui.view !== 'timeline';
+		$('#pm-zoom').value = ui.zoom;
 		const q = $('#pm-q');
 		if (document.activeElement !== q) q.value = ui.q;
 
-		$('#pm-fStatus').innerHTML = '<option value="">Any status</option>' + STATUSES.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+		$('#pm-fStatus').innerHTML = '<option value="">Any status</option><option value="overdue">Overdue</option>' + STATUSES.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
 		$('#pm-fStatus').value = ui.fStatus;
 
 		if (ui.fPerson && ui.fPerson !== '__none' && !personById(ui.fPerson)) ui.fPerson = '';
@@ -128,13 +183,16 @@
 		$('#pm-clear').hidden = !filtering();
 
 		const mine = allItems().filter((i) => tracksShown().includes(i.track));
-		$('#pm-counts').innerHTML = STATUSES.map(([s, l]) => `<span class="pm-count"><b>${mine.filter((i) => i.status === s).length}</b>${l}</span>`).join('');
+		const overdue = mine.filter(isOverdue).length;
+		$('#pm-counts').innerHTML = (overdue ? `<button type="button" class="pm-count pm-count-overdue" data-show-overdue><b>${overdue}</b>Overdue</button>` : '') +
+			STATUSES.map(([s, l]) => `<span class="pm-count"><b>${mine.filter((i) => i.status === s).length}</b>${l}</span>`).join('');
 		$('#pm-newGroup').hidden = !treeMode() || ui.track === 'all' || editing === 'newgroup';
 	}
 
 	function render() {
 		pendingRender = false;
 		renderControls();
+		if (ui.view === 'timeline') { renderTimeline(); return; }
 		const out = treeMode() ? renderTree() : renderFlat();
 		$('#pm-body').innerHTML = out.join('') || '<p class="pm-empty">No tasks yet.</p>';
 	}
@@ -166,18 +224,23 @@
 
 	// Filtered or regrouped view: matching tasks in flat sections, each showing its parent path.
 	// Tasks with sub-tasks can still be expanded here.
-	function renderFlat() {
+	// Tasks in the shown tab(s) that pass the search and filters.
+	function filteredItems() {
 		const q = ui.q.toLowerCase();
-		const list = allItems().filter((i) => tracksShown().includes(i.track)).filter((i) => {
-			if (ui.fStatus && i.status !== ui.fStatus) return false;
-			if (!ui.fStatus && !ui.showDone && i.status === 'done') return false;
+		return allItems().filter((i) => tracksShown().includes(i.track)).filter((i) => {
+			if (ui.fStatus === 'overdue' && !isOverdue(i)) return false;
+			if (ui.fStatus && ui.fStatus !== 'overdue' && i.status !== ui.fStatus) return false;
+			if (ui.fStatus !== 'done' && !ui.showDone && i.status === 'done') return false;
 			if (ui.fPerson === '__none' && i.person_id) return false;
 			if (ui.fPerson && ui.fPerson !== '__none' && i.person_id !== ui.fPerson) return false;
 			if (ui.fGroup && groupNameOf(i) !== ui.fGroup) return false;
 			if (q && !(i.title + ' ' + i.note).toLowerCase().includes(q)) return false;
 			return true;
-		}).sort((a, b) => STATUS_RANK[a.status] - STATUS_RANK[b.status] || a.sort_order - b.sort_order);
+		});
+	}
 
+	// Split tasks into sections by the "Group by" choice. Returns [{ key, label, head }] with .items.
+	function bucketize(list) {
 		const keyOf = {
 			group: (i) => (ui.track === 'all' ? TRACKS[i.track] + ' · ' : '') + groupNameOf(i),
 			status: (i) => i.status,
@@ -194,18 +257,25 @@
 			buckets.get(k).push(i);
 		}
 
-		const out = [];
+		const sections = [];
 		for (const [k, arr] of buckets) {
 			if (!arr.length) continue;
-			let head;
+			let head, label;
 			if (ui.groupBy === 'person' && k) {
-				head = headHTML('person', k, personById(k).name, personById(k).name, arr.length);
+				label = personById(k).name;
+				head = headHTML('person', k, label, label, arr.length);
 			} else {
-				const label = ui.groupBy === 'status' ? STATUS_LABEL[k] : ui.groupBy === 'person' ? 'No one assigned' : ui.groupBy === 'none' ? 'Matching tasks' : k;
+				label = ui.groupBy === 'status' ? STATUS_LABEL[k] : ui.groupBy === 'person' ? 'No one assigned' : ui.groupBy === 'none' ? 'Matching tasks' : k;
 				head = headHTML(null, null, null, label, arr.length);
 			}
-			out.push(`<section class="pm-group">${head}<div class="pm-list">${arr.map((i) => nodeHTML(i, 0, true)).join('')}</div></section>`);
+			sections.push({ key: k, label, head, items: arr });
 		}
+		return sections;
+	}
+
+	function renderFlat() {
+		const list = filteredItems().sort((a, b) => STATUS_RANK[a.status] - STATUS_RANK[b.status] || a.sort_order - b.sort_order);
+		const out = bucketize(list).map((sec) => `<section class="pm-group">${sec.head}<div class="pm-list">${sec.items.map((i) => nodeHTML(i, 0, true)).join('')}</div></section>`);
 		if (!out.length) out.push('<p class="pm-empty">No tasks match these filters.</p>');
 		return out;
 	}
@@ -221,6 +291,16 @@
 			(kind ? `<button type="button" class="pm-icon" data-startrename="${kind}:${id}">Rename</button>` : '') +
 			'<span class="pm-spacer"></span>' +
 			(group ? `<button type="button" class="pm-link" data-add="${group.track}:${group.id}">+ Add task</button>` : '') + '</h2>';
+	}
+
+	// "Overdue · 25 Sep", "Due 1 Oct 14:00" or "Starts 5 Oct".
+	function dueChip(i) {
+		if (i.due_at) {
+			const od = isOverdue(i);
+			return `<span class="pm-chip pm-due${od ? ' pm-overdue' : ''}">${od ? 'Overdue · ' : 'Due '}${esc(fmtDate(i.due_at, 'due'))}</span>`;
+		}
+		if (i.start_at) return `<span class="pm-chip pm-due">Starts ${esc(fmtDate(i.start_at, 'start'))}</span>`;
+		return '';
 	}
 
 	function statusSelect(i) {
@@ -265,6 +345,7 @@
 				(crumbs.length ? `<span class="pm-crumb">${crumbs.join(' › ')} ›</span>` : '') +
 				`<button type="button" class="pm-title" data-edit="${i.id}" aria-expanded="${editing === i.id}">${esc(i.title)}</button>` +
 				(all.length ? `<span class="pm-chip" title="Sub-tasks done">${doneCount}/${all.length}</span>` : '') +
+				dueChip(i) +
 				(person ? `<span class="pm-chip pm-person">${esc(person.name)}</span>` : '') +
 			'</div>' +
 			(i.note || rel ? `<div class="pm-meta">${rel}${i.note ? `<span class="pm-note">${esc(i.note)}</span>` : ''}</div>` : '') +
@@ -314,6 +395,9 @@
 		const groups = groupsFor(track);
 		const currentGroup = it.group_id || (groups[0] || {}).id;
 		const links = isNew ? [] : linksFrom(i.id).filter((l) => data.items[l.to_id]);
+		const start = toInputs(it.start_at, 'start');
+		const due = toInputs(it.due_at, 'due');
+		const stamp = isNew ? '' : `<p class="pm-hint pm-stamp">Created ${esc(fmtStamp(i.created_at))} · Last changed ${esc(fmtStamp(i.updated_at))}</p>`;
 
 		return `<form class="pm-form" data-form="${fid}" data-track="${track}">
 			<label>Task<input id="pm-f-title-${fid}" name="title" value="${esc(it.title)}" maxlength="300" required></label>
@@ -327,6 +411,11 @@
 					<select id="pm-f-person-${fid}" name="person_id"><option value="">No one</option>${peopleSorted().map((p) => `<option value="${p.id}"${p.id === it.person_id ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}<option value="__new">+ New person…</option></select>
 					<input id="pm-f-newperson-${fid}" name="new_person" placeholder="Name" maxlength="100" hidden></span></label>
 			</div>
+			<div class="pm-grid2">
+				<label>Start<span class="pm-pair"><input type="date" id="pm-f-sdate-${fid}" name="start_date" value="${start.date}"><input type="time" id="pm-f-stime-${fid}" name="start_time" value="${start.time}" aria-label="Start time (optional)"></span></label>
+				<label>Due<span class="pm-pair"><input type="date" id="pm-f-ddate-${fid}" name="due_date" value="${due.date}"><input type="time" id="pm-f-dtime-${fid}" name="due_time" value="${due.time}" aria-label="Due time (optional)"></span></label>
+			</div>
+			<p class="pm-hint">Times are optional. No start time means the start of the day; no due time means the end of it.</p>
 			<fieldset><legend>Links to other tasks</legend>
 				<div class="pm-links">${links.map((l) => linkRowHTML(l, exclude)).join('')}</div>
 				<div><button type="button" class="pm-link" data-addlink>+ Add link</button></div>
@@ -336,14 +425,124 @@
 				<button type="button" class="pm-btn" data-cancel>Cancel</button>
 				<button type="submit" class="pm-btn pm-primary">${isNew ? 'Add task' : 'Save'}</button>
 			</div>
+			${stamp}
 		</form>`;
+	}
+
+	// ─── Timeline ───
+	// Gantt view: one row per task with dates, a bar from start to due, a diamond for a due date with no start,
+	// and a short fading bar for a start with no due date. Sections follow "Group by"; filters and tabs apply.
+	// Rows scroll sideways under a fixed label column. Tap a bar or label to open that task in the list.
+	function renderTimeline() {
+		const body = $('#pm-body');
+		const oldScroller = body.querySelector('.pm-tl-scroll');
+		const keepScroll = oldScroller ? oldScroller.scrollLeft : null;
+
+		const list = filteredItems();
+		const dated = list.filter((i) => i.start_at || i.due_at);
+		// Undated tasks in the same order as the list view: by group, then each task followed by its sub-tasks.
+		const order = new Map();
+		for (const t of tracksShown()) {
+			for (const g of groupsFor(t)) {
+				(function walk(items) { items.forEach((k) => { order.set(k.id, order.size); walk(kids(k.id)); }); })(kids(null).filter((r) => r.group_id === g.id));
+			}
+		}
+		const undated = list.filter((i) => !i.start_at && !i.due_at).sort((a, b) => (order.get(a.id) ?? 1e9) - (order.get(b.id) ?? 1e9));
+		const undatedHTML = undated.length
+			? `<section class="pm-group"><h2><span>No dates</span><span class="pm-gcount">${undated.length}</span></h2><div class="pm-list">` +
+				undated.map((i) => `<button type="button" class="pm-tl-undated" data-open="${i.id}"><span class="pm-tl-dot" data-s="${i.status}"></span>` +
+					`${ancestors(i).length ? `<span class="pm-crumb">${ancestors(i).map((a) => esc(a.title)).join(' › ')} ›</span>` : ''}${esc(i.title)}</button>`).join('') +
+				'</div></section>'
+			: '';
+
+		if (!dated.length) {
+			body.innerHTML = '<p class="pm-empty">No tasks with dates here yet. Open a task and give it a start or due date to see it on the timeline.</p>' + undatedHTML;
+			return;
+		}
+
+		const now = Date.now();
+		const px = ZOOMS[ui.zoom] || ZOOMS.week;
+		const when = (i) => Date.parse(i.start_at || i.due_at);
+		const times = dated.flatMap((i) => [i.start_at, i.due_at].filter(Boolean).map((t) => Date.parse(t)));
+
+		// Range: from the Monday before the earliest date (or last week) to two weeks past the latest date.
+		const first = new Date(startOfDay(Math.min(now, ...times)));
+		first.setDate(first.getDate() - 7 - ((first.getDay() + 6) % 7));
+		const last = new Date(startOfDay(Math.max(now, ...times)));
+		last.setDate(last.getDate() + 15);
+		const dayList = [];
+		for (const d = new Date(first); d <= last; d.setDate(d.getDate() + 1)) dayList.push(new Date(d));
+		const min = first.getTime();
+		const W = dayList.length * px;
+		const x = (ms) => ((ms - min) / DAY) * px;
+
+		// Header: week starts (and month names when zoomed out).
+		const ticks = dayList.map((d, ix) => {
+			const left = ix * px;
+			if (ui.zoom === 'month') {
+				if (d.getDate() === 1) {
+					const opts = { month: 'short' };
+					if (d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
+					return `<span class="pm-tl-tick pm-tl-major" style="left:${left}px">${d.toLocaleDateString('en-ZA', opts)}</span>`;
+				}
+				return d.getDay() === 1 ? `<span class="pm-tl-tick" style="left:${left}px"></span>` : '';
+			}
+			return d.getDay() === 1 ? `<span class="pm-tl-tick pm-tl-major" style="left:${left}px">${d.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}</span>` : '';
+		}).join('');
+
+		const barHTML = (i) => {
+			const s = i.start_at ? Date.parse(i.start_at) : null;
+			const e = i.due_at ? Date.parse(i.due_at) : null;
+			const od = isOverdue(i);
+			const cls = `pm-tl-bar${od ? ' pm-overdue' : ''}`;
+			const tip = [i.title, s ? 'Starts ' + fmtDate(i.start_at, 'start') : '', e ? 'Due ' + fmtDate(i.due_at, 'due') : '', od ? 'Overdue' : STATUS_LABEL[i.status]].filter(Boolean).join(' · ');
+			let shape, endX;
+			if (s !== null && e !== null) {
+				const left = x(s);
+				const width = Math.max(6, x(e) - left);
+				shape = `<button type="button" class="${cls}" data-s="${i.status}" data-open="${i.id}" title="${esc(tip)}" style="left:${left}px;width:${width}px"></button>`;
+				endX = left + width;
+			} else if (e !== null) {
+				shape = `<button type="button" class="${cls} pm-tl-milestone" data-s="${i.status}" data-open="${i.id}" title="${esc(tip)}" style="left:${x(e) - 7}px"></button>`;
+				endX = x(e) + 8;
+			} else {
+				shape = `<button type="button" class="${cls} pm-tl-openend" data-s="${i.status}" data-open="${i.id}" title="${esc(tip)}" style="left:${x(s)}px;width:${3 * px}px"></button>`;
+				endX = x(s) + 3 * px;
+			}
+			const label = e !== null ? (od ? 'Overdue · ' : '') + fmtDate(i.due_at, 'due') : 'Starts ' + fmtDate(i.start_at, 'start');
+			return shape + `<span class="pm-tl-when${od ? ' pm-overdue' : ''}" style="left:${endX + 6}px">${esc(label)}</span>`;
+		};
+
+		const rows = bucketize(dated.sort((a, b) => when(a) - when(b))).map((sec) =>
+			`<div class="pm-tl-sec"><span class="pm-tl-label">${esc(sec.label)} <span class="pm-gcount">${sec.items.length}</span></span><div class="pm-tl-lane"></div></div>` +
+			sec.items.map((i) => {
+				const crumbs = ancestors(i).map((a) => esc(a.title));
+				const person = personById(i.person_id);
+				return `<div class="pm-tl-row${i.status === 'done' ? ' pm-done' : ''}">` +
+					`<button type="button" class="pm-tl-label" data-open="${i.id}" title="${esc(i.title)}">` +
+						(crumbs.length ? `<span class="pm-crumb">${crumbs.join(' › ')} ›</span>` : '') +
+						`<span class="pm-tl-title">${esc(i.title)}</span>${person ? `<span class="pm-chip pm-person">${esc(person.name)}</span>` : ''}</button>` +
+					`<div class="pm-tl-lane">${barHTML(i)}</div></div>`;
+			}).join('')
+		).join('');
+
+		body.innerHTML =
+			'<p class="pm-hint">Bar = start to due. ◆ = due date only. Red = overdue. Tap a task to open it.</p>' +
+			`<div class="pm-tl-scroll"><div class="pm-tl-canvas" style="--px:${px}px;--w:${W}px">` +
+				`<div class="pm-tl-head"><span class="pm-tl-label"></span><div class="pm-tl-lane">${ticks}</div></div>` +
+				rows +
+				`<div class="pm-tl-today" style="--x:${x(now)}px" title="Now"></div>` +
+			'</div></div>' + undatedHTML;
+
+		const scroller = body.querySelector('.pm-tl-scroll');
+		scroller.scrollLeft = keepScroll !== null ? keepScroll : Math.max(0, x(now) - 3 * px * (ui.zoom === 'month' ? 3 : 1));
 	}
 
 	// ─── Writes ───
 	async function loadAll() {
 		const q = (table, cols) => supabaseClient.from(table).select(cols).eq('venue_id', venueId);
 		const results = await Promise.all([
-			q('tbl_pm_items', 'id, track, group_id, parent_id, person_id, title, note, status, sort_order'),
+			q('tbl_pm_items', 'id, track, group_id, parent_id, person_id, title, note, status, sort_order, start_at, due_at, created_at, updated_at'),
 			q('tbl_pm_groups', 'id, track, name, sort_order'),
 			q('tbl_pm_people', 'id, name'),
 			q('tbl_pm_links', 'id, from_id, to_id, link_type')
@@ -414,6 +613,16 @@
 		const wantPerson = val('person_id');
 		if (!parentId && wantGroup === '__new' && !val('new_group')) { TDC.status(statusEl, 'Type a name for the new group.', 'error'); return false; }
 		if (wantPerson === '__new' && !val('new_person')) { TDC.status(statusEl, 'Type a name for the new person.', 'error'); return false; }
+		let startAt, dueAt;
+		try {
+			startAt = fromInputs(val('start_date'), val('start_time'), START_OF_DAY);
+			dueAt = fromInputs(val('due_date'), val('due_time'), END_OF_DAY);
+		} catch (err) {
+			TDC.error(AREA, err.message.replace('TDC (Error): ', ''), err, statusEl);
+			return false;
+		}
+		if ((val('start_time') && !val('start_date')) || (val('due_time') && !val('due_date'))) { TDC.status(statusEl, 'A time needs a date too.', 'error'); return false; }
+		if (startAt && dueAt && startAt > dueAt) { TDC.status(statusEl, 'The start can\'t be after the due date.', 'error'); return false; }
 		const links = [...form.querySelectorAll('.pm-linkrow')]
 			.map((r) => ({ link_type: r.querySelector('.pm-ltype').value, to_id: r.querySelector('.pm-ltarget').value }))
 			.filter((l) => l.to_id)
@@ -424,7 +633,7 @@
 			if (!parentId) groupId = wantGroup === '__new' ? await addGroup(track, val('new_group')) : wantGroup;
 			if (!parentId && !groupId) throw new Error('TDC (Error): no group chosen for a top-level task.');
 			const personId = wantPerson === '__new' ? await addPerson(val('new_person')) : (wantPerson || null);
-			const body = { title, note: val('note'), parent_id: parentId, group_id: groupId, person_id: personId };
+			const body = { title, note: val('note'), parent_id: parentId, group_id: groupId, person_id: personId, start_at: startAt, due_at: dueAt };
 
 			let id = fid;
 			if (fid === 'new') {
@@ -464,12 +673,27 @@
 		setTimeout(() => row.classList.remove('pm-flash'), 1400);
 	}
 
+	// From the timeline: open a task in the list view with its edit form.
+	function openTask(id) {
+		if (!data.items[id]) return;
+		ui.view = 'list';
+		jumpTo(id);
+		editing = id;
+		render();
+		const row = document.getElementById('pm-row-' + id);
+		if (row) row.scrollIntoView({ block: 'center' });
+		focusSoon('#pm-f-title-' + id);
+	}
+
 	root.addEventListener('click', async (e) => {
 		const t = e.target.closest('button');
 		if (!t) return;
 		const d = t.dataset;
 
 		if (d.track) { ui.track = d.track; editing = null; renaming = null; saveUI(); render(); return; }
+		if (d.view) { ui.view = d.view; editing = null; renaming = null; saveUI(); render(); return; }
+		if ('showOverdue' in d) { ui.fStatus = 'overdue'; editing = null; saveUI(); render(); return; }
+		if (d.open) { openTask(d.open); return; }
 		if (d.toggle) { expanded.has(d.toggle) ? expanded.delete(d.toggle) : expanded.add(d.toggle); saveUI(); render(); return; }
 		if (d.jump) { jumpTo(d.jump); return; }
 		if (d.edit) { editing = editing === d.edit ? null : d.edit; renaming = null; render(); if (editing) focusSoon('#pm-f-title-' + editing); return; }
@@ -507,7 +731,7 @@
 
 	root.addEventListener('change', async (e) => {
 		const el = e.target;
-		const filterKeys = { 'pm-fStatus': 'fStatus', 'pm-fPerson': 'fPerson', 'pm-fGroup': 'fGroup', 'pm-groupBy': 'groupBy' };
+		const filterKeys = { 'pm-fStatus': 'fStatus', 'pm-fPerson': 'fPerson', 'pm-fGroup': 'fGroup', 'pm-groupBy': 'groupBy', 'pm-zoom': 'zoom' };
 		if (filterKeys[el.id]) { ui[filterKeys[el.id]] = el.value; editing = null; saveUI(); render(); return; }
 		if (el.id === 'pm-showDone') { ui.showDone = el.checked; saveUI(); render(); return; }
 		if (el.matches('select.pm-pill')) {
@@ -540,8 +764,7 @@
 			const name = form.querySelector('input').value.trim();
 			if (!name) return;
 			const ok = await write(() => addGroup(ui.track, name), 'Group added.');
-			if (ok) editing = null;
-			render();
+			if (ok) { editing = null; render(); }
 			return;
 		}
 
@@ -550,15 +773,13 @@
 			if (!name) return;
 			const table = form.dataset.rename === 'group' ? 'tbl_pm_groups' : 'tbl_pm_people';
 			const ok = await write(async () => check(await supabaseClient.from(table).update({ name }).eq('id', form.dataset.id)), 'Renamed.');
-			if (ok) renaming = null;
-			render();
+			if (ok) { renaming = null; render(); }
 			return;
 		}
 
+		// On a problem the form stays open with what was typed, and the message explains what to fix.
 		const ok = await saveForm(form);
-		if (ok) editing = null;
-		saveUI();
-		render();
+		if (ok) { editing = null; saveUI(); render(); }
 	});
 
 	// Catch up with changes made on another device when you come back to this tab (at most every 5 seconds).
