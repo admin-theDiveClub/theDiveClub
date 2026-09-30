@@ -6,10 +6,12 @@
 // How it works: loadAll() reads the whole board for the venue into `data`, render() draws it from `data` and `ui`.
 // Every change is written to Supabase, then the board is reloaded. It also reloads when you come back to the tab.
 //
-// Views: List (grouped, nested tasks) and Timeline (Gantt bars from start to due date).
+// Views: List (grouped, nested tasks), Timeline (Gantt bars from start to due date) and Costs (itemised estimates with totals).
+// Costs: each task's low–high range is its own; a parent shows its sub-tasks' costs separately. Once-off, monthly and
+// yearly costs are totalled separately.
 // Overdue is worked out here, not stored: a due date in the past on a task that isn't Done.
 //
-// Sections: constants · state · model helpers · dates · rendering (list, timeline) · writes · events · start.
+// Sections: constants · state · model helpers · dates · money · rendering (list, timeline, costs) · writes · events · start.
 
 (() => {
 	const AREA = 'Board';
@@ -27,6 +29,8 @@
 	const ZOOMS = { week: 28, month: 10 };     // timeline pixels per day
 	const END_OF_DAY = '23:59';                // a due time left blank is saved as 23:59 and shown as just the date
 	const START_OF_DAY = '00:00';              // a start time left blank is saved as 00:00
+	const PERIODS = [['once', 'Once-off'], ['monthly', 'Monthly'], ['yearly', 'Yearly']];
+	const PERIOD_SUFFIX = { once: '', monthly: '/mo', yearly: '/yr' };
 
 	// ─── State ───
 	const root = document.getElementById('pm-board');
@@ -81,6 +85,27 @@
 	const isOverdue = (i) => !!i.due_at && i.status !== 'done' && Date.parse(i.due_at) < Date.now();
 	const hasOpenDescendant = (id) => descendants(id).some((d) => d.status !== 'done');
 	const visibleInTree = (it) => ui.showDone || it.status !== 'done' || hasOpenDescendant(it.id) || editing === it.id;
+	const hasCost = (i) => i.cost_low !== null && i.cost_low !== undefined;
+	// Totals of the sub-tasks' own costs, per period: { once: { low, high, n }, ... }.
+	function subCosts(id) {
+		const out = {};
+		for (const d of descendants(id)) {
+			if (!hasCost(d)) continue;
+			const t = out[d.cost_period] || (out[d.cost_period] = { low: 0, high: 0, n: 0 });
+			t.low += Number(d.cost_low); t.high += Number(d.cost_high); t.n++;
+		}
+		return out;
+	}
+	// Position of every task in list-view order (by group, then each task followed by its sub-tasks).
+	function treeOrder() {
+		const order = new Map();
+		for (const t of tracksShown()) {
+			for (const g of groupsFor(t)) {
+				(function walk(items) { items.forEach((k) => { order.set(k.id, order.size); walk(kids(k.id)); }); })(kids(null).filter((r) => r.group_id === g.id));
+			}
+		}
+		return order;
+	}
 	const linksFrom = (id) => data.links.filter((l) => l.from_id === id);
 	const linksTo = (id) => data.links.filter((l) => l.to_id === id);
 
@@ -121,13 +146,30 @@
 	}
 	const startOfDay = (ms) => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
 
+	// ─── Money ───
+	const moneyFull = (n) => new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: Number(n) % 1 ? 2 : 0 }).format(Number(n));
+	// Short form for chips: R950, R7.5k, R75k, R1.2m.
+	function moneyShort(n) {
+		n = Number(n);
+		if (n >= 1e6) return 'R' + (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'm';
+		if (n >= 1e3) return 'R' + (n / 1e3).toFixed(n >= 1e4 ? 0 : 1).replace(/\.0$/, '') + 'k';
+		return 'R' + Math.round(n);
+	}
+	const rangeShort = (low, high) => (Number(low) === Number(high) ? moneyShort(low) : `${moneyShort(low)}–${moneyShort(high)}`);
+	// "R75 000", "R25 000,50": what someone typed into a cost box → number, '' → null, anything else → NaN.
+	function parseMoney(text) {
+		const t = String(text || '').replace(/[R\s]/gi, '').replace(/,(?=\d{1,2}$)/, '.').replace(/,/g, '');
+		if (!t) return null;
+		return /^\d+(\.\d{1,2})?$/.test(t) ? Number(t) : NaN;
+	}
+
 	// ─── Rendering ───
 	function renderShell() {
 		root.innerHTML = `
 			<header class="pm-head">
 				<div>
 					<h1>Project Board</h1>
-					<p class="muted">The running list for the business and the website.</p>
+					<p class="muted">Business and website tasks, dates and costs.</p>
 				</div>
 				<div class="pm-counts" id="pm-counts"></div>
 			</header>
@@ -138,6 +180,7 @@
 				<div class="pm-views">
 					<button type="button" class="pm-view" data-view="list">List</button>
 					<button type="button" class="pm-view" data-view="timeline">Timeline</button>
+					<button type="button" class="pm-view" data-view="costs">Costs</button>
 					<select id="pm-zoom" aria-label="Timeline scale"><option value="week">Weeks</option><option value="month">Months</option></select>
 				</div>
 			</div>
@@ -193,6 +236,7 @@
 		pendingRender = false;
 		renderControls();
 		if (ui.view === 'timeline') { renderTimeline(); return; }
+		if (ui.view === 'costs') { renderCosts(); return; }
 		const out = treeMode() ? renderTree() : renderFlat();
 		$('#pm-body').innerHTML = out.join('') || '<p class="pm-empty">No tasks yet.</p>';
 	}
@@ -225,12 +269,13 @@
 	// Filtered or regrouped view: matching tasks in flat sections, each showing its parent path.
 	// Tasks with sub-tasks can still be expanded here.
 	// Tasks in the shown tab(s) that pass the search and filters.
-	function filteredItems() {
+	// includeDone: keep Done tasks even when "Show done" is off (the Costs view counts everything).
+	function filteredItems(includeDone) {
 		const q = ui.q.toLowerCase();
 		return allItems().filter((i) => tracksShown().includes(i.track)).filter((i) => {
 			if (ui.fStatus === 'overdue' && !isOverdue(i)) return false;
 			if (ui.fStatus && ui.fStatus !== 'overdue' && i.status !== ui.fStatus) return false;
-			if (ui.fStatus !== 'done' && !ui.showDone && i.status === 'done') return false;
+			if (!includeDone && ui.fStatus !== 'done' && !ui.showDone && i.status === 'done') return false;
 			if (ui.fPerson === '__none' && i.person_id) return false;
 			if (ui.fPerson && ui.fPerson !== '__none' && i.person_id !== ui.fPerson) return false;
 			if (ui.fGroup && groupNameOf(i) !== ui.fGroup) return false;
@@ -293,6 +338,15 @@
 			(group ? `<button type="button" class="pm-link" data-add="${group.track}:${group.id}">+ Add task</button>` : '') + '</h2>';
 	}
 
+	// "R75k–90k" for the task's own cost, and "Sub-tasks R72k–135k" when its sub-tasks carry costs.
+	function costChips(i) {
+		let out = hasCost(i) ? `<span class="pm-chip pm-cost">${rangeShort(i.cost_low, i.cost_high)}${PERIOD_SUFFIX[i.cost_period]}</span>` : '';
+		const sub = subCosts(i.id);
+		const parts = PERIODS.filter(([p]) => sub[p]).map(([p]) => rangeShort(sub[p].low, sub[p].high) + PERIOD_SUFFIX[p]);
+		if (parts.length) out += `<span class="pm-chip pm-cost pm-cost-sub" title="Sub-tasks' own costs, not included in this task's cost">Sub-tasks ${parts.join(' + ')}</span>`;
+		return out;
+	}
+
 	// "Overdue · 25 Sep", "Due 1 Oct 14:00" or "Starts 5 Oct".
 	function dueChip(i) {
 		if (i.due_at) {
@@ -345,7 +399,7 @@
 				(crumbs.length ? `<span class="pm-crumb">${crumbs.join(' › ')} ›</span>` : '') +
 				`<button type="button" class="pm-title" data-edit="${i.id}" aria-expanded="${editing === i.id}">${esc(i.title)}</button>` +
 				(all.length ? `<span class="pm-chip" title="Sub-tasks done">${doneCount}/${all.length}</span>` : '') +
-				dueChip(i) +
+				dueChip(i) + costChips(i) +
 				(person ? `<span class="pm-chip pm-person">${esc(person.name)}</span>` : '') +
 			'</div>' +
 			(i.note || rel ? `<div class="pm-meta">${rel}${i.note ? `<span class="pm-note">${esc(i.note)}</span>` : ''}</div>` : '') +
@@ -415,7 +469,13 @@
 				<label>Start<span class="pm-pair"><input type="date" id="pm-f-sdate-${fid}" name="start_date" value="${start.date}"><input type="time" id="pm-f-stime-${fid}" name="start_time" value="${start.time}" aria-label="Start time (optional)"></span></label>
 				<label>Due<span class="pm-pair"><input type="date" id="pm-f-ddate-${fid}" name="due_date" value="${due.date}"><input type="time" id="pm-f-dtime-${fid}" name="due_time" value="${due.time}" aria-label="Due time (optional)"></span></label>
 			</div>
-			<p class="pm-hint">Times are optional. No start time means the start of the day; no due time means the end of it.</p>
+			<p class="pm-hint">Times are optional: blank start = start of day, blank due = end of day.</p>
+			<div class="pm-grid3">
+				<label>Cost from (R)<input id="pm-f-clow-${fid}" name="cost_low" inputmode="decimal" autocomplete="off" value="${hasCost(it) ? esc(it.cost_low) : ''}"></label>
+				<label>Cost to (R)<input id="pm-f-chigh-${fid}" name="cost_high" inputmode="decimal" autocomplete="off" value="${hasCost(it) && Number(it.cost_high) !== Number(it.cost_low) ? esc(it.cost_high) : ''}"></label>
+				<label>Cost is<select id="pm-f-cperiod-${fid}" name="cost_period">${PERIODS.map(([v, l]) => `<option value="${v}"${v === (it.cost_period || 'once') ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+			</div>
+			<p class="pm-hint">One figure = both. This task only; sub-tasks carry their own.</p>
 			<fieldset><legend>Links to other tasks</legend>
 				<div class="pm-links">${links.map((l) => linkRowHTML(l, exclude)).join('')}</div>
 				<div><button type="button" class="pm-link" data-addlink>+ Add link</button></div>
@@ -441,12 +501,7 @@
 		const list = filteredItems();
 		const dated = list.filter((i) => i.start_at || i.due_at);
 		// Undated tasks in the same order as the list view: by group, then each task followed by its sub-tasks.
-		const order = new Map();
-		for (const t of tracksShown()) {
-			for (const g of groupsFor(t)) {
-				(function walk(items) { items.forEach((k) => { order.set(k.id, order.size); walk(kids(k.id)); }); })(kids(null).filter((r) => r.group_id === g.id));
-			}
-		}
+		const order = treeOrder();
 		const undated = list.filter((i) => !i.start_at && !i.due_at).sort((a, b) => (order.get(a.id) ?? 1e9) - (order.get(b.id) ?? 1e9));
 		const undatedHTML = undated.length
 			? `<section class="pm-group"><h2><span>No dates</span><span class="pm-gcount">${undated.length}</span></h2><div class="pm-list">` +
@@ -527,7 +582,7 @@
 		).join('');
 
 		body.innerHTML =
-			'<p class="pm-hint">Bar = start to due. ◆ = due date only. Red = overdue. Tap a task to open it.</p>' +
+			'<p class="pm-hint">Bar = start to due · ◆ = due only · Red = overdue. Tap to open.</p>' +
 			`<div class="pm-tl-scroll"><div class="pm-tl-canvas" style="--px:${px}px;--w:${W}px">` +
 				`<div class="pm-tl-head"><span class="pm-tl-label"></span><div class="pm-tl-lane">${ticks}</div></div>` +
 				rows +
@@ -538,11 +593,76 @@
 		scroller.scrollLeft = keepScroll !== null ? keepScroll : Math.max(0, x(now) - 3 * px * (ui.zoom === 'month' ? 3 : 1));
 	}
 
+	// ─── Costs ───
+	// Itemised estimates: one table per period (once-off, monthly, yearly), sections follow "Group by", with subtotals
+	// and a total. Tabs, search and filters apply; Done tasks are always included, since their cost still counts.
+	function renderCosts() {
+		const body = $('#pm-body');
+		const order = treeOrder();
+		const byTree = (a, b) => (order.get(a.id) ?? 1e9) - (order.get(b.id) ?? 1e9);
+		const list = filteredItems(true).sort(byTree);
+		const costed = list.filter(hasCost);
+		const uncosted = list.filter((i) => !hasCost(i) && !descendants(i.id).some(hasCost));
+
+		const sum = (items) => items.reduce((t, i) => ({ low: t.low + Number(i.cost_low), high: t.high + Number(i.cost_high) }), { low: 0, high: 0 });
+		const cell = (low, high) => `<td class="pm-num">${moneyFull(low)}</td><td class="pm-num">${moneyFull(high)}</td>`;
+		const gap = '<td class="pm-ct-status"></td><td class="pm-ct-person"></td>';   // empty Status/Person cells (hidden on phones)
+		const periods = PERIODS.filter(([p]) => costed.some((i) => i.cost_period === p));
+
+		const tiles = periods.map(([p, label]) => {
+			const t = sum(costed.filter((i) => i.cost_period === p));
+			return `<div class="pm-tile"><span class="pm-tile-label">${label}</span><span class="pm-tile-value">${Number(t.low) === Number(t.high) ? moneyFull(t.low) : `${moneyFull(t.low)} – ${moneyFull(t.high)}`}${PERIOD_SUFFIX[p]}</span></div>`;
+		}).join('');
+
+		const tables = periods.map(([p, label]) => {
+			const items = costed.filter((i) => i.cost_period === p);
+			const sections = bucketize(items);
+			const showHeads = ui.groupBy !== 'none';
+			const rows = sections.map((sec) => {
+				const t = sum(sec.items);
+				return (showHeads ? `<tr class="pm-ct-sec"><th colspan="5" scope="rowgroup">${esc(sec.label)}</th></tr>` : '') +
+					sec.items.map((i) => {
+						const crumbs = ancestors(i).map((a) => esc(a.title));
+						const person = personById(i.person_id);
+						const sub = subCosts(i.id)[p];
+						return `<tr class="${i.status === 'done' ? 'pm-done' : ''}">` +
+							'<td class="pm-ct-task">' +
+								(crumbs.length ? `<span class="pm-crumb">${crumbs.join(' › ')} ›</span>` : '') +
+								`<button type="button" class="pm-ct-title" data-open="${i.id}">${esc(i.title)}</button>` +
+								(sub ? `<span class="pm-chip pm-cost pm-cost-sub" title="Listed separately below their own rows">+ sub-tasks ${rangeShort(sub.low, sub.high)}${PERIOD_SUFFIX[p]}</span>` : '') +
+							'</td>' +
+							`<td class="pm-ct-status"><span class="pm-tl-dot" data-s="${i.status}"></span>${STATUS_LABEL[i.status]}</td>` +
+							`<td class="pm-ct-person">${person ? esc(person.name) : ''}</td>` +
+							cell(i.cost_low, i.cost_high) + '</tr>';
+					}).join('') +
+					(showHeads && sections.length > 1 ? `<tr class="pm-ct-subtotal"><td>Subtotal · ${esc(sec.label)}</td>${gap}${cell(t.low, t.high)}</tr>` : '');
+			}).join('');
+			const total = sum(items);
+			return `<section class="pm-group"><h2><span>${label}</span><span class="pm-gcount">${items.length}</span></h2>` +
+				'<div class="pm-ct-wrap"><table class="pm-ct">' +
+				`<thead><tr><th scope="col">Task</th><th scope="col" class="pm-ct-status">Status</th><th scope="col" class="pm-ct-person">Person</th><th scope="col" class="pm-num">Low${PERIOD_SUFFIX[p]}</th><th scope="col" class="pm-num">High${PERIOD_SUFFIX[p]}</th></tr></thead>` +
+				`<tbody>${rows}</tbody>` +
+				`<tfoot><tr><th scope="row">Total ${label.toLowerCase()}</th>${gap}${cell(total.low, total.high)}</tr></tfoot>` +
+				'</table></div></section>';
+		}).join('');
+
+		const missing = uncosted.length
+			? `<details class="pm-ct-missing"><summary>${uncosted.length} task${uncosted.length > 1 ? 's' : ''} without a cost</summary><div class="pm-list">` +
+				uncosted.map((i) => `<button type="button" class="pm-tl-undated" data-open="${i.id}"><span class="pm-tl-dot" data-s="${i.status}"></span>` +
+					`${ancestors(i).length ? `<span class="pm-crumb">${ancestors(i).map((a) => esc(a.title)).join(' › ')} ›</span>` : ''}${esc(i.title)}</button>`).join('') +
+				'</div></details>'
+			: '';
+
+		body.innerHTML = costed.length
+			? `<div class="pm-tiles">${tiles}</div><p class="pm-hint">Each cost counts once. "+ sub-tasks" = what a task's sub-tasks add (on their own rows). Done tasks included.</p>${tables}${missing}`
+			: `<p class="pm-empty">No costs here yet. Open a task and add a cost to see it here.</p>${missing}`;
+	}
+
 	// ─── Writes ───
 	async function loadAll() {
 		const q = (table, cols) => supabaseClient.from(table).select(cols).eq('venue_id', venueId);
 		const results = await Promise.all([
-			q('tbl_pm_items', 'id, track, group_id, parent_id, person_id, title, note, status, sort_order, start_at, due_at, created_at, updated_at'),
+			q('tbl_pm_items', 'id, track, group_id, parent_id, person_id, title, note, status, sort_order, start_at, due_at, created_at, updated_at, cost_low, cost_high, cost_period'),
 			q('tbl_pm_groups', 'id, track, name, sort_order'),
 			q('tbl_pm_people', 'id, name'),
 			q('tbl_pm_links', 'id, from_id, to_id, link_type')
@@ -623,6 +743,12 @@
 		}
 		if ((val('start_time') && !val('start_date')) || (val('due_time') && !val('due_date'))) { TDC.status(statusEl, 'A time needs a date too.', 'error'); return false; }
 		if (startAt && dueAt && startAt > dueAt) { TDC.status(statusEl, 'The start can\'t be after the due date.', 'error'); return false; }
+		let costLow = parseMoney(val('cost_low'));
+		let costHigh = parseMoney(val('cost_high'));
+		if (Number.isNaN(costLow) || Number.isNaN(costHigh)) { TDC.status(statusEl, 'Costs must be amounts in rand, like 75000 or 75 000.', 'error'); return false; }
+		if (costLow === null) costLow = costHigh;
+		if (costHigh === null) costHigh = costLow;
+		if (costLow !== null && costLow > costHigh) [costLow, costHigh] = [costHigh, costLow];
 		const links = [...form.querySelectorAll('.pm-linkrow')]
 			.map((r) => ({ link_type: r.querySelector('.pm-ltype').value, to_id: r.querySelector('.pm-ltarget').value }))
 			.filter((l) => l.to_id)
@@ -633,7 +759,8 @@
 			if (!parentId) groupId = wantGroup === '__new' ? await addGroup(track, val('new_group')) : wantGroup;
 			if (!parentId && !groupId) throw new Error('TDC (Error): no group chosen for a top-level task.');
 			const personId = wantPerson === '__new' ? await addPerson(val('new_person')) : (wantPerson || null);
-			const body = { title, note: val('note'), parent_id: parentId, group_id: groupId, person_id: personId, start_at: startAt, due_at: dueAt };
+			const body = { title, note: val('note'), parent_id: parentId, group_id: groupId, person_id: personId, start_at: startAt, due_at: dueAt,
+				cost_low: costLow, cost_high: costHigh, cost_period: val('cost_period') || 'once' };
 
 			let id = fid;
 			if (fid === 'new') {
