@@ -26,6 +26,7 @@ To work on it locally: `npx eleventy --serve` and log in as an owner. Changes to
 ## Features
 
 - Tabs: Business, Website, All. Views: **List**, **Timeline** and **Costs**.
+- **Reorder** in the List view (Group by Group, no filters): drag a task by its ⋮⋮ handle (mouse or touch). Drop on the top or bottom of a task to go before/after it, the middle to make it a sub-task, or a group heading to move it to that group. On the handle, the Up/Down arrow keys move it one place.
 - Statuses: Next, In progress, To do, Waiting, Done. Keep Next to about three per side.
 - Sub-tasks to any depth. A sub-task works like a task (status, person, links, its own sub-tasks). Deleting a task deletes its sub-tasks.
 - Links between tasks: Waiting on, Blocks, Related to. The other task shows the reverse ("Holding up", "Blocked by"). Tap a link to jump to that task.

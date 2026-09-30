@@ -11,7 +11,9 @@
 // yearly costs are totalled separately.
 // Overdue is worked out here, not stored: a due date in the past on a task that isn't Done.
 //
-// Sections: constants · state · model helpers · dates · money · rendering (list, timeline, costs) · writes · events · start.
+// Reordering: drag a task by its ⋮⋮ handle (mouse or touch) in the normal List view, or use the arrow keys on the handle.
+//
+// Sections: constants · state · model helpers · dates · money · rendering (list, timeline, costs) · writes · drag and drop · events · start.
 
 (() => {
 	const AREA = 'Board';
@@ -256,7 +258,7 @@
 					body += `<div class="pm-empty">${roots.length ? 'All done here.' : 'No tasks in this group yet.'}` +
 						(roots.length ? '' : ` <button type="button" class="pm-link" data-delgroup="${g.id}">Remove group</button>`) + '</div>';
 				}
-				out.push(`<section class="pm-group">${headHTML('group', g.id, g.name, label, roots.length)}<div class="pm-list">${body}</div></section>`);
+				out.push(`<section class="pm-group" data-group="${g.id}">${headHTML('group', g.id, g.name, label, roots.length)}<div class="pm-list">${body}</div></section>`);
 			}
 		}
 		if (editing === 'newgroup') {
@@ -392,7 +394,8 @@
 		const person = personById(i.person_id);
 		const rel = linksHTML(i);
 
-		let h = `<div class="pm-node"><div class="pm-row${i.status === 'done' ? ' pm-done' : ''}" id="pm-row-${i.id}" style="--depth:${depth}">` +
+		let h = `<div class="pm-node"><div class="pm-row${i.status === 'done' ? ' pm-done' : ''}" id="pm-row-${i.id}" data-row="${i.id}" style="--depth:${depth}">` +
+			(treeMode() ? `<button type="button" class="pm-drag" data-drag="${i.id}" aria-label="Move ${esc(i.title)}: drag, or use the up and down arrow keys" title="Drag to move">⋮⋮</button>` : '') +
 			(ks.length ? `<button type="button" class="pm-chev" data-toggle="${i.id}" aria-expanded="${open}" aria-label="${open ? 'Collapse' : 'Expand'} sub-tasks">▶</button>` : '<span class="pm-chev pm-none"></span>') +
 			statusSelect(i) +
 			'<div class="pm-main">' +
@@ -779,6 +782,149 @@
 		}, fid === 'new' ? 'Task added.' : 'Saved.');
 	}
 
+	// ─── Drag and drop ───
+	// Only in the normal List view (Group by Group, no filters), where the order on screen is the real order.
+	// Drop on the top or bottom of a row = before/after it; the middle = make it a sub-task; a group heading = move there.
+	let drag = null;   // { id, pointerId, x0, y0, started, ghost, target }
+
+	// Siblings of a task's new position, in order, without the task itself.
+	function siblingsFor(parentId, groupId, excludeId) {
+		const list = parentId ? kids(parentId) : kids(null).filter((r) => r.group_id === groupId);
+		return list.filter((k) => k.id !== excludeId);
+	}
+
+	// Where would this drop put the task? Returns { parentId, groupId, index } or null if it isn't allowed.
+	function dropPlan(id, target) {
+		const it = data.items[id];
+		if (!it || !target) return null;
+		if (target.mode === 'group') {
+			const g = groupById(target.groupId);
+			if (!g || g.track !== it.track) return null;
+			return { parentId: null, groupId: g.id, index: siblingsFor(null, g.id, id).length };
+		}
+		const t = data.items[target.id];
+		if (!t || t.id === id || t.track !== it.track) return null;
+		if (descendants(id).some((d) => d.id === t.id)) return null;          // can't go inside its own sub-tasks
+		if (target.mode === 'inside') return { parentId: t.id, groupId: null, index: siblingsFor(t.id, null, id).length };
+		const parentId = t.parent_id || null;
+		const groupId = parentId ? null : t.group_id;
+		const sibs = siblingsFor(parentId, groupId, id);
+		return { parentId, groupId, index: sibs.findIndex((k) => k.id === t.id) + (target.mode === 'after' ? 1 : 0) };
+	}
+
+	// Save a move: the task's new parent/group, and a clean 1, 2, 3… order for its new siblings.
+	async function applyMove(id, plan) {
+		const it = data.items[id];
+		const sibs = siblingsFor(plan.parentId, plan.groupId, id);
+		sibs.splice(plan.index, 0, it);
+		const moved = (it.parent_id || null) !== plan.parentId || (!plan.parentId && it.group_id !== plan.groupId);
+		const ok = await write(async () => {
+			for (let n = 0; n < sibs.length; n++) {
+				const k = sibs[n];
+				if (k.id === id) {
+					const body = { sort_order: n + 1 };
+					if (moved) Object.assign(body, { parent_id: plan.parentId, group_id: plan.groupId });
+					if (moved || k.sort_order !== n + 1) check(await supabaseClient.from('tbl_pm_items').update(body).eq('id', id));
+				} else if (k.sort_order !== n + 1) {
+					check(await supabaseClient.from('tbl_pm_items').update({ sort_order: n + 1 }).eq('id', k.id));
+				}
+			}
+		}, 'Moved.');
+		if (ok && plan.parentId) expanded.add(plan.parentId);
+		saveUI();
+		render();
+		const handle = root.querySelector(`[data-drag="${id}"]`);
+		if (handle) handle.focus({ preventScroll: true });
+	}
+
+	// What's under the pointer: a row (before/after/inside) or a group.
+	function targetAt(x, y) {
+		const el = document.elementFromPoint(x, y);
+		if (!el) return null;
+		const row = el.closest('.pm-row[data-row]');
+		if (row && root.contains(row)) {
+			const r = row.getBoundingClientRect();
+			const f = (y - r.top) / r.height;
+			return { id: row.dataset.row, mode: f < 0.3 ? 'before' : f > 0.7 ? 'after' : 'inside', el: row };
+		}
+		const sec = el.closest('.pm-group[data-group]');
+		if (sec && root.contains(sec)) return { mode: 'group', groupId: sec.dataset.group, el: sec };
+		return null;
+	}
+
+	function clearDropMarks() {
+		root.querySelectorAll('.pm-drop-before, .pm-drop-after, .pm-drop-inside, .pm-drop-group')
+			.forEach((n) => n.classList.remove('pm-drop-before', 'pm-drop-after', 'pm-drop-inside', 'pm-drop-group'));
+	}
+
+	function endDrag() {
+		if (!drag) return;
+		clearDropMarks();
+		if (drag.ghost) drag.ghost.remove();
+		document.body.classList.remove('pm-dragging');
+		const src = document.getElementById('pm-row-' + drag.id);
+		if (src) src.classList.remove('pm-drag-source');
+		drag = null;
+	}
+
+	root.addEventListener('pointerdown', (e) => {
+		const h = e.target.closest('.pm-drag');
+		if (!h || !treeMode() || editing || e.button > 0) return;
+		e.preventDefault();
+		drag = { id: h.dataset.drag, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, started: false, ghost: null, target: null };
+		h.setPointerCapture(e.pointerId);
+	});
+
+	root.addEventListener('pointermove', (e) => {
+		if (!drag || e.pointerId !== drag.pointerId) return;
+		if (!drag.started) {
+			if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 5) return;
+			drag.started = true;
+			document.body.classList.add('pm-dragging');
+			const src = document.getElementById('pm-row-' + drag.id);
+			if (src) src.classList.add('pm-drag-source');
+			drag.ghost = document.createElement('div');
+			drag.ghost.className = 'pm-ghost';
+			drag.ghost.textContent = data.items[drag.id].title;
+			document.body.appendChild(drag.ghost);
+		}
+		drag.ghost.style.transform = `translate(${e.clientX + 12}px, ${e.clientY - 14}px)`;
+
+		// Scroll the page when dragging near the top or bottom edge.
+		if (e.clientY < 90) window.scrollBy(0, -14);
+		else if (e.clientY > window.innerHeight - 60) window.scrollBy(0, 14);
+
+		clearDropMarks();
+		const t = targetAt(e.clientX, e.clientY);
+		drag.target = t && dropPlan(drag.id, t) ? t : null;
+		if (drag.target) drag.target.el.classList.add('pm-drop-' + drag.target.mode);
+	});
+
+	root.addEventListener('pointerup', async (e) => {
+		if (!drag || e.pointerId !== drag.pointerId) return;
+		const { id, started, target } = drag;
+		endDrag();
+		if (!started || !target) return;
+		const plan = dropPlan(id, target);
+		if (plan) await applyMove(id, plan);
+	});
+	root.addEventListener('pointercancel', endDrag);
+
+	// Keyboard: on a handle, Up/Down moves the task one place among its siblings.
+	root.addEventListener('keydown', async (e) => {
+		if (e.key === 'Escape' && drag) { endDrag(); return; }
+		const h = e.target.closest && e.target.closest('.pm-drag');
+		if (!h || !treeMode() || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+		e.preventDefault();
+		const it = data.items[h.dataset.drag];
+		const sibs = siblingsFor(it.parent_id || null, it.parent_id ? null : it.group_id, null);
+		const ix = sibs.findIndex((k) => k.id === it.id);
+		const other = sibs[ix + (e.key === 'ArrowUp' ? -1 : 1)];
+		if (!other) return;
+		const plan = dropPlan(it.id, { id: other.id, mode: e.key === 'ArrowUp' ? 'before' : 'after' });
+		if (plan) await applyMove(it.id, plan);
+	});
+
 	// ─── Events ───
 	const focusSoon = (sel) => setTimeout(() => { const el = root.querySelector(sel); if (el) el.focus(); }, 0);
 
@@ -911,7 +1057,7 @@
 
 	// Catch up with changes made on another device when you come back to this tab (at most every 5 seconds).
 	document.addEventListener('visibilitychange', () => {
-		if (document.visibilityState === 'visible' && venueId && Date.now() - lastLoad > 5000) refresh();
+		if (document.visibilityState === 'visible' && venueId && !drag && Date.now() - lastLoad > 5000) refresh();
 	});
 
 	// ─── Start ───
