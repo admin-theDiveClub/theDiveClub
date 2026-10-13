@@ -1,0 +1,530 @@
+/* Match scorecard (/match/).
+   Mobile first, and landscape matters as much as portrait: a phone propped on the
+   rail is usually turned sideways. The stage fills the screen below the nav and is
+   the only thing a player touches during a frame. Everything else is below the fold
+   or in the settings panel. */
+
+.match-page {
+	width: 100%;
+}
+
+/* ── The stage ───────────────────────────────────────────────────── */
+/* body already carries padding-top: 60px for the fixed nav (nav.css), so the stage
+   takes exactly what is left of the viewport. dvh keeps it right while mobile
+   browser chrome slides in and out. */
+.stage {
+	display: grid;
+	grid-template-rows: 1fr auto 1fr;
+	height: calc(100dvh - 60px);
+	position: relative;
+	overflow: hidden;
+}
+/* No min-height: the stage is exactly one screen, never more. On a very short
+   viewport a half scrolls inside itself rather than pushing the stage past the
+   fold, so the halves always stay side by side (or stacked) as designed. */
+
+@media (orientation: landscape) {
+	.stage {
+		grid-template-rows: none;
+		grid-template-columns: 1fr auto 1fr;
+	}
+}
+
+/* ── A side's half ───────────────────────────────────────────────── */
+.half {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	padding: 0.6rem 0.75rem;
+	min-height: 0;
+	min-width: 0;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+	text-align: center;
+}
+.half.breaking {
+	background: color-mix(in srgb, var(--color-primary) 7%, transparent);
+}
+
+.half-top {
+	display: flex;
+	align-items: baseline;
+	justify-content: center;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+	max-width: 100%;
+}
+.half-name {
+	font-size: 0.95rem;
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+.half-players {
+	font-size: 0.75rem;
+	color: var(--text-muted);
+	overflow-wrap: anywhere;
+	max-width: 100%;
+}
+/* In a team match the lineup is a button: tap it to change who is at the table. */
+button.half-players {
+	background: none;
+	border: none;
+	padding: 0;
+	cursor: pointer;
+	font: inherit;
+	color: var(--text-muted);
+	text-decoration: underline dotted;
+	text-underline-offset: 3px;
+}
+.break-flag {
+	font-size: 0.65rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--color-primary);
+	border: 1px solid var(--color-primary);
+	border-radius: 999px;
+	padding: 0.1rem 0.45rem;
+	white-space: nowrap;
+}
+
+/* The score is the thing you read from across the table. */
+.half-score {
+	font-size: clamp(2.75rem, 13vmin, 5.5rem);
+	font-weight: 700;
+	line-height: 0.95;
+	font-variant-numeric: tabular-nums;
+}
+.half.leading .half-score { color: var(--color-primary); }
+
+/* ── Buttons inside a half ───────────────────────────────────────── */
+.half-group {
+	width: 100%;
+	max-width: 22rem;
+}
+.half-group-label {
+	font-size: 0.65rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--text-muted);
+	margin-bottom: 0.3rem;
+}
+.half-row {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 0.35rem;
+}
+
+.mbtn {
+	flex: 1 1 auto;
+	min-width: 4.2rem;
+	min-height: 2.75rem;
+	padding: 0.45rem 0.6rem;
+	border-radius: 8px;
+	border: 1px solid var(--border-color);
+	background: var(--bg-surface);
+	color: var(--text-primary);
+	font-size: 0.85rem;
+	font-weight: 600;
+	cursor: pointer;
+	line-height: 1.15;
+}
+.mbtn:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+.mbtn.on {
+	border-color: var(--color-primary);
+	background: color-mix(in srgb, var(--color-primary) 28%, transparent);
+}
+/* Result buttons end the frame, so they read as the committing action. */
+.mbtn.result {
+	border-color: color-mix(in srgb, var(--color-primary) 45%, var(--border-color));
+}
+.mbtn.more {
+	flex: 0 0 auto;
+	min-width: 2.75rem;
+	font-size: 1rem;
+	font-weight: 400;
+	color: var(--text-muted);
+}
+
+/* ── Divider between the halves ──────────────────────────────────── */
+.stage-mid {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.75rem;
+	padding: 0.3rem 0.75rem;
+	border-top: 1px solid var(--border-color);
+	border-bottom: 1px solid var(--border-color);
+	background: var(--bg-surface);
+	font-size: 0.7rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--text-muted);
+	white-space: nowrap;
+}
+@media (orientation: landscape) {
+	.stage-mid {
+		flex-direction: column;
+		border-top: none;
+		border-bottom: none;
+		border-left: 1px solid var(--border-color);
+		border-right: 1px solid var(--border-color);
+		padding: 0.75rem 0.3rem;
+		writing-mode: vertical-rl;
+	}
+}
+.mid-frame { font-weight: 700; color: var(--text-primary); }
+.mid-undo {
+	background: none;
+	border: none;
+	padding: 0;
+	color: var(--color-primary);
+	font: inherit;
+	letter-spacing: inherit;
+	text-transform: inherit;
+	cursor: pointer;
+}
+
+/* ── Panels below the stage ──────────────────────────────────────── */
+.below {
+	width: 100%;
+	max-width: 640px;
+	margin: 0 auto;
+	padding: 1.25rem 1rem 3rem;
+}
+.panel-block { margin-bottom: 2.25rem; }
+.panel-block h2 {
+	font-size: 0.95rem;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--text-muted);
+	margin: 0 0 0.75rem;
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 0.75rem;
+}
+.panel-block h3 {
+	font-size: 0.8rem;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--text-muted);
+	margin: 1.5rem 0 0.5rem;
+}
+.link-toggle {
+	background: none;
+	border: none;
+	padding: 0;
+	color: var(--color-primary);
+	font-size: 0.8rem;
+	text-transform: none;
+	letter-spacing: 0;
+	cursor: pointer;
+}
+
+/* ── Frame history ───────────────────────────────────────────────── */
+.viz-placeholder {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 7rem;
+	margin-bottom: 1rem;
+	border: 1px dashed var(--border-color);
+	border-radius: 6px;
+	color: var(--text-muted);
+	font-size: 0.8rem;
+}
+
+/* Many frames means many columns, so the table scrolls sideways on its own
+   rather than squeezing the page. */
+.history-scroll {
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+}
+.history-table {
+	border-collapse: collapse;
+	font-size: 0.8rem;
+	white-space: nowrap;
+}
+.history-table th,
+.history-table td {
+	border: 1px solid var(--border-color);
+	padding: 0.4rem 0.5rem;
+	text-align: center;
+	font-weight: normal;
+}
+.history-table th { color: var(--text-muted); }
+.history-table .row-head {
+	text-align: left;
+	position: sticky;
+	left: 0;
+	background: var(--bg-base);
+	z-index: 1;
+}
+.history-table .col-total {
+	color: var(--text-primary);
+	background: var(--bg-surface);
+}
+/* Every cell is a correction waiting to happen. */
+.history-table td.edit { cursor: pointer; }
+.history-table td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transparent); }
+.history-table td.won-home { color: var(--color-primary); font-weight: 600; }
+.history-table td.won-away { color: var(--color-owner);   font-weight: 600; }
+/* A breaker set by hand, which the break rule no longer touches. */
+.history-table td.manual { text-decoration: underline dotted; }
+
+.time-readout {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 0.3rem 0;
+	font-size: 0.85rem;
+}
+.time-key { color: var(--text-muted); }
+.time-val {
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
+}
+.time-readout.live .time-val    { color: var(--color-primary); }
+.time-readout.warn .time-val    { color: var(--color-owner); }
+.time-readout.expired .time-val { color: var(--color-error); }
+
+.time-actions {
+	display: flex;
+	gap: 0.5rem;
+	margin: 0.6rem 0 0.2rem;
+}
+.time-actions .mbtn { flex: 1 1 0; }
+
+.time-note {
+	font-size: 0.75rem;
+	color: var(--text-muted);
+	margin-top: 0.5rem;
+}
+
+.ext-line {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.35rem 0;
+	font-size: 0.85rem;
+}
+.ext-line .time-key { flex: 1 1 auto; }
+.ext-pips { display: flex; gap: 0.25rem; }
+.pip {
+	width: 0.55rem;
+	height: 0.55rem;
+	border-radius: 50%;
+	border: 1px solid var(--border-color);
+}
+.pip.on { background: var(--color-primary); border-color: var(--color-primary); }
+.mbtn.ext {
+	flex: 0 0 auto;
+	min-width: 0;
+	min-height: 2.1rem;
+	padding: 0.3rem 0.65rem;
+	font-size: 0.8rem;
+}
+
+/* ── Overlay (lag, and anything else that must be answered first) ── */
+.stage-overlay {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem;
+	background: color-mix(in srgb, var(--bg-base) 96%, transparent);
+	z-index: 5;
+}
+.overlay-card {
+	width: 100%;
+	max-width: 22rem;
+	text-align: center;
+}
+.overlay-q {
+	font-size: 1.05rem;
+	font-weight: 600;
+	margin: 0 0 0.75rem;
+}
+.overlay-row {
+	display: flex;
+	gap: 0.5rem;
+	justify-content: center;
+	flex-wrap: wrap;
+}
+.overlay-row .mbtn { flex: 1 1 8rem; }
+.overlay-hint {
+	font-size: 0.78rem;
+	color: var(--text-muted);
+	margin: 0.75rem 0 0;
+}
+
+.stage-status {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	text-align: center;
+	font-size: 0.78rem;
+	padding: 0.2rem 0.75rem;
+	pointer-events: none;
+	min-height: 1.2em;
+}
+.stage-status.error   { color: var(--color-error); }
+.stage-status.success { color: var(--color-success); }
+
+/* ── Settings panel ──────────────────────────────────────────────── */
+/* Starts below the fixed nav, so the nav stays reachable with the panel open. */
+.panel-scrim {
+	position: fixed;
+	inset: 60px 0 0 0;
+	background: rgba(0, 0, 0, 0.5);
+	z-index: 150;
+}
+.settings-panel {
+	position: fixed;
+	top: 60px;
+	right: 0;
+	bottom: 0;
+	width: min(22rem, 100vw);
+	z-index: 160;
+	background: var(--bg-base);
+	border-left: 1px solid var(--border-color);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+.panel-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 1rem;
+	height: 48px;
+	border-bottom: 1px solid var(--border-color);
+	flex: 0 0 auto;
+}
+.panel-head h2 { font-size: 1.05rem; margin: 0; }
+.panel-close {
+	background: none;
+	border: none;
+	color: var(--text-primary);
+	font-size: 1.75rem;
+	line-height: 1;
+	cursor: pointer;
+	padding: 0 0.25rem;
+}
+.panel-body {
+	padding: 1rem;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+}
+.panel-body h3 {
+	font-size: 0.8rem;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--text-muted);
+	margin: 1.5rem 0 0.5rem;
+}
+
+/* The settings button injected into the shared nav by match.js. */
+.nav-match-btn {
+	background: none;
+	border: 1px solid var(--border-color);
+	border-radius: 6px;
+	color: var(--text-primary);
+	font-size: 0.75rem;
+	padding: 0.3rem 0.5rem;
+	cursor: pointer;
+	white-space: nowrap;
+}
+#nav-match-time     { margin-left: auto; }
+#nav-match-settings { margin-left: 0.4rem; margin-right: 0.5rem; }
+
+.context-line { margin: 0 0 0.6rem; font-size: 0.9rem; color: var(--text-muted); }
+.badge-row { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+.meta, .rules {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: 0.35rem 1rem;
+	font-size: 0.85rem;
+	margin: 0;
+}
+.meta dt, .rules dt { color: var(--text-muted); }
+.meta dd, .rules dd { margin: 0; overflow-wrap: anywhere; }
+.rules dt .badge { margin-left: 0.4rem; font-size: 0.65rem; padding: 0.05rem 0.4rem; }
+
+.muted { color: var(--text-muted); font-size: 0.85rem; }
+
+/* ── Settings form controls ──────────────────────────────────────── */
+.set-list {
+	display: grid;
+	gap: 0.9rem;
+	margin-bottom: 0.5rem;
+}
+.set-row {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	align-items: center;
+	gap: 0.5rem 0.75rem;
+}
+.set-label {
+	font-size: 0.85rem;
+	color: var(--text-primary);
+}
+.set-hint {
+	grid-column: 1 / -1;
+	font-size: 0.75rem;
+	color: var(--text-muted);
+	margin-top: -0.2rem;
+}
+.set-row select,
+.set-row input[type="text"],
+.set-row input[type="number"] {
+	justify-self: end;
+	width: 10rem;
+	max-width: 55vw;
+	padding: 0.45rem 0.5rem;
+	border-radius: 6px;
+	border: 1px solid var(--border-color);
+	background: var(--bg-surface);
+	color: var(--text-primary);
+	font-size: 1rem; /* 16px stops iPhone zooming in on focus */
+}
+.set-row input[type="number"] { width: 5.5rem; }
+.set-check {
+	justify-self: end;
+	width: 1.4rem;
+	height: 1.4rem;
+	accent-color: var(--color-primary);
+}
+
+/* Says what a settings change did to frames already played. */
+.panel-note {
+	margin: 1rem 0 0;
+	padding: 0.6rem 0.75rem;
+	border: 1px solid var(--color-owner);
+	border-radius: 6px;
+	background: color-mix(in srgb, var(--color-owner) 12%, transparent);
+	font-size: 0.8rem;
+}
+.panel-note .note-line {
+	margin-top: 0.3rem;
+	color: var(--text-muted);
+}
+
+/* ── Short landscape (phone on its side): tighten everything ─────── */
+@media (orientation: landscape) and (max-height: 460px) {
+	.half { gap: 0.3rem; padding: 0.4rem 0.5rem; }
+	.half-score { font-size: clamp(2rem, 18vh, 3.25rem); }
+	.half-players { display: none; }
+	.half-group-label { margin-bottom: 0.2rem; }
+	.mbtn { min-height: 2.4rem; font-size: 0.78rem; min-width: 3.6rem; }
+}

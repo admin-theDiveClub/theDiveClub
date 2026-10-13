@@ -1,0 +1,106 @@
+---
+layout: layout.html
+title: Match
+description: "Match scorecard: frame-by-frame scoring, timing, history and match settings."
+extraStyles:
+  - /stylesheets/match.css
+extraScripts:
+  - /scripts/match.js
+---
+{% comment %}
+	MOCKUP. Nothing here talks to the database yet; the one match lives in the
+	MATCH object at the top of /scripts/match.js.
+
+	There is one match page. Leagues, tournaments and social matches are not
+	different pages — they are the same page reading different settings.
+
+	Layout: the stage fills the screen below the nav and is the whole scoring
+	surface. Each side owns half of it: top/bottom in portrait, left/right in
+	landscape. Timing and frame history are panels below the stage; settings
+	are in the Match panel from the nav bar.
+{% endcomment %}
+
+<div class="match-page">
+
+	<section class="stage" id="stage">
+
+		<!-- Away side: top in portrait, left in landscape -->
+		<div class="half" id="half-away" data-side="away"></div>
+
+		<!-- Thin divider carrying the frame number and the win condition -->
+		<div class="stage-mid">
+			<div class="mid-frame" id="mid-frame"></div>
+			<div class="mid-target" id="mid-target"></div>
+		</div>
+
+		<!-- Home side: bottom in portrait, right in landscape -->
+		<div class="half" id="half-home" data-side="home"></div>
+
+		<!-- Covers the halves when something has to be answered first -->
+		<div class="stage-overlay" id="overlay" hidden>
+			<div class="overlay-card">
+				<p class="overlay-q" id="overlay-q"></p>
+				<div class="overlay-row" id="overlay-row"></div>
+				<p class="overlay-hint" id="overlay-hint"></p>
+			</div>
+		</div>
+
+		<div class="stage-status" id="stage-status"></div>
+	</section>
+
+	<div class="below">
+
+		<!-- Timing. Most of it only appears when a setting turns it on: an
+		     ordinary match just keeps frame and rack times, which the page
+		     records by itself. -->
+		<section class="panel-block" id="time-panel" aria-label="Timing">
+			<h2>Timing</h2>
+			<div id="time-body"></div>
+		</section>
+
+		<!-- Frame history. Everything in the table can be corrected during the
+		     match, and the scoreboard follows, because the score is counted from
+		     these frames rather than stored. -->
+		<section class="panel-block" id="history-panel" aria-label="Frame history">
+			<h2>
+				Frame history
+				<button type="button" class="link-toggle" id="undo-btn" hidden>Undo last</button>
+			</h2>
+
+			<div class="viz-placeholder" id="viz-placeholder">
+				<span>Visualisation goes here</span>
+			</div>
+
+			<div class="history-scroll">
+				<table class="history-table" id="history-table"></table>
+			</div>
+			<p class="muted" id="history-legend"></p>
+		</section>
+
+	</div>
+
+	<!-- Settings, opened from the nav bar -->
+	<div class="panel-scrim" id="panel-scrim" hidden></div>
+	<aside class="settings-panel" id="settings-panel" hidden aria-label="Match settings">
+		<div class="panel-head">
+			<h2>Match</h2>
+			<button type="button" class="panel-close" id="panel-close" aria-label="Close">&times;</button>
+		</div>
+
+		<div class="panel-body">
+			<p class="context-line" id="context-line"></p>
+			<div class="badge-row" id="badge-row"></div>
+
+			<div class="panel-note" id="panel-note" hidden></div>
+
+			<!-- Both groups are built from the definitions in match.js, so a new
+			     setting appears here by being added there and nowhere else. -->
+			<h3>Match</h3>
+			<div class="set-list" id="set-match"></div>
+
+			<h3>Rules</h3>
+			<div class="set-list" id="set-rules"></div>
+		</div>
+	</aside>
+
+</div>
