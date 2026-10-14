@@ -354,6 +354,8 @@
 
 			player.avatar_path = path;
 			showAvatar(path);
+			// The nav shows this picture too, on every page.
+			window.dispatchEvent(new CustomEvent('tdc:avatar-changed', { detail: { path } }));
 			TDC.status(els.avatarStatus, 'Picture saved.', 'success');
 
 			if (previous) {
@@ -392,6 +394,7 @@
 
 			player.avatar_path = null;
 			showAvatar(null);
+			window.dispatchEvent(new CustomEvent('tdc:avatar-changed', { detail: { path: null } }));
 
 			const { error: delErr } = await supabaseClient.storage.from(AVATAR_BUCKET).remove([previous]);
 			if (delErr) console.error('[' + AREA + '] could not delete the picture file', delErr);

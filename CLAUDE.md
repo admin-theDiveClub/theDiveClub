@@ -21,6 +21,7 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
 - `_includes/layout.html` is the shared shell (head, PWA meta, nav, Supabase library + client, `tdc.js`, `forms.css`, per-page scripts, SW registration).
   - Pages opt in with front matter: `layout: layout.html`, `title`, `description`, optional `extraScripts: [...]` (loaded after `supabaseClient.js`), optional `extraStyles: [...]` (extra stylesheets, with the build stamp), optional `hideNav: true`.
 - `_includes/nav.html` + `scripts/nav.js` + `stylesheets/nav.css` make up the shared nav. Nav items live in `_data/navLinks.json`.
+  - The account button shows the signed-in player's profile picture when they have one, and the generic icon otherwise. `nav.js` swaps it only once the image has loaded, and falls back to the icon if the file is missing, so a stale path never leaves a broken picture in the nav. The profile page fires a `tdc:avatar-changed` window event after a save or a removal so the nav follows without a reload.
   - Note: `src/navLinks.json` is a stray duplicate and can be removed.
 - `.eleventy.js` handles passthrough copy (stylesheets, resources, scripts, components, sw.js, manifest, CNAME, robots, sitemap, favicon, Google verification file).
   - Any new top-level static file must be added there.

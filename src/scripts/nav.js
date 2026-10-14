@@ -11,8 +11,11 @@
 	const profileEmail    = document.getElementById('nav-profile-email');
 	const staffLink       = document.getElementById('nav-staff-link');
 	const logoutBtn       = document.getElementById('nav-logout-btn');
+	const profileIcon     = document.getElementById('nav-profile-icon');
+	const profileAvatar   = document.getElementById('nav-avatar');
 
-	if (!menuToggle || !menu || !profileBtn || !profileDropdown || !profileEmail || !staffLink || !logoutBtn) {
+	if (!menuToggle || !menu || !profileBtn || !profileDropdown || !profileEmail || !staffLink || !logoutBtn
+		|| !profileIcon || !profileAvatar) {
 		TDC.error(AREA, 'nav is missing expected elements.');
 		return;
 	}
@@ -56,6 +59,53 @@
 		}
 	});
 
+	// --- Profile picture in place of the generic icon ---
+	// Only ever shown for a signed-in player who has one. If the file has gone
+	// (an old path, or deleted on another device) the image fails to load and
+	// the generic icon comes back, rather than leaving a broken picture there.
+	const AVATAR_BUCKET = 'player-avatars';
+
+	function avatarUrlFor(path) {
+		if (!path) return null;
+		const { data } = supabaseClient.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+		return data && data.publicUrl ? data.publicUrl : null;
+	}
+
+	// toggleAttribute, not .hidden: `hidden` is an HTMLElement property and an
+	// <svg> does not reflect it, so `svg.hidden = true` sets a plain JavaScript
+	// property that reads back true while leaving the icon on screen. Setting
+	// the attribute is what the `[hidden]` rule in global.css acts on.
+	function setShown(node, shown) {
+		node.toggleAttribute('hidden', !shown);
+	}
+
+	function showNavAvatar(url) {
+		if (!url) {
+			setShown(profileAvatar, false);
+			profileAvatar.removeAttribute('src');
+			setShown(profileIcon, true);
+			return;
+		}
+		profileAvatar.onerror = () => {
+			console.error('[' + AREA + '] profile picture could not be loaded, using the icon.', url);
+			showNavAvatar(null);
+		};
+		// Swapped only once the picture has actually loaded, so the nav never
+		// shows an empty box.
+		profileAvatar.onload = () => {
+			setShown(profileIcon, false);
+			setShown(profileAvatar, true);
+		};
+		profileAvatar.src = url;
+	}
+
+	// The profile page fires this after a picture is changed or removed, so the
+	// nav follows without a reload.
+	window.addEventListener('tdc:avatar-changed', (e) => {
+		showNavAvatar(avatarUrlFor(e.detail && e.detail.path));
+	});
+
+
 	// --- Check login state on load ---
 	(async () => {
 		const session = await TDC.getSession(AREA);
@@ -73,8 +123,22 @@
 
 		if (error) {
 			TDC.error(AREA, 'could not check staff role.', error);
+		} else {
+			staffLink.hidden = data.length === 0;
+		}
+
+		// The player's picture. A missing player row is not worth shouting about
+		// in the nav; the generic icon simply stays.
+		const { data: me, error: playerErr } = await supabaseClient
+			.from('tbl_players')
+			.select('avatar_path')
+			.eq('user_id', session.user.id)
+			.maybeSingle();
+
+		if (playerErr) {
+			console.error('[' + AREA + '] could not load the profile picture.', playerErr);
 			return;
 		}
-		staffLink.hidden = data.length === 0;
+		if (me && me.avatar_path) showNavAvatar(avatarUrlFor(me.avatar_path));
 	})();
 })();

@@ -55,6 +55,16 @@
 	fill: currentColor;
 }
 
+/* The signed-in player's picture, shown in place of the generic icon. A round
+   photo reads smaller than a glyph, so it is a touch larger. */
+.nav-avatar {
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	object-fit: cover;
+	border: 1px solid var(--border-color);
+}
+
 .nav-menu {
 	position: fixed;
 	top: 60px;
