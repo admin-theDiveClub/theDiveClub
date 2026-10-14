@@ -12,6 +12,11 @@
 		lastName:       el('last-name'),
 		detailsBtn:     el('details-btn'),
 		detailsStatus:  el('details-status'),
+		avatarPreview:  el('avatar-preview'),
+		avatarFile:     el('avatar-file'),
+		avatarChoose:   el('avatar-choose'),
+		avatarRemove:   el('avatar-remove'),
+		avatarStatus:   el('avatar-status'),
 		idList:         el('id-list'),
 		idForm:         el('id-form'),
 		idKind:         el('id-kind'),
@@ -227,6 +232,175 @@
 			TDC.error(AREA, 'unexpected problem saving your details.', err, els.detailsStatus);
 		} finally {
 			els.detailsBtn.disabled = false;
+		}
+	});
+
+	// ─── Profile picture ───
+	// The file goes to Supabase Storage; tbl_players keeps the object path.
+	// Everything about the picture is decided in the browser before it leaves:
+	// square-cropped from the middle, shrunk, and re-encoded, which also drops
+	// the EXIF block — phone photos carry the GPS coordinates of where they
+	// were taken, and nobody expects a profile picture to carry their address.
+	const AVATAR_BUCKET = 'player-avatars';
+	const AVATAR_SIZE = 512;
+
+	function avatarInitials() {
+		const source = [player.first_name, player.last_name].filter(Boolean).join(' ')
+			|| player.display_name || '';
+		return source.split(/\s+/).filter(Boolean).slice(0, 2)
+			.map((w) => w[0].toUpperCase()).join('') || '?';
+	}
+
+	function showAvatar(path) {
+		if (path) {
+			const { data } = supabaseClient.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+			els.avatarPreview.style.backgroundImage = `url("${data.publicUrl}")`;
+			els.avatarPreview.classList.remove('placeholder');
+			els.avatarPreview.textContent = '';
+			els.avatarRemove.hidden = false;
+		} else {
+			els.avatarPreview.style.backgroundImage = '';
+			els.avatarPreview.classList.add('placeholder');
+			els.avatarPreview.textContent = avatarInitials();
+			els.avatarRemove.hidden = true;
+		}
+	}
+
+	// Crop the middle square, shrink it, re-encode. Returns a Blob, or null and
+	// says why — a HEIC the browser can't decode is the likely failure.
+	async function processPicture(file) {
+		let bitmap;
+		try {
+			// from-image so a photo taken sideways is not saved sideways.
+			bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+		} catch (err) {
+			TDC.error(AREA, 'that image could not be read. Try a JPEG or PNG.', err, els.avatarStatus);
+			return null;
+		}
+
+		const side = Math.min(bitmap.width, bitmap.height);
+		const canvas = document.createElement('canvas');
+		canvas.width = AVATAR_SIZE;
+		canvas.height = AVATAR_SIZE;
+		const ctx = canvas.getContext('2d');
+		if (!ctx) {
+			TDC.error(AREA, 'this browser would not give us a canvas to resize the picture.', null, els.avatarStatus);
+			return null;
+		}
+		ctx.drawImage(bitmap,
+			(bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side,
+			0, 0, AVATAR_SIZE, AVATAR_SIZE);
+		if (bitmap.close) bitmap.close();
+
+		// WebP where the browser can encode it, JPEG where it can't. toBlob
+		// quietly falls back to PNG for a type it does not know, so the type is
+		// checked rather than trusted.
+		for (const type of ['image/webp', 'image/jpeg']) {
+			const blob = await new Promise((resolve) => canvas.toBlob(resolve, type, 0.85));
+			if (blob && blob.type === type) return blob;
+		}
+		TDC.error(AREA, 'the picture could not be prepared for upload.', null, els.avatarStatus);
+		return null;
+	}
+
+	showAvatar(player.avatar_path);
+
+	els.avatarChoose.addEventListener('click', () => els.avatarFile.click());
+
+	els.avatarFile.addEventListener('change', async () => {
+		const file = els.avatarFile.files && els.avatarFile.files[0];
+		els.avatarFile.value = '';
+		if (!file) return;
+
+		els.avatarChoose.disabled = true;
+		els.avatarRemove.disabled = true;
+		TDC.status(els.avatarStatus, 'Preparing your picture…', '');
+		try {
+			const blob = await processPicture(file);
+			if (!blob) return;
+
+			// A new name every time, so no cached copy of the old picture can be
+			// served in its place. The old file is removed once the new one is in.
+			const previous = player.avatar_path;
+			const ext = blob.type === 'image/webp' ? 'webp' : 'jpg';
+			const path = `${player.id}/${crypto.randomUUID()}.${ext}`;
+
+			TDC.status(els.avatarStatus, 'Uploading…', '');
+			const { error: upErr } = await supabaseClient.storage
+				.from(AVATAR_BUCKET)
+				.upload(path, blob, { contentType: blob.type, upsert: false });
+			if (upErr) {
+				TDC.showSupabaseError(AREA, upErr, els.avatarStatus);
+				return;
+			}
+
+			const { data, error } = await supabaseClient
+				.from('tbl_players')
+				.update({ avatar_path: path })
+				.eq('id', player.id)
+				.select('id');
+
+			if (error) {
+				// The row was not updated, so the file just uploaded is an orphan.
+				await supabaseClient.storage.from(AVATAR_BUCKET).remove([path]);
+				TDC.showSupabaseError(AREA, error, els.avatarStatus);
+				return;
+			}
+			if (!data || data.length !== 1) {
+				await supabaseClient.storage.from(AVATAR_BUCKET).remove([path]);
+				TDC.error(AREA, 'the picture was not saved (no row updated).', { data }, els.avatarStatus);
+				return;
+			}
+
+			player.avatar_path = path;
+			showAvatar(path);
+			TDC.status(els.avatarStatus, 'Picture saved.', 'success');
+
+			if (previous) {
+				const { error: delErr } = await supabaseClient.storage.from(AVATAR_BUCKET).remove([previous]);
+				// Not worth bothering the person about: the new picture is already
+				// theirs, and the old file is only taking up room.
+				if (delErr) console.error('[' + AREA + '] could not delete the old picture', delErr);
+			}
+		} catch (err) {
+			TDC.error(AREA, 'unexpected problem saving your picture.', err, els.avatarStatus);
+		} finally {
+			els.avatarChoose.disabled = false;
+			els.avatarRemove.disabled = false;
+		}
+	});
+
+	els.avatarRemove.addEventListener('click', async () => {
+		const previous = player.avatar_path;
+		if (!previous) return;
+
+		els.avatarChoose.disabled = true;
+		els.avatarRemove.disabled = true;
+		TDC.status(els.avatarStatus, 'Removing…', '');
+		try {
+			// The row is cleared first. If the file delete fails afterwards the
+			// picture is already gone from the person's point of view.
+			const { error } = await supabaseClient
+				.from('tbl_players')
+				.update({ avatar_path: null })
+				.eq('id', player.id)
+				.select('id');
+			if (error) {
+				TDC.showSupabaseError(AREA, error, els.avatarStatus);
+				return;
+			}
+
+			player.avatar_path = null;
+			showAvatar(null);
+
+			const { error: delErr } = await supabaseClient.storage.from(AVATAR_BUCKET).remove([previous]);
+			if (delErr) console.error('[' + AREA + '] could not delete the picture file', delErr);
+			TDC.status(els.avatarStatus, 'Picture removed.', 'success');
+		} catch (err) {
+			TDC.error(AREA, 'unexpected problem removing your picture.', err, els.avatarStatus);
+		} finally {
+			els.avatarChoose.disabled = false;
+			els.avatarRemove.disabled = false;
 		}
 	});
 

@@ -103,6 +103,12 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
   - **Never run `npx supabase config push`.** It would overwrite the live auth settings with local test values.
 - Every table has RLS on and explicit grants. New tables are not auto-exposed to the API, and default privileges no longer give `anon` or `authenticated` TRUNCATE, REFERENCES, TRIGGER or MAINTAIN.
 - Auth settings (passwords, SMTP, providers) are set in the dashboard, not in migrations.
+- **Storage.** Buckets and their access rules are created in migrations too, not by clicking in the dashboard.
+  - `player-avatars` (migration `player_avatars`): profile pictures. The object path is `<player_id>/<random>.webp` and `tbl_players.avatar_path` holds it. A check constraint on that column, plus the storage rules, both say "only your own folder".
+  - The bucket is **public** on purpose: a player's picture has to appear next to their name on pages that people see without signing in (a tournament follow page, a league table), and asking for a signed URL for every face on a page is slow. Public does not mean findable — the random path can't be guessed from a name and nothing lists the bucket.
+  - The browser crops, shrinks (512px) and re-encodes the picture before upload. That keeps it around 40 KB and, importantly, **strips EXIF**: phone photos carry the GPS coordinates of where they were taken.
+  - Each upload gets a new random filename and the old file is deleted afterwards, so a cached copy of the old picture can never be served in its place.
+
 
 ## Project board
 - The owner's task list for the business and the website, at **`/staff/board/`**. Owners only: the hub tile shows for owners, and the tables' access rules allow only `owner` at the venue (UV uses admin@thediveclub.org; his personal account is staff and can't see it).

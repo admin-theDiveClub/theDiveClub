@@ -65,7 +65,7 @@ const TDC = (() => {
 	async function getMyPlayer(area, userId, targetEl) {
 		const { data, error: err } = await supabaseClient
 			.from('tbl_players')
-			.select('id, display_name, first_name, last_name, player_type')
+			.select('id, display_name, first_name, last_name, player_type, avatar_path')
 			.eq('user_id', userId)
 			.maybeSingle();
 
