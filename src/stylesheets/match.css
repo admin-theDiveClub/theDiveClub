@@ -277,6 +277,22 @@ button.half-sub {
 	margin: 0 auto;
 	padding: 1.25rem 1rem 3rem;
 }
+/* Where the data came from, and what the page can't do with it yet. */
+.match-notice {
+	border: 1px solid var(--border-color);
+	border-left-width: 3px;
+	border-radius: 6px;
+	padding: 0.7rem 0.85rem;
+	margin-bottom: 2rem;
+	font-size: 0.85rem;
+	line-height: 1.45;
+	color: var(--text-muted);
+	background: var(--bg-surface);
+}
+.match-notice strong { color: var(--text-color); font-weight: 600; }
+.match-notice.warn { border-left-color: var(--warning-color, #d8a23a); }
+.match-notice.error { border-left-color: var(--error-color, #d86a6a); }
+
 .panel-block { margin-bottom: 2.25rem; }
 .panel-block h2 {
 	font-size: 1.05rem;

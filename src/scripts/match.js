@@ -1,4 +1,12 @@
-// Match scorecard (/match/). MOCKUP — no database calls yet.
+// Match scorecard (/match/).
+//
+// Two modes, decided by the address:
+//   /match/            the built-in mockup below. Quickest way to work on layout.
+//   /match/?id=<uuid>  that match, read from the database.
+//
+// Reading real data works. Saving does not yet — the buttons still change this
+// page's own copy — and the notice below the stage says so, because a scorer
+// who loses a match's worth of frames to a reload will not come back.
 //
 // One match page. Leagues, tournaments and social matches are the same page
 // reading different settings; there is no second template anywhere.
@@ -29,7 +37,8 @@
 	// the full name, plus an avatar that is usually missing.
 	// ─────────────────────────────────────────────────────────────────
 
-	const PLAYERS = {
+	// Replaced wholesale when a real match is loaded; see loadMatch().
+	let PLAYERS = {
 		yesh:   { id: 'yesh',   display_name: 'Yesh',   full_name: 'Yesh Naicker',    avatar_url: null },
 		linton: { id: 'linton', display_name: 'Linto',  full_name: 'Linton Pillay',   avatar_url: null },
 		damian: { id: 'damian', display_name: 'Dame',   full_name: 'Damian Reddy',    avatar_url: null },
@@ -53,7 +62,7 @@
 	// The match. One object, roughly what a single match fetch returns.
 	// ─────────────────────────────────────────────────────────────────
 
-	const MATCH = {
+	let MATCH = {
 		id: 'mockup-match',
 
 		// kind is 'league', 'tournament' or 'social'. The page does not branch on
@@ -236,7 +245,8 @@
 		scrim: el('panel-scrim'),
 		panel: el('settings-panel'), panelClose: el('panel-close'),
 		contextLine: el('context-line'), badgeRow: el('badge-row'), panelNote: el('panel-note'),
-		setGroups: el('set-groups')
+		setGroups: el('set-groups'),
+		notice: el('match-notice')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -1366,16 +1376,232 @@
 		renderPanel();
 	}
 
-	document.addEventListener('click', onClick);
-	els.panel.addEventListener('change', onSettingChange);
-	els.undoBtn.addEventListener('click', undo);
-	els.panelClose.addEventListener('click', closePanel);
-	els.scrim.addEventListener('click', closePanel);
-	document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
+	// ─────────────────────────────────────────────────────────────────
+	// Loading a real match
+	//
+	// /match/ on its own keeps the mockup above, which is still the quickest
+	// way to work on the layout. /match/?id=<uuid> replaces MATCH and PLAYERS
+	// with the real thing. The shape built here is exactly the mockup's shape,
+	// so nothing else in this file knows where its data came from.
+	//
+	// Reading is done. Writing is not: the result buttons and the history table
+	// still only change this copy. showNotice() says so on screen rather than
+	// letting someone score a match that quietly evaporates.
+	// ─────────────────────────────────────────────────────────────────
 
-	addNavButton();
-	recomputeBreaks();
-	draft = newDraft();
-	renderAll();
-	setInterval(tick, 250);
+	const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+	function showNotice(html, kind) {
+		els.notice.className = 'match-notice' + (kind ? ' ' + kind : '');
+		els.notice.innerHTML = html;
+		els.notice.hidden = false;
+	}
+
+	// Storage paths are turned into URLs here rather than stored, so moving the
+	// bucket later is one edit. Matches how the nav and profile pages do it.
+	function avatarUrl(path) {
+		if (!path) return null;
+		const { data } = supabaseClient.storage.from('player-avatars').getPublicUrl(path);
+		return data ? data.publicUrl : null;
+	}
+
+	const fullName = (p) => [p.first_name, p.last_name].filter(Boolean).join(' ') || p.display_name;
+
+	async function loadPlayers(ids) {
+		const wanted = [...new Set(ids.filter(Boolean))];
+		if (!wanted.length) return {};
+
+		const { data, error } = await supabaseClient
+			.from('tbl_players')
+			.select('id, display_name, first_name, last_name, avatar_path')
+			.in('id', wanted);
+
+		if (error) { TDC.showSupabaseError(AREA, error, els.stageStatus); return null; }
+
+		const map = {};
+		for (const p of data) {
+			map[p.id] = {
+				id: p.id,
+				display_name: p.display_name,
+				full_name: fullName(p),
+				avatar_url: avatarUrl(p.avatar_path)
+			};
+		}
+
+		// A player we asked for and did not get back is a real problem — a frame
+		// would render as "TDC (Error)" with no explanation of why.
+		const absent = wanted.filter((id) => !map[id]);
+		if (absent.length) {
+			TDC.error(AREA, 'these players could not be read: ' + absent.join(', '));
+		}
+		return map;
+	}
+
+	const msOrNull = (t) => (t ? Date.parse(t) : null);
+
+	async function loadMatch(id) {
+		const { data: m, error } = await supabaseClient
+			.from('tbl_matches')
+			.select('id, venue_id, scheduled_at, first_break_side, sanctioned, rules, status,'
+				+ ' home_side_kind, home_player_id, away_side_kind, away_player_id')
+			.eq('id', id)
+			.maybeSingle();
+
+		if (error) { TDC.showSupabaseError(AREA, error, els.stageStatus); return null; }
+		if (!m) {
+			TDC.error(AREA, 'no match with id ' + id, null, els.stageStatus);
+			showNotice('<strong>Match not found.</strong> Either the link is wrong, or you are not signed in — '
+				+ 'matches are only readable once you have signed in.', 'error');
+			return null;
+		}
+
+		// Teams are not built yet, and guessing at a team name would be worse
+		// than saying so.
+		if (m.home_side_kind !== 'player' || m.away_side_kind !== 'player') {
+			TDC.error(AREA, 'team matches need the teams table, which does not exist yet', m, els.stageStatus);
+			showNotice('<strong>This is a team match.</strong> The teams table has not been built yet, '
+				+ 'so this page cannot show it. Singles matches work.', 'error');
+			return null;
+		}
+
+		const { data: rows, error: framesError } = await supabaseClient
+			.from('tbl_frames')
+			.select('id, frame_no, break_side, break_side_manual, break_player_id, break_outcome,'
+				+ ' winner_side, result_event, status, referee_player_id,'
+				+ ' rack_started_at, started_at, ended_at, paused_seconds,'
+				+ ' tbl_frame_participants (side, player_id, play_order)')
+			.eq('match_id', id)
+			.order('frame_no');
+
+		if (framesError) { TDC.showSupabaseError(AREA, framesError, els.stageStatus); return null; }
+
+		const frames = rows.map((f) => {
+			// play_order is null in singles, so sort on it only when it is set.
+			const side = (want) => (f.tbl_frame_participants || [])
+				.filter((p) => p.side === want)
+				.sort((a, b) => (a.play_order || 0) - (b.play_order || 0))
+				.map((p) => p.player_id);
+
+			return {
+				no: f.frame_no,
+				table: 'Table not set',
+				home_players: side('home'),
+				away_players: side('away'),
+				break_side: f.break_side,
+				break_side_manual: f.break_side_manual,
+				break_outcome: f.break_outcome,
+				result_event: f.result_event,
+				winner_side: f.winner_side,
+				status: f.status,
+				rack_started_at: msOrNull(f.rack_started_at),
+				started_at: msOrNull(f.started_at),
+				ended_at: msOrNull(f.ended_at),
+				paused_seconds: f.paused_seconds
+			};
+		});
+
+		const players = await loadPlayers([
+			m.home_player_id, m.away_player_id,
+			...rows.flatMap((f) => (f.tbl_frame_participants || []).map((p) => p.player_id)),
+			...rows.map((f) => f.referee_player_id)
+		]);
+		if (!players) return null;
+
+		let venue = null;
+		if (m.venue_id) {
+			const { data: v, error: venueError } = await supabaseClient
+				.from('tbl_venues').select('name').eq('id', m.venue_id).maybeSingle();
+			if (venueError) {
+				TDC.error(AREA, 'could not read the venue for this match.', venueError);
+			} else if (!v) {
+				TDC.error(AREA, 'the match points at a venue that could not be read: ' + m.venue_id);
+			} else {
+				venue = v.name;
+			}
+		}
+
+		const nameOf = (pid) => (players[pid] ? players[pid].display_name : 'TDC (Error)');
+
+		return {
+			players,
+			match: {
+				id: m.id,
+				// There is no league or tournament layer yet, so every match in the
+				// database is a social one. This becomes a real lookup later.
+				context: { kind: 'social', name: null, season: null, round: null },
+				sanctioned: m.sanctioned,
+				venue,
+				// The tables table does not exist yet. Named plainly rather than
+				// invented, so nobody reads it as a real table number.
+				tables: ['Table not set'],
+				scheduled_at: m.scheduled_at,
+				referee: null,
+				first_break_side: m.first_break_side,
+				home: { name: nameOf(m.home_player_id), crest_url: null, players: [m.home_player_id] },
+				away: { name: nameOf(m.away_player_id), crest_url: null, players: [m.away_player_id] },
+				rules: m.rules,
+				frames
+			}
+		};
+	}
+
+	// ─────────────────────────────────────────────────────────────────
+
+	function start() {
+		document.addEventListener('click', onClick);
+		els.panel.addEventListener('change', onSettingChange);
+		els.undoBtn.addEventListener('click', undo);
+		els.panelClose.addEventListener('click', closePanel);
+		els.scrim.addEventListener('click', closePanel);
+		document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
+
+		addNavButton();
+		recomputeBreaks();
+		draft = newDraft();
+		renderAll();
+		setInterval(tick, 250);
+	}
+
+	(async () => {
+		const id = new URLSearchParams(location.search).get('id');
+
+		if (!id) {
+			showNotice('<strong>Mockup match.</strong> Nothing here is real and nothing is saved. '
+				+ 'Open a real match with <code>/match/?id=&lt;match id&gt;</code>.');
+			start();
+			return;
+		}
+
+		if (!UUID_RE.test(id)) {
+			TDC.error(AREA, 'the id in the address is not a match id: ' + id, null, els.stageStatus);
+			showNotice('<strong>That is not a match id.</strong> The address needs the match\'s id, '
+				+ 'which looks like <code>215b10ec-de44-4c61-a513-ab9768c43e72</code>. '
+				+ 'Showing the mockup instead.', 'error');
+			start();
+			return;
+		}
+
+		// Frames are readable by signed-in users only, so without a session the
+		// query would come back empty and read as "no such match".
+		const session = await TDC.getSession(AREA);
+		if (!session) {
+			showNotice('<strong>Please sign in.</strong> Match data is only readable once you have '
+				+ 'signed in. <a href="/accounts/?next=' + encodeURIComponent(location.pathname + location.search)
+				+ '">Sign in</a>, and this match will open.', 'error');
+			start();
+			return;
+		}
+
+		const loaded = await loadMatch(id);
+		if (!loaded) { start(); return; }
+
+		PLAYERS = loaded.players;
+		MATCH = loaded.match;
+
+		showNotice('<strong>Reading from the database.</strong> Saving is not wired up yet, so '
+			+ 'anything you change here is lost on reload.', 'warn');
+
+		start();
+		TDC.status(els.stageStatus, 'Loaded from the database. Changes are not saved yet.', '');
+	})();
 })();

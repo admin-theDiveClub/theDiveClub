@@ -108,7 +108,12 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
   - `private.tdc_break_side_for_frame(match_id, frame_no)` — the break rule. `alternate` flips the *previous frame's actual* break side rather than counting odd/even from the start, so a correction carries through. `lag_each_frame` and `by_schedule` return null on purpose: the rule has no answer.
 - Rules read from the match's jsonb: `break_determination` (`alternate` | `winner_breaks` | `loser_breaks` | `first_breaks` | `lag_each_frame` | `by_schedule`, default `alternate`), `break_finish_requires_breaker` (default true — it's disputed between disciplines, which is why it's per match and not a constraint).
 - Approval/locking is **not** built. `tbl_matches.status` is the lifecycle of play only (`scheduled`, `in_progress`, `complete`, `abandoned`); whether a card needs a captain's signature is a league setting, and submitted/approved will derive from a submissions table.
-- Dummy match for UI work: `215b10ec-de44-4c61-a513-ab9768c43e72` (UV 3 – Linton 2, five frames, alternate breaks).
+- Dummy match for UI work: `215b10ec-de44-4c61-a513-ab9768c43e72` (UV 3 – Linton 2, five frames, alternate breaks). Its `rules` carries all 21 keys, because the page errors on a missing one by design.
+
+### The match page (`src/match/`, `scripts/match.js`, `stylesheets/match.css`)
+- Two modes from the address: `/match/` shows the built-in mockup (quickest way to work on layout), `/match/?id=<uuid>` reads that match from the database. `loadMatch()` builds exactly the mockup's shape, so nothing else in the file knows where its data came from.
+- **Reading works; saving does not yet.** The result buttons and history table still change the page's own copy. `#match-notice` below the stage says so on screen — don't remove it until `tdc_record_frame` is wired in.
+- Known gaps, all deliberate and visible rather than invented: `tables` is `['Table not set']` (no tables table yet), `context.kind` is always `social` (no league layer yet), and a team match refuses to load with an explanation.
 
 ## Database conventions
 - Table names use the `tbl_` prefix. Our own functions use the `tdc_` prefix.

@@ -8,8 +8,15 @@ extraScripts:
   - /scripts/match.js
 ---
 {% comment %}
-	MOCKUP. Nothing here talks to the database yet; the one match lives in the
-	MATCH object at the top of /scripts/match.js.
+	Two modes, decided by the address:
+
+	  /match/            the built-in mockup match in /scripts/match.js.
+	                     Still the quickest way to work on the layout.
+	  /match/?id=<uuid>  that match, read from the database.
+
+	Reading real data works. Saving does not yet: the result buttons and the
+	history table still change the page's own copy, so a reload loses them.
+	The notice at the top of the panels below says so on screen.
 
 	There is one match page. Leagues, tournaments and social matches are not
 	different pages — they are the same page reading different settings.
@@ -49,6 +56,10 @@ extraScripts:
 	</section>
 
 	<div class="below">
+
+		<!-- Where this match's data came from, and anything the page cannot do
+		     with it yet. Hidden unless there is something to say. -->
+		<div class="match-notice" id="match-notice" hidden></div>
 
 		<!-- Timing. Most of it only appears when a setting turns it on: an
 		     ordinary match just keeps frame and rack times, which the page
