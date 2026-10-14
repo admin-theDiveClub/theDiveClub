@@ -71,9 +71,13 @@ extraScripts:
 				<span>Visualisation goes here</span>
 			</div>
 
+			{% comment %}Two tables from the same frames, swapped by CSS on orientation.{% endcomment %}
+			<table class="history-tall" id="history-tall"></table>
+
 			<div class="history-scroll">
-				<table class="history-table" id="history-table"></table>
+				<table class="history-wide" id="history-wide"></table>
 			</div>
+
 			<p class="muted" id="history-legend"></p>
 		</section>
 
@@ -93,13 +97,11 @@ extraScripts:
 
 			<div class="panel-note" id="panel-note" hidden></div>
 
-			<!-- Both groups are built from the definitions in match.js, so a new
-			     setting appears here by being added there and nowhere else. -->
-			<h3>Match</h3>
-			<div class="set-list" id="set-match"></div>
-
-			<h3>Rules</h3>
-			<div class="set-list" id="set-rules"></div>
+			{% comment %}
+				The cards are built from the definitions in match.js: each setting
+				names its group, so adding one there is the only edit needed.
+			{% endcomment %}
+			<div id="set-groups"></div>
 		</div>
 	</aside>
 

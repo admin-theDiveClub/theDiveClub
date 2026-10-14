@@ -1,3 +1,51 @@
+/* Rushford Clean, used for headings only. woff2 first (smallest), then woff,
+   then the original otf. font-display: swap so text is readable before it loads.
+   Note: this font has no em dash or middle dot, so keep those out of headings. */
+@font-face {
+	font-family: "Rushford Clean";
+	src: url("/resources/fonts/rushford-clean.woff2") format("woff2"),
+	     url("/resources/fonts/rushford-clean.woff") format("woff"),
+	     url("/resources/fonts/rushford-clean.otf") format("opentype");
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+	/* Rushford Clean is an all-caps face that reads smaller than its cap height
+	   suggests. size-adjust scales the glyphs without touching any font-size
+	   value, so this one number is the knob for how big headings look. */
+	size-adjust: 150%;
+	/* The font declares ascent 0.815 + descent 0.487 + lineGap 0.302 = a 1.60em
+	   line box, but its ink only runs from -0.156em (the tail of Q) to +0.720em,
+	   so every heading sat in a band of empty space. These overrides tighten the
+	   box to the ink. They are scaled by size-adjust too, so the box stays in
+	   proportion if that number changes. line-gap-override is set for
+	   correctness; Chrome already ignores this font's lineGap. */
+	ascent-override: 72%;
+	descent-override: 16%;
+	line-gap-override: 0%;
+}
+
+/* Selawik: Microsoft's open-source (SIL OFL) metric-compatible replacement for
+   Segoe UI, which is proprietary and cannot be served as a web font. Windows
+   machines use their local Segoe UI (first in --font-body); everyone else gets
+   Selawik, which has identical metrics, so both look the same. Licence in
+   /resources/fonts/selawik-LICENSE.txt. */
+@font-face {
+	font-family: "Selawik";
+	src: url("/resources/fonts/selawik-regular.woff2") format("woff2"),
+	     url("/resources/fonts/selawik-regular.woff") format("woff");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: "Selawik";
+	src: url("/resources/fonts/selawik-bold.woff2") format("woff2"),
+	     url("/resources/fonts/selawik-bold.woff") format("woff");
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}
+
 * {
 	box-sizing: border-box;
 }
@@ -8,7 +56,7 @@ html, body {
 body {
 	background: var(--bg-base);
 	color: var(--text-primary);
-	font-family: system-ui, -apple-system, sans-serif;
+	font-family: var(--font-body);
 	min-height: 100vh;
 }
 a {
@@ -31,4 +79,11 @@ a {
 		background: #fff;
 		color: #000;
 	}
+}
+
+/* Headings carry the display face; everything else stays in the body face. */
+h1, h2, h3, h4 {
+	font-family: var(--font-display);
+	font-weight: normal;
+	letter-spacing: 0.01em;
 }

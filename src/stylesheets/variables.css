@@ -1,4 +1,8 @@
 :root {
+  /* Type */
+  --font-display: "Rushford Clean", "Segoe UI", "Selawik", system-ui, sans-serif;
+  --font-body: "Segoe UI", "Selawik", system-ui, -apple-system, sans-serif;
+
   /* Brand */
   --color-primary: #2b9fa6;
 
