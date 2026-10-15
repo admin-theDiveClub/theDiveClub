@@ -112,7 +112,16 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
 
 ### The match page (`src/match/`, `scripts/match.js`, `stylesheets/match.css`)
 - Two modes from the address: `/match/` shows the built-in mockup (quickest way to work on layout), `/match/?id=<uuid>` reads that match from the database. `loadMatch()` builds exactly the mockup's shape, so nothing else in the file knows where its data came from.
-- **Reading works; saving does not yet.** The result buttons and history table still change the page's own copy. `#match-notice` below the stage says so on screen — don't remove it until `tdc_record_frame` is wired in.
+- **Frames and settings both read and save.** The one exception is "Referee", which has no column yet, so the page deliberately doesn't send it.
+- Settings go through `tdc_update_match_settings(match_id, rules, first_break_side)` — rules and the lag winner in one call, because both move the whole match. It validates the ruleset whole (all 21 keys, no extras, known enumerated values), re-derives every break side, and puts back any frame the new rules made impossible, returning counts of both.
+- **A correction that would invalidate a frame's result asks first** (`resultLostBy()` / `confirmCellChange()`). The result picker only ever offers results that fit who broke, so a frame is valid when recorded; it's a later edit to the break side or break event that can invalidate it. The pop-up names the rule in the way — "a break & finish needs a ball potted on the break" — rather than greying out a button for reasons the user can't see.
+- Saving hooks into the only three places that change the card: `pushFrame()`, `setCell()` and `undo()`. Keep it that way — a fourth write path that skips `persistFrame()` would save nothing and look like it worked.
+- **After every write the match is read back, not patched locally.** The server owns the derived break side: correcting frame 2 can move who breaks frames 3 onwards, and `tdc_record_frame` re-derives the lot. A failed write reloads too, so the screen never keeps a change the database refused.
+- `framePayload()` leaves `break_side` out unless someone set it by hand — omitting it is what tells the function to derive it.
+- **Offline.** A club with bad wifi is the normal case, so the stage keeps working with no connection: frames queue in `localStorage` under `tdc.match.<id>.queue` and go when the connection returns. Settings and corrections to earlier frames lock, because both re-derive or renumber the whole match. Undo still works for a frame that hasn't been sent yet — it drops it from the queue — but not for one already on the server.
+  - Before replaying, the queue checks the match's `card_version` against what it was when the queue started. If somebody else scored in the meantime it stops and says so rather than renumbering their frames.
+  - `flushQueue()` guards against running twice: browsers raise `online` more than once, and two flushes would send the same frames twice.
+  - The nav's offline pip is in `nav.html` / `nav.js` and works on **every** page, firing `tdc:offline` and `tdc:online` window events. Other pages with input should listen for those and lock whatever they can't do — not yet done.
 - Known gaps, all deliberate and visible rather than invented: `tables` is `['Table not set']` (no tables table yet), `context.kind` is always `social` (no league layer yet), and a team match refuses to load with an explanation.
 
 ## Database conventions

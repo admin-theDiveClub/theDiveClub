@@ -4,9 +4,13 @@
 //   /match/            the built-in mockup below. Quickest way to work on layout.
 //   /match/?id=<uuid>  that match, read from the database.
 //
-// Reading real data works. Saving does not yet — the buttons still change this
-// page's own copy — and the notice below the stage says so, because a scorer
-// who loses a match's worth of frames to a reload will not come back.
+// Frames read and save. Match settings do not save yet, and the notice below
+// the stage says so, because a scorer who loses work to a reload will not
+// come back.
+//
+// Saving hooks into the only three places that change the card — pushFrame(),
+// setCell() and undo(). After each write the match is read back rather than
+// patched, because the server owns the derived break side.
 //
 // One match page. Leagues, tournaments and social matches are the same page
 // reading different settings; there is no second template anywhere.
@@ -957,9 +961,74 @@
 		els.overlay.hidden = false;
 	}
 
-	function setCell(field, no, value) {
+	// Would this correction stop the frame's result from being possible?
+	//
+	// The result picker only ever offers results that fit who broke, so a frame
+	// is always valid when it is recorded. It is a later edit to one of the
+	// other two cells that can invalidate it: marking the break dry on a frame
+	// already recorded as a break & finish, or moving the break to the side
+	// that won a reverse break & finish.
+	//
+	// Returns { event, because } for the result that would be given up, or null.
+	// "because" says which rule is in the way, so the answer teaches the rule
+	// rather than just reporting a loss.
+	function resultLostBy(f, field, value) {
+		if (!f.result_event || f.result_event === 'win' || f.result_event === 'default') return null;
+
+		const after = {
+			break_side: f.break_side,
+			break_outcome: f.break_outcome,
+			winner_side: f.winner_side
+		};
+		if (field === 'break_side') {
+			if (value === 'auto') return null;   // back to the rule; recompute reports it
+			after.break_side = value;
+		} else if (field === 'break_outcome') {
+			after.break_outcome = value === 'none' ? null : value;
+		} else {
+			return null;
+		}
+
+		const lost = (because) => ({ event: f.result_event, because });
+
+		if (f.result_event === 'break_and_finish' || f.result_event === 'golden_break') {
+			if (after.break_outcome !== 'in') {
+				return lost('needs a ball potted on the break');
+			}
+			if (MATCH.rules.break_finish_requires_breaker && after.winner_side !== after.break_side) {
+				return lost('has to go to the side that broke');
+			}
+		}
+		if (f.result_event === 'reverse_break_and_finish' && after.winner_side === after.break_side) {
+			return lost('has to go to the side that did not break');
+		}
+		return null;
+	}
+
+	function confirmCellChange(field, no, value, lost) {
+		const name = RESULT_EVENT[lost.event].toLowerCase();
+		overlayMode = 'confirm';
+		els.overlayQ.textContent = `Frame ${no} can no longer be a ${name}`;
+		els.overlayHint.textContent =
+			`A ${name} ${lost.because}. The frame still counts to the same player either way.`;
+		els.overlayRow.replaceChildren(
+			mbtn(`Record it as a ${RESULT_EVENT.win.toLowerCase()}`, 'result',
+				{ act: 'setcell', field, no, value, confirmed: '1' }),
+			mbtn('Leave it as it is', '', { act: 'closeoverlay' })
+		);
+		els.overlay.hidden = false;
+	}
+
+	function setCell(field, no, value, confirmed) {
 		const f = frameByNo(no);
 		if (!f) { TDC.error(AREA, 'no frame numbered ' + no, null, els.stageStatus); return; }
+
+		// Asked rather than done quietly, because losing a break & finish is the
+		// kind of thing a player notices weeks later in their stats.
+		if (!confirmed) {
+			const lost = resultLostBy(f, field, value);
+			if (lost) { confirmCellChange(field, no, value, lost); return; }
+		}
 
 		if (field === 'break_side') {
 			if (value === 'auto') f.break_side_manual = false;
@@ -981,13 +1050,22 @@
 
 		// Correcting one frame can change what later frames derive, so the whole
 		// match is re-derived and anything that no longer fits is reported.
-		const changed = recomputeBreaks();
+		// A downgrade on the frame just confirmed is not news — they were asked
+		// about that one and said yes. Knock-on changes to other frames are.
+		const changed = recomputeBreaks()
+			.filter((line) => !(confirmed && line.startsWith(`Frame ${no}:`)));
 		draft = newDraft();
 		closeOverlay();
 		renderAll();
-		TDC.status(els.stageStatus,
-			changed.length ? `Frame ${no} corrected. Also adjusted: ${changed.join('; ')}` : `Frame ${no} corrected.`,
-			changed.length ? '' : 'success');
+
+		const done = changed.length
+			? `Frame ${no} corrected. Also adjusted: ${changed.join('; ')}`
+			: `Frame ${no} corrected.`;
+
+		// The server re-derives the later frames itself, so only the corrected
+		// one is sent; reading back is what brings the rest into line.
+		if (liveMatchId) persistFrame(no, done);
+		else TDC.status(els.stageStatus, done, changed.length ? '' : 'success');
 	}
 
 	// ─────────────────────────────────────────────────────────────────
@@ -1183,11 +1261,24 @@
 			TDC.error(AREA, 'no definition for setting: ' + input.dataset.setting);
 			return;
 		}
+
+		// A settings change moves the whole match, so it waits for a connection
+		// rather than being replayed later on top of who knows what.
+		if (liveMatchId && isOffline()) {
+			scheduleSettingsRender(input.id);   // put the control back
+			TDC.status(els.stageStatus, 'Match settings need a connection. Keep scoring — this will come back.', '');
+			showPanelNote(['Settings are paused while this phone is offline.']);
+			return;
+		}
 		if (!setSetting(def, def.type === 'bool' ? input.checked : input.value)) return;
 
 		showPanelNote(recomputeBreaks());
 		draft = newDraft();
 		scheduleSettingsRender(input.id);
+
+		// "referee" is still only on this page — there is no column for it yet,
+		// so sending it would be a lie. Everything else is stored.
+		if (liveMatchId && def.key !== 'referee') persistSettings();
 	}
 
 	const openPanel  = () => { els.panel.hidden = false; els.scrim.hidden = false; };
@@ -1230,21 +1321,28 @@
 		resetClockForNextFrame();
 		draft = newDraft();
 		renderAll();
+		return MATCH.frames.length;
 	}
 
 	function saveFrame(side, ev) {
-		pushFrame({ result_event: ev, winner_side: side });
-		TDC.status(els.stageStatus, `Frame ${MATCH.frames.length} to ${MATCH[side].name}.`, 'success');
+		const no = pushFrame({ result_event: ev, winner_side: side });
+		const done = `Frame ${no} to ${MATCH[side].name}.`;
+		if (liveMatchId) persistFrame(no, done);
+		else TDC.status(els.stageStatus, done, 'success');
 	}
 
 	function walkover(side) {
-		pushFrame({ result_event: 'default', winner_side: side, break_outcome: null, break_side: null });
-		TDC.status(els.stageStatus, `Frame ${MATCH.frames.length} awarded to ${MATCH[side].name} by default.`, 'success');
+		const no = pushFrame({ result_event: 'default', winner_side: side, break_outcome: null, break_side: null });
+		const done = `Frame ${no} awarded to ${MATCH[side].name} by default.`;
+		if (liveMatchId) persistFrame(no, done);
+		else TDC.status(els.stageStatus, done, 'success');
 	}
 
 	function abandonFrame() {
-		pushFrame({ status: 'abandoned', result_event: null, winner_side: null });
-		TDC.status(els.stageStatus, `Frame ${MATCH.frames.length} abandoned. A reason is required in the real thing.`, '');
+		const no = pushFrame({ status: 'abandoned', result_event: null, winner_side: null });
+		const done = `Frame ${no} abandoned. A reason is required in the real thing.`;
+		if (liveMatchId) persistFrame(no, done);
+		else TDC.status(els.stageStatus, done, '');
 	}
 
 	function onClick(e) {
@@ -1252,6 +1350,15 @@
 		if (!b || b.disabled) return;
 		const act = b.dataset.act;
 		const side = b.dataset.side;
+
+		// Corrections to earlier frames re-derive everything after them, so they
+		// wait for a connection. Recording new frames does not, and carries on.
+		if (liveMatchId && isOffline()
+			&& ['editside', 'editbreak', 'editcell', 'setcell'].includes(act)) {
+			closeOverlay();
+			blockedOffline('Correcting an earlier frame');
+			return;
+		}
 
 		switch (act) {
 			// ── Stage ────────────────────────────────────────────────
@@ -1310,16 +1417,18 @@
 
 			// ── Frame history ────────────────────────────────────────
 			case 'editside':
-				editSide(b.dataset.no, side);
+				editSide(Number(b.dataset.no), side);
 				return;
 			case 'editbreak':
-				editBreak(b.dataset.no);
+				editBreak(Number(b.dataset.no));
 				return;
 			case 'editcell':
-				editCell(b.dataset.field, b.dataset.no);
+				// Number(), because a data attribute is a string and this ends up
+				// as the integer frame number the database is asked for.
+				editCell(b.dataset.field, Number(b.dataset.no));
 				return;
 			case 'setcell':
-				setCell(b.dataset.field, b.dataset.no, b.dataset.value);
+				setCell(b.dataset.field, Number(b.dataset.no), b.dataset.value, b.dataset.confirmed === '1');
 				return;
 
 			// ── Timing panel ─────────────────────────────────────────
@@ -1359,12 +1468,24 @@
 
 	function undo() {
 		if (!MATCH.frames.length) return;
+		const no = MATCH.frames.length;
+
+		// Offline, a frame that has already reached the server cannot be undone:
+		// removing it renumbers everything after it, and this device cannot see
+		// what else may have changed.
+		if (liveMatchId && isOffline() && !lastFrameIsQueued(no)) {
+			blockedOffline('Undoing a frame that has already been sent');
+			return;
+		}
+
 		MATCH.frames.pop();
 		recomputeBreaks();
 		resetClockForNextFrame();
 		draft = newDraft();
 		renderAll();
-		TDC.status(els.stageStatus, 'Last frame removed.', '');
+
+		if (liveMatchId) persistRemoval(no);
+		else TDC.status(els.stageStatus, 'Last frame removed.', '');
 	}
 
 	// ─────────────────────────────────────────────────────────────────
@@ -1442,12 +1563,13 @@
 	async function loadMatch(id) {
 		const { data: m, error } = await supabaseClient
 			.from('tbl_matches')
-			.select('id, venue_id, scheduled_at, first_break_side, sanctioned, rules, status,'
+			.select('id, venue_id, scheduled_at, first_break_side, sanctioned, rules, status, card_version,'
 				+ ' home_side_kind, home_player_id, away_side_kind, away_player_id')
 			.eq('id', id)
 			.maybeSingle();
 
 		if (error) { TDC.showSupabaseError(AREA, error, els.stageStatus); return null; }
+		if (m) cardVersion = m.card_version;
 		if (!m) {
 			TDC.error(AREA, 'no match with id ' + id, null, els.stageStatus);
 			showNotice('<strong>Match not found.</strong> Either the link is wrong, or you are not signed in — '
@@ -1546,6 +1668,311 @@
 	}
 
 	// ─────────────────────────────────────────────────────────────────
+	// Saving
+	//
+	// Every change to the card goes through one of three places — pushFrame(),
+	// setCell() and undo() — so saving hooks in at those three and nowhere else.
+	//
+	// After each write the match is read back rather than patched locally. The
+	// server owns the derived break side: correcting frame 2 can move who breaks
+	// frames 3 onwards, and tdc_record_frame re-derives the lot. Reading back is
+	// the only way the page is certain to agree with what was stored.
+	//
+	// A failed write also reloads, so the screen never keeps a change the
+	// database refused.
+	// ─────────────────────────────────────────────────────────────────
+
+	let liveMatchId = null;          // null in mockup mode
+	let saving = 0;                  // writes in flight
+	let cardVersion = null;          // what the server said when we last read it
+	const isoOrNull = (ms) => (ms ? new Date(ms).toISOString() : null);
+
+	// ─────────────────────────────────────────────────────────────────
+	// Offline
+	//
+	// A club with bad wifi is the normal case, not the exception, so losing a
+	// frame to a dropped connection is not acceptable. What happens instead:
+	//
+	//   The stage keeps working. Recording frames is the one thing that must
+	//   never stop, and it is also the safest thing to replay: a frame is
+	//   appended at the end, and the browser derives who breaks it with the
+	//   same rule the server uses, so a queued frame lands exactly as it
+	//   looked on screen.
+	//
+	//   Settings and history corrections lock. Both re-derive or renumber the
+	//   whole match, which is where replaying gets guesswork.
+	//
+	//   Undo still works for a frame that has not been sent yet — it just
+	//   drops it from the queue. A frame already on the server cannot be
+	//   undone until the connection is back, because that is a renumbering.
+	//
+	// The queue survives a closed browser. What it cannot survive is somebody
+	// else scoring the same match while this device was away, which is what
+	// card_version is checked for before anything is replayed.
+	// ─────────────────────────────────────────────────────────────────
+
+	const isOffline = () => !navigator.onLine;
+	const queueKey = () => 'tdc.match.' + liveMatchId + '.queue';
+
+	function readQueue() {
+		if (!liveMatchId) return null;
+		try {
+			const raw = localStorage.getItem(queueKey());
+			return raw ? JSON.parse(raw) : null;
+		} catch (e) {
+			TDC.error(AREA, 'could not read the saved-up changes on this device.', e);
+			return null;
+		}
+	}
+
+	function writeQueue(q) {
+		try {
+			if (!q || !q.ops.length) localStorage.removeItem(queueKey());
+			else localStorage.setItem(queueKey(), JSON.stringify(q));
+			return true;
+		} catch (e) {
+			// Storage can be full or switched off. Say so loudly: the whole
+			// point of the queue is that the frame is not lost.
+			TDC.error(AREA, 'this device would not store the change. Stay on this page until you are back online.',
+				e, els.stageStatus);
+			return false;
+		}
+	}
+
+	function enqueue(op) {
+		const q = readQueue() || { card_version: cardVersion, ops: [] };
+		q.ops.push(op);
+		if (!writeQueue(q)) return;
+		renderOfflineNotice();
+	}
+
+	function queuedCount() {
+		const q = readQueue();
+		return q ? q.ops.length : 0;
+	}
+
+	// True when the last thing recorded is still sitting in the queue, which is
+	// what makes undoing it safe while offline.
+	function lastFrameIsQueued(no) {
+		const q = readQueue();
+		if (!q || !q.ops.length) return false;
+		const last = q.ops[q.ops.length - 1];
+		return last.kind === 'frame' && last.no === no;
+	}
+
+	function dropLastQueued() {
+		const q = readQueue();
+		if (!q || !q.ops.length) return;
+		q.ops.pop();
+		writeQueue(q);
+		renderOfflineNotice();
+	}
+
+	function renderOfflineNotice() {
+		if (!liveMatchId) return;
+		const n = queuedCount();
+
+		if (isOffline()) {
+			showNotice('<strong>Offline.</strong> Keep scoring — frames are kept on this phone and sent when '
+				+ 'you are back online'
+				+ (n ? `. <strong>${n} waiting.</strong>` : '.')
+				+ ' Match settings and corrections to earlier frames are paused until then.', 'warn');
+		} else if (n) {
+			showNotice(`<strong>${n} change${n === 1 ? '' : 's'} still to send.</strong> Sending now…`, 'warn');
+		} else {
+			showNotice('<strong>Live match.</strong> Frames and settings are saved as you change them.', 'warn');
+		}
+	}
+
+	// Anything the page must refuse while offline says why, in the one place
+	// the scorer is already looking.
+	function blockedOffline(what) {
+		TDC.status(els.stageStatus, `${what} needs a connection. Keep scoring — this will come back.`, '');
+		return true;
+	}
+
+	let flushing = false;
+
+	async function flushQueue() {
+		const q = readQueue();
+		if (!liveMatchId || !q || !q.ops.length || isOffline()) return;
+
+		// A browser can raise "online" more than once, and a reconnect while a
+		// flush is still running would send the same frames twice.
+		if (flushing) return;
+		flushing = true;
+		try {
+			await sendQueue(q);
+		} finally {
+			flushing = false;
+		}
+	}
+
+	async function sendQueue(q) {
+
+		// Somebody else may have scored this match while this device was away.
+		// Replaying on top of that would renumber their frames, so it stops.
+		const { data: m, error } = await supabaseClient
+			.from('tbl_matches').select('card_version').eq('id', liveMatchId).maybeSingle();
+
+		if (error) { TDC.showSupabaseError(AREA, error, els.stageStatus); return; }
+		if (!m) { TDC.error(AREA, 'the match has gone while this device was offline.', null, els.stageStatus); return; }
+
+		if (q.card_version !== null && m.card_version !== q.card_version) {
+			const n = q.ops.length;
+			showNotice('<strong>Someone else has scored this match.</strong> The '
+				+ (n === 1 ? 'change saved on this phone has' : `${n} changes saved on this phone have`)
+				+ ' not been sent, because sending them now would renumber their frames. '
+				+ 'Check the card against what you wrote down before carrying on.', 'error');
+			TDC.error(AREA, 'queue held back: card_version moved from ' + q.card_version + ' to ' + m.card_version);
+			return;
+		}
+
+		renderOfflineNotice();
+
+		// while/shift rather than for-of: the queue is being emptied as it goes,
+		// so that a failure halfway leaves exactly what is still unsent.
+		while (q.ops.length) {
+			const op = q.ops[0];
+			const { error: opError } = op.kind === 'remove'
+				? await supabaseClient.rpc('tdc_remove_frame', { p_match_id: liveMatchId, p_frame_no: op.no })
+				: await supabaseClient.rpc('tdc_record_frame',
+					{ p_match_id: liveMatchId, p_frame_no: op.no, p_frame: op.payload });
+
+			if (opError) {
+				// Stop at the first refusal rather than pressing on. What is
+				// left in the queue is what has not been sent.
+				writeQueue(q);
+				TDC.showSupabaseError(AREA, opError, els.stageStatus);
+				showNotice('<strong>Something saved on this phone was refused.</strong> '
+					+ 'Nothing after it has been sent. The message below the scoreboard says what happened.', 'error');
+				return;
+			}
+			q.ops.shift();
+		}
+
+		writeQueue(null);
+		await reloadFromServer();
+		renderOfflineNotice();
+		TDC.status(els.stageStatus, 'Everything saved on this phone has been sent.', 'success');
+	}
+
+	function framePayload(f) {
+		const payload = {
+			break_outcome: f.break_outcome ?? null,
+			winner_side: f.winner_side ?? null,
+			result_event: f.result_event ?? null,
+			status: f.status,
+			home_players: f.home_players || [],
+			away_players: f.away_players || [],
+			rack_started_at: isoOrNull(f.rack_started_at),
+			started_at: isoOrNull(f.started_at),
+			ended_at: isoOrNull(f.ended_at),
+			paused_seconds: f.paused_seconds || 0
+		};
+
+		// Left out unless someone set it by hand, because omitting it is what
+		// tells the function to work the breaker out from the rule.
+		if (f.break_side_manual && f.break_side) payload.break_side = f.break_side;
+
+		// A frame awarded by default was never broken, and the function refuses
+		// a break outcome on one.
+		if (f.result_event === 'default') payload.break_outcome = null;
+
+		return payload;
+	}
+
+	function savingStarted(message) {
+		saving += 1;
+		TDC.status(els.stageStatus, message, '');
+	}
+
+	async function savingFinished(error, okMessage) {
+		saving -= 1;
+		await reloadFromServer();
+		if (error) {
+			TDC.showSupabaseError(AREA, error, els.stageStatus);
+		} else if (okMessage) {
+			TDC.status(els.stageStatus, okMessage, 'success');
+		}
+	}
+
+	async function reloadFromServer() {
+		const loaded = await loadMatch(liveMatchId);
+		if (!loaded) return;
+		PLAYERS = loaded.players;
+		MATCH = loaded.match;
+		recomputeBreaks();
+		draft = newDraft();
+		renderAll();
+	}
+
+	async function persistFrame(no, okMessage) {
+		if (!liveMatchId) return;
+		const f = frameByNo(no);
+		if (!f) { TDC.error(AREA, 'nothing to save: no frame numbered ' + no, null, els.stageStatus); return; }
+
+		if (isOffline()) {
+			enqueue({ kind: 'frame', no, payload: framePayload(f) });
+			TDC.status(els.stageStatus, `${okMessage} Kept on this phone until you are back online.`, 'success');
+			return;
+		}
+
+		savingStarted(`Saving frame ${no}…`);
+		const { error } = await supabaseClient.rpc('tdc_record_frame', {
+			p_match_id: liveMatchId,
+			p_frame_no: no,
+			p_frame: framePayload(f)
+		});
+		await savingFinished(error, okMessage);
+	}
+
+	// Settings and the lag winner go together, because both move the whole
+	// match: the server re-derives every break side and puts back any frame the
+	// new rules have made impossible, then says how many of each it touched.
+	async function persistSettings() {
+		if (!liveMatchId) return;
+
+		savingStarted('Saving settings…');
+		const { data, error } = await supabaseClient.rpc('tdc_update_match_settings', {
+			p_match_id: liveMatchId,
+			p_rules: MATCH.rules,
+			p_first_break_side: MATCH.first_break_side
+		});
+
+		let message = 'Settings saved.';
+		if (!error && data) {
+			const parts = [];
+			if (data.breaks_changed) parts.push(`${data.breaks_changed} break${data.breaks_changed === 1 ? '' : 's'} re-worked`);
+			if (data.results_downgraded) {
+				parts.push(`${data.results_downgraded} frame${data.results_downgraded === 1 ? '' : 's'} no longer a break & finish`);
+			}
+			if (parts.length) message = 'Settings saved — ' + parts.join(', ') + '.';
+		}
+		await savingFinished(error, message);
+	}
+
+	async function persistRemoval(no) {
+		if (!liveMatchId) return;
+
+		// Only reachable offline for a frame still in the queue — undo() checks
+		// first — so this drops it rather than queueing a removal of something
+		// the server has never seen.
+		if (isOffline()) {
+			dropLastQueued();
+			TDC.status(els.stageStatus, `Frame ${no} removed before it was sent.`, '');
+			return;
+		}
+
+		savingStarted(`Removing frame ${no}…`);
+		const { error } = await supabaseClient.rpc('tdc_remove_frame', {
+			p_match_id: liveMatchId,
+			p_frame_no: no
+		});
+		await savingFinished(error, `Frame ${no} removed.`);
+	}
+
+	// ─────────────────────────────────────────────────────────────────
 
 	function start() {
 		document.addEventListener('click', onClick);
@@ -1597,11 +2024,20 @@
 
 		PLAYERS = loaded.players;
 		MATCH = loaded.match;
+		liveMatchId = loaded.match.id;
 
-		showNotice('<strong>Reading from the database.</strong> Saving is not wired up yet, so '
-			+ 'anything you change here is lost on reload.', 'warn');
+		window.addEventListener('tdc:offline', renderOfflineNotice);
+		window.addEventListener('tdc:online', () => {
+			// Repaint first: with nothing queued, flushQueue() returns at once
+			// and the offline notice would otherwise stay on screen.
+			renderOfflineNotice();
+			flushQueue();
+		});
 
+		renderOfflineNotice();
 		start();
-		TDC.status(els.stageStatus, 'Loaded from the database. Changes are not saved yet.', '');
+
+		// Anything left over from a previous visit goes now.
+		if (!isOffline() && queuedCount()) flushQueue();
 	})();
 })();

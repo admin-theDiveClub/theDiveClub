@@ -7,6 +7,12 @@
 		<img src="/resources/branding/logo-primary-dark.svg" alt="The Dive Club">
 	</a>
 
+	<!-- Shown by nav.js whenever the device loses its connection. Every page
+	     gets it; what each page does about it is its own business. -->
+	<span class="nav-offline" id="nav-offline" hidden role="status">
+		<span class="nav-offline-pip" aria-hidden="true"></span>Offline
+	</span>
+
 	<div class="nav-profile-wrap">
 		<button class="nav-profile" id="nav-profile" aria-label="Account">
 			<!-- The generic icon until nav.js finds a signed-in player with a

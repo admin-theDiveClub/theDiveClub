@@ -141,4 +141,29 @@
 		}
 		if (me && me.avatar_path) showNavAvatar(avatarUrlFor(me.avatar_path));
 	})();
+
+	// ─── Offline ──────────────────────────────────────────────────────
+	// The indicator is the nav's job on every page. What a page does about
+	// being offline is the page's own business: it listens for tdc:offline
+	// and tdc:online, or reads TDCNet.online.
+	//
+	// navigator.onLine only knows whether the device has a network, not
+	// whether our server can be reached, so a page that cares about the
+	// difference should treat a failed write as the real answer.
+	const offlineTag = document.getElementById('nav-offline');
+
+	function setOffline(off) {
+		if (offlineTag) offlineTag.toggleAttribute('hidden', !off);
+		document.body.classList.toggle('is-offline', off);
+		window.dispatchEvent(new CustomEvent(off ? 'tdc:offline' : 'tdc:online'));
+	}
+
+	window.addEventListener('offline', () => setOffline(true));
+	window.addEventListener('online', () => setOffline(false));
+
+	// Set the starting state without announcing a change nobody asked about.
+	if (offlineTag) offlineTag.toggleAttribute('hidden', navigator.onLine);
+	document.body.classList.toggle('is-offline', !navigator.onLine);
+
+	window.TDCNet = { get online() { return navigator.onLine; } };
 })();

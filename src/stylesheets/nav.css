@@ -156,3 +156,28 @@ body {
 .nav-dropdown-link[hidden] {
 	display: none;
 }
+
+/* Offline indicator. Sits left of the account button on every page. */
+.nav-offline {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	margin-left: auto;
+	margin-right: 0.75rem;
+	padding: 0.25rem 0.6rem;
+	border: 1px solid var(--border-color);
+	border-radius: 999px;
+	font-size: 0.75rem;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+	white-space: nowrap;
+}
+.nav-offline[hidden] { display: none; }
+.nav-offline-pip {
+	width: 0.5rem;
+	height: 0.5rem;
+	border-radius: 50%;
+	background: var(--warning-color, #d8a23a);
+	flex: 0 0 auto;
+}
