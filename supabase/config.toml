@@ -417,3 +417,6 @@ enabled = true
 # Our Edge Functions. verify_jwt = true: Supabase rejects calls without a valid login token before the code runs.
 [functions.send-test-notification]
 verify_jwt = true
+
+[functions.notify-card]
+verify_jwt = true

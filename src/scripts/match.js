@@ -1472,11 +1472,11 @@
 			// ── Scorecard ────────────────────────────────────────────
 			case 'submitcard':
 				cardAction('tdc_submit_card', { p_match_id: liveMatchId },
-					'Submitted. The other player can check it now.');
+					'Submitted. The other player can check it now.', 'submitted');
 				return;
 			case 'agreecard':
 				cardAction('tdc_answer_card', { p_match_id: liveMatchId, p_agree: true, p_note: null },
-					'Agreed. The card is settled.');
+					'Agreed. The card is settled.', 'agreed');
 				return;
 			case 'disputecard':
 				disputing = true;
@@ -1495,12 +1495,12 @@
 					return;
 				}
 				cardAction('tdc_answer_card', { p_match_id: liveMatchId, p_agree: false, p_note: note },
-					'Sent. The card is open again.');
+					'Sent. The card is open again.', 'disputed');
 				return;
 			}
 			case 'reopencard':
 				cardAction('tdc_reopen_card', { p_match_id: liveMatchId },
-					'Reopened. Put it right, then submit it again.');
+					'Reopened. Put it right, then submit it again.', 'reopened');
 				return;
 			case 'deletematch':
 				confirmingDelete = true;
@@ -1517,6 +1517,11 @@
 					if (isOffline()) { blockedOffline('Deleting a match'); return; }
 					const { error } = await supabaseClient.rpc('tdc_delete_match', { p_match_id: liveMatchId });
 					if (error) { TDC.showSupabaseError(AREA, error, els.stageStatus); return; }
+
+					// Told after the deletion, from the note the database keeps:
+					// the match itself no longer exists to be read. Waited for,
+					// because leaving the page would cut the call off.
+					await tellTheOther('deleted');
 					location.href = '/matches/';
 				})();
 				return;
@@ -1992,7 +1997,29 @@
 		return null;
 	}
 
-	async function cardAction(fn, args, okMessage) {
+	// Telling the other player. The page says which match and what happened;
+	// the function works out who to tell and what to say, so a page cannot be
+	// talked into pushing arbitrary text at arbitrary people.
+	//
+	// A notification that does not arrive must never cost somebody their
+	// scorecard, so this never throws and never blocks: the card is already
+	// saved by the time it runs.
+	async function tellTheOther(kind) {
+		if (!liveMatchId || isOffline()) return;
+		try {
+			const { data, error } = await supabaseClient.functions.invoke('notify-card', {
+				body: { match_id: liveMatchId, kind }
+			});
+			if (error) { console.error('[' + AREA + '] could not send the notification.', error); return; }
+			if (data && data.sent === 0) {
+				console.log('[' + AREA + '] nobody notified: ' + (data.note || 'no devices'));
+			}
+		} catch (err) {
+			console.error('[' + AREA + '] could not send the notification.', err);
+		}
+	}
+
+	async function cardAction(fn, args, okMessage, notifyKind) {
 		if (isOffline()) { blockedOffline('Finishing a scorecard'); return; }
 
 		// On a settled match the stage is put away, so a message there would be
@@ -2008,6 +2035,9 @@
 		await reloadFromServer();
 		await loadCardState();
 		TDC.status(settled() ? els.resultStatus : els.stageStatus, okMessage, 'success');
+
+		// After the card is saved and on screen, never before.
+		if (notifyKind) tellTheOther(notifyKind);
 	}
 
 	// ─────────────────────────────────────────────────────────────────

@@ -123,6 +123,16 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
 - `created_at` defaults to `clock_timestamp()`, not `now()`. `now()` is the transaction start time, so two events written together shared a timestamp and the state machine could not tell which came first.
 - On the page: the Scorecard panel below the stage. `CARD_ACTS` are deliberately **not** in `WRITE_ACTS` — a player answers a card they are not allowed to change, which is what makes the answer worth anything. When `myPlayerId` is unknown the answer buttons are hidden rather than guessed at.
 
+### Telling the other player (`supabase/functions/notify-card/`, migration `20261015200000`)
+- Fired **from the page**, not by a database trigger: the person doing it is standing there, so a failed notification can be logged and ignored without the write being at risk. `tellTheOther(kind)` runs after the RPC has already succeeded, and `cardAction` takes the kind as an argument so a new card action can't forget it.
+- The page sends **only `{ match_id, kind }`** (`submitted`, `agreed`, `disputed`, `reopened`, `deleted`). It does not send the message and does not say who to tell. The function works both out from the match itself — otherwise anyone signed in could push any text to anyone, which is a spam machine rather than a notification.
+- The function checks the caller is in the match, picks the *other* player, and writes the score **from the recipient's point of view**, so it reads the way they would say it.
+- Benign cases answer `{ sent: 0, note: … }` rather than an error: a team match (no single other player), a walk-in with no account, or someone who hasn't turned notifications on. Only a real fault is logged with `[Match]`.
+- Dead subscriptions (404/410 from the push service) are deleted as they're found.
+- `tbl_deleted_matches` exists because **a deleted match has nothing left to address a message to** — no names, no score, no participants. It keeps who was playing, who removed it and a one-line summary written at the time. It is not a backup: the frames are gone.
+- The page `await`s the `deleted` notification before leaving for `/matches/`, since the tab is about to go.
+- Deploy: `npx supabase functions deploy notify-card --use-api`. **The migration must be pushed first**, because the function reads `tbl_deleted_matches`.
+
 ### Match settings definitions (`scripts/match-settings.js`)
 - **`TDCMatchDef` is the one place a match setting is defined**: labels, the `SETTINGS` array, `DEFAULT_RULES`, and `MAIN_KEYS` (the few asked before a match starts). Both the match page's panel and the create page build their forms from it, so adding a setting is one edit, not two that drift.
 - `DEFAULT_RULES` is every key at its quietest, which is what makes a match created without touching anything the simple card. Keep it in step with `private.tdc_check_match_rules`, which refuses a ruleset missing a key or carrying an unknown one.
