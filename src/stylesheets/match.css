@@ -730,3 +730,46 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
 }
 .fact-k { color: var(--text-muted); font-size: 0.9rem; }
 .fact-v { font-weight: 600; }
+
+/* Opened from the frame history, the overlay floats over the whole viewport
+   rather than over a stage that has been scrolled past. */
+.stage-overlay.floating {
+	position: fixed;
+	inset: 60px 0 0 0;   /* clears the nav */
+	z-index: 40;
+}
+
+/* ── The menu that drops out of a history cell ───────────────────── */
+.below { position: relative; }      /* the menu is placed against this */
+.cell-menu {
+	position: absolute;
+	z-index: 40;
+	width: max-content;
+	max-width: min(20rem, calc(100vw - 2rem));
+	padding: 0.75rem;
+	border: 1px solid var(--border-color);
+	border-radius: 10px;
+	background: var(--bg-base);
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+}
+.cell-menu[hidden] { display: none; }
+.cell-menu-q {
+	margin: 0 0 0.6rem;
+	font-size: 0.8rem;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--color-primary);
+}
+.cell-menu-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.cell-menu-row .mbtn { flex: 1 1 auto; white-space: nowrap; }
+.cell-menu-hint {
+	margin: 0.6rem 0 0;
+	font-size: 0.78rem;
+	line-height: 1.4;
+	color: var(--text-muted);
+}
+.cell-menu-hint[hidden] { display: none; }
+
+/* A cell you can change should look like one. */
+.history-tall .edit, .history-wide .edit { cursor: pointer; }

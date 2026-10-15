@@ -161,6 +161,8 @@
 		setGroups: el('set-groups'),
 		notice: el('match-notice'),
 		cardPanel: el('card-panel'), cardBody: el('card-body'),
+		cellMenu: el('cell-menu'), cellMenuQ: el('cell-menu-q'),
+		cellMenuRow: el('cell-menu-row'), cellMenuHint: el('cell-menu-hint'),
 		matchPage: el('match-page'), resultView: el('result-view'),
 		resultScore: el('result-score'), resultLine: el('result-line'),
 		resultLabel: el('result-label'), resultFrames: el('result-frames'),
@@ -843,6 +845,8 @@
 	}
 
 	function renderHistory() {
+		// The cells are about to be replaced, so an anchor into them is stale.
+		if (cellMenuOpen) closeCellMenu();
 		els.undoBtn.hidden = MATCH.frames.length === 0 || !canEdit;
 		renderTallTable();
 		renderWideTable();
@@ -855,65 +859,48 @@
 
 	// Portrait: tapping a side's cell says that side won, and offers only the
 	// results that fit who broke.
-	function editSide(no, side) {
+	function editSide(no, side, anchor) {
 		const f = frameByNo(no);
 		if (!f) { TDC.error(AREA, 'no frame numbered ' + no, null, els.stageStatus); return; }
-		overlayMode = 'edit';
-		els.overlayQ.textContent = `Frame ${f.no} — ${MATCH[side].name}`;
-		els.overlayHint.textContent = 'Only the results that fit who broke are offered.';
-		els.overlayRow.replaceChildren(
+		openCellMenu(anchor, `Frame ${f.no} — ${MATCH[side].name}`, [
 			...resultsFor(side, f.break_side).map((ev) =>
 				mbtn(RESULT_EVENT[ev], f.winner_side === side && f.result_event === ev && f.status === 'complete' ? 'on' : '',
 					{ act: 'setcell', field: 'result', no, value: side + ':' + ev })),
-			mbtn('Abandoned', f.status === 'abandoned' ? 'on' : '', { act: 'setcell', field: 'result', no, value: 'abandoned' }),
-			mbtn('Close', '', { act: 'closeoverlay' })
-		);
-		els.overlay.hidden = false;
+			mbtn('Abandoned', f.status === 'abandoned' ? 'on' : '', { act: 'setcell', field: 'result', no, value: 'abandoned' })
+		], 'Only the results that fit who broke are offered.');
 	}
 
 	// Portrait: the middle cell covers both break fields.
-	function editBreak(no) {
+	function editBreak(no, anchor) {
 		const f = frameByNo(no);
 		if (!f) { TDC.error(AREA, 'no frame numbered ' + no, null, els.stageStatus); return; }
-		overlayMode = 'edit';
-		els.overlayQ.textContent = `Frame ${f.no} — the break`;
-		els.overlayHint.textContent = 'Who broke, and what happened.';
-		els.overlayRow.replaceChildren(
+		cellAnchor = anchor;
+		openCellMenu(anchor, `Frame ${f.no} — the break`, [
 			mbtn('Who broke', '', { act: 'editcell', field: 'break_side', no }),
-			mbtn('Break event', '', { act: 'editcell', field: 'break_outcome', no }),
-			mbtn('Close', '', { act: 'closeoverlay' })
-		);
-		els.overlay.hidden = false;
+			mbtn('Break event', '', { act: 'editcell', field: 'break_outcome', no })
+		], 'Who broke, and what happened.');
 	}
 
-	function editCell(field, no) {
+	function editCell(field, no, anchor) {
 		const f = frameByNo(no);
 		if (!f) { TDC.error(AREA, 'no frame numbered ' + no, null, els.stageStatus); return; }
-		overlayMode = 'edit';
+		if (anchor) cellAnchor = anchor;
 
 		if (field === 'break_side') {
-			els.overlayQ.textContent = `Frame ${f.no} — who broke?`;
-			els.overlayHint.textContent = f.break_side_manual
-				? 'Set by hand, so the break rule leaves it alone.'
-				: `Currently derived from "${BREAK_DETERMINATION[MATCH.rules.break_determination]}". Changing it here fixes it in place.`;
-			els.overlayRow.replaceChildren(
+			openCellMenu(cellAnchor, `Frame ${f.no} — who broke?`, [
 				mbtn(MATCH.home.name, f.break_side === 'home' ? 'on' : '', { act: 'setcell', field, no, value: 'home' }),
 				mbtn(MATCH.away.name, f.break_side === 'away' ? 'on' : '', { act: 'setcell', field, no, value: 'away' }),
-				mbtn('Back to the rule', '', { act: 'setcell', field, no, value: 'auto' }, !f.break_side_manual),
-				mbtn('Close', '', { act: 'closeoverlay' })
-			);
+				mbtn('Back to the rule', '', { act: 'setcell', field, no, value: 'auto' }, !f.break_side_manual)
+			], f.break_side_manual
+				? 'Set by hand, so the break rule leaves it alone.'
+				: `Currently derived from "${BREAK_DETERMINATION[MATCH.rules.break_determination]}". Changing it here fixes it in place.`);
 		} else if (field === 'break_outcome') {
-			els.overlayQ.textContent = `Frame ${f.no} — on the break`;
-			els.overlayHint.textContent = 'Scratch is the cue ball pocketed. Foul is anything else.';
-			els.overlayRow.replaceChildren(
+			openCellMenu(cellAnchor, `Frame ${f.no} — on the break`, [
 				...Object.entries(BREAK_OUTCOME).map(([v, label]) =>
 					mbtn(label, f.break_outcome === v ? 'on' : '', { act: 'setcell', field, no, value: v })),
-				mbtn('None', f.break_outcome === null ? 'on' : '', { act: 'setcell', field, no, value: 'none' }),
-				mbtn('Close', '', { act: 'closeoverlay' })
-			);
+				mbtn('None', f.break_outcome === null ? 'on' : '', { act: 'setcell', field, no, value: 'none' })
+			], 'Scratch is the cue ball pocketed. Foul is anything else.');
 		} else if (field === 'result') {
-			els.overlayQ.textContent = `Frame ${f.no} — who won, and how`;
-			els.overlayHint.textContent = 'Only the results that fit who broke are offered.';
 			const buttons = [];
 			for (const side of ['home', 'away']) {
 				for (const ev of resultsFor(side, f.break_side)) {
@@ -923,13 +910,11 @@
 				}
 			}
 			buttons.push(mbtn('Abandoned', f.status === 'abandoned' ? 'on' : '', { act: 'setcell', field: 'result', no, value: 'abandoned' }));
-			buttons.push(mbtn('Close', '', { act: 'closeoverlay' }));
-			els.overlayRow.replaceChildren(...buttons);
+			openCellMenu(cellAnchor, `Frame ${f.no} — who won, and how`, buttons,
+				'Only the results that fit who broke are offered.');
 		} else {
 			TDC.error(AREA, 'unknown history field: ' + field);
-			return;
 		}
-		els.overlay.hidden = false;
 	}
 
 	// Would this correction stop the frame's result from being possible?
@@ -978,16 +963,11 @@
 
 	function confirmCellChange(field, no, value, lost) {
 		const name = RESULT_EVENT[lost.event].toLowerCase();
-		overlayMode = 'confirm';
-		els.overlayQ.textContent = `Frame ${no} can no longer be a ${name}`;
-		els.overlayHint.textContent =
-			`A ${name} ${lost.because}. The frame still counts to the same player either way.`;
-		els.overlayRow.replaceChildren(
+		openCellMenu(cellAnchor, `Frame ${no} can no longer be a ${name}`, [
 			mbtn(`Record it as a ${RESULT_EVENT.win.toLowerCase()}`, 'result',
 				{ act: 'setcell', field, no, value, confirmed: '1' }),
-			mbtn('Leave it as it is', '', { act: 'closeoverlay' })
-		);
-		els.overlay.hidden = false;
+			mbtn('Leave it as it is', '', { act: 'closecellmenu' })
+		], `A ${name} ${lost.because}. The frame still counts to the same player either way.`);
 	}
 
 	function setCell(field, no, value, confirmed) {
@@ -1026,7 +1006,7 @@
 		const changed = recomputeBreaks()
 			.filter((line) => !(confirmed && line.startsWith(`Frame ${no}:`)));
 		draft = newDraft();
-		closeOverlay();
+		closeCellMenu();
 		renderAll();
 
 		const done = changed.length
@@ -1040,11 +1020,58 @@
 	}
 
 	// ─────────────────────────────────────────────────────────────────
+	// The history cell menu
+	//
+	// Corrections are made in the table, so the choices belong at the cell
+	// being corrected. The stage overlay is still right for the questions the
+	// stage asks — who won the lag, who is playing — but using it here put the
+	// answer a screen away from the question.
+	// ─────────────────────────────────────────────────────────────────
+
+	let cellMenuOpen = false;
+	let cellAnchor = null;      // the cell the menu belongs to
+
+	function openCellMenu(anchor, question, buttons, hint) {
+		els.cellMenuQ.textContent = question;
+		els.cellMenuHint.textContent = hint || '';
+		els.cellMenuHint.hidden = !hint;
+		els.cellMenuRow.replaceChildren(...buttons);
+		els.cellMenu.hidden = false;
+		cellMenuOpen = true;
+
+		if (!anchor) return;
+
+		// Positioned against the page, under the cell, and nudged back inside
+		// the window if the cell is near an edge.
+		const cell = anchor.getBoundingClientRect();
+		const host = els.cellMenu.offsetParent || document.body;
+		const base = host.getBoundingClientRect();
+		const menu = els.cellMenu.getBoundingClientRect();
+
+		let left = cell.left - base.left + (cell.width / 2) - (menu.width / 2);
+		left = Math.max(8, Math.min(left, base.width - menu.width - 8));
+
+		let top = cell.bottom - base.top + 6;
+		// No room below? Put it above the cell instead.
+		if (cell.bottom + menu.height + 12 > window.innerHeight && cell.top > menu.height) {
+			top = cell.top - base.top - menu.height - 6;
+		}
+
+		els.cellMenu.style.left = left + 'px';
+		els.cellMenu.style.top = top + 'px';
+	}
+
+	function closeCellMenu() {
+		els.cellMenu.hidden = true;
+		cellMenuOpen = false;
+	}
+
+	// ─────────────────────────────────────────────────────────────────
 	// Overlays
 	// ─────────────────────────────────────────────────────────────────
 
 	function showBreakOverlay() {
-		overlayMode = 'break';
+		setOverlayMode('break');
 		els.overlayQ.textContent = MATCH.rules.break_determination === 'by_schedule'
 			? 'Who breaks this frame?'
 			: 'Who won the lag?';
@@ -1093,8 +1120,17 @@
 		els.overlay.hidden = false;
 	}
 
+	// The overlay lives inside the stage, which is a screen tall and scrolled
+	// out of sight by the time anyone is editing the history table below it.
+	// Opened from down there it floats over the viewport instead, so a tap on a
+	// cell does not look like it did nothing.
+	function setOverlayMode(mode) {
+		overlayMode = mode;
+		els.overlay.classList.toggle('floating', mode === 'edit');
+	}
+
 	function closeOverlay() {
-		overlayMode = null;
+		setOverlayMode(null);
 		els.overlay.hidden = true;
 		renderStage();
 	}
@@ -1429,6 +1465,9 @@
 			case 'closeoverlay':
 				closeOverlay();
 				return;
+			case 'closecellmenu':
+				closeCellMenu();
+				return;
 
 			// ── Scorecard ────────────────────────────────────────────
 			case 'submitcard':
@@ -1484,15 +1523,15 @@
 
 			// ── Frame history ────────────────────────────────────────
 			case 'editside':
-				editSide(Number(b.dataset.no), side);
+				editSide(Number(b.dataset.no), side, b);
 				return;
 			case 'editbreak':
-				editBreak(Number(b.dataset.no));
+				editBreak(Number(b.dataset.no), b);
 				return;
 			case 'editcell':
 				// Number(), because a data attribute is a string and this ends up
 				// as the integer frame number the database is asked for.
-				editCell(b.dataset.field, Number(b.dataset.no));
+				editCell(b.dataset.field, Number(b.dataset.no), null);
 				return;
 			case 'setcell':
 				setCell(b.dataset.field, Number(b.dataset.no), b.dataset.value, b.dataset.confirmed === '1');
@@ -2300,7 +2339,19 @@
 		els.undoBtn.addEventListener('click', undo);
 		els.panelClose.addEventListener('click', closePanel);
 		els.scrim.addEventListener('click', closePanel);
-		document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
+		document.addEventListener('keydown', (e) => {
+		if (e.key !== 'Escape') return;
+		if (cellMenuOpen) closeCellMenu(); else closePanel();
+	});
+
+	// Anywhere outside it closes it, the way a menu should. Capture, so it runs
+	// before the click handler that might open another one.
+	document.addEventListener('click', (e) => {
+		if (!cellMenuOpen) return;
+		if (els.cellMenu.contains(e.target)) return;
+		if (e.target.closest('[data-act="editcell"], [data-act="editbreak"], [data-act="editside"]')) return;
+		closeCellMenu();
+	}, true);
 
 		addNavButton();
 		recomputeBreaks();

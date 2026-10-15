@@ -108,6 +108,15 @@ extraScripts:
 			<div id="time-body"></div>
 		</section>
 
+		<!-- The little menu that drops out of a history cell. It lives here
+		     rather than over the stage, because the stage is off the top of
+		     the screen when somebody is looking at the table. -->
+		<div class="cell-menu" id="cell-menu" hidden role="dialog" aria-label="Change this frame">
+			<p class="cell-menu-q" id="cell-menu-q"></p>
+			<div class="cell-menu-row" id="cell-menu-row"></div>
+			<p class="cell-menu-hint" id="cell-menu-hint"></p>
+		</div>
+
 		<!-- Frame history. Everything in the table can be corrected during the
 		     match, and the scoreboard follows, because the score is counted from
 		     these frames rather than stored. -->
