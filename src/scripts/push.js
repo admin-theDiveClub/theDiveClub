@@ -66,12 +66,15 @@ document.getElementById('enable-notifications').addEventListener('click', async 
 			return;
 		}
 
-		const { error: dbError } = await supabaseClient.from('tbl_push_subscriptions').upsert({
-			user_id: session.user.id,
-			endpoint: subJson.endpoint,
-			p256dh: subJson.keys.p256dh,
-			auth: subJson.keys.auth
-		}, { onConflict: 'endpoint' });
+		// Through a function, not a direct upsert. A push endpoint belongs to the
+		// browser, so the same phone signed into a different account produces a
+		// row that already belongs to somebody else — and an upsert on endpoint
+		// is refused by the access rules in exactly that case.
+		const { error: dbError } = await supabaseClient.rpc('tdc_save_push_subscription', {
+			p_endpoint: subJson.endpoint,
+			p_p256dh: subJson.keys.p256dh,
+			p_auth: subJson.keys.auth
+		});
 
 		if (dbError) {
 			console.error('[Push] Error saving subscription to Supabase:', dbError);
