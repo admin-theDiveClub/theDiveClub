@@ -1,5 +1,6 @@
 // notify-card
-// Tells the other player that something happened to a match's scorecard.
+// Tells the other player that something happened to a match: they were put in
+// one, or something happened to its scorecard.
 //
 // Deploy from the repo root:  npx supabase functions deploy notify-card --use-api
 // Secrets live in Supabase (Edge Functions → Secrets), never in the repo:
@@ -53,8 +54,37 @@ if (missingSettings.length) {
 	webpush.setVapidDetails(env.VAPID_SUBJECT!, env.VAPID_PUBLIC_KEY!, env.VAPID_PRIVATE_KEY!);
 }
 
-const KINDS = ['submitted', 'agreed', 'disputed', 'reopened', 'deleted'] as const;
+const KINDS = ['opponent_added', 'submitted', 'agreed', 'disputed', 'reopened', 'deleted'] as const;
 type Kind = typeof KINDS[number];
+
+// A match that has not been played yet has no score worth sending, so these
+// kinds describe the match itself instead.
+const NO_SCORE: ReadonlySet<string> = new Set(['opponent_added']);
+
+const DISCIPLINE: Record<string, string> = {
+	'8ball': '8-ball',
+	'9ball': '9-ball',
+	'10ball': '10-ball',
+	blackball: 'blackball',
+};
+
+// "Race to 7, 9-ball". Enough to decide whether you want the game, which is the
+// point of telling somebody they are in one.
+function describeMatch(rules: Record<string, unknown> | null): string {
+	if (!rules) return '';
+	const target = Number(rules.win_condition_target);
+	const n = Number.isFinite(target) && target > 0 ? String(target) : '';
+	let shape = '';
+	switch (String(rules.win_condition_type)) {
+		case 'race_to':      shape = n ? 'Race to ' + n : 'A race'; break;
+		case 'best_of':      shape = n ? 'Best of ' + n : ''; break;
+		case 'fixed_frames': shape = n ? n + ' frames' : ''; break;
+		case 'timed':        shape = 'Timed'; break;
+		case 'free_play':    shape = 'Free play'; break;
+	}
+	const game = DISCIPLINE[String(rules.discipline)] ?? '';
+	return [shape, game].filter(Boolean).join(', ');
+}
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -82,8 +112,11 @@ Deno.serve(async (req) => {
 	}
 
 	try {
+		// Two different faults, two different messages. One says no token arrived,
+		// the other says the auth server refused the one that did, and carries its
+		// reason — "expired" and "bad signature" need different fixes.
 		const authHeader = req.headers.get('Authorization');
-		if (!authHeader) return reply(req, 401, { error: 'TDC (Error): not authenticated' });
+		if (!authHeader) return reply(req, 401, { error: 'TDC (Error): no login token was sent.' });
 
 		const authClient = createClient(env.SUPABASE_URL!, env.SUPABASE_ANON_KEY!, {
 			global: { headers: { Authorization: authHeader } },
@@ -91,7 +124,9 @@ Deno.serve(async (req) => {
 		const { data: { user }, error: userError } = await authClient.auth.getUser();
 		if (userError || !user) {
 			console.error(LOG, 'Auth failed:', userError);
-			return reply(req, 401, { error: 'TDC (Error): not authenticated' });
+			return reply(req, 401, {
+				error: 'TDC (Error): the login token was refused — ' + (userError?.message ?? 'no user on it') + '.',
+			});
 		}
 
 		let body: Record<string, unknown> = {};
@@ -124,6 +159,7 @@ Deno.serve(async (req) => {
 		let homeId: string | null = null;
 		let awayId: string | null = null;
 		let summary = '';
+		let shape = '';
 
 		if (kind === 'deleted') {
 			const { data: gone } = await admin
@@ -137,7 +173,7 @@ Deno.serve(async (req) => {
 		} else {
 			const { data: match } = await admin
 				.from('tbl_matches')
-				.select('home_player_id, away_player_id, home_side_kind, away_side_kind')
+				.select('home_player_id, away_player_id, home_side_kind, away_side_kind, rules')
 				.eq('id', matchId).maybeSingle();
 			if (!match) return reply(req, 404, { error: 'TDC (Error): match not found.' });
 			if (match.home_side_kind !== 'player' || match.away_side_kind !== 'player') {
@@ -147,13 +183,16 @@ Deno.serve(async (req) => {
 			}
 			homeId = match.home_player_id;
 			awayId = match.away_player_id;
+			shape = describeMatch(match.rules as Record<string, unknown> | null);
 
-			const { data: frames } = await admin
-				.from('tbl_frames').select('winner_side, status').eq('match_id', matchId);
-			const done = (frames ?? []).filter((f) => f.status === 'complete');
-			const hs = done.filter((f) => f.winner_side === 'home').length;
-			const as = done.filter((f) => f.winner_side === 'away').length;
-			summary = hs + ' – ' + as;
+			if (!NO_SCORE.has(kind)) {
+				const { data: frames } = await admin
+					.from('tbl_frames').select('winner_side, status').eq('match_id', matchId);
+				const done = (frames ?? []).filter((f) => f.status === 'complete');
+				const hs = done.filter((f) => f.winner_side === 'home').length;
+				const as = done.filter((f) => f.winner_side === 'away').length;
+				summary = hs + ' – ' + as;
+			}
 		}
 
 		if (me.id !== homeId && me.id !== awayId) {
@@ -185,6 +224,12 @@ Deno.serve(async (req) => {
 		let url = '/match/?id=' + matchId;
 
 		switch (kind) {
+			case 'opponent_added':
+				title = 'You are in a match';
+				message = shape
+					? `${who} started a match against you. ${shape}.`
+					: `${who} started a match against you.`;
+				break;
 			case 'submitted':
 				title = 'Scorecard to check';
 				message = `${who} submitted ${mine}. Tap to agree or say what is wrong.`;

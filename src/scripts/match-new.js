@@ -254,8 +254,35 @@
 			return;
 		}
 
+		// Tell the opponent they are in a match. Awaited, because the page is
+		// about to leave and an unfinished request goes with it — but a failure
+		// is logged and ignored. The match exists either way, and the one thing
+		// worse than a missing notification is a created match the player is
+		// stopped from opening.
+		await tellTheOpponent(data);
+
 		location.href = '/match/?id=' + encodeURIComponent(data);
 	});
+
+	// The page sends only which match and what happened. Who to tell and what to
+	// say are decided by the function from the match itself, so this cannot be
+	// used to push arbitrary text at anybody.
+	async function tellTheOpponent(matchId) {
+		try {
+			const { data, error } = await supabaseClient.functions.invoke('notify-card', {
+				body: { match_id: matchId, kind: 'opponent_added' }
+			});
+			if (error) {
+				console.error('[' + AREA + '] could not tell the opponent about the match.', error);
+				return;
+			}
+			if (data && data.sent === 0) {
+				console.log('[' + AREA + '] opponent not notified: ' + (data.note || 'no devices'));
+			}
+		} catch (err) {
+			console.error('[' + AREA + '] could not tell the opponent about the match.', err);
+		}
+	}
 
 	(async () => {
 		const session = await TDC.requireSession(AREA);

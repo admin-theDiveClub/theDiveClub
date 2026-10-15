@@ -83,9 +83,16 @@ Deno.serve(async (req) => {
 
 	try {
 		// Who is calling? Checked with their own login token.
+		//
+		// These two cases used to give the same message, which made a real fault
+		// on one device impossible to tell apart from not being signed in. They
+		// are different things: no token arrived at all, or a token arrived and
+		// the auth server rejected it. The second one carries its reason, because
+		// "expired" and "signature" need completely different fixes and the
+		// reason is about the caller's own token, so it is theirs to see.
 		const authHeader = req.headers.get('Authorization');
 		if (!authHeader) {
-			return reply(req, 401, { error: 'TDC (Error): not authenticated' });
+			return reply(req, 401, { error: 'TDC (Error): no login token was sent.' });
 		}
 
 		const authClient = createClient(env.SUPABASE_URL!, env.SUPABASE_ANON_KEY!, {
@@ -95,7 +102,9 @@ Deno.serve(async (req) => {
 
 		if (userError || !user) {
 			console.error(LOG, 'Auth failed:', userError);
-			return reply(req, 401, { error: 'TDC (Error): not authenticated' });
+			return reply(req, 401, {
+				error: 'TDC (Error): the login token was refused — ' + (userError?.message ?? 'no user on it') + '.',
+			});
 		}
 
 		// Admin access to read subscriptions, always limited to the user id verified above.
