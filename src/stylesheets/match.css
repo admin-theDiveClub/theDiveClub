@@ -612,3 +612,11 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
 	.half-group-label { margin-bottom: 0.2rem; }
 	.mbtn { min-height: 2.4rem; font-size: 0.78rem; min-width: 3.6rem; }
 }
+
+/* Read-only: a watcher sees the match but cannot change it. Dimmed rather
+   than hidden — knowing it is a race to 5 is the point. */
+.set-row input:disabled,
+.set-row select:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}

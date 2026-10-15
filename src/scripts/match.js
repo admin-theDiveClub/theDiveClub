@@ -460,13 +460,23 @@
 		return b;
 	}
 
+	// Everything that changes the card. The timing controls are not here: a
+	// clock is this screen's own business and changes nothing anyone else sees.
+	const WRITE_ACTS = new Set([
+		'breakside', 'outcome', 'result', 'more', 'walkover', 'abandon',
+		'changetable', 'settable', 'pick', 'pickplayer',
+		'editside', 'editbreak', 'editcell', 'setcell'
+	]);
+
 	function mbtn(label, cls, dataset, disabled) {
 		const b = document.createElement('button');
 		b.type = 'button';
 		b.className = 'mbtn' + (cls ? ' ' + cls : '');
 		b.textContent = label;
 		Object.assign(b.dataset, dataset);
-		if (disabled) b.disabled = true;
+		// One place rather than at every call site, so a control added later is
+		// covered without anyone having to remember this.
+		if (disabled || (!canEdit && WRITE_ACTS.has(dataset && dataset.act))) b.disabled = true;
 		return b;
 	}
 
@@ -769,6 +779,14 @@
 		const c = document.createElement(tag);
 		if (cls) c.className = cls;
 		if (text !== undefined) c.textContent = text;
+
+		// A history cell carries its action in a data attribute rather than
+		// being a button, so it needs the same read-only rule applied by hand:
+		// to a watcher it is a number to read, not a control to press.
+		if (dataset && !canEdit && WRITE_ACTS.has(dataset.act)) {
+			if (cls) c.className = cls.replace(/\bedit\b/g, '').trim();
+			return c;
+		}
 		if (dataset) Object.assign(c.dataset, dataset);
 		return c;
 	}
@@ -872,7 +890,7 @@
 	}
 
 	function renderHistory() {
-		els.undoBtn.hidden = MATCH.frames.length === 0;
+		els.undoBtn.hidden = MATCH.frames.length === 0 || !canEdit;
 		renderTallTable();
 		renderWideTable();
 		els.historyLegend.textContent = MATCH.frames.length
@@ -1194,6 +1212,9 @@
 
 		input.id = 'set-' + def.key;
 		input.dataset.setting = def.key;
+		// A watcher sees the match's settings but cannot change them. Disabled
+		// rather than hidden: knowing it is a race to 7 is the point.
+		if (!canEdit) input.disabled = true;
 
 		row.append(label, input);
 		if (def.hint) row.append(div('set-hint', def.hint));
@@ -1259,6 +1280,12 @@
 		const def = SETTINGS.find((d) => d.key === input.dataset.setting);
 		if (!def) {
 			TDC.error(AREA, 'no definition for setting: ' + input.dataset.setting);
+			return;
+		}
+
+		if (!canEdit) {
+			scheduleSettingsRender(input.id);   // put the control back
+			TDC.status(els.stageStatus, 'Only the players and venue staff can change this match.', '');
 			return;
 		}
 
@@ -1350,6 +1377,13 @@
 		if (!b || b.disabled) return;
 		const act = b.dataset.act;
 		const side = b.dataset.side;
+
+		// Belt and braces with the disabled buttons above: a watcher cannot
+		// change the card even if a control is reached some other way.
+		if (!canEdit && WRITE_ACTS.has(act)) {
+			TDC.status(els.stageStatus, 'Only the players and venue staff can score this match.', '');
+			return;
+		}
 
 		// Corrections to earlier frames re-derive everything after them, so they
 		// wait for a connection. Recording new frames does not, and carries on.
@@ -1468,6 +1502,10 @@
 
 	function undo() {
 		if (!MATCH.frames.length) return;
+		if (!canEdit) {
+			TDC.status(els.stageStatus, 'Only the players and venue staff can score this match.', '');
+			return;
+		}
 		const no = MATCH.frames.length;
 
 		// Offline, a frame that has already reached the server cannot be undone:
@@ -1685,6 +1723,11 @@
 	let liveMatchId = null;          // null in mockup mode
 	let saving = 0;                  // writes in flight
 	let cardVersion = null;          // what the server said when we last read it
+
+	// Whether this person may score this match. The database decides — the page
+	// asks tdc_may_edit_match rather than working the rule out again here, so
+	// there is one copy of it. The mockup is always editable; it is a drawing.
+	let canEdit = true;
 	const isoOrNull = (ms) => (ms ? new Date(ms).toISOString() : null);
 
 	// ─────────────────────────────────────────────────────────────────
@@ -1772,7 +1815,10 @@
 		if (!liveMatchId) return;
 		const n = queuedCount();
 
-		if (isOffline()) {
+		if (!canEdit) {
+			showNotice('<strong>Watching this match.</strong> Only the two players and venue staff can score it. '
+				+ 'The score updates when they do — reload to see the latest.');
+		} else if (isOffline()) {
 			showNotice('<strong>Offline.</strong> Keep scoring — frames are kept on this phone and sent when '
 				+ 'you are back online'
 				+ (n ? `. <strong>${n} waiting.</strong>` : '.')
@@ -2025,6 +2071,20 @@
 		PLAYERS = loaded.players;
 		MATCH = loaded.match;
 		liveMatchId = loaded.match.id;
+
+		// Ask before drawing the controls, rather than letting someone score a
+		// frame and then telling them it was never theirs to score.
+		const { data: mayEdit, error: editError } = await supabaseClient
+			.rpc('tdc_may_edit_match', { p_match_id: liveMatchId });
+
+		if (editError) {
+			// Err towards read-only: a watcher who cannot score is a small
+			// annoyance, a scorer whose frames are all refused is a ruined night.
+			canEdit = false;
+			TDC.showSupabaseError(AREA, editError, els.stageStatus);
+		} else {
+			canEdit = mayEdit === true;
+		}
 
 		window.addEventListener('tdc:offline', renderOfflineNotice);
 		window.addEventListener('tdc:online', () => {
