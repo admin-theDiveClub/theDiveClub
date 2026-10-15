@@ -674,3 +674,10 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
 	resize: vertical;
 }
 #card-body textarea:focus { outline: none; border-bottom-color: var(--color-primary); }
+
+/* Same as the account pages: the open dropdown list needs its own colours. */
+.set-row select option {
+	background: var(--bg-base);
+	color: var(--text-primary);
+	direction: ltr;
+}

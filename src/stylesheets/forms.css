@@ -381,3 +381,11 @@
 	border-color: var(--color-error);
 	color: var(--color-error);
 }
+
+/* The native dropdown list is drawn by the operating system and does not
+   inherit the page's dark background — on Windows it came out as near-white
+   text on white. These two properties are the only ones it honours. */
+.tdc-card select option {
+	background: var(--bg-base);
+	color: var(--text-primary);
+}

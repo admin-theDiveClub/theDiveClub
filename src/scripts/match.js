@@ -1349,10 +1349,33 @@
 
 		switch (act) {
 			// ── Stage ────────────────────────────────────────────────
-			case 'breakside':
-				draft.break_side = b.dataset.value;
+			case 'breakside': {
+				const rule = MATCH.rules.break_determination;
+
+				// Lagging every frame, or following a schedule, answers for this
+				// frame only. Every other rule reckons from who won the lag at
+				// the start, so the answer belongs to the match — and storing it
+				// in the draft alone is why this kept asking the same question
+				// before every frame.
+				//
+				// The answer is recorded before the overlay closes. closeOverlay()
+				// re-renders the stage, and a stage with no breaking side opens
+				// this overlay again — so closing first left it stuck open with
+				// the question already answered.
+				if (rule === 'lag_each_frame' || rule === 'by_schedule') {
+					draft.break_side = b.dataset.value;
+					closeOverlay();
+					return;
+				}
+
+				MATCH.first_break_side = b.dataset.value;
+				recomputeBreaks();
+				draft = newDraft();
 				closeOverlay();
+				renderAll();
+				if (liveMatchId) persistSettings();
 				return;
+			}
 			case 'outcome': {
 				const clearing = draft.break_outcome === b.dataset.value;
 				draft.break_outcome = clearing ? null : b.dataset.value;

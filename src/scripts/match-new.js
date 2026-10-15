@@ -36,6 +36,7 @@
 	const rules = Object.assign({}, D.DEFAULT_RULES);
 	let firstBreakSide = null;
 	let opponent = null;
+	const openGroups = new Set();   // which collapsed groups the person has opened
 	let me = null;
 
 	// The creator is always home, so the lag winner reads as two names rather
@@ -137,6 +138,15 @@
 
 			const box = document.createElement('details');
 			box.className = 'set-group';
+			box.dataset.group = group;
+			// The form is rebuilt whenever a setting changes, so a group the
+			// person opened has to be put back open — otherwise ticking a box
+			// folds away the box you just ticked.
+			box.open = openGroups.has(group);
+			box.addEventListener('toggle', () => {
+				if (box.open) openGroups.add(group); else openGroups.delete(group);
+			});
+
 			const head = document.createElement('summary');
 			head.textContent = group;
 			box.append(head, ...defs.map(control));
