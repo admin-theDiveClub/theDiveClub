@@ -22,7 +22,7 @@
 	}
 
 	const DISCIPLINE = { '8ball': '8-Ball', '9ball': '9-Ball', '10ball': '10-Ball', blackball: 'Blackball' };
-	const WIN_CONDITION = { race_to: 'Race to', best_of: 'Best of', fixed_frames: 'Frames', timed: 'Timed' };
+	const WIN_CONDITION = { race_to: 'Race to', best_of: 'Best of', fixed_frames: 'Frames', timed: 'Timed', free_play: 'Free play' };
 
 	const el = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -69,7 +69,8 @@
 		const bits = [];
 		if (m.played_at) bits.push(when(m.played_at));
 		if (m.discipline) bits.push(DISCIPLINE[m.discipline] || m.discipline);
-		if (m.win_condition && m.target) {
+		if (m.win_condition === 'free_play') bits.push(WIN_CONDITION.free_play);
+		else if (m.win_condition && m.target) {
 			bits.push((WIN_CONDITION[m.win_condition] || m.win_condition) + ' ' + m.target);
 		}
 		if (!m.frames_played) bits.push('No frames yet');

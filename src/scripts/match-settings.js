@@ -37,7 +37,11 @@ const TDCMatchDef = (() => {
 		by_schedule: 'Set by the scoresheet',
 		lag_each_frame: 'Lag every frame'
 	};
-	const WIN_CONDITION = { race_to: 'Race to', best_of: 'Best of', fixed_frames: 'Fixed frames', timed: 'Timed' };
+	const WIN_CONDITION = {
+		race_to: 'Race to', best_of: 'Best of', fixed_frames: 'Fixed frames', timed: 'Timed',
+		// No target and no end: a running score for two people on a table.
+		free_play: 'Free play'
+	};
 	const TIME_EXPIRY = { stop_immediately: 'Stop play at once', finish_current_frame: 'Finish the current frame' };
 	const TIEBREAK = {
 		sudden_death_frame: 'Sudden-death frame',
@@ -88,7 +92,10 @@ const TDCMatchDef = (() => {
 
 		{ group: 'Format', scope: 'rules', key: 'discipline', label: 'Discipline', type: 'select', options: () => DISCIPLINE },
 		{ group: 'Format', scope: 'rules', key: 'win_condition_type', label: 'Win condition', type: 'select', options: () => WIN_CONDITION },
-		{ group: 'Format', scope: 'rules', key: 'win_condition_target', label: 'Target frames', type: 'int', min: 1, max: 50 },
+		{
+			group: 'Format', scope: 'rules', key: 'win_condition_target', label: 'Target frames', type: 'int',
+			min: 1, max: 50, when: (r) => r.win_condition_type !== 'free_play'
+		},
 		{
 			group: 'Format', scope: 'rules', key: 'track_breaks', label: 'Record who breaks', type: 'bool',
 			hint: 'Off: the card is just the score. On: who broke and what happened on the break.'

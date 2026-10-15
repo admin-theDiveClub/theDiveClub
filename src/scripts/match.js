@@ -564,7 +564,12 @@
 
 	function renderStage() {
 		els.midFrame.textContent = matchWinner() ? 'Final' : `Frame ${MATCH.frames.length + 1}`;
-		els.midTarget.textContent = `${WIN_CONDITION[MATCH.rules.win_condition_type] || 'TDC (Error)'} ${MATCH.rules.win_condition_target}`;
+		// Free play has no number to show, and "Free play 5" would read as a
+		// target somebody is counting to.
+		const wc = WIN_CONDITION[MATCH.rules.win_condition_type] || 'TDC (Error)';
+		els.midTarget.textContent = MATCH.rules.win_condition_type === 'free_play'
+			? wc
+			: `${wc} ${MATCH.rules.win_condition_target}`;
 
 		if (overlayMode === null) {
 			const needsBreak = MATCH.rules.track_breaks && !draft.break_side && !matchWinner();
