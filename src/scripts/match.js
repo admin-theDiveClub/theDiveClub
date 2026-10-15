@@ -93,6 +93,7 @@
 			discipline: '8ball',
 			win_condition_type: 'race_to',
 			win_condition_target: 7,
+			track_breaks: true,
 			break_determination: 'alternate',
 			draws_allowed: false,
 			tiebreak_method: 'sudden_death_frame',
@@ -101,6 +102,7 @@
 			golden_break_enabled: true,
 			reverse_break_finish_enabled: true,
 			// When false, break & finish and golden break may go to either side.
+			break_finish_enabled: true,
 			break_finish_requires_breaker: true,
 			shot_clock_enabled: false, // off for most matches; a ref runs it when on
 			shot_clock_seconds: 45,
@@ -193,15 +195,20 @@
 		{ group: 'This match', scope: 'match', key: 'referee', label: 'Referee', type: 'text', placeholder: 'None' },
 		{
 			group: 'This match', scope: 'match', key: 'first_break_side', label: 'Lag winner', type: 'select', options: SIDES,
-			hint: 'Breaks the first frame. Changing this re-derives who broke in every frame.'
+			hint: 'Breaks the first frame. Changing this re-derives who broke in every frame.',
+			when: (r) => r.track_breaks
 		},
 
 		{ group: 'Format', scope: 'rules', key: 'discipline', label: 'Discipline', type: 'select', options: () => DISCIPLINE },
 		{ group: 'Format', scope: 'rules', key: 'win_condition_type', label: 'Win condition', type: 'select', options: () => WIN_CONDITION },
 		{ group: 'Format', scope: 'rules', key: 'win_condition_target', label: 'Target frames', type: 'int', min: 1, max: 50 },
 		{
+			group: 'Format', scope: 'rules', key: 'track_breaks', label: 'Record who breaks', type: 'bool',
+			hint: 'Off: the card is just the score. On: who broke and what happened on the break.'
+		},
+		{
 			group: 'Format', scope: 'rules', key: 'break_determination', label: 'Breaks', type: 'select', options: () => BREAK_DETERMINATION,
-			hint: 'Decides who breaks each frame after the first.'
+			hint: 'Decides who breaks each frame after the first.', when: (r) => r.track_breaks
 		},
 
 		{
@@ -209,11 +216,13 @@
 			hint: 'Must be off for knockout rounds — a bracket needs someone to advance.'
 		},
 		{ group: 'Results', scope: 'rules', key: 'tiebreak_method', label: 'If level', type: 'select', options: () => TIEBREAK, when: (r) => !r.draws_allowed },
-		{ group: 'Results', scope: 'rules', key: 'golden_break_enabled', label: 'Golden break', type: 'bool' },
-		{ group: 'Results', scope: 'rules', key: 'reverse_break_finish_enabled', label: 'Reverse break & finish', type: 'bool' },
+		{ group: 'Results', scope: 'rules', key: 'break_finish_enabled', label: 'Break & finish', type: 'bool', when: (r) => r.track_breaks },
+		{ group: 'Results', scope: 'rules', key: 'golden_break_enabled', label: 'Golden break', type: 'bool', when: (r) => r.track_breaks && r.break_finish_enabled },
+		{ group: 'Results', scope: 'rules', key: 'reverse_break_finish_enabled', label: 'Reverse break & finish', type: 'bool', when: (r) => r.track_breaks },
 		{
 			group: 'Results', scope: 'rules', key: 'break_finish_requires_breaker', label: 'Break & finish needs the breaker', type: 'bool',
-			hint: 'Off: either side can be credited with a break & finish.'
+			hint: 'Off: either side can be credited with a break & finish.',
+			when: (r) => r.track_breaks && r.break_finish_enabled
 		},
 
 		{ group: 'Timing', scope: 'rules', key: 'max_match_minutes', label: 'Match clock (minutes)', type: 'int', min: 0, max: 600, hint: '0 for no match clock.' },
@@ -361,6 +370,12 @@
 	}
 
 	function recomputeBreaks() {
+		if (!MATCH.rules.track_breaks) {
+			// Settings can be turned off mid-match; clear what they recorded so
+			// the card and the database agree on there being no break data.
+			for (const f of MATCH.frames) { f.break_side = null; f.break_side_manual = false; f.break_outcome = null; }
+			return [];
+		}
 		MATCH.frames.forEach((f, i) => {
 			if (f.break_side_manual) return;
 			const derived = breakSideAt(i, MATCH.frames);
@@ -532,7 +547,11 @@
 		const breaking = breakSide === side;
 		const list = ['win'];
 
-		if (breaking || !r.break_finish_requires_breaker) {
+		// With breaks untracked there is nothing but a winner, which is the
+		// whole point of the simple card: one button a side.
+		if (!r.track_breaks) return list;
+
+		if (r.break_finish_enabled && (breaking || !r.break_finish_requires_breaker)) {
 			list.push('break_and_finish');
 			if (r.golden_break_enabled) list.push('golden_break');
 		}
@@ -541,6 +560,8 @@
 	}
 
 	function resultDisabled(ev) {
+		// Nothing to wait for: the frame is over when somebody says who won it.
+		if (!MATCH.rules.track_breaks) return false;
 		if (!draft.break_side || !draft.break_outcome) return true;
 		if ((ev === 'break_and_finish' || ev === 'golden_break') && draft.break_outcome !== 'in') return true;
 		return false;
@@ -636,7 +657,7 @@
 		els.midTarget.textContent = `${WIN_CONDITION[MATCH.rules.win_condition_type] || 'TDC (Error)'} ${MATCH.rules.win_condition_target}`;
 
 		if (overlayMode === null) {
-			const needsBreak = !draft.break_side && !matchWinner();
+			const needsBreak = MATCH.rules.track_breaks && !draft.break_side && !matchWinner();
 			if (needsBreak) showBreakOverlay();
 			else els.overlay.hidden = true;
 		}
@@ -672,8 +693,11 @@
 		);
 		body.append(pauseRow);
 
-		body.append(div('time-note',
-			'Racking starts when the last frame ends. The frame starts when a break event is entered, and ends when a result is pressed. Pausing records the stoppage separately, so stalling still shows in the wall clock.'));
+		// There is no break event to start the clock on when breaks are not
+		// being recorded, so the explanation has to say what actually happens.
+		body.append(div('time-note', r.track_breaks
+			? 'Racking starts when the last frame ends. The frame starts when a break event is entered, and ends when a result is pressed. Pausing records the stoppage separately, so stalling still shows in the wall clock.'
+			: 'A frame runs from the end of the last one until a result is pressed. Pausing records the stoppage separately, so stalling still shows in the wall clock.'));
 
 		if (r.shot_clock_enabled) {
 			body.append(heading('h3', 'Shot clock'));

@@ -7,57 +7,111 @@
 	padding: 2rem 1.25rem;
 }
 .tdc-card h1 {
-	font-size: 1.5rem;
-	margin: 0 0 1.5rem;
+	font-size: 2.1rem;
+	line-height: 1.1;
+	margin: 0 0 2rem;
 }
 .tdc-card h2 {
 	font-size: 1.1rem;
 	margin: 2rem 0 0.75rem;
 }
 
-.field {
-	margin-bottom: 1rem;
+/* Explanatory text needs room, or it reads as part of the field below it. */
+.tdc-card p {
+	margin: 0 0 1.5rem;
+	line-height: 1.5;
 }
+
+.field {
+	margin-bottom: 1.6rem;
+}
+
+/* Small capitals in the brand colour, sitting above an underlined field. The
+   label carries the colour so the input itself can be quiet. */
 .field label {
 	display: block;
-	font-size: 0.85rem;
-	color: var(--text-muted);
-	margin-bottom: 0.35rem;
+	font-size: 0.7rem;
+	font-weight: 600;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--color-primary);
+	margin-bottom: 0.45rem;
 }
 .field .hint {
 	font-size: 0.8rem;
 	color: var(--text-muted);
-	margin-top: 0.35rem;
+	margin-top: 0.45rem;
 }
 
+/* A line, not a box. Less furniture on a page that is mostly fields, and it
+   keeps the eye moving down the form. */
 .tdc-card input,
-.tdc-card select {
+.tdc-card select,
+.tdc-card textarea {
 	width: 100%;
-	padding: 0.75rem;
-	border-radius: 6px;
-	border: 1px solid var(--border-color);
-	background: var(--bg-surface);
+	padding: 0.5rem 0;
+	border: none;
+	border-bottom: 1px solid var(--border-color);
+	border-radius: 0;
+	background: transparent;
 	color: var(--text-primary);
+	font-family: inherit;
 	font-size: 1rem; /* 16px stops iPhone zooming in on focus */
+	transition: border-color 0.15s ease;
+}
+.tdc-card input::placeholder,
+.tdc-card textarea::placeholder { color: var(--text-muted); }
+
+.tdc-card input:focus,
+.tdc-card select:focus,
+.tdc-card textarea:focus {
+	outline: none;
+	border-bottom-color: var(--color-primary);
+}
+
+/* A select has no box to hang the native arrow on any more, so it gets its
+   own. currentColor keeps it right in both themes. */
+.tdc-card select {
+	appearance: none;
+	-webkit-appearance: none;
+	padding-right: 1.5rem;
+	background-image:
+		linear-gradient(45deg, transparent 50%, currentColor 50%),
+		linear-gradient(135deg, currentColor 50%, transparent 50%);
+	background-position: right 0.6rem center, right 0.3rem center;
+	background-size: 0.3rem 0.3rem, 0.3rem 0.3rem;
+	background-repeat: no-repeat;
+}
+
+/* Checkboxes and radios are not full-width fields. */
+.tdc-card input[type="checkbox"],
+.tdc-card input[type="radio"] {
+	width: auto;
+	accent-color: var(--color-primary);
+	border-bottom: none;
 }
 
 .tdc-card button {
 	width: 100%;
-	padding: 0.75rem;
+	padding: 0.9rem 1.25rem;
 	margin-bottom: 0.75rem;
-	border-radius: 6px;
+	border-radius: 999px;
 	border: none;
 	cursor: pointer;
-	font-weight: 600;
-	font-size: 1rem;
+	font-family: inherit;
+	font-weight: 700;
+	font-size: 0.85rem;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
 }
 .tdc-card button:disabled {
-	opacity: 0.6;
+	opacity: 0.5;
 	cursor: default;
 }
 .btn-primary {
+	/* Dark text on the brand teal: white on this colour is hard to read. */
 	background: var(--color-primary);
-	color: #fff;
+	color: #0b1a1b;
 }
 .btn-secondary {
 	background: transparent;
@@ -69,20 +123,26 @@
 	color: #222;
 }
 
+/* The way out of a form is a quiet underlined link, never another button. */
 .link-row {
 	text-align: center;
-	margin-top: 1rem;
+	margin-top: 1.5rem;
 	font-size: 0.9rem;
 }
 .link-row a,
 .link-row button.link {
-	color: var(--color-primary);
+	color: var(--text-primary);
 	background: none;
 	border: none;
-	padding: 0;
+	border-bottom: 1px solid var(--color-primary);
+	padding: 0 0 2px;
 	width: auto;
 	margin: 0;
+	font-size: 0.9rem;
 	font-weight: normal;
+	letter-spacing: normal;
+	text-transform: none;
+	text-decoration: none;
 	cursor: pointer;
 }
 
