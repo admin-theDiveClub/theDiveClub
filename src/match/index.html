@@ -62,6 +62,14 @@ extraScripts:
 		     with it yet. Hidden unless there is something to say. -->
 		<div class="match-notice" id="match-notice" hidden></div>
 
+		<!-- Where the scorecard stands: finished, waiting on the other player,
+		     agreed, or disputed. Hidden on the mockup, which has nobody to
+		     agree with. -->
+		<section class="panel-block" id="card-panel" aria-label="Scorecard" hidden>
+			<h2>Scorecard</h2>
+			<div id="card-body"></div>
+		</section>
+
 		<!-- Timing. Most of it only appears when a setting turns it on: an
 		     ordinary match just keeps frame and rack times, which the page
 		     records by itself. -->

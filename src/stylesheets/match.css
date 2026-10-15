@@ -651,3 +651,26 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
 	opacity: 0.5;
 	cursor: not-allowed;
 }
+
+/* ── Scorecard panel ─────────────────────────────────────────────── */
+.card-line { margin-bottom: 0.6rem; line-height: 1.45; }
+.card-note {
+	font-size: 0.82rem;
+	color: var(--text-muted);
+	line-height: 1.45;
+	margin-bottom: 0.6rem;
+}
+.card-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.75rem 0; }
+.card-row .mbtn { flex: 1 1 auto; }
+#card-body textarea {
+	width: 100%;
+	padding: 0.5rem 0;
+	border: none;
+	border-bottom: 1px solid var(--border-color);
+	background: transparent;
+	color: var(--text-primary);
+	font-family: inherit;
+	font-size: 1rem;
+	resize: vertical;
+}
+#card-body textarea:focus { outline: none; border-bottom-color: var(--color-primary); }

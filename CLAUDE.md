@@ -114,6 +114,15 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
 - Approval/locking is **not** built. `tbl_matches.status` is the lifecycle of play only (`scheduled`, `in_progress`, `complete`, `abandoned`); whether a card needs a captain's signature is a league setting, and submitted/approved will derive from a submissions table.
 - Dummy match for UI work: `215b10ec-de44-4c61-a513-ab9768c43e72` (UV 3 – Linton 2, five frames, alternate breaks). Its `rules` carries all 21 keys, because the page errors on a missing one by design.
 
+### Finishing a scorecard (`tbl_match_events`, migration `20261015160000`)
+- **One submits, the other answers.** Signing your own card proves nothing, so `tdc_answer_card` refuses the submitter. Silence past `dispute_window_hours` counts as agreement, or cards sit unfinished forever.
+- An **append-only log**, not a status column — same reason frames have no score column. States (`in_progress`, `awaiting`, `agreed`, `disputed`) are worked out by `tdc_card_state` from the events.
+- **An agreement cannot survive a changed card.** A submission records the `card_version` it signed, and any frame change bumps that version, so editing a frame silently retires the submission. This falls out of the design rather than being enforced.
+- A dispute needs a reason and **reopens the match** for editing — "that's wrong, fix it".
+- `tdc_delete_match` is players-only and refuses anything sanctioned. **The one place a frame is destroyed rather than corrected**, which is why it is this narrow. Add league and competition checks to it when those tables exist.
+- `created_at` defaults to `clock_timestamp()`, not `now()`. `now()` is the transaction start time, so two events written together shared a timestamp and the state machine could not tell which came first.
+- On the page: the Scorecard panel below the stage. `CARD_ACTS` are deliberately **not** in `WRITE_ACTS` — a player answers a card they are not allowed to change, which is what makes the answer worth anything. When `myPlayerId` is unknown the answer buttons are hidden rather than guessed at.
+
 ### Match settings definitions (`scripts/match-settings.js`)
 - **`TDCMatchDef` is the one place a match setting is defined**: labels, the `SETTINGS` array, `DEFAULT_RULES`, and `MAIN_KEYS` (the few asked before a match starts). Both the match page's panel and the create page build their forms from it, so adding a setting is one edit, not two that drift.
 - `DEFAULT_RULES` is every key at its quietest, which is what makes a match created without touching anything the simple card. Keep it in step with `private.tdc_check_match_rules`, which refuses a ruleset missing a key or carrying an unknown one.

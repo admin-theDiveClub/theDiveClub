@@ -59,7 +59,7 @@
 
 	function card(m) {
 		const a = document.createElement('a');
-		a.className = 'match-card';
+		a.className = 'match-card' + (m.needs_me ? ' needs-you' : '');
 		a.href = '/match/?id=' + encodeURIComponent(m.id);
 
 		const top = el('div', 'match-top');
@@ -77,7 +77,16 @@
 		meta.textContent = bits.join(' · ');
 
 		const tags = el('div', 'match-tags');
-		if (m.status === 'in_progress') tags.append(el('span', 'badge', 'In progress'));
+
+		// Where the scorecard stands comes first: it is the only thing on this
+		// list that might be waiting on the person reading it.
+		const card = (m.card_state && m.card_state.state) || 'in_progress';
+		if (m.needs_me) tags.append(el('span', 'badge needs-you', 'Needs you'));
+		else if (card === 'awaiting') tags.append(el('span', 'badge', 'Waiting on them'));
+		else if (card === 'agreed') tags.append(el('span', 'badge verified', 'Agreed'));
+		else if (card === 'disputed') tags.append(el('span', 'badge disputed', 'Disputed'));
+		else if (m.status === 'in_progress') tags.append(el('span', 'badge', 'In progress'));
+
 		if (m.status === 'abandoned') tags.append(el('span', 'badge', 'Abandoned'));
 		if (m.sanctioned) tags.append(el('span', 'badge verified', 'Sanctioned'));
 

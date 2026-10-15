@@ -159,7 +159,8 @@
 		panel: el('settings-panel'), panelClose: el('panel-close'),
 		contextLine: el('context-line'), badgeRow: el('badge-row'), panelNote: el('panel-note'),
 		setGroups: el('set-groups'),
-		notice: el('match-notice')
+		notice: el('match-notice'),
+		cardPanel: el('card-panel'), cardBody: el('card-body')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -391,6 +392,14 @@
 		'breakside', 'outcome', 'result', 'more', 'walkover', 'abandon',
 		'changetable', 'settable', 'pick', 'pickplayer',
 		'editside', 'editbreak', 'editcell', 'setcell'
+	]);
+
+	// Scorecard actions are not frame edits. A player answers a card they are
+	// not allowed to change, which is exactly what makes the answer worth
+	// anything — so these stay out of the read-only guard above.
+	const CARD_ACTS = new Set([
+		'submitcard', 'agreecard', 'disputecard', 'disputecancel', 'disputesend',
+		'deletematch', 'deletecancel', 'deleteconfirm'
 	]);
 
 	function mbtn(label, cls, dataset, disabled) {
@@ -1333,6 +1342,11 @@
 			return;
 		}
 
+		if (liveMatchId && isOffline() && CARD_ACTS.has(act)) {
+			blockedOffline('Finishing a scorecard');
+			return;
+		}
+
 		switch (act) {
 			// ── Stage ────────────────────────────────────────────────
 			case 'breakside':
@@ -1386,6 +1400,52 @@
 			}
 			case 'closeoverlay':
 				closeOverlay();
+				return;
+
+			// ── Scorecard ────────────────────────────────────────────
+			case 'submitcard':
+				cardAction('tdc_submit_card', { p_match_id: liveMatchId },
+					'Submitted. The other player can check it now.');
+				return;
+			case 'agreecard':
+				cardAction('tdc_answer_card', { p_match_id: liveMatchId, p_agree: true, p_note: null },
+					'Agreed. The card is settled.');
+				return;
+			case 'disputecard':
+				disputing = true;
+				renderCard();
+				{ const box = document.getElementById('dispute-note'); if (box) box.focus(); }
+				return;
+			case 'disputecancel':
+				disputing = false;
+				renderCard();
+				return;
+			case 'disputesend': {
+				const box = document.getElementById('dispute-note');
+				const note = box ? box.value.trim() : '';
+				if (note.length < 3) {
+					TDC.status(els.stageStatus, 'Say briefly what is wrong, so it can be put right.', '');
+					return;
+				}
+				cardAction('tdc_answer_card', { p_match_id: liveMatchId, p_agree: false, p_note: note },
+					'Sent. The card is open again.');
+				return;
+			}
+			case 'deletematch':
+				confirmingDelete = true;
+				renderCard();
+				return;
+			case 'deletecancel':
+				confirmingDelete = false;
+				renderCard();
+				return;
+			case 'deleteconfirm':
+				(async () => {
+					if (isOffline()) { blockedOffline('Deleting a match'); return; }
+					const { error } = await supabaseClient.rpc('tdc_delete_match', { p_match_id: liveMatchId });
+					if (error) { TDC.showSupabaseError(AREA, error, els.stageStatus); return; }
+					location.href = '/matches/';
+				})();
 				return;
 
 			// ── Frame history ────────────────────────────────────────
@@ -1645,6 +1705,138 @@
 	}
 
 	// ─────────────────────────────────────────────────────────────────
+	// The scorecard: finished, waiting, agreed or disputed
+	//
+	// The state is worked out by the database from an append-only log, so this
+	// only ever displays it. One rule shapes the whole panel: you submit your
+	// own card, and the other player answers it. Signing your own proves
+	// nothing, which is the entire point of the step.
+	// ─────────────────────────────────────────────────────────────────
+
+	let cardState = null;
+	let myPlayerId = null;
+	let disputing = false;      // the reason box is open
+	let confirmingDelete = false;
+
+	async function loadCardState() {
+		if (!liveMatchId) return;
+		const { data, error } = await supabaseClient.rpc('tdc_card_state', { p_match_id: liveMatchId });
+		if (error) { TDC.showSupabaseError(AREA, error, els.stageStatus); return; }
+		cardState = data;
+		renderCard();
+	}
+
+	function whenText(iso) {
+		if (!iso) return '';
+		const d = new Date(iso);
+		if (isNaN(d)) return '';
+		return d.toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+	}
+
+	function renderCard() {
+		if (!liveMatchId || !cardState) { els.cardPanel.hidden = true; return; }
+		els.cardPanel.hidden = false;
+
+		const state = cardState.state;
+		const mine = cardState.submitted_by && cardState.submitted_by === myPlayerId;
+		const other = MATCH[otherSide(mySide() || 'home')];
+		const rows = [];
+
+		if (state === 'in_progress') {
+			if (!MATCH.frames.length) {
+				rows.push(div('card-line', 'Play a frame first — there is nothing to submit yet.'));
+			} else if (canEdit) {
+				rows.push(div('card-line', 'When the match is over, submit the card and ' +
+					(other ? other.name : 'the other player') + ' can check it.'));
+				rows.push(rowOf(mbtn('Submit scorecard', 'result', { act: 'submitcard' })));
+			} else {
+				rows.push(div('card-line', 'Not submitted yet.'));
+			}
+		} else if (state === 'awaiting' && (mine || !myPlayerId)) {
+			// Without knowing who we are, the answer buttons are a guess, and
+			// offering someone the chance to agree with themselves is worse
+			// than saying less.
+			rows.push(div('card-line', mine
+				? 'Submitted. Waiting for ' + (other ? other.name : 'the other player')
+					+ (cardState.deadline ? ', until ' + whenText(cardState.deadline) : '') + '.'
+				: 'This card has been submitted.'));
+			if (mine && cardState.deadline) {
+				rows.push(div('card-note', 'If nobody answers by then it counts as agreed.'));
+			}
+		} else if (state === 'awaiting') {
+			rows.push(div('card-line', 'This card has been submitted. Does it look right to you?'));
+			if (disputing) {
+				const box = document.createElement('textarea');
+				box.id = 'dispute-note';
+				box.rows = 2;
+				box.placeholder = 'What is wrong with it?';
+				rows.push(box);
+				rows.push(rowOf(
+					mbtn('Send', 'result', { act: 'disputesend' }),
+					mbtn('Cancel', '', { act: 'disputecancel' })
+				));
+			} else {
+				rows.push(rowOf(
+					mbtn('Looks right', 'result', { act: 'agreecard' }),
+					mbtn('Something is wrong', '', { act: 'disputecard' })
+				));
+			}
+		} else if (state === 'agreed') {
+			rows.push(div('card-line', cardState.by_silence
+				? 'Agreed — nobody disputed it in time.'
+				: 'Agreed by both players.'));
+			if (cardState.at) rows.push(div('card-note', whenText(cardState.at)));
+		} else if (state === 'disputed') {
+			rows.push(div('card-line', 'Disputed, so the card is open again.'));
+			if (cardState.note) rows.push(div('card-note', '“' + cardState.note + '”'));
+			if (canEdit) rows.push(div('card-note', 'Put it right, then submit it again.'));
+		}
+
+		// Deleting is for a match started by mistake. It takes the frames with
+		// it, so it asks twice.
+		if (canEdit && !MATCH.sanctioned) {
+			rows.push(confirmingDelete
+				? rowOf(
+					mbtn('Yes, delete this match', '', { act: 'deleteconfirm' }),
+					mbtn('Keep it', '', { act: 'deletecancel' }))
+				: rowOf(mbtn('Delete match', '', { act: 'deletematch' })));
+			if (confirmingDelete) {
+				rows.push(div('card-note', 'Every frame goes with it, for both players. This cannot be undone.'));
+			}
+		}
+
+		els.cardBody.replaceChildren(...rows);
+	}
+
+	function rowOf(...buttons) {
+		const row = div('card-row');
+		row.append(...buttons);
+		return row;
+	}
+
+	// Which side am I on? Only meaningful in a singles match for now.
+	function mySide() {
+		if (!myPlayerId) return null;
+		if (MATCH.home.players.includes(myPlayerId)) return 'home';
+		if (MATCH.away.players.includes(myPlayerId)) return 'away';
+		return null;
+	}
+
+	async function cardAction(fn, args, okMessage) {
+		if (isOffline()) { blockedOffline('Finishing a scorecard'); return; }
+
+		TDC.status(els.stageStatus, 'Saving…', '');
+		const { error } = await supabaseClient.rpc(fn, args);
+		if (error) { TDC.showSupabaseError(AREA, error, els.stageStatus); return; }
+
+		disputing = false;
+		confirmingDelete = false;
+		await reloadFromServer();
+		await loadCardState();
+		TDC.status(els.stageStatus, okMessage, 'success');
+	}
+
+	// ─────────────────────────────────────────────────────────────────
 	// Saving
 	//
 	// Every change to the card goes through one of three places — pushFrame(),
@@ -1892,6 +2084,12 @@
 		renderAll();
 	}
 
+	// Scoring a frame bumps card_version, which can retire a submission, so the
+	// panel is asked again rather than left showing something that has lapsed.
+	async function refreshCardAfterWrite() {
+		if (liveMatchId) await loadCardState();
+	}
+
 	async function persistFrame(no, okMessage) {
 		if (!liveMatchId) return;
 		const f = frameByNo(no);
@@ -1910,6 +2108,7 @@
 			p_frame: framePayload(f)
 		});
 		await savingFinished(error, okMessage);
+		await refreshCardAfterWrite();
 	}
 
 	// Settings and the lag winner go together, because both move the whole
@@ -2024,6 +2223,10 @@
 		} else {
 			canEdit = mayEdit === true;
 		}
+
+		const myPlayer = await TDC.getMyPlayer(AREA, session.user.id, null);
+		myPlayerId = myPlayer ? myPlayer.id : null;
+		await loadCardState();
 
 		window.addEventListener('tdc:offline', renderOfflineNotice);
 		window.addEventListener('tdc:online', () => {
