@@ -1,0 +1,46 @@
+---
+layout: layout.html
+title: New Match
+description: "Start a match against another player."
+extraScripts:
+  - /scripts/match-settings.js
+  - /scripts/match-new.js
+---
+{% comment %}
+	Opponent at the top, settings below. The settings are generated from the
+	same list the match page's panel uses (match-settings.js), so adding a
+	setting is one edit there and none here.
+
+	Only the few worth deciding before play are shown; the rest sit in closed
+	groups. Skipping all of it gives the simple card — two names, two scores,
+	a win button each side.
+{% endcomment %}
+
+<div class="tdc-card">
+	<h1>New Match</h1>
+
+	<!-- Who you are playing. Stays at the top once chosen. -->
+	<div class="field" id="opponent-field">
+		<label for="opponent-search">Opponent</label>
+		<input type="search" id="opponent-search" autocomplete="off" placeholder="Search by name">
+		<div class="hint">Two letters or more.</div>
+	</div>
+
+	<div id="opponent-results"></div>
+
+	<div class="chosen" id="opponent-chosen" hidden>
+		<div class="chosen-avatar" id="chosen-avatar"></div>
+		<div class="chosen-names">
+			<div class="chosen-display" id="chosen-display"></div>
+			<div class="chosen-full" id="chosen-full"></div>
+		</div>
+		<button type="button" class="link" id="opponent-clear">Change</button>
+	</div>
+
+	<!-- Settings, built by match-new.js -->
+	<div id="settings-main"></div>
+	<div id="settings-rest"></div>
+
+	<button type="button" class="btn-primary" id="create-btn" disabled>Start Match</button>
+	<div class="status" id="create-status"></div>
+</div>

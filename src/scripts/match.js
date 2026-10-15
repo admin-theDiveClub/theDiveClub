@@ -128,119 +128,19 @@
 	};
 
 	// ─────────────────────────────────────────────────────────────────
-	// Labels
+	// Labels and setting definitions live in match-settings.js, because the
+	// create-a-match page builds its form from the same list. Adding a setting
+	// is one edit there and nothing here.
 	// ─────────────────────────────────────────────────────────────────
 
-	const DISCIPLINE = { '8ball': '8-Ball', '9ball': '9-Ball', '10ball': '10-Ball', blackball: 'Blackball' };
-	const BREAK_OUTCOME = { dry: 'Dry', in: 'In', scratch: 'Scratch', foul: 'Foul' };
-	const RESULT_EVENT = {
-		win: 'Win',
-		break_and_finish: 'Break & finish',
-		reverse_break_and_finish: 'Reverse B&F',
-		golden_break: 'Golden break',
-		default: 'Won by default'
-	};
-	// Short forms for the history tables, where a cell is a few characters wide.
-	const RESULT_SHORT = {
-		win: '',
-		break_and_finish: 'B&F',
-		reverse_break_and_finish: 'rB&F',
-		golden_break: 'GB',
-		default: 'w/o'
-	};
-	const BREAK_DETERMINATION = {
-		alternate: 'Alternate breaks',
-		winner_breaks: 'Winner breaks',
-		loser_breaks: 'Loser breaks',
-		first_breaks: 'Lag winner breaks all',
-		by_schedule: 'Set by the scoresheet',
-		lag_each_frame: 'Lag every frame'
-	};
-	const WIN_CONDITION = { race_to: 'Race to', best_of: 'Best of', fixed_frames: 'Fixed frames', timed: 'Timed' };
-	const TIME_EXPIRY = { stop_immediately: 'Stop play at once', finish_current_frame: 'Finish the current frame' };
-	const TIEBREAK = {
-		sudden_death_frame: 'Sudden-death frame',
-		decider_on_lag: 'Decider, lag for break',
-		coordinator_decision: 'Coordinator decides'
-	};
-	const SCORE_ENTRY = {
-		td_only: 'Tournament Director only',
-		referee: 'Referee and above',
-		scorer: 'Scorer and above',
-		players: 'Players may enter their own'
-	};
-	const APPROVAL = {
-		none: 'No approval needed',
-		dispute_window: 'Open to dispute, then locked',
-		coordinator_approval: 'Coordinator must approve',
-		both: 'Dispute window, then coordinator approval'
-	};
-	const SIDES = () => ({ home: MATCH.home.name, away: MATCH.away.name });
+	const {
+		DISCIPLINE, BREAK_OUTCOME, RESULT_EVENT, RESULT_SHORT, BREAK_DETERMINATION,
+		WIN_CONDITION, TIME_EXPIRY, TIEBREAK, SCORE_ENTRY, APPROVAL, SIDE_TAG,
+		GROUPS, SETTINGS
+	} = TDCMatchDef;
 
-	// The landscape table's columns are a few characters wide, so sides are A
-	// and B there, with a legend underneath.
-	const SIDE_TAG = { home: 'A', away: 'B' };
-
-	// ─────────────────────────────────────────────────────────────────
-	// Setting definitions. The panel is built from these, so adding a
-	// setting here is the only edit needed to make it appear and apply.
-	//   scope 'match' writes to MATCH, scope 'rules' writes to MATCH.rules.
-	//   group  is the card it appears under.
-	//   when() hides a setting that its parent switch makes irrelevant.
-	// ─────────────────────────────────────────────────────────────────
-
-	const GROUPS = ['This match', 'Format', 'Results', 'Timing', 'Officials and approval'];
-
-	const SETTINGS = [
-		{ group: 'This match', scope: 'match', key: 'referee', label: 'Referee', type: 'text', placeholder: 'None' },
-		{
-			group: 'This match', scope: 'match', key: 'first_break_side', label: 'Lag winner', type: 'select', options: SIDES,
-			hint: 'Breaks the first frame. Changing this re-derives who broke in every frame.',
-			when: (r) => r.track_breaks
-		},
-
-		{ group: 'Format', scope: 'rules', key: 'discipline', label: 'Discipline', type: 'select', options: () => DISCIPLINE },
-		{ group: 'Format', scope: 'rules', key: 'win_condition_type', label: 'Win condition', type: 'select', options: () => WIN_CONDITION },
-		{ group: 'Format', scope: 'rules', key: 'win_condition_target', label: 'Target frames', type: 'int', min: 1, max: 50 },
-		{
-			group: 'Format', scope: 'rules', key: 'track_breaks', label: 'Record who breaks', type: 'bool',
-			hint: 'Off: the card is just the score. On: who broke and what happened on the break.'
-		},
-		{
-			group: 'Format', scope: 'rules', key: 'break_determination', label: 'Breaks', type: 'select', options: () => BREAK_DETERMINATION,
-			hint: 'Decides who breaks each frame after the first.', when: (r) => r.track_breaks
-		},
-
-		{
-			group: 'Results', scope: 'rules', key: 'draws_allowed', label: 'Draws allowed', type: 'bool',
-			hint: 'Must be off for knockout rounds — a bracket needs someone to advance.'
-		},
-		{ group: 'Results', scope: 'rules', key: 'tiebreak_method', label: 'If level', type: 'select', options: () => TIEBREAK, when: (r) => !r.draws_allowed },
-		{ group: 'Results', scope: 'rules', key: 'break_finish_enabled', label: 'Break & finish', type: 'bool', when: (r) => r.track_breaks },
-		{ group: 'Results', scope: 'rules', key: 'golden_break_enabled', label: 'Golden break', type: 'bool', when: (r) => r.track_breaks && r.break_finish_enabled },
-		{ group: 'Results', scope: 'rules', key: 'reverse_break_finish_enabled', label: 'Reverse break & finish', type: 'bool', when: (r) => r.track_breaks },
-		{
-			group: 'Results', scope: 'rules', key: 'break_finish_requires_breaker', label: 'Break & finish needs the breaker', type: 'bool',
-			hint: 'Off: either side can be credited with a break & finish.',
-			when: (r) => r.track_breaks && r.break_finish_enabled
-		},
-
-		{ group: 'Timing', scope: 'rules', key: 'max_match_minutes', label: 'Match clock (minutes)', type: 'int', min: 0, max: 600, hint: '0 for no match clock.' },
-		{ group: 'Timing', scope: 'rules', key: 'on_time_expiry', label: 'When time runs out', type: 'select', options: () => TIME_EXPIRY, when: (r) => r.max_match_minutes > 0 },
-		{
-			group: 'Timing', scope: 'rules', key: 'shot_clock_enabled', label: 'Shot clock', type: 'bool',
-			hint: 'Off for most matches. When on, a referee runs it from the timing panel.'
-		},
-		{ group: 'Timing', scope: 'rules', key: 'shot_clock_seconds', label: 'Seconds per shot', type: 'int', min: 10, max: 120, when: (r) => r.shot_clock_enabled },
-		{ group: 'Timing', scope: 'rules', key: 'shot_clock_first_shot_seconds', label: 'First shot', type: 'int', min: 10, max: 180, when: (r) => r.shot_clock_enabled },
-		{ group: 'Timing', scope: 'rules', key: 'extensions_per_player', label: 'Extensions per player', type: 'int', min: 0, max: 10, when: (r) => r.shot_clock_enabled },
-		{ group: 'Timing', scope: 'rules', key: 'extension_seconds', label: 'Extension length', type: 'int', min: 5, max: 120, when: (r) => r.shot_clock_enabled },
-
-		{ group: 'Officials and approval', scope: 'rules', key: 'referee_required', label: 'Referee required', type: 'bool' },
-		{ group: 'Officials and approval', scope: 'rules', key: 'score_entry_mode', label: 'Scores entered by', type: 'select', options: () => SCORE_ENTRY },
-		{ group: 'Officials and approval', scope: 'rules', key: 'approval_mode', label: 'Approval', type: 'select', options: () => APPROVAL },
-		{ group: 'Officials and approval', scope: 'rules', key: 'dispute_window_hours', label: 'Dispute window (hours)', type: 'int', min: 0, max: 336, when: (r) => r.approval_mode === 'dispute_window' || r.approval_mode === 'both' }
-	];
+	// This page's sides are the two players.
+	TDCMatchDef.setSideNames(() => ({ home: MATCH.home.name, away: MATCH.away.name }));
 
 	// ─────────────────────────────────────────────────────────────────
 	// Page wiring
@@ -354,8 +254,18 @@
 	function breakSideAt(i, frames) {
 		const rule = MATCH.rules.break_determination;
 		const first = MATCH.first_break_side;
+
+		// Nobody is recording breaks, so no frame has a breaking side.
+		if (!MATCH.rules.track_breaks) return null;
+
 		if (rule === 'lag_each_frame' || rule === 'by_schedule') return null;
 		if (i === 0) return first;
+
+		// Every rule below reckons from who broke first. Without that there is
+		// nothing to reckon from, and anything returned here would be invented:
+		// otherSide(null) is 'home', which is how a match with no lag winner
+		// ended up showing break buttons from the second frame on.
+		if (!first) return null;
 
 		const prev = frames[i - 1];
 		switch (rule) {

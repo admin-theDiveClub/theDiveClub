@@ -296,3 +296,77 @@
 	color: var(--text-muted);
 }
 .match-tags { margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.35rem; }
+
+/* ── New match (/matches/new/) ───────────────────────────────────── */
+.chosen {
+	display: flex;
+	align-items: center;
+	gap: 0.85rem;
+	padding: 0.85rem 0;
+	border-bottom: 1px solid var(--border-color);
+	margin-bottom: 2rem;
+}
+.chosen[hidden] { display: none; }
+.chosen-avatar {
+	flex: 0 0 auto;
+	width: 2.75rem; height: 2.75rem;
+	border-radius: 50%;
+	border: 1px solid var(--border-color);
+	background-size: cover; background-position: center;
+	display: flex; align-items: center; justify-content: center;
+	color: var(--text-muted); font-weight: 600;
+}
+.chosen-names { flex: 1 1 auto; min-width: 0; }
+.chosen-display { font-weight: 600; }
+.chosen-full { font-size: 0.82rem; color: var(--text-muted); }
+.chosen .link {
+	flex: 0 0 auto; width: auto; margin: 0; padding: 0 0 2px;
+	background: none; border: none;
+	border-bottom: 1px solid var(--color-primary);
+	color: var(--text-primary);
+	font-size: 0.85rem; font-weight: normal;
+	letter-spacing: normal; text-transform: none;
+}
+
+/* Everything that is not a main setting, folded away until wanted. */
+.set-group {
+	border-top: 1px solid var(--border-color);
+	padding: 0.9rem 0 0.2rem;
+}
+.set-group > summary {
+	cursor: pointer;
+	list-style: none;
+	font-size: 0.7rem;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+	margin-bottom: 0.9rem;
+}
+.set-group > summary::-webkit-details-marker { display: none; }
+.set-group > summary::after { content: ' +'; color: var(--color-primary); }
+.set-group[open] > summary::after { content: ' –'; }
+
+.result-name { display: block; }
+.result-sub { display: block; font-size: 0.8rem; color: var(--text-muted); }
+
+/* A link that needs to read as the page's main action. */
+.btn-link {
+	display: block;
+	text-align: center;
+	text-decoration: none;
+	padding: 0.9rem 1.25rem;
+	margin-bottom: 2rem;
+	border-radius: 999px;
+	font-weight: 700;
+	font-size: 0.85rem;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+}
+
+/* A checkbox has to be worth aiming a thumb at. */
+.field input[type="checkbox"] {
+	width: 1.4rem;
+	height: 1.4rem;
+	margin-top: 0.1rem;
+}

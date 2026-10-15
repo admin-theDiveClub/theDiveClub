@@ -114,6 +114,18 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
 - Approval/locking is **not** built. `tbl_matches.status` is the lifecycle of play only (`scheduled`, `in_progress`, `complete`, `abandoned`); whether a card needs a captain's signature is a league setting, and submitted/approved will derive from a submissions table.
 - Dummy match for UI work: `215b10ec-de44-4c61-a513-ab9768c43e72` (UV 3 – Linton 2, five frames, alternate breaks). Its `rules` carries all 21 keys, because the page errors on a missing one by design.
 
+### Match settings definitions (`scripts/match-settings.js`)
+- **`TDCMatchDef` is the one place a match setting is defined**: labels, the `SETTINGS` array, `DEFAULT_RULES`, and `MAIN_KEYS` (the few asked before a match starts). Both the match page's panel and the create page build their forms from it, so adding a setting is one edit, not two that drift.
+- `DEFAULT_RULES` is every key at its quietest, which is what makes a match created without touching anything the simple card. Keep it in step with `private.tdc_check_match_rules`, which refuses a ruleset missing a key or carrying an unknown one.
+- `stored: false` marks a setting with nowhere to be kept yet (currently just `referee`). The create page leaves those out rather than offering a control that forgets.
+- Each page calls `setSideNames()` to say what its two sides are called — players' names on the match page, the chosen opponent on the create page.
+- **Load order matters:** `match-settings.js` before `match.js` and before `match-new.js`.
+
+### Starting a match (`src/matches/new/`, `scripts/match-new.js`)
+- Opponent search pinned at the top, then the main settings, then the rest in closed `<details>` groups. Skipping all of it gives the simple card.
+- `tdc_create_match` only lets you create a match you are in. Against a walk-in or guest it needs venue staff, because nobody without a login can dispute a result.
+- `tdc_search_opponents` searches across all venues and returns accounts only. Walk-ins go through the staff tools.
+
 ### The match list (`src/matches/`, `scripts/matches.js`)
 - `/matches/` is the way into a match. Without it a match is only reachable by pasting its id into the address bar.
 - One call to `tdc_my_matches`, which counts each scoreline from the frames. Counting in the browser would be one request per match to work out two numbers.
