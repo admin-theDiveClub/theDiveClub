@@ -110,6 +110,12 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
 - Approval/locking is **not** built. `tbl_matches.status` is the lifecycle of play only (`scheduled`, `in_progress`, `complete`, `abandoned`); whether a card needs a captain's signature is a league setting, and submitted/approved will derive from a submissions table.
 - Dummy match for UI work: `215b10ec-de44-4c61-a513-ab9768c43e72` (UV 3 – Linton 2, five frames, alternate breaks). Its `rules` carries all 21 keys, because the page errors on a missing one by design.
 
+### The match list (`src/matches/`, `scripts/matches.js`)
+- `/matches/` is the way into a match. Without it a match is only reachable by pasting its id into the address bar.
+- One call to `tdc_my_matches`, which counts each scoreline from the frames. Counting in the browser would be one request per match to work out two numbers.
+- "My matches" is not only the matches you are a side of — in a team match the sides are teams and the people are in frames, so the function looks through `tbl_frame_participants` too.
+- The scoreline always puts this player's frames first. Nobody should have to work out which number is theirs.
+
 ### The match page (`src/match/`, `scripts/match.js`, `stylesheets/match.css`)
 - Two modes from the address: `/match/` shows the built-in mockup (quickest way to work on layout), `/match/?id=<uuid>` reads that match from the database. `loadMatch()` builds exactly the mockup's shape, so nothing else in the file knows where its data came from.
 - **Frames and settings both read and save.** The one exception is "Referee", which has no column yet, so the page deliberately doesn't send it.

@@ -1,4 +1,14 @@
 [
-  { "label": "Home", "url": "/" },
-  { "label": "Match", "url": "/match/" }
+  {
+    "label": "Home",
+    "url": "/"
+  },
+  {
+    "label": "My Matches",
+    "url": "/matches/"
+  },
+  {
+    "label": "Match",
+    "url": "/match/"
+  }
 ]

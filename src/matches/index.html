@@ -1,0 +1,23 @@
+---
+layout: layout.html
+title: My Matches
+description: "Every match you have played or are playing, newest first."
+extraScripts:
+  - /scripts/matches.js
+---
+{% comment %}
+	The way into a match. Without this a match is only reachable by pasting its
+	id into the address bar.
+
+	The list is built by matches.js from tdc_my_matches, which counts each
+	scoreline from the frames — the score is never stored anywhere.
+{% endcomment %}
+
+<div class="tdc-card">
+	<h1>My Matches</h1>
+	<p class="muted" id="intro">Matches you have played or are playing, newest first.</p>
+
+	<div id="match-list"></div>
+
+	<div class="status" id="list-status"></div>
+</div>
