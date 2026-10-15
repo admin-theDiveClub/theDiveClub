@@ -160,7 +160,12 @@
 		contextLine: el('context-line'), badgeRow: el('badge-row'), panelNote: el('panel-note'),
 		setGroups: el('set-groups'),
 		notice: el('match-notice'),
-		cardPanel: el('card-panel'), cardBody: el('card-body')
+		cardPanel: el('card-panel'), cardBody: el('card-body'),
+		matchPage: el('match-page'), resultView: el('result-view'),
+		resultScore: el('result-score'), resultLine: el('result-line'),
+		resultLabel: el('result-label'), resultFrames: el('result-frames'),
+		resultFacts: el('result-facts'), resultAgreed: el('result-agreed'),
+		resultActions: el('result-actions'), resultStatus: el('result-status')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -399,7 +404,7 @@
 	// anything — so these stay out of the read-only guard above.
 	const CARD_ACTS = new Set([
 		'submitcard', 'agreecard', 'disputecard', 'disputecancel', 'disputesend',
-		'deletematch', 'deletecancel', 'deleteconfirm'
+		'deletematch', 'deletecancel', 'deleteconfirm', 'reopencard'
 	]);
 
 	function mbtn(label, cls, dataset, disabled) {
@@ -1454,13 +1459,19 @@
 					'Sent. The card is open again.');
 				return;
 			}
+			case 'reopencard':
+				cardAction('tdc_reopen_card', { p_match_id: liveMatchId },
+					'Reopened. Put it right, then submit it again.');
+				return;
 			case 'deletematch':
 				confirmingDelete = true;
 				renderCard();
+				renderResult();
 				return;
 			case 'deletecancel':
 				confirmingDelete = false;
 				renderCard();
+				renderResult();
 				return;
 			case 'deleteconfirm':
 				(async () => {
@@ -1741,12 +1752,109 @@
 	let disputing = false;      // the reason box is open
 	let confirmingDelete = false;
 
+	// ─────────────────────────────────────────────────────────────────
+	// The result
+	//
+	// A settled match is not a scorecard any more, so the scoring surface is
+	// put away and what happened is shown instead. Same address: a link to a
+	// match should still work after it is over.
+	// ─────────────────────────────────────────────────────────────────
+
+	function settled() {
+		return !!(liveMatchId && cardState && cardState.state === 'agreed');
+	}
+
+	function factRow(label, value) {
+		const row = div('fact');
+		row.append(div('fact-k', label), div('fact-v', value));
+		return row;
+	}
+
+	function renderResult() {
+		const show = settled();
+		els.resultView.hidden = !show;
+		els.matchPage.hidden = show;
+		if (!show) return;
+
+		const home = framesWon('home');
+		const away = framesWon('away');
+		const winner = home === away ? null : (home > away ? 'home' : 'away');
+
+		// The winner's score first, so the line reads the way people say it.
+		const big = div('score-pair');
+		const hi = winner ? Math.max(home, away) : home;
+		const lo = winner ? Math.min(home, away) : away;
+		big.append(div('score-big', String(hi)), div('score-dash', '–'), div('score-big', String(lo)));
+		els.resultScore.replaceChildren(big);
+
+		els.resultLabel.textContent = MATCH.sanctioned ? 'Final · counts for ranking' : 'Final';
+		els.resultLine.textContent = winner
+			? MATCH[winner].name + ' beat ' + MATCH[otherSide(winner)].name
+			: MATCH.home.name + ' and ' + MATCH.away.name + ' drew';
+
+		// Every frame, in order, as it was recorded.
+		els.resultFrames.replaceChildren(...MATCH.frames.map((f) => {
+			const li = document.createElement('li');
+			li.className = 'result-frame';
+			const who = f.status === 'abandoned'
+				? 'Abandoned'
+				: (f.winner_side ? MATCH[f.winner_side].name : 'TDC (Error)');
+			li.append(div('rf-no', String(f.no)), div('rf-who', who));
+
+			const extra = [];
+			if (f.result_event && f.result_event !== 'win') extra.push(RESULT_EVENT[f.result_event]);
+			if (MATCH.rules.track_breaks && f.break_side) {
+				extra.push(MATCH[f.break_side].name + ' broke'
+					+ (f.break_outcome ? ' (' + BREAK_OUTCOME[f.break_outcome].toLowerCase() + ')' : ''));
+			}
+			if (extra.length) li.append(div('rf-extra', extra.join(' · ')));
+			return li;
+		}));
+
+		const facts = [];
+		facts.push(factRow('Discipline', DISCIPLINE[MATCH.rules.discipline] || 'TDC (Error)'));
+		facts.push(factRow('Format', MATCH.rules.win_condition_type === 'free_play'
+			? WIN_CONDITION.free_play
+			: (WIN_CONDITION[MATCH.rules.win_condition_type] || 'TDC (Error)') + ' ' + MATCH.rules.win_condition_target));
+		facts.push(factRow('Frames played', String(MATCH.frames.length)));
+		if (MATCH.venue) facts.push(factRow('Venue', MATCH.venue));
+		if (MATCH.rules.track_breaks) {
+			const bf = MATCH.frames.filter((f) => f.result_event === 'break_and_finish'
+				|| f.result_event === 'golden_break').length;
+			facts.push(factRow('Break & finishes', String(bf)));
+		}
+		const timed = MATCH.frames.filter((f) => f.started_at && f.ended_at);
+		if (timed.length) {
+			const avg = timed.reduce((t, f) => t + (f.ended_at - f.started_at) / 1000, 0) / timed.length;
+			facts.push(factRow('Average frame', Math.round(avg / 60) + ' min'));
+		}
+		els.resultFacts.replaceChildren(...facts);
+
+		els.resultAgreed.replaceChildren(div('card-line', cardState.by_silence
+			? 'Agreed — nobody disputed it in time.'
+			: 'Agreed by both players.'));
+
+		// Settled is not the same as permanent. A mistake found later is still
+		// fixable; it just cannot be fixed quietly.
+		const actions = [];
+		if (canEdit && !MATCH.sanctioned) {
+			actions.push(confirmingDelete
+				? mbtn('Yes, delete this match', '', { act: 'deleteconfirm' })
+				: mbtn('Reopen', '', { act: 'reopencard' }));
+			actions.push(confirmingDelete
+				? mbtn('Keep it', '', { act: 'deletecancel' })
+				: mbtn('Delete match', '', { act: 'deletematch' }));
+		}
+		els.resultActions.replaceChildren(...actions);
+	}
+
 	async function loadCardState() {
 		if (!liveMatchId) return;
 		const { data, error } = await supabaseClient.rpc('tdc_card_state', { p_match_id: liveMatchId });
 		if (error) { TDC.showSupabaseError(AREA, error, els.stageStatus); return; }
 		cardState = data;
 		renderCard();
+		renderResult();
 	}
 
 	function whenText(iso) {
@@ -1848,15 +1956,19 @@
 	async function cardAction(fn, args, okMessage) {
 		if (isOffline()) { blockedOffline('Finishing a scorecard'); return; }
 
-		TDC.status(els.stageStatus, 'Saving…', '');
+		// On a settled match the stage is put away, so a message there would be
+		// written somewhere nobody can see.
+		const where = settled() ? els.resultStatus : els.stageStatus;
+
+		TDC.status(where, 'Saving…', '');
 		const { error } = await supabaseClient.rpc(fn, args);
-		if (error) { TDC.showSupabaseError(AREA, error, els.stageStatus); return; }
+		if (error) { TDC.showSupabaseError(AREA, error, where); return; }
 
 		disputing = false;
 		confirmingDelete = false;
 		await reloadFromServer();
 		await loadCardState();
-		TDC.status(els.stageStatus, okMessage, 'success');
+		TDC.status(settled() ? els.resultStatus : els.stageStatus, okMessage, 'success');
 	}
 
 	// ─────────────────────────────────────────────────────────────────
@@ -2105,6 +2217,7 @@
 		recomputeBreaks();
 		draft = newDraft();
 		renderAll();
+		renderResult();
 	}
 
 	// Scoring a frame bumps card_version, which can retire a submission, so the

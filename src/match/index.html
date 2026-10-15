@@ -28,7 +28,37 @@ extraScripts:
 	are in the Match panel from the nav bar.
 {% endcomment %}
 
-<div class="match-page">
+{% comment %}
+	Once both players have agreed the card there is nothing left to score, so
+	the scoring surface is put away and the match is shown as a result. Same
+	address — a link to a match should keep working after it is finished.
+{% endcomment %}
+<div class="result-view" id="result-view" hidden>
+	<div class="result-head">
+		<p class="result-label" id="result-label">Final</p>
+		<div class="result-score" id="result-score"></div>
+		<p class="result-line" id="result-line"></p>
+	</div>
+
+	<section class="panel-block">
+		<h2>Frames</h2>
+		<ol class="result-frames" id="result-frames"></ol>
+	</section>
+
+	<section class="panel-block">
+		<h2>The match</h2>
+		<div class="result-facts" id="result-facts"></div>
+	</section>
+
+	<section class="panel-block">
+		<h2>Agreed</h2>
+		<div id="result-agreed"></div>
+		<div class="card-row" id="result-actions"></div>
+		<div class="status" id="result-status"></div>
+	</section>
+</div>
+
+<div class="match-page" id="match-page">
 
 	<section class="stage" id="stage">
 

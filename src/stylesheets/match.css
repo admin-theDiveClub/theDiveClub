@@ -681,3 +681,52 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
 	color: var(--text-primary);
 	direction: ltr;
 }
+
+/* ── The result, once both players have agreed ───────────────────── */
+.result-view {
+	width: 100%;
+	max-width: 640px;
+	margin: 0 auto;
+	padding: 2rem 1rem 3rem;
+}
+.result-view[hidden] { display: none; }
+.result-head { text-align: center; margin-bottom: 2.5rem; }
+.result-label {
+	font-size: 0.7rem;
+	font-weight: 600;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--color-primary);
+	margin: 0 0 0.75rem;
+}
+.score-pair { display: flex; align-items: center; justify-content: center; gap: 0.75rem; }
+.score-big {
+	font-family: var(--font-display);
+	font-size: 4rem;
+	line-height: 1;
+}
+.score-dash { font-size: 2rem; color: var(--text-muted); }
+.result-line { margin: 0.75rem 0 0; font-size: 1.05rem; }
+
+.result-frames { list-style: none; margin: 0; padding: 0; }
+.result-frame {
+	display: grid;
+	grid-template-columns: 2rem 1fr;
+	gap: 0.15rem 0.75rem;
+	padding: 0.55rem 0;
+	border-bottom: 1px solid var(--border-color);
+}
+.rf-no { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.rf-who { font-weight: 600; }
+.rf-extra { grid-column: 2; font-size: 0.8rem; color: var(--text-muted); }
+
+.result-facts { display: grid; gap: 0.1rem; }
+.fact {
+	display: flex;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 0.45rem 0;
+	border-bottom: 1px solid var(--border-color);
+}
+.fact-k { color: var(--text-muted); font-size: 0.9rem; }
+.fact-v { font-weight: 600; }
