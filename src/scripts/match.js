@@ -443,7 +443,8 @@
 	// anything — so these stay out of the read-only guard above.
 	const CARD_ACTS = new Set([
 		'submitcard', 'agreecard', 'disputecard', 'disputecancel', 'disputesend',
-		'deletematch', 'deletecancel', 'deleteconfirm', 'reopencard'
+		'deletematch', 'deletecancel', 'deleteconfirm', 'reopencard',
+		'finishmatch', 'finishnotyet'
 	]);
 
 	function mbtn(label, cls, dataset, disabled) {
@@ -1146,6 +1147,29 @@
 		els.overlay.hidden = false;
 	}
 
+	// The match is over on the card. Asking before submitting is the difference
+	// between a mis-tap costing a tap and a mis-tap locking the night's match:
+	// the frame itself is already saved either way, and only the submission —
+	// which is what actually locks the card — waits for an answer.
+	function showFinishOverlay() {
+		setOverlayMode('finish');
+		const home = framesWon('home');
+		const away = framesWon('away');
+		const winner = matchWinner();
+
+		els.overlayQ.textContent = winner
+			? `${MATCH[winner].name} wins it, ${Math.max(home, away)}–${Math.min(home, away)}.`
+			: `All square, ${home}–${away}.`;
+		els.overlayHint.textContent = cardState && cardState.no_approval
+			? 'Submitting settles it — this match needs no approval.'
+			: 'Submitting sends it to ' + opponentName() + ' to check.';
+		els.overlayRow.replaceChildren(
+			mbtn('Submit the card', 'result', { act: 'finishmatch' }),
+			mbtn('Not yet', '', { act: 'finishnotyet' })
+		);
+		els.overlay.hidden = false;
+	}
+
 	function showTablePicker() {
 		overlayMode = 'table';
 		els.overlayQ.textContent = 'Which table?';
@@ -1507,6 +1531,15 @@
 				return;
 
 			// ── Scorecard ────────────────────────────────────────────
+			case 'finishmatch':
+				closeOverlay();
+				submitFinishedCard();
+				return;
+			case 'finishnotyet':
+				// The card stays open and the Submit button is still there.
+				closeOverlay();
+				TDC.status(els.stageStatus, 'Left open. Submit it when you are ready.', '');
+				return;
 			case 'submitcard':
 				cardAction('tdc_submit_card', { p_match_id: liveMatchId },
 					'Submitted. The other player can check it now.', 'submitted');
@@ -2365,6 +2398,20 @@
 	async function savingFinished(error, okMessage) {
 		saving -= 1;
 		await reloadFromServer();
+
+		// Somebody else scored while this screen was looking at an older card.
+		// The write was refused, and the reload above has already put their
+		// version on screen — so this says what happened rather than showing a
+		// database message, and the score in front of the player is the real one.
+		if (error && error.code === 'TDC01') {
+			showNotice('<strong>Someone else has scored this match.</strong> Your last change was '
+				+ 'not saved, because it was aimed at the card as it was before theirs. '
+				+ 'The score above is up to date — check it, then carry on.', 'error');
+			TDC.status(els.stageStatus, 'Not saved — the card had already moved on.', '');
+			console.error('[' + AREA + '] write refused: ' + (error.details || error.message));
+			return;
+		}
+
 		if (error) {
 			TDC.showSupabaseError(AREA, error, els.stageStatus);
 		} else if (okMessage) {
@@ -2389,31 +2436,38 @@
 	async function refreshCardAfterWrite(wasOver) {
 		if (!liveMatchId) return;
 		await loadCardState();
-		await finishIfOver(wasOver);
+		finishIfOver(wasOver);
 		lastKnownOver = matchOver();
 	}
 
 	// ─────────────────────────────────────────────────────────────────
-	// Finishing by itself
+	// Finishing
 	//
-	// The target is reached, so the card goes in without being asked. Tapping
-	// "submit" after a match that is plainly over was a step to forget, and a
-	// forgotten card is the one nobody ever agrees.
+	// The target is reached, so the page offers to send the card in rather than
+	// leaving it as a step to remember — a forgotten card is the one nobody ever
+	// agrees. It asks first, because submitting is what locks the card, and a
+	// mis-tap on the deciding frame should cost a tap rather than the night's
+	// match. The frame is saved either way; only the submission waits.
 	//
 	// Only on the frame that *ends* it, which is what wasOver carries. Without
-	// that, reopening a finished match to correct something would re-submit it
-	// on the first correction and lock it again — one fix per reopen.
+	// that, reopening a finished match to correct something would ask again on
+	// the first correction — and answering would lock it after one fix.
 	// ─────────────────────────────────────────────────────────────────
 
 	let lastKnownOver = false;   // was the match over before the write in hand?
 	let finishing = false;
 
-	async function finishIfOver(wasOver) {
+	function finishIfOver(wasOver) {
 		if (finishing || wasOver) return;
 		if (!liveMatchId || !canEdit || isOffline()) return;
 		if (!matchOver() || !MATCH.frames.length) return;
 		if (!cardState || cardState.state !== 'in_progress') return;
 
+		showFinishOverlay();
+	}
+
+	async function submitFinishedCard() {
+		if (finishing) return;
 		finishing = true;
 		try {
 			const { error } = await supabaseClient.rpc('tdc_submit_card', { p_match_id: liveMatchId });
@@ -2456,7 +2510,8 @@
 		const { error } = await supabaseClient.rpc('tdc_record_frame', {
 			p_match_id: liveMatchId,
 			p_frame_no: no,
-			p_frame: framePayload(f)
+			p_frame: framePayload(f),
+			p_card_version: cardVersion
 		});
 		await savingFinished(error, okMessage);
 		await refreshCardAfterWrite(wasOver);
@@ -2502,7 +2557,8 @@
 		savingStarted(`Removing frame ${no}…`);
 		const { error } = await supabaseClient.rpc('tdc_remove_frame', {
 			p_match_id: liveMatchId,
-			p_frame_no: no
+			p_frame_no: no,
+			p_card_version: cardVersion
 		});
 		await savingFinished(error, `Frame ${no} removed.`);
 	}
