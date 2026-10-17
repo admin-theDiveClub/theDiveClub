@@ -23,6 +23,7 @@
 		chosenDisplay: el('chosen-display'), chosenFull: el('chosen-full'),
 		clear: el('opponent-clear'),
 		main: el('settings-main'), rest: el('settings-rest'),
+		when: el('match-when'),
 		create: el('create-btn'), status: el('create-status')
 	};
 
@@ -254,6 +255,26 @@
 			return;
 		}
 
+		// The time goes in a second call rather than as another argument to
+		// tdc_create_match. It is not part of creating a match — it can be set
+		// and changed afterwards by the same function — and adding an argument
+		// would mean dropping and recreating a function that works.
+		//
+		// If this one fails the match still exists with no time on it, which is
+		// the state every match was in until today and is fixable on the match
+		// page. So it is reported and not treated as a failure to create.
+		const when = whenValue();
+		if (when) {
+			const { error: timeError } = await supabaseClient.rpc('tdc_set_match_time', {
+				p_match_id: data,
+				p_scheduled_at: when
+			});
+			if (timeError) {
+				console.error('[' + AREA + '] the match was created but the time was not saved.', timeError);
+				TDC.status(els.status, 'Match started, but the time was not saved. Set it on the match page.', '');
+			}
+		}
+
 		// Tell the opponent they are in a match. Awaited, because the page is
 		// about to leave and an unfinished request goes with it — but a failure
 		// is logged and ignored. The match exists either way, and the one thing
@@ -263,6 +284,20 @@
 
 		location.href = '/match/?id=' + encodeURIComponent(data);
 	});
+
+	// A datetime-local field has no time zone: "2026-10-21T19:30" means half
+	// seven where the person is standing. Date() reads it as local time, which
+	// is exactly right, and toISOString() then pins it to a real moment.
+	function whenValue() {
+		const raw = (els.when.value || '').trim();
+		if (!raw) return null;
+		const d = new Date(raw);
+		if (isNaN(d.getTime())) {
+			TDC.error(AREA, 'the date entered could not be read: ' + raw, null, els.status);
+			return null;
+		}
+		return d.toISOString();
+	}
 
 	// The page sends only which match and what happened. Who to tell and what to
 	// say are decided by the function from the match itself, so this cannot be

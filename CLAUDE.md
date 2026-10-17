@@ -153,6 +153,17 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
 - Adding a parameter meant **dropping and recreating** rather than replacing — a replace cannot change a signature, and an overload would leave two functions the API could not choose between. The bodies are otherwise untouched, and the grants are re-applied in the same migration.
 - Still last-write-wins: `tdc_update_match_settings`. Two people changing settings at the same moment is rarer than two people scoring, and settings re-derive the whole match anyway.
 
+### When a match is played (migration `20261017140000`)
+- `tbl_matches.scheduled_at` existed from the first matches migration and **nothing ever wrote to it** — no field on the create page, no control on the match page. Every match was "now, apparently".
+- `tdc_set_match_time` is its own function, **not part of `tdc_update_match_settings`**, because a time is not a rule: settings re-derive every break side and can put frames back that new rules made impossible, while a time changes nothing about what was played. Folding it in would mean re-deriving a whole match to move a fixture by an hour.
+- The create page calls it **as a second call** after `tdc_create_match` rather than passing another argument, which would have meant dropping and recreating a working function. If that second call fails the match exists with no time — the state every match was in until now, and fixable on the match page — so it is reported rather than treated as a failed creation.
+- Clearing it is allowed and means "no particular time". Refused on a settled card, and more than two years either way, which catches a year typed wrong without blocking a fixture list published a season ahead.
+- **`datetime-local` has no time zone.** The browser gives and takes "2026-10-21T19:30" meaning local time, so `localInputValue()` formats from the viewer's own clock — `toISOString()` would hand it UTC and show the wrong hour to everyone but Greenwich. The field is not rewritten while it has focus, or the cursor jumps as the panel redraws.
+- **`time_set` is the first notification that goes to both players**, via `TELL_BOTH` in the Edge Function: a time is an arrangement between two people, and whoever set it may be venue staff rather than either of them. That is also why the message is not written from one side's point of view.
+  - Creating a match with a time folds it into `opponent_added` instead of sending two notifications a second apart.
+  - Because there can now be two recipients, the message is built **per person** (`messageFor`) — the score reads from the recipient's side, which is two different strings.
+  - The fixture time is written in **South African time**, not the viewer's: a league night is a local arrangement and should read the way the people playing it would say it.
+
 ### Live updates (migration `20261017130000`)
 - **The first use of Realtime in the project.** The project board polls on tab focus and the match page inherited that by default; a match is *watched* as well as scored, so a second screen going stale until somebody reloads is not good enough.
 - **Two subscriptions, and neither is on `tbl_frames`:**

@@ -157,6 +157,20 @@ extraScripts:
 			<div class="panel-note" id="panel-note" hidden></div>
 
 			{% comment %}
+				When the match is played. Not one of the generated settings: it
+				is a column rather than a rule, and changing it re-derives
+				nothing, so it saves through its own function.
+			{% endcomment %}
+			<div class="set-card">
+				<h3>When</h3>
+				<div class="set-row">
+					<label for="match-when">Date and time</label>
+					<input type="datetime-local" id="match-when">
+					<div class="set-hint">Leave blank for no particular time. Both players are told when this changes.</div>
+				</div>
+			</div>
+
+			{% comment %}
 				The cards are built from the definitions in match.js: each setting
 				names its group, so adding one there is the only edit needed.
 			{% endcomment %}

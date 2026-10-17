@@ -158,6 +158,7 @@
 		scrim: el('panel-scrim'),
 		panel: el('settings-panel'), panelClose: el('panel-close'),
 		contextLine: el('context-line'), badgeRow: el('badge-row'), panelNote: el('panel-note'),
+		when: el('match-when'),
 		setGroups: el('set-groups'),
 		notice: el('match-notice'),
 		cardPanel: el('card-panel'), cardBody: el('card-body'),
@@ -1284,6 +1285,8 @@
 			badge(`${framesWon('home')} — ${framesWon('away')}`)
 		);
 
+		renderWhen();
+
 		els.setGroups.replaceChildren();
 		for (const group of GROUPS) {
 			const defs = SETTINGS.filter((d) => d.group === group && (!d.when || d.when(MATCH.rules)));
@@ -1293,6 +1296,59 @@
 			for (const def of defs) card.append(renderSetting(def));
 			els.setGroups.append(card);
 		}
+	}
+
+	// ─── When the match is played ───
+	// A column, not a rule: changing it re-derives nothing, so it has its own
+	// function rather than going through tdc_update_match_settings, which
+	// rebuilds every break side and can put frames back.
+
+	// A datetime-local input wants "2026-10-21T19:30" in the viewer's own zone,
+	// which is what the browser gives back. toISOString would hand it UTC and
+	// show the wrong hour to everyone but Greenwich.
+	function localInputValue(iso) {
+		if (!iso) return '';
+		const d = new Date(iso);
+		if (isNaN(d.getTime())) return '';
+		const pad = (n) => String(n).padStart(2, '0');
+		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+			+ `T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+	}
+
+	function renderWhen() {
+		// Not while it is being typed in, or the cursor jumps back a character
+		// at a time as the panel redraws.
+		if (document.activeElement !== els.when) {
+			els.when.value = localInputValue(MATCH.scheduled_at);
+		}
+		els.when.disabled = !canEdit || settled();
+	}
+
+	async function persistWhen() {
+		if (!liveMatchId) return;
+		if (isOffline()) { blockedOffline('Changing when the match is played'); return; }
+
+		const raw = (els.when.value || '').trim();
+		let iso = null;
+		if (raw) {
+			const d = new Date(raw);
+			if (isNaN(d.getTime())) {
+				TDC.error(AREA, 'the date entered could not be read: ' + raw, null, els.stageStatus);
+				return;
+			}
+			iso = d.toISOString();
+		}
+
+		// Nothing to say and nobody to tell if it has not moved.
+		if ((MATCH.scheduled_at || null) === iso) return;
+
+		savingStarted('Saving the time…');
+		const { error } = await supabaseClient.rpc('tdc_set_match_time', {
+			p_match_id: liveMatchId,
+			p_scheduled_at: iso
+		});
+		await savingFinished(error, iso ? 'Time saved. Both players have been told.' : 'Time cleared.');
+		if (!error) tellTheOther('time_set');
 	}
 
 	function showPanelNote(lines) {
@@ -2688,6 +2744,7 @@
 	function start() {
 		document.addEventListener('click', onClick);
 		els.panel.addEventListener('change', onSettingChange);
+		els.when.addEventListener('change', persistWhen);
 		els.undoBtn.addEventListener('click', undo);
 		els.panelClose.addEventListener('click', closePanel);
 		els.scrim.addEventListener('click', closePanel);

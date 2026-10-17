@@ -37,6 +37,16 @@ extraScripts:
 		<button type="button" class="link" id="opponent-clear">Change</button>
 	</div>
 
+	{% comment %}
+		Optional, and blank on purpose. Most matches are started at the table
+		and are happening now; a time is for a fixture arranged in advance.
+	{% endcomment %}
+	<div class="field">
+		<label for="match-when">When</label>
+		<input type="datetime-local" id="match-when">
+		<div class="hint">Leave this blank if you are playing now.</div>
+	</div>
+
 	<!-- Settings, built by match-new.js -->
 	<div id="settings-main"></div>
 	<div id="settings-rest"></div>

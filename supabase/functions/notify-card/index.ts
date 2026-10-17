@@ -54,12 +54,31 @@ if (missingSettings.length) {
 	webpush.setVapidDetails(env.VAPID_SUBJECT!, env.VAPID_PUBLIC_KEY!, env.VAPID_PRIVATE_KEY!);
 }
 
-const KINDS = ['opponent_added', 'submitted', 'agreed', 'disputed', 'reopened', 'deleted'] as const;
+const KINDS = ['opponent_added', 'time_set', 'submitted', 'agreed', 'disputed', 'reopened', 'deleted'] as const;
 type Kind = typeof KINDS[number];
+
+// Everything else tells the other player. A time is an arrangement between two
+// people — and whoever set it may be venue staff rather than either of them —
+// so both are told, including the one who did it.
+const TELL_BOTH: ReadonlySet<string> = new Set(['time_set']);
 
 // A match that has not been played yet has no score worth sending, so these
 // kinds describe the match itself instead.
-const NO_SCORE: ReadonlySet<string> = new Set(['opponent_added']);
+const NO_SCORE: ReadonlySet<string> = new Set(['opponent_added', 'time_set']);
+
+// "Tue 21 Oct, 19:30", in South African time. A fixture is a local
+// arrangement, so it is written the way the people playing it would say it
+// rather than in the viewer's own zone.
+function whenText(value: string | null): string {
+	if (!value) return '';
+	const d = new Date(value);
+	if (isNaN(d.getTime())) return '';
+	return d.toLocaleString('en-ZA', {
+		timeZone: 'Africa/Johannesburg',
+		weekday: 'short', day: 'numeric', month: 'short',
+		hour: '2-digit', minute: '2-digit', hour12: false,
+	});
+}
 
 const DISCIPLINE: Record<string, string> = {
 	'8ball': '8-ball',
@@ -160,6 +179,7 @@ Deno.serve(async (req) => {
 		let awayId: string | null = null;
 		let summary = '';
 		let shape = '';
+		let when = '';
 		let noApproval = false;
 
 		if (kind === 'deleted') {
@@ -174,7 +194,7 @@ Deno.serve(async (req) => {
 		} else {
 			const { data: match } = await admin
 				.from('tbl_matches')
-				.select('home_player_id, away_player_id, home_side_kind, away_side_kind, rules')
+				.select('home_player_id, away_player_id, home_side_kind, away_side_kind, rules, scheduled_at')
 				.eq('id', matchId).maybeSingle();
 			if (!match) return reply(req, 404, { error: 'TDC (Error): match not found.' });
 			if (match.home_side_kind !== 'player' || match.away_side_kind !== 'player') {
@@ -187,6 +207,7 @@ Deno.serve(async (req) => {
 			const rules = match.rules as Record<string, unknown> | null;
 			shape = describeMatch(rules);
 			noApproval = String(rules?.approval_mode ?? 'none') === 'none';
+			when = whenText(match.scheduled_at as string | null);
 
 			if (!NO_SCORE.has(kind)) {
 				const { data: frames } = await admin
@@ -205,23 +226,42 @@ Deno.serve(async (req) => {
 		const otherId = me.id === homeId ? awayId : homeId;
 		if (!otherId) return reply(req, 200, { sent: 0, note: 'no other player' });
 
-		const { data: other } = await admin
-			.from('tbl_players').select('id, user_id, display_name').eq('id', otherId).maybeSingle();
-		if (!other || !other.user_id) {
-			// A walk-in has no account and no devices. Nothing to do, and not a
-			// fault worth reporting to the page.
-			return reply(req, 200, { sent: 0, note: 'no account' });
-		}
+		// Everything is addressed to the other player, except an arrangement
+		// like the time, which belongs to both of them.
+		const wantedIds = TELL_BOTH.has(kind)
+			? [homeId, awayId].filter((id): id is string => !!id)
+			: [otherId];
 
-		// The score is written from the recipient's point of view, so it reads
-		// the way they would say it.
-		let mine = summary;
-		if (kind !== 'deleted' && summary.includes(' – ')) {
-			const [h, a] = summary.split(' – ');
-			mine = other.id === homeId ? `${h} – ${a}` : `${a} – ${h}`;
+		const { data: found } = await admin
+			.from('tbl_players').select('id, user_id, display_name').in('id', wantedIds);
+
+		// A walk-in has no account and no devices. Nothing to do, and not a
+		// fault worth reporting to the page.
+		const targets = (found ?? []).filter((p) => p.user_id);
+		if (targets.length === 0) return reply(req, 200, { sent: 0, note: 'no account' });
+
+		// Read once, outside the loop: it is the same note for everybody.
+		let disputeNote = '';
+		if (kind === 'disputed') {
+			const { data: ev } = await admin
+				.from('tbl_match_events').select('note')
+				.eq('match_id', matchId).eq('kind', 'disputed')
+				.order('created_at', { ascending: false }).limit(1).maybeSingle();
+			disputeNote = shorten(ev?.note, 140);
 		}
 
 		const who = me.display_name ?? 'The other player';
+
+		// Written from the recipient's point of view, so the score reads the way
+		// they would say it. With two recipients that is two different strings,
+		// which is why this is worked out per person rather than once.
+		function messageFor(target: { id: string; display_name: string | null }) {
+		let mine = summary;
+		if (kind !== 'deleted' && summary.includes(' – ')) {
+			const [h, a] = summary.split(' – ');
+			mine = target.id === homeId ? `${h} – ${a}` : `${a} – ${h}`;
+		}
+
 		let title: string;
 		let message: string;
 		let url = '/match/?id=' + matchId;
@@ -229,9 +269,17 @@ Deno.serve(async (req) => {
 		switch (kind) {
 			case 'opponent_added':
 				title = 'You are in a match';
-				message = shape
-					? `${who} started a match against you. ${shape}.`
-					: `${who} started a match against you.`;
+				message = `${who} started a match against you.`
+					+ (shape ? ` ${shape}.` : '')
+					+ (when ? ` ${when}.` : '');
+				break;
+			case 'time_set':
+				// Both players get this one, so it cannot be written from one
+				// side's point of view.
+				title = when ? 'Match time set' : 'Match time cleared';
+				message = when
+					? `${who} set the match for ${when}.`
+					: `${who} removed the time from the match.`;
 				break;
 			case 'submitted':
 				// A match set to need no approval settles on submission, so
@@ -248,16 +296,10 @@ Deno.serve(async (req) => {
 				title = 'Scorecard agreed';
 				message = `${who} agreed the card. ${mine} is settled.`;
 				break;
-			case 'disputed': {
-				const { data: ev } = await admin
-					.from('tbl_match_events').select('note')
-					.eq('match_id', matchId).eq('kind', 'disputed')
-					.order('created_at', { ascending: false }).limit(1).maybeSingle();
-				const note = shorten(ev?.note, 140);
+			case 'disputed':
 				title = 'Scorecard disputed';
-				message = note ? `${who} says: ${note}` : `${who} says the card is wrong.`;
+				message = disputeNote ? `${who} says: ${disputeNote}` : `${who} says the card is wrong.`;
 				break;
-			}
 			case 'reopened':
 				title = 'Scorecard reopened';
 				message = `${who} reopened the match. It needs agreeing again.`;
@@ -269,48 +311,54 @@ Deno.serve(async (req) => {
 				break;
 		}
 
-		const { data: subs, error: subsError } = await admin
-			.from('tbl_push_subscriptions')
-			.select('id, endpoint, p256dh, auth')
-			.eq('user_id', other.user_id);
-
-		if (subsError) {
-			console.error(LOG, 'Could not read subscriptions:', subsError);
-			return reply(req, 500, { error: 'TDC (Error): ' + subsError.message });
+		return { title, body: message, url, icon: '/resources/icons/icon-192.png' };
 		}
-		if (!subs || subs.length === 0) {
-			// They have not turned notifications on. Normal, not a fault.
-			return reply(req, 200, { sent: 0, note: 'no devices' });
-		}
-
-		const payload = JSON.stringify({
-			title,
-			body: message,
-			url,
-			icon: '/resources/icons/icon-192.png',
-		});
 
 		let sent = 0;
-		for (const sub of subs) {
-			const service = serviceOf(sub.endpoint);
-			try {
-				await webpush.sendNotification(
-					{ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-					payload,
-				);
-				sent += 1;
-			} catch (err) {
-				const statusCode = (err as { statusCode?: number }).statusCode;
-				console.error(LOG, `Failed via ${service} (status ${statusCode ?? 'n/a'}):`, err);
-				if (statusCode === 404 || statusCode === 410) {
-					await admin.from('tbl_push_subscriptions').delete().eq('id', sub.id);
-					console.log(LOG, 'Removed a dead subscription:', sub.id);
+		let devices = 0;
+
+		for (const target of targets) {
+			const { data: subs, error: subsError } = await admin
+				.from('tbl_push_subscriptions')
+				.select('id, endpoint, p256dh, auth')
+				.eq('user_id', target.user_id);
+
+			if (subsError) {
+				console.error(LOG, 'Could not read subscriptions:', subsError);
+				return reply(req, 500, { error: 'TDC (Error): ' + subsError.message });
+			}
+
+			// They have not turned notifications on. Normal, not a fault, and
+			// with two recipients the other one should still hear.
+			if (!subs || subs.length === 0) continue;
+			devices += subs.length;
+
+			const payload = JSON.stringify(messageFor(target));
+
+			for (const sub of subs) {
+				const service = serviceOf(sub.endpoint);
+				try {
+					await webpush.sendNotification(
+						{ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+						payload,
+					);
+					sent += 1;
+				} catch (err) {
+					const statusCode = (err as { statusCode?: number }).statusCode;
+					console.error(LOG, `Failed via ${service} (status ${statusCode ?? 'n/a'}):`, err);
+					if (statusCode === 404 || statusCode === 410) {
+						await admin.from('tbl_push_subscriptions').delete().eq('id', sub.id);
+						console.log(LOG, 'Removed a dead subscription:', sub.id);
+					}
 				}
 			}
 		}
 
-		console.log(LOG, `${kind}: told ${other.display_name} on ${sent} of ${subs.length} device(s).`);
-		return reply(req, 200, { sent, devices: subs.length });
+		if (devices === 0) return reply(req, 200, { sent: 0, note: 'no devices' });
+
+		console.log(LOG, `${kind}: told ${targets.map((t) => t.display_name).join(' and ')}`
+			+ ` on ${sent} of ${devices} device(s).`);
+		return reply(req, 200, { sent, devices });
 	} catch (err) {
 		console.error(LOG, 'Unexpected error:', err);
 		return reply(req, 500, { error: 'TDC (Error): ' + String(err) });
