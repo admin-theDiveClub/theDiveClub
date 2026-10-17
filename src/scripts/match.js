@@ -247,12 +247,49 @@
 	const framesWon = (side) => completed().filter((f) => f.winner_side === side).length;
 	const otherSide = (side) => (side === 'home' ? 'away' : 'home');
 
+	// Who won, if anybody has. Only "race to" was ever worked out, so a best-of
+	// or a fixed number of frames never ended: the clocks stayed live, the stage
+	// kept offering the next frame and the match never read as complete.
 	function matchWinner() {
-		if (MATCH.rules.win_condition_type !== 'race_to') return null;
-		const t = MATCH.rules.win_condition_target;
-		if (framesWon('home') >= t) return 'home';
-		if (framesWon('away') >= t) return 'away';
-		return null;
+		const t = Number(MATCH.rules.win_condition_target);
+		const home = framesWon('home');
+		const away = framesWon('away');
+
+		switch (MATCH.rules.win_condition_type) {
+			case 'race_to':
+				if (!(t > 0)) return null;
+				if (home >= t) return 'home';
+				if (away >= t) return 'away';
+				return null;
+
+			case 'best_of': {
+				// Best of 7 is won at 4: more than half, so the rest cannot change it.
+				if (!(t > 0)) return null;
+				const need = Math.floor(t / 2) + 1;
+				if (home >= need) return 'home';
+				if (away >= need) return 'away';
+				return null;
+			}
+
+			case 'fixed_frames':
+				if (!(t > 0) || completed().length < t) return null;
+				if (home === away) return null;      // played out, but drawn
+				return home > away ? 'home' : 'away';
+
+			default:
+				// Timed and free play end when the players say so, not by score.
+				return null;
+		}
+	}
+
+	// Whether there is any more to play. Not the same question as who won: a
+	// fixed number of frames can finish level, and a drawn match is over.
+	function matchOver() {
+		if (MATCH.rules.win_condition_type === 'fixed_frames') {
+			const t = Number(MATCH.rules.win_condition_target);
+			return t > 0 && completed().length >= t;
+		}
+		return matchWinner() !== null;
 	}
 
 	// ─────────────────────────────────────────────────────────────────
@@ -548,7 +585,7 @@
 		// Band 3: the buttons.
 		const foot = div('half-foot');
 
-		if (matchWinner()) {
+		if (matchOver()) {
 			foot.append(div('half-group-label', matchWinner() === side ? 'Match won' : ''));
 			host.append(foot);
 			return;
@@ -579,7 +616,7 @@
 	}
 
 	function renderStage() {
-		els.midFrame.textContent = matchWinner() ? 'Final' : `Frame ${MATCH.frames.length + 1}`;
+		els.midFrame.textContent = matchOver() ? 'Final' : `Frame ${MATCH.frames.length + 1}`;
 		// Free play has no number to show, and "Free play 5" would read as a
 		// target somebody is counting to.
 		const wc = WIN_CONDITION[MATCH.rules.win_condition_type] || 'TDC (Error)';
@@ -588,7 +625,7 @@
 			: `${wc} ${MATCH.rules.win_condition_target}`;
 
 		if (overlayMode === null) {
-			const needsBreak = MATCH.rules.track_breaks && !draft.break_side && !matchWinner();
+			const needsBreak = MATCH.rules.track_breaks && !draft.break_side && !matchOver();
 			if (needsBreak) showBreakOverlay();
 			else els.overlay.hidden = true;
 		}
@@ -601,7 +638,7 @@
 	// Timing panel
 	// ─────────────────────────────────────────────────────────────────
 
-	const isRacking = () => frameStartedAt === null && !matchWinner();
+	const isRacking = () => frameStartedAt === null && !matchOver();
 
 	function renderTimePanel() {
 		const r = MATCH.rules;
@@ -610,7 +647,7 @@
 		body.replaceChildren();
 
 		body.append(readout('State',
-			matchWinner() ? 'Match over' : (isRacking() ? 'Racking' : `Frame ${MATCH.frames.length + 1} running`)));
+			matchOver() ? 'Match over' : (isRacking() ? 'Racking' : `Frame ${MATCH.frames.length + 1} running`)));
 		body.append(readout('Table', draft.table));
 		body.append(readout('Rack time', '—', { live: 'rack' }));
 		body.append(readout('Frame time', '—', { live: 'frame' }));
@@ -619,8 +656,8 @@
 		const pauseRow = div('time-actions');
 		pauseRow.append(
 			mbtn(timerRunning(frameTimer) ? 'Pause frame' : 'Resume frame', '', { act: 'toggleframe' },
-				frameStartedAt === null || !!matchWinner()),
-			mbtn(timerRunning(matchTimer) ? 'Pause match' : 'Resume match', '', { act: 'togglematchtimer' }, !!matchWinner())
+				frameStartedAt === null || !!matchOver()),
+			mbtn(timerRunning(matchTimer) ? 'Pause match' : 'Resume match', '', { act: 'togglematchtimer' }, !!matchOver())
 		);
 		body.append(pauseRow);
 
@@ -637,15 +674,15 @@
 
 			const turns = div('time-actions');
 			turns.append(
-				mbtn(MATCH.home.name, '', { act: 'turn', side: 'home' }, !!matchWinner()),
-				mbtn(MATCH.away.name, '', { act: 'turn', side: 'away' }, !!matchWinner())
+				mbtn(MATCH.home.name, '', { act: 'turn', side: 'home' }, !!matchOver()),
+				mbtn(MATCH.away.name, '', { act: 'turn', side: 'away' }, !!matchOver())
 			);
 			body.append(turns);
 
 			const ctrl = div('time-actions');
 			ctrl.append(
-				mbtn(clock.running ? 'Pause shot' : 'Resume shot', '', { act: 'toggleshot' }, !clock.side || !!matchWinner()),
-				mbtn('Reset shot', '', { act: 'resetshot' }, !clock.side || !!matchWinner())
+				mbtn(clock.running ? 'Pause shot' : 'Resume shot', '', { act: 'toggleshot' }, !clock.side || !!matchOver()),
+				mbtn('Reset shot', '', { act: 'resetshot' }, !clock.side || !!matchOver())
 			);
 			body.append(ctrl);
 
@@ -1219,7 +1256,7 @@
 		els.badgeRow.replaceChildren(
 			badge(DISCIPLINE[MATCH.rules.discipline] || 'TDC (Error)'),
 			badge(MATCH.sanctioned ? 'Sanctioned' : 'Casual', MATCH.sanctioned ? 'verified' : ''),
-			badge(matchWinner() ? 'Complete' : 'In progress'),
+			badge(matchOver() ? 'Complete' : 'In progress'),
 			badge(`${framesWon('home')} — ${framesWon('away')}`)
 		);
 
@@ -1481,11 +1518,13 @@
 			case 'disputecard':
 				disputing = true;
 				renderCard();
+				renderResult();
 				{ const box = document.getElementById('dispute-note'); if (box) box.focus(); }
 				return;
 			case 'disputecancel':
 				disputing = false;
 				renderCard();
+				renderResult();
 				return;
 			case 'disputesend': {
 				const box = document.getElementById('dispute-note');
@@ -1500,7 +1539,9 @@
 			}
 			case 'reopencard':
 				cardAction('tdc_reopen_card', { p_match_id: liveMatchId },
-					'Reopened. Put it right, then submit it again.', 'reopened');
+					cardState && cardState.state === 'awaiting'
+						? 'Taken back. Put it right, then submit it again.'
+						: 'Reopened. Put it right, then submit it again.', 'reopened');
 				return;
 			case 'deletematch':
 				confirmingDelete = true;
@@ -1804,8 +1845,19 @@
 	// match should still work after it is over.
 	// ─────────────────────────────────────────────────────────────────
 
+	// A submitted card is already out of the scorer's hands, so the stage goes
+	// away then — not only once it has been agreed. The match is over, the
+	// result is what matters, and anyone who needs to change something reopens
+	// it from here. A dispute puts the stage back, because that is exactly what
+	// a dispute asks for.
 	function settled() {
-		return !!(liveMatchId && cardState && cardState.state === 'agreed');
+		if (!liveMatchId || !cardState) return false;
+		return cardState.state === 'agreed' || cardState.state === 'awaiting';
+	}
+
+	function opponentName() {
+		const other = MATCH[otherSide(mySide() || 'home')];
+		return other ? other.name : 'the other player';
 	}
 
 	function factRow(label, value) {
@@ -1874,17 +1926,55 @@
 		}
 		els.resultFacts.replaceChildren(...facts);
 
-		els.resultAgreed.replaceChildren(div('card-line', cardState.by_silence
-			? 'Agreed — nobody disputed it in time.'
-			: 'Agreed by both players.'));
+		// The card can still be waiting on somebody, so this page has to be able
+		// to answer it. The scorecard panel lives on the stage, and the stage is
+		// not on screen any more.
+		const waiting = cardState.state === 'awaiting';
+		const mine = cardState.submitted_by && cardState.submitted_by === myPlayerId;
+		const myTurn = waiting && myPlayerId && !mine;
+
+		const lines = [];
+		if (waiting) {
+			lines.push(div('card-line', mine
+				? 'Submitted. Waiting for ' + opponentName()
+					+ (cardState.deadline ? ', until ' + whenText(cardState.deadline) : '') + '.'
+				: myPlayerId
+					? 'Submitted. Does this look right to you?'
+					: 'This card has been submitted.'));
+			if (mine && cardState.deadline) {
+				lines.push(div('card-note', 'If nobody answers by then it counts as agreed.'));
+			}
+		} else {
+			lines.push(div('card-line',
+				cardState.no_approval ? 'Settled — this match was set to need no approval.'
+					: cardState.by_silence ? 'Agreed — nobody disputed it in time.'
+						: 'Agreed by both players.'));
+			if (cardState.at) lines.push(div('card-note', whenText(cardState.at)));
+		}
+
+		if (myTurn && disputing) {
+			const box = document.createElement('textarea');
+			box.id = 'dispute-note';
+			box.rows = 2;
+			box.placeholder = 'What is wrong with it?';
+			lines.push(box);
+		}
+		els.resultAgreed.replaceChildren(...lines);
 
 		// Settled is not the same as permanent. A mistake found later is still
 		// fixable; it just cannot be fixed quietly.
 		const actions = [];
-		if (canEdit && !MATCH.sanctioned) {
+		if (myTurn) {
+			actions.push(...(disputing
+				? [mbtn('Send', 'result', { act: 'disputesend' }), mbtn('Cancel', '', { act: 'disputecancel' })]
+				: [mbtn('Looks right', 'result', { act: 'agreecard' }),
+					mbtn('Something is wrong', '', { act: 'disputecard' })]));
+		} else if (canEdit && !MATCH.sanctioned && (!waiting || mine)) {
+			// While a card is waiting, only the person who sent it can take it
+			// back. The other player's way in is to say what is wrong.
 			actions.push(confirmingDelete
 				? mbtn('Yes, delete this match', '', { act: 'deleteconfirm' })
-				: mbtn('Reopen', '', { act: 'reopencard' }));
+				: mbtn(waiting ? 'Withdraw' : 'Reopen', '', { act: 'reopencard' }));
 			actions.push(confirmingDelete
 				? mbtn('Keep it', '', { act: 'deletecancel' })
 				: mbtn('Delete match', '', { act: 'deletematch' }));
@@ -1921,9 +2011,12 @@
 			if (!MATCH.frames.length) {
 				rows.push(div('card-line', 'Play a frame first — there is nothing to submit yet.'));
 			} else if (canEdit) {
-				rows.push(div('card-line', 'When the match is over, submit the card and ' +
-					(other ? other.name : 'the other player') + ' can check it.'));
-				rows.push(rowOf(mbtn('Submit scorecard', 'result', { act: 'submitcard' })));
+				rows.push(div('card-line', cardState.no_approval
+					? 'When the match is over, submit the card. It settles straight away — this match needs no approval.'
+					: 'When the match is over, submit the card and ' +
+						(other ? other.name : 'the other player') + ' can check it.'));
+				rows.push(rowOf(mbtn(cardState.no_approval ? 'Submit and finish' : 'Submit scorecard',
+					'result', { act: 'submitcard' })));
 			} else {
 				rows.push(div('card-line', 'Not submitted yet.'));
 			}
@@ -1957,9 +2050,10 @@
 				));
 			}
 		} else if (state === 'agreed') {
-			rows.push(div('card-line', cardState.by_silence
-				? 'Agreed — nobody disputed it in time.'
-				: 'Agreed by both players.'));
+			rows.push(div('card-line',
+				cardState.no_approval ? 'Settled — this match was set to need no approval.'
+					: cardState.by_silence ? 'Agreed — nobody disputed it in time.'
+						: 'Agreed by both players.'));
 			if (cardState.at) rows.push(div('card-note', whenText(cardState.at)));
 		} else if (state === 'disputed') {
 			rows.push(div('card-line', 'Disputed, so the card is open again.'));
@@ -2285,18 +2379,70 @@
 		MATCH = loaded.match;
 		recomputeBreaks();
 		draft = newDraft();
+		lastKnownOver = matchOver();
 		renderAll();
 		renderResult();
 	}
 
 	// Scoring a frame bumps card_version, which can retire a submission, so the
 	// panel is asked again rather than left showing something that has lapsed.
-	async function refreshCardAfterWrite() {
-		if (liveMatchId) await loadCardState();
+	async function refreshCardAfterWrite(wasOver) {
+		if (!liveMatchId) return;
+		await loadCardState();
+		await finishIfOver(wasOver);
+		lastKnownOver = matchOver();
+	}
+
+	// ─────────────────────────────────────────────────────────────────
+	// Finishing by itself
+	//
+	// The target is reached, so the card goes in without being asked. Tapping
+	// "submit" after a match that is plainly over was a step to forget, and a
+	// forgotten card is the one nobody ever agrees.
+	//
+	// Only on the frame that *ends* it, which is what wasOver carries. Without
+	// that, reopening a finished match to correct something would re-submit it
+	// on the first correction and lock it again — one fix per reopen.
+	// ─────────────────────────────────────────────────────────────────
+
+	let lastKnownOver = false;   // was the match over before the write in hand?
+	let finishing = false;
+
+	async function finishIfOver(wasOver) {
+		if (finishing || wasOver) return;
+		if (!liveMatchId || !canEdit || isOffline()) return;
+		if (!matchOver() || !MATCH.frames.length) return;
+		if (!cardState || cardState.state !== 'in_progress') return;
+
+		finishing = true;
+		try {
+			const { error } = await supabaseClient.rpc('tdc_submit_card', { p_match_id: liveMatchId });
+
+			// The other player's device got there first. Both saw the same last
+			// frame, so this is a race, not a fault.
+			const alreadyIn = error && /already been (submitted|agreed)/i.test(error.message || '');
+			if (error && !alreadyIn) { TDC.showSupabaseError(AREA, error, els.stageStatus); return; }
+
+			await loadCardState();
+			TDC.status(settled() ? els.resultStatus : els.stageStatus,
+				cardState && cardState.no_approval
+					? 'Match over. The card is settled.'
+					: 'Match over. The card has gone to ' + opponentName() + ' to check.',
+				'success');
+
+			if (!error) tellTheOther('submitted');
+		} finally {
+			finishing = false;
+		}
 	}
 
 	async function persistFrame(no, okMessage) {
 		if (!liveMatchId) return;
+
+		// Read before anything is written or reloaded: the frame being saved is
+		// already in MATCH, so asking afterwards would always say "it was over".
+		const wasOver = lastKnownOver;
+
 		const f = frameByNo(no);
 		if (!f) { TDC.error(AREA, 'nothing to save: no frame numbered ' + no, null, els.stageStatus); return; }
 
@@ -2313,7 +2459,7 @@
 			p_frame: framePayload(f)
 		});
 		await savingFinished(error, okMessage);
-		await refreshCardAfterWrite();
+		await refreshCardAfterWrite(wasOver);
 	}
 
 	// Settings and the lag winner go together, because both move the whole

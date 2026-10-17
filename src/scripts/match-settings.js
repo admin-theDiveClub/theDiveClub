@@ -164,7 +164,10 @@ const TDCMatchDef = (() => {
 		extension_seconds: 45,
 		referee_required: false,
 		score_entry_mode: 'players',
-		approval_mode: 'none',
+		// A card nobody has to answer is a card nobody checks. The window is the
+		// quiet default: the other player has 48 hours, and silence settles it.
+		// "Not needed" is there for a social game, and settles on submission.
+		approval_mode: 'dispute_window',
 		dispute_window_hours: 48
 	};
 

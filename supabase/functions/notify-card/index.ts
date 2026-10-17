@@ -160,6 +160,7 @@ Deno.serve(async (req) => {
 		let awayId: string | null = null;
 		let summary = '';
 		let shape = '';
+		let noApproval = false;
 
 		if (kind === 'deleted') {
 			const { data: gone } = await admin
@@ -183,7 +184,9 @@ Deno.serve(async (req) => {
 			}
 			homeId = match.home_player_id;
 			awayId = match.away_player_id;
-			shape = describeMatch(match.rules as Record<string, unknown> | null);
+			const rules = match.rules as Record<string, unknown> | null;
+			shape = describeMatch(rules);
+			noApproval = String(rules?.approval_mode ?? 'none') === 'none';
 
 			if (!NO_SCORE.has(kind)) {
 				const { data: frames } = await admin
@@ -231,8 +234,15 @@ Deno.serve(async (req) => {
 					: `${who} started a match against you.`;
 				break;
 			case 'submitted':
-				title = 'Scorecard to check';
-				message = `${who} submitted ${mine}. Tap to agree or say what is wrong.`;
+				// A match set to need no approval settles on submission, so
+				// asking them to agree to it would be asking for nothing.
+				if (noApproval) {
+					title = 'Match finished';
+					message = `${who} finished the match. ${mine}, settled.`;
+				} else {
+					title = 'Scorecard to check';
+					message = `${who} submitted ${mine}. Tap to agree or say what is wrong.`;
+				}
 				break;
 			case 'agreed':
 				title = 'Scorecard agreed';
