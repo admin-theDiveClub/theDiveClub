@@ -153,6 +153,19 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
 - Adding a parameter meant **dropping and recreating** rather than replacing — a replace cannot change a signature, and an overload would leave two functions the API could not choose between. The bodies are otherwise untouched, and the grants are re-applied in the same migration.
 - Still last-write-wins: `tdc_update_match_settings`. Two people changing settings at the same moment is rarer than two people scoring, and settings re-derive the whole match anyway.
 
+### Live updates (migration `20261017130000`)
+- **The first use of Realtime in the project.** The project board polls on tab focus and the match page inherited that by default; a match is *watched* as well as scored, so a second screen going stale until somebody reloads is not good enough.
+- **Two subscriptions, and neither is on `tbl_frames`:**
+  - `tbl_matches` UPDATE, filtered to the match — every frame change bumps `card_version`, so this one row already carries an insert, a correction and a removal alike, plus settings and status. One subscription instead of three.
+  - `tbl_match_events` INSERT — agreeing a card writes only an event and touches nothing on the match, so it would otherwise be the one thing a second screen never heard about.
+- **No DELETE events, on purpose.** Postgres sends only a deleted row's key unless the table keeps a full replica identity, so a filter on `match_id` could never match one — and turning that on would put every deleted frame's contents onto a channel whose name is a match id. Routing deletions through `card_version` avoids both problems.
+- **Nothing is merged from the payload.** An event means "something changed", and the page re-reads — the same rule it already follows after its own writes, and the reason the server stays the owner of every derived break side.
+- **Realtime is for immediacy, not correctness.** Events are missed while a phone is locked or the socket is down, so the page also re-reads on `visibilitychange` and when the connection returns. That is what makes a missed event harmless, and it is the polling fallback for free.
+- **It never redraws under someone's hands.** `busyScoring()` — a break event tapped, a running frame clock, an open overlay or cell menu — holds the change back and offers a *refresh* link instead, because a reload starts a fresh draft and would throw away a half-recorded frame. The banner clears itself once the next save has pulled the change in anyway.
+- A change the page caused itself is ignored by comparing `card_version` with what it already holds.
+- Access is unchanged: Realtime checks the subscriber can select the row, and all three tables already allow signed-in reads.
+- Not yet live: the match list and the nav. Watching an order's status on the business side is the same machinery with a different channel.
+
 ### Match settings definitions (`scripts/match-settings.js`)
 - **`TDCMatchDef` is the one place a match setting is defined**: labels, the `SETTINGS` array, `DEFAULT_RULES`, and `MAIN_KEYS` (the few asked before a match starts). Both the match page's panel and the create page build their forms from it, so adding a setting is one edit, not two that drift.
 - `DEFAULT_RULES` is every key at its quietest, which is what makes a match created without touching anything the simple card. Keep it in step with `private.tdc_check_match_rules`, which refuses a ruleset missing a key or carrying an unknown one.

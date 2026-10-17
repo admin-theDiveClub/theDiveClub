@@ -1530,6 +1530,10 @@
 				closeCellMenu();
 				return;
 
+			case 'refreshnow':
+				refreshFromRemote();
+				return;
+
 			// ── Scorecard ────────────────────────────────────────────
 			case 'finishmatch':
 				closeOverlay();
@@ -1705,6 +1709,11 @@
 		els.notice.className = 'match-notice' + (kind ? ' ' + kind : '');
 		els.notice.innerHTML = html;
 		els.notice.hidden = false;
+	}
+
+	function hideNotice() {
+		els.notice.hidden = true;
+		els.notice.replaceChildren();
 	}
 
 	// Storage paths are turned into URLs here rather than stored, so moving the
@@ -2414,9 +2423,15 @@
 
 		if (error) {
 			TDC.showSupabaseError(AREA, error, els.stageStatus);
-		} else if (okMessage) {
-			TDC.status(els.stageStatus, okMessage, 'success');
+			return;
 		}
+
+		// The reload above has brought in whatever arrived while this was busy,
+		// so a "someone else has scored" banner is now describing something the
+		// player is already looking at.
+		if (staleKnown) { staleKnown = false; hideNotice(); }
+
+		if (okMessage) TDC.status(els.stageStatus, okMessage, 'success');
 	}
 
 	async function reloadFromServer() {
@@ -2564,6 +2579,111 @@
 	}
 
 	// ─────────────────────────────────────────────────────────────────
+	// Live updates
+	//
+	// A match is watched as well as scored — players follow the score from the
+	// next table, and the other scorer needs to see a correction land. Without
+	// this, a second screen is wrong until somebody thinks to reload.
+	//
+	// Only two subscriptions are needed, and neither is on tbl_frames:
+	//   tbl_matches UPDATE   — every frame change bumps card_version, so this
+	//                          one row carries insert, correction and removal
+	//                          alike, as well as settings and status
+	//   tbl_match_events INSERT — agreeing writes only an event, and nothing on
+	//                          the match, so it would otherwise go unheard
+	//
+	// Avoiding DELETE events is deliberate. Postgres only sends a deleted row's
+	// key unless the table keeps a full replica identity, so a filter on
+	// match_id could not match one — and turning that on would put every
+	// deleted frame's contents on a channel name anybody could guess.
+	//
+	// Realtime is for immediacy, not for correctness: events are missed while a
+	// phone is locked or the socket is down. Re-reading whenever the page is
+	// shown again, and whenever the connection returns, is what makes a missed
+	// event harmless.
+	// ─────────────────────────────────────────────────────────────────
+
+	let liveChannel = null;
+	let liveTimer = null;
+	let staleKnown = false;      // a change arrived that we chose not to apply
+
+	function startLiveUpdates() {
+		if (!liveMatchId || liveChannel) return;
+
+		liveChannel = supabaseClient
+			.channel('match:' + liveMatchId)
+			.on('postgres_changes',
+				{ event: 'UPDATE', schema: 'public', table: 'tbl_matches', filter: 'id=eq.' + liveMatchId },
+				(payload) => {
+					// Our own write, already on screen. The reload after every
+					// save has set cardVersion to this value.
+					if (payload.new && payload.new.card_version === cardVersion) return;
+					onRemoteChange();
+				})
+			.on('postgres_changes',
+				{ event: 'INSERT', schema: 'public', table: 'tbl_match_events', filter: 'match_id=eq.' + liveMatchId },
+				onRemoteChange)
+			.subscribe((status) => {
+				if (status === 'SUBSCRIBED') return;
+				// Not fatal: the page still works, it just stops being live
+				// until the next time it is shown. Said out loud rather than
+				// left as a screen that quietly stops updating.
+				if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+					console.error('[' + AREA + '] live updates are not running (' + status + ').');
+				}
+			});
+	}
+
+	function stopLiveUpdates() {
+		if (!liveChannel) return;
+		supabaseClient.removeChannel(liveChannel);
+		liveChannel = null;
+	}
+
+	// Mid-frame is the wrong moment to redraw: a reload starts a fresh draft,
+	// which would throw away a break event somebody has already tapped. So the
+	// screen is left alone and the change is offered instead.
+	function busyScoring() {
+		if (!draft) return false;
+		return !!(draft.break_outcome || frameStartedAt !== null || overlayMode || cellMenuOpen);
+	}
+
+	function onRemoteChange() {
+		if (liveTimer) clearTimeout(liveTimer);
+
+		// A correction can move every frame, which arrives as a burst. One
+		// reload at the end of it is enough.
+		liveTimer = setTimeout(async () => {
+			liveTimer = null;
+			if (saving > 0) { staleKnown = true; return; }
+			if (busyScoring()) {
+				staleKnown = true;
+				showNotice('<strong>Someone else has scored this match.</strong> '
+					+ 'Finish what you are doing, then <button type="button" class="link-toggle" '
+					+ 'data-act="refreshnow">refresh</button> to see it.', '');
+				return;
+			}
+			await refreshFromRemote();
+		}, 250);
+	}
+
+	async function refreshFromRemote() {
+		if (isOffline()) { blockedOffline('Refreshing the match'); return; }
+		staleKnown = false;
+		hideNotice();
+		await reloadFromServer();
+		await loadCardState();
+	}
+
+	// Coming back to the page, or back onto the network, is the moment a missed
+	// event would show up as a wrong score. Re-read rather than trust the socket.
+	function refreshIfShown() {
+		if (document.visibilityState !== 'visible') return;
+		if (!liveMatchId || isOffline() || saving > 0 || busyScoring()) return;
+		refreshFromRemote();
+	}
+
+	// ─────────────────────────────────────────────────────────────────
 
 	function start() {
 		document.addEventListener('click', onClick);
@@ -2653,7 +2773,12 @@
 			// and the offline notice would otherwise stay on screen.
 			renderOfflineNotice();
 			flushQueue();
+			refreshIfShown();
 		});
+
+		startLiveUpdates();
+		document.addEventListener('visibilitychange', refreshIfShown);
+		window.addEventListener('pagehide', stopLiveUpdates);
 
 		renderOfflineNotice();
 		start();
