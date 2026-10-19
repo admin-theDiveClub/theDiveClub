@@ -1,0 +1,159 @@
+/* The draw (/tournaments/bracket/).
+ *
+ * Rounds are columns and the page scrolls sideways, which is how a draw sheet
+ * is read and the only shape that survives a 32-player field on a phone. No
+ * connector lines: at this width they cost more than they explain, and each
+ * fixture carries its number (3-2) and says where each player came from
+ * ("Winner of 2-1"), which is the same information in less ink.
+ *
+ * Every value here is a token. If something needs a colour or a radius that
+ * is not in variables.css, the token is missing, not this file. */
+
+.bracket-scroll {
+	overflow-x: auto;
+	/* Room for the focus ring on a button in the last column. */
+	padding-bottom: var(--space-2);
+	margin-bottom: var(--space-5);
+}
+
+.bracket {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--space-5);
+	min-width: min-content;
+}
+
+.bracket-round {
+	flex: 0 0 auto;
+	width: 15rem;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+}
+
+.bracket-round-name {
+	margin: 0 0 var(--space-1);
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--color-primary);
+}
+
+/* ── A fixture ─────────────────────────────────────────────────────── */
+
+.bracket-fixture {
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-md);
+	background: var(--bg-surface);
+	padding: var(--space-2);
+	position: relative;
+}
+
+/* The fixture's number, small and out of the way. It is what "Winner of 2-1"
+   on the next column refers to, so it has to be findable. */
+.bracket-no {
+	font-size: 0.62rem;
+	letter-spacing: 0.1em;
+	color: var(--text-muted);
+	margin-bottom: var(--space-1);
+	font-variant-numeric: tabular-nums;
+}
+
+.bracket-side {
+	display: flex;
+	align-items: baseline;
+	gap: var(--space-2);
+	padding: 0.3rem 0;
+}
+.bracket-side + .bracket-side {
+	border-top: 1px solid var(--border-color);
+}
+
+/* The winner is the one thing someone scanning a finished round is looking
+   for, so it carries weight and the brand colour rather than a tick. */
+.bracket-side.won .bracket-name { font-weight: 700; color: var(--color-primary); }
+.bracket-side.won .bracket-frames { font-weight: 700; color: var(--color-primary); }
+
+.bracket-seed {
+	flex: 0 0 auto;
+	min-width: 1.4rem;
+	font-size: 0.68rem;
+	font-variant-numeric: tabular-nums;
+	color: var(--text-muted);
+	text-align: right;
+}
+
+.bracket-name {
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 0.92rem;
+}
+/* A slot nobody has reached yet. Said, not left blank: a draw sheet is
+   readable before it is played, and that is most of what it is for. */
+.bracket-name.pending {
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+.bracket-frames {
+	flex: 0 0 auto;
+	font-variant-numeric: tabular-nums;
+	font-size: 0.95rem;
+}
+
+.bracket-tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-1);
+	margin-top: var(--space-2);
+}
+.bracket-tags .badge { font-size: 0.68rem; }
+/* Defined here rather than in forms.css: a disputed card is a bracket idea,
+   and forms.css already carries .badge.disputed for the match list. */
+.bracket-tags .badge.disputed {
+	border-color: var(--color-error);
+	color: var(--color-error);
+}
+
+.bracket-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-1);
+	margin-top: var(--space-2);
+}
+.bracket-actions .btn {
+	/* Three of these can sit in a 15rem column, so they shrink rather than
+	   wrapping one word per line. */
+	padding: 0.3rem 0.6rem;
+	font-size: 0.65rem;
+	letter-spacing: 0.06em;
+}
+
+/* ── Phones ────────────────────────────────────────────────────────── */
+/* The columns stay columns and the page scrolls, which beats stacking: a
+   bracket read top to bottom is a list, and a list is not a bracket. They
+   just get narrower so two are visible at once. */
+@media (max-width: 480px) {
+	.bracket-round { width: 12.5rem; }
+	.bracket { gap: var(--space-4); }
+}
+
+/* ── Printing ──────────────────────────────────────────────────────── */
+/* A draw sheet on the wall is still how most of a club night is read. */
+@media print {
+	.bracket-scroll { overflow: visible; }
+	.bracket { gap: 0.6rem; }
+	.bracket-round { width: auto; min-width: 9rem; }
+	.bracket-fixture {
+		background: #fff;
+		border-color: #000;
+		break-inside: avoid;
+	}
+	.bracket-actions, .btn-row, .link-row { display: none !important; }
+	.bracket-side.won .bracket-name,
+	.bracket-side.won .bracket-frames { color: #000; }
+}

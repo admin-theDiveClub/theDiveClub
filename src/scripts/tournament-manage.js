@@ -34,7 +34,7 @@
 		count: el('entrant-count'), empty: el('entrant-empty'),
 		seedActions: el('seed-actions'),
 		seedRandom: el('seed-random'), seedClear: el('seed-clear'),
-		status: el('page-status')
+		status: el('page-status'), drawLink: el('draw-link')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -385,16 +385,24 @@
 			return;
 		}
 
+		els.drawLink.href = '/tournaments/bracket/?t=' + encodeURIComponent(tournamentId);
+
 		const tournament = await loadTournament();
 		if (!tournament) return;
 
 		// Settled before anything is drawn, so the controls are never offered
-		// and then taken away.
-		const { data: mineList, error } = await supabaseClient.rpc('tdc_my_tournaments', { p_limit: 200 });
+		// and then taken away. tdc_may_run_tournament asks
+		// private.tdc_can_run_tournament directly — the same one place the
+		// writes themselves ask, so the page and the database cannot disagree.
+		// Reading it out of tdc_my_tournaments instead would miss a venue's
+		// staff standing in for a director who went home, because that list
+		// only holds tournaments you run or are entered in.
+		const { data: mayRun, error } = await supabaseClient.rpc('tdc_may_run_tournament', {
+			p_tournament_id: tournamentId
+		});
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
 
-		const mine = (mineList || []).find((t) => t.id === tournamentId);
-		readOnly = !mine || !mine.i_run_it;
+		readOnly = !mayRun;
 
 		if (readOnly) {
 			els.search.disabled = true;

@@ -276,7 +276,17 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
 - `tdc_detach_fixture_match` takes a match off a fixture without deleting it. The match is a real record of frames really played; deleting one is `tdc_delete_match`'s job, asked for explicitly.
 - `tdc_tournament_draw` was **dropped and recreated** rather than replaced — it gained columns, and PostgreSQL will not change a function's return type in place. It now also returns the frame score, the match status, the winner, and the card state, so a bracket can show that somebody advanced while their opponent is still disputing the card.
 - Verified on a throwaway Postgres by playing whole tournaments: an 8-player bracket round by round to a winner; an 11-player field where all 5 byes advance on the first resolve; manual progression moving nobody; automatic progression with manual creation filling slots but starting nothing; a level card and an in-progress card each advancing nobody; and third place correctly fed by the two semi-final losers.
-- **Not here yet:** the bracket page. That is the next step — nothing above is visible to anyone until it exists.
+
+### The bracket page (migration `20261019180000`)
+- `tournaments/bracket/index.html` + `scripts/tournament-bracket.js` + `stylesheets/bracket.css`, at `?t=<tournament id>`. Readable by any signed-in player; the controls appear only for the people running it, settled before the first render.
+- **`tdc_update_tournament` was dropped and recreated** to carry `third_place`, `progression` and `create_matches`. Without it the three columns added earlier today had no way to be set and every tournament was stuck on the defaults. An overload was the alternative and is worse: two candidates PostgREST can resolve to, against "one place decides each thing". It also refuses to change `third_place` once a draw exists, because the draw reads it at generation and changing it afterwards would silently do nothing.
+- **The draw settings live on this page, not the create page**, because generation is the last moment they mean anything. The empty state is the setup: who goes in (confirmed only or everyone not withdrawn, with a live count of each), progression, match creation, third place — then Generate.
+- `tdc_resolve_draw` is called on load and after every write. Calling it on load is why a TD who scored three matches on somebody else's phone opens this page to a bracket that is already up to date.
+- **Rounds are columns and the page scrolls sideways.** No connector lines: at phone width they cost more than they explain, and each fixture carries its number (`3-2`) while the next column says "Winner of 2-1", which is the same information in less ink. It prints, because a draw sheet on the wall is still how most of a club night is read.
+- An unreached slot says where its player will come from rather than sitting blank — a draw sheet is readable before it is played, and that is most of what it is for.
+- The redraw button does not write its own warning. It calls `tdc_generate_draw`, and if the database refuses with the already-started message, **that message is what the person is asked to confirm** — so the warning they read is the real count rather than a guess maintained in two places.
+- Rounds are named from the end (Final, Semi-finals, Quarter-finals, then "Round n"), so the naming survives any field size.
+- **Not here yet:** entering a match score without frames (a TD-run match may have none), coordinator approval, the public read-only view for players who are not signed in, and double elimination.
 
 
 ## Database conventions

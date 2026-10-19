@@ -1,0 +1,86 @@
+---
+layout: layout.html
+title: Draw
+description: "The draw for a tournament: who plays who, and who has gone through."
+extraStyles:
+  - /stylesheets/bracket.css
+extraScripts:
+  - /scripts/tournament-bracket.js
+---
+{% comment %}
+	The bracket. Readable by any signed-in player, run by whoever runs the
+	tournament.
+
+	Everything comes from tdc_tournament_draw, which returns the whole bracket
+	with names, scores and card states in one call. tdc_resolve_draw is called
+	on load and after every write — it is idempotent, and it is what moves
+	people up as results come in.
+
+	Reached as /tournaments/bracket/?t=<tournament id>.
+{% endcomment %}
+
+<div class="tdc-card wide">
+	<h1 id="t-name">Draw</h1>
+	<p class="muted" id="t-meta"></p>
+
+	{% comment %}
+		Shown only when there is no draw yet. These settings are read when the
+		draw is generated, which is why they live here and not on the create
+		page: this is the last moment they mean anything.
+	{% endcomment %}
+	<div id="setup" hidden>
+		<div class="empty">No draw yet. Set it up below, then generate.</div>
+
+		<div class="panel">
+			<div class="field">
+				<label for="who">Who goes in</label>
+				<select id="who">
+					<option value="confirmed">Confirmed entrants only</option>
+					<option value="all">Everyone who has not withdrawn</option>
+				</select>
+				<div class="hint" id="who-hint"></div>
+			</div>
+
+			<div class="field">
+				<label for="progression">Moving between rounds</label>
+				<select id="progression">
+					<option value="automatic">Winners advance automatically</option>
+					<option value="manual">I will move people myself</option>
+				</select>
+				<div class="hint">You can always move anybody by hand, in either setting.</div>
+			</div>
+
+			<div class="field">
+				<label for="create-matches">Starting matches</label>
+				<select id="create-matches">
+					<option value="automatic">Start as soon as both players are known</option>
+					<option value="manual">I will start each one when a table is free</option>
+				</select>
+			</div>
+
+			<div class="field">
+				<label for="third-place">Third-place playoff</label>
+				<input type="checkbox" id="third-place">
+				<div class="hint">Decided now: it is generated with the draw.</div>
+			</div>
+		</div>
+
+		<button type="button" class="btn-primary" id="generate">Generate the Draw</button>
+	</div>
+
+	<!-- The bracket itself, built by tournament-bracket.js -->
+	<div class="bracket-scroll">
+		<div class="bracket" id="bracket"></div>
+	</div>
+
+	<div class="btn-row" id="draw-actions" hidden>
+		<button type="button" class="btn btn-secondary btn-sm" id="resolve">Refresh progress</button>
+		<button type="button" class="btn btn-danger btn-sm" id="redraw">Redraw</button>
+	</div>
+
+	<div class="status" id="page-status"></div>
+
+	<div class="link-row">
+		<a href="#" id="entrants-link">Entrants</a>
+	</div>
+</div>
