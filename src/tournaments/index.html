@@ -1,0 +1,25 @@
+---
+layout: layout.html
+title: Tournaments
+description: "Tournaments you run or are entered in."
+extraScripts:
+  - /scripts/tournaments.js
+---
+{% comment %}
+	The way into a tournament, in the same shape as /matches/.
+
+	Everything comes from one call to tdc_my_tournaments, which returns the
+	ones this account runs and the ones it is entered in, with the entrant
+	count counted rather than stored.
+{% endcomment %}
+
+<div class="tdc-card">
+	<h1>Tournaments</h1>
+	<p class="muted" id="intro">Tournaments you run or are entered in.</p>
+
+	<a href="/tournaments/new/" class="btn-primary btn-link" id="new-tournament">Create a Tournament</a>
+
+	<div id="tournament-list"></div>
+
+	<div class="status" id="list-status"></div>
+</div>

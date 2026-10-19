@@ -30,9 +30,15 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
 - `scripts/supabaseClient.js` creates the global `supabaseClient` (publishable key, custom domain).
 - `scripts/tdc.js` holds the shared helpers (`TDC.error`, `TDC.status`, `TDC.showSupabaseError`, `TDC.getSession`, `TDC.requireSession`, `TDC.safeNext`, `TDC.getMyPlayer`). Use these on every page.
 - **Fonts** live in `src/resources/fonts/` (published automatically by the existing `resources` passthrough). Two families, declared in `global.css` and used via the `--font-display` / `--font-body` tokens in `variables.css`:
-  - **Rushford Clean** (headings only, `h1`-`h4`): UV's own licensed font, shipped as woff2 -> woff -> otf. It's an all-caps face with no em dash or middle dot, so keep those out of headings. `size-adjust: 118%` on its `@font-face` is the single knob for how large headings read; change that number rather than every heading's font-size.
+  - **Rushford Clean** (headings only, `h1`-`h4`): UV's own licensed font, shipped as woff2 -> woff -> otf. It's an all-caps face with no em dash or middle dot, so keep those out of headings. `size-adjust: 150%` on its `@font-face` is the single knob for how large headings read; change that number rather than every heading's font-size.
   - **Selawik** (body text): Microsoft's open-source (SIL OFL) metric-compatible replacement for Segoe UI, which is proprietary and can't legally be served as a web font. `--font-body` lists `"Segoe UI"` first so Windows uses its locally installed copy; every other device downloads Selawik, which has identical metrics (2048 upem, 1434 cap height), so both look the same. Licence kept at `src/resources/fonts/selawik-LICENSE.txt` — it must stay with the font files.
-- `stylesheets/forms.css` holds the shared card, field, button, status and badge styles (`.tdc-card`, `.field`, `.btn-primary`, `.btn-secondary`, `.status`, `.badge`).
+- `stylesheets/variables.css` is the **token layer**, and nothing else should hold a raw colour, radius or spacing value.
+  - Brand: `--color-primary` (teal), `--color-cream`, `--color-ink` — the three colours the logo artwork is drawn from. `--color-on-primary` is what sits on top of a teal fill, and differs per theme: the dark theme's teal needs dark text, the light theme's deepened teal needs cream.
+  - Depth: `--alpha-1`-`--alpha-4` (black at low alpha, matching how the artwork builds its shadows), then `--shadow-raised`, `--shadow-panel`, `--scrim`, `--hover-wash`. The alpha values are **provisional** until UV supplies the exact ones from the artwork.
+  - Space and shape: `--space-1`-`--space-7`, `--radius-sm/md/lg/pill/round`, `--nav-height`.
+  - The light theme is a cream page (`--bg-base: #f4e8d2`), not a grey one, and its teal, success, warning, error and owner colours are all deepened so they still pass contrast on cream.
+- `stylesheets/forms.css` holds the shared card, field, button, status and badge styles (`.tdc-card`, `.field`, `.btn-primary`, `.btn-secondary`, `.status`, `.badge`), and below those a **shared component layer** written to work outside `.tdc-card`: `.btn` (the button shape, lifted off `.tdc-card button`), `.btn-sm`, `.btn-row`, `.btn-danger`, `.toolbar`, `.tdc-table` + `.table-scroll` + `.num`, `.list-row`, `.empty`, `.panel`, `.tdc-card.wide`, and `.badge` in `warn` / `pending` / `live` / `paid`.
+  - Use a token or an existing component before adding a value or a class. Four stylesheets had invented their own variable names (`--warning-color`, `--error-color`, `--accent-color`, `--text-color`), none of which existed, so they had been silently falling back to hardcoded hexes since they were written.
 - Pages:
   - `index.html`: placeholder home page (logo, "Opening soon", My Account button) until the Phase 4 site.
   - `accounts/index.html` + `scripts/auth.js`: login and signup (display name, password rules, `?next=` return to the previous page).
@@ -44,10 +50,14 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
     - `staff/walk-in/index.html` + `scripts/staff-walk-in.js`: add a walk-in or guest (optional ID, phone, email).
     - `staff/link/index.html` + `scripts/staff-link.js`: link a walk-in/guest record to a player's account (in store, after checking ID).
     - `staff/verifications/index.html` + `scripts/staff-verifications.js`: owners/admins review the venue's ID verifications and revoke mistakes (reason required). Its hub tile shows only for owners/admins.
+  - `tournaments/index.html` + `scripts/tournaments.js`: the tournaments this account runs or is entered in. Only one you run is a link, because the public bracket does not exist yet.
+  - `tournaments/new/index.html` + `scripts/tournament-new.js`: create a tournament. The ruleset controls are generated from `TDCMatchDef`, filtered to `scope: 'rules'` — the `'match'` ones describe one match being played and there is no match here yet.
+  - `tournaments/manage/index.html` + `scripts/tournament-manage.js`: the entrant list, at `?t=<tournament id>`. Search, add, status, paid, seed, randomise, remove.
   - `staff/board/index.html`: the **Project Board** (owners only, gold hub tile). A thin page; its code lives outside `src/` in `tools/project-board/app/` (see "Project board" below).
 - `stylesheets/global.css` has `[hidden] { display: none !important; }`, so the `hidden` attribute always wins over classes that set `display`.
 - Front matter: put `description:` (and any value containing a colon) in quotes, or the build fails.
-- `sw.js` + `site.webmanifest` make the PWA installable (iOS confirmed). The service worker caches only its `CORE_ASSETS` list (cache-first); pages are network-first and always revalidated with the server (`cache: 'no-cache'`), so a deploy shows on the next page load. **Bump `CACHE_NAME` when a file in `CORE_ASSETS` changes** (logo, icons, manifest).
+- `sw.js` + `site.webmanifest` make the PWA installable (iOS confirmed). The service worker caches only its `CORE_ASSETS` list (cache-first); pages are network-first and always revalidated with the server (`cache: 'no-cache'`), so a deploy shows on the next page load.
+  - **`CACHE_NAME` carries the build stamp and no longer needs bumping by hand.** `layout.html` registers `/sw.js?v={{ build.version }}` and the worker reads that stamp into its cache name, so every deploy is a new cache and the `activate` handler deletes the previous one. Before this, a changed logo or icon stayed cached on every device that already had the old one, because `CORE_ASSETS` is served cache-first and the logo URL carries no stamp.
 - **Cache-busting:** GitHub Pages lets browsers reuse CSS/JS for 10 minutes. `layout.html` adds `?v={{ build.version }}` (from `_data/build.js`, new on every build) to every stylesheet and script, including `extraScripts`, so each deploy's pages load that deploy's files. New stylesheets/scripts must be linked through `layout.html` or `extraScripts` to get the stamp.
 - Eleventy's watcher sometimes misses new folders: if a new page gives a 404 locally, restart `npx eleventy --serve`.
 
@@ -224,6 +234,20 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
 - `tdc_tournament_entrants` returns names, status, paid and seed together — the TD's entrant list is the screen a tournament is actually run from, and a request per row on a page showing thirty is not a page.
 - **Not here, deliberately:** rounds, brackets and progression. Setup captures identity, rules and entrants; none of those depend on the format, and generating the draw is its own step. That separation is what let the setup page exist before any bracket generator does.
 - Still to come: the format's draw generator, match-level score entry (a TD-run match may have **no frames at all**, so an entered score is a normal recording path rather than an override), and coordinator approval — see `claude/approval-and-corrections.md`.
+
+### The setup pages (migration `20261019150000`)
+- Three pages, following the shape of `/matches/`: the list, the create page, and the entrant list at `/tournaments/manage/?t=<id>`.
+- **`tdc_search_entrants` is a second search, not a change to `tdc_search_opponents`.** The opponent search returns players with a login only and leaves the caller out of their own results, which is right for "who am I playing" and wrong twice over for a tournament: entrants are routinely walk-ins, and a TD plays in their own club night. The two questions have different answers, so they are two functions. The new one is gated on `private.tdc_can_run_tournament`, because unlike the opponent search it returns walk-in records — people who never chose to be findable.
+- **Seeding is always sent as the whole order.** The seed boxes are read, sorted (unseeded falling to the end in name order), and the result handed to `tdc_set_seeds` as seeds 1..n. Typing a duplicate therefore cannot produce one — the second entrant just sorts next to the first. Randomise is Fisher-Yates, not a `Math.random()` sort, which is not uniform.
+- **Withdrawn entrants stay on the list and out of the draw.** They keep their row so the TD can see who pulled out, they are never seeded, and they do not count toward `max_entrants`. Removing is different and asks first: it takes the person out of the record entirely.
+- After every write the list is read again rather than patched in the page, as everywhere else in this project — the server owns the ordering.
+- Read access and write access differ here: anyone signed in may read an entrant list, only the people running it may change one. The page settles that **before the first render** (a `readOnly` flag every render reads) so the controls are never offered and then taken away. The database refuses the write either way; this is the courtesy, not the guard.
+- **Known gaps in these pages:**
+  - No venue picker, so `p_venue_id` is always null and every tournament made here is the open tier. A club tournament needs the picker and staff rights at that venue.
+  - A walk-in cannot be created from the entrant page. `tdc_create_walk_in` requires a venue and staff rights there, which a TD running an open tournament does not have — so for now a new walk-in has to come from `/staff/walk-in/`. **Open question for UV:** should a TD be able to create a player for their own tournament without a venue behind them?
+  - Nothing edits a tournament after creation, though `tdc_update_tournament` exists for it.
+  - Entrants are not notified that they have been entered.
+
 
 ## Database conventions
 - Table names use the `tbl_` prefix. Our own functions use the `tdc_` prefix.

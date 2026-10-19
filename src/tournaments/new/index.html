@@ -1,0 +1,68 @@
+---
+layout: layout.html
+title: New Tournament
+description: "Create a tournament and start adding entrants."
+extraScripts:
+  - /scripts/match-settings.js
+  - /scripts/tournament-new.js
+---
+{% comment %}
+	The tournament itself at the top, the ruleset its matches will inherit
+	below. The ruleset controls are generated from the same TDCMatchDef list
+	the match panel and the create-a-match page are built from, so a setting
+	added there appears here too.
+
+	Only the settings with scope 'rules' appear: the rest describe one match
+	being played, not a default for matches that do not exist yet.
+{% endcomment %}
+
+<div class="tdc-card">
+	<h1>New Tournament</h1>
+	<p>The ruleset below is frozen onto every match in this tournament when it
+	   is created, so a rule changed later cannot rescore a frame already played.</p>
+
+	<div class="field">
+		<label for="t-name">Name</label>
+		<input type="text" id="t-name" maxlength="120" autocomplete="off" placeholder="Thursday Club Night">
+		<div class="hint">Two characters or more.</div>
+	</div>
+
+	<div class="field">
+		<label for="t-format">Format</label>
+		<select id="t-format"></select>
+		<div class="hint" id="format-hint"></div>
+	</div>
+
+	<div class="field">
+		<label for="t-when">Starts</label>
+		<input type="datetime-local" id="t-when">
+		<div class="hint">Leave blank if you have not set a date.</div>
+	</div>
+
+	<details class="set-group" id="t-extras">
+		<summary>Entries and fee</summary>
+
+		<div class="field">
+			<label for="t-max">Maximum entrants</label>
+			<input type="number" id="t-max" inputmode="numeric" min="2" max="1024" placeholder="No limit">
+			<div class="hint">Leave blank for no limit. Withdrawn entrants do not take up a place.</div>
+		</div>
+
+		<div class="field">
+			<label for="t-fee">Entry fee (credits)</label>
+			<input type="number" id="t-fee" inputmode="numeric" min="0" value="0">
+			<div class="hint">0 is free to enter.</div>
+		</div>
+	</details>
+
+	<!-- The ruleset, built by tournament-new.js from TDCMatchDef -->
+	<div id="settings-main"></div>
+	<div id="settings-rest"></div>
+
+	<button type="button" class="btn-primary" id="create-btn">Create Tournament</button>
+	<div class="status" id="create-status"></div>
+
+	<div class="link-row">
+		<a href="/tournaments/">Back to tournaments</a>
+	</div>
+</div>

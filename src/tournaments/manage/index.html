@@ -1,0 +1,65 @@
+---
+layout: layout.html
+title: Entrants
+description: "Add and manage the entrants in a tournament."
+extraScripts:
+  - /scripts/tournament-manage.js
+---
+{% comment %}
+	The screen a tournament is run from. Search, add, mark paid, confirm,
+	seed, randomise.
+
+	Everything on it is one call each: tdc_tournament_entrants to read the
+	list, and tdc_add_entrant / tdc_set_entrant / tdc_remove_entrant /
+	tdc_set_seeds to change it. After every write the list is read again
+	rather than patched here, because the server owns the ordering.
+
+	Reached as /tournaments/manage/?t=<tournament id>.
+{% endcomment %}
+
+<div class="tdc-card wide">
+	<h1 id="t-name">Entrants</h1>
+	<p class="muted" id="t-meta"></p>
+
+	<div class="field" id="search-field">
+		<label for="entrant-search">Add an entrant</label>
+		<input type="search" id="entrant-search" autocomplete="off" placeholder="Search by name">
+		<div class="hint">Two letters or more. Walk-ins are included.</div>
+	</div>
+
+	<div id="search-results"></div>
+
+	<h2>In this tournament <span class="badge" id="entrant-count" hidden></span></h2>
+
+	<div class="table-scroll">
+		<table class="tdc-table" id="entrant-table" hidden>
+			<thead>
+				<tr>
+					<th class="num">Seed</th>
+					<th>Player</th>
+					<th>Status</th>
+					<th>Paid</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody id="entrant-rows"></tbody>
+		</table>
+	</div>
+
+	<div class="empty" id="entrant-empty" hidden>Nobody has entered yet. Search above to add the first player.</div>
+
+	{% comment %}
+		Seeding is one call for the whole field, not one per player: half a
+		re-seed is a draw nobody can read.
+	{% endcomment %}
+	<div class="btn-row" id="seed-actions" hidden>
+		<button type="button" class="btn btn-secondary btn-sm" id="seed-random">Randomise seeds</button>
+		<button type="button" class="btn btn-secondary btn-sm" id="seed-clear">Clear seeds</button>
+	</div>
+
+	<div class="status" id="page-status"></div>
+
+	<div class="link-row">
+		<a href="/tournaments/">Back to tournaments</a>
+	</div>
+</div>
