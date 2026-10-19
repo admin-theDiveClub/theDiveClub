@@ -213,6 +213,18 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
   - The nav's offline pip is in `nav.html` / `nav.js` and works on **every** page, firing `tdc:offline` and `tdc:online` window events. Other pages with input should listen for those and lock whatever they can't do — not yet done.
 - Known gaps, all deliberate and visible rather than invented: `tables` is `['Table not set']` (no tables table yet), `context.kind` is always `social` (no league layer yet), and a team match refuses to load with an explanation.
 
+## Tournaments (migration `20261019140000`)
+- **The governing requirement: a tournament director must be able to run the whole thing alone.** Players entering their own scores is a convenience, not the path. Plenty of entrants never open the app, and a TD at a club night works from a scoresheet on the bar. Everything in this area is shaped by that, and a design that assumes player participation is wrong.
+- **An entrant is a player record, which may be a walk-in with no account.** Nobody has to sign up to be in a tournament. This is why entrants key on `player_id` and not `user_id`.
+- `tbl_tournaments` — identity, `rules` (the default ruleset matches inherit, validated by the same `private.tdc_check_match_rules` the match page uses, so a tournament cannot hold a ruleset its own matches would refuse), `format` (stored, not yet acted on), status, fee, `max_entrants`. `venue_id` is **nullable on purpose**: anyone may run a tournament, and an approved club gets branding and venue features — the tier falls out of that column being empty or not. `sanctioned` is a column, never a ruleset key.
+- `tbl_competition_roles` + `tbl_competition_role_types` — **a lookup table with a rank number, not an enum**, so "outranks" is a comparison rather than a chain of ifs. `tournament_id` is nullable because a league season gets its own column here later, which is also why it is not called `tournament_role`.
+- `private.tdc_can_run_tournament` is **the single place deciding who runs a competition**, in the same spirit as `private.tdc_can_edit_match`. Director, or venue staff where the tournament belongs to a venue — because a club night's TD is often whoever is behind the bar, and a club must be able to rescue a tournament whose director went home.
+- **Whoever creates a tournament is made its director in the same transaction**, or nobody can change it.
+- `tdc_set_seeds` takes the **whole order in one call** and clears anyone not named. A re-seed moves everybody, and half a re-seed is a draw nobody can read.
+- `tdc_tournament_entrants` returns names, status, paid and seed together — the TD's entrant list is the screen a tournament is actually run from, and a request per row on a page showing thirty is not a page.
+- **Not here, deliberately:** rounds, brackets and progression. Setup captures identity, rules and entrants; none of those depend on the format, and generating the draw is its own step. That separation is what let the setup page exist before any bracket generator does.
+- Still to come: the format's draw generator, match-level score entry (a TD-run match may have **no frames at all**, so an entered score is a normal recording path rather than an override), and coordinator approval — see `claude/approval-and-corrections.md`.
+
 ## Database conventions
 - Table names use the `tbl_` prefix. Our own functions use the `tdc_` prefix.
 - Helper functions for access rules live in the `private` schema, so they can't be called through the API.
