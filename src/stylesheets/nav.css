@@ -94,7 +94,7 @@
 	text-decoration: none;
 }
 .nav-menu a:hover {
-	background: rgba(255, 255, 255, 0.05);
+	background: var(--hover-wash);
 }
 
 body {
@@ -151,7 +151,7 @@ body {
 	color: var(--text-primary);
 }
 .nav-dropdown-link:hover {
-	background: rgba(255, 255, 255, 0.05);
+	background: var(--hover-wash);
 }
 .nav-dropdown-link[hidden] {
 	display: none;
@@ -178,6 +178,6 @@ body {
 	width: 0.5rem;
 	height: 0.5rem;
 	border-radius: 50%;
-	background: var(--warning-color, #d8a23a);
+	background: var(--color-warning);
 	flex: 0 0 auto;
 }

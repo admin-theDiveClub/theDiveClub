@@ -289,9 +289,9 @@ button.half-sub {
 	color: var(--text-muted);
 	background: var(--bg-surface);
 }
-.match-notice strong { color: var(--text-color); font-weight: 600; }
-.match-notice.warn { border-left-color: var(--warning-color, #d8a23a); }
-.match-notice.error { border-left-color: var(--error-color, #d86a6a); }
+.match-notice strong { color: var(--text-primary); font-weight: 600; }
+.match-notice.warn { border-left-color: var(--color-warning); }
+.match-notice.error { border-left-color: var(--color-error); }
 
 .panel-block { margin-bottom: 2.25rem; }
 .panel-block h2 {
@@ -467,7 +467,7 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
 .panel-scrim {
 	position: fixed;
 	inset: 60px 0 0 0;
-	background: rgba(0, 0, 0, 0.5);
+	background: var(--scrim);
 	z-index: 150;
 }
 .settings-panel {
@@ -748,9 +748,9 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
 	max-width: min(20rem, calc(100vw - 2rem));
 	padding: 0.75rem;
 	border: 1px solid var(--border-color);
-	border-radius: 10px;
+	border-radius: var(--radius-lg);
 	background: var(--bg-base);
-	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+	box-shadow: var(--shadow-panel);
 }
 .cell-menu[hidden] { display: none; }
 .cell-menu-q {

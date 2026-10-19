@@ -2,42 +2,100 @@
   /* Type */
   --font-display: "Rushford Clean", "Segoe UI", "Selawik", system-ui, sans-serif;
   --font-body: "Segoe UI", "Selawik", system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Brand */
-  --color-primary: #2b9fa6;
+  /* Brand. The three colours the logo artwork is drawn from. */
+  --color-primary: #2b9fa6;   /* teal — the diver's suit, the pool rim */
+  --color-cream: #f4e8d2;     /* cream — the figure, the ladder, the wordmark */
+  --color-ink: #181818;       /* near-black — the ground the artwork sits on */
+
+  /* What sits on top of a filled brand-colour button. Teal is light enough
+     in the dark theme to need dark text, and deep enough in the light theme
+     to need cream. Anything using --color-primary as a background reads this. */
+  --color-on-primary: #0b1a1b;
 
   /* Backgrounds */
   --bg-base: #181818;
-  --bg-surface: rgba(36, 36, 36, 0.7);
+  --bg-surface: rgba(38, 36, 32, 0.7);
 
-  /* Text */
-  --text-primary: #f2f2f2;
-  --text-muted: #a0a0a0;
+  /* Text. Cream is the brand's ink on dark, not a cold white. */
+  --text-primary: #f4e8d2;
+  --text-muted: #a39a89;
 
-  /* Borders */
-  --border-color: #444444;
+  /* Borders. The pool-interior grey from the artwork. */
+  --border-color: #4c4c4c;
 
   /* Status */
   --color-success: #6bff9e;
+  --color-warning: #e0b04a;
   --color-error: #ff6b6b;
 
   /* Owner-only tools (staff hub glow) */
   --color-owner: #e0b04a;
+
+  /* ── Depth ─────────────────────────────────────────────────────────
+     The artwork builds its shadows from black at low alpha rather than
+     from a darker grey, so the interface does the same and the two sit
+     together. PROVISIONAL — UV has exact alphas to supply. */
+  --alpha-1: rgba(0, 0, 0, 0.08);
+  --alpha-2: rgba(0, 0, 0, 0.24);
+  --alpha-3: rgba(0, 0, 0, 0.32);
+  --alpha-4: rgba(0, 0, 0, 0.55);
+
+  --shadow-raised: 0 1px 2px var(--alpha-2);
+  --shadow-panel: 0 10px 30px var(--alpha-4);
+  --scrim: var(--alpha-4);
+
+  /* A hover that lifts a surface without introducing another colour. */
+  --hover-wash: rgba(244, 232, 210, 0.06);
+
+  /* ── Space ─────────────────────────────────────────────────────────
+     One scale. Reach for the nearest step rather than a new decimal. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  /* ── Shape ─────────────────────────────────────────────────────────
+     sm for anything inside a card, md for a card, lg for a floating
+     panel, pill for a button, round for an avatar. */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+  --radius-round: 50%;
+
+  /* The fixed nav's height. Panels and scrims start below it. */
+  --nav-height: 60px;
 }
 
 [data-theme="light"] {
-  --color-primary: #2b9fa6;
+  /* Teal is deepened so it still reads as text and as a border on cream. */
+  --color-primary: #1a6a70;
+  --color-on-primary: #f4e8d2;
 
-  --bg-base: #f5f5f5;
-  --bg-surface: rgba(255, 255, 255, 0.7);
+  --bg-base: #f4e8d2;
+  --bg-surface: rgba(255, 252, 245, 0.75);
 
   --text-primary: #181818;
-  --text-muted: #666666;
+  --text-muted: #6b6151;
 
-  --border-color: #dddddd;
+  --border-color: #d9cdb4;
 
-  --color-success: #1f8a4c;
-  --color-error: #c62828;
+  --color-success: #176b3b;
+  --color-warning: #7d5410;
+  --color-error: #b02121;
 
-  --color-owner: #a8751a;
+  --color-owner: #8a5e12;
+
+  /* Shadows on a cream page read as dirt at the dark-theme alphas. */
+  --alpha-1: rgba(0, 0, 0, 0.04);
+  --alpha-2: rgba(0, 0, 0, 0.10);
+  --alpha-3: rgba(0, 0, 0, 0.16);
+  --alpha-4: rgba(0, 0, 0, 0.35);
+
+  --hover-wash: rgba(24, 24, 24, 0.05);
 }

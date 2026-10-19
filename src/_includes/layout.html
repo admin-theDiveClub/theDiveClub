@@ -54,7 +54,7 @@
 	<script>
         if ('serviceWorker' in navigator && !['localhost', '127.0.0.1'].includes(location.hostname)) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js');
+                navigator.serviceWorker.register('/sw.js?v={{ build.version }}');
             });
         }
     </script>

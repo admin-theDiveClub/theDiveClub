@@ -1,4 +1,11 @@
-const CACHE_NAME = 'dive-club-v2.6';
+// The cache name carries the build stamp, handed over by the registration in
+// layout.html as /sw.js?v=<stamp>. Every deploy is therefore a new cache, and
+// the activate handler below deletes the previous one — so a changed logo or
+// icon reaches a device that already has the old one cached. Without this the
+// fetch handler below (cache-first for images) would serve the old artwork
+// forever. 'dev' is the fallback for a hand-opened /sw.js.
+const BUILD = new URL(self.location.href).searchParams.get('v') || 'dev';
+const CACHE_NAME = `dive-club-${BUILD}`;
 const CORE_ASSETS = [
   '/',
   '/index.html',
