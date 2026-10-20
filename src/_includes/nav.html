@@ -13,6 +13,12 @@
 		<span class="nav-offline-pip" aria-hidden="true"></span>Offline
 	</span>
 
+	<!-- Shown by nav.js only when the app is running installed, where there is
+	     no browser chrome and therefore no way to reload. -->
+	<button class="nav-reload" id="nav-reload" hidden aria-label="Reload" title="Reload">
+		<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A8 8 0 1 0 19.73 14h-2.1A6 6 0 1 1 12 6a5.94 5.94 0 0 1 4.22 1.78L13 11h7V4z"/></svg>
+	</button>
+
 	<div class="nav-profile-wrap">
 		<button class="nav-profile" id="nav-profile" aria-label="Account">
 			<!-- The generic icon until nav.js finds a signed-in player with a

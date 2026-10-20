@@ -166,4 +166,50 @@
 	document.body.classList.toggle('is-offline', !navigator.onLine);
 
 	window.TDCNet = { get online() { return navigator.onLine; } };
+
+	// ─── Reload ───────────────────────────────────────────────────────
+	// An installed app has no address bar and no reload button, so there is
+	// no way out of a page that has gone stale — a live page whose socket
+	// dropped, or one opened before the last deploy. Pull-to-refresh is not
+	// reliable either: the match page's own scrolling swallows it.
+	//
+	// Only shown when running installed. In a browser the chrome already has
+	// one and a second would be clutter.
+	const reloadBtn = document.getElementById('nav-reload');
+
+	function runningInstalled() {
+		// iOS Safari predates display-mode and reports navigator.standalone.
+		return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+			|| window.navigator.standalone === true;
+	}
+
+	if (reloadBtn && runningInstalled()) {
+		reloadBtn.hidden = false;
+
+		reloadBtn.addEventListener('click', async () => {
+			reloadBtn.disabled = true;
+
+			// Ask the service worker to look for a new version first, so this
+			// also gets a stale install onto the current deploy rather than
+			// just redrawing the same old files. Never allowed to hold the
+			// reload up: a slow or missing worker must not leave somebody
+			// pressing a dead button.
+			try {
+				if ('serviceWorker' in navigator) {
+					const reg = await Promise.race([
+						navigator.serviceWorker.getRegistration(),
+						new Promise((done) => setTimeout(() => done(null), 1500))
+					]);
+					if (reg) await Promise.race([
+						reg.update(),
+						new Promise((done) => setTimeout(done, 1500))
+					]);
+				}
+			} catch (err) {
+				console.error('[' + AREA + '] could not check for a new version before reloading.', err);
+			}
+
+			location.reload();
+		});
+	}
 })();

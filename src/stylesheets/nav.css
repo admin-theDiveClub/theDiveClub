@@ -181,3 +181,27 @@ body {
 	background: var(--color-warning);
 	flex: 0 0 auto;
 }
+
+/* Reload, for an installed app with no browser chrome to do it from.
+   Sits beside the offline pip and is hidden in a browser. */
+.nav-reload {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	width: 2rem;
+	height: 2rem;
+	margin-right: var(--space-2);
+	padding: 0;
+	border: none;
+	border-radius: var(--radius-round);
+	background: none;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+/* The offline pip takes the auto margin when it is showing; without it the
+   reload button is the one that has to push itself to the right. */
+.nav-offline[hidden] + .nav-reload { margin-left: auto; }
+.nav-reload svg { width: 1.1rem; height: 1.1rem; fill: currentColor; }
+.nav-reload:hover { color: var(--color-primary); }
+.nav-reload:disabled { opacity: 0.4; cursor: default; }
