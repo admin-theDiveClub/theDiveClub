@@ -48,7 +48,8 @@
 		in_progress: { label: 'Playing', cls: 'live' },
 		awaiting:    { label: 'Not agreed yet', cls: 'warn' },
 		disputed:    { label: 'Disputed', cls: 'disputed' },
-		agreed:      { label: '', cls: '' }
+		agreed:      { label: '', cls: '' },
+		approved:    { label: '', cls: '' }
 	};
 	const AWARD = {
 		bye: 'Bye', walkover: 'Walkover', withdrawal: 'Withdrew', decision: 'Awarded'
@@ -123,6 +124,13 @@
 		} else if (f.match_id) {
 			const card = CARD[f.card_state];
 			if (card && card.label) tags.append(node('span', 'badge ' + card.cls, card.label));
+			// A result that has not been published has not happened as far as
+			// the draw is concerned, so the bracket says so rather than
+			// leaving the TD wondering why nobody moved up.
+			if (!f.published && f.card_state && f.card_state !== 'in_progress') {
+				tags.append(node('span', 'badge warn', 'Waiting on you'));
+			}
+			if (f.objection) tags.append(node('span', 'badge disputed', 'Disputed'));
 			// A finished card that is level is not a result: the tiebreak has
 			// not been recorded, and nobody can advance until it is.
 			if (f.match_status === 'complete' && !f.winner_entrant_id) {
@@ -144,6 +152,14 @@
 			const open = node('a', 'btn btn-secondary btn-sm', 'Open match');
 			open.href = '/match/?id=' + encodeURIComponent(f.match_id);
 			row.append(open);
+
+			// Publishing is only a separate step where the tournament asks for
+			// it. In the other modes submitting already published, so offering
+			// a button here would be offering one that does nothing.
+			if (f.needs_approval && !f.published && f.card_state && f.card_state !== 'in_progress') {
+				row.append(action('publish', f.fixture_id, 'Publish', 'btn-secondary'));
+				row.append(action('send-back', f.fixture_id, 'Send back', 'btn-danger'));
+			}
 		} else if (both && !f.advanced_entrant_id) {
 			row.append(action('start', f.fixture_id, 'Start match', 'btn-secondary'));
 		}
@@ -167,6 +183,12 @@
 
 		return row;
 	}
+
+	// Both approval calls take a match, and the buttons carry a fixture.
+	const matchOf = (fixtureId) => {
+		const f = fixtures.find((x) => x.fixture_id === fixtureId);
+		return f ? f.match_id : null;
+	};
 
 	function action(kind, fixtureId, label, cls, entrantId) {
 		const b = node('button', 'btn btn-sm ' + cls, label);
@@ -396,6 +418,24 @@
 					p_advanced_entrant_id: button.dataset.entrant,
 					p_advance_reason: 'walkover'
 				}));
+			return;
+		}
+
+		if (button.dataset.act === 'publish') {
+			write('Publishing', () =>
+				supabaseClient.rpc('tdc_approve_card', { p_match_id: matchOf(id) }));
+			return;
+		}
+
+		if (button.dataset.act === 'send-back') {
+			const why = prompt('What is wrong with it? The players will see this.');
+			if (why === null) return;
+			if (!why || why.trim().length < 3) {
+				TDC.status(els.status, 'Sending a card back needs a reason.', '');
+				return;
+			}
+			write('Sending it back', () =>
+				supabaseClient.rpc('tdc_reject_card', { p_match_id: matchOf(id), p_note: why.trim() }));
 			return;
 		}
 

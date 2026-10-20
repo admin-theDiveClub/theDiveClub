@@ -316,7 +316,17 @@ Not built. Recorded here so it is not re-derived.
 - So publishing is `approval_mode` finally meaning what it says, plus an `approved` card event retired by `card_version` like a submission — not a new concept.
 - **An override by the TD publishes**, because the TD is the approver; overriding is implicitly approving.
 - `score_entry_mode` is validated but **enforced nowhere**. `td_only` currently restricts nothing.
-- **Open, asked 20 Oct:** does `dispute_window` apply inside a tournament at all (it is offerable today and would stall a bracket for 48 hours), and what happens when a TD changes a result whose downstream match has already been played — cascade, warn and confirm, or refuse. The second was put to UV in the previous session and never answered.
+- **Answered 20 Oct (UV), and built — migration `20261020120000`:**
+  - **`approval_mode` and `dispute_window_hours` are two independent axes in a competition.** The mode decides *when it publishes* (`none` / `dispute_window` on submission; `coordinator_approval` / `both` on the coordinator's approval). The hours decide *how long a player may object afterwards*. This corrects the design note's guess about `both`, which assumed the coordinator could not approve until the players had settled.
+  - **Publishing locks the card. A dispute never reopens it and never un-publishes it** — the objection is recorded and goes to the coordinator, who lets it stand or changes the score.
+  - **An override publishes.** The coordinator is the approver; making them press a second button would only produce matches that are overridden and not published.
+  - **A coordinator may correct a locked card**, through the lock guard rather than a session flag. Nobody else may.
+  - **Publication exists only inside a competition.** A social match has no bracket or standings to publish to, so `dispute_window` keeps exactly the meaning it has today. *This was caught by the social regression suite after a first version published and locked every social `dispute_window` match on submission, leaving the opponent unable to agree or dispute.*
+  - `tdc_submit_card` now accepts anyone `tdc_can_edit_match` permits, which closes the audit finding that a TD could record every frame of a match between two walk-ins and then had no way to say the card was done.
+  - New: `tdc_approve_card`, `tdc_reject_card` (reason required, for the same reason a dispute needs one), `private.tdc_published_at`, `private.tdc_is_published`, `private.tdc_card_is_locked`, `private.tdc_match_competition`. `tdc_fixture_outcome` advances on **published**, not on `status = 'complete'`.
+  - `match.js` gained the `approved` state, the sent-back note and the objection note. Without it an approved card rendered an empty card panel and the page showed the scoring stage, because `settled()` did not know the state existed.
+  - The bracket page gained Publish and Send back, offered only where the tournament actually asks for approval, plus a "Waiting on you" badge so an unpublished result does not look identical to a published one.
+- **Cascade — answered 20 Oct (UV), not yet built.** With `progression: automatic` a change upstream cascades downstream, with warnings; that is the point of automatic. With `progression: manual` the TD changes each affected match by hand. A downstream match already played with what is now the wrong player is **detached, not deleted** — the frames were really played.
 
 
 ## Database conventions

@@ -1950,7 +1950,9 @@
 	// a dispute asks for.
 	function settled() {
 		if (!liveMatchId || !cardState) return false;
-		return cardState.state === 'agreed' || cardState.state === 'awaiting';
+		return cardState.state === 'agreed' || cardState.state === 'awaiting'
+			// A published tournament result is as settled as a card gets.
+			|| cardState.state === 'approved';
 	}
 
 	function opponentName() {
@@ -2118,6 +2120,10 @@
 			} else {
 				rows.push(div('card-line', 'Not submitted yet.'));
 			}
+			if (cardState.sent_back) {
+				rows.push(div('card-line', 'Sent back by whoever is running this competition.'));
+				if (cardState.note) rows.push(div('card-note', '“' + cardState.note + '”'));
+			}
 		} else if (state === 'awaiting' && (mine || !myPlayerId)) {
 			// Without knowing who we are, the answer buttons are a guess, and
 			// offering someone the chance to agree with themselves is worse
@@ -2157,6 +2163,21 @@
 			rows.push(div('card-line', 'Disputed, so the card is open again.'));
 			if (cardState.note) rows.push(div('card-note', '“' + cardState.note + '”'));
 			if (canEdit) rows.push(div('card-note', 'Put it right, then submit it again.'));
+		} else if (state === 'approved') {
+			// A competition result the coordinator has published. Terminal:
+			// nobody below them edits it, and the bracket has already moved.
+			rows.push(div('card-line', 'Published by whoever is running this competition.'));
+			if (cardState.at) rows.push(div('card-note', whenText(cardState.at)));
+		}
+
+		// Somebody has objected to a published result. It does not reopen the
+		// card — it sits with the coordinator — so it is said here rather
+		// than changing what the card looks like.
+		if (cardState.objection) {
+			rows.push(div('card-line', 'Disputed, and with whoever is running this competition.'));
+			if (cardState.objection.note) {
+				rows.push(div('card-note', '“' + cardState.objection.note + '”'));
+			}
 		}
 
 		// Deleting is for a match started by mistake. It takes the frames with
