@@ -160,15 +160,20 @@
 			open.href = '/match/?id=' + encodeURIComponent(f.match_id);
 			row.append(open);
 
-			// Publishing is only a separate step where the tournament asks for
-			// it. In the other modes submitting already published, so offering
-			// a button here would be offering one that does nothing.
+			// Taking a hand-set score back off, which restores the counted
+			// frames underneath it.
 			if (f.overridden) {
 				row.append(action('clear-score', f.fixture_id, 'Use the frames', 'btn-danger'));
 			}
 
-			if (f.needs_approval && !f.published && f.card_state && f.card_state !== 'in_progress') {
-				row.append(action('publish', f.fixture_id, 'Publish', 'btn-secondary'));
+			// Approving closes a match in any mode: it publishes one that was
+			// waiting on the coordinator, and it ends the players'
+			// involvement in one that published itself on submission.
+			// Offered wherever there is a result that nobody has approved.
+			const hasResult = f.overridden || (f.card_state && f.card_state !== 'in_progress');
+			if (hasResult && f.card_state !== 'approved') {
+				row.append(action('publish', f.fixture_id,
+					f.published ? 'Lock it' : 'Publish', 'btn-secondary'));
 				row.append(action('send-back', f.fixture_id, 'Send back', 'btn-danger'));
 			}
 		} else if (both && !f.advanced_entrant_id) {

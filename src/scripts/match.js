@@ -2032,6 +2032,10 @@
 		const waiting = cardState.state === 'awaiting';
 		const mine = cardState.submitted_by && cardState.submitted_by === myPlayerId;
 		const myTurn = waiting && myPlayerId && !mine;
+		// A published result is settled. There is nothing to agree to, so the
+		// only thing a player can still do is say it is wrong, and only while
+		// the window the coordinator set is open.
+		const canObject = !!cardState.published && !!cardState.can_object && !!myPlayerId;
 
 		const lines = [];
 		if (waiting) {
@@ -2044,6 +2048,21 @@
 			if (mine && cardState.deadline) {
 				lines.push(div('card-note', 'If nobody answers by then it counts as agreed.'));
 			}
+		} else if (cardState.published) {
+			lines.push(div('card-line', cardState.state === 'approved'
+				? 'Published by whoever is running this competition.'
+				: 'Published — this result counts.'));
+			if (cardState.at) lines.push(div('card-note', whenText(cardState.at)));
+			if (cardState.objection) {
+				lines.push(div('card-line', 'Disputed, and with whoever is running this competition.'));
+				if (cardState.objection.note) {
+					lines.push(div('card-note', '\u201c' + cardState.objection.note + '\u201d'));
+				}
+			} else if (canObject) {
+				lines.push(div('card-note',
+					'If this is wrong, say so by ' + whenText(cardState.object_until)
+					+ ' and it goes to whoever is running the competition.'));
+			}
 		} else {
 			lines.push(div('card-line',
 				cardState.no_approval ? 'Settled — this match was set to need no approval.'
@@ -2052,7 +2071,7 @@
 			if (cardState.at) lines.push(div('card-note', whenText(cardState.at)));
 		}
 
-		if (myTurn && disputing) {
+		if ((myTurn || canObject) && disputing) {
 			const box = document.createElement('textarea');
 			box.id = 'dispute-note';
 			box.rows = 2;
@@ -2069,6 +2088,12 @@
 				? [mbtn('Send', 'result', { act: 'disputesend' }), mbtn('Cancel', '', { act: 'disputecancel' })]
 				: [mbtn('Looks right', 'result', { act: 'agreecard' }),
 					mbtn('Something is wrong', '', { act: 'disputecard' })]));
+		} else if (canObject) {
+			// No "Looks right" here: it is already published, and offering it
+			// would be offering a button the database refuses.
+			actions.push(...(disputing
+				? [mbtn('Send', 'result', { act: 'disputesend' }), mbtn('Cancel', '', { act: 'disputecancel' })]
+				: [mbtn('Something is wrong', '', { act: 'disputecard' })]));
 		} else if (canEdit && !MATCH.sanctioned && (!waiting || mine)) {
 			// While a card is waiting, only the person who sent it can take it
 			// back. The other player's way in is to say what is wrong.
@@ -2153,6 +2178,9 @@
 					mbtn('Something is wrong', '', { act: 'disputecard' })
 				));
 			}
+		} else if (state === 'agreed' && cardState.published) {
+			rows.push(div('card-line', 'Published — this result counts.'));
+			if (cardState.at) rows.push(div('card-note', whenText(cardState.at)));
 		} else if (state === 'agreed') {
 			rows.push(div('card-line',
 				cardState.no_approval ? 'Settled — this match was set to need no approval.'
