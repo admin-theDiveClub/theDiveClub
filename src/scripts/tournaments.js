@@ -74,11 +74,15 @@
 	}
 
 	function card(t) {
-		// Only a tournament you run has somewhere to go. The rest are a record
-		// until the public bracket exists.
-		const box = document.createElement(t.i_run_it ? 'a' : 'div');
+		// Everyone gets somewhere to go. Running it takes you to the entrant
+		// list, which is where a tournament is run from; being in it takes you
+		// to the draw, which renders read-only for anyone who is not running
+		// it. This was a plain div for players until 20 Oct, written before
+		// the bracket page existed and left behind when it arrived.
+		const box = document.createElement('a');
 		box.className = 'match-card';
-		if (t.i_run_it) box.href = '/tournaments/manage/?t=' + encodeURIComponent(t.id);
+		box.href = (t.i_run_it ? '/tournaments/manage/?t=' : '/tournaments/bracket/?t=')
+			+ encodeURIComponent(t.id);
 
 		const top = el('div', 'match-top');
 		top.append(

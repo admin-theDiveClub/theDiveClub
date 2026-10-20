@@ -157,3 +157,58 @@
 	.bracket-side.won .bracket-name,
 	.bracket-side.won .bracket-frames { color: #000; }
 }
+
+/* ── Entering a result by hand ─────────────────────────────────────
+   The TD's own input path, in place of the fixture's buttons while it is
+   open. Narrow enough to live inside a bracket column, which is why the
+   two score boxes sit on one line and the reason gets its own. */
+.bracket-entry {
+	margin-top: var(--space-2);
+	padding-top: var(--space-2);
+	border-top: 1px solid var(--border-color);
+}
+.bracket-entry-score {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+	margin-bottom: var(--space-2);
+}
+.bracket-entry-name {
+	flex: 1 1 0;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 0.78rem;
+	color: var(--text-muted);
+}
+.bracket-entry-v {
+	flex: 0 0 auto;
+	font-size: 0.72rem;
+	color: var(--text-muted);
+}
+.bracket-entry input[type="number"] {
+	flex: 0 0 auto;
+	width: 2.6rem;
+	padding: 0.25rem;
+	text-align: center;
+	font-variant-numeric: tabular-nums;
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-sm);
+	background: var(--bg-base);
+	color: var(--text-primary);
+	font-family: inherit;
+	/* 16px stops iPhone zooming the whole bracket on focus. */
+	font-size: 1rem;
+}
+.bracket-entry input[type="text"] {
+	width: 100%;
+	padding: 0.3rem 0.4rem;
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-sm);
+	background: var(--bg-base);
+	color: var(--text-primary);
+	font-family: inherit;
+	font-size: 1rem;
+}
+.bracket-entry input:focus { outline: none; border-color: var(--color-primary); }

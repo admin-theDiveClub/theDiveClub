@@ -62,6 +62,9 @@
 	let fixtures = [];
 	let readOnly = true;
 	let busy = false;
+	// The fixture whose score the TD is typing, if any. One at a time: two
+	// half-filled score forms on one bracket is a mis-tap waiting to happen.
+	let entering = null;
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -141,7 +144,9 @@
 		}
 		if (tags.childElementCount) box.append(tags);
 
-		if (!readOnly) box.append(controls(f));
+		if (!readOnly) {
+			box.append(entering === f.fixture_id ? scoreForm(f) : controls(f));
+		}
 		return box;
 	}
 
@@ -158,6 +163,10 @@
 			// Publishing is only a separate step where the tournament asks for
 			// it. In the other modes submitting already published, so offering
 			// a button here would be offering one that does nothing.
+			if (f.overridden) {
+				row.append(action('clear-score', f.fixture_id, 'Use the frames', 'btn-danger'));
+			}
+
 			if (f.needs_approval && !f.published && f.card_state && f.card_state !== 'in_progress') {
 				row.append(action('publish', f.fixture_id, 'Publish', 'btn-secondary'));
 				row.append(action('send-back', f.fixture_id, 'Send back', 'btn-danger'));
@@ -177,6 +186,14 @@
 			}
 		}
 
+		// Entering the result by hand, which needs both players known and
+		// nothing already awarded. Offered whether or not a match exists: if
+		// it does not, saving makes one.
+		if (both && !f.advanced_entrant_id) {
+			row.append(action('enter', f.fixture_id,
+				f.overridden ? 'Change score' : 'Enter score', 'btn-secondary'));
+		}
+
 		// Undoing an award. Not offered for a bye, which is a fact about the
 		// shape of the draw rather than a decision anybody made.
 		if (f.advanced_entrant_id && f.advance_reason !== 'bye') {
@@ -191,6 +208,85 @@
 		const f = fixtures.find((x) => x.fixture_id === fixtureId);
 		return f ? f.match_id : null;
 	};
+
+	// ─── Entering a result by hand ───
+	// The third of UV's three cases: the TD knows it finished 5-3 and has no
+	// interest in reconstructing eight frames at eleven at night. Two numbers
+	// and a reason, because tdc_set_match_override will not take a score
+	// without one.
+	function scoreForm(f) {
+		const box = node('div', 'bracket-entry');
+
+		const home = node('input');
+		home.type = 'number'; home.min = 0; home.inputMode = 'numeric';
+		home.value = f.home_frames ?? 0;
+		home.setAttribute('aria-label', 'Frames for ' + (f.home_name || 'home'));
+
+		const away = node('input');
+		away.type = 'number'; away.min = 0; away.inputMode = 'numeric';
+		away.value = f.away_frames ?? 0;
+		away.setAttribute('aria-label', 'Frames for ' + (f.away_name || 'away'));
+
+		const why = node('input');
+		why.type = 'text';
+		why.placeholder = 'Why (kept on the record)';
+		why.value = f.override_reason || '';
+		why.setAttribute('aria-label', 'Reason');
+
+		const line = node('div', 'bracket-entry-score');
+		line.append(node('span', 'bracket-entry-name', f.home_name || '—'), home,
+			node('span', 'bracket-entry-v', 'v'),
+			away, node('span', 'bracket-entry-name', f.away_name || '—'));
+
+		const save = node('button', 'btn btn-primary btn-sm', 'Save');
+		save.type = 'button';
+		save.addEventListener('click', () => saveScore(f, home.value, away.value, why.value));
+
+		const cancel = node('button', 'btn btn-secondary btn-sm', 'Cancel');
+		cancel.type = 'button';
+		cancel.addEventListener('click', () => { entering = null; render(); });
+
+		const actions = node('div', 'bracket-actions');
+		actions.append(save, cancel);
+
+		box.append(line, why, actions);
+		return box;
+	}
+
+	async function saveScore(f, homeRaw, awayRaw, why) {
+		const home = parseInt(homeRaw, 10);
+		const away = parseInt(awayRaw, 10);
+		if (isNaN(home) || isNaN(away) || home < 0 || away < 0) {
+			TDC.status(els.status, 'A score needs two numbers, neither of them negative.', '');
+			return;
+		}
+		if (!why || why.trim().length < 3) {
+			TDC.status(els.status, 'Setting a score by hand needs a reason.', '');
+			return;
+		}
+
+		// A fixture nobody has started has no match to put a score on, so one
+		// is made first. Two calls rather than one, because creating a match
+		// and recording its result are different things and the second can
+		// fail on its own.
+		let matchId = f.match_id;
+		if (!matchId) {
+			const { data, error } = await supabaseClient.rpc('tdc_create_fixture_match', {
+				p_fixture_id: f.fixture_id
+			});
+			if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+			matchId = data;
+		}
+
+		entering = null;
+		await write('Saving the score', () =>
+			supabaseClient.rpc('tdc_set_match_override', {
+				p_match_id: matchId,
+				p_home_score: home,
+				p_away_score: away,
+				p_reason: why.trim()
+			}));
+	}
 
 	function action(kind, fixtureId, label, cls, entrantId) {
 		const b = node('button', 'btn btn-sm ' + cls, label);
@@ -468,6 +564,18 @@
 					p_advanced_entrant_id: button.dataset.entrant,
 					p_advance_reason: 'walkover'
 				}));
+			return;
+		}
+
+		if (button.dataset.act === 'enter') {
+			entering = id;
+			render();
+			return;
+		}
+
+		if (button.dataset.act === 'clear-score') {
+			write('Clearing the score', () =>
+				supabaseClient.rpc('tdc_clear_match_override', { p_match_id: matchOf(id) }));
 			return;
 		}
 
