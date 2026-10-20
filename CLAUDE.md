@@ -286,7 +286,20 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
 - An unreached slot says where its player will come from rather than sitting blank — a draw sheet is readable before it is played, and that is most of what it is for.
 - The redraw button does not write its own warning. It calls `tdc_generate_draw`, and if the database refuses with the already-started message, **that message is what the person is asked to confirm** — so the warning they read is the real count rather than a guess maintained in two places.
 - Rounds are named from the end (Final, Semi-finals, Quarter-finals, then "Round n"), so the naming survives any field size.
-- **Not here yet:** entering a match score without frames (a TD-run match may have none), coordinator approval, the public read-only view for players who are not signed in, and double elimination.
+
+### Overrides and officials (migration `20261020100000`)
+Built to `claude/approval-and-corrections.md`, which is the design record for all of this.
+- **`private.tdc_can_edit_match` now knows competition roles exist.** It never did, so a tournament director who was neither a player in the match nor staff at the venue could not touch their own tournament's matches — principle 8 was false in the database. One extra branch in the one function, per principle 4, joining through `tbl_tournament_fixtures` because a match belongs to a competition through its fixture and not through a column.
+- **`tdc_add_competition_role` / `tdc_remove_competition_role` / `tdc_competition_officials`.** Until now the only insert into `tbl_competition_roles` anywhere was the director created inside `tdc_create_tournament`, so referees and scorers could not be appointed at all. Appointing is gated on `tdc_can_run_tournament`, so a scorer (rank 30) cannot appoint anybody — which is what the ranks are for. Removing the only director of a venue-less tournament is refused: nobody would ever be able to run it again.
+- **`tbl_match_result_override`** is the design note's table, unchanged: one per match, `reason` mandatory, `counted_home` / `counted_away` recording what the frames said at the time, and `card_version` recording what it was set against.
+  - **Reading a score is one branch in one place** — `private.tdc_match_score`: the override if there is one, otherwise count the frames. Everything reads through it.
+  - **Only somebody running the competition the match belongs to.** A social match has no coordinator and therefore no override, which is right: nobody's word outranks the two people who played it.
+  - **Refused on a match still `in_progress`**, allowed on one never played. The second is the TD-run case this exists for — requiring `complete` first would make a TD pretend to play it. *(Settled 20 Oct from the note's own instinct.)*
+  - **A later frame edit makes an override stale, never drops it.** A coordinator overriding a score is deliberately overruling the frames, so the page flags it for review. *(Same.)*
+  - Clearing it restores the counted score, which a score written onto the match could never do.
+- `tdc_fixture_outcome` and `tdc_tournament_draw` both read through `tdc_match_score`, so a TD's score advances the bracket and the draw shows it labelled as set by hand rather than disguised as a result.
+- Verified on a throwaway Postgres: a TD who is neither player nor venue staff can edit, a stranger cannot, a referee can edit but can neither appoint nor override; an override beats the frames and advances the bracket from them, keeps what the frames said, goes stale on a card change without being dropped, and is reversible; reasonless, mid-match and non-coordinator overrides are all refused.
+- **Not here yet:** coordinator approval itself (`coordinator_approval` and `both` still behave like a dispute window), the role-rank conflict rule on frame writes (a lower rank overwriting a higher rank's frame), any page for officials or overrides, the public read-only view, and double elimination.
 
 
 ## Database conventions
