@@ -68,6 +68,21 @@ extraScripts:
 		<button type="button" class="btn-primary" id="generate">Generate the Draw</button>
 	</div>
 
+	{% comment %}
+		Shown when the draw no longer matches its own results, which happens
+		when a score is corrected upstream. It carries the exact list of what
+		will change, because tdc_cascade_draw rehearses the whole thing before
+		anything is applied.
+	{% endcomment %}
+	<div class="panel" id="drift" hidden>
+		<h2>The draw has moved on</h2>
+		<p class="muted" id="drift-intro"></p>
+		<ul id="drift-list"></ul>
+		<div class="btn-row">
+			<button type="button" class="btn btn-primary btn-sm" id="drift-apply">Update the draw</button>
+		</div>
+	</div>
+
 	<!-- The bracket itself, built by tournament-bracket.js -->
 	<div class="bracket-scroll">
 		<div class="bracket" id="bracket"></div>

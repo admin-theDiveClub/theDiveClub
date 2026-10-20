@@ -25,7 +25,9 @@
 		thirdPlace: el('third-place'), generate: el('generate'),
 		bracket: el('bracket'), actions: el('draw-actions'),
 		resolve: el('resolve'), redraw: el('redraw'),
-		status: el('page-status'), entrantsLink: el('entrants-link')
+		status: el('page-status'), entrantsLink: el('entrants-link'),
+		drift: el('drift'), driftIntro: el('drift-intro'),
+		driftList: el('drift-list'), driftApply: el('drift-apply')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -295,6 +297,51 @@
 		return true;
 	}
 
+	// ─── When the draw disagrees with its own results ───
+	// A rehearsal, not an estimate: tdc_cascade_draw does the whole thing in a
+	// subtransaction and rolls it back, so the list below is exactly what
+	// pressing the button will do, knock-on effects included.
+	async function checkDrift() {
+		els.drift.hidden = true;
+		if (readOnly || !fixtures.length) return;
+
+		const { data, error } = await supabaseClient.rpc('tdc_cascade_draw', {
+			p_tournament_id: tournamentId,
+			p_apply: false
+		});
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+
+		const changes = (data && data.changes) || [];
+		if (!changes.length) return;
+
+		const detached = (data && data.detached) || [];
+		const played = detached.filter((d) => d.frames > 0);
+
+		const bits = [changes.length === 1 ? 'One place in the draw changes.'
+			: changes.length + ' places in the draw change.'];
+		if (played.length) {
+			// The thing a TD actually needs to know before pressing it.
+			bits.push(played.length === 1
+				? 'One match that has already been played is between the wrong two people and comes out of the draw. It is kept, not deleted.'
+				: played.length + ' matches that have already been played are between the wrong people and come out of the draw. They are kept, not deleted.');
+		}
+		els.driftIntro.textContent = bits.join(' ');
+
+		els.driftList.replaceChildren(...changes.map((c) => {
+			const where = c.bracket === 'main' ? c.round + '-' + c.position
+				: c.bracket.replace('_', ' ') + ' ' + c.position;
+			return node('li', null, `${where}: ${c.was} becomes ${c.now}`);
+		}));
+
+		els.drift.hidden = false;
+	}
+
+	els.driftApply.addEventListener('click', () => {
+		if (!confirm('Update the draw to match the results as they now stand?')) return;
+		write('Updating the draw', () =>
+			supabaseClient.rpc('tdc_cascade_draw', { p_tournament_id: tournamentId, p_apply: true }));
+	});
+
 	// ─── Writing ───
 	// One at a time, resolve after, then re-read. The server owns the bracket.
 	async function write(what, fn) {
@@ -313,7 +360,10 @@
 		await resolve();
 		const ok = await loadDraw();
 		busy = false;
-		if (ok) TDC.status(els.status, '', '');
+		if (ok) {
+			TDC.status(els.status, '', '');
+			await checkDrift();
+		}
 		return ok;
 	}
 
@@ -478,6 +528,7 @@
 			if (fixtures.length) {
 				await resolve();
 				await loadDraw();
+				await checkDrift();
 			} else {
 				await describeField();
 			}
