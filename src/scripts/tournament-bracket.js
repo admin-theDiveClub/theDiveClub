@@ -144,6 +144,19 @@
 		}
 		if (tags.childElementCount) box.append(tags);
 
+		// The way into the match, for everybody. It was inside the TD's
+		// controls until 20 Oct, which meant a player looking at the draw
+		// could see their own final and had no way to open it — they had to
+		// go round through /matches/. The match page decides for itself what
+		// a visitor may do there.
+		if (f.match_id) {
+			const open = node('a', 'btn btn-secondary btn-sm', 'Open match');
+			open.href = '/match/?id=' + encodeURIComponent(f.match_id);
+			const row = node('div', 'bracket-actions');
+			row.append(open);
+			box.append(row);
+		}
+
 		if (!readOnly) {
 			box.append(entering === f.fixture_id ? scoreForm(f) : controls(f));
 		}
@@ -156,10 +169,6 @@
 		const both = f.home_entrant_id && f.away_entrant_id;
 
 		if (f.match_id) {
-			const open = node('a', 'btn btn-secondary btn-sm', 'Open match');
-			open.href = '/match/?id=' + encodeURIComponent(f.match_id);
-			row.append(open);
-
 			// Taking a hand-set score back off, which restores the counted
 			// frames underneath it.
 			if (f.overridden) {
@@ -383,6 +392,10 @@
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		fixtures = data || [];
 		render();
+		// The set of live matches changes as rounds resolve, so the
+		// subscription is re-pointed after every read rather than fixed at
+		// load. It is a no-op when the set has not changed.
+		startLiveUpdates();
 		return true;
 	}
 
@@ -610,6 +623,107 @@
 				}));
 		}
 	});
+
+	// ─────────────────────────────────────────────────────────────────
+	// Live updates
+	//
+	// A TD at the desk should see a score move as it is tapped at the table.
+	// Same two tables the match page watches, and the same reasoning: every
+	// frame change bumps card_version on tbl_matches, so one row carries a
+	// frame, a correction and a removal alike; agreeing writes only an event
+	// and touches nothing on the match, so tbl_match_events is watched too.
+	//
+	// Only the matches still live are subscribed to. A fixture nobody has
+	// approved can still change; one that has been approved is terminal, and
+	// a bracket of thirty-two finished matches has nothing to listen for.
+	//
+	// Realtime is for immediacy, not correctness. Events are missed while a
+	// phone is locked or the socket is down, so the page also re-reads when
+	// it is shown again and when the connection returns — that is what makes
+	// a missed event harmless rather than a bracket that quietly went stale.
+	// ─────────────────────────────────────────────────────────────────
+
+	let liveChannel = null;
+	let liveKey = '';          // which matches the current channel covers
+	let liveTimer = null;
+
+	const liveMatchIds = () => fixtures
+		.filter((f) => f.match_id && f.card_state !== 'approved')
+		.map((f) => f.match_id);
+
+	let liveSet = new Set();
+
+	// payload is null when this is a catch-up rather than a pushed event.
+	function onLiveChange(payload) {
+		// Checked here as well as in the filter, because the unfiltered
+		// fallback below hears about every match on the site.
+		if (payload && payload.new) {
+			const id = payload.new.id || payload.new.match_id;
+			if (id && !liveSet.has(id)) return;
+		}
+
+		// Several frames land in a burst while somebody clears a rack, and a
+		// typed-in score must not be thrown away under the TD's hands.
+		clearTimeout(liveTimer);
+		liveTimer = setTimeout(() => {
+			if (busy || entering) return;
+			loadDraw().then(() => { if (!readOnly) checkDrift(); });
+		}, 400);
+	}
+
+	function startLiveUpdates() {
+		const ids = liveMatchIds();
+		const key = ids.slice().sort().join(',');
+		if (key === liveKey) return;      // nothing has changed about who to watch
+
+		stopLiveUpdates();
+		liveKey = key;
+		liveSet = new Set(ids);
+		if (!ids.length) return;
+
+		// A server-side filter is the right thing and keeps the socket quiet,
+		// but the first round of a 64 draw is 32 ids in one filter string.
+		// Rather than find out where the length limit is on a club night, a
+		// large field drops the filter and sorts it out on arrival instead.
+		const few = ids.length <= 20;
+		const matchFilter  = few ? { filter: 'id=in.(' + ids.join(',') + ')' } : {};
+		const eventFilter  = few ? { filter: 'match_id=in.(' + ids.join(',') + ')' } : {};
+
+		liveChannel = supabaseClient
+			.channel('draw:' + tournamentId)
+			.on('postgres_changes',
+				Object.assign({ event: 'UPDATE', schema: 'public', table: 'tbl_matches' }, matchFilter),
+				onLiveChange)
+			.on('postgres_changes',
+				Object.assign({ event: 'INSERT', schema: 'public', table: 'tbl_match_events' }, eventFilter),
+				onLiveChange)
+			.subscribe((status) => {
+				if (status === 'SUBSCRIBED') return;
+				// Not fatal: the draw still works, it just stops being live
+				// until the page is shown again. Said out loud rather than
+				// left as a screen that quietly stops updating.
+				if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+					console.error('[' + AREA + '] live updates are not running (' + status + ').');
+				}
+			});
+	}
+
+	function stopLiveUpdates() {
+		clearTimeout(liveTimer);
+		if (!liveChannel) return;
+		supabaseClient.removeChannel(liveChannel);
+		liveChannel = null;
+		liveKey = '';
+	}
+
+	// Coming back to the page, or back online, is when a missed event is
+	// caught up. Both re-read rather than trusting the socket.
+	document.addEventListener('visibilitychange', () => {
+		if (document.visibilityState !== 'visible') return;
+		onLiveChange();
+	});
+	window.addEventListener('online', onLiveChange);
+	window.addEventListener('pagehide', stopLiveUpdates);
 
 	// ─── Start ───
 	(async () => {
