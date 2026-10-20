@@ -294,12 +294,29 @@ Built to `claude/approval-and-corrections.md`, which is the design record for al
 - **`tbl_match_result_override`** is the design note's table, unchanged: one per match, `reason` mandatory, `counted_home` / `counted_away` recording what the frames said at the time, and `card_version` recording what it was set against.
   - **Reading a score is one branch in one place** — `private.tdc_match_score`: the override if there is one, otherwise count the frames. Everything reads through it.
   - **Only somebody running the competition the match belongs to.** A social match has no coordinator and therefore no override, which is right: nobody's word outranks the two people who played it.
-  - **Refused on a match still `in_progress`**, allowed on one never played. The second is the TD-run case this exists for — requiring `complete` first would make a TD pretend to play it. *(Settled 20 Oct from the note's own instinct.)*
+  - **Corrected 20 Oct, migration `20261020110000`:** the original refused an override on a match whose status is `in_progress`. That read the note's open question 5 too literally — `in_progress` does not mean people are at the table, it means frames exist and the card has not been submitted, which is exactly the state a TD-run match sits in. Combined with `tdc_submit_card` accepting only the players in a match, it left a TD able to record frames, unable to submit, and unable to override: a dead end in the main flow. The refusal is gone; the page asks instead, per the house rule of confirm-and-repair rather than block. A reason and coordinator rights are still required.
   - **A later frame edit makes an override stale, never drops it.** A coordinator overriding a score is deliberately overruling the frames, so the page flags it for review. *(Same.)*
   - Clearing it restores the counted score, which a score written onto the match could never do.
 - `tdc_fixture_outcome` and `tdc_tournament_draw` both read through `tdc_match_score`, so a TD's score advances the bracket and the draw shows it labelled as set by hand rather than disguised as a result.
 - Verified on a throwaway Postgres: a TD who is neither player nor venue staff can edit, a stranger cannot, a referee can edit but can neither appoint nor override; an override beats the frames and advances the bracket from them, keeps what the frames said, goes stale on a card change without being dropped, and is reversible; reasonless, mid-match and non-coordinator overrides are all refused.
+- **Known, not yet fixed — a TD cannot finish a card.** `tdc_submit_card` requires `private.tdc_my_player_on_match`, so only a player in the match may submit. In the core case — the TD runs it and neither player uses the app — the TD can record frames but cannot submit, so the match never reaches `complete`. Found by audit on 20 Oct; predates the tournament work but blocks it. The override is the way through for now. The fix belongs with the publishing work below, because who may finish a card and who may publish it are the same question.
 - **Not here yet:** coordinator approval itself (`coordinator_approval` and `both` still behave like a dispute window), the role-rank conflict rule on frame writes (a lower rank overwriting a higher rank's frame), any page for officials or overrides, the public read-only view, and double elimination.
+
+### Publishing — the shape UV described, 20 Oct
+Not built. Recorded here so it is not re-derived.
+- The bracket must advance on **published**, not recorded. It currently advances on `status = 'complete'`, which for a dispute window happens at submission — 48 hours early. Found by audit 20 Oct.
+- UV's three cases map onto settings that already exist rather than anything new:
+
+| Case | Settings | Published when |
+|---|---|---|
+| Player results publish immediately | `approval_mode: none` + `score_entry_mode: players` | On submission; the card locks |
+| Only the TD publishes | `approval_mode: coordinator_approval` + `players` | On the TD's approve, or his override-and-publish |
+| TD enters everything | `score_entry_mode: td_only` + override | On the override |
+
+- So publishing is `approval_mode` finally meaning what it says, plus an `approved` card event retired by `card_version` like a submission — not a new concept.
+- **An override by the TD publishes**, because the TD is the approver; overriding is implicitly approving.
+- `score_entry_mode` is validated but **enforced nowhere**. `td_only` currently restricts nothing.
+- **Open, asked 20 Oct:** does `dispute_window` apply inside a tournament at all (it is offerable today and would stall a bracket for 48 hours), and what happens when a TD changes a result whose downstream match has already been played — cascade, warn and confirm, or refuse. The second was put to UV in the previous session and never answered.
 
 
 ## Database conventions
