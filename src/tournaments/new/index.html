@@ -53,6 +53,27 @@ extraScripts:
 			<input type="number" id="t-fee" inputmode="numeric" min="0" value="0">
 			<div class="hint">0 is free to enter.</div>
 		</div>
+
+		{% comment %}
+			How people get in. Both of these can be changed later on the
+			entrants page for as long as entries are open — they are here so a
+			TD who already knows can say so once.
+		{% endcomment %}
+		<div class="field">
+			<label for="t-entry-mode">Entries</label>
+			<select id="t-entry-mode">
+				<option value="td_only">I add everybody myself</option>
+				<option value="interested">Anyone can mark themselves interested</option>
+				<option value="self_confirm">Anyone can confirm their own entry</option>
+			</select>
+			<div class="hint" id="entry-mode-hint"></div>
+		</div>
+
+		<div class="field">
+			<label for="t-paid-confirms">Paid also confirms</label>
+			<input type="checkbox" id="t-paid-confirms">
+			<div class="hint">Ticking somebody as paid confirms them too. Leave this off if you confirm on something other than payment.</div>
+		</div>
 	</details>
 
 	<!-- The ruleset, built by tournament-new.js from TDCMatchDef -->

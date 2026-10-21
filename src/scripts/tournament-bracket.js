@@ -794,6 +794,11 @@
 		const row = (mine || []).find((t) => t.id === tournamentId);
 		readOnly = !row || !row.i_run_it;
 
+		// The entrant list is the TD's view as of 21 Oct — it carries payment
+		// status and their private notes — so it would send a player straight
+		// back here. Hidden rather than left to bounce them.
+		if (readOnly) els.entrantsLink.hidden = true;
+
 		if (!await loadDraw()) return;
 		await loadStatus();
 

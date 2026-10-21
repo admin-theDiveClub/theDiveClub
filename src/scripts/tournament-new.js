@@ -37,6 +37,8 @@
 	const els = {
 		name: el('t-name'), format: el('t-format'), formatHint: el('format-hint'),
 		when: el('t-when'), max: el('t-max'), fee: el('t-fee'),
+		entryMode: el('t-entry-mode'), entryModeHint: el('entry-mode-hint'),
+		paidConfirms: el('t-paid-confirms'),
 		main: el('settings-main'), rest: el('settings-rest'),
 		create: el('create-btn'), status: el('create-status')
 	};
@@ -66,6 +68,22 @@
 	function showFormatHint() {
 		els.formatHint.textContent = FORMAT_HINT[els.format.value] || '';
 	}
+
+	// ─── How people get in ───
+	// The same three sentences the entrants page shows, because it is the same
+	// setting and a TD should not have to work out that they match.
+	const ENTRY_HINT = {
+		td_only: 'Nobody can put themselves down. You search for them and add them.',
+		interested: 'Players can mark themselves interested. You confirm them, on whatever basis you use.',
+		self_confirm: 'Players can confirm their own entry. Right for a free tournament, or one paid for at the desk.'
+	};
+
+	function showEntryHint() {
+		els.entryModeHint.textContent = ENTRY_HINT[els.entryMode.value] || '';
+	}
+
+	els.entryMode.addEventListener('change', showEntryHint);
+	showEntryHint();
 
 	// A knockout needs somebody to advance, so a draw cannot be allowed in one.
 	// The ruleset is corrected rather than the create button refused: the person
@@ -260,7 +278,9 @@
 			p_venue_id: null,
 			p_starts_at: startsAt,
 			p_max_entrants: maxEntrants,
-			p_entry_fee_credits: fee
+			p_entry_fee_credits: fee,
+			p_entry_mode: els.entryMode.value,
+			p_paid_confirms: els.paidConfirms.checked
 		});
 
 		if (error) {

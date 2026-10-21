@@ -21,6 +21,41 @@ extraScripts:
 	<h1 id="t-name">Entrants</h1>
 	<p class="muted" id="t-meta"></p>
 
+	{% comment %}
+		How people get in. Three settings, which is the whole of the entry
+		design: who may put themselves down, and whether the TD's own criterion
+		for confirming somebody is payment.
+
+		These stay changeable for as long as the tournament is taking entries,
+		unlike the draw settings on the bracket page — a TD who opens entries
+		and then decides to close them early is an ordinary thing to do.
+	{% endcomment %}
+	<div class="panel" id="entry-settings" hidden>
+		<h2>How people get in</h2>
+
+		<div class="field">
+			<label for="entry-mode">Entries</label>
+			<select id="entry-mode">
+				<option value="td_only">I add everybody myself</option>
+				<option value="interested">Anyone can mark themselves interested</option>
+				<option value="self_confirm">Anyone can confirm their own entry</option>
+			</select>
+			<div class="hint" id="entry-mode-hint"></div>
+		</div>
+
+		<div class="field">
+			<label for="paid-confirms">Paid also confirms</label>
+			<input type="checkbox" id="paid-confirms">
+			<div class="hint">Ticking somebody as paid confirms them too. Leave this off if you confirm on something other than payment.</div>
+		</div>
+
+		<div class="field">
+			<label for="entry-link">The link to share</label>
+			<input type="text" id="entry-link" readonly>
+			<div class="hint" id="entry-link-hint">Entering needs an account with a confirmed email address.</div>
+		</div>
+	</div>
+
 	<div class="field" id="search-field">
 		<label for="entrant-search">Add an entrant</label>
 		<input type="search" id="entrant-search" autocomplete="off" placeholder="Search by name">
@@ -39,6 +74,7 @@ extraScripts:
 					<th>Player</th>
 					<th>Status</th>
 					<th>Paid</th>
+					<th>When</th>
 					<th></th>
 				</tr>
 			</thead>

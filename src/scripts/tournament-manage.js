@@ -34,6 +34,9 @@
 		count: el('entrant-count'), empty: el('entrant-empty'),
 		seedActions: el('seed-actions'),
 		seedRandom: el('seed-random'), seedClear: el('seed-clear'),
+		entrySettings: el('entry-settings'), entryMode: el('entry-mode'),
+		entryModeHint: el('entry-mode-hint'), paidConfirms: el('paid-confirms'),
+		entryLink: el('entry-link'),
 		status: el('page-status'), drawLink: el('draw-link'),
 		officialAdd: el('official-add'), officialSearch: el('official-search'),
 		officialRole: el('official-role'), officialResults: el('official-results'),
@@ -52,11 +55,9 @@
 	let entrants = [];
 	let officials = [];
 	let busy = false;       // one write at a time, so two clicks cannot race
-	// Anyone signed in may read an entrant list; only the people running the
-	// tournament may change one. This is checked before the first render and
-	// read by every render after it, so a re-read cannot hand the controls
-	// back. The database refuses the write either way — this is the courtesy,
-	// not the guard.
+	// Only the people running the tournament get here at all now — see the
+	// redirect at the bottom. Kept because every control still asks it, so
+	// nothing is enabled by a re-read going wrong.
 	let readOnly = false;
 
 	const node = (tag, cls, text) => {
@@ -70,7 +71,7 @@
 	async function loadTournament() {
 		const { data, error } = await supabaseClient
 			.from('tbl_tournaments')
-			.select('id, name, format, status, starts_at, max_entrants, entry_fee_credits')
+			.select('id, name, format, status, starts_at, max_entrants, entry_fee_credits, entry_mode, paid_confirms')
 			.eq('id', tournamentId)
 			.maybeSingle();
 
@@ -137,6 +138,23 @@
 		return box;
 	}
 
+	// When they paid. UV asked for this beside the tick, and it answers the
+	// question a tick cannot: whether somebody paid at the desk this evening or
+	// three weeks ago when entries opened.
+	function paidWhen(e) {
+		if (!e.paid_at) return '';
+		const d = new Date(e.paid_at);
+		if (isNaN(d)) { TDC.error(AREA, 'unreadable payment time: ' + e.paid_at); return ''; }
+
+		const midnight = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+		const days = Math.round((midnight(new Date()) - midnight(d)) / 86400000);
+		const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+		if (days === 0) return time;
+		if (days === 1) return 'Yesterday ' + time;
+		return d.toLocaleDateString([], { day: 'numeric', month: 'short' });
+	}
+
 	function seedCell(e) {
 		const input = document.createElement('input');
 		input.type = 'number';
@@ -182,7 +200,7 @@
 		remove.disabled = readOnly;
 		actions.append(remove);
 
-		tr.append(seed, who, status, paid, actions);
+		tr.append(seed, who, status, paid, node('td', 'sub', paidWhen(e)), actions);
 		return tr;
 	}
 
@@ -198,6 +216,60 @@
 
 		els.rows.replaceChildren(...entrants.map(row));
 	}
+
+	// ─────────────────────────────────────────────────────────────────
+	// How people get in
+	//
+	// Both settings go through tdc_update_tournament, the one function that
+	// changes a tournament, rather than writing the columns from here.
+	// ─────────────────────────────────────────────────────────────────
+
+	const ENTRY_HINT = {
+		td_only: 'Nobody can put themselves down. Search above to add them.',
+		interested: 'Players can mark themselves interested. You confirm them, on whatever basis you use.',
+		self_confirm: 'Players can confirm their own entry. Right for a free tournament, or one paid for at the desk.'
+	};
+
+	function renderEntrySettings(t) {
+		els.entrySettings.hidden = readOnly;
+		els.entryMode.value = t.entry_mode;
+		els.entryMode.disabled = readOnly;
+		els.entryModeHint.textContent = ENTRY_HINT[t.entry_mode] || '';
+		els.paidConfirms.checked = !!t.paid_confirms;
+		els.paidConfirms.disabled = readOnly;
+
+		// The poster page is where this will point once it exists — it is the
+		// one page meant to be opened by somebody who is not signed in. Until
+		// then the draw is the honest destination, because it is what a shared
+		// link actually reaches today.
+		els.entryLink.value = location.origin
+			+ '/tournaments/bracket/?t=' + encodeURIComponent(tournamentId);
+	}
+
+	// Changing a setting re-reads the tournament rather than trusting the
+	// control, for the same reason the entrant list does.
+	async function saveEntrySetting(what, args) {
+		if (busy) return;
+		busy = true;
+		TDC.status(els.status, what + '…', '');
+
+		const { error } = await supabaseClient.rpc('tdc_update_tournament',
+			Object.assign({ p_tournament_id: tournamentId }, args));
+
+		busy = false;
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); }
+		const t = await loadTournament();
+		if (t) renderEntrySettings(t);
+		if (!error) TDC.status(els.status, '', '');
+	}
+
+	els.entryMode.addEventListener('change', () =>
+		saveEntrySetting('Saving', { p_entry_mode: els.entryMode.value }));
+
+	els.paidConfirms.addEventListener('change', () =>
+		saveEntrySetting('Saving', { p_paid_confirms: els.paidConfirms.checked }));
+
+	els.entryLink.addEventListener('focus', () => els.entryLink.select());
 
 	// ─────────────────────────────────────────────────────────────────
 	// Who runs it
@@ -534,22 +606,28 @@
 		});
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
 
-		readOnly = !mayRun;
-
-		if (readOnly) {
-			els.search.disabled = true;
-			document.getElementById('search-field').hidden = true;
-			// The whole add block goes, role picker included: offering a role
-			// to somebody who cannot appoint anyone is furniture.
-			els.officialAdd.hidden = true;
-			TDC.status(els.status,
-				'You are not running this tournament, so this list can be read but not changed.', '');
+		// This page used to render read-only for anybody signed in. It cannot
+		// any more: tdc_tournament_entrants is gated as of 21 Oct, because it
+		// carries payment status and the TD's private notes, so a player now
+		// gets an empty list — which would read as "nobody has entered yet".
+		//
+		// Sending them to the draw instead, which is the page for somebody who
+		// is in the tournament rather than running it. A player only lands here
+		// from an old link or a typed address; the tournament list has pointed
+		// them at the draw since 20 Oct.
+		if (!mayRun) {
+			readOnly = true;
+			TDC.status(els.status, 'Taking you to the draw — the entrant list is for whoever is running this.', '');
+			location.replace('/tournaments/bracket/?t=' + encodeURIComponent(tournamentId));
+			return;
 		}
 
+		renderEntrySettings(tournament);
+
 		if (!await loadEntrants()) return;
-		if (!readOnly) await loadRoleTypes();
+		await loadRoleTypes();
 		await loadOfficials();
 
-		if (!readOnly) els.search.focus();
+		els.search.focus();
 	})();
 })();
