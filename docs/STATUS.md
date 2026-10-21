@@ -6,6 +6,8 @@ Updated at every milestone, in the same breath as giving UV a commit subject. Ne
 
 Last updated: **21 Oct 2026**
 
+**Database is current.** All migrations through `20261021170000` are applied to `thediveclub-prod`, verified 21 Oct against `supabase_migrations.schema_migrations` and by checking the function bodies — not taken on trust.
+
 ---
 
 ## 1. Waiting on UV
@@ -14,12 +16,11 @@ Nothing here can be done by Claude.
 
 | | What | Why it matters |
 |---|---|---|
-| 1 | **Apply and push migrations `20261021150000`, `160000`, `170000`** | Written and tested 21 Oct, not yet confirmed applied. `160000` fixes a live bug: sending a card back did nothing |
-| 2 | **Play through sections 8, 11, 12 and 13 of the test plan** | Several builds are proven only against a scratch database. The logic is verified; a real league night is not |
-| 3 | **Retest the walk-in merge via `/staff/link/`** | The one thing left that could lose real data. Changed again on 21 Oct by the merge fix, so earlier testing no longer counts |
-| 4 | **Enable the signup bot check** (Turnstile or hCaptcha) | Self-entry currently rests on a confirmed email address alone. The bot check is the other half of "a verified account" |
-| 5 | **`git rm src/navLinks.json`** | A leftover. Claude cannot delete files on the machine |
-| 6 | **Hand over the exact black-alpha values** for the refreshed branding | The UI chat will otherwise guess, and guessing at brand colour is worse than waiting |
+| 1 | **Play through sections 8, 11, 12 and 13 of the test plan** | Several builds are proven only against a scratch database. The logic is verified; a real league night is not |
+| 2 | **Retest the walk-in merge via `/staff/link/`** | The one thing left that could lose real data. Changed again on 21 Oct by the merge fix, so earlier testing no longer counts |
+| 3 | **Enable the signup bot check** (Turnstile or hCaptcha) | Self-entry currently rests on a confirmed email address alone. The bot check is the other half of "a verified account" |
+| 4 | **`git rm src/navLinks.json`** | A leftover. Claude cannot delete files on the machine |
+| 5 | **Hand over the exact black-alpha values** for the refreshed branding | The UI chat will otherwise guess, and guessing at brand colour is worse than waiting. UV, 21 Oct: agreed, not yet supplied |
 
 ---
 
@@ -104,3 +105,4 @@ Real, small, and none of them blocking.
 - **Date anything that could go stale.** A line without a date is read as current.
 - **Move, do not copy.** An item that is done comes out of this document; if the reasoning is worth keeping it goes to `docs/DECISIONS.md`, and if it is a built system it goes to `CLAUDE.md`.
 - **This file is the agenda. `CLAUDE.md` is the record. `docs/DECISIONS.md` is the why.** Three files, three jobs, no overlap.
+- **The long backlog is `claude/stats-todo.md`** in the project — someday work, the schema still to come, deferred refinements. The split: if it is active, blocked, or waiting on UV it belongs here; if it is someday, it belongs there. When something there becomes active, **move** it here rather than copying it.
