@@ -94,6 +94,33 @@ extraScripts:
 		the only way to reach "cancelled" and the way to close entries early.
 		Setting it by hand makes it stick; the link hands it back.
 	{% endcomment %}
+	{% comment %}
+		How the draw runs, changeable while it runs. These were only ever
+		settable in the setup panel above, which disappears the moment a draw
+		exists — so a TD who wanted to stop automatic progression halfway
+		through a night had to clear the draw. They live here too now, and
+		take effect on the next resolve.
+	{% endcomment %}
+	<div class="toolbar" id="run-row" hidden>
+		<div class="field">
+			<label for="t-progression">Moving between rounds</label>
+			<select id="t-progression">
+				<option value="automatic">Winners advance automatically</option>
+				<option value="manual">I will move people myself</option>
+			</select>
+			<div class="hint">You can always move anybody by hand, in either setting.</div>
+		</div>
+
+		<div class="field">
+			<label for="t-create-matches">Starting matches</label>
+			<select id="t-create-matches">
+				<option value="automatic">Start as soon as both players are known</option>
+				<option value="manual">I will start each one when a table is free</option>
+			</select>
+			<div class="hint" id="create-matches-hint"></div>
+		</div>
+	</div>
+
 	<div class="toolbar" id="status-row" hidden>
 		<div class="field">
 			<label for="t-status">Status</label>

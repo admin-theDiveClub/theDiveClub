@@ -55,6 +55,29 @@ extraScripts:
 		</div>
 
 		{% comment %}
+			How the draw runs. Both are read by the draw when it is generated
+			and both stay changeable on the draw page afterwards — they are
+			here so a TD who already knows says it once.
+		{% endcomment %}
+		<div class="field">
+			<label for="t-progression">Moving between rounds</label>
+			<select id="t-progression">
+				<option value="automatic">Winners advance automatically</option>
+				<option value="manual">I will move people myself</option>
+			</select>
+			<div class="hint">You can always move anybody by hand, in either setting.</div>
+		</div>
+
+		<div class="field">
+			<label for="t-create-matches">Starting matches</label>
+			<select id="t-create-matches">
+				<option value="automatic">Start as soon as both players are known</option>
+				<option value="manual">I will start each one when a table is free</option>
+			</select>
+			<div class="hint">On "I will start each one", nobody can score a match until you start it.</div>
+		</div>
+
+		{% comment %}
 			How people get in. Both of these can be changed later on the
 			entrants page for as long as entries are open — they are here so a
 			TD who already knows can say so once.

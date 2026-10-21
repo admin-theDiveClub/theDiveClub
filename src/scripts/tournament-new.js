@@ -39,6 +39,7 @@
 		when: el('t-when'), max: el('t-max'), fee: el('t-fee'),
 		entryMode: el('t-entry-mode'), entryModeHint: el('entry-mode-hint'),
 		paidConfirms: el('t-paid-confirms'),
+		progression: el('t-progression'), createMatches: el('t-create-matches'),
 		main: el('settings-main'), rest: el('settings-rest'),
 		create: el('create-btn'), status: el('create-status')
 	};
@@ -280,7 +281,9 @@
 			p_max_entrants: maxEntrants,
 			p_entry_fee_credits: fee,
 			p_entry_mode: els.entryMode.value,
-			p_paid_confirms: els.paidConfirms.checked
+			p_paid_confirms: els.paidConfirms.checked,
+			p_progression: els.progression.value,
+			p_create_matches: els.createMatches.value
 		});
 
 		if (error) {

@@ -27,6 +27,8 @@
 		resolve: el('resolve'), redraw: el('redraw'),
 		status: el('page-status'), entrantsLink: el('entrants-link'),
 		statusRow: el('status-row'), statusSelect: el('t-status'), statusHint: el('status-hint'),
+		runRow: el('run-row'), tProgression: el('t-progression'),
+		tCreateMatches: el('t-create-matches'), createMatchesHint: el('create-matches-hint'),
 		drift: el('drift'), driftIntro: el('drift-intro'),
 		driftList: el('drift-list'), driftApply: el('drift-apply')
 	};
@@ -96,6 +98,17 @@
 		return 'Round ' + round;
 	}
 
+	// How a fixture is named to a person. "Round 1 · Match 1", not "1-1" —
+	// the short form is the schema's way of identifying a fixture, and it was
+	// leaking into everything a TD reads. Said in one place so the bracket,
+	// the swap warning and the drift list cannot drift apart.
+	function fixtureName(bracket, round, position) {
+		if (bracket && bracket !== 'main') {
+			return bracket.replace(/_/g, ' ') + ' · Match ' + position;
+		}
+		return `Round ${round} · Match ${position}`;
+	}
+
 	// ─── A side of a fixture ───
 	function side(f, which) {
 		const name = which === 'home' ? f.home_name : f.away_name;
@@ -109,39 +122,68 @@
 		const row = node('div', 'bracket-side');
 		if (f.winner_entrant_id && id && f.winner_entrant_id === id) row.classList.add('won');
 
+		// The row is a grid of three fixed tracks — swap, name, score — rather
+		// than a flex line. 21 Oct: as a flex line the name was a shrinkable
+		// item sharing space with the button, and on UV's screen it collapsed
+		// to 0 x 20 and vanished, with the frame count left looking like the
+		// player. A 1fr grid track cannot be squeezed to nothing by what sits
+		// beside it, so the name is safe whatever else the row grows.
+		const swapCell = node('div', 'bracket-swap-cell');
+		const nameCell = node('div', 'bracket-name-cell');
+		const scoreCell = node('div', 'bracket-score-cell');
+
+		// What the slot says. Built first so the swap control can be labelled
+		// with it, and so the clickable version below wraps the same text.
+		let label, pending = false;
 		if (name) {
-			if (seed != null) row.append(node('span', 'bracket-seed', String(seed)));
-			row.append(node('span', 'bracket-name', name));
+			label = name;
 		} else if (source === 'winner_of' || source === 'loser_of') {
 			// Say where the player will come from rather than leaving a blank
 			// line: a bracket is readable before it is played, and that is
 			// most of what a draw sheet is for.
-			const from = feederRound != null ? `${feederRound}-${feederPos}` : '?';
-			const word = source === 'winner_of' ? 'Winner' : 'Loser';
-			row.append(node('span', 'bracket-name pending', `${word} of ${from}`));
+			// Short form here on purpose: this sits inside a 15rem column and
+			// the fixture's own heading above already spells the long form
+			// out, so "Winner of R1 · M1" is unambiguous and fits.
+			const from = feederRound != null ? `R${feederRound} · M${feederPos}` : '?';
+			label = (source === 'winner_of' ? 'Winner' : 'Loser') + ' of ' + from;
+			pending = true;
 		} else {
-			row.append(node('span', 'bracket-name pending', 'Bye'));
+			label = 'Bye';
+			pending = true;
+		}
+
+		if (name && seed != null) nameCell.append(node('span', 'bracket-seed', String(seed)));
+
+		// UV, 21 Oct: "keep that swap button as a small icon before each name
+		// and allow clicking directly on the name to change players". So the
+		// name itself is the control for a TD, and a plain span for everybody
+		// else — a read-only viewer must not be given a dead button.
+		if (readOnly) {
+			nameCell.append(node('span', 'bracket-name' + (pending ? ' pending' : ''), label));
+		} else {
+			const nameBtn = node('button', 'bracket-name as-button' + (pending ? ' pending' : ''), label);
+			nameBtn.type = 'button';
+			nameBtn.dataset.act = 'swap';
+			nameBtn.dataset.fixture = f.fixture_id;
+			nameBtn.dataset.side = which;
+			nameBtn.title = 'Change who is in this slot';
+			nameCell.append(nameBtn);
+
+			const icon = node('button', 'bracket-swap', '⇄');
+			icon.type = 'button';
+			icon.dataset.act = 'swap';
+			icon.dataset.fixture = f.fixture_id;
+			icon.dataset.side = which;
+			icon.title = 'Change who is in this slot';
+			icon.setAttribute('aria-label',
+				'Change ' + (name || 'the ' + which + ' slot') + ' in this fixture');
+			swapCell.append(icon);
 		}
 
 		// A score only means something once there is a match behind it.
-		if (f.match_id) row.append(node('span', 'bracket-frames', String(frames ?? 0)));
+		if (f.match_id) scoreCell.append(node('span', 'bracket-frames', String(frames ?? 0)));
 
-		// Changing who is in this slot. UV asked for drag-and-drop from the
-		// entrant list onto a match; this is the same idea with a different
-		// gesture, because a TD at the desk is on a phone and dragging across
-		// a sideways-scrolling bracket is a mis-tap waiting to happen. The
-		// swap function serves either, so it can become a drag later.
-		if (!readOnly) {
-			const change = node('button', 'bracket-swap', '⇄');
-			change.type = 'button';
-			change.dataset.act = 'swap';
-			change.dataset.fixture = f.fixture_id;
-			change.dataset.side = which;
-			change.title = 'Change who is in this slot';
-			change.setAttribute('aria-label',
-				'Change ' + (name || 'the ' + which + ' slot') + ' in this fixture');
-			row.append(change);
-		}
+		row.append(swapCell, nameCell, scoreCell);
 		return row;
 	}
 
@@ -149,7 +191,10 @@
 	function fixture(f) {
 		const box = node('div', 'bracket-fixture');
 		box.dataset.fixture = f.fixture_id;
-		box.append(node('div', 'bracket-no', f.round + '-' + f.position));
+		// UV, 21 Oct: "Instead of just showing 1-2 or 1-1 on matches in the
+		// tournament view, show Round 1 - Match 1". The short form was the
+		// schema's way of naming a fixture, not a person's.
+		box.append(node('div', 'bracket-no', fixtureName(f.bracket, f.round, f.position)));
 		box.append(side(f, 'home'), side(f, 'away'));
 
 		const tags = node('div', 'bracket-tags');
@@ -407,7 +452,7 @@
 	// line comes from the report; nothing is inferred here.
 	function swapWarning(r) {
 		const lines = [];
-		lines.push(`${r.was} out, ${r.now} in — ${r.bracket} ${r.round}-${r.position}.`);
+		lines.push(`${r.was} out, ${r.now} in — ${fixtureName(r.bracket, r.round, r.position)}.`);
 
 		const d = r.detached || {};
 		if (d.match_id) {
@@ -427,7 +472,7 @@
 			lines.push('');
 			lines.push('Further up the draw:');
 			for (const m of moves) {
-				lines.push(`  ${m.bracket} ${m.round}-${m.position}: ${m.was} → ${m.now}`);
+				lines.push(`  ${fixtureName(m.bracket, m.round, m.position)}: ${m.was} → ${m.now}`);
 			}
 		}
 
@@ -443,7 +488,7 @@
 		const also = (r.also_in || []).filter((x) => x.same_round);
 		if (also.length) {
 			lines.push('');
-			lines.push(`Careful: ${r.now} is already in ${also.map((x) => x.bracket + ' ' + x.round + '-' + x.position).join(', ')}, in this same round.`);
+			lines.push(`Careful: ${r.now} is already in ${also.map((x) => fixtureName(x.bracket, x.round, x.position)).join(', ')}, in this same round.`);
 		}
 
 		lines.push('');
@@ -500,6 +545,9 @@
 	function render() {
 		els.setup.hidden = !!fixtures.length || readOnly;
 		els.actions.hidden = !fixtures.length || readOnly;
+		// Re-asserted here because on first load loadTournament runs before
+		// loadDraw, so it decided on an empty fixture list.
+		if (tournament) renderRunSettings(tournament);
 
 		if (!fixtures.length) {
 			els.bracket.replaceChildren();
@@ -551,6 +599,7 @@
 
 		tournament = data;
 		els.name.textContent = data.name;
+		renderRunSettings(data);
 
 		const bits = [FORMAT[data.format] || data.format];
 		if (data.starts_at) {
@@ -634,6 +683,37 @@
 				: { p_tournament_id: tournamentId, p_status: v }));
 	});
 
+	// ─────────────────────────────────────────────────────────────────
+	// How the draw runs, while it is running
+	//
+	// progression and create_matches were settable only in the setup panel,
+	// which is hidden once a draw exists — so changing your mind mid-night
+	// meant clearing the draw. tdc_update_tournament has taken both since
+	// 20261019180000; nothing but the page was missing.
+	// ─────────────────────────────────────────────────────────────────
+
+	function renderRunSettings(t) {
+		// Only once there is a draw: before that the setup panel above asks
+		// the same two questions, and two copies on one screen is a way to
+		// set one and wonder why the other disagrees.
+		els.runRow.hidden = readOnly || !fixtures.length;
+		els.tProgression.value = t.progression;
+		els.tCreateMatches.value = t.create_matches;
+		els.createMatchesHint.textContent = t.create_matches === 'manual'
+			// The thing UV hit: a player could not score because no match
+			// existed, and nothing on the page said so.
+			? 'Nobody can score a match until you press Start match on it.'
+			: 'A match starts on its own once both players are known.';
+	}
+
+	els.tProgression.addEventListener('change', () =>
+		write('Saving', () => supabaseClient.rpc('tdc_update_tournament', {
+			p_tournament_id: tournamentId, p_progression: els.tProgression.value })));
+
+	els.tCreateMatches.addEventListener('change', () =>
+		write('Saving', () => supabaseClient.rpc('tdc_update_tournament', {
+			p_tournament_id: tournamentId, p_create_matches: els.tCreateMatches.value })));
+
 	// ─── When the draw disagrees with its own results ───
 	// A rehearsal, not an estimate: tdc_cascade_draw does the whole thing in a
 	// subtransaction and rolls it back, so the list below is exactly what
@@ -665,8 +745,7 @@
 		els.driftIntro.textContent = bits.join(' ');
 
 		els.driftList.replaceChildren(...changes.map((c) => {
-			const where = c.bracket === 'main' ? c.round + '-' + c.position
-				: c.bracket.replace('_', ' ') + ' ' + c.position;
+			const where = fixtureName(c.bracket, c.round, c.position);
 			return node('li', null, `${where}: ${c.was} becomes ${c.now}`);
 		}));
 
@@ -699,6 +778,10 @@
 		busy = false;
 		if (ok) {
 			TDC.status(els.status, '', '');
+			// The tournament row too, not just the draw: the two run settings
+			// live on it, and a save that did not re-read would leave the
+			// selects showing what was asked for rather than what was stored.
+			await loadTournament();
 			await loadStatus();
 			await checkDrift();
 		}

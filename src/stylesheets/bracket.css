@@ -60,12 +60,33 @@
 	font-variant-numeric: tabular-nums;
 }
 
+/* Three fixed tracks: the swap control, the name, the score.
+ *
+ * A grid rather than a flex line, as of 21 Oct. As flex, the name was a
+ * shrinkable item sharing the row with the swap button, and on a real screen
+ * it collapsed to zero width and disappeared — leaving the frame count
+ * looking like the player's name. A 1fr track cannot be squeezed away by
+ * what sits beside it, however the row grows later. */
 .bracket-side {
-	display: flex;
+	display: grid;
+	grid-template-columns: auto 1fr auto;
 	align-items: baseline;
 	gap: var(--space-2);
 	padding: 0.3rem 0;
 }
+
+/* Collapses to nothing for a read-only viewer, who gets no swap control, so
+   the name still starts at the left edge. */
+.bracket-swap-cell:empty { display: none; }
+
+.bracket-name-cell {
+	min-width: 0;
+	display: flex;
+	align-items: baseline;
+	gap: var(--space-2);
+}
+
+.bracket-score-cell { justify-self: end; }
 .bracket-side + .bracket-side {
 	border-top: 1px solid var(--border-color);
 }
@@ -253,4 +274,43 @@
 	.bracket-swap {
 		border-color: var(--border-color);
 	}
+}
+
+/* ── The name as a control ───────────────────────────────────────── */
+
+/* UV, 21 Oct: clicking the name should change the player. It is a real button
+   for a TD, so it has to be stripped back to looking like text — the bracket
+   would be unreadable as a grid of buttons. The affordance is the ⇄ beside it
+   and the hover, not a border. */
+.bracket-name.as-button {
+	appearance: none;
+	border: 1px solid transparent;
+	border-radius: var(--radius-sm);
+	background: none;
+	padding: 0 var(--space-1);
+	margin: 0 calc(var(--space-1) * -1);
+	color: inherit;
+	font: inherit;
+	font-size: 0.92rem;
+	text-align: left;
+	cursor: pointer;
+	width: 100%;
+}
+
+.bracket-name.as-button:hover,
+.bracket-name.as-button:focus-visible {
+	border-color: var(--border-color);
+	background: var(--bg-base);
+}
+
+/* The winner's weight and colour are set on .bracket-name above, but `font:
+   inherit` on the button resets the weight, so it is restored here. */
+.bracket-side.won .bracket-name.as-button { font-weight: 700; color: var(--color-primary); }
+
+/* `font: inherit` and `color: inherit` above reset what .bracket-name.pending
+   sets, and equal specificity means the later rule wins — so the "Bye" and
+   "Winner of…" placeholders came back as ordinary text. Restored. */
+.bracket-name.as-button.pending {
+	color: var(--text-muted);
+	font-style: italic;
 }
