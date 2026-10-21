@@ -1,0 +1,103 @@
+---
+layout: layout.html
+title: Tournament
+description: "A tournament at The Dive Club: when, where, the format and how to enter."
+extraStyles:
+  - /stylesheets/poster.css
+extraScripts:
+  - /scripts/match-settings.js
+  - /scripts/tournament-poster.js
+---
+{% comment %}
+	The poster. **The only page on this site that renders without a session.**
+
+	It reads one function, tdc_tournament_poster, which returns a snapshot the
+	TD built and stored — not a live view of the tournament. anon can reach
+	that function and the one table behind it and nothing else; see the header
+	of migration 20261021140000 for why it is built that way.
+
+	Because a visitor may be signed out, this page uses TDC.getSession and not
+	TDC.requireSession: everything above the entry buttons renders for a
+	stranger, and the buttons are what needs an account.
+
+	Reached as /tournaments/poster/?t=<tournament id>.
+{% endcomment %}
+
+<div class="tdc-card wide">
+	{% comment %}
+		Shown when there is nothing to show: no poster, or one the TD has not
+		shared. Deliberately the same message for both — saying which would
+		tell a stranger the tournament exists.
+	{% endcomment %}
+	<div id="nothing" hidden>
+		<h1>Nothing here</h1>
+		<p class="muted">This tournament has no poster, or whoever is running it has not shared one.</p>
+		<div class="link-row">
+			<a href="/tournaments/">Tournaments</a>
+		</div>
+	</div>
+
+	<div id="poster" hidden>
+		<h1 id="p-name">Tournament</h1>
+		<p class="muted" id="p-meta"></p>
+
+		<div class="poster-badges" id="p-badges"></div>
+
+		{% comment %}
+			The TD's own view of a poster they have not shared yet. A stranger
+			never sees this because the function returns nothing to them.
+		{% endcomment %}
+		<div class="panel" id="p-private" hidden>
+			<p><strong>Not shared.</strong> Only you can see this page. Share it from the entrants page to let anyone open it.</p>
+		</div>
+
+		<div class="poster-entrants" id="p-counts"></div>
+
+		<h2>How it is played</h2>
+		<dl class="poster-rules" id="p-rules"></dl>
+
+		<div id="p-names-box" hidden>
+			<h2>Who is in</h2>
+			<div class="poster-names" id="p-names"></div>
+		</div>
+
+		<div id="p-draw-box" hidden>
+			<h2>The draw</h2>
+			<div class="poster-draw" id="p-draw"></div>
+		</div>
+
+		{% comment %}
+			Entering. Driven by tdc_my_entry, which says whether the buttons
+			belong here at all and why not if they do not — so a signed-out
+			visitor is told to sign in, and somebody whose email is unconfirmed
+			is told that instead of being shown a button that refuses them.
+		{% endcomment %}
+		<div class="panel" id="p-entry" hidden>
+			<h2>Entering</h2>
+			<p id="p-entry-state"></p>
+			<div class="btn-row" id="p-entry-actions"></div>
+			<div class="status" id="p-entry-status"></div>
+		</div>
+
+		{% comment %}
+			The point of the whole page, per UV's original spec: a block of text
+			describing the tournament in enough detail to hand to an AI and get
+			a poster back. Generated from the same snapshot the page renders, so
+			it cannot describe a different tournament than the one shown.
+		{% endcomment %}
+		<details class="panel" id="p-text-box">
+			<summary><h2>Text for a poster designer</h2></summary>
+			<p class="muted">Copy this and give it to an image generator, or to a designer.</p>
+			<textarea id="p-text" rows="14" readonly></textarea>
+			<div class="btn-row">
+				<button type="button" class="btn btn-secondary btn-sm" id="p-copy">Copy</button>
+			</div>
+		</details>
+
+		<p class="muted sub" id="p-generated"></p>
+
+		<div class="status" id="page-status"></div>
+
+		<div class="link-row" id="p-links"></div>
+	</div>
+</div>

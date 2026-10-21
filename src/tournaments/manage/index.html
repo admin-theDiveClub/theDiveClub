@@ -56,6 +56,41 @@ extraScripts:
 		</div>
 	</div>
 
+	{% comment %}
+		The poster. Nothing about a tournament is readable by anybody outside
+		the app until a poster is generated and shared — and the two are
+		separate acts, so a TD can build one, read the text out of it for a
+		designer, and never make it public.
+
+		What goes in is the TD's choice. The default is the tournament and the
+		entrant counts; names and the draw are opt-in, because the real entrant
+		list is the TD's.
+	{% endcomment %}
+	<div class="panel" id="poster-panel" hidden>
+		<h2>The poster</h2>
+		<p class="muted" id="poster-state">No poster yet.</p>
+
+		<div class="field">
+			<label for="poster-names">Include the entrants' names</label>
+			<input type="checkbox" id="poster-names">
+		</div>
+
+		<div class="field">
+			<label for="poster-draw">Include the draw and results</label>
+			<input type="checkbox" id="poster-draw">
+			<div class="hint">Results that have not been published are marked as not confirmed.</div>
+		</div>
+
+		<div class="btn-row">
+			<button type="button" class="btn btn-primary btn-sm" id="poster-build">Generate</button>
+			<button type="button" class="btn btn-secondary btn-sm" id="poster-share" hidden>Share it</button>
+			<button type="button" class="btn btn-danger btn-sm" id="poster-unshare" hidden>Stop sharing</button>
+			<a class="btn btn-secondary btn-sm" id="poster-open" href="#" hidden>Open it</a>
+		</div>
+
+		<div class="status" id="poster-status"></div>
+	</div>
+
 	<div class="field" id="search-field">
 		<label for="entrant-search">Add an entrant</label>
 		<input type="search" id="entrant-search" autocomplete="off" placeholder="Search by name">

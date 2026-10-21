@@ -36,7 +36,12 @@
 		seedRandom: el('seed-random'), seedClear: el('seed-clear'),
 		entrySettings: el('entry-settings'), entryMode: el('entry-mode'),
 		entryModeHint: el('entry-mode-hint'), paidConfirms: el('paid-confirms'),
-		entryLink: el('entry-link'),
+		entryLink: el('entry-link'), entryLinkHint: el('entry-link-hint'),
+		posterPanel: el('poster-panel'), posterState: el('poster-state'),
+		posterNames: el('poster-names'), posterDraw: el('poster-draw'),
+		posterBuild: el('poster-build'), posterShare: el('poster-share'),
+		posterUnshare: el('poster-unshare'), posterOpen: el('poster-open'),
+		posterStatus: el('poster-status'),
 		status: el('page-status'), drawLink: el('draw-link'),
 		officialAdd: el('official-add'), officialSearch: el('official-search'),
 		officialRole: el('official-role'), officialResults: el('official-results'),
@@ -238,13 +243,15 @@
 		els.paidConfirms.checked = !!t.paid_confirms;
 		els.paidConfirms.disabled = readOnly;
 
-		// The poster page is where this will point once it exists — it is the
-		// one page meant to be opened by somebody who is not signed in. Until
-		// then the draw is the honest destination, because it is what a shared
-		// link actually reaches today.
-		els.entryLink.value = location.origin
-			+ '/tournaments/bracket/?t=' + encodeURIComponent(tournamentId);
+		// The poster, which is the one page meant to be opened by somebody who
+		// is not signed in. It shows nothing until a poster has been generated
+		// and shared, which is what the panel below is for — so the hint says
+		// so rather than letting a TD share a link to an empty page.
+		els.entryLink.value = posterUrl();
 	}
+
+	const posterUrl = () => location.origin
+		+ '/tournaments/poster/?t=' + encodeURIComponent(tournamentId);
 
 	// Changing a setting re-reads the tournament rather than trusting the
 	// control, for the same reason the entrant list does.
@@ -270,6 +277,110 @@
 		saveEntrySetting('Saving', { p_paid_confirms: els.paidConfirms.checked }));
 
 	els.entryLink.addEventListener('focus', () => els.entryLink.select());
+
+	// ─────────────────────────────────────────────────────────────────
+	// The poster
+	//
+	// Generating and sharing are separate, so a TD can build a poster to read
+	// the text out of it without making anything public. Nothing about a
+	// tournament is readable outside the app until "Share it" is pressed.
+	// ─────────────────────────────────────────────────────────────────
+
+	async function loadPoster() {
+		const { data, error } = await supabaseClient.rpc('tdc_tournament_poster', {
+			p_tournament_id: tournamentId
+		});
+		if (error) { TDC.showSupabaseError(AREA, error, els.posterStatus); return; }
+
+		// The TD sees their own unshared poster, so a row here means one
+		// exists — shared or not.
+		const row = (data || [])[0];
+		renderPoster(row);
+	}
+
+	function renderPoster(row) {
+		els.posterPanel.hidden = readOnly;
+		els.posterOpen.href = posterUrl();
+
+		if (!row) {
+			els.posterState.textContent =
+				'No poster yet. Generate one to get the text for a designer, or to share the tournament.';
+			els.posterShare.hidden = true;
+			els.posterUnshare.hidden = true;
+			els.posterOpen.hidden = true;
+			els.posterBuild.textContent = 'Generate';
+			// Said here rather than greying the box out: a disabled field
+			// explains nothing, and the link is correct — there is just
+			// nothing behind it yet.
+			els.entryLinkHint.textContent =
+				'This link shows nothing until you generate a poster and share it, below.';
+			return;
+		}
+
+		const when = new Date(row.generated_at);
+		const stamp = isNaN(when) ? '' : ' on ' + when.toLocaleString([], {
+			day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+		});
+
+		els.posterState.textContent = row.is_public
+			? 'Shared. Anyone with the link can see this poster, as it was' + stamp + '.'
+			: 'Generated' + stamp + ', but not shared — only you can open it.';
+
+		// The toggles show what went into the poster that exists, so pressing
+		// Regenerate without touching them rebuilds the same shape.
+		const snap = row.snapshot || {};
+		els.posterNames.checked = !!snap.entrant_names;
+		els.posterDraw.checked = !!snap.draw;
+
+		els.posterBuild.textContent = 'Regenerate';
+		els.posterShare.hidden = row.is_public;
+		els.posterUnshare.hidden = !row.is_public;
+		els.posterOpen.hidden = false;
+		els.entryLinkHint.textContent = row.is_public
+			? 'Anyone can open this. Entering needs an account with a confirmed email address.'
+			: 'Only you can open this until you share the poster, below.';
+	}
+
+	async function poster(what, args) {
+		if (busy) return;
+		busy = true;
+		TDC.status(els.posterStatus, what + '…', '');
+
+		const { error } = await supabaseClient.rpc(args.fn,
+			Object.assign({ p_tournament_id: tournamentId }, args.params || {}));
+
+		busy = false;
+		if (error) { TDC.showSupabaseError(AREA, error, els.posterStatus); return; }
+
+		await loadPoster();
+		TDC.status(els.posterStatus, args.done || '', args.done ? 'success' : '');
+	}
+
+	els.posterBuild.addEventListener('click', () => poster('Generating', {
+		fn: 'tdc_publish_poster',
+		params: {
+			p_include_entrants: els.posterNames.checked,
+			p_include_draw: els.posterDraw.checked
+		},
+		// Regenerating never changes whether it is shared, so this does not
+		// claim it did.
+		done: 'Poster built.'
+	}));
+
+	els.posterShare.addEventListener('click', () => poster('Sharing', {
+		fn: 'tdc_publish_poster',
+		params: {
+			p_include_entrants: els.posterNames.checked,
+			p_include_draw: els.posterDraw.checked,
+			p_public: true
+		},
+		done: 'Shared. Anyone with the link can see it now.'
+	}));
+
+	els.posterUnshare.addEventListener('click', () => {
+		if (!confirm('Stop sharing this poster?\n\nThe link will show nothing to anybody but you. The poster itself is kept.')) return;
+		poster('Stopping', { fn: 'tdc_unpublish_poster', done: 'No longer shared.' });
+	});
 
 	// ─────────────────────────────────────────────────────────────────
 	// Who runs it
@@ -623,6 +734,7 @@
 		}
 
 		renderEntrySettings(tournament);
+		await loadPoster();
 
 		if (!await loadEntrants()) return;
 		await loadRoleTypes();

@@ -1,0 +1,165 @@
+/* The poster (/tournaments/poster/).
+ *
+ * The one page a stranger can land on, so it is the only page that has to work
+ * for somebody with no account, no context and quite possibly no interest yet.
+ * That shapes it: the tournament's name is large, the facts are scannable, and
+ * everything the club already knows about itself is stated rather than assumed.
+ *
+ * Rounds run down the page here rather than sideways as they do on the draw.
+ * The draw is a working document read at the desk; this is read once, on a
+ * phone, by somebody deciding whether to come.
+ *
+ * Every value is a token. If something needs a colour or a radius that is not
+ * in variables.css, the token is missing, not this file. */
+
+/* ── The heading block ─────────────────────────────────────────────── */
+
+.poster-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+	margin-bottom: var(--space-4);
+}
+
+.poster-entrants {
+	font-family: var(--font-display);
+	font-size: 1.05rem;
+	color: var(--color-primary);
+	margin-bottom: var(--space-5);
+}
+
+.poster-entrants:empty {
+	display: none;
+}
+
+/* ── How it is played ──────────────────────────────────────────────── */
+
+/* A two-column list that collapses to one on a narrow screen. dt/dd rather
+ * than a table: this is a set of labelled facts, not data to compare. */
+.poster-rules {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: var(--space-2) var(--space-4);
+	margin: 0 0 var(--space-5);
+}
+
+.poster-rules dt {
+	font-size: 0.8rem;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+	align-self: baseline;
+}
+
+.poster-rules dd {
+	margin: 0;
+	color: var(--text-primary);
+}
+
+/* ── Who is in ─────────────────────────────────────────────────────── */
+
+.poster-names {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+	margin-bottom: var(--space-5);
+}
+
+.poster-name {
+	padding: var(--space-1) var(--space-3);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-pill);
+	background: var(--bg-surface);
+	font-size: 0.9rem;
+}
+
+/* ── The draw ──────────────────────────────────────────────────────── */
+
+.poster-draw {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-5);
+	margin-bottom: var(--space-5);
+}
+
+.poster-round h3 {
+	margin: 0 0 var(--space-2);
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--color-primary);
+}
+
+.poster-fixture {
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-md);
+	background: var(--bg-surface);
+	padding: var(--space-2) var(--space-3);
+	margin-bottom: var(--space-2);
+}
+
+.poster-side {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: var(--space-3);
+	padding: var(--space-1) 0;
+}
+
+/* The winner carries the weight, so a glance at a finished bracket reads as a
+ * list of who went through rather than a grid of numbers to compare. */
+.poster-side.won .poster-side-name,
+.poster-side.won .poster-side-score {
+	font-weight: 700;
+	color: var(--color-primary);
+}
+
+.poster-side-name {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.poster-side-score {
+	font-family: var(--font-mono);
+	flex: 0 0 auto;
+}
+
+.poster-fixture-tag {
+	margin-top: var(--space-1);
+	font-size: 0.75rem;
+	color: var(--text-muted);
+}
+
+/* ── The text output ───────────────────────────────────────────────── */
+
+/* Monospace and tall: this is read as a block to be copied whole, not as prose
+ * on the page. Resizable because a 32-player result list is long. */
+#p-text {
+	width: 100%;
+	font-family: var(--font-mono);
+	font-size: 0.85rem;
+	line-height: 1.5;
+	resize: vertical;
+	margin-bottom: var(--space-3);
+}
+
+/* The summary carries an h2 so the heading level is honest to a screen reader;
+ * this stops it starting on its own line and keeps the disclosure marker
+ * beside it. */
+#p-text-box summary {
+	cursor: pointer;
+}
+
+#p-text-box summary h2 {
+	display: inline;
+	font-size: 1rem;
+}
+
+/* ── Footnote ──────────────────────────────────────────────────────── */
+
+/* When the page was generated. Quiet, but present: a poster is a snapshot and
+ * a reader deserves to know how old a score on it is. */
+.sub {
+	font-size: 0.8rem;
+}
