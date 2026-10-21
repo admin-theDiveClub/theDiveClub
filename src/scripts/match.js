@@ -2132,6 +2132,8 @@
 		const other = MATCH[otherSide(mySide() || 'home')];
 		const rows = [];
 
+		if (noEditNote) rows.push(div('card-line', noEditNote));
+
 		if (state === 'in_progress') {
 			if (!MATCH.frames.length) {
 				rows.push(div('card-line', 'Play a frame first — there is nothing to submit yet.'));
@@ -2304,6 +2306,9 @@
 	// asks tdc_may_edit_match rather than working the rule out again here, so
 	// there is one copy of it. The mockup is always editable; it is a drawing.
 	let canEdit = true;
+	// Why not, when the answer is no because of the tournament's rules rather
+	// than because this person is a stranger to the match. Null otherwise.
+	let noEditNote = null;
 	const isoOrNull = (ms) => (ms ? new Date(ms).toISOString() : null);
 
 	// ─────────────────────────────────────────────────────────────────
@@ -2867,6 +2872,20 @@
 			TDC.showSupabaseError(AREA, editError, els.stageStatus);
 		} else {
 			canEdit = mayEdit === true;
+		}
+
+		// A player who finds the scoring buttons gone deserves a sentence
+		// rather than a blank card. Only says anything when the reason is the
+		// tournament's score_entry_mode; a stranger to the match gets nothing,
+		// because telling them about a tournament they are not in is noise.
+		if (!canEdit) {
+			const { data: note, error: noteError } = await supabaseClient
+				.rpc('tdc_score_entry_note', { p_match_id: liveMatchId });
+			if (noteError) {
+				console.error('[' + AREA + '] could not check why scoring is closed.', noteError);
+			} else {
+				noEditNote = note || null;
+			}
 		}
 
 		const myPlayer = await TDC.getMyPlayer(AREA, session.user.id, null);
