@@ -19,7 +19,7 @@
   },
   "homepage": "https://github.com/admin-theDiveClub/theDiveClub#readme",
   "devDependencies": {
-    "@11ty/eleventy": "^3.1.6",
+    "@11ty/eleventy": "^3.1.7",
     "supabase": "^2.121.0"
   },
   "dependencies": {
