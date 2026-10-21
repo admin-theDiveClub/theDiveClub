@@ -294,11 +294,12 @@ button.half-sub {
 .match-notice.error { border-left-color: var(--color-error); }
 
 .panel-block { margin-bottom: 2.25rem; }
+/* The same heading as .tdc-card h2 on the account pages — the display face,
+   sentence case, in the text colour rather than tracked-out and muted. The
+   flex row stays, because some of these carry a toggle link on the right. */
 .panel-block h2 {
-	font-size: 1.05rem;
-	text-transform: uppercase;
-	letter-spacing: 0.06em;
-	color: var(--text-muted);
+	font-size: 1.1rem;
+	color: var(--text-primary);
 	margin: 0 0 0.75rem;
 	display: flex;
 	align-items: baseline;
@@ -544,35 +545,35 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
 	color: var(--text-muted);
 }
 
+/* The settings panel is a form, so it is laid out like every other form on
+   the site: label above, full-width underlined field below, hint under that.
+   It used to be a two-column list with the control right-aligned beside its
+   label, which read as a different product the moment you opened it next to
+   the account pages. These are deliberately the same numbers as .field in
+   forms.css rather than numbers that merely look similar. */
 .set-row {
-	display: grid;
-	grid-template-columns: 1fr auto;
-	align-items: center;
-	gap: 0.5rem 0.75rem;
+	margin-bottom: 1.5rem;
 }
-/* Same small capitals in the brand colour as the account pages, so the
-   settings panel reads as part of the same site. */
 .set-label {
+	display: block;
 	font-size: 0.7rem;
 	font-weight: 600;
-	letter-spacing: 0.1em;
+	letter-spacing: 0.12em;
 	text-transform: uppercase;
 	color: var(--color-primary);
+	margin-bottom: 0.45rem;
 }
 .set-hint {
-	grid-column: 1 / -1;
-	font-size: 0.75rem;
+	font-size: 0.8rem;
 	color: var(--text-muted);
-	margin-top: -0.2rem;
+	margin-top: 0.45rem;
 }
-/* A line rather than a box, matching the account pages. */
+/* A line, not a box. Less furniture on a panel that is mostly fields. */
 .set-row select,
 .set-row input[type="text"],
 .set-row input[type="number"] {
-	justify-self: end;
-	width: 10rem;
-	max-width: 50vw;
-	padding: 0.35rem 0;
+	width: 100%;
+	padding: 0.5rem 0;
 	border: none;
 	border-bottom: 1px solid var(--border-color);
 	border-radius: 0;
@@ -580,7 +581,7 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
 	color: var(--text-primary);
 	font-family: inherit;
 	font-size: 1rem; /* 16px stops iPhone zooming in on focus */
-	text-align: right;
+	text-align: left;
 	transition: border-color 0.15s ease;
 }
 .set-row select:focus,
@@ -589,32 +590,39 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
 	outline: none;
 	border-bottom-color: var(--color-primary);
 }
+/* A select has no box to hang the native arrow on any more, so it gets its
+   own. currentColor keeps it right in both themes. */
 .set-row select {
 	appearance: none;
 	-webkit-appearance: none;
-	padding-right: 1.1rem;
+	padding-right: 1.5rem;
 	background-image:
 		linear-gradient(45deg, transparent 50%, currentColor 50%),
 		linear-gradient(135deg, currentColor 50%, transparent 50%);
-	background-position: right 0.45rem center, right 0.15rem center;
+	background-position: right 0.6rem center, right 0.3rem center;
 	background-size: 0.3rem 0.3rem, 0.3rem 0.3rem;
 	background-repeat: no-repeat;
-	direction: rtl;          /* right-aligns the chosen option text */
 }
-.set-row select option { direction: ltr; }
-.set-row input[type="number"] { width: 5.5rem; }
+/* The native dropdown list is drawn by the operating system and does not
+   inherit the panel's dark background — on Windows it came out as near-white
+   text on white. These two properties are the only ones it honours. */
+.set-row select option {
+	background: var(--bg-base);
+	color: var(--text-primary);
+}
+/* A number is a number: full width would be a wall of empty box. */
+.set-row input[type="number"] { width: 6rem; }
 
-/* Stacked rows put the control on its own line, full width. */
-.set-row.stack { grid-template-columns: 1fr; }
-.set-row.stack select {
-	justify-self: stretch;
-	width: 100%;
-	max-width: none;
-}
+/* .stack was the class that pulled a select onto its own line. Every row is
+   its own line now, so it is left as a no-op rather than chased out of
+   match.js, where it is still emitted. */
+.set-row.stack { }
+
+/* A checkbox has to be worth aiming a thumb at. */
 .set-check {
-	justify-self: end;
 	width: 1.4rem;
 	height: 1.4rem;
+	margin-top: 0.1rem;
 	accent-color: var(--color-primary);
 }
 
