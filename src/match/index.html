@@ -9,11 +9,9 @@ extraScripts:
   - /scripts/match.js
 ---
 {% comment %}
-	Two modes, decided by the address:
-
-	  /match/            the built-in mockup match in /scripts/match.js.
-	                     Still the quickest way to work on the layout.
-	  /match/?id=<uuid>  that match, read from the database.
+	One mode: /match/?id=<uuid>, that match read from the database. There was
+	a mockup match in /scripts/match.js that /match/ with no id rendered;
+	it was removed on 21 Oct once there were real matches to look at.
 
 	Frames read and save. Match settings do not save yet — changing one in the
 	panel affects this screen only. The notice at the top of the panels below
@@ -93,8 +91,7 @@ extraScripts:
 		<div class="match-notice" id="match-notice" hidden></div>
 
 		<!-- Where the scorecard stands: finished, waiting on the other player,
-		     agreed, or disputed. Hidden on the mockup, which has nobody to
-		     agree with. -->
+		     agreed, published, or disputed. -->
 		<section class="panel-block" id="card-panel" aria-label="Scorecard" hidden>
 			<h2>Scorecard</h2>
 			<div id="card-body"></div>

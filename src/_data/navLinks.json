@@ -10,9 +10,5 @@
   {
     "label": "Tournaments",
     "url": "/tournaments/"
-  },
-  {
-    "label": "Match",
-    "url": "/match/"
   }
 ]

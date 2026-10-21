@@ -1,8 +1,8 @@
-// Match scorecard (/match/).
+// Match scorecard (/match/?id=<uuid>).
 //
-// Two modes, decided by the address:
-//   /match/            the built-in mockup below. Quickest way to work on layout.
-//   /match/?id=<uuid>  that match, read from the database.
+// One mode: the match named in the address, read from the database. There was
+// a second — /match/ with no id rendered a hand-written mockup — which was
+// removed on 21 Oct once there were real matches to look at.
 //
 // Frames read and save. Match settings do not save yet, and the notice below
 // the stage says so, because a scorer who loses work to a reload will not
@@ -41,16 +41,9 @@
 	// the full name, plus an avatar that is usually missing.
 	// ─────────────────────────────────────────────────────────────────
 
-	// Replaced wholesale when a real match is loaded; see loadMatch().
-	let PLAYERS = {
-		yesh:   { id: 'yesh',   display_name: 'Yesh',   full_name: 'Yesh Naicker',    avatar_url: null },
-		linton: { id: 'linton', display_name: 'Linto',  full_name: 'Linton Pillay',   avatar_url: null },
-		damian: { id: 'damian', display_name: 'Dame',   full_name: 'Damian Reddy',    avatar_url: null },
-		uv:     { id: 'uv',     display_name: 'UV',     full_name: 'Yuvan Naidoo',    avatar_url: null },
-		joe:    { id: 'joe',    display_name: 'Joe',    full_name: 'Joe Abrahams',    avatar_url: null },
-		trevor: { id: 'trevor', display_name: 'Trev',   full_name: 'Trevor Mokoena',  avatar_url: null },
-		sipho:  { id: 'sipho',  display_name: 'Sipho',  full_name: 'Sipho Dlamini',   avatar_url: null }
-	};
+	// Filled wholesale when a match is loaded; see loadMatch(). The invented
+	// names that used to seed it went with the mockup.
+	let PLAYERS = {};
 
 	const player = (id) => {
 		const p = PLAYERS[id];
@@ -66,66 +59,12 @@
 	// The match. One object, roughly what a single match fetch returns.
 	// ─────────────────────────────────────────────────────────────────
 
-	let MATCH = {
-		id: 'mockup-match',
-
-		// kind is 'league', 'tournament' or 'social'. The page does not branch on
-		// it beyond the label: settings do the work.
-		context: { kind: 'league', name: 'Fourways Tuesday League', season: 'Season 4', round: 'Round 3' },
-		sanctioned: true,
-
-		venue: 'The Dive Club',
-		tables: ['Table 1', 'Table 3'],
-		scheduled_at: '2026-10-13T18:30:00+02:00',
-		referee: 'Linton Pillay',
-
-		// Who won the lag, and so who breaks the first frame. A match-level fact:
-		// change it and every frame's breaker moves with it.
-		first_break_side: 'home',
-
-		home: { name: 'Dive Club Sharks', crest_url: null, players: ['yesh', 'linton', 'damian', 'uv'] },
-		away: { name: 'Kyalami Hustlers', crest_url: null, players: ['joe', 'trevor', 'sipho'] },
-
-		// Every key present with an explicit value, flat, no nesting. The real one
-		// is merged (league → season → round) and frozen onto the match.
-		rules: {
-			version: 1,
-			discipline: '8ball',
-			win_condition_type: 'race_to',
-			win_condition_target: 7,
-			track_breaks: true,
-			break_determination: 'alternate',
-			draws_allowed: false,
-			tiebreak_method: 'sudden_death_frame',
-			on_time_expiry: 'finish_current_frame',
-			max_match_minutes: 0, // 0 = no match clock
-			golden_break_enabled: true,
-			reverse_break_finish_enabled: true,
-			// When false, break & finish and golden break may go to either side.
-			break_finish_enabled: true,
-			break_finish_requires_breaker: true,
-			shot_clock_enabled: false, // off for most matches; a ref runs it when on
-			shot_clock_seconds: 45,
-			shot_clock_first_shot_seconds: 60,
-			extensions_per_player: 1,
-			extension_seconds: 45,
-			referee_required: true,
-			score_entry_mode: 'referee',
-			approval_mode: 'dispute_window',
-			dispute_window_hours: 48
-		},
-
-		// break_side is written by recomputeBreaks(), unless break_side_manual is
-		// set — a breaker corrected by hand in the history table is left alone.
-		frames: [
-			{ no: 1, table: 'Table 1', home_players: ['yesh'],   away_players: ['joe'],    break_side: null, break_side_manual: false, break_outcome: 'in',   result_event: 'break_and_finish',         winner_side: 'home', status: 'complete', rack_started_at: null, started_at: null, ended_at: null, paused_seconds: 0 },
-			{ no: 2, table: 'Table 3', home_players: ['linton'], away_players: ['trevor'], break_side: null, break_side_manual: false, break_outcome: 'foul', result_event: 'win',                      winner_side: 'home', status: 'complete', rack_started_at: null, started_at: null, ended_at: null, paused_seconds: 0 },
-			{ no: 3, table: 'Table 1', home_players: ['damian'], away_players: ['sipho'],  break_side: null, break_side_manual: false, break_outcome: 'dry',  result_event: 'reverse_break_and_finish', winner_side: 'away', status: 'complete', rack_started_at: null, started_at: null, ended_at: null, paused_seconds: 0 },
-			// Scotch doubles: two players a side, which is why participants are
-			// their own rows rather than one player column on the frame.
-			{ no: 4, table: 'Table 3', home_players: ['yesh', 'uv'], away_players: ['joe', 'sipho'], break_side: null, break_side_manual: false, break_outcome: 'in', result_event: 'win', winner_side: 'away', status: 'complete', rack_started_at: null, started_at: null, ended_at: null, paused_seconds: 0 }
-		]
-	};
+	// Null until a match is loaded. There was a hand-written mockup match here
+	// — a league night with seven invented players — which /match/ with no id
+	// used to render. It was the quickest way to work on the layout before
+	// there was anything real to look at, and it stopped being that a while
+	// ago. Removed 21 Oct; the page now needs an id.
+	let MATCH = null;
 
 	// ─────────────────────────────────────────────────────────────────
 	// Labels and setting definitions live in match-settings.js, because the
@@ -1749,10 +1688,9 @@
 	// ─────────────────────────────────────────────────────────────────
 	// Loading a real match
 	//
-	// /match/ on its own keeps the mockup above, which is still the quickest
-	// way to work on the layout. /match/?id=<uuid> replaces MATCH and PLAYERS
-	// with the real thing. The shape built here is exactly the mockup's shape,
-	// so nothing else in this file knows where its data came from.
+	// /match/?id=<uuid> fills MATCH and PLAYERS. The shape built here is the
+	// only shape this file knows, so nothing else in it has to ask where its
+	// data came from.
 	//
 	// Reading is done. Writing is not: the result buttons and the history table
 	// still only change this copy. showNotice() says so on screen rather than
@@ -2298,14 +2236,16 @@
 	// database refused.
 	// ─────────────────────────────────────────────────────────────────
 
-	let liveMatchId = null;          // null in mockup mode
+	let liveMatchId = null;          // set once a match has loaded
 	let saving = 0;                  // writes in flight
 	let cardVersion = null;          // what the server said when we last read it
 
 	// Whether this person may score this match. The database decides — the page
 	// asks tdc_may_edit_match rather than working the rule out again here, so
-	// there is one copy of it. The mockup is always editable; it is a drawing.
-	let canEdit = true;
+	// there is one copy of it. Read-only until it has answered: a watcher who
+	// cannot score is a small annoyance, a scorer whose frames are all refused
+	// is a ruined night.
+	let canEdit = false;
 	// Why not, when the answer is no because of the tournament's rules rather
 	// than because this person is a stranger to the match. Null otherwise.
 	let noEditNote = null;
@@ -2826,10 +2766,12 @@
 	(async () => {
 		const id = new URLSearchParams(location.search).get('id');
 
+		// Nothing is drawn without a match. Both of these used to fall back to
+		// the mockup, which meant a wrong address quietly showed somebody a
+		// fictional league night instead of saying it could not find theirs.
 		if (!id) {
-			showNotice('<strong>Mockup match.</strong> Nothing here is real and nothing is saved. '
-				+ 'Open a real match with <code>/match/?id=&lt;match id&gt;</code>.');
-			start();
+			showNotice('<strong>No match in the address.</strong> Open one from '
+				+ '<a href="/matches/">your matches</a>, or from a tournament draw.');
 			return;
 		}
 
@@ -2837,8 +2779,7 @@
 			TDC.error(AREA, 'the id in the address is not a match id: ' + id, null, els.stageStatus);
 			showNotice('<strong>That is not a match id.</strong> The address needs the match\'s id, '
 				+ 'which looks like <code>215b10ec-de44-4c61-a513-ab9768c43e72</code>. '
-				+ 'Showing the mockup instead.', 'error');
-			start();
+				+ 'Open one from <a href="/matches/">your matches</a>.', 'error');
 			return;
 		}
 
@@ -2849,12 +2790,15 @@
 			showNotice('<strong>Please sign in.</strong> Match data is only readable once you have '
 				+ 'signed in. <a href="/accounts/?next=' + encodeURIComponent(location.pathname + location.search)
 				+ '">Sign in</a>, and this match will open.', 'error');
-			start();
 			return;
 		}
 
+		// start() draws the stage from MATCH, so there is nothing to start
+		// when there is no match. Both of these used to draw the mockup under
+		// the message instead, which is how a failed load ended up looking
+		// like somebody else's league night.
 		const loaded = await loadMatch(id);
-		if (!loaded) { start(); return; }
+		if (!loaded) return;
 
 		PLAYERS = loaded.players;
 		MATCH = loaded.match;
