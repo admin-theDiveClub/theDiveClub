@@ -88,6 +88,20 @@ extraScripts:
 		<div class="bracket" id="bracket"></div>
 	</div>
 
+	{% comment %}
+		The status. Derived from the tournament's own facts, so it is right
+		without anybody maintaining it — but a TD can say otherwise, which is
+		the only way to reach "cancelled" and the way to close entries early.
+		Setting it by hand makes it stick; the link hands it back.
+	{% endcomment %}
+	<div class="toolbar" id="status-row" hidden>
+		<div class="field">
+			<label for="t-status">Status</label>
+			<select id="t-status"></select>
+			<div class="hint" id="status-hint"></div>
+		</div>
+	</div>
+
 	<div class="btn-row" id="draw-actions" hidden>
 		<button type="button" class="btn btn-secondary btn-sm" id="resolve">Refresh progress</button>
 		<button type="button" class="btn btn-danger btn-sm" id="redraw">Redraw</button>

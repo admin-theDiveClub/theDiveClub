@@ -26,6 +26,7 @@
 		bracket: el('bracket'), actions: el('draw-actions'),
 		resolve: el('resolve'), redraw: el('redraw'),
 		status: el('page-status'), entrantsLink: el('entrants-link'),
+		statusRow: el('status-row'), statusSelect: el('t-status'), statusHint: el('status-hint'),
 		drift: el('drift'), driftIntro: el('drift-intro'),
 		driftList: el('drift-list'), driftApply: el('drift-apply')
 	};
@@ -56,6 +57,13 @@
 	const AWARD = {
 		bye: 'Bye', walkover: 'Walkover', withdrawal: 'Withdrew', decision: 'Awarded'
 	};
+	const STATUS = {
+		draft: 'Draft', open: 'Open for entries', in_progress: 'Running',
+		complete: 'Finished', cancelled: 'Cancelled'
+	};
+	// The value the select uses for "stop overriding me". Not a status, so it
+	// cannot collide with one.
+	const AUTO = '__auto__';
 
 	// ─── State ───
 	let tournament = null;
@@ -411,6 +419,44 @@
 		return true;
 	}
 
+	// ─── Status ───
+	// Derived from the tournament's facts unless the TD has said otherwise.
+	// The select offers the five statuses plus a way back to the derivation,
+	// and the hint says what the derivation would say — so handing it back is
+	// a known quantity rather than something you find out by pressing it.
+	async function loadStatus() {
+		if (readOnly) { els.statusRow.hidden = true; return; }
+
+		const { data, error } = await supabaseClient.rpc('tdc_tournament_status', {
+			p_tournament_id: tournamentId
+		});
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+
+		const row = Array.isArray(data) ? data[0] : data;
+		if (!row) return;
+
+		els.statusSelect.replaceChildren(
+			...Object.entries(STATUS).map(([v, label]) =>
+				new Option(label, v, false, v === row.status && row.set_by_hand)),
+			new Option(
+				row.set_by_hand ? 'Follow the tournament again' : 'Following the tournament',
+				AUTO, false, !row.set_by_hand));
+
+		els.statusHint.textContent = row.set_by_hand
+			? `Set by hand. Left to itself this would say "${STATUS[row.would_be] || row.would_be}".`
+			: 'Worked out from the entrants and the draw.';
+
+		els.statusRow.hidden = false;
+	}
+
+	els.statusSelect.addEventListener('change', () => {
+		const v = els.statusSelect.value;
+		write('Saving the status', () =>
+			supabaseClient.rpc('tdc_update_tournament', v === AUTO
+				? { p_tournament_id: tournamentId, p_auto_status: true }
+				: { p_tournament_id: tournamentId, p_status: v }));
+	});
+
 	// ─── When the draw disagrees with its own results ───
 	// A rehearsal, not an estimate: tdc_cascade_draw does the whole thing in a
 	// subtransaction and rolls it back, so the list below is exactly what
@@ -476,6 +522,7 @@
 		busy = false;
 		if (ok) {
 			TDC.status(els.status, '', '');
+			await loadStatus();
 			await checkDrift();
 		}
 		return ok;
@@ -748,6 +795,7 @@
 		readOnly = !row || !row.i_run_it;
 
 		if (!await loadDraw()) return;
+		await loadStatus();
 
 		if (!readOnly) {
 			// Catches up anything decided on somebody else's phone. Only worth

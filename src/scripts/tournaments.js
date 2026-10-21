@@ -95,7 +95,13 @@
 		bits.push(t.entrants === 1 ? '1 entrant' : t.entrants + ' entrants');
 
 		const tags = el('div', 'match-tags');
+		// Until 21 Oct this was always "Draft": the column existed and nothing
+		// ever wrote it. It is derived now, so it tells the truth on its own.
 		tags.append(el('span', 'badge ' + (STATUS_CLASS[t.status] || ''), STATUS[t.status] || t.status));
+		// A status the TD set by hand is a different kind of fact from one the
+		// tournament worked out about itself, and a cancelled tournament
+		// should not look like something the system decided.
+		if (t.status_manual) tags.append(el('span', 'badge pending', 'Set by hand'));
 		if (t.i_run_it) tags.append(el('span', 'badge live', 'You run this'));
 
 		box.append(top, el('div', 'match-meta', bits.join(' · ')), tags);
