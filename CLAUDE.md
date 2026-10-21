@@ -1,5 +1,22 @@
 # theDiveClub: project context for Claude
 
+> ## Where the documentation lives
+>
+> **Four files, four jobs. If the same fact appears in two of them, one is wrong.**
+>
+> | File | Job |
+> |---|---|
+> | **`CLAUDE.md`** (this file) | **The record** — how every built system works, the conventions, the environment |
+> | **`docs/STATUS.md`** | **The agenda** — outstanding work, decisions needed, what is waiting on UV |
+> | **`docs/DECISIONS.md`** | **The why** — append-only log of decisions, reasons, and what was rejected |
+> | **`claude/START-HERE.md`** (project) | **The way of working** — how to open a chat, the rhythm, the non-negotiables |
+>
+> Supporting: `docs/product/` holds documentation for venues and players. The project docs hold the long design records (`stats-schema-design.md`, `approval-and-corrections.md`), the test plan, and the UI chat's brief and log (`ui-handover.md`).
+>
+> **Do not record an outstanding task here.** It goes in `docs/STATUS.md`, which is the only list.
+>
+> **Every milestone:** update this file, update `STATUS.md`, add to `DECISIONS.md` if a decision was made, then give UV a commit subject. Never batched to the end of a session.
+
 ## What this is
 theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's pool lounge in Johannesburg (C5, The Gantry, Lonehill/Fourways). It is also designed as a **multi-venue platform**: other pool clubs will be able to adopt it, and players will share one community across venues.
 
@@ -459,18 +476,8 @@ UV, 20 Oct: with `progression: automatic` a change upstream cascades downstream 
 
 
 ## Wanted, not built
-Asked for and agreed, with nothing written yet. Each section above carries its own "not built" notes; this is the list of things UV has *asked for* that have no home in a section yet.
 
-- **Close a tournament off to specific players.** *(UV, 21 Oct.)* A tournament restricted to a named set — "all players in a specific league", for instance — rather than open to anyone who finds the poster. This is a fourth answer to the question `entry_mode` asks, so it probably belongs as an `entry_mode` value plus a table saying who is eligible, not as a separate flag. Interacts with the poster: a restricted tournament may still want a public poster that says "members only" rather than offering an entry button to everybody.
-- **A live public scoreboard.** Explicitly *not* what the poster is — see the poster section. If this is wanted, it needs an `anon` read of live data and therefore the per-function audit the poster design avoids. Worth deciding deliberately rather than by extending the poster.
-- **`player_facing` on `TDCMatchDef`.** The setup page, the round settings box, the per-match override dropdown and the poster text are all meant to be renderings of one definition. Until the flag exists, `private.tdc_poster_rules` holds a hand-kept copy of the list. **Two places that can drift.**
-- **Notifications.** Nobody is told they have been entered in a tournament, confirmed, or that somebody else changed a frame on their card. UV wants to discuss the shape before anything is built.
-- **Per-round match settings.** *(UV, 21 Oct: "being able to change match settings for a round on demand (we can discuss if needed first)".)* The TD page should be able to push a ruleset change across a whole round — race-to 3 for the early rounds, race-to 5 for the semis. **Needs discussion first**, and the hard part is not the UI: a match freezes its ruleset at creation on purpose, so that a later change cannot rescore frames already played. Changing a round's settings therefore means deciding what happens to matches in that round that have already started, and whether the change is stored on the round (a thing that does not exist as a row today) or applied to each match as it is created.
-- **Adding rounds and matches on demand.** *(UV, 21 Oct: "a TD might add a player mid tournament and they would only be added to the actual matches after a few rounds have been completed".)* **Needs discussion first.** `tbl_tournament_fixtures` is generated as a complete shape by `tdc_generate_draw`; nothing adds to it afterwards. A late entrant joining at round 3 means either a pre-sized bracket with empty slots, or genuinely inserting fixtures and rewiring `home_source_ref` / `away_source_ref` for everything downstream. The second is where byes, seeding and the cascade all meet, so it wants a design before any code.
-- **A player cannot start their own match.** With `create_matches: manual`, a player sees their fixture on the draw and has no way in and no explanation — the draw is read-only for them and the Start match button is the TD's. Found 21 Oct when UV could not score as a scorer; the cause was simply that no match existed yet. The draw now says so in the TD's hint, but a player still sees nothing.
-- **A hardening migration for the `private` schema.** 14 `private.tdc_*` functions have no `revoke ... from public`, so only `anon` lacking `usage` on the schema keeps them out of reach. Found 21 Oct while auditing the poster's exposure. Not urgent, not a live hole, one `grant usage` away from being one.
-- **Entry fee charging.** Blocked on the credit ledger's `ref_table` / `ref_id`, undecided for travelling leagues.
-- **Nothing displays `tdc_frame_history`.** The audit log is written and queryable, with no screen reading it.
+**Moved to `docs/STATUS.md`** (21 Oct), which is now the only list of outstanding work. Keeping a second copy here was how the old handover went stale: two lists, one maintained.
 
 ## Database conventions
 - Table names use the `tbl_` prefix. Our own functions use the `tdc_` prefix.
