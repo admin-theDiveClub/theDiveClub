@@ -57,6 +57,46 @@ extraScripts:
 		<button type="button" class="btn btn-secondary btn-sm" id="seed-clear">Clear seeds</button>
 	</div>
 
+	{% comment %}
+		Who runs it. A tournament always has a director — whoever created it —
+		and may have referees and scorers. This matters more than it looks:
+		score_entry_mode can be set to 'referee' or 'scorer', and without a way
+		to appoint one the tournament would have nobody able to score it.
+
+		The role list comes from tbl_competition_role_types rather than being
+		written out here, because that table is a lookup with a rank for
+		exactly this reason — a new role should not need a page edit.
+	{% endcomment %}
+	<h2>Who runs it</h2>
+
+	<div id="official-add">
+		<div class="field">
+			<label for="official-role">Role</label>
+			<select id="official-role"></select>
+		</div>
+
+		<div class="field" id="official-field">
+			<label for="official-search">Add an official</label>
+			<input type="search" id="official-search" autocomplete="off" placeholder="Search by name">
+			<div class="hint">Two letters or more. They do not have to be entered in the tournament.</div>
+		</div>
+
+		<div id="official-results"></div>
+	</div>
+
+	<div class="table-scroll">
+		<table class="tdc-table" id="official-table" hidden>
+			<thead>
+				<tr>
+					<th>Person</th>
+					<th>Role</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody id="official-rows"></tbody>
+		</table>
+	</div>
+
 	<div class="status" id="page-status"></div>
 
 	<div class="link-row">

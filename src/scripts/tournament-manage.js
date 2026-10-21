@@ -34,7 +34,10 @@
 		count: el('entrant-count'), empty: el('entrant-empty'),
 		seedActions: el('seed-actions'),
 		seedRandom: el('seed-random'), seedClear: el('seed-clear'),
-		status: el('page-status'), drawLink: el('draw-link')
+		status: el('page-status'), drawLink: el('draw-link'),
+		officialAdd: el('official-add'), officialSearch: el('official-search'),
+		officialRole: el('official-role'), officialResults: el('official-results'),
+		officialTable: el('official-table'), officialRows: el('official-rows')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -47,6 +50,7 @@
 
 	// ─── State ───
 	let entrants = [];
+	let officials = [];
 	let busy = false;       // one write at a time, so two clicks cannot race
 	// Anyone signed in may read an entrant list; only the people running the
 	// tournament may change one. This is checked before the first render and
@@ -195,6 +199,133 @@
 		els.rows.replaceChildren(...entrants.map(row));
 	}
 
+	// ─────────────────────────────────────────────────────────────────
+	// Who runs it
+	//
+	// The director is created with the tournament and cannot be removed while
+	// they are the only one, so this is mostly about referees and scorers —
+	// which score_entry_mode now actually depends on.
+	// ─────────────────────────────────────────────────────────────────
+
+	async function loadRoleTypes() {
+		const { data, error } = await supabaseClient
+			.from('tbl_competition_role_types')
+			.select('key, name, rank')
+			.order('rank', { ascending: false });
+
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+		els.officialRole.replaceChildren(
+			...(data || []).map((r) => new Option(r.name, r.key)));
+		// A referee is the one somebody usually wants to add; the director
+		// already exists and a scorer is the narrower case.
+		const ref = (data || []).find((r) => r.key === 'referee');
+		if (ref) els.officialRole.value = ref.key;
+	}
+
+	async function loadOfficials() {
+		const { data, error } = await supabaseClient.rpc('tdc_competition_officials', {
+			p_tournament_id: tournamentId
+		});
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
+		officials = data || [];
+		renderOfficials();
+		return true;
+	}
+
+	function officialRow(o) {
+		const tr = document.createElement('tr');
+		tr.append(node('td', null, o.display_name));
+		tr.append(node('td', null, o.role_name));
+
+		const actions = document.createElement('td');
+		if (!readOnly) {
+			const remove = node('button', 'btn btn-danger btn-sm', 'Remove');
+			remove.type = 'button';
+			remove.dataset.role = o.role_id;
+			remove.dataset.name = o.display_name;
+			remove.dataset.what = o.role_name;
+			actions.append(remove);
+		}
+		tr.append(actions);
+		return tr;
+	}
+
+	function renderOfficials() {
+		els.officialTable.hidden = !officials.length;
+		els.officialRows.replaceChildren(...officials.map(officialRow));
+	}
+
+	els.officialRows.addEventListener('click', (e) => {
+		const button = e.target.closest('[data-role]');
+		if (!button) return;
+		if (!confirm(`Remove ${button.dataset.name} as ${button.dataset.what.toLowerCase()}?`)) return;
+		write('Removing', () =>
+			supabaseClient.rpc('tdc_remove_competition_role', { p_role_id: button.dataset.role }));
+	});
+
+	let officialRun = 0;
+	async function searchOfficials(term) {
+		const run = ++officialRun;
+		if (term.trim().length < 2) { els.officialResults.replaceChildren(); return; }
+
+		// The same search the entrant list uses: it is gated on running the
+		// tournament and returns every player, which is right here too —
+		// an official need not be entered in the thing they are running.
+		const { data, error } = await supabaseClient.rpc('tdc_search_entrants', {
+			p_tournament_id: tournamentId, p_query: term, p_limit: 20
+		});
+		if (run !== officialRun) return;
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+
+		if (!data || !data.length) {
+			els.officialResults.replaceChildren(node('p', 'muted', 'Nobody by that name.'));
+			return;
+		}
+
+		els.officialResults.replaceChildren(...data.map((p) => {
+			const b = node('button', 'result');
+			b.type = 'button';
+			b.append(node('span', 'result-name', p.display_name));
+
+			const sub = [];
+			if (p.full_name && p.full_name !== p.display_name) sub.push(p.full_name);
+			// A walk-in has no account, so they cannot sign in to score
+			// anything. Worth saying before somebody appoints one as a scorer.
+			if (!p.has_account) sub.push('Walk-in — cannot sign in');
+			const held = officials.filter((o) => o.player_id === p.id).map((o) => o.role_name);
+			if (held.length) sub.push('Already ' + held.join(', ').toLowerCase());
+			if (sub.length) b.append(node('span', 'result-sub', sub.join(' · ')));
+
+			b.disabled = !p.has_account;
+			if (p.has_account) {
+				b.addEventListener('click', () => addOfficial(p.id, p.display_name));
+			}
+			return b;
+		}));
+	}
+
+	async function addOfficial(playerId, name) {
+		const role = els.officialRole.value;
+		const done = await write(`Adding ${name}`, () =>
+			supabaseClient.rpc('tdc_add_competition_role', {
+				p_tournament_id: tournamentId,
+				p_player_id: playerId,
+				p_role: role
+			}));
+		if (done) {
+			els.officialSearch.value = '';
+			els.officialResults.replaceChildren();
+			els.officialSearch.focus();
+		}
+	}
+
+	let officialTimer = null;
+	els.officialSearch.addEventListener('input', () => {
+		clearTimeout(officialTimer);
+		const term = els.officialSearch.value;
+		officialTimer = setTimeout(() => searchOfficials(term), 250);
+	});
+
 	// ─── Writing ───
 	// Every write goes through here: one at a time, the list re-read
 	// afterwards, and nothing swallowed quietly.
@@ -214,6 +345,7 @@
 		}
 
 		const ok = await loadEntrants();
+		await loadOfficials();
 		busy = false;
 		if (ok) TDC.status(els.status, '', '');
 		return ok;
@@ -407,11 +539,16 @@
 		if (readOnly) {
 			els.search.disabled = true;
 			document.getElementById('search-field').hidden = true;
+			// The whole add block goes, role picker included: offering a role
+			// to somebody who cannot appoint anyone is furniture.
+			els.officialAdd.hidden = true;
 			TDC.status(els.status,
 				'You are not running this tournament, so this list can be read but not changed.', '');
 		}
 
 		if (!await loadEntrants()) return;
+		if (!readOnly) await loadRoleTypes();
+		await loadOfficials();
 
 		if (!readOnly) els.search.focus();
 	})();
