@@ -212,3 +212,45 @@
 	font-size: 1rem;
 }
 .bracket-entry input:focus { outline: none; border-color: var(--color-primary); }
+
+/* ── Changing who is in a slot ─────────────────────────────────────── */
+
+/* Sits at the end of a side, quiet until wanted. The name flexes, so this has
+   to hold its width rather than be squeezed out by a long one.
+
+   Deliberately small but not below the ~2.2rem a thumb needs: this is pressed
+   at the desk, on a phone, usually in a hurry. The visible glyph is smaller
+   than the target. */
+.bracket-swap {
+	flex: 0 0 auto;
+	width: 1.6rem;
+	height: 1.6rem;
+	margin: -0.3rem 0;
+	padding: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: 1px solid transparent;
+	border-radius: var(--radius-sm);
+	background: none;
+	color: var(--text-muted);
+	font-family: var(--font-body);
+	font-size: 0.8rem;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.bracket-swap:hover,
+.bracket-swap:focus-visible {
+	border-color: var(--border-color);
+	background: var(--bg-base);
+	color: var(--color-primary);
+}
+
+/* On a touch screen there is no hover to discover it with, so it stays
+   faintly visible rather than appearing only once pressed. */
+@media (hover: none) {
+	.bracket-swap {
+		border-color: var(--border-color);
+	}
+}

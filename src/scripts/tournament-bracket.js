@@ -73,6 +73,10 @@
 	// The fixture whose score the TD is typing, if any. One at a time: two
 	// half-filled score forms on one bracket is a mis-tap waiting to happen.
 	let entering = null;
+	// The slot whose player is being changed, as { fixtureId, side }, plus the
+	// candidate list once it has been read. Same one-at-a-time rule.
+	let swapping = null;
+	let candidates = [];
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -121,6 +125,23 @@
 
 		// A score only means something once there is a match behind it.
 		if (f.match_id) row.append(node('span', 'bracket-frames', String(frames ?? 0)));
+
+		// Changing who is in this slot. UV asked for drag-and-drop from the
+		// entrant list onto a match; this is the same idea with a different
+		// gesture, because a TD at the desk is on a phone and dragging across
+		// a sideways-scrolling bracket is a mis-tap waiting to happen. The
+		// swap function serves either, so it can become a drag later.
+		if (!readOnly) {
+			const change = node('button', 'bracket-swap', '⇄');
+			change.type = 'button';
+			change.dataset.act = 'swap';
+			change.dataset.fixture = f.fixture_id;
+			change.dataset.side = which;
+			change.title = 'Change who is in this slot';
+			change.setAttribute('aria-label',
+				'Change ' + (name || 'the ' + which + ' slot') + ' in this fixture');
+			row.append(change);
+		}
 		return row;
 	}
 
@@ -166,7 +187,9 @@
 		}
 
 		if (!readOnly) {
-			box.append(entering === f.fixture_id ? scoreForm(f) : controls(f));
+			if (swapping && swapping.fixtureId === f.fixture_id) box.append(swapForm(f));
+			else if (entering === f.fixture_id) box.append(scoreForm(f));
+			else box.append(controls(f));
 		}
 		return box;
 	}
@@ -308,6 +331,160 @@
 				p_away_score: away,
 				p_reason: why.trim()
 			}));
+	}
+
+	// ─────────────────────────────────────────────────────────────────
+	// Changing who is in a slot
+	//
+	// Two taps and a question. The question is the point: tdc_swap_fixture_player
+	// rehearses the whole thing first — inside a subtransaction that is rolled
+	// back — so what the TD is asked to confirm is what will actually happen,
+	// not a guess this page made about what might.
+	//
+	// Nothing here works out the consequences for itself. The cascade, the
+	// detaching of a match and the clearing of a walkover are all decided by
+	// the database, and this only renders what it was told.
+	// ─────────────────────────────────────────────────────────────────
+
+	function swapForm(f) {
+		const box = node('div', 'bracket-entry');
+		const current = swapping.side === 'home' ? f.home_name : f.away_name;
+
+		box.append(node('div', 'bracket-entry-name',
+			current ? 'Replace ' + current : 'Who goes in this slot'));
+
+		if (!candidates.length) {
+			box.append(node('div', 'hint', 'Reading the entrants…'));
+		} else {
+			const pick = document.createElement('select');
+			pick.setAttribute('aria-label', 'Who goes in this slot');
+			// Empty is a real choice: somebody withdrew and there is no
+			// stand-in, which is different from not having decided yet.
+			pick.append(new Option(current ? '— take ' + current + ' out —' : '— nobody —', ''));
+			for (const c of candidates) {
+				const bits = [c.display_name];
+				if (c.status !== 'confirmed') bits.push(c.status);
+				if (c.paid) bits.push('paid');
+				// Where they already are, so a TD can see they are about to
+				// put somebody in two places at once.
+				if (c.already_in) bits.push('already in ' + c.already_in);
+				pick.append(new Option(bits.join(' · '), c.entrant_id));
+			}
+			box.append(pick);
+
+			const why = node('input');
+			why.type = 'text';
+			why.placeholder = 'Why (needed once frames are played)';
+			why.setAttribute('aria-label', 'Why the player is changing');
+			box.append(why);
+
+			const go = node('button', 'btn btn-primary btn-sm', 'Check');
+			go.type = 'button';
+			go.addEventListener('click', () => trySwap(f, pick.value || null, why.value));
+
+			const cancel = node('button', 'btn btn-secondary btn-sm', 'Cancel');
+			cancel.type = 'button';
+			cancel.addEventListener('click', () => { swapping = null; candidates = []; render(); });
+
+			const actions = node('div', 'bracket-actions');
+			actions.append(go, cancel);
+			box.append(actions);
+		}
+
+		return box;
+	}
+
+	async function loadCandidates(fixtureId) {
+		const { data, error } = await supabaseClient.rpc('tdc_fixture_candidates', {
+			p_fixture_id: fixtureId
+		});
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+		candidates = data || [];
+		render();
+	}
+
+	// Turns the rehearsal into the sentence the TD is asked to agree to. Every
+	// line comes from the report; nothing is inferred here.
+	function swapWarning(r) {
+		const lines = [];
+		lines.push(`${r.was} out, ${r.now} in — ${r.bracket} ${r.round}-${r.position}.`);
+
+		const d = r.detached || {};
+		if (d.match_id) {
+			lines.push('');
+			lines.push(d.frames
+				? `The match already has ${d.frames} frame(s). It keeps them and stops belonging to the draw — nothing is deleted, but this fixture will show no score.`
+				: 'The match on this fixture stops belonging to the draw.');
+		}
+
+		if (r.award_cleared && r.award_cleared.reason) {
+			lines.push('');
+			lines.push(`The ${r.award_cleared.reason} awarded to ${r.was} is undone.`);
+		}
+
+		const moves = (r.cascade && r.cascade.changes) || [];
+		if (moves.length) {
+			lines.push('');
+			lines.push('Further up the draw:');
+			for (const m of moves) {
+				lines.push(`  ${m.bracket} ${m.round}-${m.position}: ${m.was} → ${m.now}`);
+			}
+		}
+
+		const dets = (r.cascade && r.cascade.detached) || [];
+		if (dets.length) {
+			lines.push('');
+			lines.push(`${dets.length} match(es) above also stop belonging to the draw, keeping their frames.`);
+		}
+
+		// Allowed, but a bracket with somebody in two fixtures of one round
+		// cannot be played, so it is said plainly rather than left to be
+		// noticed later.
+		const also = (r.also_in || []).filter((x) => x.same_round);
+		if (also.length) {
+			lines.push('');
+			lines.push(`Careful: ${r.now} is already in ${also.map((x) => x.bracket + ' ' + x.round + '-' + x.position).join(', ')}, in this same round.`);
+		}
+
+		lines.push('');
+		lines.push('Go ahead?');
+		return lines.join('\n');
+	}
+
+	async function trySwap(f, entrantId, why) {
+		if (busy) return;
+		busy = true;
+		TDC.status(els.status, 'Checking…', '');
+
+		const args = {
+			p_fixture_id: f.fixture_id,
+			p_side: swapping.side,
+			p_entrant_id: entrantId,
+			p_reason: why && why.trim() ? why.trim() : null
+		};
+
+		// The rehearsal. p_apply defaults to false, so this changes nothing.
+		const { data, error } = await supabaseClient.rpc('tdc_swap_fixture_player', args);
+		busy = false;
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+
+		// Nothing to do, said rather than confirmed and applied as a no-op.
+		if (data && data.note) {
+			TDC.status(els.status, data.note, '');
+			swapping = null; candidates = [];
+			render();
+			return;
+		}
+
+		if (!confirm(swapWarning(data))) {
+			TDC.status(els.status, '', '');
+			return;
+		}
+
+		swapping = null; candidates = [];
+		await write('Changing the player', () =>
+			supabaseClient.rpc('tdc_swap_fixture_player',
+				Object.assign({}, args, { p_apply: true })));
 	}
 
 	function action(kind, fixtureId, label, cls, entrantId) {
@@ -638,6 +815,15 @@
 			return;
 		}
 
+		if (button.dataset.act === 'swap') {
+			swapping = { fixtureId: id, side: button.dataset.side };
+			entering = null;
+			candidates = [];
+			render();
+			loadCandidates(id);
+			return;
+		}
+
 		if (button.dataset.act === 'clear-score') {
 			write('Clearing the score', () =>
 				supabaseClient.rpc('tdc_clear_match_override', { p_match_id: matchOf(id) }));
@@ -710,10 +896,11 @@
 		}
 
 		// Several frames land in a burst while somebody clears a rack, and a
-		// typed-in score must not be thrown away under the TD's hands.
+		// typed-in score must not be thrown away under the TD's hands. Nor a
+		// half-made swap: the picker holds a chosen name and a typed reason.
 		clearTimeout(liveTimer);
 		liveTimer = setTimeout(() => {
-			if (busy || entering) return;
+			if (busy || entering || swapping) return;
 			loadDraw().then(() => { if (!readOnly) checkDrift(); });
 		}, 400);
 	}
