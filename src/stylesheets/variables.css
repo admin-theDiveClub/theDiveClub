@@ -72,24 +72,36 @@
 
 [data-theme="light"] {
   /* Teal is deepened so it still reads as text and as a border on cream. */
-  --color-primary: #1a6a70;
+  --color-primary: #594f4f;
   --color-on-primary: #f4e8d2;
 
   --bg-base: #f4e8d2;
-  --bg-surface: rgba(255, 252, 245, 0.75);
+  --bg-surface: rgba(168, 167, 167, 0.1);
 
-  --text-primary: #181818;
-  --text-muted: #6b6151;
+  --text-primary: #20333b;
+  --text-muted: #20333b;
 
-  --border-color: #d9cdb4;
+  --border-color: #c6bba9;
 
-  --color-success: #176b3b;
-  --color-warning: #7d5410;
-  --color-error: #b02121;
+  --color-success: #2a9357;
+  --color-warning: #911818;
+  --color-error: #ff0000;
 
-  --color-owner: #8a5e12;
+  --color-owner: #ff0088;
 
   /* Shadows on a cream page read as dirt at the dark-theme alphas. */
-  --shadow-alpha: 0.35;
-  --scrim-alpha: 0.35;
+  --shadow-alpha: 0;
+  --scrim-alpha: 0.47;
+  --surface-blur: 8px;
+
+  /* Logo. Set from the artwork section of /sandbox/. */
+  --logo-primary: #594f4f;
+  --logo-light: #a8a7a7;
+  --logo-shadow-alpha: 0.32;
+  --logo-blur-alpha: 0.64;
+  --logo-blur: 12.5;
+  --logo-grad-start: 1;
+  --logo-grad-mid: 0;
+  --logo-grad-end: 0;
+  --logo-grad-offset: 0.60562778;
 }
