@@ -6,7 +6,7 @@ Updated at every milestone, in the same breath as giving UV a commit subject. Ne
 
 Last updated: **22 Oct 2026**
 
-**Database is current through `20261022170000`**, verified 22 Oct against `supabase_migrations.schema_migrations` and by checking the function bodies — not taken on trust. **`20261022180000_league_structure.sql` is written and tested but not pushed** (§1).
+**Database is current through `20261022180000`** (leagues step 1, pushed 22 Oct), verified against `supabase_migrations.schema_migrations`. **`20261022190000_league_confirmation_and_captains.sql` is written and tested but not pushed** (§1).
 
 ---
 
@@ -16,7 +16,7 @@ Nothing here can be done by Claude.
 
 | | What | Why it matters |
 |---|---|---|
-| 0 | **Review and push `20261022180000_league_structure.sql`** | Leagues step 1. `npx supabase db push --dry-run`, then `db push`. It also **fixes the walk-in claim** for any signup record that has ever submitted or answered a card (it fails today). No page uses it yet, so nothing visible changes |
+| 0 | **Review and push `20261022190000_league_confirmation_and_captains.sql`** | Leagues step 1 corrections: no walk-ins in a league, every player confirms, captains control their teams. `npx supabase db push --dry-run`, then `db push`. Production has no league rows, so nothing can be stranded. No page uses it yet, so nothing visible changes |
 | 1 | **Play through sections 8, 11, 12 and 13 of the test plan** | Several builds are proven only against a scratch database. The logic is verified; a real league night is not |
 | 1b | **Try the bracket editor on a real draw** | Insert a prelim, add a match to it, click an arrow to rewire, remove a match. Proven against a scratch database and rendered in headless Chromium; never driven by a person. **Check a tournament with a third-place playoff in particular** — it was broken from 22 Oct until this build and nobody hit it |
 | 2 | **Retest the walk-in merge via `/staff/link/`** | The one thing left that could lose real data. Changed again on 21 Oct by the merge fix, so earlier testing no longer counts |
@@ -29,7 +29,7 @@ Nothing here can be done by Claude.
 
 | Area | Chat | State |
 |---|---|---|
-| Leagues | Leagues | **Step 1 of 6 written, not pushed.** Structure: leagues, seasons, teams, entrants, officials; matches get their team keys; the merge fixed. See `CLAUDE.md` → Leagues. Remaining, in order: (2) pages to create and manage a league, so step 1 can be tried by a person; (3) round-robin fixtures and the team match; (4) the three ruleset keys and lineups, with frames created at lock; (5) per-side submission and reconciliation; (6) the captain's scorecard page; then LD-configurable standings |
+| Leagues | Leagues | **Step 1 of 6 pushed; its 22 Oct corrections (walk-ins refused, player confirmation, captains control teams) written, not pushed.** Structure: leagues, seasons, teams, entrants, officials; matches get their team keys; the merge fixed. See `CLAUDE.md` → Leagues. **Paused by UV until the session limit resets.** Remaining, in order: (2) pages to create and manage a league, so step 1 can be tried by a person; (3) round-robin fixtures and the team match (refuses unless the season is ready: every active player confirmed); (4) the three ruleset keys and lineups, with frames created at lock; (5) per-side submission and reconciliation; (6) the captain's scorecard page; then LD-configurable standings |
 
 ---
 
@@ -81,8 +81,7 @@ Work is blocked or will be built wrong without these.
 | Should an unpublished result be marked as pending in a player's own view? | Affects the match page and the match list |
 | Travelling leagues: does a league have an owning venue, or its own fee scope? | Blocks entry fee charging |
 | Shot clock and extension rules the timer hardware reads | Hardware is not specified |
-| Can a walk-in be a league entrant? | `leagues.md` §8. The structure allows it (as tournaments do) so nothing is blocked; it becomes one line in `tdc_add_league_entrant` if the answer is no |
-| Who may create a team: the league director only, or captains too? | Built as director-only, the narrower choice. A captain registering their own team is a different flow and would want its own approval |
+| Captains inviting players to their team | UV, 22 Oct: common practice in existing leagues; to be discussed later. For now the director adds players (mid-season too) and a captain claims them once they have confirmed |
 
 ---
 

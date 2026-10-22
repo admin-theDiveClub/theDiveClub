@@ -1,7 +1,7 @@
 # Leagues — the design, as settled
 
-**Status: designed. The structure in §1 is built (22 Oct, migration
-`20261022180000`); nothing else is.** Nothing in this document is a proposal.
+**Status: designed. The structure in §1 is built (22 Oct, migrations
+`20261022180000` and `20261022190000`); nothing else is.** Nothing in this document is a proposal.
 All of it was decided with UV on 13 Oct 2026 and is reproduced here from that
 session and from `claude/stats-schema-design.md` in the project. The record of
 what was built, and how it differs, is `CLAUDE.md` → *Leagues*.
@@ -38,6 +38,13 @@ way.
 > separate member table); there is no `status` column on a league season until
 > fixtures exist to derive it from; and there is no `discipline` column on a
 > league, because discipline is already a ruleset key.
+>
+> **Settled by UV on 22 Oct, after the first build:** a walk-in or guest can
+> never be a league player; every league player confirms their own place before
+> the league can begin; only the league director creates teams, and captains
+> control them, claiming players who have confirmed. Players can be added
+> mid-season by the director and are then claimed. Captains inviting players is
+> deferred.
 
 **Teams do not persist across seasons.** A new entity each season carrying
 `league_season_id`, with a nullable `team_lineage_id` linking successive
@@ -281,5 +288,6 @@ Carried from `claude/stats-schema-design.md`; none of it blocks starting.
   but a league playing at four clubs owes its fee to the league, not a venue.
   Either a league has an owning venue and fees always settle there, or leagues
   get their own fee scope. Blocks entry fees, not leagues.
-- **Can a walk-in be a league entrant**, or must they claim an account first?
+- ~~Can a walk-in be a league entrant?~~ **Resolved 22 Oct: never.** Walk-ins are for business, tournaments and matches.
+- **Captains inviting players** to their team. Common practice in existing leagues; UV will discuss later.
 - **Approval and dispute mechanics** for the team case in detail.

@@ -297,3 +297,24 @@ These predate the log. They are recorded here because every one of them is a dec
 *Why:* `tbl_match_events.player_id` is `ON DELETE RESTRICT` and the merge never moved it, so a signup record that had ever submitted or answered a card made the walk-in claim fail with a raw foreign-key error. Reproduced against the production definition on a scratch database before changing it. `tbl_deleted_matches` was missing too.
 *Loud, not lossy:* the transaction aborts, so nothing was lost — but the claim simply could not go through, for exactly the players most likely to have played a match.
 *Method:* the live function was patched, not retyped, and diffed against the original with comments intact: additions only.
+
+## 2026-10-22 — Walk-ins and guests can never be league players
+
+*Decided by:* UV
+*Why:* walk-ins are for business operations, tournaments and matches. A league player has to confirm their own place, which takes an account. Claude had defaulted to allowing it, as tournaments do; UV said no.
+*So:* `tdc_add_league_entrant` refuses an accountless player, and an insert trigger on the entrants table refuses it by any other path. Insert-only, because the walk-in merge repoints entrants at a record that only gains its login at the end.
+*Cost:* the merge's same-league-season guard is now unreachable. Kept as a defence; not tested.
+
+## 2026-10-22 — A league player confirms their own place, and the league waits for everyone
+
+*Decided by:* UV
+*Why:* a place is nothing until the player says they are playing. Existing leagues treat confirmation as a step everybody ignores; here it gates the start.
+*So:* `confirmed_at` on the entrant row, set only by the player through `tdc_confirm_league_entry`. Adding a player notifies them. Coming back from a withdrawal clears it. A season is ready when it has an active player and every active player has confirmed; fixtures must refuse otherwise.
+
+## 2026-10-22 — The league director creates teams; captains control them and claim confirmed players
+
+*Decided by:* UV
+*Why:* creating a team is a league-level act. Running one, day to day, is the captain's. Players can be added mid-season by the director, so a team needs a way to take them in.
+*So:* team creation stays with the director. A captain (active and confirmed) may rename the team, claim a player who is in the season, active, confirmed and unplaced, release a player, and name other captains. A team's last captain is protected.
+*Not decided:* captains inviting players themselves. UV: a common practice, to be discussed later.
+
