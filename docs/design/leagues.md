@@ -2,7 +2,8 @@
 
 **Status: designed. The structure in §1 is built (22 Oct, migrations
 `20261022180000` and `20261022190000`), and the pages to create and run a league
-(`/leagues/`, with `20261022200000`); nothing else is.** Nothing in this document is a proposal.
+(`/leagues/`, with `20261022200000`), and the round-robin fixtures and the team
+match (`20261022210000`); the lineups in §3 onwards are not.** Nothing in this document is a proposal.
 All of it was decided with UV on 13 Oct 2026 and is reproduced here from that
 session and from `claude/stats-schema-design.md` in the project. The record of
 what was built, and how it differs, is `CLAUDE.md` → *Leagues*.
@@ -63,6 +64,13 @@ attributed.
 ---
 
 ## 2. A team league night
+
+> **As built (22 Oct).** The schedule itself is `tbl_league_fixtures`: a round
+> robin by the circle method, one to four meetings per pair, generated only
+> once every active player has confirmed. A bye is a row with no away team.
+> `tdc_create_league_match` writes the team match. **Everything below this
+> line — the flat list of frames, the lag per frame, `by_schedule` — is step 4
+> and is not built**; a league match today is a match record with no frames.
 
 Round-robin. **The night is a flat list of frames**, each its own race-to-one
 between two named players, each lagged separately.

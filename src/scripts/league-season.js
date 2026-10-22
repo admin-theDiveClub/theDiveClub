@@ -31,7 +31,8 @@
 		teamCount: el('team-count'), teamList: el('team-list'), teamEmpty: el('team-empty'),
 		officialList: el('official-list'),
 		status: el('page-status'),
-		manageLink: el('manage-link'), manageSep: el('manage-sep')
+		manageLink: el('manage-link'), manageSep: el('manage-sep'),
+		fixturesLink: el('fixtures-link')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -440,6 +441,8 @@
 			TDC.error(AREA, 'no league season in the address. Open this page from the leagues list.', null, els.status);
 			return;
 		}
+
+		els.fixturesLink.href = '/leagues/fixtures/?s=' + encodeURIComponent(seasonId);
 
 		if (!await loadInfo()) return;
 		await loadAll();

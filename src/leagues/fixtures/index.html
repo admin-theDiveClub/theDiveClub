@@ -1,0 +1,102 @@
+---
+layout: layout.html
+title: Fixtures
+description: "The league's schedule, round by round."
+extraScripts:
+  - /scripts/league-fixtures.js
+---
+{% comment %}
+	The schedule of a league season, round by round. Everyone signed in can
+	read it; the league director gets the controls.
+
+	Generating is a round robin — every team plays every other, once or
+	several times — and refuses until every active player has confirmed. That
+	is what confirmation is for: a schedule built on people who have not said
+	they are playing is a schedule that gets rebuilt.
+
+	Everything is one call each: tdc_league_fixtures to read, and
+	tdc_generate_league_fixtures / tdc_clear_league_fixtures /
+	tdc_add_league_fixture / tdc_set_league_fixture /
+	tdc_remove_league_fixture / tdc_create_league_match /
+	tdc_detach_league_match to change it. After every write the list is read
+	again rather than patched here.
+
+	Reached as /leagues/fixtures/?s=<league season id>.
+{% endcomment %}
+
+<div class="tdc-card wide">
+	<h1 id="l-name">Fixtures</h1>
+	<p class="muted" id="l-meta"></p>
+
+	{% comment %}
+		The director's panel. Hidden for everybody else, who are here to read
+		the schedule rather than make it.
+	{% endcomment %}
+	<div class="panel" id="generate-panel" hidden>
+		<h2>Make the schedule</h2>
+		<p class="muted" id="generate-state"></p>
+
+		<div class="field">
+			<label for="times-played">How often does each pair meet?</label>
+			<select id="times-played">
+				<option value="1">Once</option>
+				<option value="2" selected>Twice — home and away</option>
+				<option value="3">Three times</option>
+				<option value="4">Four times</option>
+			</select>
+			<div class="hint" id="times-hint"></div>
+		</div>
+
+		<div class="field">
+			<label for="first-round">First round</label>
+			<input type="datetime-local" id="first-round">
+			<div class="hint">Leave blank to make the schedule without dates and set them yourself.</div>
+		</div>
+
+		<div class="field">
+			<label for="days-between">Days between rounds</label>
+			<input type="number" id="days-between" inputmode="numeric" min="0" max="365" value="7">
+			<div class="hint">7 for a weekly league. Ignored if there is no first round date.</div>
+		</div>
+
+		<div class="btn-row">
+			<button type="button" class="btn btn-primary btn-sm" id="generate-btn">Generate</button>
+			<button type="button" class="btn btn-danger btn-sm" id="clear-btn" hidden>Clear the schedule</button>
+		</div>
+	</div>
+
+	{% comment %}
+		Adding one by hand. A rearranged game, a catch-up week, a team joining
+		late — all ordinary in a league, none of them a repair.
+	{% endcomment %}
+	<div class="panel" id="add-panel" hidden>
+		<h2>Add a fixture</h2>
+		<div class="field">
+			<label for="add-round">Round</label>
+			<input type="number" id="add-round" inputmode="numeric" min="1" value="1">
+		</div>
+		<div class="field">
+			<label for="add-home">Home</label>
+			<select id="add-home"></select>
+		</div>
+		<div class="field">
+			<label for="add-away">Away</label>
+			<select id="add-away"></select>
+			<div class="hint">Leave as "Nobody — a bye" for a team sitting the round out.</div>
+		</div>
+		<button type="button" class="btn btn-secondary btn-sm" id="add-btn">Add it</button>
+	</div>
+
+	<div id="round-list"></div>
+	<div class="empty" id="fixtures-empty" hidden>No fixtures yet.</div>
+
+	<div class="status" id="page-status"></div>
+
+	<div class="link-row">
+		<a href="#" id="season-link">The season</a>
+		<span id="manage-sep" hidden>&nbsp;·&nbsp;</span>
+		<a href="#" id="manage-link" hidden>Run this season</a>
+		&nbsp;·&nbsp;
+		<a href="/leagues/">Back to leagues</a>
+	</div>
+</div>
