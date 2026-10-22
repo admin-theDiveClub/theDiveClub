@@ -176,10 +176,97 @@ const TDCMatchDef = (() => {
 	const MAIN_KEYS = ['win_condition_type', 'win_condition_target', 'track_breaks',
 		'break_determination', 'first_break_side'];
 
+	// ─────────────────────────────────────────────────────────────────
+	// The control for a setting
+	//
+	// Here rather than in a page, for the same reason the definitions are: a
+	// setting's type and its control are one fact. The create page still has
+	// its own copy of this (predates it) and should adopt this one; the round
+	// rules panel on the bracket uses it.
+	//
+	//   def       one entry from SETTINGS
+	//   rules     the ruleset being edited, for the current value
+	//   prefix    so two panels on one page cannot collide on element ids
+	//
+	// Returns a .field with a label, the input, and the hint where there is
+	// one. The input carries data-setting, which is how a page reads it back.
+	// ─────────────────────────────────────────────────────────────────
+	function control(def, rules, prefix) {
+		const id = (prefix || 'set') + '-' + def.key;
+		const value = rules[def.key];
+
+		const row = document.createElement('div');
+		row.className = 'field';
+
+		const label = document.createElement('label');
+		label.textContent = def.label;
+		label.htmlFor = id;
+
+		let input;
+		if (def.type === 'select') {
+			input = document.createElement('select');
+			const options = typeof def.options === 'function' ? def.options() : def.options;
+			for (const [v, text] of Object.entries(options)) {
+				input.append(new Option(text, v, false, v === value));
+			}
+		} else if (def.type === 'bool') {
+			input = document.createElement('input');
+			input.type = 'checkbox';
+			input.checked = !!value;
+		} else if (def.type === 'int') {
+			input = document.createElement('input');
+			input.type = 'number';
+			input.inputMode = 'numeric';
+			if (def.min !== undefined) input.min = def.min;
+			if (def.max !== undefined) input.max = def.max;
+			input.value = value;
+		} else {
+			input = document.createElement('input');
+			input.type = 'text';
+			input.value = value == null ? '' : value;
+			if (def.placeholder) input.placeholder = def.placeholder;
+		}
+
+		input.id = id;
+		input.dataset.setting = def.key;
+
+		row.append(label, input);
+		if (def.hint) {
+			const hint = document.createElement('div');
+			hint.className = 'hint';
+			hint.textContent = def.hint;
+			row.append(hint);
+		}
+		return row;
+	}
+
+	// Which settings belong on a ruleset form right now: the rules ones, that
+	// have somewhere to be stored, whose parent switch is on.
+	function liveRuleKeys(rules) {
+		return SETTINGS.filter((d) =>
+			d.scope === 'rules' && d.stored !== false && (!d.when || d.when(rules)));
+	}
+
+	// Reads a typed value back off a control into the shape the ruleset wants.
+	// Returns undefined for a number that is not one, so a caller can refuse
+	// rather than store NaN.
+	function readValue(def, raw) {
+		if (def.type === 'bool') return !!raw;
+		if (def.type === 'int') {
+			const n = parseInt(raw, 10);
+			if (isNaN(n)) return undefined;
+			if (def.min !== undefined && n < def.min) return undefined;
+			if (def.max !== undefined && n > def.max) return undefined;
+			return n;
+		}
+		return raw;
+	}
+
 	return {
 		DISCIPLINE, BREAK_OUTCOME, RESULT_EVENT, RESULT_SHORT, BREAK_DETERMINATION,
 		WIN_CONDITION, TIME_EXPIRY, TIEBREAK, SCORE_ENTRY, APPROVAL, SIDE_TAG, SIDES,
 		GROUPS, SETTINGS, DEFAULT_RULES, MAIN_KEYS,
+		control, liveRuleKeys, readValue,
 		setSideNames(fn) { sideNames = fn; }
 	};
 })();

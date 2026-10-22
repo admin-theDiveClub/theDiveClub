@@ -5,6 +5,7 @@ description: "The draw for a tournament: who plays who, and who has gone through
 extraStyles:
   - /stylesheets/bracket.css
 extraScripts:
+  - /scripts/match-settings.js
   - /scripts/tournament-bracket.js
 ---
 {% comment %}
@@ -81,6 +82,33 @@ extraScripts:
 		<div class="btn-row">
 			<button type="button" class="btn btn-primary btn-sm" id="drift-apply">Update the draw</button>
 		</div>
+	</div>
+
+	{% comment %}
+		The rules for one round, opened from the heading above a column. Lives
+		outside the scrolling bracket on purpose: inside it, a panel this tall
+		would scroll sideways away from the person filling it in.
+	{% endcomment %}
+	<div class="panel" id="round-rules" hidden>
+		<h2 id="round-rules-head">Rules for this round</h2>
+		<p class="muted" id="round-rules-note"></p>
+
+		<div id="round-rules-main"></div>
+		<div id="round-rules-rest"></div>
+
+		<div class="field round-rules-scope">
+			<label for="round-rules-later">Apply to the later rounds too</label>
+			<input type="checkbox" id="round-rules-later">
+			<div class="hint">Every round above this one that is already drawn.</div>
+		</div>
+
+		<div class="btn-row">
+			<button type="button" class="btn btn-primary btn-sm" id="round-rules-save">Check and apply</button>
+			<button type="button" class="btn btn-danger btn-sm" id="round-rules-clear" hidden>Use the tournament's rules</button>
+			<button type="button" class="btn btn-secondary btn-sm" id="round-rules-cancel">Cancel</button>
+		</div>
+
+		<div class="status" id="round-rules-status"></div>
 	</div>
 
 	<!-- The bracket itself, built by tournament-bracket.js -->

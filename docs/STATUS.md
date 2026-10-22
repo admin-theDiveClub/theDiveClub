@@ -6,7 +6,7 @@ Updated at every milestone, in the same breath as giving UV a commit subject. Ne
 
 Last updated: **22 Oct 2026**
 
-**Database is current.** All migrations through `20261022130000` are applied to `thediveclub-prod`, verified 22 Oct against `supabase_migrations.schema_migrations` and by checking the function bodies — not taken on trust.
+**Database is current.** All migrations through `20261022140000` are applied to `thediveclub-prod`, verified 22 Oct against `supabase_migrations.schema_migrations` and by checking the function bodies — not taken on trust.
 
 ---
 
@@ -27,7 +27,7 @@ Nothing here can be done by Claude.
 
 | Area | Chat | State |
 |---|---|---|
-| — | — | Nothing mid-flight. The tournament track reached a natural stopping point on 21 Oct |
+| — | — | Nothing mid-flight |
 
 ---
 
@@ -37,8 +37,7 @@ In the order it probably makes sense.
 
 | | What | Notes |
 |---|---|---|
-| 1 | **Per-round match settings** | **Needs discussion.** See §5 |
-| 2 | **Adding rounds and matches mid-tournament** | **Needs discussion.** See §5 |
+| 1 | **Adding rounds and matches mid-tournament** | **Needs discussion.** See §5 |
 
 ---
 
@@ -74,7 +73,6 @@ Work is blocked or will be built wrong without these.
 
 | Question | Why it is not Claude's call |
 |---|---|
-| **Per-round match settings** — what happens to matches in a round that have already started when the round's ruleset changes? | A match freezes its ruleset at creation *on purpose*, so a later change cannot rescore played frames. Changing a round's settings therefore has to say what happens to matches already under way, and whether a round becomes a real row |
 | **Adding rounds and matches mid-tournament** — pre-sized bracket with empty slots, or genuinely insert fixtures and rewire everything downstream? | Fixtures are generated as a complete shape and nothing adds to them afterwards. The second option is where byes, seeding and the cascade all meet |
 | **Notifications** — what gets sent, to whom, and on what | UV asked to discuss before anything is built |
 | Does a coordinator's rejection need a reason? | A dispute does. A rejection currently requires one in the function; confirm that is wanted |
@@ -92,6 +90,7 @@ Real, small, and none of them blocking.
 | | Area |
 |---|---|
 | Settings writes are still last-write-wins | Frames are guarded, settings are not |
+| The create page builds its settings form from its own older copy | `tournament-new.js` predates `TDCMatchDef.control()`; the bracket's round panel uses the shared one. Two places that can drift (22 Oct) |
 | The match list and nav are not live | Everything else is |
 | A future fixture does not read as upcoming in the match list | |
 | No audit log for staff linking walk-ins | Frames have one; this does not |

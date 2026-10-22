@@ -30,7 +30,12 @@
 		runRow: el('run-row'), tProgression: el('t-progression'),
 		tCreateMatches: el('t-create-matches'), createMatchesHint: el('create-matches-hint'),
 		drift: el('drift'), driftIntro: el('drift-intro'),
-		driftList: el('drift-list'), driftApply: el('drift-apply')
+		driftList: el('drift-list'), driftApply: el('drift-apply'),
+		roundRules: el('round-rules'), roundRulesHead: el('round-rules-head'),
+		roundRulesNote: el('round-rules-note'), roundRulesMain: el('round-rules-main'),
+		roundRulesRest: el('round-rules-rest'), roundRulesLater: el('round-rules-later'),
+		roundRulesSave: el('round-rules-save'), roundRulesClear: el('round-rules-clear'),
+		roundRulesCancel: el('round-rules-cancel'), roundRulesStatus: el('round-rules-status')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -565,7 +570,9 @@
 			const inRound = main.filter((f) => f.round === r);
 			if (!inRound.length) continue;
 			const col = node('div', 'bracket-round');
-			col.append(node('h2', 'bracket-round-name', roundName(r, lastRound)));
+			const head = node('h2', 'bracket-round-name', roundName(r, lastRound));
+			if (!readOnly) head.append(roundRulesButton('main', r));
+			col.append(head);
 			col.append(...inRound.map(fixture));
 			columns.push(col);
 		}
@@ -575,7 +582,9 @@
 		const third = fixtures.filter((f) => f.bracket === 'third_place');
 		if (third.length) {
 			const col = node('div', 'bracket-round');
-			col.append(node('h2', 'bracket-round-name', 'Third place'));
+			const tpHead = node('h2', 'bracket-round-name', 'Third place');
+			if (!readOnly) tpHead.append(roundRulesButton(rest[0].bracket, rest[0].round));
+			col.append(tpHead);
 			col.append(...third.map(fixture));
 			columns.push(col);
 		}
@@ -587,7 +596,7 @@
 	async function loadTournament() {
 		const { data, error } = await supabaseClient
 			.from('tbl_tournaments')
-			.select('id, name, format, status, starts_at, third_place, progression, create_matches')
+			.select('id, name, format, status, starts_at, third_place, progression, create_matches, rules')   // rules: the round panel starts from the tournament's own ruleset
 			.eq('id', tournamentId)
 			.maybeSingle();
 
@@ -625,6 +634,7 @@
 		});
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		fixtures = data || [];
+		await loadRoundRules();
 		render();
 		// The set of live matches changes as rounds resolve, so the
 		// subscription is re-pointed after every read rather than fixed at
@@ -714,6 +724,248 @@
 		write('Saving', () => supabaseClient.rpc('tdc_update_tournament', {
 			p_tournament_id: tournamentId, p_create_matches: els.tCreateMatches.value })));
 
+
+	// ─────────────────────────────────────────────────────────────────
+	// The rules for a round
+	//
+	// A tournament's ruleset is its default; a round may differ — race to 3
+	// early, race to 5 from the semis. Stored per round
+	// (20261022140000), so a match created later in that round inherits it
+	// rather than quietly getting the tournament's.
+	//
+	// Every write rehearses first. tdc_set_round_rules returns what it would
+	// do — which matches change, how many are being played right now — and
+	// that is what the confirmation is built from, rather than a guess made
+	// here.
+	// ─────────────────────────────────────────────────────────────────
+
+	// What each round's stored ruleset is, keyed "bracket:round". Absent means
+	// the round follows the tournament.
+	let roundRules = new Map();
+	// The round whose panel is open, as { bracket, round }, and the ruleset
+	// being edited in it.
+	let editingRound = null;
+	let draftRules = null;
+	const openRuleGroups = new Set();
+
+	const roundKey = (bracket, round) => bracket + ':' + round;
+
+	async function loadRoundRules() {
+		if (readOnly) { roundRules = new Map(); return; }
+
+		const { data, error } = await supabaseClient.rpc('tdc_round_rules', {
+			p_tournament_id: tournamentId
+		});
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+
+		roundRules = new Map((data || []).map((r) => [roundKey(r.bracket, r.round), r.rules]));
+	}
+
+	// The heading button on a round column. Says whether the round differs,
+	// because that is the thing a TD scanning the bracket wants to know.
+	function roundRulesButton(bracket, round) {
+		const own = roundRules.get(roundKey(bracket, round));
+
+		const b = node('button', 'bracket-round-rules' + (own ? ' differs' : ''));
+		b.type = 'button';
+		b.dataset.act = 'round-rules';
+		b.dataset.bracket = bracket;
+		b.dataset.round = String(round);
+
+		if (own) {
+			// The one setting worth showing at a glance. Everything else is
+			// behind the panel.
+			const target = own.win_condition_target;
+			const kind = TDCMatchDef.WIN_CONDITION[own.win_condition_type] || '';
+			b.textContent = target ? `${kind} ${target}` : 'Own rules';
+			b.title = 'This round has its own rules';
+		} else {
+			b.textContent = 'Rules';
+			b.title = 'This round follows the tournament';
+		}
+		return b;
+	}
+
+	function openRoundRules(bracket, round) {
+		editingRound = { bracket, round };
+		// Start from whatever the round is actually played under: its own
+		// rules if it has them, the tournament's if not. Copied, so cancelling
+		// leaves nothing behind.
+		draftRules = Object.assign({},
+			roundRules.get(roundKey(bracket, round)) || (tournament && tournament.rules) || {});
+		openRuleGroups.clear();
+		renderRoundRules();
+		els.roundRules.hidden = false;
+		els.roundRules.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+	}
+
+	function closeRoundRules() {
+		editingRound = null;
+		draftRules = null;
+		els.roundRules.hidden = true;
+		TDC.status(els.roundRulesStatus, '', '');
+	}
+
+	function renderRoundRules() {
+		if (!editingRound) return;
+		const { bracket, round } = editingRound;
+		const own = roundRules.get(roundKey(bracket, round));
+
+		els.roundRulesHead.textContent = 'Rules for ' + fixtureName(bracket, round, 1)
+			.replace(/ · Match 1$/, '');
+		els.roundRulesNote.textContent = own
+			? 'This round has its own rules. Matches started in it from now on will use these.'
+			: 'This round follows the tournament. Changing anything here gives it rules of its own.';
+		els.roundRulesClear.hidden = !own;
+
+		const live = TDCMatchDef.liveRuleKeys(draftRules);
+
+		els.roundRulesMain.replaceChildren(
+			...live.filter((d) => TDCMatchDef.MAIN_KEYS.includes(d.key))
+				.map((d) => TDCMatchDef.control(d, draftRules, 'rr'))
+		);
+
+		els.roundRulesRest.replaceChildren();
+		for (const group of TDCMatchDef.GROUPS) {
+			const defs = live.filter(
+				(d) => d.group === group && !TDCMatchDef.MAIN_KEYS.includes(d.key));
+			if (!defs.length) continue;
+
+			const box = document.createElement('details');
+			box.className = 'set-group';
+			// The form is rebuilt whenever a setting changes, so a group that
+			// was open has to be put back open — otherwise ticking a box folds
+			// away the box you just ticked.
+			box.open = openRuleGroups.has(group);
+			box.addEventListener('toggle', () => {
+				if (box.open) openRuleGroups.add(group); else openRuleGroups.delete(group);
+			});
+
+			const head = document.createElement('summary');
+			head.textContent = group;
+			box.append(head, ...defs.map((d) => TDCMatchDef.control(d, draftRules, 'rr')));
+			els.roundRulesRest.append(box);
+		}
+	}
+
+	els.roundRules.addEventListener('change', (e) => {
+		const input = e.target.closest('[data-setting]');
+		if (!input || !draftRules) return;
+
+		const def = TDCMatchDef.SETTINGS.find((d) => d.key === input.dataset.setting);
+		if (!def) { TDC.error(AREA, 'no definition for setting: ' + input.dataset.setting); return; }
+
+		const value = TDCMatchDef.readValue(def, def.type === 'bool' ? input.checked : input.value);
+		if (value === undefined) {
+			TDC.status(els.roundRulesStatus,
+				def.label + ' needs a number'
+					+ (def.min !== undefined ? ' between ' + def.min + ' and ' + def.max : '') + '.', '');
+			return;
+		}
+		draftRules[def.key] = value;
+		TDC.status(els.roundRulesStatus, '', '');
+
+		// Turning one setting on can reveal others, so the form is rebuilt and
+		// focus put back — otherwise a checkbox throws you to the top.
+		const id = input.id;
+		renderRoundRules();
+		const again = document.getElementById(id);
+		if (again) again.focus({ preventScroll: true });
+	});
+
+	// Builds the confirmation out of the rehearsal. Every line comes from the
+	// report; nothing is worked out here.
+	function roundRulesWarning(r) {
+		const lines = [];
+		const rounds = r.rounds || [];
+		lines.push(rounds.length === 1
+			? 'Round ' + rounds[0] + '.'
+			: 'Rounds ' + rounds.join(', ') + '.');
+
+		const changed = r.changed || [];
+		if (!changed.length) {
+			lines.push('');
+			lines.push('No match has been started in it yet, so this only decides what future matches use.');
+		} else {
+			lines.push('');
+			lines.push(changed.length === 1
+				? 'One match already exists and will be changed.'
+				: changed.length + ' matches already exist and will be changed.');
+
+			if (r.in_progress > 0) {
+				lines.push('');
+				lines.push(r.in_progress === 1
+					? 'One of them is being played. Its frames are kept, but the break order is worked out again under the new rules.'
+					: r.in_progress + ' of them are being played. Their frames are kept, but the break order is worked out again under the new rules.');
+			}
+		}
+
+		const skipped = r.skipped || [];
+		if (skipped.length) {
+			lines.push('');
+			lines.push('Left alone:');
+			for (const s of skipped) {
+				lines.push(`  Round ${s.round} · Match ${s.position} — ${s.why}`);
+			}
+		}
+
+		lines.push('');
+		lines.push('Go ahead?');
+		return lines.join('\n');
+	}
+
+	els.roundRulesSave.addEventListener('click', async () => {
+		if (busy || !editingRound) return;
+		const { bracket, round } = editingRound;
+		const later = els.roundRulesLater.checked;
+
+		busy = true;
+		TDC.status(els.roundRulesStatus, 'Checking…', '');
+
+		const args = {
+			p_tournament_id: tournamentId,
+			p_round: round,
+			p_rules: draftRules,
+			p_bracket: bracket,
+			p_and_later: later
+		};
+
+		// The rehearsal. p_apply defaults to false, so this changes nothing.
+		const { data, error } = await supabaseClient.rpc('tdc_set_round_rules', args);
+		busy = false;
+		if (error) { TDC.showSupabaseError(AREA, error, els.roundRulesStatus); return; }
+
+		if (!confirm(roundRulesWarning(data))) {
+			TDC.status(els.roundRulesStatus, '', '');
+			return;
+		}
+
+		closeRoundRules();
+		await write('Saving the rules', () =>
+			supabaseClient.rpc('tdc_set_round_rules', Object.assign({}, args, { p_apply: true })));
+	});
+
+	els.roundRulesClear.addEventListener('click', async () => {
+		if (busy || !editingRound) return;
+		const { bracket, round } = editingRound;
+		const later = els.roundRulesLater.checked;
+
+		if (!confirm('Hand this round back to the tournament\'s rules?\n\n'
+			+ 'Matches already started keep the rules they were started under — '
+			+ 'this decides what future ones use.')) return;
+
+		closeRoundRules();
+		await write('Clearing the rules', () =>
+			supabaseClient.rpc('tdc_clear_round_rules', {
+				p_tournament_id: tournamentId,
+				p_round: round,
+				p_bracket: bracket,
+				p_and_later: later
+			}));
+	});
+
+	els.roundRulesCancel.addEventListener('click', closeRoundRules);
+
 	// ─── When the draw disagrees with its own results ───
 	// A rehearsal, not an estimate: tdc_cascade_draw does the whole thing in a
 	// subtransaction and rolls it back, so the list below is exactly what
@@ -776,11 +1028,6 @@
 		await resolve();
 		const ok = await loadDraw();
 		busy = false;
-
-		// Anything that just caused a notification goes out now rather than
-		// waiting for the next page load. Not awaited: the person is waiting
-		// on the list, not on somebody else's phone buzzing.
-		TDC.flushPushes();
 		if (ok) {
 			TDC.status(els.status, '', '');
 			// The tournament row too, not just the draw: the two run settings
@@ -903,6 +1150,11 @@
 			return;
 		}
 
+		if (button.dataset.act === 'round-rules') {
+			openRoundRules(button.dataset.bracket, parseInt(button.dataset.round, 10));
+			return;
+		}
+
 		if (button.dataset.act === 'swap') {
 			swapping = { fixtureId: id, side: button.dataset.side };
 			entering = null;
@@ -988,7 +1240,7 @@
 		// half-made swap: the picker holds a chosen name and a typed reason.
 		clearTimeout(liveTimer);
 		liveTimer = setTimeout(() => {
-			if (busy || entering || swapping) return;
+			if (busy || entering || swapping || editingRound) return;
 			loadDraw().then(() => { if (!readOnly) checkDrift(); });
 		}, 400);
 	}

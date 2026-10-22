@@ -479,6 +479,26 @@ UV, 20 Oct: with `progression: automatic` a change upstream cascades downstream 
 - Verified on a throwaway Postgres with a fully played 8-player bracket: overriding fixture 1-1 the other way, the rehearsal reported the semi-final and final changes and two published matches to detach, and left the database untouched; applying it reseated the semi, emptied the final, kept both detached matches with their frames (7 matches before, 8 after — one new semi, nothing deleted), left a hand-placed entrant alone, and did nothing at all under manual progression.
 
 
+### A round's own rules (migration `20261022140000`)
+A tournament's ruleset is its default; a round may differ — race to 3 early, race to 5 from the semis. UV, 22 Oct: stored and editable before the round starts, applied to matches that already exist **after showing which ones**, with a checkbox for "and later rounds".
+- **This does not break the frozen-ruleset principle, it completes it.** A match copies its ruleset at creation so that a later change cannot rescore played frames. That frozen copy says what a match *was played under*. The round row says what a match *started from now on* will use. Before this, a match created later in a round silently got the tournament's rules, which is the thing that was actually wrong.
+- **`tbl_tournament_round_rules`**, keyed `(tournament_id, bracket, round)`. **No row means the round follows the tournament** — nothing to create up front, nothing to backfill, and clearing is a delete rather than a flag.
+- **`private.tdc_rules_for_round(tournament, bracket, round)` is the one place that resolves it**, round first then tournament. `tdc_create_fixture_match` calls it instead of reading `tournament.rules`, which is the single line that makes the whole thing work.
+- **`tdc_set_round_rules` rehearses before it writes**, the same subtransaction pattern as the cascade: `p_apply` defaults to false, and the first call returns which matches change, how many are **being played right now**, and which are **skipped and why**. The TD confirms against the report, not against a guess.
+- **A card that is agreed or published is skipped, not fought with.** It is reported as skipped with its reason.
+- **A match being played keeps its frames** and has its break order derived again under the new rules. Nothing is rescored — the derivation was always a function of the frames plus the ruleset.
+- **A ruleset the matches would refuse is refused here too**, by the same validation. There is no second, looser check.
+- `p_and_later` covers every round above this one that is already drawn. `tdc_clear_round_rules` takes it too.
+- `public.tdc_round_rules(tournament)` lists the stored rows with a match count, for the page.
+- Verified on a throwaway Postgres (`/var/tmp/tests/roundrules.sql`): a round with no row inherits; setting the final to race 5 before anyone reaches it leaves round 1 alone and freezes 5 onto the final when it is created; the rehearsal on a round with two live matches reported them and changed nothing; applying re-derived them and kept their frames; an agreed card was skipped; `and later` covered every drawn round; a bad ruleset was refused; clearing handed the round back while already-played matches kept what they were played under; and a player could neither set nor clear.
+
+#### The panel (`tournaments/bracket/`, `scripts/tournament-bracket.js`, `scripts/match-settings.js`)
+- Each round heading carries a small pill. Quiet and reading "Rules" when the round follows the tournament; highlighted and reading the headline setting — "Race to 5" — when it does not, because that is what a TD scanning a bracket wants to know without opening anything.
+- The panel itself lives **outside** the horizontally scrolling bracket. Inside it, a form this tall scrolls sideways away from the person filling it in.
+- It is built from `TDCMatchDef`, not from a hand-written form. `control(def, rules, prefix)`, `liveRuleKeys(rules)` and `readValue(def, raw)` were added to the module for this; the `prefix` argument exists so two settings panels on one page cannot collide on element ids. **The create page still builds its own older copy of the same form** — recorded as a gap, not fixed here.
+- The confirmation text is built line by line out of the rehearsal. Nothing in it is worked out in the browser.
+- **`.tdc-card button` in `forms.css` is a full-width pill and outranks a single class.** The heading pill came out 233×45px, stretched to the whole column, until it was written as `.tdc-card .bracket-round-rules` with `width`, `height` and `margin` undone explicitly. Found by rendering it in headless Chromium — nothing in the markup or the stylesheet reads as wrong.
+
 ## Notifications (migrations `20261022100000`, `110000`, `120000`)
 
 - **A record first, a push second.** Until 22 Oct the only notification was a push, fired from the page by `notify-card`. A push is handed to Apple or Google and forgotten: phone off, or notifications never switched on — which is most people — and it never happened, with nothing to find later. UV's case: a TD enters sixteen players on Tuesday for Saturday, and most of them learn nothing. So **every notification is a row the recipient can come back to**, and a push goes on top where they have allowed it. A failed push is then not data loss.

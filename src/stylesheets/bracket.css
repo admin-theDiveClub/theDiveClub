@@ -314,3 +314,56 @@
 	color: var(--text-muted);
 	font-style: italic;
 }
+
+/* -- A round's own rules ------------------------------------------
+ *
+ * A small button on the round heading. Quiet when the round follows the
+ * tournament, and carrying the headline setting when it does not - a TD
+ * scanning a bracket wants to see at a glance which rounds differ.
+ *
+ * Scoped under .tdc-card deliberately: forms.css styles `.tdc-card button`
+ * as a full-width pill, which outranks a single class and stretched this to
+ * the whole column. Two classes beat it, and the inherited box is undone
+ * below rather than fought with. */
+
+.tdc-card .bracket-round-rules {
+	display: inline-block;
+	width: auto;
+	height: auto;
+	margin: 0 0 0 var(--space-2);
+	padding: 0.15rem 0.5rem;
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-pill);
+	background: none;
+	color: var(--text-muted);
+	font-family: var(--font-body);
+	font-size: 0.65rem;
+	font-weight: 400;
+	letter-spacing: 0.04em;
+	text-transform: none;
+	vertical-align: middle;
+	cursor: pointer;
+}
+
+.tdc-card .bracket-round-rules:hover,
+.tdc-card .bracket-round-rules:focus-visible {
+	border-color: var(--color-primary);
+	color: var(--color-primary);
+}
+
+/* The round is not playing by the tournament's rules. Worth saying loudly:
+   somebody reading the bracket needs to know the semis are a longer race. */
+.tdc-card .bracket-round-rules.differs {
+	border-color: var(--color-primary);
+	color: var(--color-primary);
+	font-weight: 700;
+}
+
+/* The scope question is not another setting — it decides how far everything
+   above it reaches. Set apart so it does not read as the tail of the last
+   collapsed group. */
+.tdc-card .round-rules-scope {
+	margin-top: var(--space-4);
+	padding-top: var(--space-4);
+	border-top: 1px solid var(--border-color);
+}
