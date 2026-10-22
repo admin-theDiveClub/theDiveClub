@@ -6,7 +6,7 @@ Updated at every milestone, in the same breath as giving UV a commit subject. Ne
 
 Last updated: **22 Oct 2026**
 
-**Database is current through `20261022210000`** (leagues steps 1 to 3, pushed 22 Oct), verified against `supabase_migrations.schema_migrations`. **`20261022220000_ruleset_v2.sql` is written and tested but not pushed** (§1).
+**Database is current through `20261022210000`** (leagues steps 1 to 3, pushed 22 Oct), verified against `supabase_migrations.schema_migrations`. **`20261022220000_ruleset_v2.sql` and `20261022230000_league_lineups.sql` are written and tested but not pushed** (§1).
 
 ---
 
@@ -16,7 +16,8 @@ Nothing here can be done by Claude.
 
 | | What | Why it matters |
 |---|---|---|
-| 0 | **Push `20261022220000_ruleset_v2.sql`** | Leagues step 4, first half. Ruleset version 2 adds `lineup_cutoff_hours` and `strict_frame_order`. **Version 1 is untouched and the eighteen matches already played keep their 23 keys** — that is tested, including the exact round-trip the match page does. `npx supabase db push --dry-run`, then `db push` |
+| 0 | **Push `20261022220000` and `20261022230000`** | Leagues step 4. Ruleset version 2, then the squads, lineups and the frames they make. **Version 1 is untouched and the eighteen matches already played keep their 23 keys**, tested including the exact round-trip the match page does. `npx supabase db push --dry-run`, then `db push` |
+| 0a | **Play a singles match straight after pushing** | `20261022230000` patches **`tdc_record_frame`**, which every match in the system goes through, and **`private.tdc_can_edit_match`**. Both changes are additive and covered by new tests, but the original match suites from 15–21 Oct did not survive the container they were built in, so a real singles match is the only end-to-end check there is |
 | 0b | **Try the league pages on a phone** | Steps 2 and 3 are pushed and were proven only on a throwaway Postgres driven by headless Chromium. At `/leagues/`: create a league, add a second account, make two teams, confirm as both, generate the fixtures, start a match |
 | 1 | **Play through sections 8, 11, 12 and 13 of the test plan** | Several builds are proven only against a scratch database. The logic is verified; a real league night is not |
 | 1b | **Try the bracket editor on a real draw** | Insert a prelim, add a match to it, click an arrow to rewire, remove a match. Proven against a scratch database and rendered in headless Chromium; never driven by a person. **Check a tournament with a third-place playoff in particular** — it was broken from 22 Oct until this build and nobody hit it |
@@ -30,7 +31,7 @@ Nothing here can be done by Claude.
 
 | Area | Chat | State |
 |---|---|---|
-| Leagues | Leagues | **Steps 1 to 3 of 6 built, step 4 started.** Step 1 and its corrections (walk-ins refused, player confirmation, captains control teams) are pushed; steps 2 (the pages) and 3 (round-robin fixtures and the team match) are written, with `200000` and `210000` not yet pushed. Structure: leagues, seasons, teams, entrants, officials; matches get their team keys; the merge fixed. See `CLAUDE.md` → Leagues. Remaining, in order: (4) **the ruleset keys are done** (`20261022220000`, version 2) — the lineups themselves are next: the squad and order tables, with frames created at lineup lock; (5) per-side submission and reconciliation; (6) the captain's scorecard page; then LD-configurable standings |
+| Leagues | Leagues | **Steps 1 to 4 of 6 built.** Step 1 and its corrections (walk-ins refused, player confirmation, captains control teams) are pushed; steps 2 (the pages) and 3 (round-robin fixtures and the team match) are written, with `200000` and `210000` not yet pushed. Structure: leagues, seasons, teams, entrants, officials; matches get their team keys; the merge fixed. See `CLAUDE.md` → Leagues. Remaining, in order: (5) per-side submission and reconciliation; (6) the captain's scorecard page; then LD-configurable standings |
 
 ---
 
@@ -40,7 +41,7 @@ In the order it probably makes sense.
 
 | | What | Notes |
 |---|---|---|
-| 1 | **Leagues, step 4: lineups** | See §2. The keys are done (ruleset version 2). Next: the squad and order tables — squad open to everyone, order a blind exchange locked at match start — with frames created at lock, a `default` frame for a slot only one side filled, and no frame at all where neither did. Designed in `docs/design/leagues.md` §3 |
+| 1 | **Leagues, step 5: submission and reconciliation** | See §2. One shared card plus a version: each captain submits the `card_version` they signed, and two submissions only agree when they refer to the same card. **It has to understand a `pending` frame** — a card with slots nobody has played is not finished — which `tdc_submit_card` and `tdc_approve_card` know nothing about yet. Designed in `docs/design/leagues.md` §5 |
 | 2 | **UV to play through the bracket editor** | Built and render-checked, not yet used on a real draw. See §1 |
 
 ---
@@ -96,7 +97,8 @@ Real, small, and none of them blocking.
 | League pages not built yet | Per-season rule overrides, continuing a team from an earlier season, a venue picker, and a page to edit a league's own rules (`tdc_update_league` has no form). None blocks lineups |
 | **The 23 version 1 ruleset keys are not type-checked** | `private.tdc_check_match_rules` checks that the keys are present and that the enumerated values are known, but never that `win_condition_target` is a number or `draws_allowed` a boolean. The two version 2 keys added 22 Oct are checked; the older ones are a job of their own. The design note calls this jsonb quietly becoming an unvalidated config format the heaviest standing risk in the system |
 | **Nothing tells the players the fixtures are out** | Generating notifies nobody on purpose (`docs/DECISIONS.md`): a fresh schedule is the director's working document and regenerating it is ordinary. Telling them should be a separate act, as sharing a tournament poster is. Not built |
-| A league match cannot be scored | `tdc_create_league_match` writes a team match and the match page refuses to load one. Expected until step 6; the fixtures page says so when it creates one |
+| **`tdc_submit_card` and `tdc_approve_card` do not know about `pending` frames** | A team card exists from the lock with a row per slot. Nothing stops a card being submitted with slots nobody has played. Step 5's job |
+| A league match cannot be scored **from a page** | The database side works: `tdc_record_frame` scores a team frame and keeps its players. There is no screen for it — the match page still refuses a team match, and the captain's scorecard is step 6. The fixtures page says so when it creates one |
 | `tdc_remove_league_entrant` removes anyone | Fine while there are no fixtures. Once there are, it should refuse for a player who has played — as `tdc_remove_entrant` should have |
 | Settings writes are still last-write-wins | Frames are guarded, settings are not |
 | The match list and nav are not live | Everything else is |

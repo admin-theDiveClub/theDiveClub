@@ -98,6 +98,12 @@ frames complete in order, and frame 4 routinely finishes before frame 3.
 
 ## 3. Lineups
 
+> **As built (22 Oct, `20261022230000`).** Squad, order and lock are three
+> tables; the blind exchange is enforced in `tdc_match_lineup`, not in a
+> policy. Frames are created when the second side locks, exactly as the three
+> rules below say. **Not built:** nothing yet reads `strict_frame_order` — it
+> is stored and validated, and the scorecard that would obey it is step 6.
+
 - **Squad is open** to everyone and editable. **Order is a blind exchange**
   between captains, locked at match start.
 - **Submitting a lineup is confirming participation** for the night, even a

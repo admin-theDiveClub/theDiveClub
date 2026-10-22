@@ -362,3 +362,23 @@ These predate the log. They are recorded here because every one of them is a dec
 *Why:* a lineup cutoff and a strict frame order mean nothing on a social match or a tournament, and `TDCMatchDef` has no idea which kind of thing a form is being built for. Every page already builds its form by looping `GROUPS`.
 *So:* the two settings sit in a group called `Team play` which is **not** in `GROUPS`, exported separately as `LEAGUE_GROUPS`. The match panel and the tournament create page skip them without being changed at all; the league pages loop `GROUPS.concat(LEAGUE_GROUPS)`. They are still stored in the ruleset, as version 2 requires.
 
+## 2026-10-22 — A frame can exist before it is played
+
+*Decided by:* Claude
+*Why:* a team night's card is a grid that exists from the moment the lineups lock — every slot, both names, nothing played. The three frame statuses all meant a frame that had at least started, so there was no way to write that grid down.
+*So:* `pending` joins them. Only a team match ever has one, and everything that counts a score already asks for `status = 'complete'`, so a pending frame adds nothing to anybody's total. What it does is give the scorecard a row to write into.
+*Follows from it:* step 5 has to teach `tdc_submit_card` what a pending frame means, because a card with slots nobody has played is not a finished card. Recorded in `docs/STATUS.md` §6.
+
+## 2026-10-22 — The blind exchange is enforced in a function, not a policy
+
+*Decided by:* Claude
+*Why:* neither captain may see the other's order until both have locked. A row-level policy able to express that would have to re-implement the lock rule, and then the rule lives in two places and they drift.
+*So:* `tbl_league_match_order` has RLS on, no policy and no grant — the same shape as `tbl_league_season_entrants`, which is closed because it carries payment. `tdc_match_lineup` is the only way in, and it returns every slot of both sides with the opponent's **names** withheld, so a captain still sees how much of the other lineup is filled. An empty slot is never a secret.
+
+## 2026-10-22 — Recording a frame falls back to the players it already has
+
+*Decided by:* Claude
+*Why:* `tdc_record_frame` took a frame's players from the payload alone. A team frame is given its two players when the lineups lock, and a scorer tapping in a result sends nothing about who played — so recording it failed outright, and would have emptied the frame if it had not.
+*So:* when the payload names nobody, the people already in the frame are used. Nothing changes for a singles match, where both sides are filled from the match's own players before this runs, or for doubles, where the page sends the list and wholesale replacement is the point.
+*Note:* this is a change to the most used function in the system, found by writing the tests rather than by reading. The original match suites did not survive their container, so `docs/STATUS.md` §1 asks for a real singles match after the push.
+
