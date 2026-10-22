@@ -6,7 +6,7 @@ Updated at every milestone, in the same breath as giving UV a commit subject. Ne
 
 Last updated: **22 Oct 2026**
 
-**Database is current.** All migrations through `20261022140000` are applied to `thediveclub-prod`, verified 22 Oct against `supabase_migrations.schema_migrations` and by checking the function bodies — not taken on trust.
+**Database is current.** All migrations through `20261022150000` are applied to `thediveclub-prod`, verified 22 Oct against `supabase_migrations.schema_migrations` and by checking the function bodies — not taken on trust.
 
 ---
 
@@ -37,7 +37,8 @@ In the order it probably makes sense.
 
 | | What | Notes |
 |---|---|---|
-| 1 | **Adding rounds and matches mid-tournament** | **Needs discussion.** See §5 |
+| 1 | **Progression arrows on the bracket** | The drawing of what `20261022150000` made editable: an arrow per slot, a "+" on the border between two rounds, and a picker for where a slot comes from. The TD's whole mental model, and the reason the two functions below exist |
+| 2 | **Inserting a round** | Renumbers. `round` is an integer and `tbl_tournament_round_rules` keys off it, so the insert has to move those rows with it. UV chose renumbering over sparse ordering, 22 Oct. `roundName()` deriving "Semi-finals" from distance to the last round also stops being true once the ladder is not a clean power of two |
 
 ---
 
@@ -73,8 +74,6 @@ Work is blocked or will be built wrong without these.
 
 | Question | Why it is not Claude's call |
 |---|---|
-| **Adding rounds and matches mid-tournament** — pre-sized bracket with empty slots, or genuinely insert fixtures and rewire everything downstream? | Fixtures are generated as a complete shape and nothing adds to them afterwards. The second option is where byes, seeding and the cascade all meet |
-| **Notifications** — what gets sent, to whom, and on what | UV asked to discuss before anything is built |
 | Does a coordinator's rejection need a reason? | A dispute does. A rejection currently requires one in the function; confirm that is wanted |
 | What does the coordinator's approval queue screen look like? | No design yet |
 | Should an unpublished result be marked as pending in a player's own view? | Affects the match page and the match list |
