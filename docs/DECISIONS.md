@@ -264,3 +264,36 @@ These predate the log. They are recorded here because every one of them is a dec
 *Why that broke:* it assumes a clean power-of-two ladder. `tdc_insert_round` exists precisely to put a prelim in front of round 1, after which every round shifts and the old rule calls the real quarter-finals the semis. The names would have been confidently wrong on exactly the draws the new feature creates.
 *Now:* walking down from the last round, one match is the Final, two the semis, four the quarters — and **naming stops the moment the halving breaks**. A prelim, an odd field, or a match added by hand all fall back to "Round n", which is true and is what a TD says out loud anyway.
 
+
+## 2026-10-22 — A league season has no status column until there are fixtures to derive it from
+
+*Decided by:* Claude, from the 21 Oct tournament-status lesson
+*Why:* the design lists `status` on `tbl_league_season`. The tournament column of the same name sat at `draft` for two days because nothing wrote it, and a badge nobody updates is a badge that gets believed. A league season's honest status is a fact about its fixtures; creating the column first would recreate that bug with nothing to derive it from.
+*So:* none yet. When fixtures exist, derive it as a tournament's is, with a manual override only if a derivation cannot say "cancelled".
+
+## 2026-10-22 — Team membership lives on the entrant row; a captain is a flag there
+
+*Decided by:* Claude, flagged to UV
+*Why:* the design has both `tbl_league_season_entrant` (with a team) and `tbl_entity_member` (team, player, role). It also names "who is in team X" as the question with two legitimate answers — the roster, and who actually played. A member table alongside the entrant's team would add a third answer to the roster half.
+*So:* the roster is `tbl_league_season_entrants.team_id`, a captain is `is_captain` on that row, and transfers are updates. Scorer and coach, the other member roles, are left out until something needs them; a scorer is a competition role already.
+*Rejected:* a separate member table (two sources for one fact); captain as a competition role (it is per team, and `tbl_competition_roles` is per competition).
+*Follows from it:* a composite key `(team_id, league_season_id)` makes a cross-season placement impossible by any path.
+
+## 2026-10-22 — League directors and tournament directors are one role type
+
+*Decided by:* Claude
+*Why:* ranks are unique and a comparison, so a second role at 100 cannot exist; and the design treats LD and TD as the same power in different competitions. Renaming the lookup row would relabel the tournament officials list for no gain.
+*So:* the `director` row is untouched and league functions label it "League director" on the way out.
+
+## 2026-10-22 — A table that carries payment and private notes is reached only through functions
+
+*Decided by:* Claude
+*Why:* `tbl_tournament_entrants` was meant to be gated on 21 Oct and only its read function was. The table kept a `select … using (true)` policy, so the data the gate protects was one API call away.
+*So:* `tbl_league_season_entrants` has RLS on, no policy and no grant. Everything reads it through a security-definer function that does its own check. The tournament table is recorded in `docs/STATUS.md` §6 and left to its own chat.
+
+## 2026-10-22 — The merge moves card events and deleted-match records
+
+*Decided by:* Claude, found while reading the function for leagues
+*Why:* `tbl_match_events.player_id` is `ON DELETE RESTRICT` and the merge never moved it, so a signup record that had ever submitted or answered a card made the walk-in claim fail with a raw foreign-key error. Reproduced against the production definition on a scratch database before changing it. `tbl_deleted_matches` was missing too.
+*Loud, not lossy:* the transaction aborts, so nothing was lost — but the claim simply could not go through, for exactly the players most likely to have played a match.
+*Method:* the live function was patched, not retyped, and diffed against the original with comments intact: additions only.

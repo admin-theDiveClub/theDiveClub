@@ -1,8 +1,10 @@
 # Leagues — the design, as settled
 
-**Status: designed, not built.** Nothing in this document is a proposal. All of
-it was decided with UV on 13 Oct 2026 and is reproduced here from that session
-and from `claude/stats-schema-design.md` in the project.
+**Status: designed. The structure in §1 is built (22 Oct, migration
+`20261022180000`); nothing else is.** Nothing in this document is a proposal.
+All of it was decided with UV on 13 Oct 2026 and is reproduced here from that
+session and from `claude/stats-schema-design.md` in the project. The record of
+what was built, and how it differs, is `CLAUDE.md` → *Leagues*.
 
 **Why this file exists.** The design lived only in a chat. On 22 Oct a new
 session asked UV two questions he had already answered in detail — how
@@ -27,6 +29,15 @@ way.
 | `tbl_season` | name, starts_on, ends_on |
 | `tbl_league_season` | league_id, season_id, name/number, ruleset overrides, status. The fixtures and standings hang off this |
 | `tbl_league_season_entrant` | league_season_id, player_id, entity_id, status (active / inactive / withdrawn), payment fields. **Unique on (league_season_id, player_id)** — one team at a time, a transfer is an update |
+
+> **As built (22 Oct).** The names above are the design's; the built tables are
+> plural — `tbl_leagues`, `tbl_seasons`, `tbl_league_seasons`,
+> `tbl_league_season_entrants` — and the design's "entity" is `tbl_teams`.
+> Three differences of substance, each in `docs/DECISIONS.md`: team membership
+> is the entrant row's `team_id` and a captain is `is_captain` on it (no
+> separate member table); there is no `status` column on a league season until
+> fixtures exist to derive it from; and there is no `discipline` column on a
+> league, because discipline is already a ruleset key.
 
 **Teams do not persist across seasons.** A new entity each season carrying
 `league_season_id`, with a nullable `team_lineage_id` linking successive
@@ -249,7 +260,7 @@ pointer, not a specification.
 | `card_version` on `tbl_matches`, bumped on frame writes | The version counter above. Already drives the `TDC01` stale-write refusal |
 | `tbl_match_events` as an append-only card log | Submit / agree / dispute / reopen. Per-player, not per-side — the team case needs the per-side submission row above |
 | `tbl_frame_edit` / the frame edit log | What the "card changed after you submitted" message is built from |
-| `tbl_competition_role` (TD, referee, scorer) | Already scoped to a tournament *or a season* — the LD and captain roles belong here |
+| `tbl_competition_roles` (TD, referee, scorer) | Scoped to a tournament **or, since 22 Oct, a league season**. The LD is the shared `director` role. A captain is *not* a competition role — it is per team, so it lives on the entrant row |
 | Notifications with per-category switches and push | The lineup-confirmed notification and the frame-changed notification both land here |
 | Frozen rulesets, round-level overrides, `TDCMatchDef` | `lineup_cutoff_hours`, `strict_frame_order` and `by_schedule` are new keys in an existing system |
 

@@ -6,7 +6,7 @@ Updated at every milestone, in the same breath as giving UV a commit subject. Ne
 
 Last updated: **22 Oct 2026**
 
-**Database is current.** All migrations through `20261022170000` are applied to `thediveclub-prod`, verified 22 Oct against `supabase_migrations.schema_migrations` and by checking the function bodies — not taken on trust.
+**Database is current through `20261022170000`**, verified 22 Oct against `supabase_migrations.schema_migrations` and by checking the function bodies — not taken on trust. **`20261022180000_league_structure.sql` is written and tested but not pushed** (§1).
 
 ---
 
@@ -16,6 +16,7 @@ Nothing here can be done by Claude.
 
 | | What | Why it matters |
 |---|---|---|
+| 0 | **Review and push `20261022180000_league_structure.sql`** | Leagues step 1. `npx supabase db push --dry-run`, then `db push`. It also **fixes the walk-in claim** for any signup record that has ever submitted or answered a card (it fails today). No page uses it yet, so nothing visible changes |
 | 1 | **Play through sections 8, 11, 12 and 13 of the test plan** | Several builds are proven only against a scratch database. The logic is verified; a real league night is not |
 | 1b | **Try the bracket editor on a real draw** | Insert a prelim, add a match to it, click an arrow to rewire, remove a match. Proven against a scratch database and rendered in headless Chromium; never driven by a person. **Check a tournament with a third-place playoff in particular** — it was broken from 22 Oct until this build and nobody hit it |
 | 2 | **Retest the walk-in merge via `/staff/link/`** | The one thing left that could lose real data. Changed again on 21 Oct by the merge fix, so earlier testing no longer counts |
@@ -28,7 +29,7 @@ Nothing here can be done by Claude.
 
 | Area | Chat | State |
 |---|---|---|
-| — | — | Nothing mid-flight |
+| Leagues | Leagues | **Step 1 of 6 written, not pushed.** Structure: leagues, seasons, teams, entrants, officials; matches get their team keys; the merge fixed. See `CLAUDE.md` → Leagues. Remaining, in order: (2) pages to create and manage a league, so step 1 can be tried by a person; (3) round-robin fixtures and the team match; (4) the three ruleset keys and lineups, with frames created at lock; (5) per-side submission and reconciliation; (6) the captain's scorecard page; then LD-configurable standings |
 
 ---
 
@@ -38,7 +39,7 @@ In the order it probably makes sense.
 
 | | What | Notes |
 |---|---|---|
-| 1 | **Leagues** | **The next track, and it is already designed** — `docs/design/leagues.md`, decided 13 Oct. Tables, lineups, the captain's scorecard, reconciliation by `card_version`, and LD-configurable standings columns. Nothing to re-decide; the open items in §8 of that doc do not block starting |
+| 1 | **Leagues, step 2** | See §2. Designed in `docs/design/leagues.md`; step 1 (the structure) is built. Nothing to re-decide; the open items in §8 of that doc do not block it |
 | 2 | **UV to play through the bracket editor** | Built and render-checked, not yet used on a real draw. See §1 |
 
 ---
@@ -80,6 +81,8 @@ Work is blocked or will be built wrong without these.
 | Should an unpublished result be marked as pending in a player's own view? | Affects the match page and the match list |
 | Travelling leagues: does a league have an owning venue, or its own fee scope? | Blocks entry fee charging |
 | Shot clock and extension rules the timer hardware reads | Hardware is not specified |
+| Can a walk-in be a league entrant? | `leagues.md` §8. The structure allows it (as tournaments do) so nothing is blocked; it becomes one line in `tdc_add_league_entrant` if the answer is no |
+| Who may create a team: the league director only, or captains too? | Built as director-only, the narrower choice. A captain registering their own team is a different flow and would want its own approval |
 
 ---
 
@@ -89,6 +92,8 @@ Real, small, and none of them blocking.
 
 | | Area |
 |---|---|
+| **`tbl_tournament_entrants` can be read directly by any signed-in player** | `paid_at` and the TD's `notes` come back from the API with no function in the way. The 21 Oct gate on `tdc_tournament_entrants` closed the function, not the table: the `select … using (true)` policy and grant are still there. Found 22 Oct while building the league equivalent. The fix is a migration revoking the grant and dropping the policy, after checking no page selects from the table directly. Tournaments chat's area; not changed from the leagues chat |
+| `tdc_remove_league_entrant` removes anyone | Fine while there are no fixtures. Once there are, it should refuse for a player who has played — as `tdc_remove_entrant` should have |
 | Settings writes are still last-write-wins | Frames are guarded, settings are not |
 | The match list and nav are not live | Everything else is |
 | A future fixture does not read as upcoming in the match list | |
