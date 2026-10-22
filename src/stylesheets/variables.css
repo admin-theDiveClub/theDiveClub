@@ -15,6 +15,8 @@
   /* Backgrounds */
   --bg-base: #181818;
   --bg-surface: rgba(38, 36, 32, 0.7);
+  /* How much the page blurs behind a surface: nav, menus, cards, panels. */
+  --surface-blur: 12px;
 
   /* Text. Cream is the brand's ink on dark, not a cold white. */
   --text-primary: #f4e8d2;

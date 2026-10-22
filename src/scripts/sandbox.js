@@ -43,7 +43,7 @@
 	/* ── What is specified ─────────────────────────────────────────────
 	   Only the values that are chosen by hand. Everything else (the hover
 	   wash, the panel shadow, the scrim colour) is built from these in
-	   variables.css. kind: colour | rgba (colour + opacity) | alpha. */
+	   variables.css. kind: colour | rgba (colour + opacity) | alpha | px (a blur in pixels). */
 	var TOKENS = [
 		['Brand', [
 			{ name: '--color-primary',    label: 'Primary',        kind: 'colour', use: 'Buttons, links, field labels, focus lines, the winning score' },
@@ -51,7 +51,8 @@
 		]],
 		['Backgrounds', [
 			{ name: '--bg-base',          label: 'Page',           kind: 'colour', use: 'Behind everything' },
-			{ name: '--bg-surface',       label: 'Surface',        kind: 'rgba',   use: 'Nav bar, menu, cards, tiles and panels' }
+			{ name: '--bg-surface',       label: 'Surface',        kind: 'rgba',   use: 'Nav bar, menu, cards, tiles and panels' },
+			{ name: '--surface-blur',    label: 'Surface blur',   kind: 'px',     use: 'How much the page blurs behind a surface (the nav, menus, cards, tiles and panels)' }
 		]],
 		['Text', [
 			{ name: '--text-primary',     label: 'Text',           kind: 'colour', use: 'Headings, body text, the hover wash' },
@@ -429,15 +430,15 @@
 					var line = document.createElement('div');
 					line.className = 'sb-alpha';
 					var alphaLabel = document.createElement('label');
-					alphaLabel.textContent = spec.kind === 'rgba' ? 'Opacity' : 'Opacity of the black';
+					alphaLabel.textContent = spec.kind === 'rgba' ? 'Opacity' : (spec.kind === 'px' ? 'Blur' : 'Opacity of the black');
 					var out = document.createElement('output');
 					out.className = 'sb-val';
 					alphaLabel.appendChild(out);
 					var range = document.createElement('input');
 					range.type = 'range';
 					range.min = '0';
-					range.max = '1';
-					range.step = '0.01';
+					range.max = spec.kind === 'px' ? '40' : '1';
+					range.step = spec.kind === 'px' ? '1' : '0.01';
 					range.setAttribute('aria-label', spec.label + ' opacity');
 					line.appendChild(alphaLabel);
 					line.appendChild(range);
@@ -447,6 +448,7 @@
 
 					range.addEventListener('input', function () {
 						if (spec.kind === 'rgba') writeColour(spec, ctl);
+						else if (spec.kind === 'px') setDraft(spec.name, range.value + 'px');
 						else setDraft(spec.name, trimNum(range.value, 2));
 					});
 				}
@@ -484,7 +486,10 @@
 				return;
 			}
 			try {
-				if (spec.kind === 'alpha') {
+				if (spec.kind === 'px') {
+					ctl.alpha.value = parseFloat(value);
+					ctl.alphaOut.textContent = value;
+				} else if (spec.kind === 'alpha') {
 					ctl.alpha.value = value;
 					ctl.alphaOut.textContent = trimNum(value, 3);
 				} else {

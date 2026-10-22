@@ -533,3 +533,14 @@
 .badge.pending { border-color: var(--text-muted);    color: var(--text-muted); }
 .badge.live    { border-color: var(--color-primary); color: var(--color-primary); }
 .badge.paid    { border-color: var(--color-success); color: var(--color-success); }
+
+/* ── Surfaces ────────────────────────────────────────────────────────
+   Anything on --bg-surface that can sit over something else blurs what is
+   behind it by --surface-blur, set with the surface colour in variables.css. */
+.panel,
+.tile-link,
+.match-card,
+.code-item {
+	-webkit-backdrop-filter: blur(var(--surface-blur));
+	backdrop-filter: blur(var(--surface-blur));
+}
