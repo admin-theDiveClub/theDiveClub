@@ -2219,6 +2219,12 @@
 
 		// After the card is saved and on screen, never before.
 		if (notifyKind) tellTheOther(notifyKind);
+
+		// Approving writes a notification to both players
+		// (20261022110000), so its push goes out now. Unconditional here,
+		// unlike the frame path: a card action is a deliberate press, not
+		// something repeated once per frame.
+		TDC.flushPushes();
 	}
 
 	// ─────────────────────────────────────────────────────────────────
@@ -2482,6 +2488,17 @@
 		if (staleKnown) { staleKnown = false; hideNotice(); }
 
 		if (okMessage) TDC.status(els.stageStatus, okMessage, 'success');
+
+		// An official editing somebody else's card writes them a notification
+		// (20261022110000), so the push for it goes out now rather than
+		// waiting for the next page load.
+		//
+		// Only when the viewer is not a player in this match, which is exactly
+		// when that notification fires. A player scoring their own match
+		// writes none, and asking the queue on every frame would add a round
+		// trip to the hot path for nothing — on a bad signal at the bar, that
+		// is the one place it would be felt.
+		if (!mySide()) TDC.flushPushes();
 	}
 
 	async function reloadFromServer() {

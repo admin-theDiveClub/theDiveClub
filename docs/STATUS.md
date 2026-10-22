@@ -37,12 +37,19 @@ In the order it probably makes sense.
 
 | | What | Notes |
 |---|---|---|
-| 1 | **A player cannot start their own match** | With `create_matches: manual` a player sees their fixture, has no way in, and no explanation. The TD now gets a hint; the player gets nothing |
-| 2 | **Per-round match settings** | **Needs discussion.** See §5 |
-| 3 | **Adding rounds and matches mid-tournament** | **Needs discussion.** See §5 |
-| 4 | **A screen for `tdc_frame_history`** | The audit log is written and queryable, and nothing displays it |
-| 5 | **Hardening migration for the `private` schema** | 14 `private.tdc_*` functions have no `revoke … from public`. Not a live hole — `anon` has no `usage` on the schema — but one `grant` away from being one |
-| 6 | **Sweep pushes from `match.js` too** | An official editing a frame there relies on the nav backstop, so the push can lag until the next page load. One line in that page's save path — deliberate, because `match.js` is 117 KB and the most dangerous file in the project |
+| 1 | **Per-round match settings** | **Needs discussion.** See §5 |
+| 2 | **Adding rounds and matches mid-tournament** | **Needs discussion.** See §5 |
+| 3 | **A screen for `tdc_frame_history`** | The audit log is written and queryable, and nothing displays it |
+| 4 | **Hardening migration for the `private` schema** | 14 `private.tdc_*` functions have no `revoke … from public`. Not a live hole — `anon` has no `usage` on the schema — but one `grant` away from being one |
+| 7 | **Per-category notification switches on the profile page** | `tdc_notification_prefs` and `tdc_set_notification_pref` exist with four categories. Nothing renders them, so the switches cannot be reached |
+
+---
+
+## 3a. Left to the UI chat
+
+| What | Notes |
+|---|---|
+| **A player cannot start their own match** | With `create_matches: manual` a player sees their fixture, has no way in, and no explanation. **UV, 22 Oct: a communication problem, to be solved when the rounds are drawn properly with progression arrows** — not a schema gap. The TD already gets a hint |
 
 ---
 
