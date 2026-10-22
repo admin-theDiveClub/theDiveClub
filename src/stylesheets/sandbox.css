@@ -52,37 +52,6 @@
 	gap: var(--space-3);
 	margin-bottom: var(--space-4);
 }
-.sb-swatch {
-	border: 1px solid var(--border-color);
-	border-radius: var(--radius-md);
-	overflow: hidden;
-	background: var(--bg-surface);
-}
-.sb-chip {
-	position: relative;
-	height: 3.5rem;
-}
-/* Semi-transparent tokens are drawn over cream, or a black alpha would
-   vanish into a dark page and tell you nothing. */
-.sb-chip.on-cream { background: var(--color-cream); }
-.sb-fill {
-	position: absolute;
-	inset: 0;
-	background: var(--sb-fill);
-}
-.sb-swatch-text {
-	padding: var(--space-2) var(--space-3);
-	font-size: 0.78rem;
-	line-height: 1.35;
-}
-.sb-swatch-name { display: block; font-weight: 600; }
-.sb-swatch-value {
-	display: block;
-	color: var(--text-muted);
-	font-family: var(--font-mono);
-	font-size: 0.72rem;
-	overflow-wrap: anywhere;
-}
 
 .sb-sample {
 	display: inline-block;
@@ -95,6 +64,188 @@
 	font-weight: 700;
 	text-align: center;
 }
+
+/* ── Palette controls and mock-up ───────────────────────────────── */
+.sb-palette-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: var(--space-5);
+	align-items: start;
+}
+@media (min-width: 60rem) {
+	.sb-palette-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 24rem); }
+}
+/* The mock-up stays in view while the controls beside it are moved. */
+.sb-mock-wrap {
+	position: sticky;
+	top: calc(var(--nav-height) + var(--space-2));
+	z-index: 2;
+	order: -1;
+	max-height: calc(100vh - var(--nav-height) - var(--space-4));
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+}
+@media (min-width: 60rem) {
+	.sb-mock-wrap { order: 0; }
+}
+.sb-mock-caption {
+	margin: 0;
+	padding: var(--space-2) var(--space-3);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-sm);
+	background-color: var(--bg-base);
+	font-size: 0.8rem;
+	color: var(--text-muted);
+	min-height: 2.6rem;
+}
+.sandbox .sb-mock-caption { margin: 0; flex: 0 0 auto; }
+.sb-mock {
+	flex: 1 1 auto;
+	min-height: 0;
+	max-height: 45vh;
+	overflow: auto;
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-lg);
+	background: var(--bg-base);
+	color: var(--text-primary);
+	font-family: var(--font-body);
+}
+@media (min-width: 60rem) {
+	.sb-mock { max-height: none; }
+}
+.sandbox .sb-mock .tdc-card {
+	max-width: none;
+	margin: 0;
+	padding: var(--space-4);
+}
+.sandbox .sb-mock .tdc-card h2:first-child { margin-top: 0; }
+.sandbox .sb-mock .tdc-card p { margin-bottom: var(--space-3); }
+.sandbox .sb-mock .field { margin-bottom: var(--space-4); }
+
+/* What the row's colour touches is outlined in the mock-up. The outline is
+   the text colour, so it reads in both themes without adding a colour. */
+.sb-mock .sb-hit {
+	outline: 2px dashed var(--text-primary);
+	outline-offset: 2px;
+}
+
+/* The fixed nav, drawn in flow. */
+.sb-mock-nav {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	height: var(--nav-height);
+	padding: 0 var(--space-4);
+	background: var(--bg-surface);
+	border-bottom: 1px solid var(--border-color);
+	position: sticky;
+	top: 0;
+	z-index: 1;
+}
+.sb-mock-burger {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-1);
+	width: var(--space-5);
+}
+.sb-mock-burger i {
+	display: block;
+	height: 2px;
+	border-radius: 2px;
+	background: var(--text-primary);
+}
+.sb-mock-name { flex: 1 1 auto; font-family: var(--font-display); }
+.sb-mock-pip {
+	width: var(--space-2);
+	height: var(--space-2);
+	border-radius: var(--radius-round);
+	background: var(--color-warning);
+}
+.sb-mock-avatar {
+	width: var(--space-5);
+	height: var(--space-5);
+	border-radius: var(--radius-round);
+	border: 1px solid var(--border-color);
+}
+.sb-mock-menu {
+	margin-bottom: var(--space-4);
+	padding: var(--space-2) 0;
+	background: var(--bg-surface);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-md);
+}
+.sb-mock-menu a {
+	display: block;
+	padding: var(--space-2) var(--space-4);
+	color: var(--text-primary);
+}
+.sb-mock-menu a.sb-hovered { background: var(--hover-wash); }
+
+/* A panel over the page, dimmed behind it. */
+.sb-mock-depth {
+	position: relative;
+	height: 9rem;
+	overflow: hidden;
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-md);
+}
+.sb-mock-behind { padding: var(--space-4); }
+.sb-mock-scrim {
+	position: absolute;
+	inset: 0;
+	background: var(--scrim);
+}
+.sb-mock-panel {
+	position: absolute;
+	top: var(--space-4);
+	right: var(--space-4);
+	bottom: var(--space-4);
+	width: 55%;
+	padding: var(--space-3);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-lg);
+	background: var(--bg-base);
+	box-shadow: var(--shadow-panel);
+}
+
+/* One colour: a name, what it is for, and how to change it. */
+.sb-row {
+	margin-bottom: var(--space-4);
+	padding-bottom: var(--space-3);
+	border-bottom: 1px solid var(--border-color);
+}
+.sb-row:last-child { border-bottom: none; }
+.sb-row-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: var(--space-2);
+}
+.sb-row-name { font-weight: 600; }
+.sb-edited {
+	margin-left: auto;
+	font-size: 0.7rem;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--color-warning);
+}
+.sb-row .hint {
+	margin: var(--space-1) 0 var(--space-2);
+	font-size: 0.8rem;
+	color: var(--text-muted);
+}
+.sb-alpha { margin-top: var(--space-2); }
+.sb-alpha label {
+	display: block;
+	margin-bottom: var(--space-1);
+	font-size: 0.7rem;
+	font-weight: 600;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+}
+.sb-savebar { margin-top: var(--space-4); }
 
 /* ── Artwork stage ───────────────────────────────────────────────────
    Sticky, so the logo stays in view while the controls below it are moved.
@@ -117,8 +268,8 @@
 }
 .sb-stage.bd-page    { background-image: none; }
 .sb-stage.bd-surface { background-image: linear-gradient(var(--bg-surface), var(--bg-surface)); }
-.sb-stage.bd-cream   { background-color: var(--color-cream); }
-.sb-stage.bd-ink     { background-color: var(--color-ink); }
+.sb-stage.bd-text    { background-color: var(--text-primary); }
+.sb-stage.bd-primary { background-color: var(--color-primary); }
 .sb-stage.bd-checker {
 	background-image: conic-gradient(var(--hover-wash) 25%, transparent 0 50%, var(--hover-wash) 0 75%, transparent 0);
 	background-size: var(--space-5) var(--space-5);
@@ -191,10 +342,9 @@
 	font-size: 0.8rem;
 	text-align: center;
 }
-.sb-raised       { box-shadow: var(--shadow-raised); }
 .sb-panel-shadow { box-shadow: var(--shadow-panel); border-radius: var(--radius-lg); }
 .sb-scrim-demo {
-	background: var(--color-cream);
+	background: var(--text-primary);
 	border-color: var(--border-color);
 	position: relative;
 	overflow: hidden;
@@ -205,7 +355,7 @@
 	inset: 0;
 	background: var(--scrim);
 }
-.sb-scrim-demo span { position: relative; color: var(--color-cream); }
+.sb-scrim-demo span { position: relative; color: var(--bg-base); }
 .sb-hover { background: var(--hover-wash); }
 
 .sb-r-sm    { border-radius: var(--radius-sm); }

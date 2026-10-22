@@ -4,10 +4,8 @@
   --font-body: "Segoe UI", "Selawik", system-ui, -apple-system, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Brand. The three colours the logo artwork is drawn from. */
+  /* Brand */
   --color-primary: #2b9fa6;   /* teal — the diver's suit, the pool rim */
-  --color-cream: #f4e8d2;     /* cream — the figure, the ladder, the wordmark */
-  --color-ink: #181818;       /* near-black — the ground the artwork sits on */
 
   /* What sits on top of a filled brand-colour button. Teal is light enough
      in the dark theme to need dark text, and deep enough in the light theme
@@ -33,21 +31,19 @@
   /* Owner-only tools (staff hub glow) */
   --color-owner: #e0b04a;
 
-  /* ── Depth ─────────────────────────────────────────────────────────
-     The artwork builds its shadows from black at low alpha rather than
-     from a darker grey, so the interface does the same and the two sit
-     together. PROVISIONAL — UV has exact alphas to supply. */
-  --alpha-1: rgba(0, 0, 0, 0.08);
-  --alpha-2: rgba(0, 0, 0, 0.24);
-  --alpha-3: rgba(0, 0, 0, 0.32);
-  --alpha-4: rgba(0, 0, 0, 0.55);
+  /* ── Depth ───────────────────────────────────────────────────────
+     Shadows and the dim behind a panel are black at low alpha, as in the
+     artwork. Only the two strengths are set; everything else is built from
+     them. Set from the palette section of /sandbox/. */
+  --shadow-alpha: 0.55;       /* floating panels and menus */
+  --scrim-alpha: 0.55;        /* the dim behind a slide-over panel */
 
-  --shadow-raised: 0 1px 2px var(--alpha-2);
-  --shadow-panel: 0 10px 30px var(--alpha-4);
-  --scrim: var(--alpha-4);
+  --shadow-panel: 0 10px 30px rgba(0, 0, 0, var(--shadow-alpha));
+  --scrim: rgba(0, 0, 0, var(--scrim-alpha));
 
-  /* A hover that lifts a surface without introducing another colour. */
-  --hover-wash: rgba(244, 232, 210, 0.06);
+  /* A hover that lifts a surface without introducing another colour. Built
+     from the text colour, so it follows the theme. */
+  --hover-wash: color-mix(in srgb, var(--text-primary) 6%, transparent);
 
   /* ── Space ─────────────────────────────────────────────────────────
      One scale. Reach for the nearest step rather than a new decimal. */
@@ -92,10 +88,6 @@
   --color-owner: #8a5e12;
 
   /* Shadows on a cream page read as dirt at the dark-theme alphas. */
-  --alpha-1: rgba(0, 0, 0, 0.04);
-  --alpha-2: rgba(0, 0, 0, 0.10);
-  --alpha-3: rgba(0, 0, 0, 0.16);
-  --alpha-4: rgba(0, 0, 0, 0.35);
-
-  --hover-wash: rgba(24, 24, 24, 0.05);
+  --shadow-alpha: 0.35;
+  --scrim-alpha: 0.35;
 }

@@ -19,7 +19,7 @@ Nothing here can be done by Claude.
 | 1 | **Play through sections 8, 11, 12 and 13 of the test plan** | Several builds are proven only against a scratch database. The logic is verified; a real league night is not |
 | 2 | **Retest the walk-in merge via `/staff/link/`** | The one thing left that could lose real data. Changed again on 21 Oct by the merge fix, so earlier testing no longer counts |
 | 3 | **Enable the signup bot check** (Turnstile or hCaptcha) | Self-entry currently rests on a confirmed email address alone. The bot check is the other half of "a verified account" |
-| 4 | **Hand over the exact black-alpha values** for the refreshed branding | The UI chat will otherwise guess, and guessing at brand colour is worse than waiting. UV, 21 Oct: agreed, not yet supplied |
+| 4 | **Set the black-alpha values** for the refreshed branding | UV sets them himself on `/sandbox/` (palette Depth strengths and the logo controls) and saves them into `variables.css` (22 Oct). Done once he has saved and committed them |
 
 ---
 

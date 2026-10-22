@@ -1,65 +1,244 @@
 /* UI sandbox (/sandbox/). A scratch page: no data layer, no sign-in.
-   Reads the live tokens, previews artwork, and adjusts the labelled parts of
-   the logo. Nothing else. */
+   Edits the palette and the logo per theme, shows the effect on a mock-up of
+   the site, and saves the result into variables.css. Nothing else.
+
+   How a value travels:
+     file text  ->  parsed values (per theme)
+     a change   ->  a draft (per theme), applied to <html> as an inline
+                    custom property, so the whole page follows it at once
+     Save       ->  the drafts are patched into variables.css in place
+   The page never edits a stylesheet it has loaded. Undo or publish is Fork's job. */
 (function () {
 	'use strict';
 
 	var STORE_KEY = 'tdc.sandbox.theme';
+	var CSS_URL = '/stylesheets/variables.css';
 	var INKSCAPE_NS = 'http://www.inkscape.org/namespaces/inkscape';
 	var XLINK_NS = 'http://www.w3.org/1999/xlink';
 	var root = document.documentElement;
+	var $ = function (id) { return document.getElementById(id); };
 
 	/* ── Errors are shown, never swallowed ─────────────────────────── */
 	function fail(message, err, targetId) {
 		console.error('[Sandbox] ' + message, err || '');
-		var el = document.getElementById(targetId || 'sb-status');
+		var el = $(targetId || 'sb-status');
 		if (el) {
 			el.textContent = 'TDC (Error): ' + message;
 			el.className = 'status error';
 		}
 	}
 	function clearFail(targetId) {
-		var el = document.getElementById(targetId || 'sb-status');
+		var el = $(targetId || 'sb-status');
 		if (el) { el.textContent = ''; el.className = 'status'; }
 	}
+	/* The save line appears twice on the page (palette and artwork). */
+	function saveStatus(message, kind, err) {
+		if (kind === 'error') console.error('[Sandbox] ' + message, err || '');
+		document.querySelectorAll('.sb-save-status').forEach(function (el) {
+			el.textContent = (kind === 'error' ? 'TDC (Error): ' : '') + message;
+			el.className = 'status sb-save-status' + (kind ? ' ' + kind : '');
+		});
+	}
+
+	/* ── What is specified ─────────────────────────────────────────────
+	   Only the values that are chosen by hand. Everything else (the hover
+	   wash, the panel shadow, the scrim colour) is built from these in
+	   variables.css. kind: colour | rgba (colour + opacity) | alpha. */
+	var TOKENS = [
+		['Brand', [
+			{ name: '--color-primary',    label: 'Primary',        kind: 'colour', use: 'Buttons, links, field labels, focus lines, the winning score' },
+			{ name: '--color-on-primary', label: 'On primary',     kind: 'colour', use: 'Text on a primary-coloured button' }
+		]],
+		['Backgrounds', [
+			{ name: '--bg-base',          label: 'Page',           kind: 'colour', use: 'Behind everything' },
+			{ name: '--bg-surface',       label: 'Surface',        kind: 'rgba',   use: 'Nav bar, menu, cards, tiles and panels' }
+		]],
+		['Text', [
+			{ name: '--text-primary',     label: 'Text',           kind: 'colour', use: 'Headings, body text, the hover wash' },
+			{ name: '--text-muted',       label: 'Muted text',     kind: 'colour', use: 'Hints, detail lines, placeholders' }
+		]],
+		['Lines', [
+			{ name: '--border-color',     label: 'Border',         kind: 'colour', use: 'Field lines, card and tile edges, dividers' }
+		]],
+		['States', [
+			{ name: '--color-success',    label: 'Success',        kind: 'colour', use: 'Success messages, Paid badge, staff tile glow' },
+			{ name: '--color-warning',    label: 'Warning',        kind: 'colour', use: 'Warning badge, offline indicator' },
+			{ name: '--color-error',      label: 'Error',          kind: 'colour', use: 'Error messages, danger button' },
+			{ name: '--color-owner',      label: 'Owner',          kind: 'colour', use: 'Owner tile glow' }
+		]],
+		['Depth', [
+			{ name: '--shadow-alpha',     label: 'Shadow strength', kind: 'alpha', use: 'How dark the shadow under floating panels is (black at this opacity)' },
+			{ name: '--scrim-alpha',      label: 'Dim strength',    kind: 'alpha', use: 'How dark the page goes behind a slide-over panel (black at this opacity)' }
+		]]
+	];
+	var SPEC = {};
+	TOKENS.forEach(function (g) { g[1].forEach(function (t) { SPEC[t.name] = t; }); });
+
+	/* The logo's variables. Saved with the palette, per theme. */
+	var LOGO = [
+		'--logo-shadow-alpha', '--logo-primary', '--logo-light', '--logo-blur-alpha',
+		'--logo-blur', '--logo-grad-start', '--logo-grad-mid', '--logo-grad-end', '--logo-grad-offset'
+	];
+	var BASE_BLUR = 12.5; /* the blur % the file was saved at, per the brief */
+
+	/* ── Colour helpers ────────────────────────────────────────────── */
+	function pad2(n) { return ('0' + Math.round(n).toString(16)).slice(-2); }
+	function toHex(r, g, b) { return '#' + pad2(r) + pad2(g) + pad2(b); }
+	function rgbOf(hex) {
+		return [1, 3, 5].map(function (i) { return parseInt(hex.substr(i, 2), 16); });
+	}
+	function validHex(v) {
+		var m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(v.trim());
+		if (!m) return null;
+		var h = m[1].length === 3 ? m[1].replace(/./g, '$&$&') : m[1];
+		return '#' + h.toLowerCase();
+	}
+	/* "#rrggbb", "#rgb", "rgb(...)" and "rgba(...)" are the forms variables.css holds. */
+	function parseColour(value) {
+		var hex = validHex(value);
+		if (hex) return { hex: hex, alpha: null };
+		var m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)$/i.exec(value.trim());
+		if (m) return { hex: toHex(+m[1], +m[2], +m[3]), alpha: m[4] === undefined ? null : m[4] };
+		throw new Error('Cannot read "' + value + '" as a colour');
+	}
+	function rgbaString(hex, alpha) {
+		var c = rgbOf(hex);
+		return 'rgba(' + c[0] + ', ' + c[1] + ', ' + c[2] + ', ' + alpha + ')';
+	}
+	function norm(v) { return String(v).toLowerCase().replace(/\s+/g, ''); }
+	function trimNum(v, digits) { return String(Number(Number(v).toFixed(digits))); }
+
+	/* ── Reading and patching variables.css ────────────────────────────
+	   The two blocks that matter are  :root  (dark)  and  [data-theme="light"].
+	   Comments are blanked (same length) before searching, so a brace or a
+	   token name inside a comment is never mistaken for code. */
+	function blank(text) {
+		return text.replace(/\/\*[\s\S]*?\*\//g, function (m) { return m.replace(/[^\n\r]/g, ' '); });
+	}
+	function blockRange(text, theme) {
+		var clean = blank(text);
+		var open = theme === 'light' ? /\[data-theme\s*=\s*"light"\]\s*\{/ : /(^|[\s}])\:root\s*\{/;
+		var m = open.exec(clean);
+		if (!m) throw new Error('variables.css has no ' + (theme === 'light' ? '[data-theme="light"]' : ':root') + ' block');
+		var start = m.index + m[0].length;
+		var end = clean.indexOf('}', start);
+		if (end < 0) throw new Error('The ' + theme + ' block in variables.css is not closed');
+		return [start, end];
+	}
+	function declarations(text, range) {
+		var clean = blank(text.slice(range[0], range[1]));
+		var re = /(--[a-zA-Z0-9-]+)\s*:\s*([^;]*?)\s*;/g;
+		var out = [], m;
+		while ((m = re.exec(clean))) {
+			var valueStart = range[0] + m.index + m[0].indexOf(m[2], m[1].length);
+			out.push({ name: m[1], value: m[2], valueStart: valueStart, valueEnd: valueStart + m[2].length });
+		}
+		return out;
+	}
+	function parseFile(text) {
+		var out = { dark: {}, light: {} };
+		['dark', 'light'].forEach(function (theme) {
+			declarations(text, blockRange(text, theme)).forEach(function (d) { out[theme][d.name] = d.value; });
+		});
+		return out;
+	}
+	/* Sets each name to its value inside one theme's block. A value that is
+	   there is replaced in place (its trailing comment stays); one that is not
+	   is added at the end of the block, in the block's own indentation. */
+	function patchTheme(text, theme, changes) {
+		var eol = text.indexOf('\r\n') >= 0 ? '\r\n' : '\n';
+		Object.keys(changes).forEach(function (name) {
+			var range = blockRange(text, theme);
+			var found = declarations(text, range).filter(function (d) { return d.name === name; })[0];
+			if (found) {
+				text = text.slice(0, found.valueStart) + changes[name] + text.slice(found.valueEnd);
+				return;
+			}
+			var block = text.slice(range[0], range[1]);
+			var tail = /\s*$/.exec(block)[0];
+			var body = block.slice(0, block.length - tail.length);
+			var indent = (/\n([ \t]+)--/.exec(blank(block)) || [0, '\t'])[1];
+			var hasLogo = declarations(text, range).some(function (d) { return d.name.indexOf('--logo-') === 0; });
+			var add = eol;
+			if (name.indexOf('--logo-') === 0 && !hasLogo) add += eol + indent + '/* Logo. Set from the artwork section of /sandbox/. */' + eol;
+			add += indent + name + ': ' + changes[name] + ';';
+			text = text.slice(0, range[0]) + body + add + tail + text.slice(range[1]);
+		});
+		return text;
+	}
+
+	/* ── State ─────────────────────────────────────────────────────────
+	   fileText   the text of variables.css as last read or written
+	   parsed     its values per theme
+	   drafts     changes not yet saved, per theme */
+	var theme = 'dark';
+	var fileText = '';
+	var parsed = { dark: {}, light: {} };
+	var drafts = { dark: {}, light: {} };
+	var logoDefaults = {};
+	var inlineSet = [];
+
+	function fileValue(t, name) {
+		if (parsed[t][name] !== undefined) return parsed[t][name];
+		return t === 'light' ? parsed.dark[name] : undefined;
+	}
+	function effective(t, name) {
+		if (drafts[t][name] !== undefined) return drafts[t][name];
+		return fileValue(t, name);
+	}
+	function effectiveOrDefault(t, name) {
+		var v = effective(t, name);
+		return v !== undefined ? v : logoDefaults[name];
+	}
+
+	function applyInline() {
+		inlineSet.forEach(function (n) { root.style.removeProperty(n); });
+		inlineSet = [];
+		var set = function (n, v) { root.style.setProperty(n, v); inlineSet.push(n); };
+		Object.keys(drafts[theme]).forEach(function (n) { set(n, drafts[theme][n]); });
+		/* A logo variable the file does not have yet is supplied from the SVG,
+		   so the logo draws; it only becomes a saved value if it is changed. */
+		LOGO.forEach(function (n) {
+			if (effective(theme, n) === undefined && logoDefaults[n] !== undefined) set(n, logoDefaults[n]);
+		});
+	}
+
+	function setDraft(name, value) {
+		var base = fileValue(theme, name);
+		if (base !== undefined && norm(base) === norm(value)) delete drafts[theme][name];
+		else drafts[theme][name] = value;
+		applyInline();
+		update();
+	}
+
+	function draftCount(t) { return Object.keys(drafts[t]).length; }
 
 	/* ── Theme ─────────────────────────────────────────────────────── */
 	function setTheme(name, remember) {
-		root.setAttribute('data-theme', name === 'light' ? 'light' : '');
+		theme = name === 'light' ? 'light' : 'dark';
+		root.setAttribute('data-theme', theme === 'light' ? 'light' : '');
 		if (remember) {
-			try { localStorage.setItem(STORE_KEY, name); } catch (e) { /* storage can be blocked; the theme still applies */ }
+			try { localStorage.setItem(STORE_KEY, theme); } catch (e) { /* storage can be blocked; the theme still applies */ }
 		}
 		document.querySelectorAll('[data-theme-set]').forEach(function (b) {
-			b.setAttribute('aria-pressed', String(b.getAttribute('data-theme-set') === name));
+			b.setAttribute('aria-pressed', String(b.getAttribute('data-theme-set') === theme));
 		});
-		renderPalette();
+		$('sb-edit-theme').textContent = theme === 'light' ? 'Light' : 'Dark';
+		applyInline();
+		syncControls();
+		logo.refresh();
+		update();
 	}
 	function savedTheme() {
 		try { return localStorage.getItem(STORE_KEY); } catch (e) { return null; }
 	}
 
-	/* ── Reading tokens ────────────────────────────────────────────── */
-	var COLOURS = [
-		['Brand',       ['--color-primary', '--color-on-primary', '--color-cream', '--color-ink']],
-		['Backgrounds', ['--bg-base', '--bg-surface']],
-		['Text',        ['--text-primary', '--text-muted']],
-		['Borders',     ['--border-color']],
-		['States',      ['--color-success', '--color-warning', '--color-error', '--color-owner']],
-		['Depth',       ['--alpha-1', '--alpha-2', '--alpha-3', '--alpha-4', '--hover-wash']]
-	];
-	var TRANSLUCENT = ['--bg-surface', '--alpha-1', '--alpha-2', '--alpha-3', '--alpha-4', '--hover-wash'];
-
-	function tokenValue(name) {
-		return getComputedStyle(root).getPropertyValue(name).trim();
-	}
-
+	/* ── Reading what the page is showing (for contrast) ───────────── */
 	var probe = document.createElement('span');
 	probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none';
 	document.body.appendChild(probe);
 
-	/* Resolve any token to [r, g, b, a] by letting the browser compute it. */
 	function colourOf(name) {
-		if (!tokenValue(name)) throw new Error('The token ' + name + ' has no value');
 		probe.style.color = '';
 		probe.style.color = 'var(' + name + ')';
 		var computed = getComputedStyle(probe).color;
@@ -84,66 +263,23 @@
 		return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 	}
 
-	/* ── Palette ───────────────────────────────────────────────────── */
 	var PAIRS = [
-		['Text on page',      '--text-primary',   '--bg-base'],
-		['Muted text on page', '--text-muted',    '--bg-base'],
-		['Primary on page',   '--color-primary',  '--bg-base'],
-		['Text on button',    '--color-on-primary', '--color-primary'],
-		['Text on surface',   '--text-primary',   '--bg-surface'],
-		['Muted on surface',  '--text-muted',     '--bg-surface'],
-		['Success on page',   '--color-success',  '--bg-base'],
-		['Warning on page',   '--color-warning',  '--bg-base'],
-		['Error on page',     '--color-error',    '--bg-base'],
-		['Owner on page',     '--color-owner',    '--bg-base']
+		['Text on page',       '--text-primary',     '--bg-base'],
+		['Muted text on page', '--text-muted',       '--bg-base'],
+		['Primary on page',    '--color-primary',    '--bg-base'],
+		['Text on button',     '--color-on-primary', '--color-primary'],
+		['Text on surface',    '--text-primary',     '--bg-surface'],
+		['Muted on surface',   '--text-muted',       '--bg-surface'],
+		['Success on page',    '--color-success',    '--bg-base'],
+		['Warning on page',    '--color-warning',    '--bg-base'],
+		['Error on page',      '--color-error',      '--bg-base'],
+		['Owner on page',      '--color-owner',      '--bg-base']
 	];
-
 	function rating(r) {
 		if (r >= 7)   return ['AAA', 'paid'];
 		if (r >= 4.5) return ['Text', 'paid'];
 		if (r >= 3)   return ['UI only', 'warn'];
 		return ['Fails', 'disputed'];
-	}
-
-	function renderSwatches() {
-		var host = document.getElementById('sb-swatches');
-		host.innerHTML = '';
-		COLOURS.forEach(function (group) {
-			var title = document.createElement('h3');
-			title.className = 'sb-group-title';
-			title.textContent = group[0];
-			host.appendChild(title);
-
-			var grid = document.createElement('div');
-			grid.className = 'sb-grid';
-			group[1].forEach(function (name) {
-				var card = document.createElement('div');
-				card.className = 'sb-swatch';
-
-				var chip = document.createElement('div');
-				chip.className = 'sb-chip' + (TRANSLUCENT.indexOf(name) >= 0 ? ' on-cream' : '');
-				var fill = document.createElement('div');
-				fill.className = 'sb-fill';
-				fill.style.setProperty('--sb-fill', 'var(' + name + ')');
-				chip.appendChild(fill);
-
-				var text = document.createElement('div');
-				text.className = 'sb-swatch-text';
-				var label = document.createElement('span');
-				label.className = 'sb-swatch-name';
-				label.textContent = name;
-				var value = document.createElement('span');
-				value.className = 'sb-swatch-value';
-				value.textContent = tokenValue(name) || '(missing)';
-				text.appendChild(label);
-				text.appendChild(value);
-
-				card.appendChild(chip);
-				card.appendChild(text);
-				grid.appendChild(card);
-			});
-			host.appendChild(grid);
-		});
 	}
 
 	function renderContrast() {
@@ -191,24 +327,368 @@
 		});
 	}
 
-	function renderPalette() {
-		try {
-			renderSwatches();
-			renderContrast();
-		} catch (e) {
-			fail(e.message, e);
+	/* ── Palette controls ──────────────────────────────────────────────
+	   Built once. Each row writes only its own token, and only when it is
+	   touched, so a value left alone is never rounded by a slider. */
+	var rows = {}; /* name -> { row, picker, hex, alpha, alphaOut, edited } */
+	var mock = $('sb-mock');
+	var caption = $('sb-mock-caption');
+	var CAPTION_DEFAULT = 'Hover a colour on the left, or any part of this mock-up, to see what uses what.';
+
+	function usesCount(name) {
+		return mock.querySelectorAll('[data-uses~="' + name + '"]').length;
+	}
+
+	function highlight(name) {
+		mock.querySelectorAll('.sb-hit').forEach(function (el) { el.classList.remove('sb-hit'); });
+		if (!name) { caption.textContent = CAPTION_DEFAULT; return; }
+		var hits = mock.querySelectorAll('[data-uses~="' + name + '"]');
+		hits.forEach(function (el) { el.classList.add('sb-hit'); });
+		var labels = [];
+		hits.forEach(function (el) {
+			var l = el.getAttribute('data-label');
+			if (l && labels.indexOf(l) < 0) labels.push(l);
+		});
+		caption.textContent = SPEC[name].label + ': ' + (hits.length ? 'used by ' + labels.join(', ') + '.' : 'not shown in this mock-up.');
+	}
+
+	function buildControls() {
+		var host = $('sb-palette-controls');
+		host.innerHTML = '';
+		TOKENS.forEach(function (group) {
+			var title = document.createElement('h3');
+			title.className = 'sb-group-title';
+			title.textContent = group[0];
+			host.appendChild(title);
+
+			group[1].forEach(function (spec) {
+				var row = document.createElement('div');
+				row.className = 'sb-row';
+				row.setAttribute('data-token', spec.name);
+
+				var head = document.createElement('div');
+				head.className = 'sb-row-head';
+				var label = document.createElement('span');
+				label.className = 'sb-row-name';
+				label.textContent = spec.label;
+				var key = document.createElement('span');
+				key.className = 'sb-key';
+				key.textContent = spec.name;
+				var edited = document.createElement('span');
+				edited.className = 'sb-edited';
+				edited.textContent = 'edited';
+				edited.hidden = true;
+				head.appendChild(label);
+				head.appendChild(key);
+				head.appendChild(edited);
+				row.appendChild(head);
+
+				var use = document.createElement('div');
+				use.className = 'hint';
+				use.textContent = spec.use;
+				row.appendChild(use);
+
+				var ctl = { row: row, edited: edited };
+
+				if (spec.kind !== 'alpha') {
+					var wrap = document.createElement('div');
+					wrap.className = 'sb-colour';
+					var picker = document.createElement('input');
+					picker.type = 'color';
+					picker.setAttribute('aria-label', spec.label + ' colour picker');
+					var hex = document.createElement('input');
+					hex.type = 'text';
+					hex.maxLength = 7;
+					hex.spellcheck = false;
+					hex.setAttribute('aria-label', spec.label + ' as hex');
+					wrap.appendChild(picker);
+					wrap.appendChild(hex);
+					row.appendChild(wrap);
+					ctl.picker = picker;
+					ctl.hex = hex;
+
+					picker.addEventListener('input', function () {
+						hex.value = picker.value;
+						writeColour(spec, ctl);
+					});
+					hex.addEventListener('change', function () {
+						var v = validHex(hex.value.charAt(0) === '#' ? hex.value : '#' + hex.value);
+						if (!v) {
+							fail('"' + hex.value + '" is not a hex colour, like #2b9fa6', null, 'sb-status');
+							hex.value = picker.value;
+							return;
+						}
+						clearFail('sb-status');
+						picker.value = v;
+						hex.value = v;
+						writeColour(spec, ctl);
+					});
+				}
+
+				if (spec.kind !== 'colour') {
+					var line = document.createElement('div');
+					line.className = 'sb-alpha';
+					var alphaLabel = document.createElement('label');
+					alphaLabel.textContent = spec.kind === 'rgba' ? 'Opacity' : 'Opacity of the black';
+					var out = document.createElement('output');
+					out.className = 'sb-val';
+					alphaLabel.appendChild(out);
+					var range = document.createElement('input');
+					range.type = 'range';
+					range.min = '0';
+					range.max = '1';
+					range.step = '0.01';
+					range.setAttribute('aria-label', spec.label + ' opacity');
+					line.appendChild(alphaLabel);
+					line.appendChild(range);
+					row.appendChild(line);
+					ctl.alpha = range;
+					ctl.alphaOut = out;
+
+					range.addEventListener('input', function () {
+						if (spec.kind === 'rgba') writeColour(spec, ctl);
+						else setDraft(spec.name, trimNum(range.value, 2));
+					});
+				}
+
+				row.addEventListener('mouseenter', function () { highlight(spec.name); });
+				row.addEventListener('mouseleave', function () { highlight(null); });
+				row.addEventListener('focusin', function () { highlight(spec.name); });
+				row.addEventListener('focusout', function () { highlight(null); });
+
+				rows[spec.name] = ctl;
+				host.appendChild(row);
+			});
+		});
+	}
+
+	/* The colour and opacity of a surface are two controls but one value. */
+	function writeColour(spec, ctl) {
+		if (spec.kind === 'rgba') {
+			var current = parseColour(effective(theme, spec.name));
+			var alpha = ctl.alphaTouched ? trimNum(ctl.alpha.value, 2) : (current.alpha === null ? '1' : current.alpha);
+			ctl.alphaTouched = false;
+			setDraft(spec.name, rgbaString(ctl.picker.value, alpha));
+		} else {
+			setDraft(spec.name, ctl.picker.value);
 		}
 	}
 
+	/* Show the current theme's values in the controls. */
+	function syncControls() {
+		Object.keys(rows).forEach(function (name) {
+			var spec = SPEC[name], ctl = rows[name];
+			var value = effective(theme, name);
+			if (value === undefined) {
+				fail('variables.css has no value for ' + name + ' in the ' + theme + ' theme', null, 'sb-status');
+				return;
+			}
+			try {
+				if (spec.kind === 'alpha') {
+					ctl.alpha.value = value;
+					ctl.alphaOut.textContent = trimNum(value, 3);
+				} else {
+					var c = parseColour(value);
+					ctl.picker.value = c.hex;
+					ctl.hex.value = c.hex;
+					if (spec.kind === 'rgba') {
+						var a = c.alpha === null ? '1' : c.alpha;
+						ctl.alpha.value = a;
+						ctl.alphaOut.textContent = trimNum(a, 3);
+					}
+				}
+			} catch (e) {
+				fail(name + ': ' + e.message, e, 'sb-status');
+			}
+		});
+	}
+	/* Moving an opacity slider on a surface marks it, so a colour change
+	   alone keeps the file's own opacity digits. */
+	function wireAlphaTouch() {
+		var ctl = rows['--bg-surface'];
+		if (ctl && ctl.alpha) {
+			ctl.alpha.addEventListener('pointerdown', function () { ctl.alphaTouched = true; });
+			ctl.alpha.addEventListener('keydown', function () { ctl.alphaTouched = true; });
+		}
+	}
+
+	/* Refresh everything that reports on the current state. */
+	function update() {
+		Object.keys(rows).forEach(function (name) {
+			var ctl = rows[name];
+			var changed = drafts[theme][name] !== undefined;
+			ctl.edited.hidden = !changed;
+			if (ctl.alpha && SPEC[name].kind === 'rgba') {
+				var c = parseColour(effective(theme, name));
+				ctl.alphaOut.textContent = trimNum(c.alpha === null ? 1 : c.alpha, 3);
+			}
+		});
+		document.querySelectorAll('.sb-save').forEach(function (b) {
+			var t = b.getAttribute('data-save');
+			var n = draftCount(t);
+			b.textContent = 'Save ' + (t === 'light' ? 'Light' : 'Dark') + ' theme' + (n ? ' (' + n + ')' : '');
+			b.disabled = n === 0 || !fileText;
+		});
+		$('sb-discard').disabled = draftCount(theme) === 0;
+		try { renderContrast(); } catch (e) { fail(e.message, e); }
+		logo.readouts();
+	}
+
+	/* ── Saving into variables.css ─────────────────────────────────────
+	   Chrome and Edge can write to a file the person picks. The picked file
+	   is remembered in this browser so it is asked for once. */
+	var fileHandle = null;
+
+	function idb() {
+		return new Promise(function (resolve, reject) {
+			var req = indexedDB.open('tdc-sandbox', 1);
+			req.onupgradeneeded = function () { req.result.createObjectStore('handles'); };
+			req.onsuccess = function () { resolve(req.result); };
+			req.onerror = function () { reject(req.error); };
+		});
+	}
+	function idbGet(key) {
+		return idb().then(function (db) {
+			return new Promise(function (resolve, reject) {
+				var r = db.transaction('handles').objectStore('handles').get(key);
+				r.onsuccess = function () { resolve(r.result); };
+				r.onerror = function () { reject(r.error); };
+			});
+		});
+	}
+	function idbSet(key, value) {
+		return idb().then(function (db) {
+			return new Promise(function (resolve, reject) {
+				var tx = db.transaction('handles', 'readwrite');
+				tx.objectStore('handles').put(value, key);
+				tx.oncomplete = function () { resolve(); };
+				tx.onerror = function () { reject(tx.error); };
+			});
+		});
+	}
+
+	async function getHandle() {
+		if (!window.showOpenFilePicker) {
+			throw new Error('This browser cannot save to a file. Use Chrome or Edge, or use "Download variables.css instead".');
+		}
+		if (fileHandle) {
+			var perm = await fileHandle.queryPermission({ mode: 'readwrite' });
+			if (perm !== 'granted') perm = await fileHandle.requestPermission({ mode: 'readwrite' });
+			if (perm === 'granted') return fileHandle;
+			fileHandle = null;
+		}
+		var picked = await window.showOpenFilePicker({
+			id: 'tdc-variables',
+			multiple: false,
+			types: [{ description: 'Stylesheet', accept: { 'text/css': ['.css'] } }]
+		});
+		var handle = picked[0];
+		if (handle.name !== 'variables.css') {
+			throw new Error('That file is called ' + handle.name + '. Choose src/stylesheets/variables.css in the project.');
+		}
+		var granted = await handle.requestPermission({ mode: 'readwrite' });
+		if (granted !== 'granted') throw new Error('Permission to change variables.css was not given');
+		fileHandle = handle;
+		idbSet('variables', handle).catch(function (e) { console.error('[Sandbox] Could not remember the chosen file', e); });
+		return handle;
+	}
+
+	/* What would be written for one theme: its drafts, and, if any of them is a
+	   logo value, the whole logo set, so the saved file never holds half a logo. */
+	function changesFor(t) {
+		var out = {};
+		Object.keys(drafts[t]).forEach(function (n) { out[n] = drafts[t][n]; });
+		var hasLogo = Object.keys(out).some(function (n) { return n.indexOf('--logo-') === 0; });
+		if (hasLogo) {
+			LOGO.forEach(function (n) {
+				var v = effectiveOrDefault(t, n);
+				if (v !== undefined) out[n] = v;
+			});
+		}
+		return out;
+	}
+
+	function markSaved(t, changes) {
+		Object.keys(changes).forEach(function (n) {
+			parsed[t][n] = changes[n];
+			delete drafts[t][n];
+		});
+	}
+
+	async function save(t) {
+		var changes = changesFor(t);
+		var names = Object.keys(changes);
+		if (!names.length) { saveStatus('Nothing to save for the ' + t + ' theme.', ''); return; }
+		var label = t === 'light' ? 'Light' : 'Dark';
+		try {
+			saveStatus('Saving the ' + label + ' theme…', '');
+			var handle = await getHandle();
+			var onDisk = await (await handle.getFile()).text();
+			parseFile(onDisk); /* throws if this is not a variables.css */
+			var patched = patchTheme(onDisk, t, changes);
+			var writable = await handle.createWritable();
+			await writable.write(patched);
+			await writable.close();
+			var check = await (await handle.getFile()).text();
+			if (check !== patched) throw new Error('The file on disk does not match what was written. Check it before committing.');
+			fileText = patched;
+			markSaved(t, changes);
+			applyInline();
+			syncControls();
+			logo.refresh();
+			update();
+			saveStatus('Saved ' + names.length + ' value' + (names.length === 1 ? '' : 's') + ' to the ' + label + ' theme in variables.css. Commit or undo it in Fork.', 'success');
+		} catch (e) {
+			if (e && e.name === 'AbortError') { saveStatus('Cancelled. Nothing was saved.', ''); return; }
+			saveStatus(e.message || 'Could not save', 'error', e);
+		}
+	}
+
+	function download() {
+		try {
+			var text = fileText;
+			['dark', 'light'].forEach(function (t) {
+				var c = changesFor(t);
+				if (Object.keys(c).length) text = patchTheme(text, t, c);
+			});
+			var url = URL.createObjectURL(new Blob([text], { type: 'text/css' }));
+			var a = document.createElement('a');
+			a.href = url;
+			a.download = 'variables.css';
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
+			setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+			saveStatus('Downloaded variables.css with both themes\' unsaved changes. Replace src/stylesheets/variables.css with it.', 'success');
+		} catch (e) {
+			saveStatus(e.message || 'Could not build the download', 'error', e);
+		}
+	}
+
+	/* ── Mock-up ───────────────────────────────────────────────────── */
+	mock.addEventListener('mouseover', function (e) {
+		var el = e.target.closest('[data-uses]');
+		if (!el) return;
+		var names = el.getAttribute('data-uses').split(/\s+/).filter(Boolean).map(function (n) {
+			return SPEC[n] ? SPEC[n].label : n;
+		});
+		caption.textContent = el.getAttribute('data-label') + ': ' + names.join(', ') + '.';
+	});
+	mock.addEventListener('mouseleave', function () { caption.textContent = CAPTION_DEFAULT; });
+	/* It is a picture of the site, not the site: nothing in it goes anywhere. */
+	mock.addEventListener('click', function (e) {
+		if (e.target.closest('a, button')) e.preventDefault();
+	});
+
 	/* ── Artwork ───────────────────────────────────────────────────── */
-	var sourceSel = document.getElementById('sb-source');
-	var fileInput = document.getElementById('sb-file');
-	var modeSel = document.getElementById('sb-mode');
-	var backdropSel = document.getElementById('sb-backdrop');
-	var sizeInput = document.getElementById('sb-size');
-	var sizeOut = document.getElementById('sb-size-out');
-	var stage = document.getElementById('sb-stage');
-	var stageBox = document.getElementById('sb-stage-box');
+	var sourceSel = $('sb-source');
+	var fileInput = $('sb-file');
+	var modeSel = $('sb-mode');
+	var backdropSel = $('sb-backdrop');
+	var sizeInput = $('sb-size');
+	var sizeOut = $('sb-size-out');
+	var stage = $('sb-stage');
+	var stageBox = $('sb-stage-box');
 	var ART_STATUS = 'sb-art-status';
 
 	var localUrl = null;
@@ -313,27 +793,25 @@
 
 	/* ── Logo controls ─────────────────────────────────────────────────
 	   The parts of the logo are found by their Inkscape labels, not their
-	   ids (Inkscape's ids are generic and change). The naming is:
+	   ids (Inkscape's ids are generic and change):
 	     sha_*      flat shadows        black, opacity is the control
 	     col_m_*    primary colour      any colour, no alpha
 	     col_l_*    light colour        any colour, no alpha
 	     blu_*      blurred shadows     black, opacity and blur are the controls
 	     gra_m_all  the gradient        black, stop opacities and one offset
-	   Everything is read from the file first, so the controls always start
-	   at what the file says, and edited on the live DOM only. */
+	   The logo is driven by CSS variables, exactly as the live site's inline
+	   logo will be: colour and opacity are var(--logo-*) on the parts, and the
+	   two things CSS cannot reach (the blur amount and the gradient offset,
+	   which are attributes) are set from the same variables by script. Each
+	   variable starts at what the SVG file says until one is saved. */
 	var logo = (function () {
-		var panel = document.getElementById('sb-logo');
-		var note = document.getElementById('sb-logo-note');
-		var $ = function (id) { return document.getElementById(id); };
-		var BASE_BLUR = 12.5; /* the blur % the file was saved at, per the brief */
+		var panel = $('sb-logo');
+		var note = $('sb-logo-note');
 
 		var parts = null; /* { sha, colm, coll, blu, gra, blurs, stops } once bound */
-		var currentBlur = BASE_BLUR;
 
 		function labelOf(el) { return el.getAttributeNS(INKSCAPE_NS, 'label') || ''; }
-
 		function byId(svg, id) { return svg.querySelector('[id="' + id.replace(/"/g, '') + '"]'); }
-
 		function urlId(value) {
 			var m = /url\(\s*["']?#([^"')\s]+)/.exec(value || '');
 			return m ? m[1] : null;
@@ -368,27 +846,19 @@
 			};
 		}
 
-		function hex(computed) {
-			var n = (computed.match(/[\d.]+/g) || []).slice(0, 3).map(function (v) { return Math.round(Number(v)); });
-			if (n.length < 3) return null;
-			return '#' + n.map(function (v) { return ('0' + v.toString(16)).slice(-2); }).join('');
+		function hexOf(computed) {
+			var n = (computed.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
+			return n.length < 3 ? null : toHex(n[0], n[1], n[2]);
 		}
-		function pct(v) { return String(Math.round(v * 100)); }
-		function rgb(h) {
-			return [1, 3, 5].map(function (i) { return parseInt(h.substr(i, 2), 16); }).join(',');
-		}
-		function round2(v) { return Math.round(v * 100) / 100; }
-
-		function names(list) {
-			return list.map(labelOf).join(', ');
-		}
-
+		function names(list) { return list.map(labelOf).join(', '); }
 		function setEnabled(on) {
 			panel.querySelectorAll('input, button, textarea').forEach(function (el) { el.disabled = !on; });
 		}
 
 		function unbind(message) {
 			parts = null;
+			logoDefaults = {};
+			applyInline();
 			setEnabled(false);
 			note.textContent = message || 'Choose a source to load the logo.';
 			$('sb-logo-values').value = '';
@@ -414,49 +884,49 @@
 				unbind('This SVG has no parts labelled sha_, col_m_, col_l_, blu_ or gra_m_all, so there is nothing to adjust.');
 				return;
 			}
-			parts = p;
-			setEnabled(true);
-			note.textContent = 'Each control edits every part with that prefix. The values start at whatever the file says.';
 
-			/* Groups with nothing behind them are switched off and say so. */
-			var gate = function (list, ids, label) {
-				ids.forEach(function (id) {
-					$(id).disabled = !list.length;
-				});
-				if (!list.length) fail('No ' + label + ' parts were found in this SVG', null, ART_STATUS);
-			};
-
-			if (p.sha.length) {
-				var sha = parseFloat(getComputedStyle(p.sha[0]).fillOpacity);
-				$('sb-sha').value = pct(sha);
-				$('sb-sha-parts').textContent = names(p.sha);
-			}
-			if (p.colm.length) {
-				var cm = hex(getComputedStyle(p.colm[0]).fill);
-				$('sb-colm').value = cm; $('sb-colm-hex').value = cm;
-				$('sb-colm-parts').textContent = names(p.colm);
-			}
-			if (p.coll.length) {
-				var cl = hex(getComputedStyle(p.coll[0]).fill);
-				$('sb-coll').value = cl; $('sb-coll-hex').value = cl;
-				$('sb-coll-parts').textContent = names(p.coll);
-			}
-			if (p.blu.length) {
-				$('sb-blu').value = pct(parseFloat(getComputedStyle(p.blu[0]).fillOpacity));
-				$('sb-blu-parts').textContent = names(p.blu);
-			}
-			currentBlur = BASE_BLUR;
-			$('sb-blur').value = BASE_BLUR;
+			/* What the file says, read before anything is pointed at a variable. */
+			var d = {};
+			if (p.sha.length) d['--logo-shadow-alpha'] = getComputedStyle(p.sha[0]).fillOpacity;
+			if (p.colm.length) d['--logo-primary'] = hexOf(getComputedStyle(p.colm[0]).fill);
+			if (p.coll.length) d['--logo-light'] = hexOf(getComputedStyle(p.coll[0]).fill);
+			if (p.blu.length) d['--logo-blur-alpha'] = getComputedStyle(p.blu[0]).fillOpacity;
+			if (p.blurs.length) d['--logo-blur'] = String(BASE_BLUR);
 			if (p.stops.length >= 3) {
-				$('sb-g0').value = round2(parseFloat(getComputedStyle(p.stops[0]).stopOpacity));
-				$('sb-g1').value = round2(parseFloat(getComputedStyle(p.stops[1]).stopOpacity));
-				$('sb-g2').value = round2(parseFloat(getComputedStyle(p.stops[2]).stopOpacity));
-				$('sb-goff').value = round2(parseFloat(p.stops[1].getAttribute('offset')));
+				d['--logo-grad-start'] = getComputedStyle(p.stops[0]).stopOpacity;
+				d['--logo-grad-mid'] = getComputedStyle(p.stops[1]).stopOpacity;
+				d['--logo-grad-end'] = getComputedStyle(p.stops[2]).stopOpacity;
+				d['--logo-grad-offset'] = p.stops[1].getAttribute('offset');
+			}
+			logoDefaults = d;
+			parts = p;
+			applyInline();
+
+			/* Point the parts at the variables. */
+			p.sha.forEach(function (el) { el.style.setProperty('fill-opacity', 'var(--logo-shadow-alpha)'); });
+			p.colm.forEach(function (el) { el.style.setProperty('fill', 'var(--logo-primary)'); });
+			p.coll.forEach(function (el) { el.style.setProperty('fill', 'var(--logo-light)'); });
+			p.blu.forEach(function (el) { el.style.setProperty('fill-opacity', 'var(--logo-blur-alpha)'); });
+			if (p.stops.length >= 3) {
+				p.stops[0].style.setProperty('stop-opacity', 'var(--logo-grad-start)');
+				p.stops[1].style.setProperty('stop-opacity', 'var(--logo-grad-mid)');
+				p.stops[2].style.setProperty('stop-opacity', 'var(--logo-grad-end)');
 				/* Stop 1 may only move between its neighbours. */
 				$('sb-goff').min = p.stops[0].getAttribute('offset');
 				$('sb-goff').max = p.stops[2].getAttribute('offset');
 			}
 
+			setEnabled(true);
+			note.textContent = 'Each control sets one --logo-* variable and the logo follows it. Values start at whatever the SVG file says until you save.';
+			if (p.sha.length) $('sb-sha-parts').textContent = names(p.sha);
+			if (p.colm.length) $('sb-colm-parts').textContent = names(p.colm);
+			if (p.coll.length) $('sb-coll-parts').textContent = names(p.coll);
+			if (p.blu.length) $('sb-blu-parts').textContent = names(p.blu);
+
+			var gate = function (list, ids, label) {
+				ids.forEach(function (id) { $(id).disabled = !list.length; });
+				if (!list.length) fail('No ' + label + ' parts were found in this SVG', null, ART_STATUS);
+			};
 			gate(p.sha, ['sb-sha'], 'sha_');
 			gate(p.colm, ['sb-colm', 'sb-colm-hex'], 'col_m_');
 			gate(p.coll, ['sb-coll', 'sb-coll-hex'], 'col_l_');
@@ -466,7 +936,8 @@
 				['sb-g0', 'sb-g1', 'sb-g2', 'sb-goff'].forEach(function (id) { $(id).disabled = true; });
 				fail(p.gra ? 'The gra_m_all gradient needs three stops and has ' + p.stops.length : 'No gra_m_all part was found in this SVG', null, ART_STATUS);
 			}
-			readouts();
+			refresh();
+			update();
 		}
 
 		/* The blur % is a multiplier on the saved filter: Inkscape sets the
@@ -484,74 +955,77 @@
 			});
 		}
 
-		function validHex(v) {
-			return /^#[0-9a-f]{6}$/i.test(v) ? v.toLowerCase() : null;
-		}
+		function val(name) { return effectiveOrDefault(theme, name); }
 
-		/* Each control writes only its own value. Writing them all on every
-		   move would quietly round the ones left alone (a range input snaps
-		   to its step), changing the file's numbers without being asked. */
-		var writers = {
-			'sb-sha': function () {
-				var v = String(Number($('sb-sha').value) / 100);
-				parts.sha.forEach(function (el) { el.style.setProperty('fill-opacity', v); });
-			},
-			'sb-colm': function () {
-				parts.colm.forEach(function (el) { el.style.setProperty('fill', $('sb-colm').value); });
-			},
-			'sb-coll': function () {
-				parts.coll.forEach(function (el) { el.style.setProperty('fill', $('sb-coll').value); });
-			},
-			'sb-blu': function () {
-				var v = String(Number($('sb-blu').value) / 100);
-				parts.blu.forEach(function (el) { el.style.setProperty('fill-opacity', v); });
-			},
-			'sb-blur': function () {
-				currentBlur = Math.min(15, Math.max(10, Number($('sb-blur').value)));
-				applyBlur(currentBlur);
-			},
-			'sb-g0': function () { parts.stops[0].style.setProperty('stop-opacity', $('sb-g0').value); },
-			'sb-g1': function () { parts.stops[1].style.setProperty('stop-opacity', $('sb-g1').value); },
-			'sb-g2': function () { parts.stops[2].style.setProperty('stop-opacity', $('sb-g2').value); },
-			'sb-goff': function () { parts.stops[1].setAttribute('offset', $('sb-goff').value); }
-		};
-
-		function apply(id) {
+		/* The two things CSS cannot do, and the controls' own positions. */
+		function refresh() {
 			if (!parts) return;
-			writers[id]();
+			if (parts.blurs.length) {
+				var b = parseFloat(val('--logo-blur'));
+				if (!isNaN(b)) applyBlur(Math.min(15, Math.max(10, b)));
+			}
+			if (parts.stops.length >= 3 && val('--logo-grad-offset') !== undefined) {
+				parts.stops[1].setAttribute('offset', val('--logo-grad-offset'));
+			}
+			syncPositions();
 			readouts();
 		}
 
-		/* What is actually in the SVG now, which is what the numbers report.
-		   The sliders can only show a rounded value; the file may hold more. */
+		/* Move the controls to the current theme's values. A slider can only
+		   show a rounded position; the variable keeps the exact one. */
+		function syncPositions() {
+			var set = function (id, v) { if (v !== undefined) $(id).value = v; };
+			var pctOf = function (v) { return v === undefined ? undefined : Math.round(parseFloat(v) * 100); };
+			set('sb-sha', pctOf(val('--logo-shadow-alpha')));
+			set('sb-blu', pctOf(val('--logo-blur-alpha')));
+			set('sb-blur', val('--logo-blur'));
+			set('sb-g0', val('--logo-grad-start'));
+			set('sb-g1', val('--logo-grad-mid'));
+			set('sb-g2', val('--logo-grad-end'));
+			set('sb-goff', val('--logo-grad-offset'));
+			['colm:--logo-primary', 'coll:--logo-light'].forEach(function (pair) {
+				var id = pair.split(':')[0], name = pair.split(':')[1];
+				var v = val(name);
+				if (v !== undefined) { $('sb-' + id).value = v; $('sb-' + id + '-hex').value = v; }
+			});
+		}
+
 		function readouts() {
 			if (!parts) return;
-			var num = function (v, digits) { return String(Number(Number(v).toFixed(digits))); };
-			var opacity = function (el) { return parseFloat(getComputedStyle(el).fillOpacity); };
-			var stopOp = function (i) { return parseFloat(getComputedStyle(parts.stops[i]).stopOpacity); };
-			var sha = parts.sha.length ? Math.round(opacity(parts.sha[0]) * 10000) / 100 : null;
-			var blu = parts.blu.length ? Math.round(opacity(parts.blu[0]) * 10000) / 100 : null;
-			var cm = parts.colm.length ? hex(getComputedStyle(parts.colm[0]).fill) : null;
-			var cl = parts.coll.length ? hex(getComputedStyle(parts.coll[0]).fill) : null;
-			var haveStops = parts.stops.length >= 3;
-			var off = haveStops ? parseFloat(parts.stops[1].getAttribute('offset')) : null;
-
-			$('sb-sha-out').textContent = sha === null ? '' : num(sha, 2);
-			$('sb-blu-out').textContent = blu === null ? '' : num(blu, 2);
-			$('sb-blur-out').textContent = currentBlur.toFixed(1) + ' %';
-			$('sb-g0-out').textContent = haveStops ? num(stopOp(0), 3) : '';
-			$('sb-g1-out').textContent = haveStops ? num(stopOp(1), 3) : '';
-			$('sb-g2-out').textContent = haveStops ? num(stopOp(2), 3) : '';
-			$('sb-goff-out').textContent = haveStops ? num(off, 3) : '';
+			var out = function (id, v, digits, suffix) { $(id).textContent = v === undefined ? '' : trimNum(v, digits) + (suffix || ''); };
+			var sha = val('--logo-shadow-alpha'), blu = val('--logo-blur-alpha');
+			out('sb-sha-out', sha === undefined ? undefined : parseFloat(sha) * 100, 2);
+			out('sb-blu-out', blu === undefined ? undefined : parseFloat(blu) * 100, 2);
+			out('sb-blur-out', val('--logo-blur'), 1, ' %');
+			out('sb-g0-out', val('--logo-grad-start'), 3);
+			out('sb-g1-out', val('--logo-grad-mid'), 3);
+			out('sb-g2-out', val('--logo-grad-end'), 3);
+			out('sb-goff-out', val('--logo-grad-offset'), 4);
 
 			var lines = [];
-			if (sha !== null) lines.push('sha_*      rgba(0,0,0,' + num(sha / 100, 4) + ')   X = ' + num(sha, 2));
-			if (cm) lines.push('col_m_*    rgb(' + rgb(cm) + ')   ' + cm);
-			if (cl) lines.push('col_l_*    rgb(' + rgb(cl) + ')   ' + cl);
-			if (blu !== null) lines.push('blu_*      rgba(0,0,0,' + num(blu / 100, 4) + ')   X = ' + num(blu, 2));
-			if (parts.blurs.length) lines.push('blur       ' + currentBlur.toFixed(1) + ' %');
-			if (haveStops) lines.push('gra_m_all  stop0 X = ' + num(stopOp(0), 3) + ', stop1 X = ' + num(stopOp(1), 3) + ' at offset ' + num(off, 4) + ', stop2 X = ' + num(stopOp(2), 3));
+			LOGO.forEach(function (n) {
+				var v = val(n);
+				if (v !== undefined) lines.push(n + ': ' + v + ';' + (drafts[theme][n] !== undefined ? '   /* unsaved */' : ''));
+			});
 			$('sb-logo-values').value = lines.join('\n');
+		}
+
+		/* Each control sets only its own variable. */
+		var writers = {
+			'sb-sha':  function () { setDraft('--logo-shadow-alpha', String(+(Number($('sb-sha').value) / 100).toFixed(2))); },
+			'sb-colm': function () { setDraft('--logo-primary', $('sb-colm').value); },
+			'sb-coll': function () { setDraft('--logo-light', $('sb-coll').value); },
+			'sb-blu':  function () { setDraft('--logo-blur-alpha', String(+(Number($('sb-blu').value) / 100).toFixed(2))); },
+			'sb-blur': function () { setDraft('--logo-blur', String(Math.min(15, Math.max(10, Number($('sb-blur').value))))); },
+			'sb-g0':   function () { setDraft('--logo-grad-start', $('sb-g0').value); },
+			'sb-g1':   function () { setDraft('--logo-grad-mid', $('sb-g1').value); },
+			'sb-g2':   function () { setDraft('--logo-grad-end', $('sb-g2').value); },
+			'sb-goff': function () { setDraft('--logo-grad-offset', $('sb-goff').value); }
+		};
+		function apply(id) {
+			if (!parts) return;
+			writers[id]();
+			refresh();
 		}
 
 		/* Colours: the picker and the hex box stay in step; a bad hex is reported. */
@@ -564,7 +1038,7 @@
 				var raw = $(hexId).value.trim();
 				var v = validHex(raw.charAt(0) === '#' ? raw : '#' + raw);
 				if (!v) {
-					fail('"' + raw + '" is not a six-digit hex colour, like #3593dd', null, ART_STATUS);
+					fail('"' + raw + '" is not a hex colour, like #3593dd', null, ART_STATUS);
 					$(hexId).value = $(pickerId).value;
 					return;
 				}
@@ -580,7 +1054,11 @@
 			$(id).addEventListener('input', function () { apply(id); });
 		});
 
-		$('sb-logo-reset').addEventListener('click', drawArt);
+		/* Forget this theme's unsaved logo changes and read the SVG again. */
+		$('sb-logo-reset').addEventListener('click', function () {
+			LOGO.forEach(function (n) { delete drafts[theme][n]; });
+			drawArt();
+		});
 		$('sb-logo-copy').addEventListener('click', function () {
 			var text = $('sb-logo-values').value;
 			if (!navigator.clipboard) { fail('This browser cannot copy from here. Select the text and copy it by hand.', null, ART_STATUS); return; }
@@ -590,13 +1068,25 @@
 			);
 		});
 
-		unbind();
-		return { bind: bind, unbind: unbind };
+		setEnabled(false);
+		return { bind: bind, unbind: unbind, refresh: refresh, readouts: readouts };
 	})();
 
 	/* ── Wiring ────────────────────────────────────────────────────── */
 	document.querySelectorAll('[data-theme-set]').forEach(function (b) {
 		b.addEventListener('click', function () { setTheme(b.getAttribute('data-theme-set'), true); });
+	});
+	document.querySelectorAll('.sb-save').forEach(function (b) {
+		b.addEventListener('click', function () { save(b.getAttribute('data-save')); });
+	});
+	$('sb-download').addEventListener('click', download);
+	$('sb-discard').addEventListener('click', function () {
+		drafts[theme] = {};
+		applyInline();
+		syncControls();
+		logo.refresh();
+		update();
+		saveStatus('Unsaved ' + theme + ' changes discarded.', '');
 	});
 	[sourceSel, modeSel, backdropSel].forEach(function (el) { el.addEventListener('change', drawArt); });
 	sizeInput.addEventListener('input', function () {
@@ -605,14 +1095,39 @@
 	});
 	fileInput.addEventListener('change', function () { useLocalFile(fileInput.files[0]); });
 
-	setTheme(savedTheme() === 'light' ? 'light' : 'dark', false);
+	/* ── Start ─────────────────────────────────────────────────────────
+	   Read variables.css first, because every control starts from it. If it
+	   cannot be read, say so: the palette stays switched off rather than
+	   guess. Then, if a file has been saved into the sandbox slot, start on
+	   it; otherwise start on the primary logo, which always exists. */
+	caption.textContent = CAPTION_DEFAULT;
+	buildControls();
+	wireAlphaTouch();
 
-	/* If a file has been saved into the sandbox slot, start on it. Otherwise
-	   start on the primary logo, which always exists. The dropdown says which. */
-	fetch('/resources/branding/sandbox.svg', { method: 'HEAD', cache: 'no-store' })
+	if (window.indexedDB) {
+		idbGet('variables').then(function (h) { if (h) fileHandle = h; }).catch(function (e) {
+			console.error('[Sandbox] Could not look up the remembered file', e);
+		});
+	}
+
+	fetch(CSS_URL, { cache: 'no-store' })
 		.then(function (res) {
-			if (res.ok) sourceSel.value = '/resources/branding/sandbox.svg';
+			if (!res.ok) throw new Error('Could not read ' + CSS_URL + ' (' + res.status + ')');
+			return res.text();
 		})
-		.catch(function () { /* no probe result: the default stays selected and is visible in the dropdown */ })
+		.then(function (text) {
+			parsed = parseFile(text);
+			fileText = text;
+		})
+		.catch(function (e) {
+			fail(e.message + '. The palette controls are switched off.', e);
+			document.querySelectorAll('#sb-palette-controls input').forEach(function (el) { el.disabled = true; });
+		})
+		.then(function () {
+			setTheme(savedTheme() === 'light' ? 'light' : 'dark', false);
+			return fetch('/resources/branding/sandbox.svg', { method: 'HEAD', cache: 'no-store' })
+				.then(function (res) { if (res.ok) sourceSel.value = '/resources/branding/sandbox.svg'; })
+				.catch(function () { /* no probe result: the default stays selected and is visible in the dropdown */ });
+		})
 		.then(drawArt);
 })();

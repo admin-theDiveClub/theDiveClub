@@ -38,8 +38,85 @@ extraScripts:
 	<!-- ── Palette ─────────────────────────────────────────────────── -->
 	<section class="sb-section" id="sb-palette">
 		<h2>Palette</h2>
-		<p class="muted">Read live from the tokens in <code>variables.css</code> for the current theme.</p>
-		<div id="sb-swatches"></div>
+		<p class="muted">Editing the <strong id="sb-edit-theme">Dark</strong> theme. Changes show on this page straight away. <strong>Save</strong> writes them into <code>variables.css</code> (you choose the file once); undo or publish from Fork. Hover a colour to see where the mock-up uses it.</p>
+
+		<div class="sb-palette-layout">
+			<div class="sb-controls">
+				<div id="sb-palette-controls"></div>
+
+					<div class="btn-row sb-savebar">
+					<button type="button" class="btn btn-primary sb-save" data-save="dark">Save Dark theme</button>
+					<button type="button" class="btn btn-primary sb-save" data-save="light">Save Light theme</button>
+				</div>
+				<div class="btn-row">
+					<button type="button" class="btn btn-secondary" id="sb-discard">Discard unsaved changes</button>
+					<button type="button" class="btn btn-secondary" id="sb-download">Download variables.css instead</button>
+				</div>
+				<div class="status sb-save-status" role="status"></div>
+			</div>
+
+			<aside class="sb-mock-wrap" aria-label="Mock-up of the site">
+				<p class="sb-mock-caption" id="sb-mock-caption" role="status"></p>
+				<div class="sb-mock" id="sb-mock" data-label="Page" data-uses="--bg-base --text-primary">
+
+					<div class="sb-mock-nav" data-label="Nav bar" data-uses="--bg-surface --border-color">
+						<span class="sb-mock-burger" data-label="Menu button" data-uses="--text-primary"><i></i><i></i><i></i></span>
+						<span class="sb-mock-name" data-label="Site name" data-uses="--text-primary">The Dive Club</span>
+						<span class="sb-mock-pip" data-label="Offline indicator" data-uses="--color-warning"></span>
+						<span class="sb-mock-avatar" data-label="Avatar ring" data-uses="--border-color"></span>
+					</div>
+
+					<div class="tdc-card">
+						<h2 data-label="Heading" data-uses="--text-primary">Tonight</h2>
+						<p class="muted" data-label="Muted text" data-uses="--text-muted">Quiet text for hints and detail, with <a href="#sb-palette" data-label="Link" data-uses="--color-primary">a link</a> inside it.</p>
+
+						<div class="field">
+							<label for="sb-m-name" data-label="Field label" data-uses="--color-primary">Player name</label>
+							<input type="text" id="sb-m-name" value="Alex Morgan" data-label="Field line and text" data-uses="--border-color --text-primary --color-primary">
+							<div class="hint" data-label="Field hint" data-uses="--text-muted">Click the field to see its focus line.</div>
+						</div>
+
+						<button type="button" class="btn btn-primary" data-label="Main button" data-uses="--color-primary --color-on-primary">Start match</button>
+						<button type="button" class="btn btn-secondary" data-label="Quiet button" data-uses="--border-color --text-primary">Cancel</button>
+						<button type="button" class="btn btn-danger" data-label="Danger button" data-uses="--color-error">Remove</button>
+
+						<div class="status success" data-label="Success message" data-uses="--color-success">That worked.</div>
+						<div class="status error" data-label="Error message" data-uses="--color-error">Something went wrong.</div>
+
+						<h2 data-label="Heading" data-uses="--text-primary">Matches</h2>
+						<a href="#sb-palette" class="match-card" data-label="Match card" data-uses="--bg-surface --border-color --text-primary --color-primary">
+							<div class="match-top">
+								<span class="match-opponent">Sam Reyes</span>
+								<span class="match-score"><span class="win" data-label="Winning score" data-uses="--color-primary">5</span><span class="dash" data-label="Score divider" data-uses="--text-muted">-</span>3</span>
+							</div>
+							<div class="match-meta" data-label="Match detail" data-uses="--text-muted">8-ball, race to 5</div>
+							<div class="match-tags">
+								<span class="badge" data-label="Plain badge" data-uses="--border-color --text-muted">Casual</span>
+								<span class="badge paid" data-label="Paid badge" data-uses="--color-success">Paid</span>
+								<span class="badge warn" data-label="Warning badge" data-uses="--color-warning">Late</span>
+								<span class="badge live" data-label="Live badge" data-uses="--color-primary">Live</span>
+							</div>
+						</a>
+
+						<a href="#sb-palette" class="tile-link tile-staff" data-label="Staff tile" data-uses="--bg-surface --border-color --text-primary --color-success">Staff tool<span class="sub" data-label="Tile detail" data-uses="--text-muted">Any staff member</span></a>
+						<a href="#sb-palette" class="tile-link tile-admin" data-label="Admin tile" data-uses="--bg-surface --border-color --text-primary --color-primary">Admin tool<span class="sub" data-label="Tile detail" data-uses="--text-muted">Owners and admins</span></a>
+						<a href="#sb-palette" class="tile-link tile-owner" data-label="Owner tile" data-uses="--bg-surface --border-color --text-primary --color-owner">Owner tool<span class="sub" data-label="Tile detail" data-uses="--text-muted">Owners only</span></a>
+
+						<div class="sb-mock-menu" data-label="Menu" data-uses="--bg-surface --border-color">
+							<a href="#sb-palette" data-label="Menu link" data-uses="--text-primary">Matches</a>
+							<a href="#sb-palette" class="sb-hovered" data-label="Menu link under the pointer" data-uses="--hover-wash --text-primary">Tournaments</a>
+							<a href="#sb-palette" data-label="Menu link" data-uses="--text-primary">Profile</a>
+						</div>
+
+						<div class="sb-mock-depth" data-label="Panel over the page" data-uses="--scrim-alpha --shadow-alpha">
+							<div class="sb-mock-behind" data-label="Page behind a panel" data-uses="--text-primary">Page content behind a panel</div>
+							<div class="sb-mock-scrim" data-label="Dim behind the panel" data-uses="--scrim-alpha"></div>
+							<div class="sb-mock-panel" data-label="Floating panel" data-uses="--shadow-alpha --bg-base --border-color --text-primary">Settings panel</div>
+						</div>
+					</div>
+				</div>
+			</aside>
+		</div>
 
 		<h2>Contrast</h2>
 		<p class="muted">Computed from the same live values. 4.5 or more is comfortable for text. 3 to 4.5 is only enough for icons and borders.</p>
@@ -95,8 +172,8 @@ extraScripts:
 			<select id="sb-backdrop">
 				<option value="page">Page background</option>
 				<option value="surface">Surface</option>
-				<option value="cream">Brand cream</option>
-				<option value="ink">Brand ink</option>
+				<option value="text">Text colour</option>
+				<option value="primary">Primary colour</option>
 				<option value="checker">Checkerboard</option>
 			</select>
 		</div>
@@ -164,14 +241,20 @@ extraScripts:
 				<input type="range" id="sb-g2" min="0" max="1" step="0.01">
 			</div>
 
-			<div class="btn-row">
-				<button type="button" class="btn btn-secondary" id="sb-logo-reset">Reset to the file</button>
-				<button type="button" class="btn btn-secondary" id="sb-logo-copy">Copy values</button>
-			</div>
-			<div class="field">
-				<label for="sb-logo-values">Current values</label>
-				<textarea id="sb-logo-values" rows="7" readonly></textarea>
-			</div>
+				<div class="btn-row sb-savebar">
+					<button type="button" class="btn btn-primary sb-save" data-save="dark">Save Dark theme</button>
+					<button type="button" class="btn btn-primary sb-save" data-save="light">Save Light theme</button>
+				</div>
+				<div class="btn-row">
+					<button type="button" class="btn btn-secondary" id="sb-logo-reset">Reset logo</button>
+					<button type="button" class="btn btn-secondary" id="sb-logo-copy">Copy values</button>
+				</div>
+				<div class="status sb-save-status" role="status"></div>
+				<div class="field">
+					<label for="sb-logo-values">Variables for the current theme</label>
+					<textarea id="sb-logo-values" rows="9" readonly></textarea>
+					<div class="hint">These are the <code>--logo-*</code> lines Save writes into <code>variables.css</code>. Save writes the whole set for the theme, together with any palette changes. A logo with no saved values starts from the SVG file.</div>
+				</div>
 		</div>
 	</section>
 
@@ -193,7 +276,6 @@ extraScripts:
 		<h2>Depth and shape</h2>
 
 		<div class="sb-grid">
-			<div class="sb-demo sb-raised">Raised</div>
 			<div class="sb-demo sb-panel-shadow">Panel</div>
 			<div class="sb-demo sb-scrim-demo"><span>Scrim</span></div>
 			<div class="sb-demo sb-hover">Hover wash</div>
