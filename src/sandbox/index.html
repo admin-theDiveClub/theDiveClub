@@ -1,0 +1,317 @@
+---
+layout: layout.html
+title: UI Sandbox
+description: "A scratch page for trying colours, artwork and components. Not part of the product."
+extraStyles:
+  - /stylesheets/sandbox.css
+extraScripts:
+  - /scripts/sandbox.js
+---
+{% comment %}
+	A scratch page for trying things before they go anywhere real.
+
+	Nothing here is the product: no data, no sign-in, not linked from the nav.
+	Everything on it is drawn from the live tokens in variables.css and the
+	live components in forms.css, so editing either and reloading shows the
+	effect on every kind of thing at once.
+
+	It is a public page once deployed (nothing is behind a sign-in, and the
+	sitemap and robots.txt are both empty, so it is simply unlisted).
+{% endcomment %}
+
+<div class="tdc-card wide sandbox">
+	<h1>UI Sandbox</h1>
+	<p class="muted">A scratch page. Change a stylesheet, reload, and every section below shows the result. Not linked from the nav.</p>
+
+	<div class="status" id="sb-status" role="status"></div>
+
+	<!-- ── Theme ───────────────────────────────────────────────────── -->
+	<section class="sb-section" id="sb-theme">
+		<h2>Theme</h2>
+		<div class="btn-row">
+			<button type="button" class="btn btn-secondary" data-theme-set="dark" aria-pressed="true">Dark</button>
+			<button type="button" class="btn btn-secondary" data-theme-set="light" aria-pressed="false">Light</button>
+		</div>
+		<p class="muted">Sets <code>data-theme</code> on the page and remembers it in this browser. Every section below follows it.</p>
+	</section>
+
+	<!-- ── Palette ─────────────────────────────────────────────────── -->
+	<section class="sb-section" id="sb-palette">
+		<h2>Palette</h2>
+		<p class="muted">Read live from the tokens in <code>variables.css</code> for the current theme.</p>
+		<div id="sb-swatches"></div>
+
+		<h2>Contrast</h2>
+		<p class="muted">Computed from the same live values. 4.5 or more is comfortable for text. 3 to 4.5 is only enough for icons and borders.</p>
+		<div class="table-scroll">
+			<table class="tdc-table" id="sb-contrast">
+				<thead>
+					<tr><th>Pair</th><th>Sample</th><th class="num">Ratio</th><th>Rating</th></tr>
+				</thead>
+				<tbody></tbody>
+			</table>
+		</div>
+	</section>
+
+	<!-- ── Artwork ─────────────────────────────────────────────────── -->
+	<section class="sb-section" id="sb-art">
+		<h2>Artwork</h2>
+
+		<div class="sb-stage bd-page" id="sb-stage-box">
+			<div class="sb-art" id="sb-stage"></div>
+		</div>
+		<div class="status" id="sb-art-status" role="status"></div>
+
+		<p class="muted">To try a new SVG without adding it to the repo, choose a local file below. To keep one, save it as <code>src/resources/branding/sandbox.svg</code> and pick the first source.</p>
+
+		<div class="field">
+			<label for="sb-source">Source</label>
+			<select id="sb-source">
+				<option value="/resources/branding/sandbox.svg">Sandbox slot (branding/sandbox.svg)</option>
+				<option value="/resources/branding/logo-primary-dark.svg" selected>logo-primary-dark.svg</option>
+				<option value="/resources/branding/logo-primary-light.svg">logo-primary-light.svg</option>
+				<option value="/resources/branding/logo-mark-dark.svg">logo-mark-dark.svg</option>
+				<option value="/resources/branding/logo-mark-light.svg">logo-mark-light.svg</option>
+				<option value="/resources/branding/icon-primary.svg">icon-primary.svg</option>
+			</select>
+		</div>
+
+		<div class="field">
+			<label for="sb-file">Local SVG file</label>
+			<input type="file" id="sb-file" accept=".svg,image/svg+xml">
+			<div class="hint">Previewed in this browser only. Nothing is uploaded.</div>
+		</div>
+
+		<div class="field">
+			<label for="sb-mode">Render as</label>
+			<select id="sb-mode">
+				<option value="inline" selected>Inline (needed for the logo controls below)</option>
+				<option value="img">Image (as the site uses it)</option>
+			</select>
+		</div>
+
+		<div class="field">
+			<label for="sb-backdrop">Backdrop</label>
+			<select id="sb-backdrop">
+				<option value="page">Page background</option>
+				<option value="surface">Surface</option>
+				<option value="cream">Brand cream</option>
+				<option value="ink">Brand ink</option>
+				<option value="checker">Checkerboard</option>
+			</select>
+		</div>
+
+		<div class="field">
+			<label for="sb-size">Size <span id="sb-size-out">240 px</span></label>
+			<input type="range" id="sb-size" min="24" max="640" step="4" value="240">
+		</div>
+
+		<!-- Logo controls: act on the parts of the SVG named by their Inkscape labels. -->
+		<h2>Logo controls</h2>
+		<p class="muted" id="sb-logo-note"></p>
+
+		<div class="panel" id="sb-logo">
+			<div class="field">
+				<label for="sb-sha">Flat shadows <span class="sb-key">sha_*</span> <output class="sb-val" id="sb-sha-out"></output></label>
+				<input type="range" id="sb-sha" min="0" max="100" step="1">
+				<div class="hint" id="sb-sha-parts"></div>
+			</div>
+
+			<div class="field">
+				<label for="sb-colm">Primary <span class="sb-key">col_m_*</span></label>
+				<div class="sb-colour">
+					<input type="color" id="sb-colm" aria-label="Primary colour picker">
+					<input type="text" id="sb-colm-hex" maxlength="7" spellcheck="false" aria-label="Primary colour as hex">
+				</div>
+				<div class="hint" id="sb-colm-parts"></div>
+			</div>
+
+			<div class="field">
+				<label for="sb-coll">Light <span class="sb-key">col_l_*</span></label>
+				<div class="sb-colour">
+					<input type="color" id="sb-coll" aria-label="Light colour picker">
+					<input type="text" id="sb-coll-hex" maxlength="7" spellcheck="false" aria-label="Light colour as hex">
+				</div>
+				<div class="hint" id="sb-coll-parts"></div>
+			</div>
+
+			<div class="field">
+				<label for="sb-blu">Blurred shadows <span class="sb-key">blu_*</span> <output class="sb-val" id="sb-blu-out"></output></label>
+				<input type="range" id="sb-blu" min="0" max="100" step="1">
+				<div class="hint" id="sb-blu-parts"></div>
+			</div>
+
+			<div class="field">
+				<label for="sb-blur">Blur <span class="sb-key">blu_*</span> <output class="sb-val" id="sb-blur-out"></output></label>
+				<input type="range" id="sb-blur" min="10" max="15" step="0.1">
+				<div class="hint">Inkscape blur %, locked between 10 and 15. Scaled from the blur saved in the file, which is taken to be 12.5.</div>
+			</div>
+
+			<div class="field">
+				<label for="sb-g0">Gradient <span class="sb-key">gra_m_all</span>, stop 0 opacity <output class="sb-val" id="sb-g0-out"></output></label>
+				<input type="range" id="sb-g0" min="0" max="1" step="0.01">
+			</div>
+			<div class="field">
+				<label for="sb-g1">Gradient stop 1 opacity <output class="sb-val" id="sb-g1-out"></output></label>
+				<input type="range" id="sb-g1" min="0" max="1" step="0.01">
+			</div>
+			<div class="field">
+				<label for="sb-goff">Gradient stop 1 offset <output class="sb-val" id="sb-goff-out"></output></label>
+				<input type="range" id="sb-goff" min="0" max="1" step="0.01">
+			</div>
+			<div class="field">
+				<label for="sb-g2">Gradient stop 2 opacity <output class="sb-val" id="sb-g2-out"></output></label>
+				<input type="range" id="sb-g2" min="0" max="1" step="0.01">
+			</div>
+
+			<div class="btn-row">
+				<button type="button" class="btn btn-secondary" id="sb-logo-reset">Reset to the file</button>
+				<button type="button" class="btn btn-secondary" id="sb-logo-copy">Copy values</button>
+			</div>
+			<div class="field">
+				<label for="sb-logo-values">Current values</label>
+				<textarea id="sb-logo-values" rows="7" readonly></textarea>
+			</div>
+		</div>
+	</section>
+
+	<!-- ── Type ────────────────────────────────────────────────────── -->
+	<section class="sb-section" id="sb-type">
+		<h2>Type</h2>
+		<h1 class="sb-spec">Heading one</h1>
+		<h2 class="sb-spec">Heading two</h2>
+		<h3 class="sb-spec">Heading three</h3>
+		<h4 class="sb-spec">Heading four</h4>
+		<p>Body text in the body face. The quick brown fox jumps over the lazy dog. 0123456789</p>
+		<p class="muted">Muted text, used for hints and secondary lines. The quick brown fox jumps over the lazy dog.</p>
+		<p><a href="#sb-type">A link in the primary colour</a></p>
+		<p class="sb-mono">Monospace, used for codes: A7K2-93QX 0O 1lI</p>
+	</section>
+
+	<!-- ── Depth and shape ─────────────────────────────────────────── -->
+	<section class="sb-section" id="sb-depth">
+		<h2>Depth and shape</h2>
+
+		<div class="sb-grid">
+			<div class="sb-demo sb-raised">Raised</div>
+			<div class="sb-demo sb-panel-shadow">Panel</div>
+			<div class="sb-demo sb-scrim-demo"><span>Scrim</span></div>
+			<div class="sb-demo sb-hover">Hover wash</div>
+		</div>
+
+		<div class="sb-grid">
+			<div class="sb-demo sb-r-sm">radius-sm</div>
+			<div class="sb-demo sb-r-md">radius-md</div>
+			<div class="sb-demo sb-r-lg">radius-lg</div>
+			<div class="sb-demo sb-r-pill">radius-pill</div>
+			<div class="sb-demo sb-r-round">round</div>
+		</div>
+
+		<div class="sb-spaces">
+			<div class="sb-space"><span class="sb-bar sb-s1"></span><span>space-1</span></div>
+			<div class="sb-space"><span class="sb-bar sb-s2"></span><span>space-2</span></div>
+			<div class="sb-space"><span class="sb-bar sb-s3"></span><span>space-3</span></div>
+			<div class="sb-space"><span class="sb-bar sb-s4"></span><span>space-4</span></div>
+			<div class="sb-space"><span class="sb-bar sb-s5"></span><span>space-5</span></div>
+			<div class="sb-space"><span class="sb-bar sb-s6"></span><span>space-6</span></div>
+			<div class="sb-space"><span class="sb-bar sb-s7"></span><span>space-7</span></div>
+		</div>
+	</section>
+
+	<!-- ── Components ──────────────────────────────────────────────── -->
+	<section class="sb-section" id="sb-components">
+		<h2>Buttons</h2>
+		<button type="button" class="btn btn-primary">Primary</button>
+		<button type="button" class="btn btn-secondary">Secondary</button>
+		<button type="button" class="btn btn-danger">Danger</button>
+		<button type="button" class="btn btn-primary" disabled>Disabled</button>
+		<div class="btn-row">
+			<button type="button" class="btn btn-sm btn-primary">Small</button>
+			<button type="button" class="btn btn-sm btn-secondary">Small</button>
+			<button type="button" class="btn btn-sm btn-danger">Small</button>
+		</div>
+		<a href="#sb-components" class="btn-primary btn-link">A link as the main action</a>
+		<div class="link-row"><a href="#sb-components">A quiet way out</a></div>
+
+		<h2>Fields</h2>
+		<div class="field">
+			<label for="sb-f-text">Text</label>
+			<input type="text" id="sb-f-text" placeholder="Placeholder text">
+			<div class="hint">A hint sits under the field.</div>
+		</div>
+		<div class="field">
+			<label for="sb-f-select">Select</label>
+			<select id="sb-f-select">
+				<option>First option</option>
+				<option>Second option</option>
+			</select>
+		</div>
+		<div class="field">
+			<label for="sb-f-area">Text area</label>
+			<textarea id="sb-f-area" rows="2" placeholder="A longer note"></textarea>
+		</div>
+		<div class="field">
+			<label for="sb-f-check">Checkbox</label>
+			<input type="checkbox" id="sb-f-check" checked>
+		</div>
+
+		<h2>Status lines</h2>
+		<div class="status error">Something went wrong.</div>
+		<div class="status success">That worked.</div>
+
+		<h2>Badges</h2>
+		<p>
+			<span class="badge">Default</span>
+			<span class="badge verified">Verified</span>
+			<span class="badge warn">Warn</span>
+			<span class="badge pending">Pending</span>
+			<span class="badge live">Live</span>
+			<span class="badge paid">Paid</span>
+			<span class="badge needs-you">Needs you</span>
+			<span class="badge disputed">Disputed</span>
+		</p>
+
+		<h2>Cards and tiles</h2>
+		<a href="#sb-components" class="match-card needs-you">
+			<div class="match-top">
+				<span class="match-opponent">Example Opponent</span>
+				<span class="match-score"><span class="win">5</span><span class="dash">-</span>1</span>
+			</div>
+			<div class="match-meta">8-ball, race to 5</div>
+			<div class="match-tags"><span class="badge needs-you">Needs you</span></div>
+		</a>
+		<a href="#sb-components" class="tile-link tile-staff">Staff tile<span class="sub">Any staff member</span></a>
+		<a href="#sb-components" class="tile-link tile-admin">Admin tile<span class="sub">Owners and admins</span></a>
+		<a href="#sb-components" class="tile-link tile-owner">Owner tile<span class="sub">Owners only</span></a>
+
+		<h2>Table</h2>
+		<div class="table-scroll">
+			<table class="tdc-table">
+				<thead>
+					<tr><th class="num">Seed</th><th>Entrant</th><th>Status</th><th class="num">Frames</th></tr>
+				</thead>
+				<tbody>
+					<tr><td class="num">1</td><td>First Player<span class="sub">Member</span></td><td><span class="badge paid">Paid</span></td><td class="num">12</td></tr>
+					<tr><td class="num">2</td><td>Second Player<span class="sub">Walk-in</span></td><td><span class="badge pending">Interested</span></td><td class="num">9</td></tr>
+					<tr><td class="num">3</td><td>Third Player<span class="sub">Member</span></td><td><span class="badge live">Confirmed</span></td><td class="num">7</td></tr>
+				</tbody>
+			</table>
+		</div>
+
+		<h2>Rows, panels and empty states</h2>
+		<div class="list-row">
+			<div class="list-row-main">A list row<span class="sub">With a second line</span></div>
+			<div class="list-row-actions"><button type="button" class="btn btn-sm btn-secondary">Edit</button></div>
+		</div>
+		<div class="list-row">
+			<div class="list-row-main">Another row<span class="sub">With a second line</span></div>
+			<div class="list-row-actions"><button type="button" class="btn btn-sm btn-danger">Remove</button></div>
+		</div>
+		<div class="panel">A panel groups related controls.</div>
+		<div class="empty">Nothing here yet.</div>
+		<details class="set-group">
+			<summary>A folded group</summary>
+			<p class="muted">Closed until wanted.</p>
+		</details>
+	</section>
+</div>

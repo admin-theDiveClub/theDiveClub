@@ -1,0 +1,237 @@
+/* UI sandbox (/sandbox/). A scratch page, not part of the product.
+   Every colour, radius and space here is a token. The page exists to show
+   what the tokens look like, so it must never hold a value of its own. */
+
+.sandbox code {
+	font-family: var(--font-mono);
+	font-size: 0.85em;
+}
+
+.sb-section {
+	margin-bottom: var(--space-7);
+}
+.sb-section > h2:first-child {
+	margin-top: var(--space-5);
+}
+
+/* Theme buttons: the pressed one reads as chosen. */
+.sandbox button[aria-pressed="true"] {
+	border-color: var(--color-primary) !important;
+	color: var(--color-primary);
+}
+
+/* The size slider and file picker would otherwise keep the browser's own colours. */
+.sandbox input[type="range"] {
+	accent-color: var(--color-primary);
+	padding: 0;
+	border-bottom: none;
+}
+.sandbox input[type="file"]::file-selector-button {
+	margin-right: var(--space-3);
+	padding: var(--space-1) var(--space-3);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-pill);
+	background: transparent;
+	color: var(--text-primary);
+	font-family: inherit;
+	cursor: pointer;
+}
+
+/* ── Palette ─────────────────────────────────────────────────────── */
+.sb-group-title {
+	margin: var(--space-5) 0 var(--space-2);
+	font-size: 0.7rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+}
+.sb-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+	gap: var(--space-3);
+	margin-bottom: var(--space-4);
+}
+.sb-swatch {
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-md);
+	overflow: hidden;
+	background: var(--bg-surface);
+}
+.sb-chip {
+	position: relative;
+	height: 3.5rem;
+}
+/* Semi-transparent tokens are drawn over cream, or a black alpha would
+   vanish into a dark page and tell you nothing. */
+.sb-chip.on-cream { background: var(--color-cream); }
+.sb-fill {
+	position: absolute;
+	inset: 0;
+	background: var(--sb-fill);
+}
+.sb-swatch-text {
+	padding: var(--space-2) var(--space-3);
+	font-size: 0.78rem;
+	line-height: 1.35;
+}
+.sb-swatch-name { display: block; font-weight: 600; }
+.sb-swatch-value {
+	display: block;
+	color: var(--text-muted);
+	font-family: var(--font-mono);
+	font-size: 0.72rem;
+	overflow-wrap: anywhere;
+}
+
+.sb-sample {
+	display: inline-block;
+	min-width: 2.75rem;
+	padding: var(--space-1) var(--space-3);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-sm);
+	background: var(--sb-bg);
+	color: var(--sb-fg);
+	font-weight: 700;
+	text-align: center;
+}
+
+/* ── Artwork stage ───────────────────────────────────────────────────
+   Sticky, so the logo stays in view while the controls below it are moved.
+   Every backdrop sits on an opaque page colour, or the controls scrolling
+   underneath would show through a translucent one. */
+.sb-stage {
+	position: sticky;
+	top: calc(var(--nav-height) + var(--space-2));
+	z-index: 2;
+	display: grid;
+	place-items: center;
+	min-height: 10rem;
+	max-height: 40vh;
+	margin-bottom: var(--space-3);
+	padding: var(--space-4);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-md);
+	overflow: auto;
+	background-color: var(--bg-base);
+}
+.sb-stage.bd-page    { background-image: none; }
+.sb-stage.bd-surface { background-image: linear-gradient(var(--bg-surface), var(--bg-surface)); }
+.sb-stage.bd-cream   { background-color: var(--color-cream); }
+.sb-stage.bd-ink     { background-color: var(--color-ink); }
+.sb-stage.bd-checker {
+	background-image: conic-gradient(var(--hover-wash) 25%, transparent 0 50%, var(--hover-wash) 0 75%, transparent 0);
+	background-size: var(--space-5) var(--space-5);
+}
+.sb-art { max-width: 100%; }
+.sb-art img,
+.sb-art svg {
+	display: block;
+	width: 100%;
+	height: auto;
+	max-height: calc(40vh - var(--space-6));
+	object-fit: contain;
+}
+
+/* ── Logo controls ───────────────────────────────────────────────── */
+.sb-key {
+	font-family: var(--font-mono);
+	font-size: 0.72rem;
+	letter-spacing: normal;
+	text-transform: none;
+	color: var(--text-muted);
+}
+.sb-val {
+	float: right;
+	font-family: var(--font-mono);
+	letter-spacing: normal;
+	text-transform: none;
+	color: var(--text-primary);
+}
+.sb-colour {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+}
+.sandbox input[type="color"] {
+	flex: 0 0 auto;
+	width: 3.5rem;
+	height: 2.25rem;
+	padding: 0;
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-sm);
+	background: transparent;
+	cursor: pointer;
+}
+.sandbox .sb-colour input[type="text"] {
+	flex: 1 1 auto;
+	font-family: var(--font-mono);
+}
+.sandbox textarea[readonly] {
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	line-height: 1.5;
+	border: 1px solid var(--border-color);
+	padding: var(--space-3);
+	border-radius: var(--radius-sm);
+}
+
+/* ── Type ────────────────────────────────────────────────────────── */
+.tdc-card .sb-spec { margin: 0 0 var(--space-3); }
+.sb-mono { font-family: var(--font-mono); }
+
+/* ── Depth and shape ─────────────────────────────────────────────── */
+.sb-demo {
+	display: grid;
+	place-items: center;
+	min-height: 4.5rem;
+	padding: var(--space-3);
+	border: 1px solid var(--border-color);
+	background: var(--bg-surface);
+	font-size: 0.8rem;
+	text-align: center;
+}
+.sb-raised       { box-shadow: var(--shadow-raised); }
+.sb-panel-shadow { box-shadow: var(--shadow-panel); border-radius: var(--radius-lg); }
+.sb-scrim-demo {
+	background: var(--color-cream);
+	border-color: var(--border-color);
+	position: relative;
+	overflow: hidden;
+}
+.sb-scrim-demo::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: var(--scrim);
+}
+.sb-scrim-demo span { position: relative; color: var(--color-cream); }
+.sb-hover { background: var(--hover-wash); }
+
+.sb-r-sm    { border-radius: var(--radius-sm); }
+.sb-r-md    { border-radius: var(--radius-md); }
+.sb-r-lg    { border-radius: var(--radius-lg); }
+.sb-r-pill  { border-radius: var(--radius-pill); }
+.sb-r-round { border-radius: var(--radius-round); aspect-ratio: 1; }
+
+.sb-spaces { display: grid; gap: var(--space-2); }
+.sb-space {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	font-size: 0.8rem;
+	color: var(--text-muted);
+}
+.sb-bar {
+	display: block;
+	height: var(--space-3);
+	background: var(--color-primary);
+	border-radius: var(--radius-sm);
+}
+.sb-s1 { width: var(--space-1); }
+.sb-s2 { width: var(--space-2); }
+.sb-s3 { width: var(--space-3); }
+.sb-s4 { width: var(--space-4); }
+.sb-s5 { width: var(--space-5); }
+.sb-s6 { width: var(--space-6); }
+.sb-s7 { width: var(--space-7); }
