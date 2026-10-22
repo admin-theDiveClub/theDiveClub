@@ -479,6 +479,42 @@ UV, 20 Oct: with `progression: automatic` a change upstream cascades downstream 
 - Verified on a throwaway Postgres with a fully played 8-player bracket: overriding fixture 1-1 the other way, the rehearsal reported the semi-final and final changes and two published matches to detach, and left the database untouched; applying it reseated the semi, emptied the final, kept both detached matches with their frames (7 matches before, 8 after — one new semi, nothing deleted), left a hand-placed entrant alone, and did nothing at all under manual progression.
 
 
+## Notifications (migrations `20261022100000`, `110000`, `120000`)
+
+- **A record first, a push second.** Until 22 Oct the only notification was a push, fired from the page by `notify-card`. A push is handed to Apple or Google and forgotten: phone off, or notifications never switched on — which is most people — and it never happened, with nothing to find later. UV's case: a TD enters sixteen players on Tuesday for Saturday, and most of them learn nothing. So **every notification is a row the recipient can come back to**, and a push goes on top where they have allowed it. A failed push is then not data loss.
+- **`tbl_notifications`** — one row per thing a player was told. `title` and `body` are **written when it happens, never derived at read time**: if a tournament is renamed afterwards, the message they received did not change. Same reasoning as the poster storing a snapshot. `created_at` defaults to `clock_timestamp()`, because several are written in one transaction — both players when a match becomes ready — and `now()` would give them one timestamp and an arbitrary order.
+- **`link` is constrained to a same-site path by a check constraint.** That value ends up in an `href`, and anything able to write a notification could otherwise send somebody to another site.
+- **`tbl_notification_prefs`** — per-category switches (`match`, `tournament`, `league`, `admin`), and **no row means on**, so nothing needed backfilling and a category added later starts enabled for everybody. **The switch governs the push, never the record**: muting tournaments stops the interruption and keeps the history, which is what muting means to a person.
+- **`private.tdc_notify` is the only way to write one**, and it is private for the reason `notify-card` composes its own messages: a function that takes arbitrary text addressed to an arbitrary person is a spam machine. It declines to tell somebody what they did themselves (`p_actor_id`), and writes nothing for a player with no account — **an account is required for notifications** (UV, 22 Oct).
+- **Pruning rides on `tdc_mark_notifications_seen`**, which the tray calls on open. That call is already a write, already scoped to that person's rows, and happens often — so there is no cron to forget. Seen and older than thirty days goes; unseen stays however old, because they have not seen it.
+
+### The four events (`20261022110000`)
+
+- **Entered or confirmed** — patched into `tdc_add_entrant` and `tdc_set_entrant`. Confirming is announced only on the transition, so ticking "paid" twice says nothing. Self-entry through `tdc_enter_tournament` needed no patch: the actor is the recipient.
+- **Your match is ready** — patched into `tdc_create_fixture_match`. UV asked for automatic progression to notify as well as manual, which sounded like it needed a scheduled job since nothing advances a bracket until somebody opens it. **It did not:** automatic and manual both end at that one function, which is the single place a tournament match comes into existence.
+- **Your result was published** — patched into `tdc_approve_card`, with the score written from each recipient's own side. Approving is the only publishing moment worth a message; in the modes where submitting publishes, the other player already hears through `notify-card`.
+- **An official changed your frame** — hooked into the existing `private.tdc_frame_edit_log` trigger. **Scoped to an editor who is not a player in the match.** The trigger fires on every frame write, so without that test a player scoring their own match would message their opponent once per frame. Verified: ordinary play produces zero notifications.
+  - It **collapses** through `private.tdc_notify_collapsing` — an unseen one of the same kind about the same match is refreshed rather than joined by a second, so a TD correcting five frames leaves one notice showing the latest. Once seen, the next change starts a fresh one.
+
+### Sending the push (`20261022120000`, `supabase/functions/notify-push`)
+
+- **A sweep, not a trigger.** The rows are written inside database functions and triggers, so the page that caused them does not know how many were written or to whom and cannot compose them. A trigger calling out over HTTP would need `pg_net`, and **the project has neither `pg_net` nor `pg_cron`** (checked 22 Oct). Turning them on is a decision of its own, and this design needs neither.
+- `tbl_notifications.pushed_at` is the queue. `public.tdc_claim_pushes` hands out work and marks it in **one statement** with `for update skip locked`, so two sweeps at once cannot send the same row twice.
+- **It is in `public`, which breaks this project's rule that internals live in `private`** — it has to, because PostgREST exposes `public` only and the Edge Function calls it over the API. The lock-down is the grant instead: revoked from `anon` and `authenticated`, granted to `service_role` alone, which the browser never holds.
+- **Three kinds of row are retired without being sent**, marked pushed so the sweep stops reconsidering them: a muted category, a recipient with no account or no device, and anything over an hour old — a push about something that happened hours ago is worse than silence, and the tray is where old news belongs.
+- **`notify-push` is told nothing at all.** Unlike `notify-card`, which is told which match and what happened, this has no input to abuse: the caller cannot name a recipient, write a message, or choose which notification to send. Signing in is the whole permission.
+- `TDC.flushPushes()` sets a sweep going: it asks `tdc_pushes_waiting` first and does nothing in the common case. Called from `nav.js` on load and on refocus — the backstop, since the nav is on every page — and straight after the writes on `/tournaments/manage/` and `/tournaments/bracket/`, for latency. **Never awaited and never surfaced**: a missed sweep costs the push and nothing else, because the row is already in the tray.
+- **If `pg_cron` is ever turned on** — the dispute-window reminder wants it too — it can call the same Edge Function on a schedule and none of this changes. The function does not know what set it off.
+- **Not yet swept from `match.js`**, so an official editing a frame there relies on the nav backstop. `match.js` is 117 KB and the most dangerous file in the project; the one-line addition is worth doing deliberately.
+- Deploy: `npx supabase functions deploy notify-push --use-api`. **The migrations must be pushed first**, because the function calls `tdc_claim_pushes`.
+
+### The tray (`_includes/nav.html`, `nav.css`, `scripts/nav.js`)
+
+- A bell, a pip and a tray, shown only to a signed-in player. **The pip is a dot, not a count**: a number would mean reading the whole list on every page load, when "something is waiting" is the entire message.
+- Opening the tray **loads the list and then marks it seen**, in that order, so what arrived while they were away is still drawn as unread and greys out next time. Clear one, or clear all.
+- **The tray is `position: fixed` at `top: 60px; right: 1rem`, not anchored to the bell.** Anchored with `right: 0` it overflowed the *left* edge of a phone, because the bell sits mid-bar and the tray is 22rem. The nav is itself fixed with a 1rem gutter, so matching it cannot overflow at any width. Found by rendering it in a headless Chromium, not by reading the CSS.
+- **The nav files are CRLF.** A patch written with `\n` search strings matches nothing and reports success having changed nothing.
+
 ## Wanted, not built
 
 **Moved to `docs/STATUS.md`** (21 Oct), which is now the only list of outstanding work. Keeping a second copy here was how the old handover went stale: two lists, one maintained.

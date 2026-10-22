@@ -531,6 +531,11 @@
 		await loadOfficials();
 		busy = false;
 		if (ok) TDC.status(els.status, '', '');
+
+		// Anything that just caused a notification goes out now rather than
+		// waiting for the next page load. Not awaited: the person is waiting
+		// on the list, not on somebody else's phone buzzing.
+		TDC.flushPushes();
 		return ok;
 	}
 

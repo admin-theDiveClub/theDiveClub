@@ -4,7 +4,7 @@
 
 Updated at every milestone, in the same breath as giving UV a commit subject. Never batched to the end of a session.
 
-Last updated: **21 Oct 2026**
+Last updated: **22 Oct 2026**
 
 **Database is current.** All migrations through `20261021170000` are applied to `thediveclub-prod`, verified 21 Oct against `supabase_migrations.schema_migrations` and by checking the function bodies — not taken on trust.
 
@@ -37,12 +37,13 @@ In the order it probably makes sense.
 
 | | What | Notes |
 |---|---|---|
-| 1 | **Notifications** | Nobody is told they have been entered in a tournament, confirmed, or that someone else changed a frame on their card. UV wants to discuss the shape before anything is built |
-| 2 | **A player cannot start their own match** | With `create_matches: manual` a player sees their fixture, has no way in, and no explanation. The TD now gets a hint; the player gets nothing |
-| 3 | **Per-round match settings** | **Needs discussion.** See §5 |
-| 4 | **Adding rounds and matches mid-tournament** | **Needs discussion.** See §5 |
-| 5 | **A screen for `tdc_frame_history`** | The audit log is written and queryable, and nothing displays it |
-| 6 | **Hardening migration for the `private` schema** | 14 `private.tdc_*` functions have no `revoke … from public`. Not a live hole — `anon` has no `usage` on the schema — but one `grant` away from being one |
+| 1 | **A player cannot start their own match** | With `create_matches: manual` a player sees their fixture, has no way in, and no explanation. The TD now gets a hint; the player gets nothing |
+| 2 | **Per-round match settings** | **Needs discussion.** See §5 |
+| 3 | **Adding rounds and matches mid-tournament** | **Needs discussion.** See §5 |
+| 4 | **A screen for `tdc_frame_history`** | The audit log is written and queryable, and nothing displays it |
+| 5 | **Hardening migration for the `private` schema** | 14 `private.tdc_*` functions have no `revoke … from public`. Not a live hole — `anon` has no `usage` on the schema — but one `grant` away from being one |
+| 6 | **Sweep pushes from `match.js` too** | An official editing a frame there relies on the nav backstop, so the push can lag until the next page load. One line in that page's save path — deliberate, because `match.js` is 117 KB and the most dangerous file in the project |
+| 7 | **Per-category notification switches on the profile page** | `tdc_notification_prefs` and `tdc_set_notification_pref` exist with four categories. Nothing renders them, so the switches cannot be reached |
 
 ---
 

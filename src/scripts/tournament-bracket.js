@@ -776,6 +776,11 @@
 		await resolve();
 		const ok = await loadDraw();
 		busy = false;
+
+		// Anything that just caused a notification goes out now rather than
+		// waiting for the next page load. Not awaited: the person is waiting
+		// on the list, not on somebody else's phone buzzing.
+		TDC.flushPushes();
 		if (ok) {
 			TDC.status(els.status, '', '');
 			// The tournament row too, not just the draw: the two run settings

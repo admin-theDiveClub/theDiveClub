@@ -80,5 +80,36 @@ const TDC = (() => {
 		return data;
 	}
 
-	return { error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer };
+	// Send any notification pushes that are waiting.
+	//
+	// Notification rows are written inside the database — by the function or
+	// trigger that owns the moment — so the page that caused them does not
+	// know how many were written or to whom, and cannot compose them. All it
+	// can do is say "something happened, go and look". That is this.
+	//
+	// Cheap to call and safe to call often: it asks for a count first and
+	// does nothing at all in the common case, which is that nothing is
+	// waiting. Never awaited by anything that matters and never surfaced to
+	// the person — a push that does not go out costs the push and nothing
+	// else, because the notification is already recorded and will be in
+	// their tray. Failures go to the console and no further.
+	async function flushPushes() {
+		try {
+			const { data: waiting, error } = await supabaseClient.rpc('tdc_pushes_waiting');
+			if (error || !(waiting > 0)) return;
+
+			// Up to three rounds. One sweep takes a fixed batch, and a round
+			// of a tournament can tell sixteen people at once; the cap stops
+			// a backlog turning one page load into a long run of requests.
+			for (let i = 0; i < 3; i++) {
+				const { data, error: sendError } = await supabaseClient.functions.invoke('notify-push');
+				if (sendError) { console.error('[Push] could not send notifications.', sendError); return; }
+				if (!data || !data.more) return;
+			}
+		} catch (e) {
+			console.error('[Push] could not send notifications.', e);
+		}
+	}
+
+	return { error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes };
 })();

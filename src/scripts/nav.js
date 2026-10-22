@@ -297,7 +297,10 @@
 		// the tray is shut: re-reading under somebody's finger is worse than
 		// being a minute out of date.
 		document.addEventListener('visibilitychange', () => {
-			if (!document.hidden && !notifyTray.classList.contains('open')) refreshPip();
+			if (!document.hidden && !notifyTray.classList.contains('open')) {
+				refreshPip();
+				TDC.flushPushes();
+			}
 		});
 	}
 
@@ -312,6 +315,12 @@
 		// Nothing to show a stranger, so the bell appears only now.
 		if (notifyWrap) notifyWrap.hidden = false;
 		refreshPip();
+
+		// Push anything waiting. The nav is on every page, so this is the
+		// backstop: whatever the acting page did not send goes out the next
+		// time anybody loads anything. Not awaited — the nav must not wait
+		// on it, and a failure costs the push and nothing else.
+		TDC.flushPushes();
 
 		// Show the "Staff" link only to venue staff. The page and the database check again for real.
 		const { data, error } = await supabaseClient
