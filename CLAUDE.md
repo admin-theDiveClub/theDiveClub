@@ -9,9 +9,12 @@
 > | **`CLAUDE.md`** (this file) | **The record** — how every built system works, the conventions, the environment |
 > | **`docs/STATUS.md`** | **The agenda** — outstanding work, decisions needed, what is waiting on UV |
 > | **`docs/DECISIONS.md`** | **The why** — append-only log of decisions, reasons, and what was rejected |
+> | **`docs/design/`** | **Settled designs not yet built.** `leagues.md` is the league and captain's-scorecard design, decided 13 Oct |
 > | **`claude/START-HERE.md`** (project) | **The way of working** — how to open a chat, the rhythm, the non-negotiables |
 >
 > Supporting: `docs/product/` holds documentation for venues and players. The project docs hold the long design records (`stats-schema-design.md`, `approval-and-corrections.md`), the test plan, and the UI chat's brief and log (`ui-handover.md`).
+>
+> **A design settled in conversation goes in `docs/design/` the same day.** On 22 Oct a session asked UV two questions he had answered in full on 13 Oct — how an LD configures standings columns, and what the captain's page is — because the answers were in a chat and in a project doc, and nothing in the repo pointed at them. Re-asking is worse than not documenting: it spends the person's time to get an answer that already existed.
 >
 > **Do not record an outstanding task here.** It goes in `docs/STATUS.md`, which is the only list.
 >
@@ -544,6 +547,12 @@ UV, 22 Oct: "progression arrows between each round … the arrows should be smar
 
 #### A bug this found
 `render()` called `roundRulesButton(rest[0].bracket, …)` in the third-place branch. **`rest` does not exist in that scope** — a TD opening a bracket with a third-place playoff got a `ReferenceError` and no bracket at all. Introduced 22 Oct with the round-rules button and only caught while reading the same function to add the arrows; UV's test tournaments had no third-place playoff. Fixed to `third[0]`.
+
+### One copy of the settings form (22 Oct)
+`tournament-new.js` carried its own `control()` and its own "which settings are live" filter, written before `TDCMatchDef` exported either and identical to them bar the element-id prefix. Two copies of the form builder meant a setting added to `TDCMatchDef` would appear on the bracket's round panel and silently not on the create page.
+- Removed. The page now calls `D.control(d, rules, 'tr')` and `D.liveRuleKeys(rules)`; the `'tr'` prefix keeps every element id exactly as it was.
+- Verified by building the form both ways in headless Chromium and comparing `innerHTML`: **identical**, 12 controls, same ids. A dedup that changes nothing is the only kind worth doing without being asked.
+- **Not** deduped: `setValue()` clamps an out-of-range number to the bound, while the round panel's `readValue()` rejects it with a message. That is a real behavioural difference, not drift, so it was left alone rather than quietly changed.
 
 ## Notifications (migrations `20261022100000`, `110000`, `120000`)
 

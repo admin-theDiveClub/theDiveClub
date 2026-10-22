@@ -116,52 +116,17 @@
 		return true;
 	}
 
-	function control(def) {
-		const row = node('div', 'field');
-		const label = node('label', null, def.label);
-		label.htmlFor = 'tr-' + def.key;
-
-		const value = rules[def.key];
-		let input;
-
-		if (def.type === 'select') {
-			input = document.createElement('select');
-			const options = typeof def.options === 'function' ? def.options() : def.options;
-			for (const [v, text] of Object.entries(options)) {
-				input.append(new Option(text, v, false, v === value));
-			}
-		} else if (def.type === 'bool') {
-			input = document.createElement('input');
-			input.type = 'checkbox';
-			input.checked = !!value;
-		} else if (def.type === 'int') {
-			input = document.createElement('input');
-			input.type = 'number';
-			input.inputMode = 'numeric';
-			if (def.min !== undefined) input.min = def.min;
-			if (def.max !== undefined) input.max = def.max;
-			input.value = value;
-		} else {
-			input = document.createElement('input');
-			input.type = 'text';
-			input.value = value == null ? '' : value;
-			if (def.placeholder) input.placeholder = def.placeholder;
-		}
-
-		input.id = 'tr-' + def.key;
-		input.dataset.setting = def.key;
-
-		row.append(label, input);
-		if (def.hint) row.append(node('div', 'hint', def.hint));
-		return row;
-	}
-
-	// Only ruleset settings, and only those whatever they depend on has switched on.
-	const live = (def) =>
-		def.scope === 'rules' && def.stored !== false && (!def.when || def.when(rules));
-
+	// This page used to carry its own copy of control() and of the "which
+	// settings are live" filter — written before TDCMatchDef exported either,
+	// and identical to them bar the element-id prefix. Two copies of the form
+	// builder meant a setting added to TDCMatchDef appeared on the bracket's
+	// round panel and silently not here. Removed 22 Oct; the shared ones are
+	// the only copy now.
 	function renderSettings() {
-		const main = D.SETTINGS.filter((d) => D.MAIN_KEYS.includes(d.key) && live(d));
+		const live = D.liveRuleKeys(rules);
+		const control = (d) => D.control(d, rules, 'tr');
+
+		const main = live.filter((d) => D.MAIN_KEYS.includes(d.key));
 		els.main.replaceChildren(
 			node('h2', null, 'How will these matches be played?'),
 			...main.map(control)
@@ -169,8 +134,8 @@
 
 		els.rest.replaceChildren();
 		for (const group of D.GROUPS) {
-			const defs = D.SETTINGS.filter(
-				(d) => d.group === group && !D.MAIN_KEYS.includes(d.key) && live(d)
+			const defs = live.filter(
+				(d) => d.group === group && !D.MAIN_KEYS.includes(d.key)
 			);
 			if (!defs.length) continue;
 

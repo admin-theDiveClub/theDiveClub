@@ -38,7 +38,8 @@ In the order it probably makes sense.
 
 | | What | Notes |
 |---|---|---|
-| 1 | **UV to play through the bracket editor** | Built and render-checked, not yet used on a real draw. See §1 |
+| 1 | **Leagues** | **The next track, and it is already designed** — `docs/design/leagues.md`, decided 13 Oct. Tables, lineups, the captain's scorecard, reconciliation by `card_version`, and LD-configurable standings columns. Nothing to re-decide; the open items in §8 of that doc do not block starting |
+| 2 | **UV to play through the bracket editor** | Built and render-checked, not yet used on a real draw. See §1 |
 
 ---
 
@@ -58,7 +59,7 @@ Agreed in principle, nothing written.
 |---|---|
 | **Close a tournament to specific players** | UV, 21 Oct: restricted to a named set, e.g. everyone in a given league. Probably a fourth `entry_mode` value plus an eligibility table, not a separate flag. Interacts with the poster: a restricted tournament may still want a public poster that says "members only" |
 | **A live public scoreboard** | Explicitly *not* what the poster is. Needs an `anon` read of live data and therefore the per-function audit the poster design deliberately avoids. Decide on its own merits, do not grow the poster into it |
-| **`player_facing` on `TDCMatchDef`** | The setup page, the round settings box, the override dropdown and the poster text should all render from one definition. Until the flag exists, `private.tdc_poster_rules` holds a hand-kept copy — two places that can drift |
+| **`player_facing` on `TDCMatchDef`** | **Corrected 22 Oct — this does less than it used to say here.** The flag would let the *pages* agree on which settings are player-facing, which is worth having. It would **not** remove `private.tdc_poster_rules`: that runs in SQL, cannot read the JS, and decides what becomes publicly readable, so it has to keep its own list. The real fix for the drift is a check that the two lists agree, not a shared one. Scope it as two jobs, not one |
 | **Entry fee charging** | **Blocked** on the credit ledger's `ref_table` / `ref_id`, undecided for travelling leagues |
 | **Double elimination, round robin, groups** | Only single elimination generates a draw today |
 | **A screen for `tdc_frame_history`** | The audit log is written and queryable with nothing displaying it. **UV, 22 Oct: do it with the match visualisation**, not on its own |
@@ -89,7 +90,6 @@ Real, small, and none of them blocking.
 | | Area |
 |---|---|
 | Settings writes are still last-write-wins | Frames are guarded, settings are not |
-| The create page builds its settings form from its own older copy | `tournament-new.js` predates `TDCMatchDef.control()`; the bracket's round panel uses the shared one. Two places that can drift (22 Oct) |
 | The match list and nav are not live | Everything else is |
 | A future fixture does not read as upcoming in the match list | |
 | No audit log for staff linking walk-ins | Frames have one; this does not |
