@@ -19,6 +19,26 @@
 		<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A8 8 0 1 0 19.73 14h-2.1A6 6 0 1 1 12 6a5.94 5.94 0 0 1 4.22 1.78L13 11h7V4z"/></svg>
 	</button>
 
+	<!-- Notifications. Hidden until nav.js finds a signed-in player: there is
+	     nothing to show a stranger, and a bell that opens an empty tray is
+	     worse than no bell. The pip is the only thing that says "unread" —
+	     a count would mean reading the list on every page load. -->
+	<div class="nav-notify-wrap" id="nav-notify-wrap" hidden>
+		<button class="nav-notify" id="nav-notify" aria-label="Notifications" aria-expanded="false">
+			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22a2.1 2.1 0 0 0 2.1-2.1H9.9A2.1 2.1 0 0 0 12 22zm6.3-6.2v-5.3c0-3.2-1.7-5.9-4.7-6.6v-.7a1.6 1.6 0 0 0-3.2 0v.7c-3 .7-4.7 3.4-4.7 6.6v5.3L3.6 18v.9h16.8V18z"/></svg>
+			<span class="nav-notify-pip" id="nav-notify-pip" hidden></span>
+		</button>
+
+		<div class="nav-notify-tray" id="nav-notify-tray" role="region" aria-label="Notifications">
+			<div class="nav-notify-head">
+				<span>Notifications</span>
+				<button type="button" class="nav-notify-clear-all" id="nav-notify-clear-all" hidden>Clear all</button>
+			</div>
+			<div class="nav-notify-list" id="nav-notify-list"></div>
+			<div class="nav-notify-empty" id="nav-notify-empty">Nothing yet.</div>
+		</div>
+	</div>
+
 	<div class="nav-profile-wrap">
 		<button class="nav-profile" id="nav-profile" aria-label="Account">
 			<!-- The generic icon until nav.js finds a signed-in player with a

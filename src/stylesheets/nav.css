@@ -205,3 +205,230 @@ body {
 .nav-reload svg { width: 1.1rem; height: 1.1rem; fill: currentColor; }
 .nav-reload:hover { color: var(--color-primary); }
 .nav-reload:disabled { opacity: 0.4; cursor: default; }
+
+/* ── Notifications ─────────────────────────────────────────────────
+ *
+ * A bell, a pip, and a tray. The tray borrows the profile dropdown's shape
+ * deliberately: it sits in the same row and opens the same way, so there is
+ * one dropdown idea on this bar rather than two that nearly match. */
+
+.nav-notify-wrap {
+	position: relative;
+}
+
+.nav-notify {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.4rem;
+	height: 2.4rem;
+	padding: 0;
+	background: none;
+	border: none;
+	border-radius: var(--radius-sm);
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.nav-notify svg {
+	width: 1.25rem;
+	height: 1.25rem;
+	fill: currentColor;
+}
+
+.nav-notify:hover,
+.nav-notify:focus-visible,
+.nav-notify[aria-expanded="true"] {
+	color: var(--text-primary);
+}
+
+/* The pip. Deliberately not a count: a number would mean reading the whole
+   list on every page load, when "something is waiting" is the entire
+   message. Positioned on the bell rather than beside it so it survives the
+   bar getting tighter on a phone. */
+.nav-notify-pip {
+	position: absolute;
+	top: 0.45rem;
+	right: 0.5rem;
+	width: 0.5rem;
+	height: 0.5rem;
+	border-radius: var(--radius-pill);
+	background: var(--color-primary);
+	/* A ring in the bar's own colour, so the pip reads as separate from the
+	   bell underneath it at any size. */
+	box-shadow: 0 0 0 2px var(--bg-base);
+}
+
+/* Fixed to the viewport, not hung off the bell.
+ *
+ * Right-aligned to the bell it overflowed the left edge of a phone: the bell
+ * sits mid-bar, and a 22rem tray anchored to it starts off-screen. The nav is
+ * itself position:fixed with a 1rem gutter, so matching that puts the tray
+ * under the bar's right edge and makes overflowing impossible at any width. */
+.nav-notify-tray {
+	position: fixed;
+	top: 60px;
+	right: 1rem;
+	width: min(22rem, calc(100vw - 2rem));
+	max-height: min(26rem, 70vh);
+	background: var(--bg-surface);
+	backdrop-filter: blur(var(--surface-blur));
+	-webkit-backdrop-filter: blur(var(--surface-blur));
+	border: 1px solid var(--border-color);
+	border-radius: 8px;
+	display: none;
+	flex-direction: column;
+	overflow: hidden;
+	/* Above the bar (100) so it is never clipped by it, and above page
+	   content that might raise itself. */
+	z-index: 101;
+}
+
+.nav-notify-tray.open {
+	display: flex;
+}
+
+.nav-notify-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-3);
+	padding: 0.6rem 0.75rem;
+	border-bottom: 1px solid var(--border-color);
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--color-primary);
+}
+
+.nav-notify-clear-all {
+	background: none;
+	border: none;
+	padding: 0;
+	color: var(--text-muted);
+	font: inherit;
+	font-weight: 400;
+	letter-spacing: normal;
+	text-transform: none;
+	cursor: pointer;
+}
+
+.nav-notify-clear-all:hover,
+.nav-notify-clear-all:focus-visible {
+	color: var(--color-error);
+}
+
+.nav-notify-list {
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+/* One notification. A grid rather than a flex line, for the same reason the
+   bracket row is: the text must never be squeezed to nothing by the clear
+   button beside it. */
+.nav-notify-item {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	align-items: start;
+	gap: var(--space-2);
+	padding: 0.6rem 0.75rem;
+	border-bottom: 1px solid var(--border-color);
+}
+
+.nav-notify-item:last-child {
+	border-bottom: none;
+}
+
+/* Already seen. UV, 22 Oct: once the tray has been opened, what was in it
+   greys out. Unread is the ordinary weight; this is the quieter state, so
+   the thing that arrived while you were away stands out without the read
+   ones having to shout. */
+.nav-notify-item.seen .nav-notify-title,
+.nav-notify-item.seen .nav-notify-body,
+.nav-notify-item.seen .nav-notify-when {
+	color: var(--text-muted);
+}
+
+.nav-notify-item.seen .nav-notify-title {
+	font-weight: 400;
+}
+
+/* The whole text block is the link where there is somewhere to go. Stripped
+   back to looking like text: a tray of buttons is unreadable. */
+.nav-notify-main {
+	display: block;
+	min-width: 0;
+	background: none;
+	border: none;
+	padding: 0;
+	margin: 0;
+	font: inherit;
+	color: inherit;
+	text-align: left;
+	text-decoration: none;
+}
+
+a.nav-notify-main {
+	cursor: pointer;
+}
+
+a.nav-notify-main:hover .nav-notify-title,
+a.nav-notify-main:focus-visible .nav-notify-title {
+	color: var(--color-primary);
+}
+
+.nav-notify-title {
+	display: block;
+	font-size: 0.9rem;
+	font-weight: 700;
+	color: var(--text-primary);
+	overflow-wrap: anywhere;
+}
+
+.nav-notify-body {
+	display: block;
+	margin-top: 0.15rem;
+	font-size: 0.82rem;
+	color: var(--text-primary);
+	overflow-wrap: anywhere;
+}
+
+.nav-notify-when {
+	display: block;
+	margin-top: 0.2rem;
+	font-size: 0.72rem;
+	color: var(--text-muted);
+}
+
+/* Clearing one. Small, quiet, and a real tap target — this is pressed on a
+   phone with a thumb. */
+.nav-notify-clear {
+	flex: 0 0 auto;
+	width: 1.8rem;
+	height: 1.8rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: none;
+	border: 1px solid transparent;
+	border-radius: var(--radius-sm);
+	color: var(--text-muted);
+	font-size: 1rem;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.nav-notify-clear:hover,
+.nav-notify-clear:focus-visible {
+	border-color: var(--border-color);
+	color: var(--color-error);
+}
+
+.nav-notify-empty {
+	padding: 1.25rem 0.75rem;
+	text-align: center;
+	font-size: 0.85rem;
+	color: var(--text-muted);
+}

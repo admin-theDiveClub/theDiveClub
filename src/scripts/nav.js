@@ -20,6 +20,17 @@
 		return;
 	}
 
+	// Notifications. Deliberately not in the required list above: if this part
+	// of the nav is missing, the rest of it must still work. Everything below
+	// checks before using them.
+	const notifyWrap  = document.getElementById('nav-notify-wrap');
+	const notifyBtn   = document.getElementById('nav-notify');
+	const notifyPip   = document.getElementById('nav-notify-pip');
+	const notifyTray  = document.getElementById('nav-notify-tray');
+	const notifyList  = document.getElementById('nav-notify-list');
+	const notifyEmpty = document.getElementById('nav-notify-empty');
+	const notifyClearAll = document.getElementById('nav-notify-clear-all');
+
 	let loggedIn = false;
 
 	// --- Hamburger menu open/close ---
@@ -56,6 +67,9 @@
 		}
 		if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
 			profileDropdown.classList.remove('open');
+		}
+		if (notifyBtn && !notifyBtn.contains(e.target) && !notifyTray.contains(e.target)) {
+			closeNotifications();
 		}
 	});
 
@@ -106,6 +120,187 @@
 	});
 
 
+
+	// ─── Notifications ────────────────────────────────────────────────
+	//
+	// The pip asks a counting function on load — one number, no list. The
+	// list is read only when the tray is opened, because most page loads
+	// never open it.
+	//
+	// Opening the tray marks everything seen, which is what clears the pip.
+	// The rows already drawn keep the state they were drawn with, so somebody
+	// can see what arrived while they were away; those grey out on the next
+	// open. Marking seen also prunes, which is why there is no cron.
+
+	let notifyBusy = false;
+
+	async function refreshPip() {
+		if (!notifyPip || !loggedIn) return;
+
+		const { data, error } = await supabaseClient.rpc('tdc_unseen_notification_count');
+		if (error) {
+			// Not worth shouting about in the nav of every page: the bell just
+			// stays quiet. The console still carries it.
+			console.error('[' + AREA + '] could not count notifications.', error);
+			return;
+		}
+		notifyPip.hidden = !(data > 0);
+	}
+
+	function notifyWhen(iso) {
+		const d = new Date(iso);
+		if (isNaN(d)) return '';
+		const mins = Math.round((Date.now() - d.getTime()) / 60000);
+		if (mins < 1) return 'Just now';
+		if (mins < 60) return mins + ' min ago';
+		const hrs = Math.round(mins / 60);
+		if (hrs < 24) return hrs === 1 ? 'An hour ago' : hrs + ' hours ago';
+		const days = Math.round(hrs / 24);
+		if (days === 1) return 'Yesterday';
+		if (days < 7) return days + ' days ago';
+		return d.toLocaleDateString([], { day: 'numeric', month: 'short' });
+	}
+
+	function notifyRow(n) {
+		const row = document.createElement('div');
+		row.className = 'nav-notify-item' + (n.seen ? ' seen' : '');
+
+		// A link where there is somewhere to go, a plain div where there is
+		// not — never a link to nowhere.
+		const main = document.createElement(n.link ? 'a' : 'div');
+		main.className = 'nav-notify-main';
+		if (n.link) main.href = n.link;
+
+		const title = document.createElement('span');
+		title.className = 'nav-notify-title';
+		title.textContent = n.title;
+		main.append(title);
+
+		if (n.body) {
+			const body = document.createElement('span');
+			body.className = 'nav-notify-body';
+			body.textContent = n.body;
+			main.append(body);
+		}
+
+		const stamp = document.createElement('span');
+		stamp.className = 'nav-notify-when';
+		stamp.textContent = notifyWhen(n.created_at);
+		main.append(stamp);
+
+		const clear = document.createElement('button');
+		clear.type = 'button';
+		clear.className = 'nav-notify-clear';
+		clear.textContent = '×';
+		clear.setAttribute('aria-label', 'Clear: ' + n.title);
+		clear.addEventListener('click', (e) => {
+			// The row may be inside a link; clearing must not follow it.
+			e.preventDefault();
+			e.stopPropagation();
+			clearOneNotification(n.id, row);
+		});
+
+		row.append(main, clear);
+		return row;
+	}
+
+	async function loadNotifications() {
+		if (!notifyList) return;
+
+		const { data, error } = await supabaseClient.rpc('tdc_my_notifications', { p_limit: 50 });
+		if (error) {
+			TDC.showSupabaseError(AREA, error, notifyEmpty);
+			notifyEmpty.hidden = false;
+			return;
+		}
+
+		const rows = data || [];
+		notifyList.replaceChildren(...rows.map(notifyRow));
+		notifyEmpty.hidden = rows.length > 0;
+		notifyEmpty.textContent = 'Nothing yet.';
+		if (notifyClearAll) notifyClearAll.hidden = rows.length === 0;
+	}
+
+	async function clearOneNotification(id, row) {
+		if (notifyBusy) return;
+		notifyBusy = true;
+
+		const { error } = await supabaseClient.rpc('tdc_clear_notification', { p_id: id });
+		notifyBusy = false;
+		if (error) { TDC.showSupabaseError(AREA, error, notifyEmpty); return; }
+
+		// Taken off the screen rather than the whole list re-read: one row
+		// going is not worth a round trip, and the others have not changed.
+		row.remove();
+		const left = notifyList.childElementCount;
+		notifyEmpty.hidden = left > 0;
+		if (notifyClearAll) notifyClearAll.hidden = left === 0;
+		refreshPip();
+	}
+
+	async function openNotifications() {
+		notifyTray.classList.add('open');
+		notifyBtn.setAttribute('aria-expanded', 'true');
+
+		notifyEmpty.hidden = false;
+		notifyEmpty.textContent = 'Reading…';
+		notifyList.replaceChildren();
+
+		// The list first, so what was unread is still drawn as unread. Marking
+		// seen afterwards clears the pip without changing what is on screen:
+		// the person gets to see what arrived while they were away, and it
+		// greys out next time they look.
+		await loadNotifications();
+
+		const { error } = await supabaseClient.rpc('tdc_mark_notifications_seen');
+		if (error) {
+			console.error('[' + AREA + '] could not mark notifications seen.', error);
+			return;
+		}
+		if (notifyPip) notifyPip.hidden = true;
+	}
+
+	function closeNotifications() {
+		if (!notifyTray) return;
+		notifyTray.classList.remove('open');
+		notifyBtn.setAttribute('aria-expanded', 'false');
+	}
+
+	if (notifyBtn && notifyTray) {
+		notifyBtn.addEventListener('click', () => {
+			if (notifyTray.classList.contains('open')) closeNotifications();
+			else openNotifications();
+		});
+
+		notifyClearAll.addEventListener('click', async () => {
+			if (notifyBusy) return;
+			if (!confirm('Clear all notifications?')) return;
+			notifyBusy = true;
+
+			const { error } = await supabaseClient.rpc('tdc_clear_all_notifications');
+			notifyBusy = false;
+			if (error) { TDC.showSupabaseError(AREA, error, notifyEmpty); return; }
+
+			notifyList.replaceChildren();
+			notifyEmpty.hidden = false;
+			notifyEmpty.textContent = 'Nothing yet.';
+			notifyClearAll.hidden = true;
+			if (notifyPip) notifyPip.hidden = true;
+		});
+
+		// Escape closes it, as it should any layer over the page.
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape') closeNotifications();
+		});
+
+		// Coming back to a tab left open a while. One count, and only while
+		// the tray is shut: re-reading under somebody's finger is worse than
+		// being a minute out of date.
+		document.addEventListener('visibilitychange', () => {
+			if (!document.hidden && !notifyTray.classList.contains('open')) refreshPip();
+		});
+	}
+
 	// --- Check login state on load ---
 	(async () => {
 		const session = await TDC.getSession(AREA);
@@ -113,6 +308,10 @@
 
 		loggedIn = true;
 		profileEmail.textContent = session.user.email || 'TDC (No Email)';
+
+		// Nothing to show a stranger, so the bell appears only now.
+		if (notifyWrap) notifyWrap.hidden = false;
+		refreshPip();
 
 		// Show the "Staff" link only to venue staff. The page and the database check again for real.
 		const { data, error } = await supabaseClient
