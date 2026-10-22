@@ -5,40 +5,40 @@
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Brand */
-  --color-primary: #2b9fa6;   /* teal — the diver's suit, the pool rim */
+  --color-primary: #61ffad;   /* teal — the diver's suit, the pool rim */
 
   /* What sits on top of a filled brand-colour button. Teal is light enough
      in the dark theme to need dark text, and deep enough in the light theme
      to need cream. Anything using --color-primary as a background reads this. */
-  --color-on-primary: #0b1a1b;
+  --color-on-primary: #202020;
 
   /* Backgrounds */
-  --bg-base: #181818;
-  --bg-surface: rgba(38, 36, 32, 0.7);
+  --bg-base: #202020;
+  --bg-surface: rgba(0, 0, 0, 0.01);
   /* How much the page blurs behind a surface: nav, menus, cards, panels. */
-  --surface-blur: 12px;
+  --surface-blur: 7px;
 
   /* Text. Cream is the brand's ink on dark, not a cold white. */
   --text-primary: #f4e8d2;
-  --text-muted: #a39a89;
+  --text-muted: #808080;
 
   /* Borders. The pool-interior grey from the artwork. */
-  --border-color: #4c4c4c;
+  --border-color: #404040;
 
   /* Status */
-  --color-success: #6bff9e;
-  --color-warning: #e0b04a;
-  --color-error: #ff6b6b;
+  --color-success: #00ff7b;
+  --color-warning: #ffae00;
+  --color-error: #ff0000;
 
   /* Owner-only tools (staff hub glow) */
-  --color-owner: #e0b04a;
+  --color-owner: #ff00ae;
 
   /* ── Depth ───────────────────────────────────────────────────────
      Shadows and the dim behind a panel are black at low alpha, as in the
      artwork. Only the two strengths are set; everything else is built from
      them. Set from the palette section of /sandbox/. */
-  --shadow-alpha: 0.55;       /* floating panels and menus */
-  --scrim-alpha: 0.55;        /* the dim behind a slide-over panel */
+  --shadow-alpha: 0;       /* floating panels and menus */
+  --scrim-alpha: 0.38;        /* the dim behind a slide-over panel */
 
   --shadow-panel: 0 10px 30px rgba(0, 0, 0, var(--shadow-alpha));
   --scrim: rgba(0, 0, 0, var(--scrim-alpha));
