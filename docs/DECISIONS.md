@@ -144,3 +144,45 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* the specified palette is cut to what is chosen by hand (11 colours, the surface's opacity, two depth strengths per theme). `--alpha-1` to `--alpha-4`, `--shadow-raised`, `--color-cream` and `--color-ink` were removed because nothing used them; `--hover-wash`, `--shadow-panel` and `--scrim` are built from the chosen values. The logo's colours, opacities, blur and gradient are `--logo-*` variables, per theme.
 *Rejected:* a settings table or localStorage for the choices (a second place for the truth, and invisible to Git); keeping the logo as an `<img>` (cannot be changed by variables or animated).
 *Touches:* `variables.css`, `/sandbox/`, and any future inline logo markup in `_includes`.
+
+## 2026-10-22 — Notifications are a record first and a push second
+
+*Decided by:* UV, after asking what the difference was
+*Why:* a push is handed to Apple or Google and forgotten. Phone off, or notifications never switched on — which is most people — and it never happened, with nothing to find later. A TD entering sixteen players on Tuesday for Saturday would reach almost none of them.
+*So:* every notification is a row in `tbl_notifications` the recipient can come back to, and a push goes on top where they have allowed it. **A failed push is not data loss.**
+*Follows from it:* the per-category switches govern the push and never the record — muting tournaments stops the interruption and keeps the history, which is what muting means to a person.
+
+## 2026-10-22 — An account is required for notifications
+
+*Decided by:* UV — "Walk-ins are not a priority for notifications. A player should have an account for notifications to be enabled."
+*Why:* a walk-in has no account and can never read a notification, so the row would be unreachable.
+*Where:* `private.tdc_notify` writes nothing for a player with no `user_id`.
+*One line kept anyway:* `tdc_merge_players` moves notifications, because the record it *removes* during a walk-in claim is the signup record — the one with the account. Without it, claiming a walk-in would silently wipe what that account had been told.
+
+## 2026-10-22 — The frame notification is for officials, not opponents
+
+*Decided by:* Claude, flagged to UV
+*Why:* the frame-edit trigger fires on every frame write. Notifying each time would message the opponent once per frame during ordinary play, which is the opposite of useful.
+*So:* it fires only for an editor who is **not a player in the match** — a TD, scorer or referee acting on somebody else's card. A player scoring their own match is the card flow's business.
+*And it collapses:* an unseen notice of the same kind about the same match is refreshed rather than joined by a second, so a TD correcting five frames leaves one. Verified: ordinary play produces zero.
+
+## 2026-10-22 — Pushing is a sweep, not a trigger
+
+*Decided by:* Claude, from what the project has
+*Why:* notification rows are written inside database functions and triggers, so the page that caused them does not know how many were written or to whom and cannot compose them. A trigger calling out over HTTP needs `pg_net`, and the project has **neither `pg_net` nor `pg_cron`** installed.
+*So:* `pushed_at` is a queue, `tdc_claim_pushes` hands out work and marks it in one statement (`for update skip locked`, so two sweeps cannot double-send), and the `notify-push` Edge Function sends it. Any page sets it going.
+*Deliberately trigger-agnostic:* the function does not know what set it off, so a schedule can call it later with no change.
+*Exception recorded:* `tdc_claim_pushes` lives in `public`, breaking the rule that internals live in `private`. PostgREST exposes `public` only and the Edge Function calls it over the API. The lock-down is the grant — revoked from `anon` and `authenticated`, granted to `service_role` alone.
+
+## 2026-10-22 — pg_cron waits for leagues
+
+*Decided by:* UV — "Keep PGCron for later (I think we'll enable when we sort out the leagues which require scheduled notifications)"
+*Why:* nothing built so far needs a scheduler. The two things that would — the dispute-window reminder and league scheduling — are both ahead, so enabling it now would be infrastructure with one speculative user.
+*What this costs today:* nothing. The push sweep was designed to need no scheduler, and will accept one without modification.
+
+## 2026-10-22 — The UI chat refines; the schema chat builds
+
+*Decided by:* UV — "The UI chat is for me to update UI elements. Not build pages."
+*Why:* the split written on 21 Oct gave the UI chat all markup and all stylesheets, which would have meant a page's data layer and its markup being owned by different chats and written into the same file.
+*So:* the schema chat builds a page together with the functions behind it, markup and CSS included. The UI chat refines what exists — styling, tokens, layout, accessibility — and owns `/sandbox/`.
+*Recorded in:* `claude/ui-handover.md` §2, which now says so explicitly.

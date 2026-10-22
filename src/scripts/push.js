@@ -130,3 +130,95 @@ async function sendNotification(title, body, icon) {
 document.getElementById('notif-preset-1').addEventListener('click', () => {
 	sendNotification('Match Starting', 'Your match on Table 3 starts in 10 minutes.', '/resources/icons/notifications/test.png');
 });
+
+// ─── What buzzes your phone ───────────────────────────────────────
+//
+// Per-category push switches. They govern the push only: the notification is
+// recorded either way and waits in the bell menu, which is what makes muting
+// a category a reasonable thing to do rather than a way to lose things.
+//
+// The list is built from whatever tdc_notification_prefs returns rather than
+// written out here, so a category added in the database appears on this page
+// without a edit. Labels fall back to the key, so a new one is usable before
+// anybody writes a nice name for it.
+
+(() => {
+	const AREA = 'Notifications';
+
+	const box    = document.getElementById('notif-prefs');
+	const status = document.getElementById('notif-prefs-status');
+	if (!box || !status) return;   // not this page
+
+	const LABEL = {
+		match:      'Matches',
+		tournament: 'Tournaments',
+		league:     'Leagues',
+		admin:      'Account and admin'
+	};
+	const HINT = {
+		match:      'Scorecards, results, and somebody changing a frame on your card.',
+		tournament: 'Being entered or confirmed, and when your next match is ready.',
+		league:     'League nights and standings.',
+		admin:      'Anything about your account itself.'
+	};
+
+	let busy = false;
+
+	function row(pref) {
+		const field = document.createElement('div');
+		field.className = 'field';
+
+		const id = 'notif-pref-' + pref.category;
+
+		const label = document.createElement('label');
+		label.setAttribute('for', id);
+		label.textContent = LABEL[pref.category] || pref.category;
+
+		const box2 = document.createElement('input');
+		box2.type = 'checkbox';
+		box2.id = id;
+		box2.checked = pref.push_enabled;
+		box2.addEventListener('change', () => save(pref.category, box2.checked, box2));
+
+		field.append(label, box2);
+
+		if (HINT[pref.category]) {
+			const hint = document.createElement('div');
+			hint.className = 'hint';
+			hint.textContent = HINT[pref.category];
+			field.append(hint);
+		}
+		return field;
+	}
+
+	async function save(category, enabled, control) {
+		if (busy) return;
+		busy = true;
+		TDC.status(status, 'Saving…', '');
+
+		const { error } = await supabaseClient.rpc('tdc_set_notification_pref', {
+			p_category: category,
+			p_enabled: enabled
+		});
+		busy = false;
+
+		if (error) {
+			// Put the switch back: leaving it where the finger left it says
+			// the setting changed when it did not.
+			control.checked = !enabled;
+			TDC.showSupabaseError(AREA, error, status);
+			return;
+		}
+		TDC.status(status, 'Saved.', 'success');
+	}
+
+	(async () => {
+		const session = await TDC.getSession(AREA);
+		if (!session) return;   // the section above already hides itself
+
+		const { data, error } = await supabaseClient.rpc('tdc_notification_prefs');
+		if (error) { TDC.showSupabaseError(AREA, error, status); return; }
+
+		box.replaceChildren(...(data || []).map(row));
+	})();
+})();

@@ -137,6 +137,21 @@ extraScripts:
 		<button type="button" class="btn-primary" id="enable-notifications">Enable Notifications</button>
 		<button type="button" class="btn-secondary" id="notif-preset-1">Send Test Notification</button>
 		<div class="status" id="notif-status"></div>
+
+		<!--
+			What buzzes your phone. These govern the push only — everything is
+			recorded either way and waits in the bell menu, so turning one off
+			means "stop interrupting me", not "keep it from me". Said on the
+			page, because that is not obvious from a switch.
+
+			Built from whatever tdc_notification_prefs returns rather than
+			listed here, so a category added in the database appears without
+			a page edit.
+		-->
+		<h3>What buzzes your phone</h3>
+		<p class="muted">Everything is kept in your notifications menu either way. These only decide what interrupts you.</p>
+		<div id="notif-prefs"></div>
+		<div class="status" id="notif-prefs-status"></div>
 	</div>
 
 	<!-- Account (login details) -->
