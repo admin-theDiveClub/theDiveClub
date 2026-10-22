@@ -6,7 +6,7 @@ Updated at every milestone, in the same breath as giving UV a commit subject. Ne
 
 Last updated: **22 Oct 2026**
 
-**Database is current.** All migrations through `20261021170000` are applied to `thediveclub-prod`, verified 21 Oct against `supabase_migrations.schema_migrations` and by checking the function bodies — not taken on trust.
+**Database is current.** All migrations through `20261022130000` are applied to `thediveclub-prod`, verified 22 Oct against `supabase_migrations.schema_migrations` and by checking the function bodies — not taken on trust.
 
 ---
 
@@ -39,9 +39,6 @@ In the order it probably makes sense.
 |---|---|---|
 | 1 | **Per-round match settings** | **Needs discussion.** See §5 |
 | 2 | **Adding rounds and matches mid-tournament** | **Needs discussion.** See §5 |
-| 3 | **A screen for `tdc_frame_history`** | The audit log is written and queryable, and nothing displays it |
-| 4 | **Hardening migration for the `private` schema** | 14 `private.tdc_*` functions have no `revoke … from public`. Not a live hole — `anon` has no `usage` on the schema — but one `grant` away from being one |
-| 7 | **Per-category notification switches on the profile page** | `tdc_notification_prefs` and `tdc_set_notification_pref` exist with four categories. Nothing renders them, so the switches cannot be reached |
 
 ---
 
@@ -64,6 +61,7 @@ Agreed in principle, nothing written.
 | **`player_facing` on `TDCMatchDef`** | The setup page, the round settings box, the override dropdown and the poster text should all render from one definition. Until the flag exists, `private.tdc_poster_rules` holds a hand-kept copy — two places that can drift |
 | **Entry fee charging** | **Blocked** on the credit ledger's `ref_table` / `ref_id`, undecided for travelling leagues |
 | **Double elimination, round robin, groups** | Only single elimination generates a draw today |
+| **A screen for `tdc_frame_history`** | The audit log is written and queryable with nothing displaying it. **UV, 22 Oct: do it with the match visualisation**, not on its own |
 | **Public follow view** | Watch a tournament without being in it |
 | **Venue picker on tournament creation** | `p_venue_id` is always null today, so every tournament made in the app is the open tier. A club tournament needs the picker and staff rights at that venue |
 | **Real content for 404, privacy policy, terms** | Stubs of 42–49 bytes |
@@ -110,5 +108,6 @@ Real, small, and none of them blocking.
 - **One list, not several.** Before adding an outstanding item anywhere else, add it here instead.
 - **Date anything that could go stale.** A line without a date is read as current.
 - **Move, do not copy.** An item that is done comes out of this document; if the reasoning is worth keeping it goes to `docs/DECISIONS.md`, and if it is a built system it goes to `CLAUDE.md`.
+- **Re-stage before every edit, and know which branch the repo is on.** This file is written by both chats and by several steps of one session. A copy staged ten minutes ago is already stale, and committing it silently reverts whatever landed in between — which happened twice on 22 Oct, both times putting a finished item back on the list. A delivery into a working tree mid-branch-switch also caused an autostash conflict the same day; ask before writing if the last message was not a plain "done".
 - **This file is the agenda. `CLAUDE.md` is the record. `docs/DECISIONS.md` is the why.** Three files, three jobs, no overlap.
 - **The long backlog is `claude/stats-todo.md`** in the project — someday work, the schema still to come, deferred refinements. The split: if it is active, blocked, or waiting on UV it belongs here; if it is someday, it belongs there. When something there becomes active, **move** it here rather than copying it.
