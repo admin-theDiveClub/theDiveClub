@@ -6,7 +6,7 @@ Updated at every milestone, in the same breath as giving UV a commit subject. Ne
 
 Last updated: **22 Oct 2026**
 
-**Database is current.** All migrations through `20261022150000` are applied to `thediveclub-prod`, verified 22 Oct against `supabase_migrations.schema_migrations` and by checking the function bodies — not taken on trust.
+**Database is current.** All migrations through `20261022160000` are applied to `thediveclub-prod`, verified 22 Oct against `supabase_migrations.schema_migrations` and by checking the function bodies — not taken on trust.
 
 ---
 
@@ -37,8 +37,8 @@ In the order it probably makes sense.
 
 | | What | Notes |
 |---|---|---|
-| 1 | **Progression arrows on the bracket** | The drawing of what `20261022150000` made editable: an arrow per slot, a "+" on the border between two rounds, and a picker for where a slot comes from. The TD's whole mental model, and the reason the two functions below exist |
-| 2 | **Inserting a round** | Renumbers. `round` is an integer and `tbl_tournament_round_rules` keys off it, so the insert has to move those rows with it. UV chose renumbering over sparse ordering, 22 Oct. `roundName()` deriving "Semi-finals" from distance to the last round also stops being true once the ladder is not a clean power of two |
+| 1 | **Progression arrows on the bracket** | **The last piece, and now purely drawing.** An arrow per slot read straight from `home_source_ref` / `away_source_ref`, a "+" on the border between two rounds, a picker for where a slot comes from, and buttons for add/remove. Every function it needs exists and is tested (`20261022150000`, `20261022160000`). **The page must draw rounds `1..max`, not the distinct rounds that have fixtures** — an inserted round is a gap, and that gap is how an empty round is represented |
+| 2 | **`roundName()` counts fixtures instead of rounds** | Small, and it goes with the arrows. Deriving "Semi-finals" from distance to the last round is wrong the moment a prelim is in front of it; 1 fixture = Final, 2 = Semi-finals, 4 = Quarter-finals is right either way |
 
 ---
 
