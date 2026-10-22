@@ -1,7 +1,8 @@
 # Leagues — the design, as settled
 
 **Status: designed. The structure in §1 is built (22 Oct, migrations
-`20261022180000` and `20261022190000`); nothing else is.** Nothing in this document is a proposal.
+`20261022180000` and `20261022190000`), and the pages to create and run a league
+(`/leagues/`, with `20261022200000`); nothing else is.** Nothing in this document is a proposal.
 All of it was decided with UV on 13 Oct 2026 and is reproduced here from that
 session and from `claude/stats-schema-design.md` in the project. The record of
 what was built, and how it differs, is `CLAUDE.md` → *Leagues*.

@@ -1,0 +1,132 @@
+---
+layout: layout.html
+title: Run a League
+description: "Add players, make teams and see who has confirmed."
+extraScripts:
+  - /scripts/league-manage.js
+---
+{% comment %}
+	The screen a league season is run from. Add players, make teams, put people
+	on them, see who has confirmed, appoint officials.
+
+	Everything on it is one call each: tdc_league_season_entrants,
+	tdc_league_season_teams, tdc_league_season_readiness and
+	tdc_league_officials to read, and tdc_add_league_entrant /
+	tdc_set_league_entrant / tdc_remove_league_entrant / tdc_create_team /
+	tdc_update_team / tdc_delete_team / tdc_add_league_role /
+	tdc_remove_league_role to change it. After every write everything is read
+	again rather than patched here, because the server owns the answer.
+
+	Only players with an account can be added: they have to confirm their own
+	place, which a walk-in cannot do. Reached as /leagues/manage/?s=<league season id>.
+{% endcomment %}
+
+<div class="tdc-card wide">
+	<h1 id="l-name">League</h1>
+	<p class="muted" id="l-meta"></p>
+
+	<div class="panel" id="ready-panel" hidden>
+		<h2>Ready to begin?</h2>
+		<p id="ready-line"></p>
+		<p class="muted" id="ready-detail"></p>
+	</div>
+
+	<div class="field" id="search-field">
+		<label for="player-search">Add a player</label>
+		<input type="search" id="player-search" autocomplete="off" placeholder="Search by name">
+		<div class="hint">Two letters or more. They are told they have been added, and have to confirm that they are playing. Walk-ins cannot be added: a league player needs an account.</div>
+	</div>
+
+	<div id="search-results"></div>
+
+	<h2>Players <span class="badge" id="player-count" hidden></span></h2>
+
+	<div class="table-scroll">
+		<table class="tdc-table" id="player-table" hidden>
+			<thead>
+				<tr>
+					<th>Player</th>
+					<th>Status</th>
+					<th>Confirmed</th>
+					<th>Team</th>
+					<th>Captain</th>
+					<th>Paid</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody id="player-rows"></tbody>
+		</table>
+	</div>
+
+	<div class="empty" id="player-empty" hidden>Nobody has been added yet. Search above to add the first player.</div>
+
+	{% comment %}
+		Only the director makes a team. Captains control one once it exists —
+		they claim confirmed players onto it from the season page.
+	{% endcomment %}
+	<h2>Teams</h2>
+
+	<div class="toolbar">
+		<div class="field">
+			<label for="team-new">New team</label>
+			<input type="text" id="team-new" maxlength="120" autocomplete="off" placeholder="Rack Attack">
+		</div>
+		<button type="button" class="btn btn-primary btn-sm" id="team-add">Add team</button>
+	</div>
+
+	<div class="table-scroll">
+		<table class="tdc-table" id="team-table" hidden>
+			<thead>
+				<tr>
+					<th>Team</th>
+					<th class="num">Players</th>
+					<th>Captains</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody id="team-rows"></tbody>
+		</table>
+	</div>
+
+	<div class="empty" id="team-empty" hidden>No teams yet. Add one above, then put players on it here or let its captain claim them.</div>
+
+	<h2>Who runs it</h2>
+
+	<div id="official-add">
+		<div class="field">
+			<label for="official-role">Role</label>
+			<select id="official-role"></select>
+		</div>
+
+		<div class="field" id="official-field">
+			<label for="official-search">Add an official</label>
+			<input type="search" id="official-search" autocomplete="off" placeholder="Search by name">
+			<div class="hint">Two letters or more. They do not have to be a player in the league.</div>
+		</div>
+
+		<div id="official-results"></div>
+	</div>
+
+	<div class="table-scroll">
+		<table class="tdc-table" id="official-table" hidden>
+			<thead>
+				<tr>
+					<th>Person</th>
+					<th>Role</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody id="official-rows"></tbody>
+		</table>
+	</div>
+
+	<div class="status" id="page-status"></div>
+
+	<div class="link-row">
+		<a href="#" id="season-link">How players see it</a>
+		&nbsp;·&nbsp;
+		<a href="#" id="new-season-link">Open another season</a>
+		&nbsp;·&nbsp;
+		<a href="/leagues/">Back to leagues</a>
+	</div>
+</div>

@@ -318,3 +318,15 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* team creation stays with the director. A captain (active and confirmed) may rename the team, claim a player who is in the season, active, confirmed and unplaced, release a player, and name other captains. A team's last captain is protected.
 *Not decided:* captains inviting players themselves. UV: a common practice, to be discussed later.
 
+## 2026-10-22 — Leagues get a manage page and a season page, not one page with two modes
+
+*Decided by:* Claude
+*Why:* the tournament manage page renders for the director only, and sends everyone else to the draw. A league has a second kind of person with real controls — the captain — and a third with only their own place to confirm. One page that hides and shows half its controls by role is the shape the tournament page was kept out of.
+*So:* `/leagues/manage/` is the director's and sends anyone else away; `/leagues/season/` is for people who play, and for a captain it adds the controls for their own team. The director can see the player view from a link, and a captain never sees payment or notes, because `tdc_league_season_entrants` is not theirs.
+
+## 2026-10-22 — League player search is its own function
+
+*Decided by:* Claude
+*Why:* `tdc_search_entrants` returns walk-ins and is gated on a tournament. Reusing it would have offered the director people the database then refuses, and told them so on the click.
+*So:* `tdc_search_league_players` returns accounts only, so what the page offers is exactly what the add accepts, and reports each person's state in the season so a withdrawn player can be added back.
+

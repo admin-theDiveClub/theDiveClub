@@ -1,0 +1,26 @@
+---
+layout: layout.html
+title: Leagues
+description: "Leagues you run or play in."
+extraScripts:
+  - /scripts/leagues.js
+---
+{% comment %}
+	The way into a league, in the same shape as /tournaments/.
+
+	Everything comes from one call to tdc_my_leagues, which returns the league
+	seasons this account runs and the ones it is entered in, newest first.
+	A season you run opens its management page; one you play in opens the
+	season page, where you confirm your place and see your team.
+{% endcomment %}
+
+<div class="tdc-card">
+	<h1>Leagues</h1>
+	<p class="muted" id="intro">Leagues you run or play in.</p>
+
+	<a href="/leagues/new/" class="btn-primary btn-link" id="new-league">Create a League</a>
+
+	<div id="league-list"></div>
+
+	<div class="status" id="list-status"></div>
+</div>

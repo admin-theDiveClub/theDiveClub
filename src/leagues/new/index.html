@@ -1,0 +1,63 @@
+---
+layout: layout.html
+title: New League
+description: "Create a league and open its first season."
+extraScripts:
+  - /scripts/match-settings.js
+  - /scripts/league-new.js
+---
+{% comment %}
+	A league and its first season in one go. The ruleset below belongs to the
+	league and is frozen onto every match played in it, so a rule changed later
+	cannot rescore a frame already played.
+
+	The ruleset controls are generated from the same TDCMatchDef list the match
+	panel and the new-tournament page are built from.
+
+	Reached as /leagues/new/, or as /leagues/new/?l=<league id> to open a further
+	season of a league that already exists — and to finish the job if the league
+	was made and its season was not.
+{% endcomment %}
+
+<div class="tdc-card">
+	<h1 id="page-title">New League</h1>
+	<p id="page-intro">A league is made once. Each year, or term, is a season of it, with its own players and teams.</p>
+
+	<div id="league-part">
+		<div class="field">
+			<label for="l-name">League name</label>
+			<input type="text" id="l-name" maxlength="120" autocomplete="off" placeholder="Tuesday Night League">
+			<div class="hint">Two characters or more.</div>
+		</div>
+	</div>
+
+	<div class="field">
+		<label for="s-name">Season name</label>
+		<input type="text" id="s-name" maxlength="120" autocomplete="off" placeholder="Summer 2026">
+		<div class="hint">Two characters or more.</div>
+	</div>
+
+	<div class="field">
+		<label for="s-start">Starts</label>
+		<input type="date" id="s-start">
+		<div class="hint">Leave blank if you have not set a date.</div>
+	</div>
+
+	<div class="field">
+		<label for="s-end">Ends</label>
+		<input type="date" id="s-end">
+	</div>
+
+	<!-- The ruleset, built by league-new.js from TDCMatchDef -->
+	<div id="rules-part">
+		<div id="settings-main"></div>
+		<div id="settings-rest"></div>
+	</div>
+
+	<button type="button" class="btn-primary" id="create-btn">Create League</button>
+	<div class="status" id="create-status"></div>
+
+	<div class="link-row">
+		<a href="/leagues/">Back to leagues</a>
+	</div>
+</div>

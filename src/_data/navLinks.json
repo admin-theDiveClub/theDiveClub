@@ -10,5 +10,9 @@
   {
     "label": "Tournaments",
     "url": "/tournaments/"
+  },
+  {
+    "label": "Leagues",
+    "url": "/leagues/"
   }
 ]
