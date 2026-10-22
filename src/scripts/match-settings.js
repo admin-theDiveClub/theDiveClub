@@ -79,6 +79,13 @@ const TDCMatchDef = (() => {
 
 	const GROUPS = ['This match', 'Format', 'Results', 'Timing', 'Officials and approval'];
 
+	// Team play only, and deliberately NOT in GROUPS: every page builds its
+	// form by looping GROUPS, so a setting in this group is invisible to the
+	// match panel and the create-a-tournament page without either of them
+	// having to know it exists. The league pages loop GROUPS.concat(LEAGUE_GROUPS).
+	// Both settings are version 2 of the ruleset (20261022220000).
+	const LEAGUE_GROUPS = ['Team play'];
+
 	const SETTINGS = [
 		// No column for this yet, so it lives only on the screen it is typed on.
 		// The create page leaves it out rather than offering a control that
@@ -130,6 +137,16 @@ const TDCMatchDef = (() => {
 		{ group: 'Timing', scope: 'rules', key: 'extensions_per_player', label: 'Extensions per player', type: 'int', min: 0, max: 10, when: (r) => r.shot_clock_enabled },
 		{ group: 'Timing', scope: 'rules', key: 'extension_seconds', label: 'Extension length', type: 'int', min: 5, max: 120, when: (r) => r.shot_clock_enabled },
 
+		{
+			group: 'Team play', scope: 'rules', key: 'lineup_cutoff_hours', label: 'Lineup cutoff (hours)', type: 'int',
+			min: 0, max: 336,
+			hint: 'Hours before a team match. A side with no lineup in by then concedes. 0 for no cutoff.'
+		},
+		{
+			group: 'Team play', scope: 'rules', key: 'strict_frame_order', label: 'Frames in strict order', type: 'bool',
+			hint: 'Nationals forbid changing the order. Off lets a scorer record any frame as it finishes, which is how most league nights actually run.'
+		},
+
 		{ group: 'Officials and approval', scope: 'rules', key: 'referee_required', label: 'Referee required', type: 'bool' },
 		{ group: 'Officials and approval', scope: 'rules', key: 'score_entry_mode', label: 'Scores entered by', type: 'select', options: () => SCORE_ENTRY },
 		{ group: 'Officials and approval', scope: 'rules', key: 'approval_mode', label: 'Approval', type: 'select', options: () => APPROVAL },
@@ -143,7 +160,10 @@ const TDCMatchDef = (() => {
 	// Kept in step with private.tdc_check_match_rules, which refuses a ruleset
 	// that is missing a key or carries one it does not know.
 	const DEFAULT_RULES = {
-		version: 1,
+		// Version 2 since 22 Oct. Matches frozen at version 1 keep their own
+		// ruleset and their own 23 keys; private.tdc_check_match_rules still
+		// validates both, and nothing rewrites a match that has been played.
+		version: 2,
 		discipline: '8ball',
 		win_condition_type: 'race_to',
 		win_condition_target: 5,
@@ -168,7 +188,11 @@ const TDCMatchDef = (() => {
 		// quiet default: the other player has 48 hours, and silence settles it.
 		// "Not needed" is there for a social game, and settles on submission.
 		approval_mode: 'dispute_window',
-		dispute_window_hours: 48
+		dispute_window_hours: 48,
+		// Version 2. Both are inert outside team play, which is why they are
+		// safe defaults for a social match and a tournament alike.
+		lineup_cutoff_hours: 0,
+		strict_frame_order: false
 	};
 
 	// The few worth asking about before a match starts. Everything else is a
@@ -265,7 +289,7 @@ const TDCMatchDef = (() => {
 	return {
 		DISCIPLINE, BREAK_OUTCOME, RESULT_EVENT, RESULT_SHORT, BREAK_DETERMINATION,
 		WIN_CONDITION, TIME_EXPIRY, TIEBREAK, SCORE_ENTRY, APPROVAL, SIDE_TAG, SIDES,
-		GROUPS, SETTINGS, DEFAULT_RULES, MAIN_KEYS,
+		GROUPS, LEAGUE_GROUPS, SETTINGS, DEFAULT_RULES, MAIN_KEYS,
 		control, liveRuleKeys, readValue,
 		setSideNames(fn) { sideNames = fn; }
 	};

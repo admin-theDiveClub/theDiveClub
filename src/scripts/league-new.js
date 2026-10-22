@@ -73,7 +73,11 @@
 		);
 
 		els.rest.replaceChildren();
-		for (const group of D.GROUPS) {
+		// The league pages are the only ones that show the Team play group:
+		// a lineup cutoff and a strict frame order mean nothing to a social
+		// match or a tournament, so TDCMatchDef keeps that group out of GROUPS
+		// and the other pages never see it.
+		for (const group of D.GROUPS.concat(D.LEAGUE_GROUPS)) {
 			const defs = live.filter((d) => d.group === group && !D.MAIN_KEYS.includes(d.key));
 			if (!defs.length) continue;
 

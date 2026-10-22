@@ -225,6 +225,15 @@ theDiveClub (thediveclub.org) is the web app and PWA for **The Dive Club**, UV's
 ### Match settings definitions (`scripts/match-settings.js`)
 - **`TDCMatchDef` is the one place a match setting is defined**: labels, the `SETTINGS` array, `DEFAULT_RULES`, and `MAIN_KEYS` (the few asked before a match starts). Both the match page's panel and the create page build their forms from it, so adding a setting is one edit, not two that drift.
 - `DEFAULT_RULES` is every key at its quietest, which is what makes a match created without touching anything the simple card. Keep it in step with `private.tdc_check_match_rules`, which refuses a ruleset missing a key or carrying an unknown one.
+- **`LEAGUE_GROUPS` (`['Team play']`) is deliberately not in `GROUPS`.** Every page builds its form by looping `GROUPS` and filtering `SETTINGS` by group, so a setting in a group outside that list is invisible to the match panel and the create-a-tournament page without either of them knowing it exists. The league pages loop `GROUPS.concat(LEAGUE_GROUPS)`. That is how `lineup_cutoff_hours` and `strict_frame_order` reach a league form and nothing else.
+
+### The ruleset is versioned, and version 1 is frozen (migration `20261022220000`)
+- **`version: 2` since 22 Oct**, adding `lineup_cutoff_hours` and `strict_frame_order` — 25 keys. `private.tdc_check_match_rules` now dispatches on the version and holds **two** lists; the version 1 list of 23 keys is never to be edited again.
+- **Why a version and not two more keys.** The match page reads a match's stored ruleset and sends it **straight back** when a setting changes — there is no merge with `DEFAULT_RULES` in between (`match.js`, `persistSettings`). Adding a required key to version 1 would therefore have failed on every one of the eighteen matches already played, the first time anybody opened its settings. The 15 Oct migration anticipated exactly this: *"A later version adds its own list rather than editing this one."*
+- **Nothing rewrites a played match.** A version 1 match stays version 1, keeps its 23 keys and keeps round-tripping. New rulesets are made at version 2 by `DEFAULT_RULES`.
+- **Read the new settings through `private.tdc_lineup_cutoff_hours` and `private.tdc_strict_frame_order`**, never with `rules->>`. They answer for a version 1 ruleset the way the system behaves today (no cutoff, no strict order), so one place knows what a setting means on a ruleset that predates it.
+- **The two new keys are type-checked**; the 23 older ones still are not. That is a job of its own — `docs/STATUS.md` §6.
+- **`by_schedule` needed nothing:** it was already an allowed `break_determination` from the tournament work, at version 1 too.
 - `stored: false` marks a setting with nowhere to be kept yet (currently just `referee`). The create page leaves those out rather than offering a control that forgets.
 - Each page calls `setSideNames()` to say what its two sides are called — players' names on the match page, the chosen opponent on the create page.
 - **Load order matters:** `match-settings.js` before `match.js` and before `match-new.js`.
@@ -560,7 +569,7 @@ UV, 22 Oct: "progression arrows between each round … the arrows should be smar
 - Verified by building the form both ways in headless Chromium and comparing `innerHTML`: **identical**, 12 controls, same ids. A dedup that changes nothing is the only kind worth doing without being asked.
 - **Not** deduped: `setValue()` clamps an out-of-range number to the bound, while the round panel's `readValue()` rejects it with a message. That is a real behavioural difference, not drift, so it was left alone rather than quietly changed.
 
-## Leagues (migrations `20261022180000`, `20261022190000`, `20261022200000`, `20261022210000`)
+## Leagues (migrations `20261022180000`, `20261022190000`, `20261022200000`, `20261022210000`, `20261022220000`)
 
 Built to `docs/design/leagues.md`. **This is the structure only** — the league, its seasons, the teams, who is entered, who runs it. No fixtures, lineups, captain's scorecard or standings yet; each is its own step. **Step 2 added the pages and step 3 the fixtures** (file map above): everything below is reachable from `/leagues/`, and was tested on a throwaway Postgres, the pages in headless Chromium against it. Still missing: lineups, the frames themselves, the captain's scorecard and standings — steps 4 to 6.
 
