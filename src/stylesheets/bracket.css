@@ -367,3 +367,160 @@
 	padding-top: var(--space-4);
 	border-top: 1px solid var(--border-color);
 }
+
+/* -- Progression arrows --------------------------------------------
+ *
+ * One SVG laid over the whole bracket, not borders between fixtures: an
+ * arrow crosses between columns, and an inserted empty round means it may
+ * cross more than one. Sized to the bracket's scroll extent and sitting
+ * inside the scrolling content, so it moves with the columns.
+ *
+ * pointer-events is off on the layer and back on for the paths alone, so an
+ * arrow passing over a fixture never eats a click meant for the fixture. */
+
+.bracket {
+	position: relative;
+}
+
+.bracket-arrows {
+	position: absolute;
+	top: 0;
+	left: 0;
+	pointer-events: none;
+	overflow: visible;
+	/* Behind the fixtures, like the printed lines on a draw sheet. An arrow
+	   crossing an inserted empty round passes over two columns, and drawn in
+	   front it would run straight through the names. */
+	z-index: 0;
+}
+
+/* Lifted so the arrows pass behind them. A fixture is opaque, so a line
+   under it simply disappears where it is covered, which is what a drawn
+   bracket looks like. */
+.bracket-fixture,
+.bracket-round-empty,
+.bracket-round-name {
+	position: relative;
+	z-index: 1;
+}
+
+.bracket-arrow {
+	fill: none;
+	stroke: var(--color-primary);
+	stroke-width: 1.5;
+	pointer-events: stroke;
+}
+
+/* Faint until somebody is actually in the slot. A bracket at the start of
+   the night is almost all pending arrows, and drawing them at full strength
+   makes the few that matter impossible to pick out. */
+.bracket-arrow.pending {
+	stroke: var(--border-color);
+	stroke-dasharray: 4 4;
+}
+
+.bracket-arrow.loser {
+	stroke: var(--text-muted);
+	stroke-dasharray: 2 3;
+}
+
+/* Wired to a round above itself. Legal, and the draw honours it, so it is
+   marked rather than hidden. */
+.bracket-arrow.backwards {
+	stroke: var(--color-warn, #d08a2c);
+	stroke-width: 2;
+}
+
+.bracket-arrow:hover {
+	stroke-width: 3;
+}
+
+#tdc-arrow path { fill: var(--color-primary); }
+#tdc-arrow-dim path { fill: var(--border-color); }
+
+/* The tournament moves nobody on its own, so every arrow is a thing the TD
+   will do by hand. Said once, on the layer, rather than per arrow. */
+.bracket-arrows.by-hand .bracket-arrow.decided {
+	stroke-dasharray: 6 3;
+}
+
+
+/* -- Adding a round, and the gap one leaves -------------------------
+ *
+ * The border between two rounds is a column of its own, narrow until
+ * hovered. An overlay would land on top of a fixture; a column cannot. */
+
+.bracket-border {
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding-top: 2.2rem;
+	width: 0.75rem;
+	flex: 0 0 auto;
+	transition: width 0.12s ease;
+}
+
+.bracket-border:hover,
+.bracket-border:focus-within {
+	width: 2.25rem;
+}
+
+.tdc-card .bracket-border-add {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	margin: 0;
+	padding: 0;
+	border: 1px dashed var(--border-color);
+	border-radius: 50%;
+	background: none;
+	color: var(--text-muted);
+	font-size: 0.9rem;
+	line-height: 1;
+	opacity: 0;
+	cursor: pointer;
+	transition: opacity 0.12s ease;
+}
+
+.bracket-border:hover .bracket-border-add,
+.bracket-border-add:focus-visible {
+	opacity: 1;
+	border-color: var(--color-primary);
+	color: var(--color-primary);
+}
+
+/* An inserted round holds nothing until the TD puts a match in it. There is
+   no rounds table, so this gap in the numbering is the round. */
+.bracket-round-empty {
+	padding: var(--space-4);
+	border: 1px dashed var(--border-color);
+	border-radius: var(--radius-md);
+	color: var(--text-muted);
+	font-size: 0.8rem;
+	text-align: center;
+}
+
+.tdc-card .bracket-add-match {
+	width: 100%;
+	margin-top: var(--space-2);
+	opacity: 0.65;
+}
+
+.tdc-card .bracket-add-match:hover,
+.tdc-card .bracket-add-match:focus-visible {
+	opacity: 1;
+}
+
+/* The column past the last round. A round on the end moves nothing, so it is
+   a plain add rather than an insert. */
+.bracket-round-new {
+	justify-content: flex-start;
+	padding-top: 2.2rem;
+	opacity: 0.5;
+}
+
+.bracket-round-new:hover {
+	opacity: 1;
+}

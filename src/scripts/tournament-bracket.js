@@ -35,7 +35,10 @@
 		roundRulesNote: el('round-rules-note'), roundRulesMain: el('round-rules-main'),
 		roundRulesRest: el('round-rules-rest'), roundRulesLater: el('round-rules-later'),
 		roundRulesSave: el('round-rules-save'), roundRulesClear: el('round-rules-clear'),
-		roundRulesCancel: el('round-rules-cancel'), roundRulesStatus: el('round-rules-status')
+		roundRulesCancel: el('round-rules-cancel'), roundRulesStatus: el('round-rules-status'),
+		wiring: el('wiring'), wiringHead: el('wiring-head'), wiringNote: el('wiring-note'),
+		wiringBody: el('wiring-body'), wiringSave: el('wiring-save'),
+		wiringCancel: el('wiring-cancel'), wiringStatus: el('wiring-status')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -94,13 +97,31 @@
 
 	// ─── Naming the rounds ───
 	// "Semi-final" beats "Round 3" for everybody except the person who wrote
-	// the schema. Counted back from the last round of the main bracket.
-	function roundName(round, lastRound) {
-		const fromEnd = lastRound - round;
-		if (fromEnd === 0) return 'Final';
-		if (fromEnd === 1) return 'Semi-finals';
-		if (fromEnd === 2) return 'Quarter-finals';
-		return 'Round ' + round;
+	// the schema.
+	//
+	// Counted by how many matches are in each round, not by distance from the
+	// end. Distance was right only while a draw was a clean power-of-two
+	// ladder, and 20261022160000 made that false on purpose: a TD can put a
+	// prelim in front of round 1, after which the old rule called the real
+	// quarter-finals the semis.
+	//
+	// Walking down from the last round, a round is the Final if it holds one
+	// match, the semis if the round above was the final and it holds two, and
+	// so on. The moment the halving breaks — a prelim, an odd field, a match
+	// added by hand — naming stops and everything below is "Round n", which
+	// is both true and the thing a TD would say out loud.
+	function roundNames(main, lastRound) {
+		const names = new Map();
+		const LADDER = { 1: 'Final', 2: 'Semi-finals', 4: 'Quarter-finals' };
+		let expect = 1;
+
+		for (let r = lastRound; r >= 1; r--) {
+			const count = main.filter((f) => f.round === r).length;
+			if (count !== expect || !LADDER[expect]) break;
+			names.set(r, LADDER[expect]);
+			expect *= 2;
+		}
+		return names;
 	}
 
 	// How a fixture is named to a person. "Round 1 · Match 1", not "1-1" —
@@ -188,6 +209,11 @@
 		// A score only means something once there is a match behind it.
 		if (f.match_id) scoreCell.append(node('span', 'bracket-frames', String(frames ?? 0)));
 
+		// Which slot this is, so an arrow has something to point at. The
+		// progression overlay anchors to these rather than to the fixture box,
+		// because a slot is what a source feeds — not the match.
+		row.dataset.side = which;
+
 		row.append(swapCell, nameCell, scoreCell);
 		return row;
 	}
@@ -268,6 +294,15 @@
 			}
 		} else if (both && !f.advanced_entrant_id) {
 			row.append(action('start', f.fixture_id, 'Start match', 'btn-secondary'));
+		}
+
+		// Where the two slots come from, and the undo for adding a match.
+		// Both only while nothing has been played: a fixture with a match has
+		// settled sides, and the functions refuse either way — offering a
+		// button that always refuses is worse than not offering it.
+		if (!f.match_id) {
+			row.append(action('wiring', f.fixture_id, 'Wiring', 'btn-secondary'));
+			row.append(action('remove-fixture', f.fixture_id, 'Remove', 'btn-danger'));
 		}
 
 		// A walkover is the common one at a club night: somebody did not turn
@@ -564,18 +599,38 @@
 
 		const main = fixtures.filter((f) => f.bracket === 'main');
 		const lastRound = Math.max(...main.map((f) => f.round));
+		const names = roundNames(main, lastRound);
 		const columns = [];
 
+		// 1..lastRound, not the rounds that happen to have fixtures.
+		// tdc_insert_round (20261022160000) renumbers and leaves a gap, and
+		// the gap *is* the empty round — there is no rounds table for it to be
+		// a row in. Skipping empty rounds here would make an inserted round
+		// invisible and the one after it look like it moved for no reason.
 		for (let r = 1; r <= lastRound; r++) {
 			const inRound = main.filter((f) => f.round === r);
-			if (!inRound.length) continue;
+
+			// The border before this round, where a new one goes in.
+			if (!readOnly) columns.push(roundBorder(r));
+
 			const col = node('div', 'bracket-round');
-			const head = node('h2', 'bracket-round-name', roundName(r, lastRound));
+			col.dataset.round = String(r);
+			col.dataset.bracket = 'main';
+
+			const head = node('h2', 'bracket-round-name', names.get(r) || 'Round ' + r);
 			if (!readOnly) head.append(roundRulesButton('main', r));
 			col.append(head);
-			col.append(...inRound.map(fixture));
+
+			if (inRound.length) col.append(...inRound.map(fixture));
+			else col.append(node('div', 'bracket-round-empty', 'Empty round'));
+
+			if (!readOnly) col.append(addMatchButton('main', r, inRound.length === 0));
 			columns.push(col);
 		}
+
+		// A round on the end moves nothing, so it is offered as a plain add
+		// rather than an insert.
+		if (!readOnly) columns.push(addRoundColumn(lastRound + 1));
 
 		// Third place sits beside the final rather than after it, because that
 		// is where it is played.
@@ -583,13 +638,18 @@
 		if (third.length) {
 			const col = node('div', 'bracket-round');
 			const tpHead = node('h2', 'bracket-round-name', 'Third place');
-			if (!readOnly) tpHead.append(roundRulesButton(rest[0].bracket, rest[0].round));
+			// Was rest[0] — an identifier that does not exist in this scope, so
+			// a TD opening a bracket with a third-place playoff got a
+			// ReferenceError and no bracket at all. Introduced 22 Oct with the
+			// round-rules button and caught while building the arrows.
+			if (!readOnly) tpHead.append(roundRulesButton(third[0].bracket, third[0].round));
 			col.append(tpHead);
 			col.append(...third.map(fixture));
 			columns.push(col);
 		}
 
 		els.bracket.replaceChildren(...columns);
+		drawArrows();
 	}
 
 	// ─── Reading ───
@@ -970,6 +1030,422 @@
 	// A rehearsal, not an estimate: tdc_cascade_draw does the whole thing in a
 	// subtransaction and rolls it back, so the list below is exactly what
 	// pressing the button will do, knock-on effects included.
+
+	// ─────────────────────────────────────────────────────────────────
+	// The progression arrows
+	//
+	// UV, 22 Oct: "progression arrows between each round where the progression
+	// arrows will communicate details like auto-progression and the arrows
+	// should be smart so that if TD swaps players as they progress from one
+	// round to the next, then the arrows will show that change rather than
+	// resorting the entire tournament."
+	//
+	// They are smart for free. Each arrow is drawn straight from one slot's
+	// home_feeder_id / away_feeder_id, which is what the slot actually reads
+	// when the draw resolves. There is no second model of progression here to
+	// get out of step with the first: repoint a slot and the arrow moves,
+	// because the arrow *is* the slot's source.
+	//
+	// Drawn as one SVG laid over the bracket rather than per-fixture borders,
+	// because an arrow crosses between columns and an inserted empty round
+	// means it may cross more than one.
+	// ─────────────────────────────────────────────────────────────────
+
+	const SVG_NS = 'http://www.w3.org/2000/svg';
+
+	// Redrawing is measurement, so it has to happen after layout and again
+	// whenever layout changes. Coalesced into a frame: a resize fires dozens
+	// of times and each redraw reads every fixture's box.
+	let arrowFrame = 0;
+
+	function redrawArrowsSoon() {
+		if (arrowFrame) return;
+		arrowFrame = requestAnimationFrame(() => { arrowFrame = 0; drawArrows(); });
+	}
+
+	function drawArrows() {
+		const old = els.bracket.querySelector('.bracket-arrows');
+		if (old) old.remove();
+		if (!fixtures.length) return;
+
+		const host = els.bracket.getBoundingClientRect();
+		// Zero while the page is hidden or mid-layout. Measuring then puts
+		// every arrow at the origin, so the draw is skipped and retried.
+		if (!host.width || !host.height) return;
+
+		const svg = document.createElementNS(SVG_NS, 'svg');
+		svg.setAttribute('class', 'bracket-arrows'
+			+ (tournament && tournament.progression === 'manual' ? ' by-hand' : ''));
+		svg.setAttribute('width', String(els.bracket.scrollWidth));
+		svg.setAttribute('height', String(els.bracket.scrollHeight));
+
+		// One marker, referenced by every path. Defined inline because the
+		// page has no shared SVG sprite and a marker per arrow is waste.
+		svg.append(arrowHead('tdc-arrow', 'head'), arrowHead('tdc-arrow-dim', 'head dim'));
+
+		let drawn = 0;
+		for (const f of fixtures) {
+			for (const which of ['home', 'away']) {
+				const feeder = which === 'home' ? f.home_feeder_id : f.away_feeder_id;
+				if (!feeder) continue;
+
+				const from = els.bracket.querySelector(`[data-fixture="${feeder}"]`);
+				const to = els.bracket.querySelector(
+					`[data-fixture="${f.fixture_id}"] [data-side="${which}"]`);
+				if (!from || !to) continue;
+
+				const a = from.getBoundingClientRect();
+				const b = to.getBoundingClientRect();
+				const x1 = a.right - host.left;
+				const y1 = a.top + a.height / 2 - host.top;
+				const x2 = b.left - host.left;
+				const y2 = b.top + b.height / 2 - host.top;
+
+				// An arrow that would run backwards means the TD has wired a
+				// round to one above it. Legal, and the draw honours it, but a
+				// curve drawn the usual way would read as pointing the wrong
+				// way, so it is not hidden — it is marked.
+				const back = x2 < x1;
+				const source = which === 'home' ? f.home_source : f.away_source;
+				const decided = !!(which === 'home' ? f.home_entrant_id : f.away_entrant_id);
+
+				const path = document.createElementNS(SVG_NS, 'path');
+				path.setAttribute('d', curve(x1, y1, x2, y2));
+				path.setAttribute('class', 'bracket-arrow'
+					+ (source === 'loser_of' ? ' loser' : '')
+					+ (decided ? ' decided' : ' pending')
+					+ (back ? ' backwards' : ''));
+				path.setAttribute('marker-end',
+					'url(#' + (decided ? 'tdc-arrow' : 'tdc-arrow-dim') + ')');
+
+				// Clickable, because the arrow is the most direct way to say
+				// "this, change where it comes from". pointer-events is off on
+				// the svg and back on for the paths, so the arrows never eat a
+				// click meant for a fixture underneath.
+				if (!readOnly) {
+					path.dataset.act = 'wiring';
+					path.dataset.fixture = f.fixture_id;
+					path.style.cursor = 'pointer';
+					const title = document.createElementNS(SVG_NS, 'title');
+					title.textContent = (source === 'loser_of' ? 'Loser' : 'Winner')
+						+ ' of ' + fixtureName(
+							which === 'home' ? f.home_feeder_bracket : f.away_feeder_bracket,
+							which === 'home' ? f.home_feeder_round : f.away_feeder_round,
+							which === 'home' ? f.home_feeder_position : f.away_feeder_position)
+						+ ' — click to change';
+					path.append(title);
+				}
+				svg.append(path);
+				drawn++;
+			}
+		}
+
+		if (drawn) els.bracket.append(svg);
+	}
+
+	// A flat-ended S. Control points pushed out horizontally by half the gap,
+	// so the line leaves a fixture sideways and arrives sideways, which is
+	// what makes a bracket readable rather than a plate of spaghetti.
+	function curve(x1, y1, x2, y2) {
+		const dx = Math.max(18, Math.abs(x2 - x1) / 2);
+		return `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+	}
+
+	function arrowHead(id, cls) {
+		const marker = document.createElementNS(SVG_NS, 'marker');
+		marker.setAttribute('id', id);
+		marker.setAttribute('class', cls);
+		marker.setAttribute('viewBox', '0 0 8 8');
+		marker.setAttribute('refX', '7');
+		marker.setAttribute('refY', '4');
+		marker.setAttribute('markerWidth', '6');
+		marker.setAttribute('markerHeight', '6');
+		marker.setAttribute('orient', 'auto-start-reverse');
+		const tip = document.createElementNS(SVG_NS, 'path');
+		tip.setAttribute('d', 'M 0 1 L 7 4 L 0 7 z');
+		marker.append(tip);
+		return marker;
+	}
+
+	// Arrows are measured, so anything that changes the layout has to redraw
+	// them. Resize covers rotation and the window; the scroller does not need
+	// one, because the svg is inside the scrolling content and moves with it.
+	window.addEventListener('resize', redrawArrowsSoon);
+
+
+	// ─────────────────────────────────────────────────────────────────
+	// Adding and removing rounds and matches
+	//
+	// UV, 22 Oct: "TD can hover on the border between two rounds and then add
+	// a round via a '+' button." The border is a real column of its own —
+	// a zero-width one that widens on hover — rather than an overlay, so it
+	// cannot land on top of a fixture and it survives the bracket scrolling.
+	// ─────────────────────────────────────────────────────────────────
+
+	function roundBorder(beforeRound) {
+		const slot = node('div', 'bracket-border');
+		const b = node('button', 'bracket-border-add', '+');
+		b.type = 'button';
+		b.dataset.act = 'insert-round';
+		b.dataset.round = String(beforeRound);
+		b.title = 'Put a round in here';
+		slot.append(b);
+		return slot;
+	}
+
+	function addRoundColumn(round) {
+		const col = node('div', 'bracket-round bracket-round-new');
+		const b = node('button', 'btn btn-secondary btn-sm', '+ Round');
+		b.type = 'button';
+		b.dataset.act = 'add-match';
+		b.dataset.bracket = 'main';
+		b.dataset.round = String(round);
+		b.title = 'A round on the end, which moves nothing';
+		col.append(b);
+		return col;
+	}
+
+	function addMatchButton(bracket, round, empty) {
+		const b = node('button', 'btn btn-secondary btn-sm bracket-add-match',
+			empty ? '+ First match' : '+ Match');
+		b.type = 'button';
+		b.dataset.act = 'add-match';
+		b.dataset.bracket = bracket;
+		b.dataset.round = String(round);
+		return b;
+	}
+
+
+	// ─────────────────────────────────────────────────────────────────
+	// Where a slot comes from
+	//
+	// Opened by clicking an arrow, or by the Wiring button on a fixture. One
+	// panel for both slots of a fixture rather than a control per slot: UV,
+	// 21 Oct, had the swap button covering the names, and a third control in
+	// each row would be the same mistake again.
+	// ─────────────────────────────────────────────────────────────────
+
+	let wiring = null;          // the fixture id whose wiring is open
+	let wiringCandidates = [];
+
+	async function openWiring(fixtureId) {
+		wiring = fixtureId;
+		wiringCandidates = [];
+		renderWiring();
+		els.wiring.hidden = false;
+		els.wiring.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+		const { data, error } = await supabaseClient.rpc('tdc_fixture_source_candidates', {
+			p_fixture_id: fixtureId
+		});
+		if (error) { TDC.showSupabaseError(AREA, error, els.wiringStatus); return; }
+		// Still the same fixture? The TD may have closed it or opened another
+		// while this was in flight.
+		if (wiring !== fixtureId) return;
+		wiringCandidates = data || [];
+		renderWiring();
+	}
+
+	function closeWiring() {
+		wiring = null;
+		wiringCandidates = [];
+		els.wiring.hidden = true;
+		TDC.status(els.wiringStatus, '', '');
+	}
+
+	function renderWiring() {
+		if (!wiring) return;
+		const f = fixtures.find((x) => x.fixture_id === wiring);
+		if (!f) { closeWiring(); return; }
+
+		els.wiringHead.textContent = 'Where ' + fixtureName(f.bracket, f.round, f.position)
+			+ ' comes from';
+		els.wiringNote.textContent = f.match_id
+			? 'This match has started, so its sides are settled. Detach the match to change the wiring.'
+			: 'Pointing a slot at a match empties it, so the winner can move in when that match is decided.';
+
+		els.wiringBody.replaceChildren(
+			wiringRow(f, 'home'),
+			wiringRow(f, 'away'));
+	}
+
+	function wiringRow(f, which) {
+		const row = node('div', 'field');
+		const id = 'wiring-' + which;
+
+		const label = node('label', '', which === 'home' ? 'Top slot' : 'Bottom slot');
+		label.htmlFor = id;
+
+		const pick = node('select');
+		pick.id = id;
+		pick.dataset.side = which;
+		pick.disabled = !!f.match_id;
+
+		const source = which === 'home' ? f.home_source : f.away_source;
+		const feeder = which === 'home' ? f.home_feeder_id : f.away_feeder_id;
+		const entrant = which === 'home' ? f.home_entrant_id : f.away_entrant_id;
+
+		pick.append(new Option('Nobody — leave it empty', '', false,
+			!source));
+
+		// Whoever is in it now, kept as an option so choosing something else
+		// and changing your mind does not need the entrant picker.
+		if (entrant) {
+			const name = which === 'home' ? f.home_name : f.away_name;
+			pick.append(new Option(name + ' (placed by hand)', 'entrant:' + entrant,
+				false, source === 'entrant'));
+		}
+
+		for (const c of wiringCandidates) {
+			for (const kind of ['winner_of', 'loser_of']) {
+				const value = kind + ':' + c.fixture_id;
+				const text = (kind === 'winner_of' ? 'Winner of ' : 'Loser of ')
+					+ fixtureName(c.bracket, c.round, c.position)
+					+ (c.decided ? ' (decided)' : '');
+				pick.append(new Option(text, value, false,
+					source === kind && feeder === c.fixture_id));
+			}
+		}
+
+		const hint = node('div', 'hint');
+		hint.textContent = feeder
+			? 'Currently fed by a match.'
+			: (entrant ? 'Currently a player put here by hand.' : 'Currently empty.');
+
+		row.append(label, pick, hint);
+		return row;
+	}
+
+	els.wiringSave.addEventListener('click', async () => {
+		if (busy || !wiring) return;
+		const f = fixtures.find((x) => x.fixture_id === wiring);
+		if (!f) { closeWiring(); return; }
+
+		// One slot at a time, and only the ones that changed. Two calls would
+		// be two rehearsals and two confirmations for one intention, so the
+		// unchanged slot is left alone.
+		const wanted = [];
+		for (const which of ['home', 'away']) {
+			const pick = els.wiring.querySelector(`[data-side="${which}"]`);
+			if (!pick) continue;
+			const [kind, ref] = (pick.value || ':').split(':');
+			const source = which === 'home' ? f.home_source : f.away_source;
+			const current = which === 'home'
+				? (f.home_feeder_id || f.home_entrant_id)
+				: (f.away_feeder_id || f.away_entrant_id);
+			if ((kind || null) === (source || null) && (ref || null) === (current || null)) continue;
+			wanted.push({ side: which, kind: kind || null, ref: ref || null });
+		}
+
+		if (!wanted.length) {
+			TDC.status(els.wiringStatus, 'Nothing changed.', '');
+			return;
+		}
+
+		busy = true;
+		TDC.status(els.wiringStatus, 'Checking…', '');
+
+		// Rehearse every change first, so the TD confirms once against the
+		// whole thing rather than being asked twice halfway through.
+		const lines = [];
+		for (const w of wanted) {
+			const { data, error } = await supabaseClient.rpc('tdc_set_fixture_source', {
+				p_fixture_id: wiring,
+				p_side: w.side,
+				p_source_type: w.kind,
+				p_source_ref: w.ref
+			});
+			if (error) { busy = false; TDC.showSupabaseError(AREA, error, els.wiringStatus); return; }
+			if (data && data.note) continue;
+			lines.push(`${w.side === 'home' ? 'Top' : 'Bottom'} slot: ${data.from} → ${data.to}`
+				+ (data.displaces ? `\n  turns ${data.displaces} out of it` : '')
+				+ (data.award_cleared && data.award_cleared.entrant
+					? `\n  clears the bye that sent ${data.award_cleared.entrant} through` : ''));
+		}
+		busy = false;
+
+		if (!lines.length) { TDC.status(els.wiringStatus, 'Nothing changed.', ''); return; }
+		if (!confirm(lines.join('\n\n') + '\n\nGo ahead?')) {
+			TDC.status(els.wiringStatus, '', '');
+			return;
+		}
+
+		const todo = wanted.slice();
+		closeWiring();
+		await write('Rewiring', async () => {
+			for (const w of todo) {
+				const r = await supabaseClient.rpc('tdc_set_fixture_source', {
+					p_fixture_id: f.fixture_id,
+					p_side: w.side,
+					p_source_type: w.kind,
+					p_source_ref: w.ref,
+					p_apply: true
+				});
+				if (r.error) return r;
+			}
+			return { error: null };
+		});
+	});
+
+	els.wiringCancel.addEventListener('click', closeWiring);
+
+	// Both of these rehearse, so the TD is told what moves before it moves.
+	// Renumbering is the one operation here that touches rounds a TD is not
+	// looking at.
+	async function insertRound(before) {
+		if (busy) return;
+		busy = true;
+		TDC.status(els.status, 'Checking\u2026', '');
+		const args = { p_tournament_id: tournamentId, p_before_round: before, p_bracket: 'main' };
+		const { data, error } = await supabaseClient.rpc('tdc_insert_round', args);
+		busy = false;
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+
+		const lines = [`A new empty round goes in at ${before}.`, ''];
+		lines.push(`${data.fixtures_renumbered} match(es) move up a round`
+			+ (data.round_rules_moved
+				? `, and ${data.round_rules_moved} round(s) take their own rules with them.` : '.'));
+		if (data.matches_in_play > 0) {
+			lines.push('');
+			lines.push(`${data.matches_in_play} match(es) being played change number only \u2014 `
+				+ 'their rules and their frames are untouched.');
+		}
+		lines.push('', 'Go ahead?');
+		if (!confirm(lines.join('\n'))) { TDC.status(els.status, '', ''); return; }
+
+		await write('Inserting the round', () =>
+			supabaseClient.rpc('tdc_insert_round', Object.assign({}, args, { p_apply: true })));
+	}
+
+	async function removeFixture(id) {
+		if (busy) return;
+		busy = true;
+		TDC.status(els.status, 'Checking\u2026', '');
+		const { data, error } = await supabaseClient.rpc('tdc_remove_fixture', { p_fixture_id: id });
+		busy = false;
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+
+		// Anything still wired to it has to be repointed first. Said with the
+		// list, because "something depends on this" without naming what is an
+		// error message that makes the TD go looking.
+		const feeds = data.feeds || [];
+		if (feeds.length) {
+			alert('This match still feeds:\n\n'
+				+ feeds.map((x) => '  ' + fixtureName('main', x.round, x.position)
+					+ ' (' + (x.side === 'home' ? 'top' : 'bottom') + ' slot)').join('\n')
+				+ '\n\nPoint those somewhere else first.');
+			TDC.status(els.status, '', '');
+			return;
+		}
+
+		if (!confirm(`Take ${fixtureName('main', data.round, data.position)} out of the draw?`)) {
+			TDC.status(els.status, '', '');
+			return;
+		}
+		await write('Removing the match', () =>
+			supabaseClient.rpc('tdc_remove_fixture', { p_fixture_id: id, p_apply: true }));
+	}
+
 	async function checkDrift() {
 		els.drift.hidden = true;
 		if (readOnly || !fixtures.length) return;
@@ -1155,6 +1631,31 @@
 			return;
 		}
 
+		if (button.dataset.act === 'wiring') {
+			openWiring(id);
+			return;
+		}
+
+		if (button.dataset.act === 'add-match') {
+			write('Adding the match', () =>
+				supabaseClient.rpc('tdc_add_fixture', {
+					p_tournament_id: tournamentId,
+					p_round: parseInt(button.dataset.round, 10),
+					p_bracket: button.dataset.bracket
+				}));
+			return;
+		}
+
+		if (button.dataset.act === 'insert-round') {
+			insertRound(parseInt(button.dataset.round, 10));
+			return;
+		}
+
+		if (button.dataset.act === 'remove-fixture') {
+			removeFixture(id);
+			return;
+		}
+
 		if (button.dataset.act === 'swap') {
 			swapping = { fixtureId: id, side: button.dataset.side };
 			entering = null;
@@ -1240,7 +1741,7 @@
 		// half-made swap: the picker holds a chosen name and a typed reason.
 		clearTimeout(liveTimer);
 		liveTimer = setTimeout(() => {
-			if (busy || entering || swapping || editingRound) return;
+			if (busy || entering || swapping || editingRound || wiring) return;
 			loadDraw().then(() => { if (!readOnly) checkDrift(); });
 		}, 400);
 	}

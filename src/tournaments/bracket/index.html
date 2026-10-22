@@ -111,6 +111,27 @@ extraScripts:
 		<div class="status" id="round-rules-status"></div>
 	</div>
 
+	{% comment %}
+		Where a fixture's two slots come from. Opened by clicking an arrow or
+		the Wiring button on a match. One panel for both slots rather than a
+		control in each row: a third control per row is what covered the names
+		on 21 Oct. Outside the scrolling bracket for the same reason the round
+		rules are.
+	{% endcomment %}
+	<div class="panel" id="wiring" hidden>
+		<h2 id="wiring-head">Where this match comes from</h2>
+		<p class="muted" id="wiring-note"></p>
+
+		<div id="wiring-body"></div>
+
+		<div class="btn-row">
+			<button type="button" class="btn btn-primary btn-sm" id="wiring-save">Check and apply</button>
+			<button type="button" class="btn btn-secondary btn-sm" id="wiring-cancel">Cancel</button>
+		</div>
+
+		<div class="status" id="wiring-status"></div>
+	</div>
+
 	<!-- The bracket itself, built by tournament-bracket.js -->
 	<div class="bracket-scroll">
 		<div class="bracket" id="bracket"></div>

@@ -6,7 +6,7 @@ Updated at every milestone, in the same breath as giving UV a commit subject. Ne
 
 Last updated: **22 Oct 2026**
 
-**Database is current.** All migrations through `20261022160000` are applied to `thediveclub-prod`, verified 22 Oct against `supabase_migrations.schema_migrations` and by checking the function bodies — not taken on trust.
+**Database is current.** All migrations through `20261022170000` are applied to `thediveclub-prod`, verified 22 Oct against `supabase_migrations.schema_migrations` and by checking the function bodies — not taken on trust.
 
 ---
 
@@ -17,6 +17,7 @@ Nothing here can be done by Claude.
 | | What | Why it matters |
 |---|---|---|
 | 1 | **Play through sections 8, 11, 12 and 13 of the test plan** | Several builds are proven only against a scratch database. The logic is verified; a real league night is not |
+| 1b | **Try the bracket editor on a real draw** | Insert a prelim, add a match to it, click an arrow to rewire, remove a match. Proven against a scratch database and rendered in headless Chromium; never driven by a person. **Check a tournament with a third-place playoff in particular** — it was broken from 22 Oct until this build and nobody hit it |
 | 2 | **Retest the walk-in merge via `/staff/link/`** | The one thing left that could lose real data. Changed again on 21 Oct by the merge fix, so earlier testing no longer counts |
 | 3 | **Enable the signup bot check** (Turnstile or hCaptcha) | Self-entry currently rests on a confirmed email address alone. The bot check is the other half of "a verified account" |
 | 4 | **Set the black-alpha values** for the refreshed branding | UV sets them himself on `/sandbox/` (palette Depth strengths and the logo controls) and saves them into `variables.css` (22 Oct). Done once he has saved and committed them |
@@ -37,8 +38,7 @@ In the order it probably makes sense.
 
 | | What | Notes |
 |---|---|---|
-| 1 | **Progression arrows on the bracket** | **The last piece, and now purely drawing.** An arrow per slot read straight from `home_source_ref` / `away_source_ref`, a "+" on the border between two rounds, a picker for where a slot comes from, and buttons for add/remove. Every function it needs exists and is tested (`20261022150000`, `20261022160000`). **The page must draw rounds `1..max`, not the distinct rounds that have fixtures** — an inserted round is a gap, and that gap is how an empty round is represented |
-| 2 | **`roundName()` counts fixtures instead of rounds** | Small, and it goes with the arrows. Deriving "Semi-finals" from distance to the last round is wrong the moment a prelim is in front of it; 1 fixture = Final, 2 = Semi-finals, 4 = Quarter-finals is right either way |
+| 1 | **UV to play through the bracket editor** | Built and render-checked, not yet used on a real draw. See §1 |
 
 ---
 
