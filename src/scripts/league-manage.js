@@ -20,13 +20,16 @@
 (() => {
 	const AREA = 'League';
 
-	const STATUS = { active: 'Active', inactive: 'Inactive', withdrawn: 'Withdrawn' };
 
 	const el = (id) => document.getElementById(id);
 	const els = {
 		name: el('l-name'), meta: el('l-meta'),
 		readyPanel: el('ready-panel'), readyLine: el('ready-line'), readyDetail: el('ready-detail'),
 		search: el('player-search'), results: el('search-results'),
+		entryPanel: el('entry-panel'), entryMode: el('entry-mode'),
+		entryModeHint: el('entry-mode-hint'), paidConfirms: el('paid-confirms'),
+		isListed: el('is-listed'), shareLink: el('share-link'),
+		transfer: el('transfer'),
 		table: el('player-table'), rows: el('player-rows'),
 		count: el('player-count'), empty: el('player-empty'),
 		teamNew: el('team-new'), teamAdd: el('team-add'),
@@ -49,6 +52,7 @@
 
 	// ─── State ───
 	let players = [];
+	let season = null;         // the season row, for the entry settings
 	let teams = [];
 	let officials = [];
 	let busy = false;       // one write at a time, so two clicks cannot race
@@ -134,6 +138,126 @@
 		els.readyDetail.textContent = detail.join(' ');
 		return true;
 	}
+
+	// ─── How players get in ───
+	// The same three choices a tournament has, saved through the one function
+	// that changes a season rather than written from here.
+	const ENTRY_HINT = {
+		ld_only: 'Nobody can put themselves down. Search below to add them.',
+		interested: 'Players find the league and put their name down. You confirm them from the first list.',
+		self_confirm: 'Players are in as soon as they ask. Right for an open league, or one paid for at the desk.'
+	};
+
+	async function loadSeason() {
+		const { data, error } = await supabaseClient
+			.from('tbl_league_seasons')
+			.select('id, entry_mode, paid_confirms, is_listed')
+			.eq('id', seasonId)
+			.maybeSingle();
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
+		season = data;
+		renderEntry();
+		return true;
+	}
+
+	function renderEntry() {
+		if (!season) return;
+		els.entryMode.value = season.entry_mode;
+		els.entryModeHint.textContent = ENTRY_HINT[season.entry_mode] || '';
+		els.paidConfirms.checked = !!season.paid_confirms;
+		els.isListed.checked = !!season.is_listed;
+		els.shareLink.value = location.origin + '/leagues/join/?s=' + encodeURIComponent(seasonId);
+	}
+
+	els.shareLink.addEventListener('focus', () => els.shareLink.select());
+
+	function saveEntry(args) {
+		write('Saving', () => supabaseClient.rpc('tdc_update_league_season',
+			Object.assign({ p_league_season_id: seasonId }, args)));
+	}
+	els.entryMode.addEventListener('change', () => saveEntry({ p_entry_mode: els.entryMode.value }));
+	els.paidConfirms.addEventListener('change', () => saveEntry({ p_paid_confirms: els.paidConfirms.checked }));
+	els.isListed.addEventListener('change', () => saveEntry({ p_is_listed: els.isListed.checked }));
+
+	// ─── The three lists ───
+	// Everything is one read; these are three views of it. The checkboxes are
+	// kept across a redraw, because a redraw happens after every write and
+	// losing a selection of fifteen people mid-job would be its own bug.
+	const picked = { interested: new Set(), active: new Set(), suspended: new Set() };
+
+	function transferRow(p, box) {
+		const row = node('div', 'transfer-row');
+
+		const tick = document.createElement('input');
+		tick.type = 'checkbox';
+		tick.checked = picked[box].has(p.entrant_id);
+		tick.dataset.box = box;
+		tick.dataset.entrant = p.entrant_id;
+		tick.id = 'pick-' + p.entrant_id;
+
+		const label = document.createElement('label');
+		label.htmlFor = tick.id;
+		label.append(node('span', null, p.display_name));
+
+		const sub = [];
+		const full = [p.first_name, p.last_name].filter(Boolean).join(' ');
+		if (full && full !== p.display_name) sub.push(full);
+		if (box !== 'interested' && !p.confirmed_at) sub.push('Has not confirmed');
+		if (p.team_name) sub.push(p.team_name);
+		if (p.paid_at) sub.push('Paid');
+		if (sub.length) label.append(node('span', 'sub', sub.join(' · ')));
+
+		row.append(tick, label);
+		return row;
+	}
+
+	function renderTransfer() {
+		for (const box of ['interested', 'active', 'suspended']) {
+			const rows = players.filter((p) => p.status === box);
+			const ids = new Set(rows.map((r) => r.entrant_id));
+			// Somebody who has moved on is no longer selectable here.
+			for (const id of [...picked[box]]) if (!ids.has(id)) picked[box].delete(id);
+
+			el('count-' + box).textContent = String(rows.length);
+			const list = el('list-' + box);
+            if (!rows.length) {
+				list.replaceChildren(node('div', 'transfer-empty',
+					box === 'interested' ? 'Nobody waiting.'
+						: box === 'active' ? 'Nobody in the league yet.'
+						: 'Nobody suspended.'));
+			} else {
+				list.replaceChildren(...rows.map((p) => transferRow(p, box)));
+			}
+		}
+	}
+
+	els.transfer.addEventListener('change', (e) => {
+		const tick = e.target.closest('input[data-entrant]');
+		if (!tick) return;
+		const set = picked[tick.dataset.box];
+		if (tick.checked) set.add(tick.dataset.entrant); else set.delete(tick.dataset.entrant);
+	});
+
+	els.transfer.addEventListener('click', (e) => {
+		const b = e.target.closest('button[data-move]');
+		if (!b) return;
+		const from = b.dataset.from;
+		const ids = [...picked[from]];
+		if (!ids.length) {
+			TDC.status(els.status, 'Tick whoever you mean first.', '');
+			return;
+		}
+		// Suspending is taking somebody's place away, which is worth a question.
+		if (b.dataset.move === 'suspended'
+			&& !confirm(`Suspend ${ids.length === 1 ? 'this player' : these(ids.length)}?\n\nThey come off their team and lose their place until you put them back.`)) return;
+
+		picked[from].clear();
+		write('Moving', () => supabaseClient.rpc('tdc_set_league_entrants_status', {
+			p_entrant_ids: ids, p_status: b.dataset.move
+		}), (n) => (n === 1 ? '1 player moved.' : n + ' players moved.'));
+	});
+
+	const these = (n) => 'these ' + n + ' players';
 
 	// ─── Teams ───
 	async function loadTeams() {
@@ -228,18 +352,6 @@
 		return true;
 	}
 
-	function statusCell(p) {
-		const select = document.createElement('select');
-		for (const [v, text] of Object.entries(STATUS)) {
-			select.append(new Option(text, v, false, v === p.status));
-		}
-		select.dataset.entrant = p.entrant_id;
-		select.dataset.action = 'status';
-		select.style.minWidth = '7rem';   // a bare select shrinks to one letter in a narrow table
-		select.setAttribute('aria-label', 'Status for ' + p.display_name);
-		return select;
-	}
-
 	function teamCell(p) {
 		const select = document.createElement('select');
 		select.append(new Option('No team', '', false, !p.team_id));
@@ -272,13 +384,10 @@
 		const full = [p.first_name, p.last_name].filter(Boolean).join(' ');
 		if (full && full !== p.display_name) who.append(node('span', 'sub', full));
 
-		const status = document.createElement('td');
-		status.append(statusCell(p));
-
 		// Confirmation is the player's own act. There is no control here by
 		// design: nothing on this page can confirm for somebody.
 		const confirmed = node('td', null, '');
-		if (p.status === 'withdrawn' || p.status === 'inactive') {
+		if (p.status === 'withdrawn' || p.status === 'inactive' || p.status === 'suspended') {
 			confirmed.append(node('span', 'sub', p.confirmed_at ? 'Confirmed ' + stamp(p.confirmed_at) : '—'));
 		} else if (p.confirmed_at) {
 			confirmed.append(node('span', 'badge verified', 'Confirmed'));
@@ -304,19 +413,24 @@
 		remove.dataset.name = p.display_name;
 		actions.append(remove);
 
-		tr.append(who, status, confirmed, team, captain, paid, actions);
+		tr.append(who, confirmed, team, captain, paid, actions);
 		return tr;
 	}
 
 	function renderPlayers() {
-		const active = players.filter((p) => p.status === 'active').length;
+		// The table below the lists is about teams and payment, so it holds
+		// the people who are actually in the league. The rest are in the
+		// lists above, where the only question is which list they belong to.
+		const inLeague = players.filter((p) => ['active', 'inactive', 'withdrawn'].includes(p.status));
 
-		els.table.hidden = !players.length;
-		els.empty.hidden = !!players.length;
+		els.table.hidden = !inLeague.length;
+		els.empty.hidden = !!inLeague.length;
 		els.count.hidden = !players.length;
-		els.count.textContent = active === 1 ? '1 active' : active + ' active';
+		const active = players.filter((p) => p.status === 'active').length;
+		els.count.textContent = active === 1 ? '1 in the league' : active + ' in the league';
 
-		els.rows.replaceChildren(...players.map(playerRow));
+		els.rows.replaceChildren(...inLeague.map(playerRow));
+		renderTransfer();
 	}
 
 	els.rows.addEventListener('change', (e) => {
@@ -536,6 +650,7 @@
 	// Teams first: the player rows build their team menus from them.
 	async function loadAll() {
 		const results = [];
+		results.push(await loadSeason());
 		results.push(await loadTeams());
 		results.push(await loadPlayers());
 		results.push(await loadReadiness());
@@ -546,12 +661,12 @@
 	// ─── Writing ───
 	// Every write goes through here: one at a time, everything read again
 	// afterwards, and nothing swallowed quietly.
-	async function write(what, fn) {
+	async function write(what, fn, done) {
 		if (busy) return false;
 		busy = true;
 		TDC.status(els.status, what + '…', '');
 
-		const { error } = await fn();
+		const { data, error } = await fn();
 		if (error) {
 			// The screen still shows what the person just clicked, which is now
 			// a lie. Re-reading puts it back to what the server actually holds,
@@ -564,7 +679,7 @@
 
 		const ok = await loadAll();
 		busy = false;
-		if (ok) TDC.status(els.status, '', '');
+		if (ok) TDC.status(els.status, done ? done(data) : '', done ? 'success' : '');
 
 		// Adding a player writes a notification inside the database. It goes
 		// out now rather than at the next page load. Not awaited: the person

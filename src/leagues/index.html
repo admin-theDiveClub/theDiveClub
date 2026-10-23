@@ -2,6 +2,8 @@
 layout: layout.html
 title: Leagues
 description: "Leagues you run or play in."
+extraStyles:
+  - /stylesheets/league.css
 extraScripts:
   - /scripts/leagues.js
 ---
@@ -21,6 +23,21 @@ extraScripts:
 	<a href="/leagues/new/" class="btn-primary btn-link" id="new-league">Create a League</a>
 
 	<div id="league-list"></div>
+
+	{% comment %}
+		Leagues looking for players. Only the ones whose director has listed
+		them and opened them to names appear — a league in the results that
+		nobody can join is a dead end with a name on it.
+	{% endcomment %}
+	<h2>Looking for players</h2>
+
+	<div class="field">
+		<label for="league-search">Find a league</label>
+		<input type="search" id="league-search" autocomplete="off" placeholder="Name, season or venue">
+		<div class="hint">Leave it empty to see them all.</div>
+	</div>
+
+	<div id="open-list"></div>
 
 	<div class="status" id="list-status"></div>
 </div>

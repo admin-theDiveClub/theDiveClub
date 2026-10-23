@@ -37,7 +37,10 @@
 	}
 
 	// ─── State ───
-	const rules = Object.assign({}, D.DEFAULT_RULES);
+	// A league starts from what a team night wants rather than from a social
+	// match's defaults: fixed frames, draws allowed, breaks off the sheet.
+	// Every one of them is still a control below.
+	const rules = Object.assign({}, D.LEAGUE_DEFAULT_RULES || D.DEFAULT_RULES);
 	const openGroups = new Set();
 	let leagueId = new URLSearchParams(location.search).get('l');   // set once the league exists
 

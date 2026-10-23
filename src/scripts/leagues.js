@@ -13,6 +13,8 @@
 	const AREA = 'Leagues';
 
 	const els = {
+		openList: document.getElementById('open-list'),
+		search: document.getElementById('league-search'),
 		list: document.getElementById('league-list'),
 		status: document.getElementById('list-status'),
 		intro: document.getElementById('intro')
@@ -67,9 +69,69 @@
 		return box;
 	}
 
+	// ─── Leagues taking names ───
+	// A separate list from the one above: these are leagues this person is
+	// not in. tdc_search_leagues returns only listed seasons that are open.
+	const STATUS_SAID = {
+		interested: 'Your name is down',
+		active: 'You are in this one',
+		withdrawn: 'You withdrew',
+		inactive: 'Inactive',
+		suspended: 'Suspended'
+	};
+
+	function openCard(l) {
+		const box = document.createElement('a');
+		box.className = 'match-card';
+		box.href = '/leagues/join/?s=' + encodeURIComponent(l.league_season_id);
+
+		const top = el('div', 'match-top');
+		top.append(el('span', 'match-opponent', l.league_name));
+		box.append(top);
+
+		const bits = [l.season_name];
+		if (l.starts_on) bits.push('From ' + day(l.starts_on));
+		if (l.venue_name) bits.push(l.venue_name);
+		bits.push(l.players === 1 ? '1 player' : l.players + ' players');
+		box.append(el('div', 'match-meta', bits.filter(Boolean).join(' · ')));
+
+		const tags = el('div', 'match-tags');
+		if (l.my_status) tags.append(el('span', 'badge pending', STATUS_SAID[l.my_status] || l.my_status));
+		else if (l.entry_mode === 'self_confirm') tags.append(el('span', 'badge needs-you', 'Join straight away'));
+		else tags.append(el('span', 'badge', 'Taking names'));
+		box.append(tags);
+		return box;
+	}
+
+	let searchRun = 0;
+	async function searchOpen(term) {
+		const run = ++searchRun;
+		const { data, error } = await supabaseClient.rpc('tdc_search_leagues', {
+			p_query: term || null, p_limit: 25
+		});
+		if (run !== searchRun) return;   // a later keystroke has overtaken this one
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+
+		if (!data || !data.length) {
+			els.openList.replaceChildren(el('p', 'muted',
+				term ? 'No league by that name is taking players.' : 'No league is taking players at the moment.'));
+			return;
+		}
+		els.openList.replaceChildren(...data.map(openCard));
+	}
+
+	let typingTimer = null;
+	els.search.addEventListener('input', () => {
+		clearTimeout(typingTimer);
+		const term = els.search.value;
+		typingTimer = setTimeout(() => searchOpen(term), 250);
+	});
+
 	(async () => {
 		const session = await TDC.requireSession(AREA);
 		if (!session) return;
+
+		await searchOpen('');
 
 		const { data, error } = await supabaseClient.rpc('tdc_my_leagues', { p_limit: 50 });
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }

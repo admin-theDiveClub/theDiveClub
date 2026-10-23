@@ -2,6 +2,8 @@
 layout: layout.html
 title: Run a League
 description: "Add players, make teams and see who has confirmed."
+extraStyles:
+  - /stylesheets/league.css
 extraScripts:
   - /scripts/league-manage.js
 ---
@@ -31,6 +33,42 @@ extraScripts:
 		<p class="muted" id="ready-detail"></p>
 	</div>
 
+	{% comment %}
+		How people get in. The same three choices a tournament has, because it
+		is the same question and a director should not have to learn it twice.
+	{% endcomment %}
+	<div class="panel" id="entry-panel">
+		<h2>How players get in</h2>
+
+		<div class="field">
+			<label for="entry-mode">Entries</label>
+			<select id="entry-mode">
+				<option value="ld_only">I add everybody myself</option>
+				<option value="interested">Players can put their name down, and I confirm them</option>
+				<option value="self_confirm">Players can join straight away</option>
+			</select>
+			<div class="hint" id="entry-mode-hint"></div>
+		</div>
+
+		<div class="field">
+			<label for="paid-confirms">Paid also confirms</label>
+			<input type="checkbox" id="paid-confirms">
+			<div class="hint">Ticking somebody as paid puts them in the league. Leave this off if you confirm on something other than payment.</div>
+		</div>
+
+		<div class="field">
+			<label for="is-listed">Show in the league search</label>
+			<input type="checkbox" id="is-listed">
+			<div class="hint">Off keeps it private. The link below still works either way, so you can share it with the people you want.</div>
+		</div>
+
+		<div class="field">
+			<label for="share-link">The link to share</label>
+			<input type="text" id="share-link" class="share-link" readonly>
+			<div class="hint">Anyone signed in can open this and put their name down.</div>
+		</div>
+	</div>
+
 	<div class="field" id="search-field">
 		<label for="player-search">Add a player</label>
 		<input type="search" id="player-search" autocomplete="off" placeholder="Search by name">
@@ -39,14 +77,66 @@ extraScripts:
 
 	<div id="search-results"></div>
 
+	{% comment %}
+		Three lists and the arrows between them. Tick whoever you mean and move
+		the lot in one go — confirming fifteen people one at a time is fifteen
+		chances for half of it to land.
+
+		Suspended is its own list rather than a status buried in a menu,
+		because taking somebody's place away is a deliberate act and should
+		look like one.
+	{% endcomment %}
 	<h2>Players <span class="badge" id="player-count" hidden></span></h2>
+
+	<div class="transfer" id="transfer">
+		<div class="transfer-box">
+			<div class="transfer-head">
+				<h3>Name down</h3>
+				<span class="sub" id="count-interested">0</span>
+			</div>
+			<div class="transfer-list" id="list-interested"></div>
+			<div class="transfer-actions">
+				<button type="button" class="btn btn-primary btn-sm" data-move="active" data-from="interested">→ Into the league</button>
+				<button type="button" class="btn btn-danger btn-sm" data-move="suspended" data-from="interested">→ Suspend</button>
+			</div>
+		</div>
+
+		<div class="transfer-box">
+			<div class="transfer-head">
+				<h3>In the league</h3>
+				<span class="sub" id="count-active">0</span>
+			</div>
+			<div class="transfer-list" id="list-active"></div>
+			<div class="transfer-actions">
+				<button type="button" class="btn btn-secondary btn-sm" data-move="interested" data-from="active">← Back to the list</button>
+				<button type="button" class="btn btn-danger btn-sm" data-move="suspended" data-from="active">→ Suspend</button>
+			</div>
+		</div>
+
+		<div class="transfer-box">
+			<div class="transfer-head">
+				<h3>Suspended</h3>
+				<span class="sub" id="count-suspended">0</span>
+			</div>
+			<div class="transfer-list" id="list-suspended"></div>
+			<div class="transfer-actions">
+				<button type="button" class="btn btn-secondary btn-sm" data-move="active" data-from="suspended">← Into the league</button>
+			</div>
+		</div>
+	</div>
+
+	{% comment %}
+		Everything about one player that is not which list they are on: their
+		team, whether they captain it, whether they have paid, and the way out
+		of the league altogether.
+	{% endcomment %}
+	<h2>Teams and payment</h2>
 
 	<div class="table-scroll">
 		<table class="tdc-table" id="player-table" hidden>
 			<thead>
 				<tr>
 					<th>Player</th>
-					<th>Status</th>
 					<th>Confirmed</th>
 					<th>Team</th>
 					<th>Captain</th>
@@ -58,7 +148,7 @@ extraScripts:
 		</table>
 	</div>
 
-	<div class="empty" id="player-empty" hidden>Nobody has been added yet. Search above to add the first player.</div>
+	<div class="empty" id="player-empty" hidden>Nobody is in the league yet. Confirm somebody from the list above, or search to add them.</div>
 
 	{% comment %}
 		Only the director makes a team. Captains control one once it exists —

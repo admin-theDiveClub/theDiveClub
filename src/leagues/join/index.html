@@ -1,0 +1,41 @@
+---
+layout: layout.html
+title: Join a League
+description: "What this league is, and how to put your name down."
+extraStyles:
+  - /stylesheets/league.css
+extraScripts:
+  - /scripts/league-join.js
+---
+{% comment %}
+	The page a league director shares. A player opens it, sees what the league
+	is, and puts their name down.
+
+	The link works for any signed-in player whether or not the season is
+	listed in the search, which is what makes it shareable — the same way a
+	tournament poster link is. Showing interest needs an account, because a
+	league player has to be able to confirm their own place and a walk-in
+	cannot.
+
+	Reached as /leagues/join/?s=<league season id>.
+{% endcomment %}
+
+<div class="tdc-card">
+	<h1 id="l-name">League</h1>
+	<p class="muted" id="l-meta"></p>
+
+	<div class="panel" id="where-panel">
+		<h2 id="where-line">Loading…</h2>
+		<p class="muted" id="where-detail"></p>
+		<div class="btn-row">
+			<button type="button" class="btn btn-primary btn-sm" id="interest-btn" hidden>Put my name down</button>
+			<a class="btn btn-secondary btn-sm" id="season-link" href="#" hidden>Open the league</a>
+		</div>
+	</div>
+
+	<div class="status" id="page-status"></div>
+
+	<div class="link-row">
+		<a href="/leagues/">All leagues</a>
+	</div>
+</div>

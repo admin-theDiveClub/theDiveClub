@@ -402,3 +402,21 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* the comparison is wrapped in `coalesce(..., false)`. The rule is the general one, not the fix: **a permission helper returns true or false and never null, because every caller negates it.**
 *Found by:* writing a test that asserted a stranger was refused. Reading the function had not caught it in two passes.
 
+## 2026-10-23 — Showing interest is confirming, but being confirmed is not
+
+*Decided by:* Claude, from UV's 23 Oct brief
+*Why:* two things are now called confirming. `confirmed_at` is the player saying they are playing, which UV made mandatory on 22 Oct. The director confirming somebody off the interested list is the league accepting them. Making a player who went looking for the league, found it and put their own name down then *also* press a confirm button would be asking the same question twice.
+*So:* `tdc_league_show_interest` sets `confirmed_at`. A player the director adds by hand still confirms for themselves, exactly as before, and `tdc_confirm_league_entry` now refuses somebody who is only interested — there is nothing for them to confirm until they are let in.
+
+## 2026-10-23 — Suspended is a list, not a setting
+
+*Decided by:* UV
+*Why:* taking somebody's place in a league away is a deliberate act with consequences — they come off their team and lose their captaincy. Buried in a status dropdown beside "inactive" it would look like an administrative tidy-up.
+*So:* three lists on the director's screen with arrows between them, and suspending is its own column. The function clears team and captaincy when somebody moves to interested or suspended, so the lists cannot disagree with the teams.
+
+## 2026-10-23 — The league pages get their own stylesheet
+
+*Decided by:* Claude
+*Why:* the three transfer lists need layout that does not exist, and `forms.css` is the UI chat's shared component layer — adding one page's furniture to it makes it everybody's problem.
+*So:* `src/stylesheets/league.css`, loaded only by the league pages that ask for it, every value a token. If the transfer boxes prove worth having elsewhere they move to `forms.css` rather than this file growing.
+

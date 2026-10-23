@@ -29,13 +29,16 @@ const TDCMatchDef = (() => {
 		golden_break: 'GB',
 		default: 'w/o'
 	};
+	// Each one says what actually happens at the table. "Winner breaks" and
+	// "Loser breaks" read as a result rather than a rule, and "Lag winner
+	// breaks all" was three nouns in a row.
 	const BREAK_DETERMINATION = {
-		alternate: 'Alternate breaks',
-		winner_breaks: 'Winner breaks',
-		loser_breaks: 'Loser breaks',
-		first_breaks: 'Lag winner breaks all',
-		by_schedule: 'Set by the scoresheet',
-		lag_each_frame: 'Lag every frame'
+		alternate: 'Take turns, frame by frame',
+		winner_breaks: 'Whoever won the last frame',
+		loser_breaks: 'Whoever lost the last frame',
+		first_breaks: 'Whoever broke first breaks them all',
+		by_schedule: 'Set by the scoresheet, frame by frame',
+		lag_each_frame: 'Lag before every frame'
 	};
 	const WIN_CONDITION = {
 		race_to: 'Race to', best_of: 'Best of', fixed_frames: 'Fixed frames', timed: 'Timed',
@@ -195,6 +198,32 @@ const TDCMatchDef = (() => {
 		strict_frame_order: false
 	};
 
+	// What a team league night wants, and why each one differs from the
+	// default above. Settled in docs/design/leagues.md §2 and §3:
+	//
+	//   fixed_frames + draws_allowed — a slot neither captain fills vanishes,
+	//     which shrinks the card, so a race to a number can become unreachable
+	//     and a level night has to be allowed to stay level.
+	//   by_schedule — team play lags every frame and the sheet says who
+	//     breaks. winner_breaks and loser_breaks cannot be derived here at
+	//     all, because frame 4 routinely finishes before frame 3.
+	//   track_breaks — on, because break_determination is only shown when it
+	//     is, and a league scoresheet records who broke.
+	//   coordinator_approval — a team card is signed by both captains and
+	//     then published by the league director. The dispute window means
+	//     nothing on it: silence does not settle a team card.
+	//
+	// Starting points on the create-a-league form, not rules: every one of
+	// them is still a control the league director can change.
+	const LEAGUE_DEFAULT_RULES = Object.assign({}, DEFAULT_RULES, {
+		win_condition_type: 'fixed_frames',
+		win_condition_target: 5,
+		draws_allowed: true,
+		track_breaks: true,
+		break_determination: 'by_schedule',
+		approval_mode: 'coordinator_approval'
+	});
+
 	// The few worth asking about before a match starts. Everything else is a
 	// refinement, and a long form is how someone is lost on their first match.
 	const MAIN_KEYS = ['win_condition_type', 'win_condition_target', 'track_breaks',
@@ -289,7 +318,7 @@ const TDCMatchDef = (() => {
 	return {
 		DISCIPLINE, BREAK_OUTCOME, RESULT_EVENT, RESULT_SHORT, BREAK_DETERMINATION,
 		WIN_CONDITION, TIME_EXPIRY, TIEBREAK, SCORE_ENTRY, APPROVAL, SIDE_TAG, SIDES,
-		GROUPS, LEAGUE_GROUPS, SETTINGS, DEFAULT_RULES, MAIN_KEYS,
+		GROUPS, LEAGUE_GROUPS, SETTINGS, DEFAULT_RULES, LEAGUE_DEFAULT_RULES, MAIN_KEYS,
 		control, liveRuleKeys, readValue,
 		setSideNames(fn) { sideNames = fn; }
 	};

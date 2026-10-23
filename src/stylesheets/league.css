@@ -1,0 +1,116 @@
+/* The league pages.
+ *
+ * Deliberately NOT in forms.css: the transfer boxes below are one page's
+ * furniture rather than a shared component, and forms.css is the UI chat's
+ * component layer. If any of this turns out to be worth having everywhere, it
+ * should move there rather than grow here.
+ *
+ * Every value is a token. Loaded only by the league pages that ask for it.
+ */
+
+/* ── The three lists a director moves people between ──
+ *
+ * One column on a phone, three side by side once there is room. A grid with
+ * explicit tracks rather than a flex line, because a list that collapses to
+ * nothing beside its neighbour is the bug this project has already had twice.
+ */
+.transfer {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: var(--space-4);
+	margin-bottom: var(--space-5);
+}
+
+@media (min-width: 900px) {
+	.transfer { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.transfer-box {
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-md);
+	padding: var(--space-3);
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.transfer-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--space-2);
+	margin-bottom: var(--space-2);
+}
+
+.transfer-head h3 {
+	margin: 0;
+	font-size: 1rem;
+}
+
+.transfer-head .sub {
+	font-size: 0.8rem;
+	color: var(--text-muted);
+}
+
+/* Scrollable, so twenty names do not push the arrows off the screen. Capped
+ * in rem rather than vh: on a phone in landscape vh is almost nothing. */
+.transfer-list {
+	overflow-y: auto;
+	max-height: 18rem;
+	border-top: 1px solid var(--border-color);
+}
+
+.transfer-row {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	padding: var(--space-2) 0;
+	border-bottom: 1px solid var(--border-color);
+}
+
+.transfer-row:last-child { border-bottom: none; }
+
+.transfer-row label {
+	flex: 1 1 auto;
+	min-width: 0;
+	display: block;
+	cursor: pointer;
+}
+
+.transfer-row .sub {
+	display: block;
+	font-size: 0.78rem;
+	color: var(--text-muted);
+}
+
+/* The checkbox keeps its own width whatever the name does. */
+.transfer-row input[type="checkbox"] {
+	flex: 0 0 auto;
+	margin: 0;
+}
+
+.transfer-empty {
+	padding: var(--space-4) 0;
+	color: var(--text-muted);
+	font-size: 0.85rem;
+	text-align: center;
+}
+
+/* The arrows. Under each list, where they are reachable one-handed and read
+ * the same whether the boxes are stacked or side by side. */
+.transfer-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+	margin-top: var(--space-3);
+}
+
+.transfer-actions .btn {
+	width: auto;
+	flex: 1 1 auto;
+	margin-bottom: 0;
+}
+
+/* The link a director shares. Wide enough to show a whole URL, and selected
+ * on focus by the script so one tap copies it. */
+.share-link { font-family: inherit; }
