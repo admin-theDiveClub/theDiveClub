@@ -72,5 +72,6 @@ Call the `tdc_` functions as the user who would call them from the website, neve
 | `011_match_frames.test.sql` | Recording, correcting and removing frames; the score counted from frames; break sides derived, corrected by hand and carried through; the `card_version` guard (`TDC01`); abandoned matches |
 | `012_match_card.test.sql` | A singles card: submit, answer, dispute, withdraw, reopen; a changed card retiring a submission; silence settling it; approval `none` settling on submission and staying settled; the lock on an agreed card, including a direct table write |
 | `013_match_access.test.sql` | Who may edit: either player, outsiders, venue staff, a tournament's director / referee / scorer under each `score_entry_mode`, the rank guard; no direct writes to the match tables; only players answer |
+| `014_match_approval.test.sql` | A card in a tournament: when each approval mode publishes, a published card reading as settled with `can_object` / `object_until`, objections (recorded, never unlocking, once each, only inside the window), approve and send back (TD only, reason required, send back really unlocks, approve → send back → approve again), the TD correcting a locked card |
 
 `tests.rules(overrides)` in the helpers is `DEFAULT_RULES` from `match-settings.js` with overrides laid on top. Keep it in step with that file.

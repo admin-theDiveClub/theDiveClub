@@ -6,7 +6,7 @@ Updated at every milestone, in the same breath as giving UV a commit subject. Ne
 
 Last updated: **23 Oct 2026** (late: the local test harness)
 
-**Database is current through `20261023130000`**, verified against `supabase_migrations.schema_migrations` on 23 Oct. **All league migrations are pushed; nothing is waiting.** That covers all six league steps plus the three corrections of 23 Oct: `110000` paid-confirms and the readiness gate, `120000` confirmation is not a gate, `130000` the frame count.
+**Database is current through `20261023185340`** (UV pushed the frame-removal fix, 23 Oct). **Waiting to push: `20261023185945`** (A7). **All league migrations are pushed.** That covers all six league steps plus the three corrections of 23 Oct: `110000` paid-confirms and the readiness gate, `120000` confirmation is not a gate, `130000` the frame count.
 
 ---
 
@@ -41,9 +41,8 @@ Found in a read-only review of every migration, the front end, the edge function
 | A3 | `tdc_set_match_time` | Same gap — players can move a competition match, which also moves the lineup cutoff | Same guard as A2 |
 | A4 | `tdc_record_frame`, team matches | Players named in a frame are not checked against the teams' rosters, and being in a frame grants edit rights | Check each player is an active entrant of that side |
 | A5 | `private.tdc_merge_players` | Misses `tbl_league_match_squad`, `tbl_league_match_order` and `tbl_notification_prefs`; a merge empties lineups | Add them; run the migration's foreign-key query |
-| A6 | `tdc_remove_frame` | Found by the tests, 23 Oct. Removing a frame that is not the last could fail with a duplicate-key error when a later frame was corrected. Not reachable from the site (Undo only takes the last frame) | **Written and tested: `20261023185340`, waiting for UV to push.** Frames now move down one at a time |
-| A7 | `private.tdc_card_state` | Found by the tests, 23 Oct. **A published tournament card reports `awaiting` again** and has lost `can_object` / `object_until`, so the other player is offered "Looks right" (refused) and never the objection button. Fixed on 20 Oct by `20261020140000`; undone on 21 Oct by `20261021160000`, which changed more than its one clause | Patch the current text to restore the published branch and the two fields |
-| A8 | Reopening and sending back | UV, 23 Oct (`docs/DECISIONS.md`): **a settled card is final for players**; only a TD/LD can open it again. Today either player can reopen a settled social card; a player's reopen of a published tournament card half-works (says in progress, stays locked); and a TD's send back of a card published on submission leaves it locked | `tdc_reopen_card`: withdraw only. `tdc_reject_card`: really unpublish and unlock. Remove the Reopen button; update test plan 7.5 / 11.3 |
+| A7 | `private.tdc_card_state` | Found by the tests, 23 Oct. **A published tournament card reports `awaiting` again** and has lost `can_object` / `object_until`, so the other player is offered "Looks right" (refused) and never the objection button. Fixed on 20 Oct by `20261020140000`; undone on 21 Oct by `20261021160000`, which changed more than its one clause | **Written and tested: `20261023185945`, waiting for UV to push.** Also makes a send-back unlock (A8's first half), which is what lets the published branch go back without a sent-back card reading as settled |
+| A8 | Reopening | UV, 23 Oct (`docs/DECISIONS.md`): **a settled card is final for players**; only a TD/LD can open it again. Today either player can reopen a settled social card, and a player's reopen of a published tournament card half-works (says in progress, stays locked). *Send back now unlocks — done with A7* | `tdc_reopen_card`: withdraw only. Remove the Reopen button; update test plan 7.5 / 11.3 and `012` |
 
 ### Before more real players join
 
