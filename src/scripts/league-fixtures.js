@@ -51,6 +51,7 @@
 	let fixtures = [];
 	let teams = [];
 	let iRunIt = false;
+	let myTeamId = null;        // so a captain can find their own night
 	let moving = null;      // the one fixture whose date is being changed
 	let busy = false;       // one write at a time, so two clicks cannot race
 
@@ -150,31 +151,46 @@
 		if (!r) { els.generateState.textContent = ''; return true; }
 
 		const noCap = r.teams_no_captain || [];
+
+		// Confirmation is reported, never required — the database stopped
+		// refusing on it on 23 Oct and this button has no business doing it
+		// either. The only thing that actually stops a schedule is not having
+		// two teams with players in them.
+		const waiting = r.waiting
+			? ' Still to confirm: ' + (r.waiting_names || []).join(', ') + '.'
+			: '';
 		const capNote = noCap.length
 			? ' No captain for ' + noCap.join(', ') + ', so you will be setting their lineups yourself.'
 			: '';
 
-		if (r.ready) {
-			els.generateState.textContent = 'Everybody has confirmed. '
-				+ (teams.length === 1 ? '1 team' : teams.length + ' teams')
-				+ ' to schedule.';
-			els.generateBtn.disabled = teams.length < 2;
-			if (teams.length < 2) {
-				els.generateState.textContent += ' A league needs at least two.';
-			}
-			els.generateState.textContent += capNote;
-		} else if (!r.active_players) {
+		if (!r.active_players) {
 			els.generateState.textContent = 'Nobody has been added to this league yet.';
 			els.generateBtn.disabled = true;
-		} else {
-			els.generateState.textContent = 'Waiting on ' + (r.waiting_names || []).join(', ')
-				+ ' to confirm. The schedule can be made once they have.';
+		} else if (teams.length < 2) {
+			els.generateState.textContent = (teams.length === 1 ? '1 team' : teams.length + ' teams')
+				+ ' so far. A league needs at least two.' + waiting;
 			els.generateBtn.disabled = true;
+		} else {
+			els.generateState.textContent = r.active_players + ' players across '
+				+ teams.length + ' teams.' + waiting + capNote;
+			els.generateBtn.disabled = false;
 		}
+
 		return true;
 	}
 
 	// ─── Teams, for the add-a-fixture menus ───
+	// Which team, if any, this person plays for in this season. Used only to
+	// mark their own fixtures and label the card button: the card page does
+	// its own permission checks.
+	async function loadMyTeam() {
+		const { data, error } = await supabaseClient.rpc('tdc_my_leagues', { p_limit: 200 });
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
+		const mine = (data || []).find((l) => l.league_season_id === seasonId);
+		myTeamId = mine ? mine.my_team_id : null;
+		return true;
+	}
+
 	async function loadTeams() {
 		const { data, error } = await supabaseClient.rpc('tdc_league_season_teams', {
 			p_league_season_id: seasonId
@@ -236,8 +252,22 @@
 				}
 			}
 			if (f.notes) sub.push(f.notes);
+			if (myTeamId && (f.home_team_id === myTeamId || f.away_team_id === myTeamId)) sub.unshift('Your match');
 		}
 		if (sub.length) main.append(node('span', 'sub', sub.join(' · ')));
+
+		// The card is for whoever is playing, not only for the director: a
+		// captain sets their lineup on it. It opens for anybody signed in and
+		// decides for itself what they may do once they are there.
+		if (f.match_id) {
+			const mine = myTeamId && (f.home_team_id === myTeamId || f.away_team_id === myTeamId);
+			const open = node('a', 'btn btn-sm ' + (mine ? 'btn-primary' : 'btn-secondary'),
+				mine ? 'Open my card' : 'Open the card');
+			open.href = '/leagues/card/?m=' + encodeURIComponent(f.match_id);
+			const openRow = node('div', 'btn-row');
+			openRow.append(open);
+			main.append(openRow);
+		}
 
 		if (iRunIt) {
 			const actions = node('div', 'btn-row');
@@ -250,11 +280,6 @@
 				actions.append(start);
 			}
 			if (f.match_id) {
-				// The night itself: lineups, the grid and the two signatures.
-				const open = node('a', 'btn btn-primary btn-sm', 'Open the card');
-				open.href = '/leagues/card/?m=' + encodeURIComponent(f.match_id);
-				actions.append(open);
-
 				const detach = node('button', 'btn btn-secondary btn-sm', 'Take match off');
 				detach.type = 'button';
 				detach.dataset.action = 'detach';
@@ -457,6 +482,7 @@
 	// how many there are.
 	async function loadAll() {
 		const results = [];
+		results.push(await loadMyTeam());
 		results.push(await loadTeams());
 		results.push(await loadFixtures());
 		results.push(await loadReadiness());
