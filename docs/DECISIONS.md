@@ -545,3 +545,16 @@ These predate the log. They are recorded here because every one of them is a dec
 *Why:* the limit above adds reserves to the team size, which means nothing at 0, and the session rework would otherwise need a second shape of lineup for a league with no sessions. No league UV knows plays without a fixed team size.
 *So:* a league's merged rules must have a team size from 2 to 10 (`private.tdc_check_league_rules`, on create and on every change of a league's or season's rules). **0 stays valid in a ruleset**, for singles matches and tournaments, where it is what `DEFAULT_RULES` carries and the Team play group is never shown. The team size control on the league pages starts at 2.
 *Rejected:* keeping 0 for leagues, with the LD setting a plain maximum instead of reserves.
+
+## 2026-10-24 — An empty seat stays open until the card is signed
+
+*Decided by:* UV (option b)
+*Why:* the 22 Oct build wrote a walkover the moment both lineups locked, so a fifth player stuck in traffic could not play any of their frames. The design had always said an unfilled slot's walkover is "materialised at submission, not before"; the build did not follow it.
+*So:* migration `20261023221049`. A position filled on one side only gives a pending frame with one player in it. A reserve or a latecomer can be put into it. When a captain signs, any seat still empty becomes a walkover to the side that turned up, **before** the signature is recorded, so the version signed is the card with its walkovers in it. A pairing empty on both sides still has no frame.
+*Rejected:* walkovers at lock (what was built).
+
+## 2026-10-24 — The three reserve rules, as enforced
+
+*Decided by:* UV, confirming Claude's reading of design §3
+*So:* a reserve goes into one frame, which is one position in one session, through `tdc_swap_frame_player`. (1) Nobody plays two frames in a session. (2) A player in tonight's order keeps their position: only someone **not** in the order can come in, and a position's own player can be put back, which undoes a reserve. (3) A reserve never meets the same opponent twice in the night. Each refusal names the rule. A regular meeting someone twice because the LD's rotation repeats a pairing is still allowed (23 Oct).
+*Example:* Team 0 is Ann, Ben, Cal, Dee, Eve; Gus is the reserve. Gus covers Ben in session 3, so he can't also cover Dee in session 3. Ann can't move to position 4 to cover Dee. If Gus met their A3 in session 2, he can't take a frame against A3 in session 4.

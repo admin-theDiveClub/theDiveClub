@@ -6,16 +6,26 @@
 //
 // Reads, one call each and all of them again after every write:
 //   tdc_lineup_state   — my side, whether I run the league, the locks, the cutoff
-//   tdc_match_lineup   — every slot of both sides, the opponent's names withheld
-//                        until both have locked. The blind exchange is enforced
-//                        there, not here, so this page cannot leak it.
+//   tdc_match_lineup   — every position of both sides, the opponent's names
+//                        withheld until both have locked. The blind exchange is
+//                        enforced there, not here, so this page cannot leak it.
 //   tdc_match_squad    — who is available tonight
-//   tdc_match_card     — every frame with its two players
+//   tdc_match_card     — every frame with its two players, its session and
+//                        the two positions it seats
 //   tdc_card_state     — the two signatures and whether each still matches
 //   tdc_card_changes_since_signing — what moved since you signed
 //
+// A night is sessions (20261023221049). A captain names one player per
+// position — five in a five-man league — and the database builds the night
+// from the two orders and the LD's rotation table when the second side locks.
+// A seat left empty stays open until a captain signs: a reserve or a
+// latecomer can go into it, and whatever is still empty becomes a walkover at
+// signing. Reserves go into one frame at a time; the three rules (one frame a
+// session, regulars keep their position, no opponent twice) are the
+// database's, and its refusals say which rule.
+//
 // Writes: tdc_set_match_squad, tdc_set_lineup_slot, tdc_lock_lineup,
-// tdc_record_frame, tdc_submit_card, tdc_answer_card.
+// tdc_swap_frame_player, tdc_record_frame, tdc_submit_card, tdc_answer_card.
 //
 // Needs: tdc.js, match-settings.js.
 
@@ -52,7 +62,7 @@
 	let lineupState = null;
 	let lineup = [];
 	let squad = [];
-	let rosters = new Map();   // team id -> its confirmed players, for the squad picker
+	let rosters = new Map();   // team id -> its players, for the squad and reserve pickers
 	let card = [];
 	let cardState = null;
 	let changes = [];
@@ -245,7 +255,7 @@
 
 		els.squadHint.textContent = roster.length
 			? 'Tick everybody who is here. You can add somebody later — a reserve changes a frame rather than the order.'
-			: 'Nobody on this team has confirmed their place in the league yet.';
+			: 'Nobody is on this team yet.';
 
 		els.squadList.replaceChildren(...roster.map((r) => {
 			const row = node('div', 'list-row');
@@ -253,17 +263,17 @@
 			main.append(node('span', null, r.display_name));
 			const sub = [];
 			if (r.is_captain) sub.push('Captain');
-			if (!r.confirmed) sub.push('Has not confirmed their place');
-			if (r.status !== 'active') sub.push(r.status === 'withdrawn' ? 'Withdrawn' : 'Inactive');
+			if (r.status !== 'active') sub.push(r.status === 'withdrawn' ? 'Withdrawn' : 'Away');
 			if (sub.length) main.append(node('span', 'sub', sub.join(' · ')));
 
 			const actions = node('div', 'list-row-actions');
 			const box = document.createElement('input');
 			box.type = 'checkbox';
 			box.checked = inSquad.has(r.player_id);
-			// The database refuses an unconfirmed player anyway; saying so
-			// here spares a pointless tap and explains why.
-			box.disabled = !r.confirmed || r.status !== 'active';
+			// The database refuses anybody not active (away or withdrawn);
+			// saying so here spares a pointless tap. Confirmation is not asked
+			// for, and has not been since 23 Oct.
+			box.disabled = r.status !== 'active';
 			box.dataset.action = 'squad';
 			box.dataset.player = r.player_id;
 			box.setAttribute('aria-label', 'Here tonight: ' + r.display_name);
@@ -273,25 +283,25 @@
 			return row;
 		}));
 
-		// The order: one row per slot, choosing from the squad.
+		// The order: one row per position, choosing from the squad.
 		const available = squad.filter((s) => s.side === working);
 		const mySlots = lineup.filter((l) => l.side === working);
 		els.orderHint.textContent = available.length
-			? 'Who plays which frame. Leave a slot empty to concede it.'
+			? 'Your players for the first session, in order. Each keeps their position all night; the rest of the night follows from the rotation. A position left empty can still be filled by a reserve or a latecomer until the card is signed.'
 			: 'Tick somebody above first — the order is chosen from who is here.';
 
 		els.orderList.replaceChildren(...mySlots.map((slot) => {
 			const row = node('div', 'list-row');
 			const main = node('div', 'list-row-main');
-			main.append(node('span', null, 'Frame ' + slot.lineup_slot));
+			main.append(node('span', null, 'Position ' + slot.lineup_slot));
 			row.append(main);
 
 			const actions = node('div', 'list-row-actions');
 			const pick = document.createElement('select');
 			pick.dataset.action = 'slot';
 			pick.dataset.slot = slot.lineup_slot;
-			pick.setAttribute('aria-label', 'Who plays frame ' + slot.lineup_slot);
-			pick.append(new Option('Nobody — concede', '', false, !slot.player_id));
+			pick.setAttribute('aria-label', 'Who plays position ' + slot.lineup_slot);
+			pick.append(new Option('Nobody yet', '', false, !slot.player_id));
 			for (const s of available) {
 				pick.append(new Option(s.display_name, s.player_id, false, s.player_id === slot.player_id));
 			}
@@ -317,8 +327,8 @@
 
 		els.otherHead.textContent = teamName(other);
 		els.otherDetail.textContent = locked[other]
-			? 'Locked. Their order is sealed until you lock yours — ' + (hidden + named) + ' of ' + theirs.length + ' frames filled.'
-			: 'Still choosing. ' + (hidden + named) + ' of ' + theirs.length + ' frames filled so far.';
+			? 'Locked. Their order is sealed until you lock yours — ' + (hidden + named) + ' of ' + theirs.length + ' positions filled.'
+			: 'Still choosing. ' + (hidden + named) + ' of ' + theirs.length + ' positions filled so far.';
 	}
 
 	// ─── The grid ───
@@ -339,34 +349,58 @@
 			? (card.find((f) => f.status === 'pending') || {}).frame_no
 			: null;
 
-		els.gridHint.textContent = strict
+		const empty = card.filter((f) => f.status === 'pending' && (!f.home_player_id || !f.away_player_id)).length;
+		els.gridHint.textContent = (strict
 			? 'Frames must be played in order, so only frame ' + (nextOpen || '—') + ' can be entered.'
-			: 'Record each frame as it finishes, in any order.';
+			: 'Record each frame as it finishes, in any order.')
+			+ (empty
+				? ' ' + empty + (empty === 1 ? ' frame has' : ' frames have') + ' an empty seat: put a reserve or a latecomer in, or it is a walkover when the card is signed.'
+				: '');
 
-		els.frames.replaceChildren(...card.map((f) => frameRow(f, strict, nextOpen)));
+		// One heading per session. Frames are numbered session by session,
+		// so the card is already in that order.
+		const rows = [];
+		let session = null;
+		for (const f of card) {
+			if (f.session && f.session !== session && card.some((g) => g.session > 1)) {
+				session = f.session;
+				rows.push(node('h3', null, 'Session ' + session));
+			}
+			rows.push(frameRow(f, strict, nextOpen));
+		}
+		els.frames.replaceChildren(...rows);
 	}
 
 	function frameRow(f, strict, nextOpen) {
 		const row = node('div', 'list-row');
 		const main = node('div', 'list-row-main');
 
-		const names = (f.home_player || '—') + '  v  ' + (f.away_player || '—');
-		main.append(node('span', null, 'Frame ' + f.frame_no + ': ' + names));
+		const seat = (name) => name || 'empty seat';
+		main.append(node('span', null, 'Frame ' + f.frame_no + ': ' + seat(f.home_player) + '  v  ' + seat(f.away_player)));
 
 		const sub = [];
-		if (f.lineup_slot && f.lineup_slot !== f.frame_no) sub.push('Slot ' + f.lineup_slot);
+		if (f.home_position && f.away_position) sub.push('H' + f.home_position + ' v A' + f.away_position);
+		const oneSeat = !f.home_player_id || !f.away_player_id;
 		if (f.result_event === 'default') sub.push('Walkover');
 		else if (f.status === 'complete') sub.push('Won by ' + (f.winner_side === 'home' ? match.home_name : match.away_name));
+		else if (f.status === 'pending' && oneSeat) sub.push('Waiting for a player');
 		else if (f.status === 'pending') sub.push('Not played');
 		if (sub.length) main.append(node('span', 'sub', sub.join(' · ')));
 
-		// A walkover was settled when the lineups locked and nobody played it,
-		// so there is nothing to enter.
+		// A walkover is settled, so there is nothing to enter; and a frame
+		// with an empty seat has nobody to win it until somebody sits down.
 		const settled = f.result_event === 'default';
 		const lockedCard = cardState && (cardState.state === 'agreed' || cardState.state === 'approved');
-		const mayEnter = !settled && !lockedCard
+		const mayEnter = !settled && !lockedCard && !oneSeat
 			&& (!strict || f.frame_no === nextOpen)
 			&& canRecord(f);
+
+		if (f.status === 'pending' && !lockedCard) {
+			for (const side of ['home', 'away']) {
+				const pick = reservePick(f, side);
+				if (pick) main.append(pick);
+			}
+		}
 
 		if (mayEnter) {
 			const actions = node('div', 'btn-row');
@@ -392,6 +426,37 @@
 
 		row.append(main);
 		return row;
+	}
+
+	// The reserve picker for one seat of one frame: a captain's own side, or
+	// either side for the director. It offers the people rule 2 allows — the
+	// position's own player (to undo a reserve) and anybody active on the team
+	// who is not in tonight's order. Rules 1 and 3 depend on the rest of the
+	// night, so they are left to the database, whose refusal names the rule.
+	function reservePick(f, side) {
+		if (!lineupState.i_run_it && lineupState.my_side !== side) return null;
+
+		const teamId = side === 'home' ? match.home_team_id : match.away_team_id;
+		const position = side === 'home' ? f.home_position : f.away_position;
+		const current = side === 'home' ? f.home_player_id : f.away_player_id;
+		const order = lineup.filter((l) => l.side === side && l.player_id);
+		const inOrder = new Set(order.map((l) => l.player_id));
+		const regular = (order.find((l) => l.lineup_slot === position) || {}).player_id;
+
+		const choices = (rosters.get(teamId) || []).filter((r) => r.status === 'active'
+			&& r.player_id !== current
+			&& (r.player_id === regular || !inOrder.has(r.player_id)));
+		if (!choices.length) return null;
+
+		const pick = document.createElement('select');
+		pick.dataset.action = 'reserve';
+		pick.dataset.frame = f.frame_id;
+		pick.setAttribute('aria-label', (current ? 'Reserve for ' : 'Player for ') + teamName(side) + ' in frame ' + f.frame_no);
+		pick.append(new Option(current ? teamName(side) + ': reserve…' : teamName(side) + ': who sits here?', '', true, true));
+		for (const r of choices) {
+			pick.append(new Option(r.display_name + (r.player_id === regular ? ' (back in)' : ''), r.player_id));
+		}
+		return pick;
 	}
 
 	// A captain or the director may record any frame; anybody else only their
@@ -518,13 +583,21 @@
 		const mySlots = lineup.filter((l) => l.side === working);
 		const empty = mySlots.filter((s) => !s.player_id).length;
 		const warning = empty
-			? `\n\n${empty} ${empty === 1 ? 'frame has' : 'frames have'} nobody in, and ${empty === 1 ? 'it is' : 'they are'} conceded to the other side.`
+			? `\n\n${empty} ${empty === 1 ? 'position has' : 'positions have'} nobody in. You can put a reserve or a latecomer into those frames until the card is signed; any still empty then are walkovers.`
 			: '';
-		if (!confirm('Lock this lineup?' + warning + '\n\nThe order cannot be changed afterwards — a late change is a reserve on the frame.')) return;
+		if (!confirm('Lock this lineup?' + warning + '\n\nThe order cannot be changed afterwards — a late change is a reserve in one frame.')) return;
 
 		write('Locking', () => supabaseClient.rpc('tdc_lock_lineup', {
 			p_match_id: matchId, p_side: working
 		}), 'Lineup locked.');
+	});
+
+	els.frames.addEventListener('change', (e) => {
+		const pick = e.target.closest('[data-action="reserve"]');
+		if (!pick || !pick.value) return;
+		write('Saving', () => supabaseClient.rpc('tdc_swap_frame_player', {
+			p_frame_id: pick.dataset.frame, p_player_id: pick.value
+		}));
 	});
 
 	els.frames.addEventListener('click', (e) => {
@@ -551,10 +624,12 @@
 	});
 
 	els.signBtn.addEventListener('click', () => {
-		const unplayed = card.filter((f) => f.status === 'pending').length;
-		const warning = unplayed
-			? `\n\n${unplayed} ${unplayed === 1 ? 'frame has' : 'frames have'} no result. Signing says this is the final card, not that every frame was played.`
-			: '';
+		const pending = card.filter((f) => f.status === 'pending');
+		const empty = pending.filter((f) => !f.home_player_id || !f.away_player_id).length;
+		const unplayed = pending.length - empty;
+		let warning = '';
+		if (empty) warning += `\n\n${empty} ${empty === 1 ? 'frame still has an empty seat and becomes a walkover' : 'frames still have an empty seat and become walkovers'} to the side that turned up.`;
+		if (unplayed) warning += `\n\n${unplayed} ${unplayed === 1 ? 'frame has' : 'frames have'} no result. Signing says this is the final card, not that every frame was played.`;
 		if (!confirm('Sign this card for ' + teamName(working) + '?' + warning)) return;
 
 		write('Signing', () => supabaseClient.rpc('tdc_submit_card', {

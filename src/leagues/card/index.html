@@ -15,11 +15,15 @@ extraScripts:
 
 	Three things on it, in the order the night happens:
 
-	  1. The squad and the order, until the side locks. The order is a blind
-	     exchange — the other side's names are withheld by tdc_match_lineup
-	     until both have locked, so there is nothing here that could leak them.
-	  2. The grid, once the frames exist. Every frame on one page with its two
-	     players, and the result entered beside it.
+	  1. The squad and the order, until the side locks. The order is one
+	     player per position (five in a five-man league); the night is built
+	     from the two orders and the rotation table at the second lock. It is
+	     a blind exchange — the other side's names are withheld by
+	     tdc_match_lineup until both have locked, so nothing here can leak them.
+	  2. The grid, once the frames exist, grouped by session. Every frame with
+	     its two players, the result entered beside it, and a reserve picker
+	     on each unplayed frame. A seat left empty waits for a reserve or a
+	     latecomer until a captain signs, then is a walkover.
 	  3. The two signatures, with what changed since you gave yours.
 
 	Reached as /leagues/card/?m=<match id>.
@@ -36,7 +40,7 @@ extraScripts:
 
 	{% comment %}
 		Before the lock. The squad is who is available tonight; the order is
-		who plays which slot. Both are a captain's own side only — the league
+		who plays which position. Both are a captain's own side only — the league
 		director gets a side switch instead.
 	{% endcomment %}
 	<div id="setup" hidden>
@@ -62,7 +66,7 @@ extraScripts:
 
 	{% comment %}
 		The other side's shape, which is all anybody may see before the lock:
-		how many slots they have filled, never who is in them.
+		how many positions they have filled, never who is in them.
 	{% endcomment %}
 	<div class="panel" id="other-side" hidden>
 		<h2 id="other-head">The other side</h2>

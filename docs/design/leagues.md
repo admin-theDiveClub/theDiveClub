@@ -133,7 +133,11 @@ Squad and order are separate things and want **separate tables**.
 
 ### The order is one per position, not one per frame
 
-> **Settled 23 Oct, not built.** UV: *"Captains don't set the lineup on every
+> **Built 24 Oct (`20261023221049`)**, with an empty seat open until signing
+> (UV, option b) and the three rules below enforced by `tdc_swap_frame_player`.
+> See `docs/systems/leagues.md`.
+>
+> **Settled 23 Oct.** UV: *"Captains don't set the lineup on every
 > frame. The scorecard carries a specified order of play based on the order of
 > the first round-robin session. So, as a captain, I set the order on the first
 > 5 frames and then the rest of the night is worked out from there."*

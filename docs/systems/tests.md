@@ -78,6 +78,7 @@ Call the `tdc_` functions as the user who would call them from the website, neve
 | `021_league_entry_confirmation.test.sql` | What confirms a league player under each entry mode and paid-confirms setting |
 | `022_league_season_update.test.sql` | Renaming a season renames its period unless shared; dates set exactly; refusals |
 | `023_league_team_limit.test.sql` | A team's limit (team size + reserves): a captain refused at it, the LD past it, away freeing a place and back refused while full, who may mark a player away, the only captain, withdrawn not counting, lowering reserves, every league needing a team size |
+| `024_league_lineup_sessions.test.sql` | A three-man night: three positions, nine frames built by the rotation, an empty seat waiting rather than a walkover, the three reserve rules and putting a regular back, a captain kept out of the other side's seats, signing turning empty seats into walkovers with the signature still current |
 
 **A league needs a team size since `20261023213048`**, and `tests.rules()` carries `team_size: 0` (it is `DEFAULT_RULES`, for matches). A test that makes a league passes `tests.rules('{"team_size": 5}')` or similar.
 
