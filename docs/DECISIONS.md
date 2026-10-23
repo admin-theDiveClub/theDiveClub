@@ -473,3 +473,10 @@ These predate the log. They are recorded here because every one of them is a dec
 - **Tournaments and leagues.** Players cannot reopen a settled or published card. The TD or LD can: their **send back really unlocks it** so the players can fix it and resubmit, and they may still correct frames themselves.
 *Rejected:* either player reopening (the 15 Oct rule — a result the other side agreed to could be reopened a week later by one person); both players agreeing to reopen (a new request step for little gain); venue staff reopening social matches.
 *Touches:* `tdc_reopen_card`, `tdc_reject_card`, `private.tdc_published_at`, the Reopen button in `match.js`, `docs/test-plan.md` 7.5 and 11.3, `docs/BACKLOG.md` row C
+
+## 2026-10-23 — Players may still delete a settled social match
+
+*Decided by:* UV
+*Why:* raised alongside "a settled card is final for players". Reopening a settled social card is refused, but deleting the whole match is a different act and stays the players' choice: a social match belongs to the two people who played it.
+*So:* `tdc_delete_match` is unchanged for social play — either player, anything not sanctioned, settled or not. Competition matches are a separate matter (`docs/STATUS.md` A1: only the people running it).
+*Touches:* `tdc_delete_match`

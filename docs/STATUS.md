@@ -135,7 +135,6 @@ Work is blocked or will be built wrong without these.
 | Travelling leagues: does a league have an owning venue, or its own fee scope? | Blocks entry fee charging |
 | Shot clock and extension rules the timer hardware reads | Hardware is not specified |
 | Captains inviting players to their team | UV, 22 Oct: common practice in existing leagues; to be discussed later. For now the director adds players (mid-season too) and a captain claims them — since 23 Oct without waiting for them to confirm |
-| May a player still **delete** a settled social match? | Raised 23 Oct with the "settled is final" decision. Reopening a settled social card is now refused, but `tdc_delete_match` still lets either player delete it (anything not sanctioned), which removes the result entirely — e.g. Bob agreed 5–3, a week later Alice deletes the match. A1 already covers competition matches |
 | What happens to a card already dealt when the rules change under it | Blocks the settings page in §3. Claude's proposal is in that row; it needs UV's agreement because it decides whether a director can ever be stopped from editing their own league |
 
 ---
