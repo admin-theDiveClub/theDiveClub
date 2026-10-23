@@ -11,14 +11,15 @@
 -- **Point it at a league by changing v_season at the top.** Running it again
 -- with a different season MOVES the same nineteen players there rather than
 -- making nineteen more — they are one set of test accounts, not a set per
--- league. Safe to run twice on the same season; it changes nothing.
+-- league. Running it again on the same season resets them: back on the Name
+-- Down list, unconfirmed, off any team.
 --
 -- The cleanup block at the bottom removes all of it again.
 
 do $$
 declare
-	-- TestTuesday : BC BBMTL — Blackball Mainstream Team League 1995.
-	v_season uuid := '5d39556a-21d7-44e9-8b2d-2ec6e7e0f5f7';
+	-- Test_WedSim_8BMTL — 1st Half 1995.
+	v_season uuid := '87929f3a-104a-4227-9819-6aa10d56aabc';
 
 	v_names text[] := array[
 		'Thabo Mokoena', 'Ashwin Pillay', 'Johan van Wyk', 'Sipho Dlamini',
@@ -68,14 +69,15 @@ begin
 	where player_id = any(v_ids) and league_season_id <> v_season;
 	get diagnostics v_moved = row_count;
 
-	-- Interested, and confirmed: putting your own name down is saying you are
-	-- playing, which is what confirmed_at means.
+	-- Interested and not confirmed, as tdc_league_show_interest leaves them
+	-- since 20261023201147: putting your name down no longer confirms you.
+	-- Running this again puts all nineteen back on the Name Down list,
+	-- unconfirmed and off any team, ready to test the flow again.
 	insert into public.tbl_league_season_entrants
 		(league_season_id, player_id, status, confirmed_at)
-	select v_season, p, 'interested', now() from unnest(v_ids) p
+	select v_season, p, 'interested', null from unnest(v_ids) p
 	on conflict (league_season_id, player_id) do update
-		set status = 'interested',
-			confirmed_at = coalesce(public.tbl_league_season_entrants.confirmed_at, now());
+		set status = 'interested', confirmed_at = null, team_id = null, is_captain = false;
 
 	if v_moved > 0 then
 		raise notice 'Took % of them out of another league on the way.', v_moved;

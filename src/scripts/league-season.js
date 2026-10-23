@@ -147,9 +147,13 @@
 		} else if (mine.my_status === 'inactive') {
 			els.meLine.textContent = 'You are marked inactive in this league.';
 			els.meDetail.textContent = 'Ask whoever runs the league to make you active again.';
+		} else if (mine.my_status === 'interested') {
+			// Name down, not let in yet. Nothing to confirm until they are.
+			els.meLine.textContent = 'Your name is down.';
+			els.meDetail.textContent = 'Whoever runs the league will let you in. There is nothing else for you to do yet.';
 		} else if (!mine.confirmed_at) {
-			els.meLine.textContent = 'You have been added to this league. Are you playing?';
-			els.meDetail.textContent = 'The league cannot begin until every player has confirmed. Confirming also lets a team captain claim you.';
+			els.meLine.textContent = 'You are in this league. Are you playing?';
+			els.meDetail.textContent = 'Confirming tells your captain and whoever runs the league that you are playing.';
 			els.meConfirm.hidden = false;
 			els.meWithdraw.hidden = false;
 		} else if (!mine.my_team_name) {

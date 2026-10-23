@@ -4,9 +4,9 @@
 
 Updated at every milestone, in the same breath as giving UV a commit subject. Never batched to the end of a session.
 
-Last updated: **23 Oct 2026** (night: the league settings page)
+Last updated: **23 Oct 2026** (late night: test leagues cleared; name down no longer confirms)
 
-**Database is current through `20261023190825`** (checked against production's migration list, 23 Oct). **Waiting to push: `20261023193153`** (league settings, ruleset version 3). **Push it before deploying the site**: the site now makes every new match, tournament and league at ruleset version 3, which the live database refuses until this migration is in.
+**Database is current through `20261023190825`** (checked against production's migration list, 23 Oct). **Waiting to push: `20261023193153`** (league settings, ruleset version 3) **and `20261023201147`** (putting your name down no longer confirms you). **Push both before deploying the site**: the site now makes every new match, tournament and league at ruleset version 3, which the live database refuses until the first is in.
 
 ---
 
@@ -16,9 +16,9 @@ Nothing here can be done by Claude.
 
 | | What | Why it matters |
 |---|---|---|
-| 0a | **Try the league settings page** | After pushing `20261023193153` and deploying: open your TestTuesday league → Settings. Set team size 5, look at the rotation grid, change one cell in session 2 and watch it swap, save. The message should say **2 matches now use these rules** (neither has started) and none kept. To see the card follow it, try team size 4 once: a match's card should then offer 16 slots, not 25. Set it back to 5 afterwards |
+| 0a | **Try the league settings page** | After pushing `20261023193153` and deploying: open Test_WedSim_8BMTL → Settings (TestTuesday and Test 8BMTL were cleared on 23 Oct). Set team size 5, look at the rotation grid, change one cell in session 2 and watch it swap, save. The message should say **2 matches now use these rules** (neither has started) and none kept. To see the card follow it, try team size 4 once: a match's card should then offer 16 slots, not 25. Set it back to 5 afterwards |
 | 0b | **Play a singles match straight after pushing** | `20261022230000` and `20261023090000` both patch **`tdc_record_frame`**, which every match goes through, plus `tdc_submit_card`, `tdc_answer_card` and `private.tdc_card_state`. All changes are additive and covered by new tests — including that a singles card still settles on submission when no approval is wanted, and still waits for an answer when it is — but the original match suites from 15–21 Oct did not survive their container, so a real singles match is the only end-to-end check there is |
-| 0c | **Give "Linton's Team" a captain** | In your own league, that team has two players and neither is a captain, so it cannot set a lineup or sign a card by itself. The manage page now says so. Tick Captain beside one of them |
+| 0c | **Retest Name Down → In the League** | After pushing `20261023201147` and deploying: re-run `supabase/seed/dummy-league-players.sql`, which puts the 19 dummies back on Name Down, unconfirmed (Test_WedSim_8BMTL, cleared and recreated 23 Oct). Move them in: they should show **Has not confirmed**. That league confirms on payment, so tick paid on one and it should confirm. Your own entry is untouched |
 | 0d | **Try the league pages on a phone** | Steps 2 and 3 are pushed and were proven only on a throwaway Postgres driven by headless Chromium. At `/leagues/`: create a league, add a second account, make two teams, confirm as both, generate the fixtures, start a match |
 | 1 | **Play through sections 8, 11, 12, 13 and 14 of the test plan** | Several builds are proven only against a scratch database. The logic is verified; a real league night is not |
 | 1b | **Try the bracket editor on a real draw** | Insert a prelim, add a match to it, click an arrow to rewire, remove a match. Proven against a scratch database and rendered in headless Chromium; never driven by a person. **Check a tournament with a third-place playoff in particular** — it was broken from 22 Oct until this build and nobody hit it |
@@ -133,6 +133,7 @@ Work is blocked or will be built wrong without these.
 | Should an unpublished result be marked as pending in a player's own view? | Affects the match page and the match list |
 | Travelling leagues: does a league have an owning venue, or its own fee scope? | Blocks entry fee charging |
 | Shot clock and extension rules the timer hardware reads | Hardware is not specified |
+| **In a league that confirms on payment, may a player confirm themselves?** | Found 23 Oct with `20261023201147`. The paid tick confirms, but `tdc_confirm_league_entry` still lets any player who is in the league press "I'm playing" before paying, and the season page offers the button. UV's rule ("not confirmed until the LD says so, as set in the settings") suggests it should refuse an unpaid player there. It affects players added by hand too, so it is not Claude's call |
 | Captains inviting players to their team | UV, 22 Oct: common practice in existing leagues; to be discussed later. For now the director adds players (mid-season too) and a captain claims them — since 23 Oct without waiting for them to confirm |
 
 ---

@@ -1,4 +1,4 @@
-# Leagues (migrations `20261022180000`, `20261022190000`, `20261022200000`, `20261022210000`, `20261022220000`, `20261022230000`, `20261023090000`, `20261023100000`, `20261023110000`, `20261023120000`, `20261023130000`, `20261023193153`)
+# Leagues (migrations `20261022180000`, `20261022190000`, `20261022200000`, `20261022210000`, `20261022220000`, `20261022230000`, `20261023090000`, `20261023100000`, `20261023110000`, `20261023120000`, `20261023130000`, `20261023193153`, `20261023201147`)
 
 > Moved verbatim from `CLAUDE.md` on 23 Oct 2026. The settled design for what is still to build is `docs/design/leagues.md`.
 
@@ -53,7 +53,19 @@ Built to `docs/design/leagues.md`. **This is the structure only** — the league
 - **How a player gets in (migration `20261023100000`).** A director adding twenty people by hand is backwards; UV, 23 Oct. An entrant now has somewhere to stand before they are in.
   - **Five statuses.** `interested` (name down, not in: no team, no fixtures, not waited for by readiness), `active` (in), `inactive`, `withdrawn` (their own choice), `suspended` (the director took their place). Nothing that decides who plays had to change — squads, captaincy, fixtures and readiness all ask for `active`, so interested and suspended are already excluded everywhere.
   - **`entry_mode` on the season**, the same three choices a tournament has: `ld_only`, `interested`, `self_confirm`. Plus `paid_confirms` (ticking paid puts them in) and `is_listed` (whether `tdc_search_leagues` shows it).
-  - **Two different confirmations, and they meet in one place.** `confirmed_at` has meant "the player themselves said they are playing" since 22 Oct. The director confirming somebody off the interested list is the league accepting them — a different act. **Showing interest sets `confirmed_at`**, because a player who goes looking for the league and puts their own name down has said it about as plainly as it can be said. A player the director adds by hand still confirms for themselves, exactly as before.
+  - **Two different confirmations, and they meet in one place.** `confirmed_at` has meant "the player themselves said they are playing" since 22 Oct. The director confirming somebody off the interested list is the league accepting them — a different act. From `20261023100000` showing interest set `confirmed_at` too; **UV reversed that on 23 Oct (migration `20261023201147`)**, because moving the Name Down list into a league showed everyone as confirmed. Putting your name down no longer confirms you. What does depends on the season's two entry settings:
+
+    | Entry mode | Paid confirms | Confirmed when |
+    |---|---|---|
+    | interested | on | the director ticks paid |
+    | interested | off | the player presses "I'm playing" on the season page, once let in |
+    | self_confirm | on | the director ticks paid |
+    | self_confirm | off | at once: joining is their confirmation |
+
+    A player the director adds by hand still confirms for themselves, exactly as before. Anybody putting their name down again after withdrawing starts unconfirmed.
+  - **Being let in off the Name Down list notifies the player** (`tdc_set_league_entrants_status`, kind `league_entry_added`, "You are in …, confirm that you are playing"), **only when paid confirms is off** and only those still unconfirmed. With paid confirms on, the paid tick is the confirmation, so the player is not asked. Before `20261023201147` a let-in player was already confirmed, so nobody needed telling.
+  - **The season page has a Name Down state** ("Your name is down … nothing else for you to do yet"). Before, a Name Down player was always confirmed and the page never needed one; without it they would have been shown an "I'm playing" button the database refuses.
+  - Tests: `supabase/tests/021_league_entry_confirmation.test.sql`.
   - **`paid_confirms` confirms, all the way.** It was promoting an interested player to active and leaving `confirmed_at` empty — and doing nothing at all for somebody the director had added by hand, because they were active already. Both fixed 23 Oct: ticking paid on a season that confirms on payment sets `confirmed_at` too, for anybody not withdrawn or suspended.
   - `tdc_set_league_entrants_status(ids[], status)` moves a whole selection at once — confirming fifteen people one request at a time is fifteen chances for half of it to land. It refuses a selection spanning two seasons, and moving somebody to interested or suspended takes their team and captaincy with it.
   - Also `tdc_search_leagues`, `tdc_league_join_info`, `tdc_league_show_interest`, and `tdc_confirm_league_entry` now refuses a suspended or interested player rather than telling them they are confirmed when they have no place.
