@@ -107,7 +107,9 @@
 		const def = D.SETTINGS.find((d) => d.key === input.dataset.setting);
 		if (!def) { TDC.error(AREA, 'no definition for setting: ' + input.dataset.setting); return; }
 
-		if (!setValue(def, def.type === 'bool' ? input.checked : input.value)) return;
+		if (def.type === 'rotation') D.applyRotation(rules, input);
+		else if (!setValue(def, def.type === 'bool' ? input.checked : input.value)) return;
+		D.tidyRules(rules);
 
 		const id = input.id;
 		renderSettings();

@@ -74,4 +74,6 @@ Call the `tdc_` functions as the user who would call them from the website, neve
 | `013_match_access.test.sql` | Who may edit: either player, outsiders, venue staff, a tournament's director / referee / scorer under each `score_entry_mode`, the rank guard; no direct writes to the match tables; only players answer |
 | `014_match_approval.test.sql` | A card in a tournament: when each approval mode publishes, a published card reading as settled with `can_object` / `object_until`, objections (recorded, never unlocking, once each, only inside the window), approve and send back (TD only, reason required, send back really unlocks, approve → send back → approve again), the TD correcting a locked card |
 
-`tests.rules(overrides)` in the helpers is `DEFAULT_RULES` from `match-settings.js` with overrides laid on top. Keep it in step with that file.
+| `020_league_settings.test.sql` | Ruleset version 3: team size bounds, the rotation table's checks (size, one away player per session, session 1 the captains' order, repeats allowed), who meets whom under the cyclic shift and an LD's table, the card length from team size; `tdc_update_league` re-freezing only untouched matches (a locked side, a frame and a card event each keep theirs), its counts, and who may call it |
+
+`tests.rules(overrides)` in the helpers is `DEFAULT_RULES` from `match-settings.js` with overrides laid on top — **version 3 since 23 Oct**. Keep it in step with that file. A test that needs an older version subtracts the newer keys (see `010`).

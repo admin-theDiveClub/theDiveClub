@@ -114,3 +114,26 @@
 /* The link a director shares. Wide enough to show a whole URL, and selected
  * on focus by the script so one tap copies it. */
 .share-link { font-family: inherit; }
+
+/* ── The rotation table on a league's settings ──
+ *
+ * Up to ten sessions by ten home positions, each cell a two-character menu.
+ * Narrow fixed cells so five fit across a phone at 420px; more than that
+ * scrolls sideways inside .table-scroll rather than crushing the menus.
+ * The session column and the session-1 row are text, not menus: session 1 is
+ * the captains' own order and not the LD's to change.
+ */
+.rotation-grid { width: auto; margin-top: var(--space-3); }
+.rotation-grid th,
+.rotation-grid td { padding: var(--space-2) var(--space-2) var(--space-2) 0; text-align: center; }
+.rotation-grid td:last-child,
+.rotation-grid th:last-child { text-align: center; }
+.rotation-grid tbody th { color: var(--text-muted); }
+.tdc-card .rotation-grid select {
+	width: 3.4rem;
+	padding: 0.35rem 1.1rem 0.35rem 0;
+	text-align: center;
+}
+
+/* A warning under a field: allowed, but worth a second look. */
+.field .hint.warn { color: var(--color-warning); }

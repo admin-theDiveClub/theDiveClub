@@ -86,7 +86,8 @@ const TDCMatchDef = (() => {
 	// form by looping GROUPS, so a setting in this group is invisible to the
 	// match panel and the create-a-tournament page without either of them
 	// having to know it exists. The league pages loop GROUPS.concat(LEAGUE_GROUPS).
-	// Both settings are version 2 of the ruleset (20261022220000).
+	// The cutoff and strict order are version 2 of the ruleset (20261022220000);
+	// team size and the rotation table are version 3 (20261023193153).
 	const LEAGUE_GROUPS = ['Team play'];
 
 	const SETTINGS = [
@@ -149,6 +150,18 @@ const TDCMatchDef = (() => {
 			group: 'Team play', scope: 'rules', key: 'strict_frame_order', label: 'Frames in strict order', type: 'bool',
 			hint: 'Nationals forbid changing the order. Off lets a scorer record any frame as it finishes, which is how most league nights actually run.'
 		},
+		{
+			group: 'Team play', scope: 'rules', key: 'team_size', label: 'Team size', type: 'int',
+			min: 0, max: 10,
+			hint: 'Players a side in each session. A five-man team plays five sessions of five frames: 25. 0 for no sessions — the card length then comes from the win condition.'
+		},
+		{
+			// Rendered as a grid by control(), not a single input. Session 1 is
+			// the captains' own order; each later row names the away player
+			// who meets each home position. null is the cyclic shift.
+			group: 'Team play', scope: 'rules', key: 'rotation', label: 'Who meets whom', type: 'rotation',
+			when: (r) => r.team_size >= 2
+		},
 
 		{ group: 'Officials and approval', scope: 'rules', key: 'referee_required', label: 'Referee required', type: 'bool' },
 		{ group: 'Officials and approval', scope: 'rules', key: 'score_entry_mode', label: 'Scores entered by', type: 'select', options: () => SCORE_ENTRY },
@@ -163,10 +176,10 @@ const TDCMatchDef = (() => {
 	// Kept in step with private.tdc_check_match_rules, which refuses a ruleset
 	// that is missing a key or carries one it does not know.
 	const DEFAULT_RULES = {
-		// Version 2 since 22 Oct. Matches frozen at version 1 keep their own
-		// ruleset and their own 23 keys; private.tdc_check_match_rules still
-		// validates both, and nothing rewrites a match that has been played.
-		version: 2,
+		// Version 3 since 23 Oct. Matches frozen at versions 1 and 2 keep their
+		// own ruleset and keys; private.tdc_check_match_rules still validates
+		// all three, and nothing rewrites a match that has been played.
+		version: 3,
 		discipline: '8ball',
 		win_condition_type: 'race_to',
 		win_condition_target: 5,
@@ -195,7 +208,10 @@ const TDCMatchDef = (() => {
 		// Version 2. Both are inert outside team play, which is why they are
 		// safe defaults for a social match and a tournament alike.
 		lineup_cutoff_hours: 0,
-		strict_frame_order: false
+		strict_frame_order: false,
+		// Version 3. No sessions, and the cyclic shift if there ever are.
+		team_size: 0,
+		rotation: null
 	};
 
 	// What a team league night wants, and why each one differs from the
@@ -212,12 +228,16 @@ const TDCMatchDef = (() => {
 	//   coordinator_approval — a team card is signed by both captains and
 	//     then published by the league director. The dispute window means
 	//     nothing on it: silence does not settle a team card.
+	//   team_size 5 — the mainstream five-man night, 25 frames (UV, 23 Oct).
+	//     The target is 25 to match, but the two are separate settings: the
+	//     team size decides how long the card is, the win condition who won.
 	//
 	// Starting points on the create-a-league form, not rules: every one of
 	// them is still a control the league director can change.
 	const LEAGUE_DEFAULT_RULES = Object.assign({}, DEFAULT_RULES, {
 		win_condition_type: 'fixed_frames',
-		win_condition_target: 5,
+		win_condition_target: 25,
+		team_size: 5,
 		draws_allowed: true,
 		track_breaks: true,
 		break_determination: 'by_schedule',
@@ -247,6 +267,8 @@ const TDCMatchDef = (() => {
 	function control(def, rules, prefix) {
 		const id = (prefix || 'set') + '-' + def.key;
 		const value = rules[def.key];
+
+		if (def.type === 'rotation') return rotationControl(def, rules, id);
 
 		const row = document.createElement('div');
 		row.className = 'field';
@@ -293,6 +315,150 @@ const TDCMatchDef = (() => {
 		return row;
 	}
 
+	// ─────────────────────────────────────────────────────────────────
+	// The rotation table (version 3)
+	//
+	// One row per session; row s names the away position that meets home
+	// positions 1, 2, 3 … in that session. Session 1 is always the captains'
+	// own order. rules.rotation is null for the cyclic shift — the away column
+	// moving up one each session — and an array once the LD makes it their
+	// own. private.tdc_check_match_rules and private.tdc_rotation_away are the
+	// database's half of this; keep the three in step.
+	// ─────────────────────────────────────────────────────────────────
+
+	function cyclicRotation(n) {
+		const grid = [];
+		for (let s = 0; s < n; s++) {
+			const row = [];
+			for (let h = 0; h < n; h++) row.push(((h + s) % n) + 1);
+			grid.push(row);
+		}
+		return grid;
+	}
+
+	// The table as it stands, written out, whichever form it is stored in.
+	function rotationGrid(rules) {
+		const n = rules.team_size || 0;
+		if (Array.isArray(rules.rotation) && rules.rotation.length === n) {
+			return rules.rotation.map((row) => row.slice());
+		}
+		return cyclicRotation(n);
+	}
+
+	// Pairings met more than once across the night. Allowed (UV, 23 Oct), but
+	// the LD is told before saving: [{ home, away, sessions: [1, 3] }].
+	function rotationRepeats(grid) {
+		const seen = new Map();
+		grid.forEach((row, s) => row.forEach((away, h) => {
+			const key = (h + 1) + '-' + away;
+			if (!seen.has(key)) seen.set(key, { home: h + 1, away, sessions: [] });
+			seen.get(key).sessions.push(s + 1);
+		}));
+		return [...seen.values()].filter((p) => p.sessions.length > 1);
+	}
+
+	// A change on the grid. Choosing an away player already in that session
+	// swaps the two, so a session can never hold somebody twice — design rule
+	// 1, which the database also refuses.
+	function applyRotation(rules, input) {
+		if (input.dataset.rotation === 'mode') {
+			rules.rotation = input.value === 'own' ? rotationGrid(rules) : null;
+			return;
+		}
+		const s = parseInt(input.dataset.session, 10) - 1;
+		const h = parseInt(input.dataset.home, 10) - 1;
+		const v = parseInt(input.value, 10);
+		const grid = rotationGrid(rules);
+		const row = grid[s];
+		if (!row || isNaN(v)) return;
+		const other = row.indexOf(v);
+		if (other !== -1) row[other] = row[h];
+		row[h] = v;
+		rules.rotation = grid;
+	}
+
+	// After any change: a table that no longer fits the team size goes back to
+	// the cyclic shift rather than being sent to be refused.
+	function tidyRules(rules) {
+		if (!(rules.team_size >= 2)
+			|| (Array.isArray(rules.rotation) && rules.rotation.length !== rules.team_size)) {
+			rules.rotation = null;
+		}
+	}
+
+	function rotationControl(def, rules, id) {
+		const n = rules.team_size;
+		const grid = rotationGrid(rules);
+		const own = Array.isArray(rules.rotation);
+
+		const row = document.createElement('div');
+		row.className = 'field';
+
+		const label = document.createElement('label');
+		label.textContent = def.label;
+		label.htmlFor = id;
+
+		const mode = document.createElement('select');
+		mode.id = id;
+		mode.dataset.setting = def.key;
+		mode.dataset.rotation = 'mode';
+		mode.append(
+			new Option('The standard rotation', 'cyclic', false, !own),
+			new Option('My own table', 'own', false, own)
+		);
+
+		const table = document.createElement('table');
+		table.className = 'tdc-table rotation-grid';
+		const head = table.createTHead().insertRow();
+		head.append(Object.assign(document.createElement('th'), { textContent: 'Session' }));
+		for (let h = 1; h <= n; h++) {
+			head.append(Object.assign(document.createElement('th'), { textContent: 'H' + h }));
+		}
+
+		const body = table.createTBody();
+		grid.forEach((away, s) => {
+			const tr = body.insertRow();
+			tr.append(Object.assign(document.createElement('th'), { textContent: String(s + 1) }));
+			away.forEach((a, h) => {
+				const td = tr.insertCell();
+				// Session 1 is whatever order the captains set. It is not the
+				// LD's to change, so it is shown, not offered.
+				if (s === 0) { td.textContent = 'A' + a; return; }
+				const pick = document.createElement('select');
+				pick.id = id + '-' + (s + 1) + '-' + (h + 1);
+				pick.dataset.setting = def.key;
+				pick.dataset.session = s + 1;
+				pick.dataset.home = h + 1;
+				pick.setAttribute('aria-label', `Session ${s + 1}, H${h + 1} plays`);
+				for (let v = 1; v <= n; v++) pick.append(new Option('A' + v, v, false, v === a));
+				td.append(pick);
+			});
+		});
+
+		const scroll = document.createElement('div');
+		scroll.className = 'table-scroll';
+		scroll.append(table);
+
+		const hint = document.createElement('div');
+		hint.className = 'hint';
+		hint.textContent = own
+			? 'H1 is the home captain\'s first player, A1 the away captain\'s. Choosing a player already in that session swaps the two.'
+			: 'H1 is the home captain\'s first player, A1 the away captain\'s. Each session the away side moves up one, so everybody meets everybody once. Change any session to make the table your own.';
+
+		row.append(label, mode, scroll, hint);
+
+		const repeats = rotationRepeats(grid);
+		if (repeats.length) {
+			const warn = document.createElement('div');
+			warn.className = 'hint warn';
+			warn.textContent = 'This table has players meeting twice: ' + repeats.map((p) =>
+				`H${p.home} v A${p.away} in sessions ${p.sessions.join(' and ')}`).join('; ') +
+				'. That is allowed, but usually everybody meets everybody once.';
+			row.append(warn);
+		}
+		return row;
+	}
+
 	// Which settings belong on a ruleset form right now: the rules ones, that
 	// have somewhere to be stored, whose parent switch is on.
 	function liveRuleKeys(rules) {
@@ -320,6 +486,7 @@ const TDCMatchDef = (() => {
 		WIN_CONDITION, TIME_EXPIRY, TIEBREAK, SCORE_ENTRY, APPROVAL, SIDE_TAG, SIDES,
 		GROUPS, LEAGUE_GROUPS, SETTINGS, DEFAULT_RULES, LEAGUE_DEFAULT_RULES, MAIN_KEYS,
 		control, liveRuleKeys, readValue,
+		cyclicRotation, rotationGrid, rotationRepeats, applyRotation, tidyRules,
 		setSideNames(fn) { sideNames = fn; }
 	};
 })();

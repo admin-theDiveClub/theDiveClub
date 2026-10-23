@@ -82,7 +82,7 @@ begin
 end;
 $$;
 
--- A complete version 2 ruleset: DEFAULT_RULES from scripts/match-settings.js,
+-- A complete version 3 ruleset: DEFAULT_RULES from scripts/match-settings.js,
 -- with whatever the test cares about laid over it. A match refuses a ruleset
 -- missing a key, so a test that typed only the keys it wanted would fail for
 -- the wrong reason. Keep in step with DEFAULT_RULES.
@@ -92,7 +92,7 @@ language sql
 immutable
 as $$
 	select jsonb_build_object(
-		'version', 2,
+		'version', 3,
 		'discipline', '8ball',
 		'win_condition_type', 'race_to',
 		'win_condition_target', 5,
@@ -116,7 +116,9 @@ as $$
 		'approval_mode', 'dispute_window',
 		'dispute_window_hours', 48,
 		'lineup_cutoff_hours', 0,
-		'strict_frame_order', false
+		'strict_frame_order', false,
+		'team_size', 0,
+		'rotation', null
 	) || coalesce(p_overrides, '{}');
 $$;
 

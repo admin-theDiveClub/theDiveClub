@@ -39,7 +39,7 @@
 		officialTable: el('official-table'), officialRows: el('official-rows'),
 		status: el('page-status'),
 		seasonLink: el('season-link'), newSeasonLink: el('new-season-link'),
-		fixturesLink: el('fixtures-link')
+		fixturesLink: el('fixtures-link'), settingsLink: el('settings-link')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -711,6 +711,7 @@
 
 		els.seasonLink.href = '/leagues/season/?s=' + encodeURIComponent(seasonId);
 		els.fixturesLink.href = '/leagues/fixtures/?s=' + encodeURIComponent(seasonId);
+		els.settingsLink.href = '/leagues/settings/?s=' + encodeURIComponent(seasonId);
 
 		const info = await loadInfo();
 		if (!info) return;

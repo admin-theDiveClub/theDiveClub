@@ -6,7 +6,7 @@
 -- match exactly as given.
 begin;
 \ir _helpers.psql
-select plan(26);
+select plan(27);
 
 select tests.create_user('Create Alice') as alice \gset
 select tests.create_user('Create Bob') as bob \gset
@@ -43,12 +43,16 @@ select tests.sign_out();
 select is((select away_player_id from public.tbl_matches where id = :'m2'), :'alice_p'::uuid, 'p_i_am away puts the creator on the away side');
 select is((select first_break_side from public.tbl_matches where id = :'m2'), 'away', 'the first break side is stored');
 
--- A version 1 ruleset is still accepted: version 1 is frozen, not retired.
+-- Versions 1 and 2 are still accepted: they are frozen, not retired.
 select tests.sign_in(:'alice');
 select lives_ok(
 	format($$ select public.tdc_create_match(%L, %L::jsonb) $$, :'bob_p',
-		tests.rules() - 'lineup_cutoff_hours' - 'strict_frame_order' || '{"version": 1}'),
+		tests.rules() - 'lineup_cutoff_hours' - 'strict_frame_order' - 'team_size' - 'rotation' || '{"version": 1}'),
 	'a complete version 1 ruleset is accepted');
+select lives_ok(
+	format($$ select public.tdc_create_match(%L, %L::jsonb) $$, :'bob_p',
+		tests.rules() - 'team_size' - 'rotation' || '{"version": 2}'),
+	'a complete version 2 ruleset is accepted');
 
 -- ─── Refusals ───
 
@@ -83,8 +87,8 @@ select throws_ok(
 	'a ruleset with an unknown key is refused');
 
 select throws_ok(
-	format($$ select public.tdc_create_match(%L, %L::jsonb) $$, :'bob_p', tests.rules('{"version": 3}')),
-	'P0001', 'TDC (Error): unknown ruleset version "3".',
+	format($$ select public.tdc_create_match(%L, %L::jsonb) $$, :'bob_p', tests.rules('{"version": 4}')),
+	'P0001', 'TDC (Error): unknown ruleset version "4".',
 	'an unknown ruleset version is refused');
 
 select throws_ok(

@@ -4,9 +4,9 @@
 
 Updated at every milestone, in the same breath as giving UV a commit subject. Never batched to the end of a session.
 
-Last updated: **23 Oct 2026** (late: the local test harness)
+Last updated: **23 Oct 2026** (night: the league settings page)
 
-**Database is current through `20261023185945`** (UV pushed the two card fixes from the test suites, 23 Oct). **Waiting to push: `20261023190825`** (A8 — push it before deploying the site). That covers all six league steps plus the three corrections of 23 Oct: `110000` paid-confirms and the readiness gate, `120000` confirmation is not a gate, `130000` the frame count.
+**Database is current through `20261023190825`** (checked against production's migration list, 23 Oct). **Waiting to push: `20261023193153`** (league settings, ruleset version 3). **Push it before deploying the site**: the site now makes every new match, tournament and league at ruleset version 3, which the live database refuses until this migration is in.
 
 ---
 
@@ -16,7 +16,7 @@ Nothing here can be done by Claude.
 
 | | What | Why it matters |
 |---|---|---|
-| 0 | **Decide the rotation table's default** | The session rework below cannot be built without it. UV, 23 Oct: the table is "usually defined by LD when designing their scorecard … we should follow a similar format". Taken as **the LD states it, with a cyclic shift as the default** — confirm, or say it should be one fixed standard table nobody may edit |
+| 0a | **Try the league settings page** | After pushing `20261023193153` and deploying: open your TestTuesday league → Settings. Set team size 5, look at the rotation grid, change one cell in session 2 and watch it swap, save. The message should say **2 matches now use these rules** (neither has started) and none kept. To see the card follow it, try team size 4 once: a match's card should then offer 16 slots, not 25. Set it back to 5 afterwards |
 | 0b | **Play a singles match straight after pushing** | `20261022230000` and `20261023090000` both patch **`tdc_record_frame`**, which every match goes through, plus `tdc_submit_card`, `tdc_answer_card` and `private.tdc_card_state`. All changes are additive and covered by new tests — including that a singles card still settles on submission when no approval is wanted, and still waits for an answer when it is — but the original match suites from 15–21 Oct did not survive their container, so a real singles match is the only end-to-end check there is |
 | 0c | **Give "Linton's Team" a captain** | In your own league, that team has two players and neither is a captain, so it cannot set a lineup or sign a card by itself. The manage page now says so. Tick Captain beside one of them |
 | 0d | **Try the league pages on a phone** | Steps 2 and 3 are pushed and were proven only on a throwaway Postgres driven by headless Chromium. At `/leagues/`: create a league, add a second account, make two teams, confirm as both, generate the fixtures, start a match |
@@ -77,7 +77,7 @@ Lower-priority audit items are in `docs/BACKLOG.md` §7.
 
 | Area | Chat | State |
 |---|---|---|
-| Leagues | Leagues | **All six steps built and pushed.** A league night is playable end to end: fixtures → start the match → both captains lock a lineup → frames appear → results on the grid → both sign. Structure, pages, fixtures, ruleset v2, lineups, submission, entry. See `docs/systems/leagues.md`. **Two bodies of work remain**, in this order: the **session rework** (§3 item 1 — the order is per position, not per frame, settled 23 Oct) and **LD-configurable standings** (`docs/design/leagues.md` §6, token-array equations) |
+| Leagues | Leagues | **All six steps built and pushed.** A league night is playable end to end: fixtures → start the match → both captains lock a lineup → frames appear → results on the grid → both sign. Structure, pages, fixtures, ruleset v2, lineups, submission, entry. See `docs/systems/leagues.md`. **The LD settings page is built (23 Oct, waiting to push).** **Two bodies of work remain**, in this order: the **session rework** (§3 item 0 — the order is per position, not per frame, settled 23 Oct) and **LD-configurable standings** (`docs/design/leagues.md` §6, token-array equations) |
 
 ---
 
@@ -88,8 +88,7 @@ In the order it probably makes sense.
 | | What | Notes |
 |---|---|---|
 | 00 | **Put the tests in the repo** | **The harness is done (23 Oct):** Docker Desktop and a local Supabase that the fingerprint shows is identical to production, `supabase/roles.sql` for the two dashboard-made differences, the helpers, and `npx supabase test db` as the one command. See `docs/systems/tests.md`. **Still to do:** rebuild the scratch-database checks (468 by 23 Oct, all lost) as pgTAP files, one area at a time: matches and the card first (what A1–A4 touch), then the merge (A5), tournaments, leagues, notifications, identity and credits |
-| 0 | **Leagues: the order is one per position, not one per frame** | Settled 23 Oct, designed in `docs/design/leagues.md` §3. A captain names the first session only; the rest of the night derives from it by the LD's rotation table. Session size is a league setting (five-man → 5 frames a session, 25 total). Reserves fill a position for one session under three rules. **This changes `tbl_league_match_order` from one row per frame to one per position**, so orders already recorded in UV's live league will need migrating or clearing — say so before building. Blocked on §1 item 0 |
-| 0b | **An LD-only league settings page** | There is nowhere to change a league's rules after it is created, which UV hit on 23 Oct with a race-to league he had meant to make fixed-25, and has asked for twice. Team size and the rotation table need to live here too, so the session work wants it first. Proposed rule: **refuse a change that would shrink a card with frames already recorded**, allow it everywhere else — never silently drop frames |
+| 0 | **Leagues: the order is one per position, not one per frame** | **Next.** Settled 23 Oct, designed in `docs/design/leagues.md` §3. A captain names the first session only; the rest of the night derives from it by the LD's rotation table — **`team_size` and `rotation` now exist** (ruleset v3, `20261023193153`), and `private.tdc_rotation_away(rules, session, home)` already answers who meets whom. Reserves fill a position for one session under three rules. Changes `tbl_league_match_order` to one row per position; **the five live rows are kept** (they are session 1, positions 1–5), with a guard that stops the migration if anything was locked or played meanwhile. A league with `team_size` 0 needs an answer here: probably the old per-slot order, but ask UV |
 | 0c | **The LD schedule page** | UV, 23 Oct: weeks (date and time, assumed from the generate settings), venue, tables, home/away. Open questions to put to him: is the venue per fixture or the home team's? how are tables identified? is a manual home/away swap wanted? |
 | 1 | **Leagues: standings** | The table a league is for. LD-configurable columns built from a **token array, never a string** — the design is explicit about that and lists the tokens. Designed in `docs/design/leagues.md` §6 |
 | 1b | **A player's own frame on `/match/`** | The design's second surface: a player opens the match page and sees only their own frame. `/match/` still refuses a team match, so today a player's frame is entered by their captain on the card. Nothing is blocked by this — it is the convenience half of "two surfaces, one record" |
@@ -135,7 +134,6 @@ Work is blocked or will be built wrong without these.
 | Travelling leagues: does a league have an owning venue, or its own fee scope? | Blocks entry fee charging |
 | Shot clock and extension rules the timer hardware reads | Hardware is not specified |
 | Captains inviting players to their team | UV, 22 Oct: common practice in existing leagues; to be discussed later. For now the director adds players (mid-season too) and a captain claims them — since 23 Oct without waiting for them to confirm |
-| What happens to a card already dealt when the rules change under it | Blocks the settings page in §3. Claude's proposal is in that row; it needs UV's agreement because it decides whether a director can ever be stopped from editing their own league |
 
 ---
 
@@ -146,7 +144,7 @@ Real, small, and none of them blocking.
 | | Area |
 |---|---|
 | **`tbl_tournament_entrants` can be read directly by any signed-in player** | `paid_at` and the TD's `notes` come back from the API with no function in the way. The 21 Oct gate on `tdc_tournament_entrants` closed the function, not the table: the `select … using (true)` policy and grant are still there. Found 22 Oct while building the league equivalent. The fix is a migration revoking the grant and dropping the policy, after checking no page selects from the table directly. Now item B2 in §1a |
-| League pages not built yet | Per-season rule overrides, continuing a team from an earlier season, a venue picker, and a page to edit a league's own rules (`tdc_update_league` has no form). None blocks lineups |
+| League pages not built yet | Per-season rule overrides, continuing a team from an earlier season, a venue picker. None blocks lineups. **When per-season overrides get a form, `tdc_update_league_season` must call `private.tdc_refreeze_league_matches`** as `tdc_update_league` does (23 Oct), or a season's change will not reach its unstarted matches |
 | `strict_frame_order` is obeyed by the card only | The scorecard offers only the next unplayed frame when it is on. `/match/` does not know about it, which does not matter while `/match/` refuses team matches |
 | **Deleting an account leaves an accountless league player** | `tbl_players.user_id` is `ON DELETE SET NULL`, so removing an auth user leaves the player row behind — still on any league's list, which is the one thing a league player may not be. The trigger that enforces it is insert-only on purpose (the walk-in merge needs that). Found 23 Oct while writing the dummy-player cleanup. Unlikely but real; the fix is either a cascade or a nightly check |
 | **The 23 version 1 ruleset keys are not type-checked** | `private.tdc_check_match_rules` checks that the keys are present and that the enumerated values are known, but never that `win_condition_target` is a number or `draws_allowed` a boolean. The two version 2 keys added 22 Oct are checked; the older ones are a job of their own. The design note calls this jsonb quietly becoming an unvalidated config format the heaviest standing risk in the system |

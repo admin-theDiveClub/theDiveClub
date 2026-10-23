@@ -104,6 +104,10 @@ frames complete in order, and frame 4 routinely finishes before frame 3.
 > rules below say. **Not built:** nothing yet reads `strict_frame_order` — it
 > is stored and validated, and the scorecard that would obey it is step 6.
 >
+> **Built 23 Oct (`20261023193153`):** team size and the rotation table, as
+> ruleset version 3 keys, with the LD's settings page to set them. See
+> `docs/systems/leagues.md`. The order itself is still one per frame.
+>
 > **Superseded in one respect, 23 Oct.** What is built asks a captain to fill
 > every slot of the night by hand. It should ask for the first session only and
 > derive the rest — see *The order is one per position* below, which is the
@@ -386,7 +390,9 @@ Carried from `claude/stats-schema-design.md` (now `docs/archive/`); none of it b
   that would **shrink a card with frames already recorded**, allow it everywhere
   else, rather than silently dropping frames and breaking *frames are the only
   record*. Team size and the rotation table live here too.
-- **The rotation table's default.** UV: *"usually defined by LD when designing
-  their scorecard … we should follow a similar format."* Taken as *the LD states
-  it, cyclic shift as the default* — to be confirmed before it is built, since
-  the alternative is one fixed standard table nobody may edit.
+  **Settled 23 Oct:** a change reaches every match with no frames and no locked
+  side; the rest keep their frozen rules and the page says how many. Nothing is
+  refused. `docs/DECISIONS.md`.
+- ~~The rotation table's default.~~ **Settled 23 Oct: the LD states it, with a
+  cyclic shift as the default.** Stored as a ruleset key, so it is frozen onto
+  each match.

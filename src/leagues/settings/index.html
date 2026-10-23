@@ -1,0 +1,49 @@
+---
+layout: layout.html
+title: League Settings
+description: "Change a league's name and the rules its matches are played under."
+extraStyles:
+  - /stylesheets/league.css
+extraScripts:
+  - /scripts/match-settings.js
+  - /scripts/league-settings.js
+---
+{% comment %}
+	The league director's settings, at /leagues/settings/?s=<league season id>.
+
+	The rules belong to the league, not the season, so a change here applies to
+	every season of it. The controls are generated from TDCMatchDef, exactly as
+	on the new-league page, including the Team play group: team size and the
+	rotation table (version 3 of the ruleset, 23 Oct).
+
+	Saving calls tdc_update_league, which also re-freezes the new rules onto
+	every match in the league that has not started — no frames, no locked
+	lineup, no signature — and says how many matches kept their old rules
+	because they had. Frames are never rescored. docs/DECISIONS.md, 23 Oct.
+{% endcomment %}
+
+<div class="tdc-card wide">
+	<h1 id="l-title">League Settings</h1>
+	<p class="muted" id="l-meta"></p>
+
+	<div class="field">
+		<label for="l-name">League name</label>
+		<input type="text" id="l-name" maxlength="120" autocomplete="off">
+		<div class="hint">Every season of the league shares this name.</div>
+	</div>
+
+	<p class="muted" id="overrides-note" hidden></p>
+
+	<!-- The ruleset, built by league-settings.js from TDCMatchDef -->
+	<div id="settings-main"></div>
+	<div id="settings-rest"></div>
+
+	<p class="muted">Saving applies to every match in the league that has not started yet. A match with a locked lineup, a recorded frame or a signature keeps the rules it started with.</p>
+
+	<button type="button" class="btn-primary" id="save-btn" disabled>Save</button>
+	<div class="status" id="page-status"></div>
+
+	<div class="link-row">
+		<a href="#" id="manage-link">Back to the league</a>
+	</div>
+</div>

@@ -480,3 +480,38 @@ These predate the log. They are recorded here because every one of them is a dec
 *Why:* raised alongside "a settled card is final for players". Reopening a settled social card is refused, but deleting the whole match is a different act and stays the players' choice: a social match belongs to the two people who played it.
 *So:* `tdc_delete_match` is unchanged for social play — either player, anything not sanctioned, settled or not. Competition matches are a separate matter (`docs/STATUS.md` A1: only the people running it).
 *Touches:* `tdc_delete_match`
+
+## 2026-10-23 — The rotation table is the LD's, with a cyclic shift as the default
+
+*Decided by:* UV, answering `docs/STATUS.md` §1 item 0
+*Why:* a club joining the platform already has a printed scoresheet with its own pattern of who meets whom in each session. One fixed table nobody may edit would make that club change how it plays to fit the software.
+*So:* the rotation table is stored per league. A new league gets the cyclic shift: session 1 is H1–A1 … H5–A5, and each later session moves the away column up by one, so every player meets every opponent once. An LD may state their own table on the settings page. It is a ruleset key, so it is **frozen onto each match** like every other rule — an LD editing the table on Wednesday cannot reshuffle the rest of Tuesday's half-played night.
+*Rejected:* one fixed standard table. Simpler, but going from it to a stored table later would be a schema change.
+
+## 2026-10-23 — A league rule change reaches the matches that have not started
+
+*Decided by:* UV, from Claude's proposal (replacing the earlier "refuse a change that would shrink a card")
+*Why:* rules are frozen onto a match when it is created, so changing a league's rules touches no existing match at all. UV's race-to-13 league, switched to fixed-25, would still have two race-to-13 matches already sitting in its fixtures. Refusing the change would stop a director editing their own league; ignoring the existing matches would leave the switch half-done without saying so.
+*So:* when the LD changes the league's rules, every match in it with **no frames and no locked lineup** takes the new rules. A match with frames, or with a side locked, keeps its frozen rules, and the page says how many kept them. A single match can still be corrected through its own settings. Recorded frames are never rescored.
+*Rejected:* refusing the change while any match would shrink with frames recorded — it can stop a director in their own league over one played match.
+
+## 2026-10-23 — The orders already recorded are kept, not cleared
+
+*Decided by:* UV
+*Why:* production held five order rows when this was decided: one side of one TestTuesday match, slots 1–5, unlocked, no frames. Slots 1–5 are exactly session 1, positions 1–5 — the new shape — so keeping them is a relabel, not a translation.
+*So:* the migration that changes `tbl_league_match_order` to one row per position keeps the rows, and stops with a message rather than guessing if any side is locked, any frame exists, or any slot lies beyond the team size when it is pushed.
+*Order of work:* the LD settings page first (team size and the rotation table live there), then the session rework.
+
+## 2026-10-23 — A rotation table may repeat a pairing, with a warning
+
+*Decided by:* UV
+*Why:* a table where everybody meets everybody once is the usual shape, but it is the LD's scoresheet, and a format that repeats a pairing on purpose should not be locked out by the software.
+*So:* each session must still use every away position exactly once — design rule 1, *a player may not play more than one frame in a session*, which is a hard check in the database. A table where somebody meets the same opponent twice across the night is **allowed**, and the settings page warns and names the repeats before it saves.
+*Rejected:* refusing repeats outright (Claude's proposal).
+
+## 2026-10-23 — Team size and the win condition are separate settings
+
+*Decided by:* UV
+*Why:* they answer different questions. The team size says how long the night is; the win condition says who has won it.
+*So:* with a team size set, the card is `team_size²` frames (five-man → 25), whatever the win condition says. The win condition and its target are the LD's own and are not filled in or cross-checked. With no team size set (0), the card length falls back to the win condition, as it has since 23 Oct.
+*Rejected:* the team size filling in the target and refusing a mismatch (Claude's proposal).
