@@ -10,7 +10,6 @@ Built from the project doc `claude/stats-todo.md` on 23 Oct 2026, with everythin
 
 | | Question | Why it matters |
 |---|---|---|
-| C | **No-approval mis-tap** — a wrong tap on the winning frame locks the match instantly (Reopen recovers it). Leave it, or confirm first? | One line either way |
 | E | League fees — entry blocked until paid in full, or partial allowed? | Blocks the fees table |
 | F | Travelling leagues — does a league have an owning venue, or its own fee scope? | Blocks entry-fee charging |
 | H | Shot clock and extension rules the timer hardware reads | Blocks the hardware integration |

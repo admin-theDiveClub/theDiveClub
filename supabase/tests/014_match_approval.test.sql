@@ -10,7 +10,7 @@
 -- unlocks the card so the players can fix it (UV, 23 Oct).
 begin;
 \ir _helpers.psql
-select plan(43);
+select plan(44);
 
 select tests.create_user('Approve Alice') as alice \gset
 select tests.create_user('Approve Bob') as bob \gset
@@ -79,7 +79,7 @@ select tests.sign_in(:'alice');
 select throws_ok(format($$ select public.tdc_record_frame(%L, 1, '{"winner_side": "away", "result_event": "win"}') $$, :'m_coord'),
 	'P0001', 'This result has been published. Only the people running the competition can change it now.', 'a published card is locked for the players');
 select throws_ok(format($$ select public.tdc_reopen_card(%L) $$, :'m_coord'),
-	'P0001', 'This scorecard is not settled, so there is nothing to reopen.', 'a player cannot reopen an approved card');
+	'P0001', 'This result is settled. Ask whoever is running the competition to send it back.', 'a player cannot reopen an approved card');
 
 -- ─── Sending it back ───
 
@@ -126,6 +126,9 @@ select throws_ok(format($$ select public.tdc_answer_card(%L, false, 'Frame 2 too
 	'P0001', 'You have already disputed this result. It is with whoever is running the competition.', 'a second objection is refused');
 select throws_ok(format($$ select public.tdc_record_frame(%L, 1, '{"winner_side": "away", "result_event": "win"}') $$, :'m_dw'),
 	'P0001', 'This result has been published. Only the people running the competition can change it now.', 'an objection does not unlock the card');
+select tests.sign_in(:'alice');
+select throws_ok(format($$ select public.tdc_reopen_card(%L) $$, :'m_dw'),
+	'P0001', 'This result is settled. Ask whoever is running the competition to send it back.', 'a player cannot reopen a card published on submission');
 
 -- The TD acts on it by sending it back, which really unlocks it.
 select tests.sign_in(:'td');

@@ -6,12 +6,14 @@
 -- dispute window counts as agreement. With approval_mode 'none' submitting
 -- settles it there and then, and that settlement is recorded rather than
 -- re-derived from the rules. An agreed card is locked by a trigger on
--- tbl_frames, so every route in is covered, and either player can reopen it.
+-- tbl_frames, so every route in is covered — and it is final: no player can
+-- reopen it (UV, 23 Oct). The submitter may only withdraw a card nobody has
+-- answered yet.
 --
 -- All of this is social play: no tournament or league, so nothing publishes.
 begin;
 \ir _helpers.psql
-select plan(54);
+select plan(58);
 
 select tests.create_user('Card Alice') as alice \gset
 select tests.create_user('Card Bob') as bob \gset
@@ -19,16 +21,17 @@ select tests.create_user('Card Carol') as carol \gset
 select tests.player_of(:'alice') as alice_p \gset
 select tests.player_of(:'bob') as bob_p \gset
 
--- Six matches between Alice and Bob, each with two frames except the empty one.
+-- Seven matches between Alice and Bob, each with two frames except the empty one.
 select tests.sign_in(:'alice');
 select public.tdc_create_match(:'bob_p', tests.rules()) as m_empty \gset
 select public.tdc_create_match(:'bob_p', tests.rules()) as m \gset
+select public.tdc_create_match(:'bob_p', tests.rules()) as m_withdraw \gset
 select public.tdc_create_match(:'bob_p', tests.rules()) as m_dispute \gset
 select public.tdc_create_match(:'bob_p', tests.rules()) as m_silence \gset
 select public.tdc_create_match(:'bob_p', tests.rules('{"dispute_window_hours": 0}')) as m_zero \gset
 select public.tdc_create_match(:'bob_p', tests.rules('{"approval_mode": "none"}')) as m_none \gset
 select public.tdc_record_frame(x.id, n, '{"winner_side": "home", "result_event": "win"}')
-from (values (:'m'::uuid), (:'m_dispute'::uuid), (:'m_silence'::uuid), (:'m_zero'::uuid), (:'m_none'::uuid)) x(id)
+from (values (:'m'::uuid), (:'m_withdraw'::uuid), (:'m_dispute'::uuid), (:'m_silence'::uuid), (:'m_zero'::uuid), (:'m_none'::uuid)) x(id)
 	cross join generate_series(1, 2) n;
 
 -- ─── Submitting ───
@@ -90,60 +93,64 @@ select is(public.tdc_answer_card(:'m', true)->>'state', 'agreed', 'the other pla
 select is((public.tdc_card_state(:'m')->>'by')::uuid, :'bob_p'::uuid, 'the agreed state says who agreed');
 
 select throws_ok(format($$ select public.tdc_record_frame(%L, 3, '{"winner_side": "away", "result_event": "win"}') $$, :'m'),
-	'P0001', 'Both players have agreed this scorecard. Reopen it before changing anything.', 'an agreed card takes no new frame');
+	'P0001', 'This scorecard is settled and can no longer be changed.', 'an agreed card takes no new frame');
 select tests.sign_in(:'alice');
 select throws_ok(format($$ select public.tdc_record_frame(%L, 1, '{"winner_side": "away", "result_event": "win"}') $$, :'m'),
-	'P0001', 'Both players have agreed this scorecard. Reopen it before changing anything.', 'an agreed card cannot have a frame corrected');
+	'P0001', 'This scorecard is settled and can no longer be changed.', 'an agreed card cannot have a frame corrected');
 select throws_ok(format($$ select public.tdc_remove_frame(%L, 2) $$, :'m'),
-	'P0001', 'Both players have agreed this scorecard. Reopen it before changing anything.', 'an agreed card cannot lose a frame');
+	'P0001', 'This scorecard is settled and can no longer be changed.', 'an agreed card cannot lose a frame');
 
 -- The lock is a trigger on the table, so it holds even for a write that
 -- does not come through the functions.
 select tests.sign_out();
 select throws_ok(format($$ update public.tbl_frames set winner_side = 'away' where match_id = %L $$, :'m'),
-	'P0001', 'Both players have agreed this scorecard. Reopen it before changing anything.', 'the lock holds against a direct write to the table');
+	'P0001', 'This scorecard is settled and can no longer be changed.', 'the lock holds against a direct write to the table');
 select is((select count(*)::integer from public.tbl_frames where match_id = :'m' and winner_side = 'home'), 1, 'the agreed frames are unchanged');
 
 select tests.sign_in(:'alice');
 select throws_ok(format($$ select public.tdc_submit_card(%L) $$, :'m'),
 	'P0001', 'This scorecard has already been agreed.', 'an agreed card cannot be submitted again');
 select throws_ok(format($$ select public.tdc_answer_card(%L, false, 'not right') $$, :'m'),
-	'P0001', 'There is nothing waiting to be answered on this scorecard.', 'an agreed social card cannot be disputed; it is reopened instead');
+	'P0001', 'There is nothing waiting to be answered on this scorecard.', 'an agreed social card cannot be disputed');
 
--- ─── Reopening ───
+-- ─── A settled card is final (UV, 23 Oct) ───
 
 select tests.sign_in(:'carol');
 select throws_ok(format($$ select public.tdc_reopen_card(%L) $$, :'m'),
 	'P0001', 'Only the players in this match can reopen its scorecard.', 'someone outside the match cannot reopen it');
 
--- Either player may reopen an agreed card, not only the one who submitted.
 select tests.sign_in(:'bob');
-select is(public.tdc_reopen_card(:'m')->>'state', 'in_progress', 'either player can reopen an agreed card');
-select tests.sign_out();
-select is((select status || '/' || coalesce(ended_at::text, 'open') from public.tbl_matches where id = :'m'), 'in_progress/open', 'reopening puts the match back in play');
-
+select throws_ok(format($$ select public.tdc_reopen_card(%L) $$, :'m'),
+	'P0001', 'This scorecard is settled and can no longer be changed.', 'the player who agreed cannot reopen it');
 select tests.sign_in(:'alice');
-select lives_ok(format($$ select public.tdc_record_frame(%L, 3, '{"winner_side": "home", "result_event": "win"}') $$, :'m'),
-	'a reopened card can be changed again');
 select throws_ok(format($$ select public.tdc_reopen_card(%L) $$, :'m'),
-	'P0001', 'This scorecard is not settled, so there is nothing to reopen.', 'a card in progress has nothing to reopen');
+	'P0001', 'This scorecard is settled and can no longer be changed.', 'nor can the player who submitted it');
+select is(public.tdc_card_state(:'m')->>'state', 'agreed', 'the card is still agreed');
 
--- Withdrawing: the submitter may take back an unanswered card, the other
--- player may not (they dispute instead).
-select public.tdc_submit_card(:'m');
+-- ─── Withdrawing: the submitter takes back an unanswered card ───
+
+select throws_ok(format($$ select public.tdc_reopen_card(%L) $$, :'m_withdraw'),
+	'P0001', 'This scorecard has not been submitted, so there is nothing to take back.', 'a card that was never submitted has nothing to withdraw');
+
+select public.tdc_submit_card(:'m_withdraw');
 select tests.sign_in(:'bob');
-select throws_ok(format($$ select public.tdc_reopen_card(%L) $$, :'m'),
+select throws_ok(format($$ select public.tdc_reopen_card(%L) $$, :'m_withdraw'),
 	'P0001', 'You did not submit this scorecard. Say what is wrong with it instead.', 'the other player cannot withdraw a submission');
 select tests.sign_in(:'alice');
-select is(public.tdc_reopen_card(:'m')->>'state', 'in_progress', 'the submitter can withdraw an unanswered card');
-
--- A sanctioned match is not the players' to reopen.
+select is(public.tdc_reopen_card(:'m_withdraw')->>'state', 'in_progress', 'the submitter can withdraw an unanswered card');
 select tests.sign_out();
-update public.tbl_matches set sanctioned = true, sanctioned_by = :'alice', sanctioned_at = now() where id = :'m';
+select is((select status || '/' || coalesce(ended_at::text, 'open') from public.tbl_matches where id = :'m_withdraw'), 'in_progress/open', 'withdrawing puts the match back in play');
 select tests.sign_in(:'alice');
-select public.tdc_submit_card(:'m');
-select throws_ok(format($$ select public.tdc_reopen_card(%L) $$, :'m'),
-	'P0001', 'This match counts towards rankings. Ask the organiser to reopen it.', 'a sanctioned card cannot be reopened by a player');
+select lives_ok(format($$ select public.tdc_record_frame(%L, 3, '{"winner_side": "home", "result_event": "win"}') $$, :'m_withdraw'),
+	'a withdrawn card can be changed again');
+
+-- A sanctioned match is not the players' to take back.
+select tests.sign_out();
+update public.tbl_matches set sanctioned = true, sanctioned_by = :'alice', sanctioned_at = now() where id = :'m_withdraw';
+select tests.sign_in(:'alice');
+select public.tdc_submit_card(:'m_withdraw');
+select throws_ok(format($$ select public.tdc_reopen_card(%L) $$, :'m_withdraw'),
+	'P0001', 'This match counts towards rankings. Ask the organiser to reopen it.', 'a sanctioned card cannot be withdrawn by a player');
 
 -- ─── Disputing ───
 
@@ -183,7 +190,10 @@ select is((public.tdc_card_state(:'m_silence')->>'by_silence')::boolean, true, '
 
 select tests.sign_in(:'bob');
 select throws_ok(format($$ select public.tdc_record_frame(%L, 3, '{"winner_side": "away", "result_event": "win"}') $$, :'m_silence'),
-	'P0001', 'Both players have agreed this scorecard. Reopen it before changing anything.', 'a card settled by silence is locked with no job having run');
+	'P0001', 'This scorecard is settled and can no longer be changed.', 'a card settled by silence is locked with no job having run');
+select tests.sign_in(:'alice');
+select throws_ok(format($$ select public.tdc_reopen_card(%L) $$, :'m_silence'),
+	'P0001', 'This scorecard is settled and can no longer be changed.', 'a card settled by silence is final');
 
 select tests.sign_out();
 update public.tbl_match_events set created_at = now() - interval '1000 hours' where match_id = :'m_zero';
@@ -209,7 +219,10 @@ select is(
 
 select tests.sign_in(:'bob');
 select throws_ok(format($$ select public.tdc_record_frame(%L, 3, '{"winner_side": "away", "result_event": "win"}') $$, :'m_none'),
-	'P0001', 'Both players have agreed this scorecard. Reopen it before changing anything.', 'a card settled on submission is locked');
+	'P0001', 'This scorecard is settled and can no longer be changed.', 'a card settled on submission is locked');
+select tests.sign_in(:'alice');
+select throws_ok(format($$ select public.tdc_reopen_card(%L) $$, :'m_none'),
+	'P0001', 'This scorecard is settled and can no longer be changed.', 'a card settled on submission is final, even for the submitter');
 
 -- Turning approval on afterwards must not unsettle a card that settled
 -- without it: the settlement was recorded, not worked out from the rules.

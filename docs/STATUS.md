@@ -6,7 +6,7 @@ Updated at every milestone, in the same breath as giving UV a commit subject. Ne
 
 Last updated: **23 Oct 2026** (late: the local test harness)
 
-**Database is current through `20261023185340`** (UV pushed the frame-removal fix, 23 Oct). **Waiting to push: `20261023185945`** (A7). **All league migrations are pushed.** That covers all six league steps plus the three corrections of 23 Oct: `110000` paid-confirms and the readiness gate, `120000` confirmation is not a gate, `130000` the frame count.
+**Database is current through `20261023185945`** (UV pushed the two card fixes from the test suites, 23 Oct). **Waiting to push: `20261023190825`** (A8 — push it before deploying the site). That covers all six league steps plus the three corrections of 23 Oct: `110000` paid-confirms and the readiness gate, `120000` confirmation is not a gate, `130000` the frame count.
 
 ---
 
@@ -20,7 +20,7 @@ Nothing here can be done by Claude.
 | 0b | **Play a singles match straight after pushing** | `20261022230000` and `20261023090000` both patch **`tdc_record_frame`**, which every match goes through, plus `tdc_submit_card`, `tdc_answer_card` and `private.tdc_card_state`. All changes are additive and covered by new tests — including that a singles card still settles on submission when no approval is wanted, and still waits for an answer when it is — but the original match suites from 15–21 Oct did not survive their container, so a real singles match is the only end-to-end check there is |
 | 0c | **Give "Linton's Team" a captain** | In your own league, that team has two players and neither is a captain, so it cannot set a lineup or sign a card by itself. The manage page now says so. Tick Captain beside one of them |
 | 0d | **Try the league pages on a phone** | Steps 2 and 3 are pushed and were proven only on a throwaway Postgres driven by headless Chromium. At `/leagues/`: create a league, add a second account, make two teams, confirm as both, generate the fixtures, start a match |
-| 1 | **Play through sections 8, 11, 12 and 13 of the test plan** | Several builds are proven only against a scratch database. The logic is verified; a real league night is not |
+| 1 | **Play through sections 8, 11, 12, 13 and 14 of the test plan** | Several builds are proven only against a scratch database. The logic is verified; a real league night is not |
 | 1b | **Try the bracket editor on a real draw** | Insert a prelim, add a match to it, click an arrow to rewire, remove a match. Proven against a scratch database and rendered in headless Chromium; never driven by a person. **Check a tournament with a third-place playoff in particular** — it was broken from 22 Oct until this build and nobody hit it |
 | 2 | **Retest the walk-in merge via `/staff/link/`** | The one thing left that could lose real data. Changed again on 21 Oct by the merge fix, so earlier testing no longer counts |
 | 3 | **Enable the signup bot check** (Turnstile or hCaptcha) | Self-entry currently rests on a confirmed email address alone. The bot check is the other half of "a verified account" |
@@ -41,8 +41,7 @@ Found in a read-only review of every migration, the front end, the edge function
 | A3 | `tdc_set_match_time` | Same gap — players can move a competition match, which also moves the lineup cutoff | Same guard as A2 |
 | A4 | `tdc_record_frame`, team matches | Players named in a frame are not checked against the teams' rosters, and being in a frame grants edit rights | Check each player is an active entrant of that side |
 | A5 | `private.tdc_merge_players` | Misses `tbl_league_match_squad`, `tbl_league_match_order` and `tbl_notification_prefs`; a merge empties lineups | Add them; run the migration's foreign-key query |
-| A7 | `private.tdc_card_state` | Found by the tests, 23 Oct. **A published tournament card reports `awaiting` again** and has lost `can_object` / `object_until`, so the other player is offered "Looks right" (refused) and never the objection button. Fixed on 20 Oct by `20261020140000`; undone on 21 Oct by `20261021160000`, which changed more than its one clause | **Written and tested: `20261023185945`, waiting for UV to push.** Also makes a send-back unlock (A8's first half), which is what lets the published branch go back without a sent-back card reading as settled |
-| A8 | Reopening | UV, 23 Oct (`docs/DECISIONS.md`): **a settled card is final for players**; only a TD/LD can open it again. Today either player can reopen a settled social card, and a player's reopen of a published tournament card half-works (says in progress, stays locked). *Send back now unlocks — done with A7* | `tdc_reopen_card`: withdraw only. Remove the Reopen button; update test plan 7.5 / 11.3 and `012` |
+| A8 | Reopening | UV, 23 Oct (`docs/DECISIONS.md`): **a settled card is final for players**; only a TD/LD can open it again. Today either player can reopen a settled social card, and a player's reopen of a published tournament card half-works (says in progress, stays locked). *Send back now unlocks — done with A7* | **Written and tested: `20261023190825` plus `match.js`, waiting for UV to push and deploy.** Reopen is withdraw-only; the button is gone; test plan 7.5 / 11.3 / 11.5 updated |
 
 ### Before more real players join
 
@@ -136,6 +135,7 @@ Work is blocked or will be built wrong without these.
 | Travelling leagues: does a league have an owning venue, or its own fee scope? | Blocks entry fee charging |
 | Shot clock and extension rules the timer hardware reads | Hardware is not specified |
 | Captains inviting players to their team | UV, 22 Oct: common practice in existing leagues; to be discussed later. For now the director adds players (mid-season too) and a captain claims them — since 23 Oct without waiting for them to confirm |
+| May a player still **delete** a settled social match? | Raised 23 Oct with the "settled is final" decision. Reopening a settled social card is now refused, but `tdc_delete_match` still lets either player delete it (anything not sanctioned), which removes the result entirely — e.g. Bob agreed 5–3, a week later Alice deletes the match. A1 already covers competition matches |
 | What happens to a card already dealt when the rules change under it | Blocks the settings page in §3. Claude's proposal is in that row; it needs UV's agreement because it decides whether a director can ever be stopped from editing their own league |
 
 ---

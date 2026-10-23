@@ -101,7 +101,7 @@ The history table is where a mis-tap gets fixed, and where the trickiest rules l
 | 7.2 | Agree from the other account | State `agreed`; the agreeing player answers from the **result page**, not the stage | ☐ |
 | 7.3 | Dispute with a reason | State `disputed`, the stage comes back for editing, reason shown | ☐ |
 | 7.4 | Try to change a frame on an agreed card | Refused by the database, not just hidden on screen | ☑ (tested directly) |
-| 7.5 | Reopen an agreed card, fix a frame, submit again | Works; a fresh agreement is needed | ☑ (tested directly) |
+| 7.5 | Try to reopen an agreed card, from either account | No Reopen button; "This result is final." The database refuses it too (changed 23 Oct — settled is final for players) | ☐ |
 | 7.6 | Edit a frame while a card is awaiting an answer | The submission lapses — state back to `in_progress` | ☑ (tested directly) |
 
 ---
@@ -154,9 +154,9 @@ Built 15 Oct, amended 17 Oct so the finish **asks first**.
 |---|---|---|---|
 | 11.1 | Start a match, leave approval alone, score it out to the target | Default is the **48-hour window**. At the target the page asks "Submit the card?" — it does not submit on its own | ☐ |
 | 11.2 | Same, but set Approval to "No approval needed" | The prompt says it settles straight away. On Submit: two events in one go, `submitted` then `agreed`, card locked | ☐ |
-| 11.3 | On that settled match, try to change a frame | Refused; Reopen puts it back | ☐ |
+| 11.3 | On that settled match, try to change a frame | Refused, and there is no Reopen — the result is final (23 Oct) | ☐ |
 | 11.4 | Answer **Not yet** at the prompt | Card stays open, Submit button still there, no event written | ☐ |
-| 11.5 | Reopen a finished match and correct **two** frames | It does **not** ask again after the first fix. Only the frame that *ends* a match prompts | ☐ |
+| 11.5 | Dispute a finished match from the other account, then correct **two** frames | It does **not** ask again after the first fix. Only the frame that *ends* a match prompts | ☐ |
 | 11.6 | Submit by hand, then tap **Withdraw** as the submitter | `reopened` event, stage comes back | ☐ |
 | 11.7 | Try to Withdraw from the *other* account | Refused — "say what is wrong with it instead" | ☐ |
 | 11.8 | Play a **best of 5** out to 3–1 | Match reads as over at 3. Previously only "race to" ever ended | ☐ |
@@ -206,6 +206,20 @@ Built 17 Oct.
 | 13.5 | Set a time with a year typed wrong (2036) | Refused — "more than two years away, check the year" | ☐ |
 | 13.6 | Try to set a time on a settled match | The field is disabled, and the database refuses it too | ☐ |
 | 13.7 | Check the time shown in the notification against the field | Field is your local clock; the notification is South African time | ☐ |
+
+---
+
+## 14. Tournament cards: published, objected to, sent back
+
+Fixed 23 Oct (`20261023185945`, A7 in `docs/STATUS.md`). Proven locally by `014_match_approval`; never played on the live site. A throwaway tournament with two player accounts and you as TD is enough. Leave approval on the default (48-hour window).
+
+| # | Do this | Claude checks | Status |
+|---|---|---|---|
+| 14.1 | Player A scores a couple of frames and submits | Player B sees a **published** result with "if this is wrong, say so by …" and an objection option — **not** "Looks right" | ☐ |
+| 14.2 | Player B objects with a reason | Card stays locked, result stays published; the objection shows for the TD. B cannot object a second time | ☐ |
+| 14.3 | TD presses **Send back** with a note | The note shows; player A can change a frame again | ☐ |
+| 14.4 | Player A fixes a frame and submits again | Published again | ☐ |
+| 14.5 | If the match had already put someone into the next round: watch the bracket after 14.3 | Does the next-round slot empty, or keep the player? Not checked by the tests — note what happens | ☐ |
 
 ---
 

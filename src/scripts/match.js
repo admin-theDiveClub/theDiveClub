@@ -1571,9 +1571,7 @@
 			}
 			case 'reopencard':
 				cardAction('tdc_reopen_card', { p_match_id: liveMatchId },
-					cardState && cardState.state === 'awaiting'
-						? 'Taken back. Put it right, then submit it again.'
-						: 'Reopened. Put it right, then submit it again.', 'reopened');
+					'Taken back. Put it right, then submit it again.', 'reopened');
 				return;
 			case 'deletematch':
 				confirmingDelete = true;
@@ -1883,9 +1881,9 @@
 
 	// A submitted card is already out of the scorer's hands, so the stage goes
 	// away then — not only once it has been agreed. The match is over, the
-	// result is what matters, and anyone who needs to change something reopens
-	// it from here. A dispute puts the stage back, because that is exactly what
-	// a dispute asks for.
+	// result is what matters, and the submitter can still withdraw it from here
+	// until it is answered. A dispute puts the stage back, because that is
+	// exactly what a dispute asks for.
 	function settled() {
 		if (!liveMatchId || !cardState) return false;
 		return cardState.state === 'agreed' || cardState.state === 'awaiting'
@@ -2007,6 +2005,7 @@
 					: cardState.by_silence ? 'Agreed — nobody disputed it in time.'
 						: 'Agreed by both players.'));
 			if (cardState.at) lines.push(div('card-note', whenText(cardState.at)));
+			lines.push(div('card-note', 'This result is final.'));
 		}
 
 		if ((myTurn || canObject) && disputing) {
@@ -2018,8 +2017,8 @@
 		}
 		els.resultAgreed.replaceChildren(...lines);
 
-		// Settled is not the same as permanent. A mistake found later is still
-		// fixable; it just cannot be fixed quietly.
+		// A settled card is final for the players (UV, 23 Oct): there is no
+		// Reopen. The submitter can only Withdraw a card nobody has answered.
 		const actions = [];
 		if (myTurn) {
 			actions.push(...(disputing
@@ -2035,12 +2034,13 @@
 		} else if (canEdit && !MATCH.sanctioned && (!waiting || mine)) {
 			// While a card is waiting, only the person who sent it can take it
 			// back. The other player's way in is to say what is wrong.
-			actions.push(confirmingDelete
-				? mbtn('Yes, delete this match', '', { act: 'deleteconfirm' })
-				: mbtn(waiting ? 'Withdraw' : 'Reopen', '', { act: 'reopencard' }));
-			actions.push(confirmingDelete
-				? mbtn('Keep it', '', { act: 'deletecancel' })
-				: mbtn('Delete match', '', { act: 'deletematch' }));
+			if (confirmingDelete) {
+				actions.push(mbtn('Yes, delete this match', '', { act: 'deleteconfirm' }),
+					mbtn('Keep it', '', { act: 'deletecancel' }));
+			} else {
+				if (waiting) actions.push(mbtn('Withdraw', '', { act: 'reopencard' }));
+				actions.push(mbtn('Delete match', '', { act: 'deletematch' }));
+			}
 		}
 		els.resultActions.replaceChildren(...actions);
 	}
