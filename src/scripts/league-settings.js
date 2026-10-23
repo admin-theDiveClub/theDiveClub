@@ -2,14 +2,20 @@
 //
 // The league's name and its ruleset — including the Team play group, where
 // team size and the rotation table live (version 3, 23 Oct). The rules belong
-// to the league, so this edits every season of it at once.
+// to the league, so this edits every season of it at once. Also this season's
+// name and dates (23 Oct), so everything set on the new-league page can be
+// changed here.
 //
 // The ruleset is read from tbl_leagues, not from tdc_league_season_info: that
 // one returns the league's rules with this season's overrides laid over them,
 // and sending the merged copy back would bake one season's changes into the
 // whole league.
 //
-// Saving is tdc_update_league, which validates the ruleset against every
+// Saving is two writes, the season first. tdc_update_league_season takes the
+// season's name, and its dates only when they changed: the dates live on the
+// season period, which another league can share, and a shared one is refused
+// — so sending unchanged dates would stop such a league saving anything.
+// Then tdc_update_league, which validates the ruleset against every
 // season, writes it, and re-freezes it onto every match that has not started.
 // It answers how many matches changed and how many kept their old rules, and
 // the page says both: a director must not believe a match follows the new
@@ -24,6 +30,7 @@
 	const el = (id) => document.getElementById(id);
 	const els = {
 		title: el('l-title'), meta: el('l-meta'), name: el('l-name'),
+		seasonName: el('s-name'), start: el('s-start'), end: el('s-end'),
 		overrides: el('overrides-note'),
 		main: el('settings-main'), rest: el('settings-rest'),
 		save: el('save-btn'), status: el('page-status'),
@@ -41,6 +48,7 @@
 	// ─── State ───
 	let leagueId = null;
 	let rules = null;
+	let savedDates = { start: '', end: '' };   // as last read, to send only a change
 	// Team play is what this page is mostly for, so it starts open.
 	const openGroups = new Set(['Team play']);
 	let busy = false;
@@ -135,6 +143,11 @@
 		leagueId = s.league_id;
 		els.meta.textContent = 'Opened from ' + s.name + '. These rules apply to every season of the league.';
 
+		els.seasonName.value = s.name || '';
+		savedDates = { start: s.starts_on || '', end: s.ends_on || '' };
+		els.start.value = savedDates.start;
+		els.end.value = savedDates.end;
+
 		// A season's own changes still apply on top. There is no form for
 		// them yet, so the director is at least told they exist.
 		const own = Object.keys(s.rules_overrides || {});
@@ -186,6 +199,22 @@
 			return;
 		}
 
+		const seasonName = (els.seasonName.value || '').trim();
+		if (seasonName.length < 2) {
+			TDC.status(els.status, 'The season needs a name of two characters or more.', '');
+			els.seasonName.focus();
+			return;
+		}
+
+		const start = els.start.value || '';
+		const end = els.end.value || '';
+		if (start && end && end < start) {
+			TDC.status(els.status, 'The season cannot end before it starts.', '');
+			els.end.focus();
+			return;
+		}
+		const datesChanged = start !== savedDates.start || end !== savedDates.end;
+
 		// Allowed, but said once more at the moment it matters (UV, 23 Oct).
 		if (rules.team_size >= 2) {
 			const repeats = D.rotationRepeats(D.rotationGrid(rules));
@@ -198,6 +227,21 @@
 		busy = true;
 		els.save.disabled = true;
 		TDC.status(els.status, 'Saving…', '');
+
+		// The season first. A refusal here has written nothing at all, so the
+		// form keeps what the person chose.
+		const seasonArgs = { p_league_season_id: seasonId, p_name: seasonName };
+		if (datesChanged) {
+			// "Exactly these": a blank box clears that one date.
+			Object.assign(seasonArgs, { p_starts_on: start || null, p_ends_on: end || null, p_clear_dates: true });
+		}
+		const season = await supabaseClient.rpc('tdc_update_league_season', seasonArgs);
+		if (season.error) {
+			busy = false;
+			els.save.disabled = false;
+			TDC.showSupabaseError(AREA, season.error, els.status);
+			return;
+		}
 
 		const { data, error } = await supabaseClient.rpc('tdc_update_league', {
 			p_league_id: leagueId,
@@ -212,6 +256,8 @@
 			busy = false;
 			els.save.disabled = false;
 			TDC.showSupabaseError(AREA, error, els.status);
+			// Said, because half of it did land.
+			els.status.textContent += ' The season\'s name and dates were saved; the league\'s name and rules were not.';
 			return;
 		}
 

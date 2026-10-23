@@ -1,7 +1,7 @@
 ---
 layout: layout.html
 title: League Settings
-description: "Change a league's name and the rules its matches are played under."
+description: "Change a league's name, this season's name and dates, and the rules its matches are played under."
 extraStyles:
   - /stylesheets/league.css
 extraScripts:
@@ -30,6 +30,29 @@ extraScripts:
 		<label for="l-name">League name</label>
 		<input type="text" id="l-name" maxlength="120" autocomplete="off">
 		<div class="hint">Every season of the league shares this name.</div>
+	</div>
+
+	{% comment %}
+		This season's own name and dates, as set on the new-league page. Saved
+		with tdc_update_league_season. The dates live on the season period,
+		which another league can share; a shared one is refused rather than
+		moved under that league.
+	{% endcomment %}
+	<div class="field">
+		<label for="s-name">Season name</label>
+		<input type="text" id="s-name" maxlength="120" autocomplete="off">
+		<div class="hint">This season only.</div>
+	</div>
+
+	<div class="field">
+		<label for="s-start">Starts</label>
+		<input type="date" id="s-start">
+		<div class="hint">Leave blank if you have not set a date.</div>
+	</div>
+
+	<div class="field">
+		<label for="s-end">Ends</label>
+		<input type="date" id="s-end">
 	</div>
 
 	<p class="muted" id="overrides-note" hidden></p>

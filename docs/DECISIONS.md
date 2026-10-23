@@ -522,3 +522,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Why:* testing a real league, UV moved the whole Name Down list into the league and every player arrived confirmed. *"They should not be confirmed until LD says so (as set in the settings)."* Claude's reasoning had been that a player who goes looking for the league and puts their name down has said they are playing; in practice that took the confirmation out of the league's hands.
 *So:* migration `20261023201147`. Name down never confirms. In a league that confirms on payment, the paid tick confirms. Otherwise the player confirms on the season page once they are let in, and being let in now tells them so. **A self-confirm league with no payment step is the one exception:** joining is the confirmation, because there is no other step for it to wait on (UV).
 *Rejected:* the director confirming by moving a player in, or by a separate tick of their own — UV kept confirmation as the player's own word.
+
+## 2026-10-23 — A maximum number of players per team
+
+*Decided by:* UV
+*Why:* nothing limited a team's roster, so a five-man card offered the whole league as reserves. *"We need to set a max limit on reserves in a team (or a max amount of players per team)."* A seven-player limit in a five-man league means two reserves.
+*So:* a league setting, **required when the league is created**. It **binds captains only**; the LD may place a player past it, for an emergency signing. **Lowering it below a team's current size is allowed**: that team keeps its players but cannot add anyone until it is under the limit, and the page warns which teams are over.
+*Rejected:* refusing a lower limit until teams shed players; binding the LD too; no limit until one is set.
