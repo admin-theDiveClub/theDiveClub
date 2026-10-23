@@ -43,14 +43,19 @@ extraScripts:
 		who plays which position. Both are a captain's own side only — the league
 		director gets a side switch instead.
 	{% endcomment %}
-	<div id="setup" hidden>
-		<div class="toolbar" id="side-switch" hidden>
-			<div class="field">
-				<label for="side-pick">Setting up for</label>
-				<select id="side-pick"></select>
-			</div>
+	{% comment %}
+		The league director's side switch. Outside #setup on purpose: #setup
+		hides once the chosen side is locked, and with the switch inside it the
+		director had no way across to the side still to lock (UV, 24 Oct).
+	{% endcomment %}
+	<div class="toolbar" id="side-switch" hidden>
+		<div class="field">
+			<label for="side-pick">Setting up for</label>
+			<select id="side-pick"></select>
 		</div>
+	</div>
 
+	<div id="setup" hidden>
 		<h2>Who is here tonight</h2>
 		<p class="muted" id="squad-hint"></p>
 		<div id="squad-list"></div>

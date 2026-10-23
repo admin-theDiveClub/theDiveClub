@@ -161,6 +161,13 @@
 		if (!working || (!lineupState.i_run_it && working !== mine)) {
 			working = mine || (lineupState && lineupState.i_run_it ? 'home' : null);
 		}
+		// A director with no side of their own goes to the side still to lock:
+		// once one is in, the other is the only one with anything to do.
+		if (lineupState && lineupState.i_run_it && !mine) {
+			const lockedNow = { home: lineupState.home_locked, away: lineupState.away_locked };
+			const other = working === 'home' ? 'away' : 'home';
+			if (lockedNow[working] && !lockedNow[other]) working = other;
+		}
 
 		changes = [];
 		if (working) {
@@ -183,6 +190,7 @@
 		const canSet = working && (lineupState.i_run_it || lineupState.my_side === working);
 
 		renderState(locked, both);
+		renderSwitch(both);
 		renderSetup(locked, both, canSet);
 		renderOther(locked, both);
 		renderGrid(both);
@@ -236,18 +244,23 @@
 		}
 	}
 
+	// The director's switch between the two sides, for as long as either has
+	// a lineup to set. Each option says whether that side is in yet.
+	function renderSwitch(both) {
+		els.sideSwitch.hidden = both || !lineupState.i_run_it || !!lineupState.my_side;
+		if (els.sideSwitch.hidden) return;
+		const label = (side) => teamName(side)
+			+ (lineupState[side + '_locked'] ? ' (locked)' : '');
+		els.sidePick.replaceChildren(
+			new Option(label('home'), 'home'),
+			new Option(label('away'), 'away'));
+		els.sidePick.value = working;
+	}
+
 	function renderSetup(locked, both, canSet) {
 		// Nothing to set up once this side is locked.
 		els.setup.hidden = !canSet || !working || locked[working];
 		if (els.setup.hidden) return;
-
-		els.sideSwitch.hidden = !lineupState.i_run_it || !!lineupState.my_side;
-		if (!els.sideSwitch.hidden && !els.sidePick.options.length) {
-			els.sidePick.append(
-				new Option(match.home_name, 'home'),
-				new Option(match.away_name, 'away'));
-		}
-		els.sidePick.value = working;
 
 		const teamId = working === 'home' ? match.home_team_id : match.away_team_id;
 		const roster = rosters.get(teamId) || [];
