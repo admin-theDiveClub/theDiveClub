@@ -103,6 +103,11 @@ frames complete in order, and frame 4 routinely finishes before frame 3.
 > policy. Frames are created when the second side locks, exactly as the three
 > rules below say. **Not built:** nothing yet reads `strict_frame_order` — it
 > is stored and validated, and the scorecard that would obey it is step 6.
+>
+> **Superseded in one respect, 23 Oct.** What is built asks a captain to fill
+> every slot of the night by hand. It should ask for the first session only and
+> derive the rest — see *The order is one per position* below, which is the
+> next piece of league work and changes `tbl_league_match_order`.
 
 - **Squad is open** to everyone and editable. **Order is a blind exchange**
   between captains, locked at match start.
@@ -122,6 +127,57 @@ frames complete in order, and frame 4 routinely finishes before frame 3.
 
 Squad and order are separate things and want **separate tables**.
 
+### The order is one per position, not one per frame
+
+> **Settled 23 Oct, not built.** UV: *"Captains don't set the lineup on every
+> frame. The scorecard carries a specified order of play based on the order of
+> the first round-robin session. So, as a captain, I set the order on the first
+> 5 frames and then the rest of the night is worked out from there."*
+
+A team night is **sessions**, not a flat list of frames.
+
+- **Session size is a league setting**: a floor number of players in a team. A
+  five-man league plays **five frames per session, five sessions, 25 frames** —
+  so `frames = team_size²` and the order a captain sets is `team_size` long.
+- A captain names the order for the **first session only**. Every later session
+  is derived from it by the rotation table.
+- **The rotation table belongs to the LD**, who defines it when designing their
+  scorecard. We follow the same format. Default to a cyclic shift of the away
+  order and let the LD state theirs.
+- **Frames may be played out of order.** That only matters for standings, but
+  nothing in the card may assume sequence.
+
+So `tbl_league_match_order` holds one row per **position** per side, not one per
+frame, and the night's pairings are derived from the two orders plus the table.
+The blind exchange is unchanged: neither side sees the other's order until both
+have locked.
+
+#### Reserves fill a position for one session
+
+A reserve never changes the session size or the frame count. It replaces a
+player **in one frame of one session**. A five-man team with six players
+usually has five players play four frames and one play five — 25 appearances
+shared among six.
+
+The captain sets how many players are in tonight and may add reserves on
+demand. At lock time they still name only the first session; once the card is
+generated they swap a reserve in per session. Three rules hold:
+
+| | Rule |
+|---|---|
+| 1 | A player may not play **more than one frame in a session** |
+| 2 | A player locked in on the team lineup **stays in the same position every session** — only a reserve coming in changes who occupies it |
+| 3 | A reserve may **not face the same opponent twice** across sessions |
+
+The captain marks each change themselves. UV: *"2 changes is not much to ask
+for."*
+
+#### Breaks are already answered
+
+The LD sets who breaks on each frame, as they do for any match; a mainstream
+team league is lag winner every frame. Formats with **pre-determined breaks per
+session** exist and are an **LD edge case for later** — not part of this.
+
 ### Frames are created at lineup lock
 
 When the second captain locks:
@@ -137,6 +193,18 @@ A captain who never locks concedes every slot to the side that did.
 > target can become unreachable and a tie can appear where the format did not
 > expect one. Team matches therefore want `fixed_frames` with "most frames
 > wins", plus `draws_allowed` to settle level.
+>
+> **This is advice, not a constraint (corrected 23 Oct).** It was read as one:
+> `private.tdc_lineup_slots` counted frames only for `fixed_frames`, so UV's
+> race-to-13 league returned zero slots and the card drew a single frame. The
+> count now answers for every win condition — `fixed_frames` and `best_of` give
+> their target, `race_to` gives **2N−1** because a team night plays its whole
+> card rather than stopping when one side gets there, and a timed or free-play
+> night gets one slot per player on the fuller side. It is never zero.
+>
+> **Once sessions exist this becomes a fallback.** A team night's frame count
+> should come from the team size (five-man → 25); the win condition answers only
+> for a league with no team size set.
 
 An unfilled slot's `default` frame is **materialised at submission, not
 before** — a team still arranging lifts should not be conceding frames at 19:30.
@@ -312,3 +380,13 @@ Carried from `claude/stats-schema-design.md`; none of it blocks starting.
 - ~~Can a walk-in be a league entrant?~~ **Resolved 22 Oct: never.** Walk-ins are for business, tournaments and matches.
 - **Captains inviting players** to their team. Common practice in existing leagues; UV will discuss later.
 - **Approval and dispute mechanics** for the team case in detail.
+- **Changing a league's rules after it starts.** There is no page for it, so a
+  ruleset chosen wrongly at creation cannot be corrected — UV hit this on 23 Oct
+  with a race-to league he had meant to make fixed-25. Proposed: refuse a change
+  that would **shrink a card with frames already recorded**, allow it everywhere
+  else, rather than silently dropping frames and breaking *frames are the only
+  record*. Team size and the rotation table live here too.
+- **The rotation table's default.** UV: *"usually defined by LD when designing
+  their scorecard … we should follow a similar format."* Taken as *the LD states
+  it, cyclic shift as the default* — to be confirmed before it is built, since
+  the alternative is one fixed standard table nobody may edit.

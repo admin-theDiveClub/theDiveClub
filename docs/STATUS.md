@@ -4,9 +4,9 @@
 
 Updated at every milestone, in the same breath as giving UV a commit subject. Never batched to the end of a session.
 
-Last updated: **22 Oct 2026**
+Last updated: **23 Oct 2026**
 
-**Database is current through `20261022210000`** (leagues steps 1 to 3, pushed 22 Oct), verified against `supabase_migrations.schema_migrations`. **`20261023110000_league_entry_fixes.sql` is written and tested but not pushed** (§1). The first contains a **security fix** to a function pushed on 22 Oct — see §1 item 0.
+**Database is current through `20261023130000`**, verified against `supabase_migrations.schema_migrations` on 23 Oct. **All league migrations are pushed; nothing is waiting.** That covers all six league steps plus the three corrections of 23 Oct: `110000` paid-confirms and the readiness gate, `120000` confirmation is not a gate, `130000` the frame count.
 
 ---
 
@@ -16,8 +16,7 @@ Nothing here can be done by Claude.
 
 | | What | Why it matters |
 |---|---|---|
-| 0 | **Push `20261023110000_league_entry_fixes.sql`** | Two corrections from UV's 23 Oct test: "paid also confirms" now actually confirms, and an unconfirmed player no longer stops the fixtures being generated. `npx supabase db push --dry-run`, then `db push` |
-| 0z | **Push `20261023090000_league_submission.sql`** | Leagues step 5, **and a security fix**: `private.tdc_can_set_lineup` (pushed 22 Oct) returned null rather than false for anybody who captained neither team, and every caller negates it — so a signed-in person outside the league could set another team's lineup and lock it by naming the side. Only an unlocked team match was exposed and production had one league and one match, so nothing is known to have been touched. `npx supabase db push --dry-run`, then `db push` |
+| 0 | **Decide the rotation table's default** | The session rework below cannot be built without it. UV, 23 Oct: the table is "usually defined by LD when designing their scorecard … we should follow a similar format". Taken as **the LD states it, with a cyclic shift as the default** — confirm, or say it should be one fixed standard table nobody may edit |
 | 0a | **Run `supabase/seed/dummy-league-players.sql`** | Nineteen dummy players on your league's interested list, so the confirm boxes have a realistic number in them. Run it in the Supabase SQL editor; Claude did not, because `execute_sql` auto-commits and the rule in START-HERE says it is never used to write. Safe to run twice, and the cleanup block at the bottom removes all of it — **use that block rather than deleting the accounts**, see §6 |
 | 0b | **Play a singles match straight after pushing** | `20261022230000` and `20261023090000` both patch **`tdc_record_frame`**, which every match goes through, plus `tdc_submit_card`, `tdc_answer_card` and `private.tdc_card_state`. All changes are additive and covered by new tests — including that a singles card still settles on submission when no approval is wanted, and still waits for an answer when it is — but the original match suites from 15–21 Oct did not survive their container, so a real singles match is the only end-to-end check there is |
 | 0c | **Give "Linton's Team" a captain** | In your own league, that team has two players and neither is a captain, so it cannot set a lineup or sign a card by itself. The manage page now says so. Tick Captain beside one of them |
@@ -34,7 +33,7 @@ Nothing here can be done by Claude.
 
 | Area | Chat | State |
 |---|---|---|
-| Leagues | Leagues | **All six steps built.** A league night is playable end to end; standings are the next body of work. Step 1 and its corrections (walk-ins refused, player confirmation, captains control teams) are pushed; steps 2 (the pages) and 3 (round-robin fixtures and the team match) are written, with `200000` and `210000` not yet pushed. Structure: leagues, seasons, teams, entrants, officials; matches get their team keys; the merge fixed. See `CLAUDE.md` → Leagues. Remaining: **LD-configurable standings** — the table a league is actually for. Designed in `docs/design/leagues.md` §6, including the token-array equation format |
+| Leagues | Leagues | **All six steps built and pushed.** A league night is playable end to end: fixtures → start the match → both captains lock a lineup → frames appear → results on the grid → both sign. Structure, pages, fixtures, ruleset v2, lineups, submission, entry. See `CLAUDE.md` → Leagues. **Two bodies of work remain**, in this order: the **session rework** (§3 item 1 — the order is per position, not per frame, settled 23 Oct) and **LD-configurable standings** (`docs/design/leagues.md` §6, token-array equations) |
 
 ---
 
@@ -44,6 +43,9 @@ In the order it probably makes sense.
 
 | | What | Notes |
 |---|---|---|
+| 0 | **Leagues: the order is one per position, not one per frame** | Settled 23 Oct, designed in `docs/design/leagues.md` §3. A captain names the first session only; the rest of the night derives from it by the LD's rotation table. Session size is a league setting (five-man → 5 frames a session, 25 total). Reserves fill a position for one session under three rules. **This changes `tbl_league_match_order` from one row per frame to one per position**, so orders already recorded in UV's live league will need migrating or clearing — say so before building. Blocked on §1 item 0 |
+| 0b | **An LD-only league settings page** | There is nowhere to change a league's rules after it is created, which UV hit on 23 Oct with a race-to league he had meant to make fixed-25, and has asked for twice. Team size and the rotation table need to live here too, so the session work wants it first. Proposed rule: **refuse a change that would shrink a card with frames already recorded**, allow it everywhere else — never silently drop frames |
+| 0c | **The LD schedule page** | UV, 23 Oct: weeks (date and time, assumed from the generate settings), venue, tables, home/away. Open questions to put to him: is the venue per fixture or the home team's? how are tables identified? is a manual home/away swap wanted? |
 | 1 | **Leagues: standings** | The table a league is for. LD-configurable columns built from a **token array, never a string** — the design is explicit about that and lists the tokens. Designed in `docs/design/leagues.md` §6 |
 | 1b | **A player's own frame on `/match/`** | The design's second surface: a player opens the match page and sees only their own frame. `/match/` still refuses a team match, so today a player's frame is entered by their captain on the card. Nothing is blocked by this — it is the convenience half of "two surfaces, one record" |
 | 2 | **UV to play through the bracket editor** | Built and render-checked, not yet used on a real draw. See §1 |
@@ -87,7 +89,8 @@ Work is blocked or will be built wrong without these.
 | Should an unpublished result be marked as pending in a player's own view? | Affects the match page and the match list |
 | Travelling leagues: does a league have an owning venue, or its own fee scope? | Blocks entry fee charging |
 | Shot clock and extension rules the timer hardware reads | Hardware is not specified |
-| Captains inviting players to their team | UV, 22 Oct: common practice in existing leagues; to be discussed later. For now the director adds players (mid-season too) and a captain claims them once they have confirmed |
+| Captains inviting players to their team | UV, 22 Oct: common practice in existing leagues; to be discussed later. For now the director adds players (mid-season too) and a captain claims them — since 23 Oct without waiting for them to confirm |
+| What happens to a card already dealt when the rules change under it | Blocks the settings page in §3. Claude's proposal is in that row; it needs UV's agreement because it decides whether a director can ever be stopped from editing their own league |
 
 ---
 

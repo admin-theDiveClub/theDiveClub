@@ -427,3 +427,21 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* `tdc_generate_league_fixtures` refuses only on fewer than two teams, or a team with nobody on it. Confirmation itself stays, and so does everything that reads it — the readiness panel still names who is outstanding. **It is information, not a gate.**
 *Kept:* a team with nobody on it still refuses, because a fixture against an empty team cannot be played. That check no longer asks whether those players have confirmed either.
 
+## 2026-10-23 — A team night's frame count reads every win condition
+
+*Decided by:* Claude, after UV's test
+*Why:* `private.tdc_lineup_slots` took the frame count from `win_condition_target` **only** when the win condition was `fixed_frames`, on the strength of a line in `docs/design/leagues.md` saying a team match wants that one. UV's real league is race-to-13 — which is how a mainstream team league is written down — so the function found nothing, fell back to the highest slot anybody had used, found none of those either, and returned zero. The card drew one frame and the order could not be set. *"After setting who is here tonight where I marked everyone as yes, I only see Frame 1 for the order."*
+*So:* the count answers for every win condition. `fixed_frames` and `best_of` give their target; `race_to` gives **2N−1**, because a team night plays its whole card rather than stopping the moment one side gets there; a timed or free-play night gets one slot per player on the fuller side. **It is never zero** — a night with nobody marked present still has a first slot, and the slot guard reads this same number to decide what exists.
+*Rejected:* reading the target regardless of win condition, which would have given UV's league 13 slots instead of 25 and quietly halved a real card.
+*Noted:* the design's line was advice about which win condition suits a team night, not a claim that the others cannot be counted. Reading advice as a constraint left a league that was set up sensibly with a one-frame card and no explanation.
+*Superseded in part:* once sessions exist the count comes from the **team size** (five-man → 25); this stays as the fallback for a league with no team size set.
+
+## 2026-10-23 — The order is one row per position, not one per frame
+
+*Decided by:* UV
+*Why:* what was built on 22 Oct asks a captain to fill all 25 slots of the night by hand. That is not how a team league works. UV: *"Captains don't set the lineup on every frame. The scorecard carries a specified order of play based on the order of the first round-robin session. So, as a captain, I set the order on the first 5 frames and then the rest of the night is worked out from there."*
+*So:* a team night is **sessions**. Session size is a league setting — a floor number of players in a team — so a five-man league plays five frames a session, five sessions, 25 frames, and `frames = team_size²`. A captain names the first session only; every later session derives from it by **the LD's rotation table**, which they define when designing their scorecard. `tbl_league_match_order` becomes one row per position per side. Frames may still be played out of order.
+*Reserves:* a reserve never changes the session size or the frame count — it fills a position for **one session**. A five-man team with six players has five players play four frames and one play five. Three rules: one frame per player per session; a player locked in on the team lineup keeps the same position every session; a reserve may not face the same opponent twice. The captain marks each change themselves — *"2 changes is not much to ask for."*
+*Unchanged:* the blind exchange. Neither side sees the other's order until both have locked.
+*Not this:* pre-determined breaks per session, which exist in other formats and are an LD edge case for later. Who breaks is already the LD's setting, and this league is lag winner every frame.
+*Open:* whether the rotation table is the LD's to define with a cyclic-shift default, or one fixed standard table. `docs/STATUS.md` §1 item 0.
