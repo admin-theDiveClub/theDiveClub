@@ -32,7 +32,7 @@
 		officialList: el('official-list'),
 		status: el('page-status'),
 		manageLink: el('manage-link'), manageSep: el('manage-sep'),
-		fixturesLink: el('fixtures-link')
+		fixturesLink: el('fixtures-link'), meCard: el('me-card')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -109,6 +109,28 @@
 		return true;
 	}
 
+	// The next match this person's team is in, so a captain lands on the card
+	// rather than hunting through the fixture list for it.
+	async function loadMyNext() {
+		els.meCard.hidden = true;
+		if (!mine || !mine.my_team_id) return;
+
+		const { data, error } = await supabaseClient.rpc('tdc_league_fixtures', {
+			p_league_season_id: seasonId
+		});
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+
+		const ours = (data || []).filter((f) =>
+			f.match_id && (f.home_team_id === mine.my_team_id || f.away_team_id === mine.my_team_id));
+		if (!ours.length) return;
+
+		// The first one not yet finished, or the most recent if they all are.
+		const next = ours.find((f) => f.match_status !== 'complete') || ours[ours.length - 1];
+		els.meCard.href = '/leagues/card/?m=' + encodeURIComponent(next.match_id);
+		els.meCard.textContent = mine.i_captain ? 'Set my lineup' : 'My next match';
+		els.meCard.hidden = false;
+	}
+
 	function renderMine() {
 		// Somebody who only runs the season, and plays nowhere in it, has no
 		// place to show. They have the manage page.
@@ -135,7 +157,8 @@
 			els.meDetail.textContent = 'You are not on a team yet. A captain can claim you, or whoever runs the league can place you.';
 			els.meWithdraw.hidden = false;
 		} else {
-			els.meLine.textContent = 'You are confirmed, playing for ' + mine.my_team_name + '.';
+			els.meLine.textContent = 'You are playing for ' + mine.my_team_name
+				+ (mine.confirmed_at ? ', and you have confirmed.' : '. You have not confirmed yet.');
 			els.meDetail.textContent = controlsTeam() ? 'You are a captain of this team.' : '';
 			els.meWithdraw.hidden = false;
 		}
@@ -146,9 +169,13 @@
 			p_league_season_id: seasonId
 		})));
 
+	// Taking your confirmation back, not leaving the league. It clears the
+	// confirmation and nothing else — the place, the team, the captaincy and
+	// the payment all stay, and payment was never a player's to change.
+	// Leaving the league altogether is the director's to do.
 	els.meWithdraw.addEventListener('click', () => {
-		if (!confirm('Withdraw from this league?\n\nYou will come off your team. Whoever runs the league can add you back.')) return;
-		write('Withdrawing', () => supabaseClient.rpc('tdc_withdraw_league_entry', {
+		if (!confirm('Say you are not playing?\n\nYour place and your team stay as they are — you just have not confirmed. You can confirm again whenever you like.')) return;
+		write('Saving', () => supabaseClient.rpc('tdc_unconfirm_league_entry', {
 			p_league_season_id: seasonId
 		}));
 	});
@@ -407,6 +434,7 @@
 		results.push(await loadPool());
 		results.push(await loadReadiness());
 		results.push(await loadOfficials());
+		await loadMyNext();
 		return results.every(Boolean);
 	}
 

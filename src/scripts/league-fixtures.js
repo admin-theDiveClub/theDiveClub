@@ -11,9 +11,10 @@
 // order, and a page that believes its own copy drifts the first time two
 // people are moving games at once.
 //
-// Generating refuses until every active player has confirmed. The page says so
-// before the button is pressed as well, using the same readiness read the
-// manage page uses — but it is the database that enforces it, not this.
+// Generating needs two teams with players in them, and nothing else. Who has
+// confirmed is reported beside the button, using the same readiness read the
+// manage page uses, but it never disables it: confirmation is a player saying
+// whether they are playing, not a gate on the director's season.
 //
 // A team match cannot be scored yet: the lineups and the captain's scorecard
 // are later steps, and the match page refuses to load one. So "Start match"
