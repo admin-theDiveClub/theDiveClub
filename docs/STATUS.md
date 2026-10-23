@@ -6,7 +6,7 @@ Updated at every milestone, in the same breath as giving UV a commit subject. Ne
 
 Last updated: **22 Oct 2026**
 
-**Database is current through `20261022210000`** (leagues steps 1 to 3, pushed 22 Oct), verified against `supabase_migrations.schema_migrations`. **`20261023090000_league_submission.sql` and `20261023100000_league_entry.sql` are written and tested but not pushed** (§1). The first contains a **security fix** to a function pushed on 22 Oct — see §1 item 0.
+**Database is current through `20261022210000`** (leagues steps 1 to 3, pushed 22 Oct), verified against `supabase_migrations.schema_migrations`. **`20261023110000_league_entry_fixes.sql` is written and tested but not pushed** (§1). The first contains a **security fix** to a function pushed on 22 Oct — see §1 item 0.
 
 ---
 
@@ -16,7 +16,8 @@ Nothing here can be done by Claude.
 
 | | What | Why it matters |
 |---|---|---|
-| 0 | **Push `20261023090000_league_submission.sql`** | Leagues step 5, **and a security fix**: `private.tdc_can_set_lineup` (pushed 22 Oct) returned null rather than false for anybody who captained neither team, and every caller negates it — so a signed-in person outside the league could set another team's lineup and lock it by naming the side. Only an unlocked team match was exposed and production had one league and one match, so nothing is known to have been touched. `npx supabase db push --dry-run`, then `db push` |
+| 0 | **Push `20261023110000_league_entry_fixes.sql`** | Two corrections from UV's 23 Oct test: "paid also confirms" now actually confirms, and an unconfirmed player no longer stops the fixtures being generated. `npx supabase db push --dry-run`, then `db push` |
+| 0z | **Push `20261023090000_league_submission.sql`** | Leagues step 5, **and a security fix**: `private.tdc_can_set_lineup` (pushed 22 Oct) returned null rather than false for anybody who captained neither team, and every caller negates it — so a signed-in person outside the league could set another team's lineup and lock it by naming the side. Only an unlocked team match was exposed and production had one league and one match, so nothing is known to have been touched. `npx supabase db push --dry-run`, then `db push` |
 | 0a | **Run `supabase/seed/dummy-league-players.sql`** | Nineteen dummy players on your league's interested list, so the confirm boxes have a realistic number in them. Run it in the Supabase SQL editor; Claude did not, because `execute_sql` auto-commits and the rule in START-HERE says it is never used to write. Safe to run twice, and the cleanup block at the bottom removes all of it — **use that block rather than deleting the accounts**, see §6 |
 | 0b | **Play a singles match straight after pushing** | `20261022230000` and `20261023090000` both patch **`tdc_record_frame`**, which every match goes through, plus `tdc_submit_card`, `tdc_answer_card` and `private.tdc_card_state`. All changes are additive and covered by new tests — including that a singles card still settles on submission when no approval is wanted, and still waits for an answer when it is — but the original match suites from 15–21 Oct did not survive their container, so a real singles match is the only end-to-end check there is |
 | 0c | **Give "Linton's Team" a captain** | In your own league, that team has two players and neither is a captain, so it cannot set a lineup or sign a card by itself. The manage page now says so. Tick Captain beside one of them |

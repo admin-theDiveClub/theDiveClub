@@ -420,3 +420,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Why:* the three transfer lists need layout that does not exist, and `forms.css` is the UI chat's shared component layer — adding one page's furniture to it makes it everybody's problem.
 *So:* `src/stylesheets/league.css`, loaded only by the league pages that ask for it, every value a token. If the transfer boxes prove worth having elsewhere they move to `forms.css` rather than this file growing.
 
+## 2026-10-23 — Confirmation no longer stops a league starting
+
+*Decided by:* UV, reversing his own rule of 22 Oct
+*Why:* on 22 Oct: "Every league player must confirm their participation before the league can begin." On 23 Oct, testing a real league: *"It is not a requirement that every active player has confirmed. I already added my personal profile to the league and marked as a captain. I should be able to start the league regardless."* A director who knows their players should not be held up by somebody who has not opened the app.
+*So:* `tdc_generate_league_fixtures` refuses only on fewer than two teams, or a team with nobody on it. Confirmation itself stays, and so does everything that reads it — the readiness panel still names who is outstanding. **It is information, not a gate.**
+*Kept:* a team with nobody on it still refuses, because a fixture against an empty team cannot be played. That check no longer asks whether those players have confirmed either.
+
