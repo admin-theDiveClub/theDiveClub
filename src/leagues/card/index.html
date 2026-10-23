@@ -1,0 +1,101 @@
+---
+layout: layout.html
+title: Team Card
+description: "The night's card: lineups, every frame, and the two signatures."
+extraScripts:
+  - /scripts/match-settings.js
+  - /scripts/league-card.js
+---
+{% comment %}
+	The captain's scorecard. A full recording surface in its own right, not
+	management around the match page: a captain can run the whole night from
+	this grid without /match/ existing at all. What keeps the one-page rule
+	honest is that there is one frame set, not one screen — this page and the
+	match page read and write the same frames.
+
+	Three things on it, in the order the night happens:
+
+	  1. The squad and the order, until the side locks. The order is a blind
+	     exchange — the other side's names are withheld by tdc_match_lineup
+	     until both have locked, so there is nothing here that could leak them.
+	  2. The grid, once the frames exist. Every frame on one page with its two
+	     players, and the result entered beside it.
+	  3. The two signatures, with what changed since you gave yours.
+
+	Reached as /leagues/card/?m=<match id>.
+{% endcomment %}
+
+<div class="tdc-card wide">
+	<h1 id="m-title">Team Card</h1>
+	<p class="muted" id="m-meta"></p>
+
+	<div class="panel" id="state-panel">
+		<h2 id="state-line">Loading…</h2>
+		<p class="muted" id="state-detail"></p>
+	</div>
+
+	{% comment %}
+		Before the lock. The squad is who is available tonight; the order is
+		who plays which slot. Both are a captain's own side only — the league
+		director gets a side switch instead.
+	{% endcomment %}
+	<div id="setup" hidden>
+		<div class="toolbar" id="side-switch" hidden>
+			<div class="field">
+				<label for="side-pick">Setting up for</label>
+				<select id="side-pick"></select>
+			</div>
+		</div>
+
+		<h2>Who is here tonight</h2>
+		<p class="muted" id="squad-hint"></p>
+		<div id="squad-list"></div>
+
+		<h2>The order</h2>
+		<p class="muted" id="order-hint"></p>
+		<div id="order-list"></div>
+
+		<div class="btn-row">
+			<button type="button" class="btn btn-primary btn-sm" id="lock-btn">Lock the lineup</button>
+		</div>
+	</div>
+
+	{% comment %}
+		The other side's shape, which is all anybody may see before the lock:
+		how many slots they have filled, never who is in them.
+	{% endcomment %}
+	<div class="panel" id="other-side" hidden>
+		<h2 id="other-head">The other side</h2>
+		<p class="muted" id="other-detail"></p>
+	</div>
+
+	<div id="grid" hidden>
+		<h2>The card <span class="badge" id="grid-score" hidden></span></h2>
+		<p class="muted" id="grid-hint"></p>
+		<div id="frame-list"></div>
+	</div>
+
+	<div class="panel" id="sign-panel" hidden>
+		<h2>Signatures</h2>
+		<p id="sign-home"></p>
+		<p id="sign-away"></p>
+
+		<div id="changed-since" hidden>
+			<p class="muted"><strong>The card changed after you signed:</strong></p>
+			<div id="changed-list"></div>
+		</div>
+
+		<div class="btn-row">
+			<button type="button" class="btn btn-primary btn-sm" id="sign-btn" hidden>Sign this card</button>
+			<button type="button" class="btn btn-danger btn-sm" id="dispute-btn" hidden>Something is wrong</button>
+		</div>
+	</div>
+
+	<div class="status" id="page-status"></div>
+
+	<div class="link-row">
+		<a href="#" id="fixtures-link">All fixtures</a>
+		&nbsp;·&nbsp;
+		<a href="/leagues/">Back to leagues</a>
+	</div>
+</div>

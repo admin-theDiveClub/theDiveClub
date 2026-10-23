@@ -32,7 +32,7 @@ Nothing here can be done by Claude.
 
 | Area | Chat | State |
 |---|---|---|
-| Leagues | Leagues | **Steps 1 to 5 of 6 built.** Step 1 and its corrections (walk-ins refused, player confirmation, captains control teams) are pushed; steps 2 (the pages) and 3 (round-robin fixtures and the team match) are written, with `200000` and `210000` not yet pushed. Structure: leagues, seasons, teams, entrants, officials; matches get their team keys; the merge fixed. See `CLAUDE.md` → Leagues. Remaining: (6) the captain's scorecard page, which is now the only thing between a league and a playable night; then LD-configurable standings |
+| Leagues | Leagues | **All six steps built.** A league night is playable end to end; standings are the next body of work. Step 1 and its corrections (walk-ins refused, player confirmation, captains control teams) are pushed; steps 2 (the pages) and 3 (round-robin fixtures and the team match) are written, with `200000` and `210000` not yet pushed. Structure: leagues, seasons, teams, entrants, officials; matches get their team keys; the merge fixed. See `CLAUDE.md` → Leagues. Remaining: **LD-configurable standings** — the table a league is actually for. Designed in `docs/design/leagues.md` §6, including the token-array equation format |
 
 ---
 
@@ -42,7 +42,8 @@ In the order it probably makes sense.
 
 | | What | Notes |
 |---|---|---|
-| 1 | **Leagues, step 6: the captain's scorecard** | See §2. The night's grid on one page: the lineup, every frame with its two players, results entered frame by frame, and the two signatures. Everything behind it exists — `tdc_match_card`, `tdc_match_lineup`, `tdc_lineup_state`, `tdc_record_frame`, `tdc_submit_card`, `tdc_card_changes_since_signing`. **The match page still refuses a team match**, so this is a new page rather than a change to that one. Designed in `docs/design/leagues.md` §4 |
+| 1 | **Leagues: standings** | The table a league is for. LD-configurable columns built from a **token array, never a string** — the design is explicit about that and lists the tokens. Designed in `docs/design/leagues.md` §6 |
+| 1b | **A player's own frame on `/match/`** | The design's second surface: a player opens the match page and sees only their own frame. `/match/` still refuses a team match, so today a player's frame is entered by their captain on the card. Nothing is blocked by this — it is the convenience half of "two surfaces, one record" |
 | 2 | **UV to play through the bracket editor** | Built and render-checked, not yet used on a real draw. See §1 |
 
 ---
@@ -96,10 +97,10 @@ Real, small, and none of them blocking.
 |---|---|
 | **`tbl_tournament_entrants` can be read directly by any signed-in player** | `paid_at` and the TD's `notes` come back from the API with no function in the way. The 21 Oct gate on `tdc_tournament_entrants` closed the function, not the table: the `select … using (true)` policy and grant are still there. Found 22 Oct while building the league equivalent. The fix is a migration revoking the grant and dropping the policy, after checking no page selects from the table directly. Tournaments chat's area; not changed from the leagues chat |
 | League pages not built yet | Per-season rule overrides, continuing a team from an earlier season, a venue picker, and a page to edit a league's own rules (`tdc_update_league` has no form). None blocks lineups |
-| **`nothing reads `strict_frame_order`** | Stored and validated since 22 Oct. The scorecard that would obey it — only the next frame in sequence editable — is step 6 |
+| `strict_frame_order` is obeyed by the card only | The scorecard offers only the next unplayed frame when it is on. `/match/` does not know about it, which does not matter while `/match/` refuses team matches |
 | **The 23 version 1 ruleset keys are not type-checked** | `private.tdc_check_match_rules` checks that the keys are present and that the enumerated values are known, but never that `win_condition_target` is a number or `draws_allowed` a boolean. The two version 2 keys added 22 Oct are checked; the older ones are a job of their own. The design note calls this jsonb quietly becoming an unvalidated config format the heaviest standing risk in the system |
 | **Nothing tells the players the fixtures are out** | Generating notifies nobody on purpose (`docs/DECISIONS.md`): a fresh schedule is the director's working document and regenerating it is ordinary. Telling them should be a separate act, as sharing a tournament poster is. Not built |
-| A league match cannot be scored **from a page** | The database side works: `tdc_record_frame` scores a team frame and keeps its players. There is no screen for it — the match page still refuses a team match, and the captain's scorecard is step 6. The fixtures page says so when it creates one |
+| The team card records a winner, not how they won | `/leagues/card/` enters winner-only. Break detail, break & finish and the rest are on `/match/`, which refuses a team match — so on a league night those are unreachable. Fine for a club night; a nationals night that tracks breaks would want them |
 | `tdc_remove_league_entrant` removes anyone | Fine while there are no fixtures. Once there are, it should refuse for a player who has played — as `tdc_remove_entrant` should have |
 | Settings writes are still last-write-wins | Frames are guarded, settings are not |
 | The match list and nav are not live | Everything else is |

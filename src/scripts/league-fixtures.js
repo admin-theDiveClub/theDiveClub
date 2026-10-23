@@ -250,6 +250,11 @@
 				actions.append(start);
 			}
 			if (f.match_id) {
+				// The night itself: lineups, the grid and the two signatures.
+				const open = node('a', 'btn btn-primary btn-sm', 'Open the card');
+				open.href = '/leagues/card/?m=' + encodeURIComponent(f.match_id);
+				actions.append(open);
+
 				const detach = node('button', 'btn btn-secondary btn-sm', 'Take match off');
 				detach.type = 'button';
 				detach.dataset.action = 'detach';
@@ -417,7 +422,7 @@
 			// Said plainly, because there is nowhere to send them yet: the
 			// match page cannot open a team match until the scorecard exists.
 			write('Starting', () => supabaseClient.rpc('tdc_create_league_match', { p_fixture_id: id }),
-				() => 'Match created. It cannot be scored until the team scorecard is built.');
+				() => 'Match created. Open the card to set the lineups.');
 		} else if (button.dataset.action === 'detach') {
 			if (!confirm('Take the match off this fixture?\n\nThe match and any frames on it are kept — it just stops being part of the schedule.')) return;
 			write('Taking it off', () => supabaseClient.rpc('tdc_detach_league_match', { p_fixture_id: id }));

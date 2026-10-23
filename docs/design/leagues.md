@@ -145,6 +145,12 @@ before** — a team still arranging lifts should not be conceding frames at 19:3
 
 ## 4. Two surfaces, one record
 
+> **As built (23 Oct).** The captain's scorecard is `/leagues/card/?m=<match id>`
+> and is a full recording surface, as this section says. **The second surface
+> is not built**: `/match/` still refuses a team match, so a player's own frame
+> is entered by their captain on the grid. One frame set either way, which is
+> what the rule was about.
+
 | Surface | For | Does |
 |---|---|---|
 | **Captain's scorecard** | Captains, scorers | The night's grid. Lineups, who plays which slot, frame-level results for **every** frame on one page, edits, submission |
