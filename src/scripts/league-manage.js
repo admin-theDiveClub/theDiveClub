@@ -34,6 +34,7 @@
 		count: el('player-count'), empty: el('player-empty'),
 		teamNew: el('team-new'), teamAdd: el('team-add'),
 		teamTable: el('team-table'), teamRows: el('team-rows'), teamEmpty: el('team-empty'),
+		teamOver: el('team-over'),
 		officialRole: el('official-role'), officialSearch: el('official-search'),
 		officialResults: el('official-results'),
 		officialTable: el('official-table'), officialRows: el('official-rows'),
@@ -306,15 +307,29 @@
 		del.dataset.name = t.name;
 		actions.append(save, del);
 
-		tr.append(name, node('td', 'num', String(t.players)),
+		tr.append(name, node('td', null, teamCount(t)),
 			node('td', null, (t.captains || []).join(', ') || '—'), actions);
 		return tr;
+	}
+
+	// "5 of 7", and the away players beside it: they are still on the team,
+	// they just do not take up a place.
+	function teamCount(t) {
+		const away = t.players - t.active_players;
+		return t.active_players + ' of ' + t.team_limit + (away > 0 ? ' (' + away + ' away)' : '');
 	}
 
 	function renderTeams() {
 		els.teamTable.hidden = !teams.length;
 		els.teamEmpty.hidden = !!teams.length;
 		els.teamRows.replaceChildren(...teams.map(teamRow));
+
+		const over = teams.filter((t) => t.active_players > t.team_limit);
+		els.teamOver.hidden = !over.length;
+		els.teamOver.textContent = over.length
+			? 'Over the limit: ' + over.map((t) => t.name + ' (' + t.active_players + ' of ' + t.team_limit + ')').join(', ')
+				+ '. They keep their players, but cannot add anyone or bring anyone back until they are under.'
+			: '';
 	}
 
 	els.teamAdd.addEventListener('click', async () => {
@@ -413,6 +428,12 @@
 		const captain = document.createElement('td');
 		captain.append(checkbox(p, 'captain', p.is_captain, 'Captain', !p.team_id));
 
+		// Away is inactive: still in the league and on their team, not
+		// pickable, not counted against the team's limit. The director's
+		// change is not bound by the limit, so a team can end up over it.
+		const away = document.createElement('td');
+		away.append(checkbox(p, 'away', p.status === 'inactive', 'Away', p.status === 'withdrawn'));
+
 		const paid = document.createElement('td');
 		paid.append(checkbox(p, 'paid', !!p.paid_at, 'Paid', false));
 
@@ -424,7 +445,7 @@
 		remove.dataset.name = p.display_name;
 		actions.append(remove);
 
-		tr.append(who, confirmed, team, captain, paid, actions);
+		tr.append(who, confirmed, team, captain, away, paid, actions);
 		return tr;
 	}
 
@@ -460,6 +481,10 @@
 		} else if (control.dataset.action === 'captain') {
 			write('Saving', () => supabaseClient.rpc('tdc_set_league_entrant', {
 				p_entrant_id: id, p_is_captain: control.checked
+			}));
+		} else if (control.dataset.action === 'away') {
+			write('Saving', () => supabaseClient.rpc('tdc_set_league_entrant', {
+				p_entrant_id: id, p_status: control.checked ? 'inactive' : 'active'
 			}));
 		} else if (control.dataset.action === 'paid') {
 			write('Saving', () => supabaseClient.rpc('tdc_set_league_entrant', {

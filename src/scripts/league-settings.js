@@ -30,7 +30,7 @@
 	const el = (id) => document.getElementById(id);
 	const els = {
 		title: el('l-title'), meta: el('l-meta'), name: el('l-name'),
-		seasonName: el('s-name'), start: el('s-start'), end: el('s-end'),
+		seasonName: el('s-name'), start: el('s-start'), end: el('s-end'), reserves: el('s-reserves'),
 		overrides: el('overrides-note'),
 		main: el('settings-main'), rest: el('settings-rest'),
 		save: el('save-btn'), status: el('page-status'),
@@ -148,6 +148,16 @@
 		els.start.value = savedDates.start;
 		els.end.value = savedDates.end;
 
+		// Not in tdc_league_season_info; the season row is readable directly.
+		const row = await supabaseClient
+			.from('tbl_league_seasons').select('max_reserves').eq('id', seasonId).maybeSingle();
+		if (row.error) { TDC.showSupabaseError(AREA, row.error, els.status); return false; }
+		if (!row.data) {
+			TDC.error(AREA, 'the season\'s reserves could not be read.', { seasonId }, els.status);
+			return false;
+		}
+		els.reserves.value = row.data.max_reserves;
+
 		// A season's own changes still apply on top. There is no form for
 		// them yet, so the director is at least told they exist.
 		const own = Object.keys(s.rules_overrides || {});
@@ -215,6 +225,13 @@
 		}
 		const datesChanged = start !== savedDates.start || end !== savedDates.end;
 
+		const reserves = Number(els.reserves.value);
+		if (els.reserves.value === '' || !Number.isInteger(reserves) || reserves < 0 || reserves > 10) {
+			TDC.status(els.status, 'Reserves allowed must be a number from 0 to 10.', '');
+			els.reserves.focus();
+			return;
+		}
+
 		// Allowed, but said once more at the moment it matters (UV, 23 Oct).
 		if (rules.team_size >= 2) {
 			const repeats = D.rotationRepeats(D.rotationGrid(rules));
@@ -230,7 +247,7 @@
 
 		// The season first. A refusal here has written nothing at all, so the
 		// form keeps what the person chose.
-		const seasonArgs = { p_league_season_id: seasonId, p_name: seasonName };
+		const seasonArgs = { p_league_season_id: seasonId, p_name: seasonName, p_max_reserves: reserves };
 		if (datesChanged) {
 			// "Exactly these": a blank box clears that one date.
 			Object.assign(seasonArgs, { p_starts_on: start || null, p_ends_on: end || null, p_clear_dates: true });
@@ -257,7 +274,7 @@
 			els.save.disabled = false;
 			TDC.showSupabaseError(AREA, error, els.status);
 			// Said, because half of it did land.
-			els.status.textContent += ' The season\'s name and dates were saved; the league\'s name and rules were not.';
+			els.status.textContent += ' The season\'s name, dates and reserves were saved; the league\'s name and rules were not.';
 			return;
 		}
 

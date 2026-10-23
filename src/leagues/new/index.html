@@ -50,6 +50,16 @@ extraScripts:
 		<input type="date" id="s-end">
 	</div>
 
+	{% comment %}
+		The season's, not the league's: seasons can differ (UV, 23 Oct). A
+		team's limit on active players is the team size plus this.
+	{% endcomment %}
+	<div class="field">
+		<label for="s-reserves">Reserves allowed</label>
+		<input type="number" id="s-reserves" inputmode="numeric" min="0" max="10" value="2">
+		<div class="hint">Players a team may have beyond the team size. With 2, a five-man team holds seven. 0 for no subs.</div>
+	</div>
+
 	<!-- The ruleset, built by league-new.js from TDCMatchDef -->
 	<div id="rules-part">
 		<div id="settings-main"></div>

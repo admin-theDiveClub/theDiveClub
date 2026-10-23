@@ -163,6 +163,12 @@ player **in one frame of one session**. A five-man team with six players
 usually has five players play four frames and one play five — 25 appearances
 shared among six.
 
+> **Built 23 Oct (`20261023213048`): how many reserves a team may carry.**
+> The LD sets reserves allowed per season (default 2, 0 for no subs); a
+> team holds at most team size + reserves **active** players. A player away
+> for a while is marked inactive and frees a place. Every league now has a
+> team size. `docs/DECISIONS.md`.
+
 The captain sets how many players are in tonight and may add reserves on
 demand. At lock time they still name only the first session; once the card is
 generated they swap a reserve in per session. Three rules hold:

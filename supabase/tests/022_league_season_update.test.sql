@@ -13,7 +13,7 @@ select tests.create_user('Season Dee') as dee \gset
 select tests.create_user('Season Stranger') as stranger \gset
 
 select tests.sign_in(:'dee');
-select public.tdc_create_league('Season League', tests.rules()) as league \gset
+select public.tdc_create_league('Season League', tests.rules('{"team_size": 5}')) as league \gset
 select public.tdc_create_league_season(:'league', 'Spring', 'Spring', '2027-01-01', '2027-06-30') as season \gset
 select tests.sign_out();
 
@@ -64,7 +64,7 @@ select tests.sign_out();
 -- ─── A period two leagues share ───
 
 select tests.sign_in(:'dee');
-select public.tdc_create_league('Other League', tests.rules()) as other \gset
+select public.tdc_create_league('Other League', tests.rules('{"team_size": 5}')) as other \gset
 select public.tdc_create_league_season(:'other', 'Their Autumn', p_season_id => :'period') as other_season \gset
 select public.tdc_update_league_season(:'season', p_name => 'Our Autumn');
 select tests.sign_out();

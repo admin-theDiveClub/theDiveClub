@@ -25,7 +25,7 @@
 	const els = {
 		name: el('l-name'), meta: el('l-meta'),
 		mePanel: el('me-panel'), meLine: el('me-line'), meDetail: el('me-detail'),
-		meConfirm: el('me-confirm'), meWithdraw: el('me-withdraw'),
+		meConfirm: el('me-confirm'), meWithdraw: el('me-withdraw'), meAway: el('me-away'),
 		readyPanel: el('ready-panel'), readyLine: el('ready-line'), readyDetail: el('ready-detail'),
 		poolPanel: el('pool-panel'), poolHint: el('pool-hint'), poolList: el('pool-list'),
 		teamCount: el('team-count'), teamList: el('team-list'), teamEmpty: el('team-empty'),
@@ -46,6 +46,7 @@
 	// ─── State ───
 	let info = null;
 	let mine = null;            // my row from tdc_my_leagues, or null
+	let myPlayerId = null;      // tdc_my_leagues does not carry it; marking myself away needs it
 	let teams = [];
 	let rosters = new Map();    // team id -> roster rows, loaded when a team is opened
 	const openTeams = new Set();
@@ -68,10 +69,15 @@
 	}
 
 	// Whether this person may control their own team. Mirrors the database's
-	// own rule (active, confirmed captain) only so the right buttons are shown;
-	// it is not what protects anything.
+	// own rule (an active captain) only so the right buttons are shown; it is
+	// not what protects anything. Confirmation stopped being part of that rule
+	// on 23 Oct (20261023120000), and this had not followed.
 	const controlsTeam = () => !!(mine && mine.i_captain && mine.my_team_id
-		&& mine.my_status === 'active' && mine.confirmed_at);
+		&& mine.my_status === 'active');
+
+	// My team's row from tdc_league_season_teams, for its count and limit.
+	const myTeam = () => (mine && mine.my_team_id && teams.find((t) => t.team_id === mine.my_team_id)) || null;
+	const isFull = (t) => !!t && t.active_players >= t.team_limit;
 
 	// ─── The season ───
 	async function loadInfo() {
@@ -140,10 +146,18 @@
 
 		els.meConfirm.hidden = true;
 		els.meWithdraw.hidden = true;
+		els.meAway.hidden = true;
 
 		if (mine.my_status === 'withdrawn') {
 			els.meLine.textContent = 'You withdrew from this league.';
 			els.meDetail.textContent = 'Whoever runs the league can add you back if you change your mind.';
+		} else if (mine.my_status === 'inactive' && mine.my_team_id) {
+			// Away: still on the team, not pickable, not taking up a place.
+			els.meLine.textContent = 'You are marked away from ' + mine.my_team_name + '.';
+			els.meDetail.textContent = 'You keep your place on the team, but you cannot be picked for a match until you are back.';
+			els.meAway.textContent = 'I am back';
+			els.meAway.dataset.active = '1';
+			els.meAway.hidden = false;
 		} else if (mine.my_status === 'inactive') {
 			els.meLine.textContent = 'You are marked inactive in this league.';
 			els.meDetail.textContent = 'Ask whoever runs the league to make you active again.';
@@ -165,8 +179,22 @@
 				+ (mine.confirmed_at ? ', and you have confirmed.' : '. You have not confirmed yet.');
 			els.meDetail.textContent = controlsTeam() ? 'You are a captain of this team.' : '';
 			els.meWithdraw.hidden = false;
+			els.meAway.textContent = 'I am away for a while';
+			els.meAway.dataset.active = '0';
+			els.meAway.hidden = false;
 		}
 	}
+
+	// Away and back, for yourself. Coming back is refused while the team is
+	// full; the database says so in words the player can act on.
+	els.meAway.addEventListener('click', () => {
+		const back = els.meAway.dataset.active === '1';
+		if (!back && !confirm('Mark yourself away?\n\nYou keep your place on ' + mine.my_team_name
+			+ ', but you cannot be picked for a match, and your place on the team is free for someone else until you are back.')) return;
+		write('Saving', () => supabaseClient.rpc('tdc_set_team_player_active', {
+			p_team_id: mine.my_team_id, p_player_id: myPlayerId, p_active: back
+		}));
+	});
 
 	els.meConfirm.addEventListener('click', () =>
 		write('Confirming', () => supabaseClient.rpc('tdc_confirm_league_entry', {
@@ -234,9 +262,16 @@
 		els.poolPanel.hidden = !controlsTeam();
 		if (els.poolPanel.hidden) return;
 
-		els.poolHint.textContent = pool.length
-			? 'These players have confirmed and are on no team. Claiming one puts them on ' + mine.my_team_name + '.'
-			: 'Nobody is waiting. A player appears here once they have confirmed their place and are on no team.';
+		// Said before they try, not only after the database refuses.
+		const t = myTeam();
+		const full = isFull(t);
+		els.poolHint.textContent = full
+			? mine.my_team_name + ' is full: ' + t.active_players + ' of ' + t.team_limit
+				+ ' active players. Mark somebody away to claim another.'
+			: pool.length
+				? 'These players are in the league and on no team. Claiming one puts them on ' + mine.my_team_name
+					+ (t ? ' (' + t.active_players + ' of ' + t.team_limit + ' places taken).' : '.')
+				: 'Nobody is waiting. A player appears here once they are in the league and on no team.';
 
 		els.poolList.replaceChildren(...pool.map((p) => {
 			const row = node('div', 'list-row');
@@ -249,6 +284,7 @@
 			claim.dataset.player = p.player_id;
 			claim.dataset.action = 'claim';
 			claim.dataset.name = p.display_name;
+			claim.disabled = full;
 			actions.append(claim);
 
 			row.append(main, actions);
@@ -298,7 +334,7 @@
 
 		const sub = [];
 		if (r.is_captain) sub.push('Captain');
-		if (r.status !== 'active') sub.push(r.status === 'withdrawn' ? 'Withdrawn' : 'Inactive');
+		if (r.status !== 'active') sub.push(r.status === 'withdrawn' ? 'Withdrawn' : 'Away');
 		else if (!r.confirmed) sub.push('Has not confirmed');
 		if (sub.length) main.append(node('span', 'sub', sub.join(' · ')));
 		row.append(main);
@@ -306,6 +342,19 @@
 		// Captain controls, on my own team only.
 		if (controlsTeam() && t.team_id === mine.my_team_id) {
 			const actions = node('div', 'list-row-actions');
+
+			// Away frees a place; back takes one, so it waits for room.
+			if (r.status === 'active' || r.status === 'inactive') {
+				const back = r.status === 'inactive';
+				const away = node('button', 'btn btn-secondary btn-sm', back ? 'Back' : 'Away');
+				away.type = 'button';
+				away.dataset.action = 'away';
+				away.dataset.player = r.player_id;
+				away.dataset.name = r.display_name;
+				away.dataset.active = back ? '1' : '0';
+				away.disabled = back && isFull(t);
+				actions.append(away);
+			}
 
 			const cap = node('button', 'btn btn-secondary btn-sm', r.is_captain ? 'Not captain' : 'Make captain');
 			cap.type = 'button';
@@ -335,7 +384,11 @@
 		box.open = openTeams.has(t.team_id);
 
 		const head = document.createElement('summary');
-		head.textContent = t.name + ' · ' + (t.players === 1 ? '1 player' : t.players + ' players');
+		// Active against the limit; away players are on the team but take no place.
+		const away = t.players - t.active_players;
+		head.textContent = t.name + ' · ' + t.active_players + ' of ' + t.team_limit + ' active'
+			+ (away > 0 ? ' · ' + away + ' away' : '')
+			+ (t.active_players > t.team_limit ? ' · over the limit' : '');
 		box.append(head);
 
 		const roster = rosters.get(t.team_id);
@@ -396,6 +449,12 @@
 				p_team_id: teamId,
 				p_player_id: button.dataset.player,
 				p_is_captain: button.dataset.captain === '1'
+			}));
+		} else if (button.dataset.action === 'away') {
+			const back = button.dataset.active === '1';
+			if (!back && !confirm(`Mark ${button.dataset.name} away?\n\nThey stay on your team but cannot be picked for a match, and their place is free until they are back.`)) return;
+			write('Saving', () => supabaseClient.rpc('tdc_set_team_player_active', {
+				p_team_id: teamId, p_player_id: button.dataset.player, p_active: back
 			}));
 		} else if (button.dataset.action === 'release') {
 			if (!confirm(`Take ${button.dataset.name} off your team?\n\nThey go back to waiting for a team, and any captain can claim them.`)) return;
@@ -475,6 +534,10 @@
 		}
 
 		els.fixturesLink.href = '/leagues/fixtures/?s=' + encodeURIComponent(seasonId);
+
+		const me = await TDC.getMyPlayer(AREA, session.user.id, els.status);
+		if (!me) return;
+		myPlayerId = me.id;
 
 		if (!await loadInfo()) return;
 		await loadAll();

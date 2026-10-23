@@ -119,7 +119,7 @@ select tests.create_user('Settings P4') as u4 \gset
 
 select tests.sign_in(:'dee');
 select public.tdc_create_league('Settings League',
-	tests.rules('{"win_condition_type": "race_to", "win_condition_target": 13}')) as league \gset
+	tests.rules('{"win_condition_type": "race_to", "win_condition_target": 13, "team_size": 5}')) as league \gset
 select public.tdc_create_league_season(:'league', 'Spring') as season \gset
 select public.tdc_create_team(:'season', 'Alpha') as t1 \gset
 select public.tdc_create_team(:'season', 'Bravo') as t2 \gset
@@ -151,7 +151,7 @@ insert into public.tbl_frames (match_id, frame_no, status) values (:'m_played', 
 insert into public.tbl_match_events (match_id, player_id, kind, card_version, side)
 	values (:'m_signed', tests.player_of(:'u1'), 'submitted', 0, 'home');
 
-select is(private.tdc_lineup_slots(:'m_open'), 25, 'race to 13 with no team size is still a 25-frame card');
+select is(private.tdc_lineup_slots(:'m_open'), 25, 'a five-man league racing to 13 has a 25-frame card');
 
 -- ─── Changing the rules ───
 

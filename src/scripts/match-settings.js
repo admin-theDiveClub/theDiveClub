@@ -152,8 +152,11 @@ const TDCMatchDef = (() => {
 		},
 		{
 			group: 'Team play', scope: 'rules', key: 'team_size', label: 'Team size', type: 'int',
-			min: 0, max: 10,
-			hint: 'Players a side in each session. A five-man team plays five sessions of five frames: 25. 0 for no sessions — the card length then comes from the win condition.'
+			// Only the league pages show this group, and every league has a
+			// team size (UV, 23 Oct). 0 is still valid in a ruleset — it is
+			// what singles and tournaments carry — but not for a league.
+			min: 2, max: 10,
+			hint: 'Players a side in each session. A five-man team plays five sessions of five frames: 25.'
 		},
 		{
 			// Rendered as a grid by control(), not a single input. Session 1 is

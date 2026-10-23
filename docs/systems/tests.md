@@ -73,7 +73,12 @@ Call the `tdc_` functions as the user who would call them from the website, neve
 | `012_match_card.test.sql` | A singles card: submit, answer, dispute, withdraw, reopen; a changed card retiring a submission; silence settling it; approval `none` settling on submission and staying settled; the lock on an agreed card, including a direct table write |
 | `013_match_access.test.sql` | Who may edit: either player, outsiders, venue staff, a tournament's director / referee / scorer under each `score_entry_mode`, the rank guard; no direct writes to the match tables; only players answer |
 | `014_match_approval.test.sql` | A card in a tournament: when each approval mode publishes, a published card reading as settled with `can_object` / `object_until`, objections (recorded, never unlocking, once each, only inside the window), approve and send back (TD only, reason required, send back really unlocks, approve → send back → approve again), the TD correcting a locked card |
-
 | `020_league_settings.test.sql` | Ruleset version 3: team size bounds, the rotation table's checks (size, one away player per session, session 1 the captains' order, repeats allowed), who meets whom under the cyclic shift and an LD's table, the card length from team size; `tdc_update_league` re-freezing only untouched matches (a locked side, a frame and a card event each keep theirs), its counts, and who may call it |
+
+| `021_league_entry_confirmation.test.sql` | What confirms a league player under each entry mode and paid-confirms setting |
+| `022_league_season_update.test.sql` | Renaming a season renames its period unless shared; dates set exactly; refusals |
+| `023_league_team_limit.test.sql` | A team's limit (team size + reserves): a captain refused at it, the LD past it, away freeing a place and back refused while full, who may mark a player away, the only captain, withdrawn not counting, lowering reserves, every league needing a team size |
+
+**A league needs a team size since `20261023213048`**, and `tests.rules()` carries `team_size: 0` (it is `DEFAULT_RULES`, for matches). A test that makes a league passes `tests.rules('{"team_size": 5}')` or similar.
 
 `tests.rules(overrides)` in the helpers is `DEFAULT_RULES` from `match-settings.js` with overrides laid on top — **version 3 since 23 Oct**. Keep it in step with that file. A test that needs an older version subtracts the newer keys (see `010`).

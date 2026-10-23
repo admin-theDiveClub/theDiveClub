@@ -529,3 +529,19 @@ These predate the log. They are recorded here because every one of them is a dec
 *Why:* nothing limited a team's roster, so a five-man card offered the whole league as reserves. *"We need to set a max limit on reserves in a team (or a max amount of players per team)."* A seven-player limit in a five-man league means two reserves.
 *So:* a league setting, **required when the league is created**. It **binds captains only**; the LD may place a player past it, for an emergency signing. **Lowering it below a team's current size is allowed**: that team keeps its players but cannot add anyone until it is under the limit, and the page warns which teams are over.
 *Rejected:* refusing a lower limit until teams shed players; binding the LD too; no limit until one is set.
+*Reshaped the same night:* the next entry says how the limit is set and what counts.
+
+## 2026-10-23 — A team's limit is its team size plus its reserves
+
+*Decided by:* UV, from Claude's proposal of a plain maximum
+*Why:* the number a league actually talks about is reserves. *"For normal leagues, we have 2 max."* A plain maximum would also have to be kept above the team size by hand, and a team may play short anyway (down to one player, who need not be the captain), so the team size is not a minimum to defend.
+*So:* migration `20261023213048`. **Reserves allowed** is a **season** setting (seasons can differ), default 2, 0 to 10, 0 meaning no subs. A team's limit is `team_size + reserves`, so a five-man league with two reserves holds seven. **Only active players count.** A player who is away for a while (work, injury) is marked inactive by themselves, their captain or the LD. They keep their place on the team, cannot be picked for a squad, and free a place, so a captain can recruit someone in their stead. Coming back is bound by the limit like a claim is. The LD is bound by neither. From the earlier entry, unchanged: lowering the limit below a team's size is allowed, and the page warns.
+*Example:* Team 0 has seven active. Ben goes away for work; the team is 6 of 7, the captain claims Gus. Ben is back a month later: refused, *"Team 0 is full: 7 of 7 active players. Mark somebody away first, or ask the league director."* The captain marks Gus away, then Ben back.
+*Rejected:* a plain max players per team (Claude's first proposal); counting inactive players too (a player who is away would block their own replacement); putting the setting on the league (a season with a different shape would need the league changed and changed back).
+
+## 2026-10-23 — Every league has a team size
+
+*Decided by:* UV
+*Why:* the limit above adds reserves to the team size, which means nothing at 0, and the session rework would otherwise need a second shape of lineup for a league with no sessions. No league UV knows plays without a fixed team size.
+*So:* a league's merged rules must have a team size from 2 to 10 (`private.tdc_check_league_rules`, on create and on every change of a league's or season's rules). **0 stays valid in a ruleset**, for singles matches and tournaments, where it is what `DEFAULT_RULES` carries and the Team play group is never shown. The team size control on the league pages starts at 2.
+*Rejected:* keeping 0 for leagues, with the LD setting a plain maximum instead of reserves.

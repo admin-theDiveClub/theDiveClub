@@ -21,7 +21,7 @@ select tests.create_user('Entry Cat') as cat \gset
 select tests.create_user('Entry Dan') as dan \gset
 
 select tests.sign_in(:'dee');
-select public.tdc_create_league('Entry League', tests.rules()) as league \gset
+select public.tdc_create_league('Entry League', tests.rules('{"team_size": 5}')) as league \gset
 select public.tdc_create_league_season(:'league', 'Interested, unpaid') as s_int \gset
 select public.tdc_create_league_season(:'league', 'Interested, paid') as s_int_paid \gset
 select public.tdc_create_league_season(:'league', 'Self, unpaid') as s_self \gset

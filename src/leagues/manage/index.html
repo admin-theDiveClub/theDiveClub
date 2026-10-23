@@ -140,6 +140,7 @@ extraScripts:
 					<th>Confirmed</th>
 					<th>Team</th>
 					<th>Captain</th>
+					<th>Away</th>
 					<th>Paid</th>
 					<th></th>
 				</tr>
@@ -164,12 +165,20 @@ extraScripts:
 		<button type="button" class="btn btn-primary btn-sm" id="team-add">Add team</button>
 	</div>
 
+	{% comment %}
+		A team's limit is the team size plus the season's reserves (Settings).
+		Only active players count; away players keep their place. A team over
+		it — the director signed somebody past it, or lowered it — keeps
+		everyone but cannot add anyone until it is under.
+	{% endcomment %}
+	<p class="muted" id="team-over" hidden></p>
+
 	<div class="table-scroll">
 		<table class="tdc-table" id="team-table" hidden>
 			<thead>
 				<tr>
 					<th>Team</th>
-					<th class="num">Players</th>
+					<th>Active</th>
 					<th>Captains</th>
 					<th></th>
 				</tr>

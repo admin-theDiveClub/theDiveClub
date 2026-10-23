@@ -25,7 +25,7 @@
 		title: el('page-title'), intro: el('page-intro'),
 		leaguePart: el('league-part'), rulesPart: el('rules-part'),
 		name: el('l-name'), seasonName: el('s-name'),
-		start: el('s-start'), end: el('s-end'),
+		start: el('s-start'), end: el('s-end'), reserves: el('s-reserves'),
 		main: el('settings-main'), rest: el('settings-rest'),
 		create: el('create-btn'), status: el('create-status')
 	};
@@ -171,6 +171,13 @@
 		const d = dates();
 		if (!d) return;
 
+		const reserves = Number(els.reserves.value);
+		if (els.reserves.value === '' || !Number.isInteger(reserves) || reserves < 0 || reserves > 10) {
+			TDC.status(els.status, 'Reserves allowed must be a number from 0 to 10.', '');
+			els.reserves.focus();
+			return;
+		}
+
 		els.create.disabled = true;
 
 		if (!leagueId) {
@@ -203,7 +210,8 @@
 			p_name: seasonName,
 			p_season_name: seasonName,
 			p_starts_on: d.start,
-			p_ends_on: d.end
+			p_ends_on: d.end,
+			p_max_reserves: reserves
 		});
 
 		if (season.error) {
