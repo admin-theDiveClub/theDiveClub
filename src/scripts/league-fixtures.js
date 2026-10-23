@@ -149,6 +149,11 @@
 		const r = (data || [])[0];
 		if (!r) { els.generateState.textContent = ''; return true; }
 
+		const noCap = r.teams_no_captain || [];
+		const capNote = noCap.length
+			? ' No captain for ' + noCap.join(', ') + ', so you will be setting their lineups yourself.'
+			: '';
+
 		if (r.ready) {
 			els.generateState.textContent = 'Everybody has confirmed. '
 				+ (teams.length === 1 ? '1 team' : teams.length + ' teams')
@@ -157,6 +162,7 @@
 			if (teams.length < 2) {
 				els.generateState.textContent += ' A league needs at least two.';
 			}
+			els.generateState.textContent += capNote;
 		} else if (!r.active_players) {
 			els.generateState.textContent = 'Nobody has been added to this league yet.';
 			els.generateBtn.disabled = true;

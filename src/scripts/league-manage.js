@@ -123,6 +123,14 @@
 		const detail = [];
 		if (r.waiting) detail.push('Waiting for ' + (r.waiting_names || []).join(', ') + '.');
 		if (r.unplaced) detail.push(r.unplaced === 1 ? '1 player is on no team.' : r.unplaced + ' players are on no team.');
+		// Not a reason to stop: a director can run a team's night for them.
+		// But setting a lineup and signing the card are a captain's work, so
+		// without one that team cannot field a side by itself.
+		const noCap = r.teams_no_captain || [];
+		if (noCap.length) {
+			detail.push((noCap.length === 1 ? 'No captain for ' : 'No captain for ')
+				+ noCap.join(', ') + ' — tick Captain beside one of their players, or you will have to run their nights yourself.');
+		}
 		els.readyDetail.textContent = detail.join(' ');
 		return true;
 	}

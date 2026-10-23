@@ -382,3 +382,23 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* when the payload names nobody, the people already in the frame are used. Nothing changes for a singles match, where both sides are filled from the match's own players before this runs, or for doubles, where the page sends the list and wholesale replacement is the point.
 *Note:* this is a change to the most used function in the system, found by writing the tests rather than by reading. The original match suites did not survive their container, so `docs/STATUS.md` §1 asks for a real singles match after the push.
 
+## 2026-10-23 — A submission stays an event, not a table
+
+*Decided by:* Claude
+*Why:* the design sketched `tbl_match_submission` (match, side, by, at, card_version). All of that already existed in `tbl_match_events`, which is append-only and already carries `card_version` — the shape the founding principles ask for. The only thing missing was which side signed, because in a singles match the submitter **is** the side.
+*So:* one nullable `side` column and a partial unique index. No new table, and the card's whole history stays in one place.
+
+## 2026-10-23 — Silence does not settle a team card
+
+*Decided by:* Claude, flagged to UV
+*Why:* a singles card is agreed when the dispute window passes with no answer, which is right when one person has seen it and said nothing. A team night wants two signatures, and a captain who never signs has not seen it at all — treating that as agreement would publish a result nobody on that side ever looked at.
+*So:* a team card is agreed only when both sides have signed the card as it stands. When a captain will not sign, the league director signs for that side or approves, both of which are already terminal.
+*Open:* if a league in practice wants a timer, this is the line to change.
+
+## 2026-10-23 — A permission helper must never return null
+
+*Decided by:* Claude, after finding one that did
+*Why:* `private.tdc_can_set_lineup` was `tdc_league_match_side(match) = side or coalesce(can_run_league(...), false)`. For anybody who captained neither team the comparison is null, and `null or false` is null. Every caller asks `if not helper(...) then raise`, and `not null` is null — not true — so the raise never fired and the check passed everyone it was meant to stop.
+*So:* the comparison is wrapped in `coalesce(..., false)`. The rule is the general one, not the fix: **a permission helper returns true or false and never null, because every caller negates it.**
+*Found by:* writing a test that asserted a stranger was refused. Reading the function had not caught it in two passes.
+
