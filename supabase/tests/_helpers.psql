@@ -82,4 +82,42 @@ begin
 end;
 $$;
 
+-- A complete version 2 ruleset: DEFAULT_RULES from scripts/match-settings.js,
+-- with whatever the test cares about laid over it. A match refuses a ruleset
+-- missing a key, so a test that typed only the keys it wanted would fail for
+-- the wrong reason. Keep in step with DEFAULT_RULES.
+create or replace function tests.rules(p_overrides jsonb default '{}')
+returns jsonb
+language sql
+immutable
+as $$
+	select jsonb_build_object(
+		'version', 2,
+		'discipline', '8ball',
+		'win_condition_type', 'race_to',
+		'win_condition_target', 5,
+		'track_breaks', false,
+		'break_determination', 'alternate',
+		'break_finish_enabled', false,
+		'draws_allowed', false,
+		'tiebreak_method', 'sudden_death_frame',
+		'on_time_expiry', 'finish_current_frame',
+		'max_match_minutes', 0,
+		'golden_break_enabled', false,
+		'reverse_break_finish_enabled', false,
+		'break_finish_requires_breaker', true,
+		'shot_clock_enabled', false,
+		'shot_clock_seconds', 45,
+		'shot_clock_first_shot_seconds', 60,
+		'extensions_per_player', 0,
+		'extension_seconds', 45,
+		'referee_required', false,
+		'score_entry_mode', 'players',
+		'approval_mode', 'dispute_window',
+		'dispute_window_hours', 48,
+		'lineup_cutoff_hours', 0,
+		'strict_frame_order', false
+	) || coalesce(p_overrides, '{}');
+$$;
+
 grant execute on all functions in schema tests to anon, authenticated;

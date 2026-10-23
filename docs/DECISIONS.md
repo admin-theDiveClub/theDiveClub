@@ -461,3 +461,15 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* Docker Desktop runs the Supabase CLI's local stack; `npx supabase db reset` rebuilds it from every migration and `npx supabase test db` runs the pgTAP files in `supabase/tests/`. The first build failed on migration `20260925065614`, because two things in production were made by dashboard settings, not migrations: the Auto-RLS function and event trigger, and the default grants that keep new tables unexposed. Without the second, every table was writable by `anon` locally. Both are copied from production's catalogue into `supabase/roles.sql`, which the CLI runs before the migrations locally and `db push` never sends. `supabase/scripts/schema-fingerprint.sql` compares the two databases category by category; all 11 matched on 23 Oct.
 *Rejected:* a new migration to create the Auto-RLS function — it would be pushed to production, where the function already exists, and would be out of order. Editing `20260925065614` — it is applied.
 *Touches:* `supabase/roles.sql`, `supabase/tests/`, `supabase/scripts/schema-fingerprint.sql`, `docs/systems/tests.md`
+
+## 2026-10-23 — A settled card is final for the players; only the people running a competition can open it again
+
+*Decided by:* UV
+*Replaces:* the 15 Oct rule in migration `20261015180000` — "Nothing becomes permanent. Either player can reopen a card." UV believed this had already been settled the other way in an earlier chat; it was never written down, so the code kept the 15 Oct rule.
+*Why:* the players chose how their card is approved when they set the match up. That choice is the agreement: once it has run its course the result stands. UV: *"if they chose 48 hours for example, then the card is locked forever after that. A player should then only be able to raise a dispute within the window."*
+*So:*
+- **Social, dispute window.** Until the other player answers or the window closes, they may agree or dispute (a dispute reopens it for fixing), and the submitter may withdraw. Once the other player agrees, or the window closes, it is locked for good. **Agreeing early locks it** — the window is how long there is to answer, not a period during which an agreement can be taken back.
+- **Social, no approval.** Locked for good on submission. A mis-tap on the deciding frame is covered by the page's "Submit the card?" prompt, and that is enough.
+- **Tournaments and leagues.** Players cannot reopen a settled or published card. The TD or LD can: their **send back really unlocks it** so the players can fix it and resubmit, and they may still correct frames themselves.
+*Rejected:* either player reopening (the 15 Oct rule — a result the other side agreed to could be reopened a week later by one person); both players agreeing to reopen (a new request step for little gain); venue staff reopening social matches.
+*Touches:* `tdc_reopen_card`, `tdc_reject_card`, `private.tdc_published_at`, the Reopen button in `match.js`, `docs/test-plan.md` 7.5 and 11.3, `docs/BACKLOG.md` row C

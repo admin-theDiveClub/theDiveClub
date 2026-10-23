@@ -41,6 +41,9 @@ Found in a read-only review of every migration, the front end, the edge function
 | A3 | `tdc_set_match_time` | Same gap — players can move a competition match, which also moves the lineup cutoff | Same guard as A2 |
 | A4 | `tdc_record_frame`, team matches | Players named in a frame are not checked against the teams' rosters, and being in a frame grants edit rights | Check each player is an active entrant of that side |
 | A5 | `private.tdc_merge_players` | Misses `tbl_league_match_squad`, `tbl_league_match_order` and `tbl_notification_prefs`; a merge empties lineups | Add them; run the migration's foreign-key query |
+| A6 | `tdc_remove_frame` | Found by the tests, 23 Oct. Removing a frame that is not the last could fail with a duplicate-key error when a later frame was corrected. Not reachable from the site (Undo only takes the last frame) | **Written and tested: `20261023185340`, waiting for UV to push.** Frames now move down one at a time |
+| A7 | `private.tdc_card_state` | Found by the tests, 23 Oct. **A published tournament card reports `awaiting` again** and has lost `can_object` / `object_until`, so the other player is offered "Looks right" (refused) and never the objection button. Fixed on 20 Oct by `20261020140000`; undone on 21 Oct by `20261021160000`, which changed more than its one clause | Patch the current text to restore the published branch and the two fields |
+| A8 | Reopening and sending back | UV, 23 Oct (`docs/DECISIONS.md`): **a settled card is final for players**; only a TD/LD can open it again. Today either player can reopen a settled social card; a player's reopen of a published tournament card half-works (says in progress, stays locked); and a TD's send back of a card published on submission leaves it locked | `tdc_reopen_card`: withdraw only. `tdc_reject_card`: really unpublish and unlock. Remove the Reopen button; update test plan 7.5 / 11.3 |
 
 ### Before more real players join
 
