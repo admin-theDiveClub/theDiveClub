@@ -1,0 +1,9 @@
+{
+	"permissions": {
+		"deny": [
+			"Bash(git commit)", "Bash(git commit *)",
+			"Bash(git push)", "Bash(git push *)",
+			"Bash(npx supabase db push *)", "Bash(npx supabase config push *)"
+		]
+	}
+}

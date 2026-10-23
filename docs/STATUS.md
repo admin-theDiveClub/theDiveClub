@@ -4,7 +4,7 @@
 
 Updated at every milestone, in the same breath as giving UV a commit subject. Never batched to the end of a session.
 
-Last updated: **23 Oct 2026** (evening: documentation restructure and the project-wide audit)
+Last updated: **23 Oct 2026** (late: the local test harness)
 
 **Database is current through `20261023130000`**, verified against `supabase_migrations.schema_migrations` on 23 Oct. **All league migrations are pushed; nothing is waiting.** That covers all six league steps plus the three corrections of 23 Oct: `110000` paid-confirms and the readiness gate, `120000` confirmation is not a gate, `130000` the frame count.
 
@@ -86,7 +86,7 @@ In the order it probably makes sense.
 
 | | What | Notes |
 |---|---|---|
-| 00 | **Put the tests in the repo** | The scratch-database checks (468 by 23 Oct) were lost with each chat's container. Rebuild them from the migrations as pgTAP files in `supabase/tests/`, with one command to run them all, so every later change is checked against everything before. **Needs a local Postgres on UV's laptop** (Docker Desktop for the Supabase CLI, or PostgreSQL for Windows) — ask UV which. First job in Claude Code |
+| 00 | **Put the tests in the repo** | **The harness is done (23 Oct):** Docker Desktop and a local Supabase that the fingerprint shows is identical to production, `supabase/roles.sql` for the two dashboard-made differences, the helpers, and `npx supabase test db` as the one command. See `docs/systems/tests.md`. **Still to do:** rebuild the scratch-database checks (468 by 23 Oct, all lost) as pgTAP files, one area at a time: matches and the card first (what A1–A4 touch), then the merge (A5), tournaments, leagues, notifications, identity and credits |
 | 0 | **Leagues: the order is one per position, not one per frame** | Settled 23 Oct, designed in `docs/design/leagues.md` §3. A captain names the first session only; the rest of the night derives from it by the LD's rotation table. Session size is a league setting (five-man → 5 frames a session, 25 total). Reserves fill a position for one session under three rules. **This changes `tbl_league_match_order` from one row per frame to one per position**, so orders already recorded in UV's live league will need migrating or clearing — say so before building. Blocked on §1 item 0 |
 | 0b | **An LD-only league settings page** | There is nowhere to change a league's rules after it is created, which UV hit on 23 Oct with a race-to league he had meant to make fixed-25, and has asked for twice. Team size and the rotation table need to live here too, so the session work wants it first. Proposed rule: **refuse a change that would shrink a card with frames already recorded**, allow it everywhere else — never silently drop frames |
 | 0c | **The LD schedule page** | UV, 23 Oct: weeks (date and time, assumed from the generate settings), venue, tables, home/away. Open questions to put to him: is the venue per fixture or the home team's? how are tables identified? is a manual home/away swap wanted? |

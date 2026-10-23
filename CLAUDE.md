@@ -29,7 +29,7 @@ Before replying with anything else, read this file, `docs/STATUS.md`, and the sy
 2. Update the system file in `docs/systems/` for what was built and why it is shaped that way.
 3. Update `docs/STATUS.md` — remove what is done, add what was uncovered.
 4. Add to `docs/DECISIONS.md` if a real decision was made.
-5. Run the tests (`supabase/tests/`, once they exist — see `STATUS.md`).
+5. Run the tests: `npx supabase db reset`, then `npx supabase test db` (local only — see `docs/systems/tests.md`).
 6. Give UV the commit subject. **Never batch the documentation to the end of a session.**
 
 ---
@@ -62,6 +62,7 @@ Business to-dos (the club itself, not the code) live on the owner board at `/sta
 | `docs/systems/leagues.md` | Leagues, seasons, teams, entrants, fixtures, lineups, the captain's scorecard, entry |
 | `docs/systems/notifications.md` | The notification record, the push sweep, the tray |
 | `docs/systems/project-board.md` | The owner board |
+| `docs/systems/tests.md` | The local Supabase copy, how it is kept identical to production, and how to write and run tests |
 
 ---
 
@@ -115,7 +116,7 @@ Breaking any of these is how the project goes wrong.
 ## 9. Lessons that cost real time
 
 - **Patch a function's text; never retype it.** Retyping dropped two guards from `tdc_merge_players` once and silently rewrote half of `tdc_card_state` another time. Copy the latest definition from the migrations, change only what is meant, and diff against the original with comments stripped. Every time.
-- **Test a migration against a scratch database before UV pushes it**: apply every file in `supabase/migrations/` in order to a clean Postgres, with `auth.uid()` stubbed, then run the tests. Extract function text from a freshly rebuilt database, never one left over from an earlier session.
+- **Test a migration locally before UV pushes it**: `npx supabase db reset` rebuilds a clean copy from every migration, then `npx supabase test db`. Extract function text from a freshly reset database, never one left over from an earlier session. **Never add `--linked`** to either.
 - **The live database has no rollback.** Any direct SQL connection to production is for reading only. Writes go through migrations that UV pushes.
 - **`_site/` can be badly stale.** It was 27 hours behind `src/` on 21 Oct and sent an investigation down the wrong road. Never edit it; never trust its age.
 - **The service worker caches aggressively.** When UV says a change has not appeared, suspect it (and a stale deploy) first.

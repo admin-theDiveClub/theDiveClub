@@ -1,0 +1,85 @@
+-- Shared test helpers. Every test file includes this straight after `begin;`:
+--
+--	\ir _helpers.psql
+--
+-- so the helpers live inside that file's transaction and vanish with its
+-- rollback. Nothing here ever reaches production: this folder is only read by
+-- `npx supabase test db`, which runs against the local copy.
+--
+-- Signing in is real, not stubbed. auth.uid() reads the user id from the
+-- request's JWT claims, so tests.sign_in() sets those claims and switches to
+-- the authenticated role, exactly as a request from the website arrives.
+
+set local client_min_messages = warning;
+create extension if not exists pgtap with schema extensions;
+
+create schema if not exists tests;
+grant usage on schema tests to anon, authenticated;
+
+-- A new account. Confirmed by default; pass false for one that has not yet
+-- clicked the link in its email. The signup trigger makes its player row.
+create or replace function tests.create_user(p_name text, p_confirmed boolean default true)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+	v_id uuid := gen_random_uuid();
+begin
+	insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+	values (
+		'00000000-0000-0000-0000-000000000000', v_id, 'authenticated', 'authenticated',
+		lower(regexp_replace(p_name, '\W', '', 'g')) || '.' || left(v_id::text, 8) || '@test.local', '',
+		case when p_confirmed then now() end,
+		'{"provider": "email", "providers": ["email"]}', jsonb_build_object('display_name', p_name),
+		now(), now()
+	);
+	return v_id;
+end;
+$$;
+
+-- The player row belonging to an account.
+create or replace function tests.player_of(p_user_id uuid)
+returns uuid
+language sql
+stable
+security definer
+set search_path = ''
+as $$ select id from public.tbl_players where user_id = p_user_id; $$;
+
+-- Act as this account until the next sign_in() or sign_out().
+create or replace function tests.sign_in(p_user_id uuid)
+returns void
+language plpgsql
+as $$
+begin
+	perform set_config('role', 'authenticated', true);
+	perform set_config('request.jwt.claims', jsonb_build_object('sub', p_user_id, 'role', 'authenticated')::text, true);
+end;
+$$;
+
+-- Act as someone who is not signed in.
+create or replace function tests.sign_in_anon()
+returns void
+language plpgsql
+as $$
+begin
+	perform set_config('role', 'anon', true);
+	perform set_config('request.jwt.claims', '{"role": "anon"}', true);
+end;
+$$;
+
+-- Back to the test's own superuser, for setting things up and looking at the
+-- tables directly.
+create or replace function tests.sign_out()
+returns void
+language plpgsql
+as $$
+begin
+	perform set_config('role', 'postgres', true);
+	perform set_config('request.jwt.claims', '', true);
+end;
+$$;
+
+grant execute on all functions in schema tests to anon, authenticated;
