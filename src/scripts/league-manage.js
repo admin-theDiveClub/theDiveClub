@@ -163,7 +163,18 @@
 	function renderEntry() {
 		if (!season) return;
 		els.entryMode.value = season.entry_mode;
-		els.entryModeHint.textContent = ENTRY_HINT[season.entry_mode] || '';
+
+		// Listing a league nobody can put their name down for would show it in
+		// the search as a dead end, so tdc_search_leagues leaves it out. That
+		// is a surprise if you have just ticked the box, so it is said here
+		// rather than left to be worked out.
+		let hint = ENTRY_HINT[season.entry_mode] || '';
+		if (season.is_listed && season.entry_mode === 'ld_only') {
+			hint += ' It will not appear in the league search while this is set:'
+				+ ' there would be no way in from there. Share the link below instead,'
+				+ ' or let players put their name down.';
+		}
+		els.entryModeHint.textContent = hint;
 		els.paidConfirms.checked = !!season.paid_confirms;
 		els.isListed.checked = !!season.is_listed;
 		els.shareLink.value = location.origin + '/leagues/join/?s=' + encodeURIComponent(seasonId);

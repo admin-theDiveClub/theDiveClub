@@ -8,13 +8,17 @@
 -- claude/START-HERE.md is that execute_sql auto-commits and is never used to
 -- write, and that rule is worth more than the twenty seconds it saves.
 --
--- Safe to run twice: every insert is guarded, so a second run changes nothing.
--- The cleanup at the bottom removes all of it again.
+-- **Point it at a league by changing v_season at the top.** Running it again
+-- with a different season MOVES the same nineteen players there rather than
+-- making nineteen more — they are one set of test accounts, not a set per
+-- league. Safe to run twice on the same season; it changes nothing.
+--
+-- The cleanup block at the bottom removes all of it again.
 
 do $$
 declare
-	-- UV's "Test 8BMTL" 2025/2026 season. Change this to point it elsewhere.
-	v_season uuid := '1c436a86-218a-4cc0-9bfa-0d577a0c6d01';
+	-- TestTuesday : BC BBMTL — Blackball Mainstream Team League 1995.
+	v_season uuid := '5d39556a-21d7-44e9-8b2d-2ec6e7e0f5f7';
 
 	v_names text[] := array[
 		'Thabo Mokoena', 'Ashwin Pillay', 'Johan van Wyk', 'Sipho Dlamini',
@@ -23,9 +27,11 @@ declare
 		'Marco Ferreira', 'Tristan de Villiers', 'Zanele Mthembu',
 		'Craig Petersen', 'Imraan Davids', 'Lebo Molefe', 'Werner Coetzee'
 	];
+	v_ids   uuid[] := '{}';
 	v_id    uuid;
 	v_user  uuid;
 	v_email text;
+	v_moved integer;
 	i       integer;
 begin
 	if not exists (select 1 from public.tbl_league_seasons where id = v_season) then
@@ -52,16 +58,28 @@ begin
 		-- The player row is made by the trigger on auth.users; name it.
 		update public.tbl_players set display_name = v_names[i] where user_id = v_user;
 		select id into v_id from public.tbl_players where user_id = v_user;
-
-		-- Interested, and confirmed: putting your own name down is saying you
-		-- are playing, which is what confirmed_at means.
-		insert into public.tbl_league_season_entrants
-			(league_season_id, player_id, status, confirmed_at)
-		values (v_season, v_id, 'interested', now())
-		on conflict (league_season_id, player_id) do update
-			set status = 'interested', confirmed_at = coalesce(public.tbl_league_season_entrants.confirmed_at, now());
+		v_ids := v_ids || v_id;
 	end loop;
 
+	-- Out of any other league first. One set of test accounts, moved where it
+	-- is wanted, rather than nineteen more every time this is pointed
+	-- somewhere new.
+	delete from public.tbl_league_season_entrants
+	where player_id = any(v_ids) and league_season_id <> v_season;
+	get diagnostics v_moved = row_count;
+
+	-- Interested, and confirmed: putting your own name down is saying you are
+	-- playing, which is what confirmed_at means.
+	insert into public.tbl_league_season_entrants
+		(league_season_id, player_id, status, confirmed_at)
+	select v_season, p, 'interested', now() from unnest(v_ids) p
+	on conflict (league_season_id, player_id) do update
+		set status = 'interested',
+			confirmed_at = coalesce(public.tbl_league_season_entrants.confirmed_at, now());
+
+	if v_moved > 0 then
+		raise notice 'Took % of them out of another league on the way.', v_moved;
+	end if;
 	raise notice 'Nineteen dummy players are on the interested list for season %.', v_season;
 end $$;
 
