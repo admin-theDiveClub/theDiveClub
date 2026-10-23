@@ -5,8 +5,8 @@
 (`/leagues/`, with `20261022200000`), and the round-robin fixtures and the team
 match (`20261022210000`); the lineups in §3 onwards are not.** Nothing in this document is a proposal.
 All of it was decided with UV on 13 Oct 2026 and is reproduced here from that
-session and from `claude/stats-schema-design.md` in the project. The record of
-what was built, and how it differs, is `CLAUDE.md` → *Leagues*.
+session and from `claude/stats-schema-design.md` (now `docs/archive/stats-schema-design.md`). The record of
+what was built, and how it differs, is `docs/systems/leagues.md`.
 
 **Why this file exists.** The design lived only in a chat. On 22 Oct a new
 session asked UV two questions he had already answered in detail — how
@@ -364,7 +364,7 @@ pointer, not a specification.
 
 ## 8. Still open
 
-Carried from `claude/stats-schema-design.md`; none of it blocks starting.
+Carried from `claude/stats-schema-design.md` (now `docs/archive/`); none of it blocks starting.
 
 - **Both sides leave the same slot empty.** No frame at all (preferred — it
   matches how a paper scoresheet strikes it out), a frame with no winner

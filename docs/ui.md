@@ -1,0 +1,129 @@
+# UI — pages, styling, known problems, traps
+
+> Moved from the project doc `claude/ui-handover.md` on 23 Oct 2026. Sections 4, 5, 6 and 8 of that brief are kept word for word below (renumbered). Its chat-coordination rules and running change log were dropped: with one chat at a time in Claude Code, git history is the log. Outstanding UI work is tracked in `docs/STATUS.md`; this file is the reference.
+
+---
+
+## 1. The pages as they stand
+
+| Page | Files | State |
+|---|---|---|
+| `/` | `index.html` | Thin landing page |
+| `/accounts/` | `index.html`, `scripts/auth.js` | Sign in / sign up |
+| `/accounts/profile/` | `index.html`, `scripts/profile.js` | Profile, avatar, push settings |
+| `/accounts/reset/` | `index.html`, `scripts/reset.js` | Password reset |
+| `/matches/` | `index.html`, `scripts/matches.js` | Match list. **Not live-updating** |
+| `/matches/new/` | `index.html`, `scripts/match-new.js` | Start a match |
+| `/match/` | `index.html`, `scripts/match.js`, `match.css` | **The big one.** Scoring, the card lifecycle, settings panel, offline queue, live updates. **Refuses to load a team match** — a league night is scored on `/leagues/card/` |
+| `/tournaments/` | `index.html`, `scripts/tournaments.js` | The list |
+| `/tournaments/new/` | `index.html`, `scripts/tournament-new.js` | Create. Ruleset controls generated from `TDCMatchDef` |
+| `/tournaments/manage/` | `index.html`, `scripts/tournament-manage.js` | Entrants, officials, entry settings, the poster panel. **TD only** |
+| `/tournaments/bracket/` | `index.html`, `scripts/tournament-bracket.js`, `bracket.css` | The draw. Live. TD controls, swaps, score entry, cascade |
+| `/tournaments/poster/` | `index.html`, `scripts/tournament-poster.js`, `poster.css` | **The only page that renders without a sign-in** |
+| `/leagues/` | `index.html`, `scripts/leagues.js`, `league.css` | The seasons you run or play in, **plus a search for leagues taking players** (23 Oct) |
+| `/leagues/new/` | `index.html`, `scripts/league-new.js` | A league and its first season. `?l=<league id>` makes it a season-only form. Starts from `LEAGUE_DEFAULT_RULES`, not the social defaults |
+| `/leagues/join/` | `index.html`, `scripts/league-join.js`, `league.css` | **New 23 Oct.** The page a director shares. What the league is, and a button to put your name down |
+| `/leagues/manage/` | `index.html`, `scripts/league-manage.js`, `league.css` | The director's screen: readiness, entry settings and the share link, **three transfer lists** (23 Oct), a teams-and-payment table, teams, officials |
+| `/leagues/season/` | `index.html`, `scripts/league-season.js` | For people who play: confirm your place, teams and rosters, a captain's controls for their own team |
+| `/leagues/fixtures/` | `index.html`, `scripts/league-fixtures.js` | The schedule by round. Read-only for players; the director gets generate, clear, add, move, start a match. Not live |
+| `/leagues/card/` | `index.html`, `scripts/league-card.js` | **New 23 Oct.** The captain's scorecard: squad and order until each side locks, then the grid of every frame, then the two signatures |
+| `/staff/…` | hub, board, codes, credits, link, verifications, verify, walk-in | Owner and staff tools |
+| `/sandbox/` | `index.html`, `scripts/sandbox.js`, `sandbox.css` | **Scratch page, not product** (22 Oct). Edits the palette and the logo per theme with a mock-up of the site, and **saves into `variables.css`**. Also contrast, SVG previewer, every shared component. Not in the nav, **public once deployed** |
+| The nav | `_includes/nav.html`, `nav.css`, `scripts/nav.js` | Hamburger, logo, offline tag, reload (installed only), **notifications bell and tray (22 Oct)**, profile dropdown |
+| 404, privacy, terms | — | **Stubs, 42–49 bytes. Real content needed** |
+
+### Styling
+
+Loaded in this order by `_includes/layout.html`, each with `?v={{ build.version }}`:
+
+`variables.css` → `global.css` → `nav.css` → `forms.css` → then the page's own.
+
+| Layer | What belongs in it |
+|---|---|
+| `variables.css` | **Tokens only** — colour, space, radius, font, shadow |
+| `global.css` | Element defaults |
+| `nav.css` | The shell |
+| `forms.css` | **The component layer** — buttons, fields, cards, tables, badges, panels, status lines |
+| `match.css` / `bracket.css` / `poster.css` / `league.css` | One page or one family each |
+
+**`league.css` is new (23 Oct)** and is the schema chat's, handed over like any other markup it builds: it holds the three transfer lists on `/leagues/manage/` and nothing else. It is deliberately **not** in `forms.css` — one page's furniture should not become everybody's component. If the transfer boxes turn out to be worth having elsewhere, move them into `forms.css` rather than letting `league.css` grow.
+
+**Every value in a page stylesheet should be a token.** If something needs a colour or a radius that is not in `variables.css`, the token is missing — add it there, do not hard-code it.
+
+**What is chosen by hand, per theme (22 Oct):** `--color-primary`, `--color-on-primary`, `--bg-base`, `--bg-surface` (colour and opacity), `--text-primary`, `--text-muted`, `--border-color`, `--color-success`, `--color-warning`, `--color-error`, `--color-owner`, `--shadow-alpha`, `--scrim-alpha`, and the `--logo-*` set. Everything else (`--shadow-panel`, `--scrim`, `--hover-wash`, the `color-mix()` glows) is built from those. `--color-cream`, `--color-ink`, `--alpha-1` to `--alpha-4` and `--shadow-raised` were removed (nothing used them). UV edits them on `/sandbox/` and saves into the file.
+
+UV asked on 20 Oct whether the site needed a design system. The answer reached was that the **tokens were already fine and the components were the gap**, which is why `forms.css` is the component layer. That answer is worth revisiting now that there are far more pages.
+
+Fonts: **Rushford Clean** for display, **Selawik** for body, both self-hosted in `resources/fonts/`.
+
+Branding: UV moved to **black elements with alpha** for shadows and gradients in the artwork. He now sets the alphas himself on `/sandbox/` and saves them; do not guess values.
+
+---
+
+## 2. Known UI problems and wanted work
+
+### Asked for by UV, not yet built
+
+| | |
+|---|---|
+| **Make it work on a PC** *(UV, 23 Oct)* | **The biggest open UI job.** Everything so far has been designed and checked at 420px, which was right — the primary context is a phone at the bar. But UV uses a PC and the pages do not use the width: a `.tdc-card` is a single narrow column whatever the screen, so a 1920px monitor shows a phone layout stretched down the middle. `/leagues/manage/` and `/match/` are the worst of it. `league.css` shows the pattern that works — a grid that is one column on a phone and several past a breakpoint — but this wants doing properly across the site rather than page by page |
+| **`/leagues/manage/` layout** *(UV, 23 Oct)* | "We really need to improve the layout of this page." It has grown to seven sections — readiness, entry settings and the share link, add a player, three transfer lists, a teams-and-payment table, teams, officials — and it reads as one long scroll with no hierarchy. The director's most common job (confirm people off the list) is a long way down. Worth grouping, and worth asking UV which parts he uses most before rearranging |
+| Per-round match settings | Change a round's ruleset on demand. **Needs discussion** — a match freezes its ruleset at creation on purpose, so what happens to matches already under way is a real question, not a UI one |
+| Add rounds and matches mid-tournament | A late entrant joining at round 3. **Needs discussion** — fixtures are generated as a complete shape and nothing adds to them afterwards |
+| Real content for 404, privacy policy, terms | Stubs today |
+| A theme switch for users | Several palettes later, as part of a profile or a match setting. UV, 22 Oct: define dark and light first, add more later. Not started |
+| The logo inline on the live site | UV wants it inline so values can change dynamically (animation). The sandbox already drives it by `--logo-*` variables; the nav and pages still use `<img>` |
+| Per-category notification switches on the profile page | The database has them (`tdc_notification_prefs`, `tdc_set_notification_pref`, four categories). Nothing renders them yet |
+
+### Rough edges found while building
+
+| | |
+|---|---|
+| A player cannot start their own match | With `create_matches: manual` a player sees their fixture, has no way in and no explanation. The TD gets a hint; the player gets nothing |
+| The match list and nav are not live | Everything else is. **The league pages are not live either** — a captain confirming, or a player putting their name down, does not appear on the director's screen until it is reloaded |
+| A future fixture does not read as upcoming | In the match list |
+| Nothing displays `tdc_frame_history` | The audit log is written and queryable; `/leagues/card/` is the first thing to read any of it, and only the part since a captain signed |
+| PWA icons are still the old silver artwork | `resources/icons/*` — the branding refresh did not reach them |
+| Email assets are pre-refresh | `email-wordmark.png`, `email-dive.gif` |
+| Duplicate light/dark SVGs are byte-identical | `logo-mark-dark.svg` / `logo-mark-light.svg`, and the `logo-primary-*` pair. One of each is redundant or one was never made |
+| `hero.jpg` and `social-share.jpg` are 0 bytes | Referenced, empty |
+| Literal colours outside `variables.css` | `#fff` / `#000` / `#222` in print rules and `.btn-google` (deliberate, print and a brand button), `.nav-profile-dropdown button` colour `#fff`, `board.css` `--pm-blue` and a `rgba(0,0,0,0.35)` drag shadow. Found in the 22 Oct audit; not yet moved onto tokens |
+| `.nav-profile-dropdown` is absolute at `top: 44px` | It fits at 200px wide, but it is anchored to the button rather than the viewport. The notification tray hit exactly this and had to become `position: fixed` — see §3. Worth the same treatment before it bites |
+| `/leagues/manage/` teams-and-payment table scrolls sideways | Five columns at 420px. The Team select still carries an inline `min-width: 9rem` from the script, which is a stopgap that belongs in a stylesheet. The status column came out of this table on 23 Oct and is now the three transfer lists, so it is smaller than it was |
+| `.list-row-actions` cannot wrap | `flex: 0 0 auto` with no `flex-wrap`, so two or three controls beside the text squeeze `.list-row-main` (which is `min-width: 0`) to nothing — see §3. `/leagues/fixtures/` and `/leagues/card/` both work around it in their own markup by nesting a `.btn-row` inside `.list-row-main` instead. **The component itself is still like this**, and the next page with three row actions will hit it |
+
+### Decisions already made — do not reopen without asking
+
+- **The nav reload button is hidden in a browser**, shown only when running installed. UV raised its absence on PC on 21 Oct and confirmed: **leave as is.**
+- **Drag-and-drop was asked for and a picker was built instead** for swapping a player on the bracket — a TD at the desk is on a phone, and dragging across a sideways-scrolling bracket mis-taps. UV accepted this. The database function serves either, so a drag can be added later.
+- **The notification pip is a dot, not a count.** A number would mean reading the whole list on every page load, when "something is waiting" is the entire message.
+- **On `/leagues/fixtures/`, the per-fixture date field is behind a "Move" button.** Twelve date pickers down a page is a page nobody reads, and moving one game is occasional.
+- **The transfer arrows sit under each list, not between the boxes.** UV asked for arrows between two boxes; buttons under each list read the same whether the boxes are stacked on a phone or side by side on a desktop, and need no absolute positioning in a gap that does not exist at 420px. The buttons carry both an arrow and the destination in words. **Moving them into the gaps on wide screens is fair game** — the behaviour is in the script and does not care where they sit.
+
+---
+
+## 3. Things that will cost you time if you do not know them
+
+- **The service worker caches aggressively.** `?v={{ build.version }}` busts it on each build, but a stale install can sit on an old deploy through any number of browser reloads. When UV says a change has not appeared, suspect this first. **`_site/` being stale is the same trap** — on 21 Oct it was 27 hours behind `src/` and sent an investigation down the wrong road for half an hour.
+- **A flex item with `min-width: 0` can collapse to nothing.** On 21 Oct `span.bracket-name` measured **0 × 20** on UV's screen — every player's name invisible, with the frame score left looking like the name. It was never reproduced: the DOM, the function's return value and all five stylesheets checked out, and a headless Chromium rendering the same markup against UV's own CSS gave the name 158–178 px every time. It was fixed **structurally** — the row is now a three-track grid, `auto 1fr auto`, because a `1fr` track cannot be squeezed away by what sits beside it. Prefer grid with explicit tracks over a flex line wherever an element must never vanish.
+- **The same trap caught `.list-row` on 22 Oct**, and that one *was* reproducible: `/leagues/fixtures/` put three `.btn-sm` controls and a `datetime-local` input in `.list-row-actions`, and at 420px "Charlie v Delta" came out one word per line with the buttons sitting over it. Fixed in the page's own markup by nesting a `.btn-row` (which wraps) **inside** `.list-row-main` rather than beside it, so the names always get the full width. **A fixed-width actions column beside text is the shape to distrust.** Caught by rendering it full-page at 420px, not by reading it.
+- **A dropdown anchored to a mid-bar button will hang off the screen.** The notification tray was `position: absolute; right: 0` on its button, which on a 420px phone put a 22rem tray partly off the **left** edge. The nav is itself `position: fixed` with a 1rem gutter, so the tray is now fixed to the viewport at `top: 60px; right: 1rem`, which cannot overflow at any width. Caught by rendering it, not by reading it.
+- **`font: inherit` on a button resets more than you mean.** Stripping a button back to looking like text also drops `font-style` and `color`, which silently undid a `.pending` modifier. Equal specificity, later rule wins.
+- **`<summary>` text and button labels are upper-cased by CSS.** `innerText` comes back in capitals, which will quietly fail any test that compares it to what the markup says. This has now cost four test runs across two days — compare case-insensitively.
+- **The primary context is a phone at the bar**, in a hurry, one-handed, often with poor signal. Tap targets matter more than density. The TD is standing up. **That is not an argument against a desktop layout** — see the PC job in §2 — it is an argument for the phone staying the one that is checked first.
+- **`TDCMatchDef` in `scripts/match-settings.js` is the one place a match setting is defined** — label, type, options, defaults. The match panel, the create page and the poster text all generate from it. Adding a setting is one edit there, never two. It now also holds `LEAGUE_DEFAULT_RULES` (what a team night starts from) and `LEAGUE_GROUPS` (a settings group deliberately outside `GROUPS`, so only the league pages render it).
+- Load order matters: `match-settings.js` before `match.js` and before `match-new.js`.
+- **An Inkscape SVG's ids are generic and its meaningful names are `inkscape:label`.** Code that adjusts the logo finds parts by label (`sha_*`, `col_m_*`, `col_l_*`, `blu_*`, `gra_m_all`), never by id.
+- **A bigger Inkscape blur needs a bigger filter region.** The saved `x`, `y`, `width` and `height` on a blur filter are sized to the blur at the time, so raising the blur without scaling them clips the shadow at the edge.
+- **`device_commit_files` can add a C2PA content-credentials block to an SVG** written to the repo (seen 22 Oct, about 7 KB inside a `<metadata>` element). Harmless to rendering, but it is not in UV's original file.
+- **Saving from `/sandbox/` writes to `variables.css` behind your back.** The page patches the file UV chooses, so before editing `variables.css` yourself, stage it fresh: the on-disk copy may be newer than yours. The patcher keeps line endings, indentation and trailing comments, and only touches the values it was given.
+- **Logo values saved as `--logo-*` are a whole set per theme.** A theme with none inherits the dark (`:root`) set. SVG attributes that CSS cannot reach (the blur's `stdDeviation` and the gradient stop `offset`) must be set by script from the variables; the sandbox's `logo` module is the working example.
+
+---
+
+## 4. Open UI questions UV has not answered
+
+- What the coordinator's approval queue screen looks like
+- Should an unpublished result be marked as pending in a player's own view
+- Does a rejection need a reason? (a dispute does)
+- The gradient's middle stop: 0.62 in the brief, 0.6056 in the file. Which is right?

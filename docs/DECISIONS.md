@@ -4,7 +4,7 @@
 
 One entry per decision that would be expensive to get wrong or that somebody will later be tempted to undo. Not every choice; the ones with a reason worth keeping.
 
-Earlier reasoning that predates this log lives in `CLAUDE.md` and in `claude/stats-schema-design.md`.
+Earlier reasoning that predates this log lives in `docs/systems/` and in `docs/archive/stats-schema-design.md`. Entries below that cite `claude/<name>.md` (a project doc at the time) now map to `docs/archive/<name>.md`, or to the file named in `docs/archive/README.md`.
 
 ---
 
@@ -445,3 +445,11 @@ These predate the log. They are recorded here because every one of them is a dec
 *Unchanged:* the blind exchange. Neither side sees the other's order until both have locked.
 *Not this:* pre-determined breaks per session, which exist in other formats and are an LD edge case for later. Who breaks is already the LD's setting, and this league is lag winner every frame.
 *Open:* whether the rotation table is the LD's to define with a cyclic-shift default, or one fixed standard table. `docs/STATUS.md` §1 item 0.
+
+## 2026-10-23 — Development moves to Claude Code, and the documentation shrinks to an index
+
+*Decided by:* UV, from the project-wide audit
+*Why:* every new chat read about 290 KB before starting (a 171 KB `CLAUDE.md`, this log, the agenda, the design, and the project docs), which cost a large share of each week's usage, and the agenda had begun to drift within hours. Working through the chat app also meant no shell, files staged one at a time, test suites lost with every container, and two chats able to overwrite each other.
+*So:* development runs in Claude Code inside VS Code on UV's laptop, with commit and push blocked in `.claude/settings.json` so committing stays UV's. `CLAUDE.md` is a short index read every session; each system's detail moved word for word into `docs/systems/`, read only when the work touches it. The project docs the code needs moved into the repo (`docs/ui.md`, `docs/test-plan.md`, `docs/BACKLOG.md`); retired design records went to `docs/archive/`. Tests go into `supabase/tests/` so they survive. Business to-dos live on the owner board, not in these files. One chat at a time.
+*Rejected:* keeping parallel chats with a "files in flight" table (it relied on every chat remembering to update it); a git branch per chat (UV works on one thing at a time, so it adds merging for nothing).
+*Touches:* `CLAUDE.md`, `docs/`, `.claude/settings.json`
