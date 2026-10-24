@@ -127,7 +127,7 @@
 		const main = D.SETTINGS.filter((d) => D.MAIN_KEYS.includes(d.key) && live(d));
 		els.main.replaceChildren(
 			node('h2', null, 'How are you playing?'),
-			...main.map(control)
+			...D.layout(main, control)
 		);
 
 		els.rest.replaceChildren();
@@ -150,7 +150,7 @@
 
 			const head = document.createElement('summary');
 			head.textContent = group;
-			box.append(head, ...defs.map(control));
+			box.append(head, ...D.layout(defs, control));
 			els.rest.append(box);
 		}
 	}

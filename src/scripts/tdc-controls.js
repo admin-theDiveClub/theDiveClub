@@ -841,12 +841,17 @@ const TDCControls = (() => {
 	// and one that has gone fades out as its space closes (UV, 24 Oct). Done
 	// here rather than in each page: the form is looked at as a change
 	// starts, again once the page has rebuilt it in that same moment, and the
-	// two are compared, a field known by its control's id and a folding
-	// section by its data-group. A field that merely stays does not move.
-	const ITEMS = '.field, details.set-group';
+	// two are compared, a field known by its control's id, a folding section
+	// by its data-group and a row of settings (TDCMatchDef.layout) by its
+	// data-row within its section. A field that merely stays does not move.
+	const ITEMS = '.field, details.set-group, .field-row';
 	let before = null;   // the form as the change started, until the page has had its turn
 	const itemKey = (el) => {
 		if (el.matches('details')) return el.dataset.group ? 'group:' + el.dataset.group : null;
+		if (el.matches('.field-row')) {
+			const group = el.closest('details[data-group]');
+			return 'row:' + (group ? group.dataset.group + ':' : '') + el.dataset.row;
+		}
 		const control = el.querySelector('[id]');
 		return control ? '#' + control.id : null;
 	};
@@ -926,6 +931,61 @@ const TDCControls = (() => {
 		return now;
 	}
 
+	// ─── Folding sections open and close smoothly ───
+	// Opening a folded group (details.set-group) by hand grows it while its
+	// settings fade in, their icons drawing in as a newly shown field's do;
+	// closing fades them out as it shrinks (UV, 24 Oct). The details stays
+	// the real one: open is set before it grows and cleared once it has shut,
+	// so the pages' toggle listeners hear what they always did. A second tap
+	// mid-way turns it round from where it is.
+	function redraw(icon) {
+		if (!icon.tdcShown) return;
+		const ms = timeMs(icon, '--ring-draw');
+		const strokes = [...icon.querySelectorAll('svg [pathLength]')];
+		const slice = ms / Math.max(1, strokes.length);
+		strokes.forEach((s, i) => {
+			s.getAnimations().forEach((a) => a.cancel());
+			if (ms) s.animate([{ strokeDashoffset: 100 }, { strokeDashoffset: 0 }],
+				{ duration: slice, delay: i * slice, easing: 'ease-out', fill: 'backwards' });
+		});
+	}
+
+	function fold(box) {
+		const ms = timeMs(box, '--control-reveal');
+		const opening = !box.open || box.classList.contains('is-closing');
+		const summary = box.querySelector(':scope > summary');
+		const inside = [...box.children].filter((c) => c !== summary);
+		// Where it is now, mid-fold or not, before the last fold lets go.
+		const from = box.offsetHeight;
+		const faded = inside.map((c) => box.open ? getComputedStyle(c).opacity : 0);
+		for (const a of box.tdcFold || []) a.cancel();
+		box.tdcFold = null;
+		box.classList.toggle('is-closing', !opening);
+		if (!ms) { box.open = opening; box.classList.remove('is-closing'); return; }
+
+		box.open = true;
+		const cs = getComputedStyle(box);
+		const shut = summary.getBoundingClientRect().bottom - box.getBoundingClientRect().top
+			+ parseFloat(getComputedStyle(summary).marginBottom)
+			+ parseFloat(cs.paddingBottom) + parseFloat(cs.borderBottomWidth);
+		const to = opening ? box.offsetHeight : shut;
+		const ease = { duration: ms, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' };
+		box.style.overflow = 'hidden';
+		const size = box.animate([{ height: from + 'px' }, { height: to + 'px' }], ease);
+		box.tdcFold = [size, ...inside.map((c, i) =>
+			c.animate([{ opacity: faded[i] }, { opacity: opening ? 1 : 0 }], Object.assign({ fill: 'forwards' }, ease)))];
+		if (opening) {
+			for (const i of box.querySelectorAll('[data-icon-key]')) redraw(i);
+			for (const w of box.querySelectorAll('.tdc-switch, .tdc-check')) if (w.tdcCheck) w.tdcCheck.appear();
+		}
+		size.finished.then(() => {
+			box.style.overflow = '';
+			for (const a of box.tdcFold || []) a.cancel();
+			box.tdcFold = null;
+			if (!opening) { box.classList.remove('is-closing'); box.open = false; }
+		}, () => {});   // cancelled: a later tap has taken over
+	}
+
 	// ─── Start ───
 	// Wait for every script at the end of the page, so a kind defined in a
 	// later file is known before anything is called unknown.
@@ -947,6 +1007,13 @@ const TDCControls = (() => {
 			before = snapshot();
 			setTimeout(() => { before = null; }, 0);
 		}, true);
+
+		document.addEventListener('click', (e) => {
+			const summary = e.target.closest('details.set-group > summary');
+			if (!summary) return;
+			e.preventDefault();
+			fold(summary.parentElement);
+		});
 
 		new MutationObserver((changes) => {
 			for (const c of changes) for (const n of c.addedNodes) {

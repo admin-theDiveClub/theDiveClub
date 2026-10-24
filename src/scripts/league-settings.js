@@ -103,7 +103,7 @@
 		const main = live.filter((d) => D.MAIN_KEYS.includes(d.key));
 		els.main.replaceChildren(
 			node('h2', null, 'How are these matches played?'),
-			...main.map(control)
+			...D.layout(main, control)
 		);
 
 		els.rest.replaceChildren();
@@ -122,7 +122,7 @@
 
 			const head = document.createElement('summary');
 			head.textContent = group;
-			box.append(head, ...defs.map(control));
+			box.append(head, ...D.layout(defs, control));
 			els.rest.append(box);
 		}
 	}

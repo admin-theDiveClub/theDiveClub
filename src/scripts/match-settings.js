@@ -78,9 +78,14 @@ const TDCMatchDef = (() => {
 	//   scope 'match' writes to MATCH, scope 'rules' writes to MATCH.rules.
 	//   group  is the card it appears under.
 	//   when() hides a setting that its parent switch makes irrelevant.
+	//   row    settings next to each other share a name (layout() below).
+	//   rule   draws a line above the setting, inside its group.
+	//
+	// The order and the groups are UV's (24 Oct). Format is the open part
+	// at the top of a form (MAIN_KEYS); the rest fold away.
 	// ─────────────────────────────────────────────────────────────────
 
-	const GROUPS = ['This match', 'Format', 'Results', 'Timing', 'Officials and approval'];
+	const GROUPS = ['Format', 'Match settings', 'Timing', 'Officials and approval'];
 
 	// Team play only, and deliberately NOT in GROUPS: every page builds its
 	// form by looping GROUPS, so a setting in this group is invisible to the
@@ -103,55 +108,50 @@ const TDCMatchDef = (() => {
 	};
 
 	const SETTINGS = [
-		// No column for this yet, so it lives only on the screen it is typed on.
-		// The create page leaves it out rather than offering a control that
-		// forgets what you told it.
-		{ group: 'This match', scope: 'match', key: 'referee', label: 'Referee', type: 'text', placeholder: 'None', stored: false },
-		{
-			group: 'This match', scope: 'match', key: 'first_break_side', label: 'Lag winner', type: 'select', options: SIDES,
-			hint: 'Breaks the first frame. Changing this re-derives who broke in every frame.',
-			when: (r) => r.track_breaks
-		},
-
 		{ group: 'Format', scope: 'rules', key: 'discipline', label: 'Discipline', type: 'select', options: () => DISCIPLINE },
-		{ group: 'Format', scope: 'rules', key: 'win_condition_type', label: 'Win condition', type: 'select', options: () => WIN_CONDITION },
+		{ group: 'Format', scope: 'rules', key: 'win_condition_type', label: 'Win condition', type: 'select', options: () => WIN_CONDITION, row: 'win' },
 		{
 			group: 'Format', scope: 'rules', key: 'win_condition_target', label: 'Target frames', type: 'int',
-			min: 1, max: 50, when: (r) => r.win_condition_type !== 'free_play'
+			min: 1, max: 50, when: (r) => r.win_condition_type !== 'free_play', row: 'win'
 		},
+
 		{
-			group: 'Format', scope: 'rules', key: 'track_breaks', label: 'Record who breaks', type: 'bool',
+			group: 'Match settings', scope: 'rules', key: 'track_breaks', label: 'Record who breaks', type: 'bool',
 			hint: 'Off: the card is just the score. On: who broke and what happened on the break.'
 		},
 		{
-			group: 'Format', scope: 'rules', key: 'break_determination', label: 'Breaks', type: 'select', options: () => BREAK_DETERMINATION,
+			group: 'Match settings', scope: 'match', key: 'first_break_side', label: 'Lag winner', type: 'select', options: SIDES,
+			hint: 'Breaks the first frame. Changing this re-derives who broke in every frame.',
+			when: (r) => r.track_breaks
+		},
+		{
+			group: 'Match settings', scope: 'rules', key: 'break_determination', label: 'Breaks', type: 'select', options: () => BREAK_DETERMINATION,
 			hint: 'Decides who breaks each frame after the first.', when: (r) => r.track_breaks
 		},
-
+		{ group: 'Match settings', scope: 'rules', key: 'break_finish_enabled', label: 'Break & finish', type: 'bool', when: (r) => r.track_breaks, row: 'bf' },
+		{ group: 'Match settings', scope: 'rules', key: 'golden_break_enabled', label: 'Golden break', type: 'bool', when: (r) => r.track_breaks && r.break_finish_enabled, row: 'bf' },
+		{ group: 'Match settings', scope: 'rules', key: 'reverse_break_finish_enabled', label: 'Reverse break & finish', type: 'bool', when: (r) => r.track_breaks, row: 'bf' },
 		{
-			group: 'Results', scope: 'rules', key: 'draws_allowed', label: 'Draws allowed', type: 'bool',
-			hint: 'Must be off for knockout rounds — a bracket needs someone to advance.'
-		},
-		{ group: 'Results', scope: 'rules', key: 'tiebreak_method', label: 'If level', type: 'select', options: () => TIEBREAK, when: (r) => !r.draws_allowed },
-		{ group: 'Results', scope: 'rules', key: 'break_finish_enabled', label: 'Break & finish', type: 'bool', when: (r) => r.track_breaks },
-		{ group: 'Results', scope: 'rules', key: 'golden_break_enabled', label: 'Golden break', type: 'bool', when: (r) => r.track_breaks && r.break_finish_enabled },
-		{ group: 'Results', scope: 'rules', key: 'reverse_break_finish_enabled', label: 'Reverse break & finish', type: 'bool', when: (r) => r.track_breaks },
-		{
-			group: 'Results', scope: 'rules', key: 'break_finish_requires_breaker', label: 'Break & finish needs the breaker', type: 'bool',
+			group: 'Match settings', scope: 'rules', key: 'break_finish_requires_breaker', label: 'Break & finish needs the breaker', type: 'bool',
 			hint: 'Off: either side can be credited with a break & finish.',
 			when: (r) => r.track_breaks && r.break_finish_enabled
 		},
-
-		{ group: 'Timing', scope: 'rules', key: 'max_match_minutes', label: 'Match clock (minutes)', type: 'int', min: 0, max: 600, hint: '0 for no match clock.' },
-		{ group: 'Timing', scope: 'rules', key: 'on_time_expiry', label: 'When time runs out', type: 'select', options: () => TIME_EXPIRY, when: (r) => r.max_match_minutes > 0 },
 		{
-			group: 'Timing', scope: 'rules', key: 'shot_clock_enabled', label: 'Shot clock', type: 'bool',
+			group: 'Match settings', scope: 'rules', key: 'draws_allowed', label: 'Draws allowed', type: 'bool',
+			hint: 'Must be off for knockout rounds — a bracket needs someone to advance.'
+		},
+		{ group: 'Match settings', scope: 'rules', key: 'tiebreak_method', label: 'If level', type: 'select', options: () => TIEBREAK, when: (r) => !r.draws_allowed },
+
+		{ group: 'Timing', scope: 'rules', key: 'max_match_minutes', label: 'Match clock (minutes)', type: 'int', min: 0, max: 600, hint: '0 for no match clock.', row: 'clock' },
+		{ group: 'Timing', scope: 'rules', key: 'on_time_expiry', label: 'When time runs out', type: 'select', options: () => TIME_EXPIRY, when: (r) => r.max_match_minutes > 0, row: 'clock' },
+		{
+			group: 'Timing', scope: 'rules', key: 'shot_clock_enabled', label: 'Shot clock', type: 'bool', rule: true,
 			hint: 'Off for most matches. When on, a referee runs it from the timing panel.'
 		},
-		{ group: 'Timing', scope: 'rules', key: 'shot_clock_seconds', label: 'Seconds per shot', type: 'int', min: 10, max: 120, when: (r) => r.shot_clock_enabled },
-		{ group: 'Timing', scope: 'rules', key: 'shot_clock_first_shot_seconds', label: 'First shot', type: 'int', min: 10, max: 180, when: (r) => r.shot_clock_enabled },
-		{ group: 'Timing', scope: 'rules', key: 'extensions_per_player', label: 'Extensions per player', type: 'int', min: 0, max: 10, when: (r) => r.shot_clock_enabled },
-		{ group: 'Timing', scope: 'rules', key: 'extension_seconds', label: 'Extension length', type: 'int', min: 5, max: 120, when: (r) => r.shot_clock_enabled },
+		{ group: 'Timing', scope: 'rules', key: 'shot_clock_seconds', label: 'Seconds per shot', type: 'int', min: 10, max: 120, when: (r) => r.shot_clock_enabled, row: 'shot' },
+		{ group: 'Timing', scope: 'rules', key: 'shot_clock_first_shot_seconds', label: 'First shot', type: 'int', min: 10, max: 180, when: (r) => r.shot_clock_enabled, row: 'shot' },
+		{ group: 'Timing', scope: 'rules', key: 'extensions_per_player', label: 'Extensions per player', type: 'int', min: 0, max: 10, when: (r) => r.shot_clock_enabled, row: 'shot' },
+		{ group: 'Timing', scope: 'rules', key: 'extension_seconds', label: 'Extension length', type: 'int', min: 5, max: 120, when: (r) => r.shot_clock_enabled, row: 'shot' },
 
 		{
 			group: 'Team play', scope: 'rules', key: 'lineup_cutoff_hours', label: 'Lineup cutoff (hours)', type: 'int',
@@ -179,8 +179,12 @@ const TDCMatchDef = (() => {
 		},
 
 		{ group: 'Officials and approval', scope: 'rules', key: 'referee_required', label: 'Referee required', type: 'bool' },
+		// No column for this yet, so it lives only on the screen it is typed on.
+		// The create page leaves it out rather than offering a control that
+		// forgets what you told it.
+		{ group: 'Officials and approval', scope: 'match', key: 'referee', label: 'Referee', type: 'text', placeholder: 'None', stored: false },
 		{ group: 'Officials and approval', scope: 'rules', key: 'score_entry_mode', label: 'Scores entered by', type: 'select', options: () => SCORE_ENTRY },
-		{ group: 'Officials and approval', scope: 'rules', key: 'approval_mode', label: 'Approval', type: 'select', options: () => APPROVAL },
+		{ group: 'Officials and approval', scope: 'rules', key: 'approval_mode', label: 'Approval', type: 'select', options: () => APPROVAL, rule: true },
 		{ group: 'Officials and approval', scope: 'rules', key: 'dispute_window_hours', label: 'Dispute window (hours)', type: 'int', min: 0, max: 336, when: (r) => r.approval_mode === 'dispute_window' || r.approval_mode === 'both' }
 	];
 
@@ -261,8 +265,7 @@ const TDCMatchDef = (() => {
 
 	// The few worth asking about before a match starts. Everything else is a
 	// refinement, and a long form is how someone is lost on their first match.
-	const MAIN_KEYS = ['win_condition_type', 'win_condition_target', 'track_breaks',
-		'break_determination', 'first_break_side'];
+	const MAIN_KEYS = ['discipline', 'win_condition_type', 'win_condition_target'];
 
 	// ─────────────────────────────────────────────────────────────────
 	// The control for a setting
@@ -328,6 +331,40 @@ const TDCMatchDef = (() => {
 			row.append(hint);
 		}
 		return row;
+	}
+
+	// ─────────────────────────────────────────────────────────────────
+	// A group's settings, laid out
+	//
+	// Every page builds its controls its own way, so it hands its maker in:
+	// layout(defs, make) returns the nodes to append. Settings in a row
+	// sit in one .field-row (data-row, which tdc-controls.js keys it by, so
+	// it fades in and out whole), and a setting with rule: true gets a line
+	// above it unless it starts the group. { rows: false } keeps every
+	// setting on its own line (the match page's panel, which is label and
+	// control on one line already) but still draws the lines.
+	// ─────────────────────────────────────────────────────────────────
+	function layout(defs, make, opts) {
+		const rows = !opts || opts.rows !== false;
+		const out = [];
+		let row = null;
+		for (const def of defs) {
+			if (def.rule && out.length) {
+				const line = document.createElement('div');
+				line.className = 'set-rule';
+				out.push(line);
+				row = null;
+			}
+			if (!rows || !def.row) { row = null; out.push(make(def)); continue; }
+			if (!row || row.dataset.row !== def.row) {
+				row = document.createElement('div');
+				row.className = 'field-row';
+				row.dataset.row = def.row;
+				out.push(row);
+			}
+			row.append(make(def));
+		}
+		return out;
 	}
 
 	// ─────────────────────────────────────────────────────────────────
@@ -500,7 +537,7 @@ const TDCMatchDef = (() => {
 		DISCIPLINE, BREAK_OUTCOME, RESULT_EVENT, RESULT_SHORT, BREAK_DETERMINATION,
 		WIN_CONDITION, TIME_EXPIRY, TIEBREAK, SCORE_ENTRY, APPROVAL, SIDE_TAG, SIDES,
 		GROUPS, LEAGUE_GROUPS, LEAGUE_STATUS, SETTINGS, DEFAULT_RULES, LEAGUE_DEFAULT_RULES, MAIN_KEYS,
-		control, liveRuleKeys, readValue,
+		control, layout, liveRuleKeys, readValue,
 		cyclicRotation, rotationGrid, rotationRepeats, applyRotation, tidyRules,
 		setSideNames(fn) { sideNames = fn; }
 	};

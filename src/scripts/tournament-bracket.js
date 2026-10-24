@@ -883,9 +883,9 @@
 
 		const live = TDCMatchDef.liveRuleKeys(draftRules);
 
+		const control = (d) => TDCMatchDef.control(d, draftRules, 'rr');
 		els.roundRulesMain.replaceChildren(
-			...live.filter((d) => TDCMatchDef.MAIN_KEYS.includes(d.key))
-				.map((d) => TDCMatchDef.control(d, draftRules, 'rr'))
+			...TDCMatchDef.layout(live.filter((d) => TDCMatchDef.MAIN_KEYS.includes(d.key)), control)
 		);
 
 		els.roundRulesRest.replaceChildren();
@@ -896,6 +896,7 @@
 
 			const box = document.createElement('details');
 			box.className = 'set-group';
+			box.dataset.group = group;
 			// The form is rebuilt whenever a setting changes, so a group that
 			// was open has to be put back open — otherwise ticking a box folds
 			// away the box you just ticked.
@@ -906,7 +907,7 @@
 
 			const head = document.createElement('summary');
 			head.textContent = group;
-			box.append(head, ...defs.map((d) => TDCMatchDef.control(d, draftRules, 'rr')));
+			box.append(head, ...TDCMatchDef.layout(defs, control));
 			els.roundRulesRest.append(box);
 		}
 	}

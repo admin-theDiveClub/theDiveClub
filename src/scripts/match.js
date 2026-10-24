@@ -75,7 +75,7 @@
 	const {
 		DISCIPLINE, BREAK_OUTCOME, RESULT_EVENT, RESULT_SHORT, BREAK_DETERMINATION,
 		WIN_CONDITION, TIME_EXPIRY, TIEBREAK, SCORE_ENTRY, APPROVAL, SIDE_TAG,
-		GROUPS, SETTINGS
+		GROUPS, SETTINGS, layout
 	} = TDCMatchDef;
 
 	// This page's sides are the two players.
@@ -1240,7 +1240,7 @@
 			if (!defs.length) continue;
 			const card = div('set-card');
 			card.append(heading('h3', group));
-			for (const def of defs) card.append(renderSetting(def));
+			card.append(...layout(defs, renderSetting, { rows: false }));
 			els.setGroups.append(card);
 		}
 	}

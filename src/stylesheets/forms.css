@@ -386,6 +386,49 @@ textarea:not(:disabled):hover {
 .set-group > summary::after { content: ' +'; color: var(--color-primary); }
 .set-group[open] > summary::after { content: ' –'; }
 
+/* Settings that sit next to each other (TDCMatchDef.layout, UV 24 Oct):
+   Win condition and Target frames, the three break & finish switches, the
+   match clock and what happens when it runs out, the four shot clock
+   numbers. Equal columns that wrap when they will not fit. Each field
+   puts its label above, its control under and its hint below, all
+   centred, and the three line up across the row (a subgrid), so a label
+   that wraps onto two lines does not push its control out of line. */
+.field-row {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 4.75rem), 1fr));
+	column-gap: var(--space-3);
+	margin-bottom: 1.6rem;
+}
+/* .field-beside (controls.css, loaded later) is outweighed on purpose. */
+.field-row > .field,
+.field-row > .field.field-beside {
+	grid-row: span 3;
+	display: grid;
+	grid-template-rows: subgrid;
+	grid-template-columns: minmax(0, 1fr);
+	justify-items: center;
+	text-align: center;
+	min-width: 0;
+	margin-bottom: 0;
+}
+.field-row > .field > label { grid-row: 1; grid-column: 1; align-self: end; }
+.field-row > .field > :not(label):not(.hint) {
+	grid-row: 2; grid-column: 1;
+	justify-self: center; align-self: center;
+	max-width: 100%;
+}
+.field-row > .field > .hint { grid-row: 3; grid-column: 1; }
+/* A pill wants more room than a stepper or a switch. */
+.field-row > .field:has(> .tdc-select) { grid-column: span 2; }
+
+/* A line between two parts of one group: the match clock and the shot
+   clock, the officials and the approval. Shorter than the group's own
+   line, so it does not read as a new group. */
+.set-rule {
+	border-top: 1px solid var(--border-color);
+	margin: 0 15% 1.6rem;
+}
+
 .result-name { display: block; }
 .result-sub { display: block; font-size: 0.8rem; color: var(--text-muted); }
 

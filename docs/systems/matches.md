@@ -94,6 +94,7 @@
 ### Match settings definitions (`scripts/match-settings.js`)
 - **`TDCMatchDef` is the one place a match setting is defined**: labels, the `SETTINGS` array, `DEFAULT_RULES`, and `MAIN_KEYS` (the few asked before a match starts). Both the match page's panel and the create page build their forms from it, so adding a setting is one edit, not two that drift.
 - `DEFAULT_RULES` is every key at its quietest, which is what makes a match created without touching anything the simple card. Keep it in step with `private.tdc_check_match_rules`, which refuses a ruleset missing a key or carrying an unknown one.
+- **The groups and their order are UV's (24 Oct):** Format (discipline, win condition and target frames side by side: `MAIN_KEYS`, the open part at the top of every form), then Match settings (record who breaks, lag winner, breaks, the three break & finish switches side by side, B&F needs the breaker, draws allowed, if level), Timing (match clock beside when time runs out, a line, shot clock, its four numbers side by side) and Officials and approval (referee required, referee, scores entered by, a line, approval, dispute window), which fold. A setting's `row` name puts it beside its neighbours with the same name and `rule: true` draws a line above it; **`TDCMatchDef.layout(defs, make)`** does both for every page, which passes its own control maker. The match page's panel passes `{ rows: false }`, since its label-and-control lines would not fit side by side. A row is a `.field-row` (`forms.css`): equal columns that wrap, each label above its control, lined up across the row by a subgrid.
 - **`LEAGUE_GROUPS` (`['Team play']`) is deliberately not in `GROUPS`.** Every page builds its form by looping `GROUPS` and filtering `SETTINGS` by group, so a setting in a group outside that list is invisible to the match panel and the create-a-tournament page without either of them knowing it exists. The league pages loop `GROUPS.concat(LEAGUE_GROUPS)`. That is how `lineup_cutoff_hours` and `strict_frame_order` reach a league form and nothing else.
 
 ### The ruleset is versioned, and version 1 is frozen (migration `20261022220000`)
@@ -109,7 +110,7 @@
 - **The nav reload button stays hidden in a browser**, shown only when running installed. Raised 21 Oct — UV looked for it on PC and found it missing — and **confirmed by UV as intended, leave as is**. The browser's own reload is the one to use there.
 
 ### Starting a match (`src/matches/new/`, `scripts/match-new.js`)
-- Opponent search pinned at the top, then the main settings, then the rest in closed `<details>` groups. Skipping all of it gives the simple card.
+- Opponent search pinned at the top, then When, then the Format settings, then the rest in closed `<details>` groups (the lag winner is in Match settings since 24 Oct). Skipping all of it gives the simple card.
 - `tdc_create_match` only lets you create a match you are in. Against a walk-in or guest it needs venue staff, because nobody without a login can dispute a result.
 - `tdc_search_opponents` searches across all venues and returns accounts only. Walk-ins go through the staff tools.
 
