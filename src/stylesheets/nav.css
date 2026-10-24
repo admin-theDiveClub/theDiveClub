@@ -3,11 +3,13 @@
 	top: 0;
 	left: 0;
 	right: 0;
-	height: 60px;
+	/* Up behind the notch or Dynamic Island too (--nav-top), the buttons in
+	   the 60px under it; in from the sides past a landscape notch. */
+	height: var(--nav-total);
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	padding: 0 1rem;
+	padding: var(--nav-top) max(1rem, env(safe-area-inset-right, 0px)) 0 max(1rem, env(safe-area-inset-left, 0px));
 	background: var(--bg-surface);
 	border-bottom: 1px solid var(--border-color);
 	z-index: 100;
@@ -38,7 +40,7 @@
 .nav-logo {
 	position: absolute;
 	left: 50%;
-	top: 50%;
+	top: calc(var(--nav-top) + var(--nav-height) / 2);
 	transform: translate(-50%, -50%);
 	line-height: 0;
 }
@@ -115,7 +117,7 @@
 
 .nav-menu {
 	position: fixed;
-	top: 60px;
+	top: var(--nav-total);
 	left: 0;
 	bottom: 0;
 	width: 260px;
@@ -146,7 +148,10 @@
 }
 
 body {
-	padding-top: 60px;
+	padding-top: var(--nav-total);
+	/* Clear of an iPhone's home bar, now the page reaches the screen's edges
+	   (viewport-fit=cover, 25 Oct). */
+	padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .nav-profile-wrap {
@@ -260,10 +265,10 @@ body {
  * Right-aligned to the bell it overflowed the left edge of a phone: the bell
  * sits mid-bar, and a 22rem tray anchored to it starts off-screen. The nav is
  * itself position:fixed with a 1rem gutter, so matching that puts the tray
- * under the bar's right edge and makes overflowing impossible at any width. */
+ * under the bar's right edge (below --nav-total, the notch included) and makes overflowing impossible at any width. */
 .nav-notify-tray {
 	position: fixed;
-	top: 60px;
+	top: var(--nav-total);
 	right: 1rem;
 	width: min(22rem, calc(100vw - 2rem));
 	max-height: min(26rem, 70vh);

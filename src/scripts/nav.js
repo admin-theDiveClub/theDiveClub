@@ -429,7 +429,7 @@
 	// (SHOW_AFTER_UP pixels without turning back down), so a small nudge up
 	// while reading does not bring it back. Tabbing into it brings it back.
 	const navBar = document.querySelector('.site-nav');
-	const SHOW_AFTER_UP = 200;
+	const SHOW_AFTER_UP = 100;   // 200 was hard to reach mid-page on an iPhone (UV, 25 Oct)
 	let lastY = Math.max(0, window.scrollY);
 	let upBy = 0;
 

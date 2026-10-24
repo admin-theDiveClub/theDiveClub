@@ -115,8 +115,13 @@
   --radius-pill: 999px;
   --radius-round: 50%;
 
-  /* The fixed nav's height. Panels and scrims start below it. */
+  /* The fixed nav: its own height, and how far it reaches up behind a
+     phone's notch or Dynamic Island (the safe area; 0 everywhere else), so
+     that strip is part of the bar and slides away with it (UV, 25 Oct).
+     Panels, scrims and the page start below the total. */
   --nav-height: 60px;
+  --nav-top: env(safe-area-inset-top, 0px);
+  --nav-total: calc(var(--nav-height) + var(--nav-top));
 }
 
 [data-theme="light"] {

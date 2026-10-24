@@ -7,13 +7,13 @@
 .match-page { width: 100%; }
 
 /* ── The stage ───────────────────────────────────────────────────── */
-/* body already carries padding-top: 60px for the fixed nav (nav.css), so the
+/* body already carries padding-top: var(--nav-total) for the fixed nav (nav.css), so the
    stage takes exactly what is left of the viewport. dvh keeps it right while
    mobile browser chrome slides in and out. */
 .stage {
 	display: grid;
 	grid-template-rows: 1fr auto 1fr;
-	height: calc(100dvh - 60px);
+	height: calc(100dvh - var(--nav-total) - env(safe-area-inset-bottom, 0px));
 	position: relative;
 	overflow: hidden;
 }
@@ -467,13 +467,13 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
 /* Starts below the fixed nav, so the nav stays reachable with the panel open. */
 .panel-scrim {
 	position: fixed;
-	inset: 60px 0 0 0;
+	inset: var(--nav-total) 0 0 0;
 	background: var(--scrim);
 	z-index: 150;
 }
 .settings-panel {
 	position: fixed;
-	top: 60px;
+	top: var(--nav-total);
 	right: 0;
 	bottom: 0;
 	width: min(22rem, 100vw);
@@ -745,7 +745,7 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
    rather than over a stage that has been scrolled past. */
 .stage-overlay.floating {
 	position: fixed;
-	inset: 60px 0 0 0;   /* clears the nav */
+	inset: var(--nav-total) 0 0 0;   /* clears the nav */
 	z-index: 40;
 }
 
