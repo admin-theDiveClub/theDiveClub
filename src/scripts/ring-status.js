@@ -19,6 +19,9 @@
 // Adding an icon: an entry in ICONS, a 100x100 box inside the ring (r = 40),
 // at most 4 strokes, each drawn start to finish, outlines not fills, no stroke
 // starting at the exact centre. Exits and dots are worked out from the starts.
+// An icon may give widths: one stroke width per stroke, in the 100 box, where
+// the default (10, status.css) is too heavy (the cue ball's spots). A stroke
+// may hold several subpaths (spots); its dot runs through them in turn.
 //
 // Needs: nothing. Loaded on every page by layout.html, before tdc-controls.js.
 
@@ -55,7 +58,17 @@ const TDCRing = (() => {
 		smile: { label: 'Happy',   strokes: ['M36 56C42 66 58 66 64 56', 'M40 37L40 42', 'M60 37L60 42'] },
 		// Added 24 Oct for the league fixtures' buttons (Move, Take match off).
 		calendar: { label: 'Moved', strokes: ['M30 36L70 36L70 70L30 70L30 36', 'M30 47L70 47', 'M40 29L40 40', 'M60 29L60 40'] },
-		minus: { label: 'Taken off', strokes: ['M30 50L70 50'] }
+		minus: { label: 'Taken off', strokes: ['M30 50L70 50'] },
+		// Added 24 Oct for the team card's lag: a spotted cue ball, the ball and its spot.
+		// The spots are foreshortened towards the ball's edge so it reads as a
+		// sphere: rounder and heavier near the middle, flatter and lighter out
+		// towards the rim. Grouped into three strokes by distance, as the engine
+		// has four dots: the ball, the near spot, the middle ring, the rim.
+		cue: { label: 'Won the lag', widths: [5, 6, 5, 4], strokes: [
+			'M50 20A30 30 0 1 1 50 80A30 30 0 1 1 50 20',
+			'M47.3 43.1A1.6 1.4 -33.7 1 1 44.7 44.9A1.6 1.4 -33.7 1 1 47.3 43.1',
+			'M64.2 40.4A1.8 0.8 49.8 1 1 61.8 37.6A1.8 0.8 49.8 1 1 64.2 40.4M33.4 54.3A1.8 0.8 -110.6 1 1 34.6 57.7A1.8 0.8 -110.6 1 1 33.4 54.3M53.2 64.6A1.9 1.1 160.3 1 1 56.8 63.4A1.9 1.1 160.3 1 1 53.2 64.6M68.6 56.6A1.7 0.3 104.7 1 1 69.4 53.4A1.7 0.3 104.7 1 1 68.6 56.6',
+			'M40.8 30.9A2.1 0.4 -31.4 1 1 37.2 33.1A2.1 0.4 -31.4 1 1 40.8 30.9M45 71.7A2 0.3 -172.2 1 1 49 72.3A2 0.3 -172.2 1 1 45 71.7'] }
 	};
 	const NAMES = Object.keys(ICONS);
 	const STR = {};   // key -> stroke geometry
@@ -89,7 +102,7 @@ const TDCRing = (() => {
 				const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
 				const S = [X[0], Y[0]];
 				const near = Math.hypot(S[0] - C, S[1] - C) < 6;
-				const st = { key: name + i, icon: name, d, len, N, X, Y, S, tx, ty,
+				const st = { key: name + i, icon: name, index: i, d, len, N, X, Y, S, tx, ty,
 					exit: nrm((near ? angOf(C + S[0] - X[3], C + S[1] - Y[3]) : angOf(S[0], S[1])) - LEAD) };
 				STR[st.key] = st;
 				return st;
@@ -202,6 +215,8 @@ const TDCRing = (() => {
 				p.setAttribute('d', STR[k].d);
 				p.setAttribute('pathLength', '100');
 				p.setAttribute('class', 'mark');
+				const widths = ICONS[STR[k].icon].widths;
+				if (widths) p.style.strokeWidth = widths[STR[k].index];
 				armsG.appendChild(p);
 				this.els[k] = p;
 			}

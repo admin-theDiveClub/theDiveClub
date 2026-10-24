@@ -41,6 +41,12 @@
 //            Click an option to choose it, or use the arrows at either end.
 //            The real select keeps the keyboard: Tab reaches it and the arrow
 //            keys change it.
+//   tri      <select> of three options, data-control="tri" only. A switch
+//            with three stops: left, middle (an empty ring) and right (a
+//            tick). Click an end to choose it, the same end again or the
+//            middle for the middle. data-icon picks the ring's icon (a tick
+//            by default) and data-tone its colour (warning). The team card's
+//            lag (a cue ball, warning) and win.
 
 const TDCControls = (() => {
 	const AREA = 'Controls';
@@ -699,6 +705,157 @@ const TDCControls = (() => {
 
 	define('switch', (box) => checkControl(box, 'switch'), 'input[type="checkbox"]');
 	define('ring', (box) => checkControl(box, 'ring'), null);
+
+	// ─── Three-way switch ───
+	// A <select> of exactly three options: left, middle and right, in that
+	// order (UV, 24 Oct: the team card's lag and win, home · nobody · away).
+	// The knob is a ring, empty in the middle and ticked at either end, on a
+	// track a little longer than a switch's so the three stops read as three.
+	// Clicking the left or right third chooses that end, or the middle again
+	// when it is already there; clicking the middle chooses the middle.
+	//
+	// The select stays the real one, invisible but focusable, so the arrow
+	// keys still move it and pages hear change as before. The knob slides in
+	// step with the ring's drawing, the dots orbit for as long as the save
+	// takes, and the live control is handed on through the page's redraw by
+	// the select's id or its data-action and data-frame, as the switch's is.
+	// Opt in with data-control="tri"; nothing becomes one automatically.
+	const liveTris = new Map();
+	const triKey = (sel) => sel.id ? '#' + sel.id
+		: ['action', 'frame', 'player'].map((k) => sel.dataset[k] || '').join('|');
+
+	function triControl(sel) {
+		if (sel.tagName !== 'SELECT' || sel.options.length !== 3) {
+			TDC.error(AREA, 'a three-way switch must be a <select> with three options.', sel);
+			return;
+		}
+		const key = triKey(sel);
+		const was = liveTris.get(key);
+		const c = was && was.ring.busy ? was : makeTri(sel);
+		sel.replaceWith(c.wrap);
+		c.bind(sel, key);
+	}
+
+	function makeTri(first) {
+		const c = { sel: null, key: null, own: false };
+		// data-icon names the ring's icon at either end (a tick unless it says),
+		// data-tone its colour (the brand colour unless it says, e.g. warning).
+		const ICON = first.dataset.icon && TDCRing.ICONS[first.dataset.icon] ? first.dataset.icon : 'tick';
+		const at = () => (c.sel.selectedIndex < 0 ? 1 : c.sel.selectedIndex) / 2;   // 0 left, 0.5 middle, 1 right
+		const state = () => at() === 0.5 ? 'empty' : ICON;
+
+		const wrap = c.wrap = node('span', 'tdc-tri');
+		wrap.tdcTri = c;
+		if (first.dataset.tone) wrap.dataset.tone = first.dataset.tone;
+		const stops = node('span', 'tdc-tri-stops');
+		stops.append(node('i'), node('i'), node('i'));
+		const face = node('span', 'tdc-ring');
+		face.innerHTML = TDCRing.svg(5);
+		const knob = node('span', 'tdc-tri-knob');
+		knob.append(face);
+		wrap.append(node('span', 'tdc-tri-track'), stops, knob);
+
+		// --p runs 0 (left) to 1 (right); --lit is how far from the middle,
+		// which lights the track as the knob reaches an end (status.css).
+		let knobAt = 0.5, fromAt = 0.5, moving = false;
+		const place = (p) => {
+			knobAt = p;
+			wrap.style.setProperty('--p', p.toFixed(3));
+			wrap.style.setProperty('--lit', (Math.abs(p - 0.5) * 2).toFixed(3));
+			// The stop the knob rests on is hidden, so the middle reads blank.
+			wrap.dataset.at = p === 0 ? 'left' : p === 1 ? 'right' : p === 0.5 ? 'middle' : '';
+		};
+
+		const startAt = (first.selectedIndex < 0 ? 1 : first.selectedIndex) / 2;
+		c.ring = new TDCRing.RingStatus(face, {
+			icons: [ICON],
+			labels: { [ICON]: first.options[first.selectedIndex] ? first.options[first.selectedIndex].text : 'Chosen', empty: 'Nobody', loading: 'Saving' },
+			initial: startAt === 0.5 ? 'empty' : ICON,
+			// Towards wherever the select is now, so a second click mid-way
+			// turns the knob round rather than finishing the first trip.
+			onProgress: (p) => {
+				if (!moving) { moving = true; fromAt = knobAt; }
+				place(fromAt + (at() - fromAt) * p);
+			}
+		});
+		place(startAt);
+
+		// Moved again while it was drawing: draw that too.
+		c.ring.onDone = () => {
+			moving = false;
+			liveTris.delete(c.key);
+			c.ring.labels[ICON] = c.sel.options[c.sel.selectedIndex] ? c.sel.options[c.sel.selectedIndex].text : 'Chosen';
+			if ((c.ring.state !== state() || Math.abs(knobAt - at()) > 0.001) && start()) finishWhen(saves);
+		};
+
+		// The same timing as the switch: orbit at once, then draw the moment
+		// the network is quiet if the page saved, or after --ring-load if not.
+		let mark = 0;
+		let saves = false;
+		const watching = typeof TDCNet !== 'undefined';
+		function start() {
+			if (c.ring.busy) return false;
+			c.ring.load(secs(wrap, '--ring-load', 1), {
+				draw: secs(wrap, '--ring-draw', 0.4),
+				fade: secs(wrap, '--ring-fade', 0.1),
+				lead: TDCRing.leadOf(ICON),
+				spin: spinOf(wrap)
+			});
+			liveTris.set(c.key, c);
+			return true;
+		}
+		function finishWhen(online) {
+			if (!online) { c.ring.resolve(state(), { together: true }); return; }
+			const late = new Promise((r) => setTimeout(r, LIVE_FOR));
+			Promise.race([TDCNet.quiet(), late]).then(() => c.ring.resolve(state(), { now: true }));
+		}
+
+		wrap.addEventListener('change', (e) => {
+			if (e.target === c.sel && watching) mark = TDCNet.started;
+		}, true);
+		wrap.addEventListener('change', (e) => {
+			if (e.target !== c.sel) return;
+			const fresh = start();
+			setTimeout(() => {
+				if (watching && TDCNet.started > mark) saves = true;
+				if (fresh) finishWhen(saves);
+			}, 0);
+		});
+
+		// Which third was clicked decides it. Never ignored, drawing or not.
+		wrap.addEventListener('click', (e) => {
+			if (c.sel.disabled) return;
+			const r = wrap.getBoundingClientRect();
+			const third = Math.max(0, Math.min(2, Math.floor(3 * (e.clientX - r.left) / r.width)));
+			const now = c.sel.selectedIndex < 0 ? 1 : c.sel.selectedIndex;
+			const next = third === 1 || third === now ? 1 : third;
+			if (next === now) return;
+			c.own = true;
+			c.sel.selectedIndex = next;
+			c.own = false;
+			announce(c.sel);
+		});
+
+		c.bind = (sel, key) => {
+			if (c.sel && c.sel !== sel) c.sel.remove();   // the one the page threw away
+			c.sel = sel;
+			c.key = key;
+			sel.classList.add('tdc-tri-native');
+			wrap.append(sel);
+			wrap.classList.toggle('is-disabled', sel.disabled);
+			// Set from a script: show it, no animation.
+			onPropSet(sel, ['value', 'selectedIndex'], () => {
+				if (c.own || c.ring.busy || c.sel !== sel) return;
+				c.ring.setState(state());
+				place(at());
+			});
+			new MutationObserver(() => wrap.classList.toggle('is-disabled', sel.disabled))
+				.observe(sel, { attributes: true, attributeFilter: ['disabled'] });
+		};
+		return c;
+	}
+
+	define('tri', triControl, null);
 
 	// ─── Select ───
 	// Where each select's green pill was the moment an option was chosen, by

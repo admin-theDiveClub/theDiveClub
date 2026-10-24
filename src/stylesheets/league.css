@@ -886,14 +886,10 @@
 	background: var(--bg-surface);
 }
 .tdc-card .cs-title { margin: 0 0 var(--space-2); font-size: 0.95rem; }
-.cs-grid {
-	--switch-height: var(--card-switch-height);
-	--switch-width: var(--card-switch-width);
-	--cs-tog: calc(var(--card-switch-width) + 1.3rem);
-}
+.cs-grid { --cs-mid: calc(var(--tri-width) + 2.6rem); }
 .cs-row {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) var(--cs-tog) var(--cs-tog) minmax(0, 1fr);
+	grid-template-columns: minmax(0, 1fr) var(--cs-mid) minmax(0, 1fr);
 	align-items: center;
 	gap: var(--space-2);
 	padding: var(--space-2) 0;
@@ -908,40 +904,95 @@
 	color: var(--color-primary);
 	overflow-wrap: anywhere;
 }
-.cs-head .cs-home { grid-column: 1 / 3; text-align: right; }
-.cs-head .cs-away { grid-column: 3 / 5; text-align: left; }
+.cs-head .cs-home { grid-column: 1; text-align: right; }
+.cs-head .cs-away { grid-column: 3; text-align: left; }
 
 .cs-player { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
 .cs-player.cs-home { align-items: flex-end; text-align: right; }
-.cs-player.cs-home .card-person { flex-direction: row-reverse; }
 .cs-player.cs-away { align-items: flex-start; text-align: left; }
 .cs-player.is-won .card-person-name { color: var(--color-primary); font-weight: 700; }
 .cs-sub { font-size: 0.7rem; color: var(--text-muted); }
 .cs-empty { color: var(--text-muted); font-style: italic; }
-.tdc-card select.cs-reserve { width: auto; max-width: 100%; font-size: 0.8rem; }
+
+/* A seat: the player, and a Reserve badge when it is not the position's
+ * own player. Where a reserve can go in, the seat is the way in: the
+ * picker lies invisibly over it, so a tap opens the phone's own list. */
+.cs-seat {
+	position: relative;
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-1) var(--space-2);
+	max-width: 100%;
+	border-radius: var(--radius-pill);
+}
+.cs-player.cs-home .cs-seat,
+.cs-player.cs-home .card-person { flex-direction: row-reverse; }
+.cs-seat.is-pickable { padding: 2px var(--space-2) 2px 2px; cursor: pointer; transition: box-shadow 0.15s; }
+.cs-player.cs-home .cs-seat.is-pickable { padding: 2px 2px 2px var(--space-2); }
+.cs-seat.is-pickable:hover,
+.cs-seat.is-pickable:focus-within { box-shadow: var(--glow-primary); }
+.cs-seat.is-pickable .card-person-name,
+.cs-seat.is-pickable .cs-empty { text-decoration: underline dotted; text-underline-offset: 3px; }
+.tdc-card .cs-seat > select.cs-reserve {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	opacity: 0;
+	cursor: pointer;
+	font-size: 16px;
+}
+.tdc-card .cs-badge {
+	padding: 0.05rem 0.4rem;
+	font-size: 0.62rem;
+	border-color: var(--color-warning);
+	color: var(--color-warning);
+}
 /* On a phone the picture goes above the name, so the name has the column. */
 @media (max-width: 30rem) {
+	.cs-seat,
+	.cs-player.cs-home .cs-seat { flex-direction: column; }
 	.cs-player .card-person,
 	.cs-player.cs-home .card-person { flex-direction: column; gap: var(--space-1); }
 	.cs-player .card-person-name { font-size: 0.88rem; }
+	.cs-seat.is-pickable,
+	.cs-player.cs-home .cs-seat.is-pickable { padding: var(--space-1); border-radius: var(--radius-md); }
 }
 
-/* L over W. The switch sits towards the middle, its letter outside it. */
-.cs-toggles { display: flex; flex-direction: column; gap: var(--space-2); }
-.cs-tog { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-2); }
-.cs-toggles.cs-away .cs-tog { flex-direction: row-reverse; }
+/* L over W in the middle: home at the left end, nobody in the middle, away
+ * at the right, its letter either side. */
+.cs-toggles { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
+.cs-tog { display: flex; align-items: center; gap: var(--space-2); }
 .cs-tog-key {
 	width: 0.8rem;
 	font-size: 0.72rem;
 	font-weight: 700;
 	color: var(--text-muted);
 	text-align: center;
+	transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+/* The letter beside the chosen end lights up. */
+.cs-tog-key.is-on {
+	color: var(--color-primary);
+	text-shadow: 0 0 8px color-mix(in srgb, var(--color-primary) 75%, transparent);
+}
+.cs-tog-lag .cs-tog-key.is-on {
+	color: var(--color-warning);
+	text-shadow: 0 0 8px color-mix(in srgb, var(--color-warning) 75%, transparent);
 }
 
+/* The totals, either side of the middle, under each team's end. */
 .cs-total { border-bottom: none; }
-.cs-tot { display: flex; flex-direction: column; align-items: center; }
-.cs-total .cs-home { grid-column: 2; }
-.cs-total .cs-away { grid-column: 3; }
+.cs-tots {
+	grid-column: 2;
+	display: flex;
+	justify-content: space-between;
+	padding: 0 calc(1.3rem + var(--tri-height) / 2 - 1.25rem);
+}
+.cs-tot { display: flex; flex-direction: column; align-items: center; width: 2.5rem; }
 .cs-tot-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
 .cs-tot-value { font-size: 1.35rem; font-weight: 700; color: var(--color-primary); font-variant-numeric: tabular-nums; }
 
@@ -951,15 +1002,27 @@
  * the two teams, a row per session. */
 .card-players th,
 .card-players td,
+.card-players td.num,
 .card-players td:last-child,
 .card-players th:last-child { text-align: center; padding-left: var(--space-2); padding-right: var(--space-2); }
-.card-players .cp-label { text-align: left; white-space: nowrap; padding-left: 0; }
+.card-players .cp-label { white-space: nowrap; }
 .card-players .cp-team { color: var(--color-primary); border-bottom: none; }
 .card-players th.cp-player { vertical-align: bottom; min-width: 4.5rem; text-transform: none; letter-spacing: normal; }
 .cp-player .person-pic { width: 1.75rem; height: 1.75rem; margin: 0 auto var(--space-1); font-size: 0.68rem; }
 .cp-name { display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-primary); overflow-wrap: anywhere; }
 .cp-pos { display: block; font-size: 0.62rem; color: var(--text-muted); }
-.card-players .cp-sep { width: var(--space-3); min-width: var(--space-3); padding: 0; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
+/* Between the teams: the score, each session's and the night's. */
+.card-players .cp-sep {
+	padding-left: var(--space-3);
+	padding-right: var(--space-3);
+	border-left: 1px solid var(--border-color);
+	border-right: 1px solid var(--border-color);
+	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
+}
+.card-players th.cp-sep { vertical-align: bottom; }
+.card-players .cp-score { font-weight: 700; color: var(--color-primary); }
+.cp-colon { margin: 0 var(--space-1); color: var(--text-muted); font-weight: 400; }
 .card-players .cp-cell.is-won { color: var(--color-primary); font-weight: 700; }
 .card-players .cp-cell.is-open { color: var(--text-muted); }
 .card-players tfoot td { border-top: 1px solid var(--color-primary); border-bottom: none; font-weight: 700; }

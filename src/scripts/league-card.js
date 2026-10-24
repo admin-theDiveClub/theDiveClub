@@ -28,8 +28,9 @@
 // database's, and its refusals say which rule.
 //
 // The layout is UV's (24 Oct): a banner with both teams and the card's state;
-// each session as rows of home player, L and W switches for each side (won
-// the lag, won the frame), away player, with the session's totals; a table of
+// each session as rows of home player, an L and a W three-way switch (who won
+// the lag, who won the frame: home, nobody, away), away player, with the
+// session's totals; a tap on a player's name opens the reserve picker; a table of
 // every player's frames by session; the result in a banner; the signatures as
 // a form waiting to be signed.
 //
@@ -88,7 +89,6 @@
 	let cardState = null;
 	let changes = [];
 	let working = null;        // the side being set up: mine, or the director's choice
-	let pairing = false;       // switching a frame's other side off, which saves nothing itself
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -491,14 +491,6 @@
 	}
 
 	// ─── The sessions ───
-	// Whether the rules leave the breaker to the table (a lag before every
-	// frame, or the sheet). Only then does a frame have an L to set.
-	function tableDecides() {
-		const r = match.rules || {};
-		return !!(r.track_breaks
-			&& (r.break_determination === 'lag_each_frame' || r.break_determination === 'by_schedule'));
-	}
-
 	// A frame's position on each side. Old cards (no team size) have neither,
 	// and their slot is the position.
 	const posOf = (f, side) => (side === 'home' ? f.home_position : f.away_position) || f.lineup_slot;
@@ -534,38 +526,42 @@
 			if (!bySession.has(s)) bySession.set(s, []);
 			bySession.get(s).push(f);
 		}
-		const lag = tableDecides();
 		const blocks = [];
 		for (const [s, frames] of bySession) {
-			blocks.push(sessionBlock(bySession.size > 1 ? 'Session ' + s : 'The frames', frames, strict, nextOpen, lag));
+			blocks.push(sessionBlock(bySession.size > 1 ? 'Session ' + s : 'The frames', frames, strict, nextOpen));
 		}
 		els.sessions.replaceChildren(...blocks);
 	}
 
-	function sessionBlock(heading, frames, strict, nextOpen, lag) {
+	// Three tracks: home player, the frame's L and W in the middle, away
+	// player. The totals sit either side of the middle, under each team's end
+	// of the toggles.
+	function sessionBlock(heading, frames, strict, nextOpen) {
 		const block = node('section', 'cs-session');
 		block.append(node('h3', 'cs-title', heading));
 
-		const grid = node('div', 'cs-grid' + (lag ? ' has-lag' : ''));
+		const grid = node('div', 'cs-grid');
 		const head = node('div', 'cs-row cs-head');
 		head.append(node('span', 'cs-team cs-home', match.home_name), node('span', 'cs-team cs-away', match.away_name));
 		grid.append(head);
 
-		for (const f of frames) grid.append(frameRow(f, strict, nextOpen, lag));
+		for (const f of frames) grid.append(frameRow(f, strict, nextOpen));
 
 		const total = node('div', 'cs-row cs-total');
+		const both = node('div', 'cs-tots');
 		for (const side of ['home', 'away']) {
 			const cell = node('span', 'cs-tot cs-' + side);
 			cell.append(node('span', 'cs-tot-label', 'Total'),
 				node('span', 'cs-tot-value', String(frames.filter((f) => f.winner_side === side).length)));
-			total.append(cell);
+			both.append(cell);
 		}
+		total.append(both);
 		grid.append(total);
 		block.append(grid);
 		return block;
 	}
 
-	function frameRow(f, strict, nextOpen, lag) {
+	function frameRow(f, strict, nextOpen) {
 		const row = node('div', 'cs-row cs-frame');
 		const oneSeat = !f.home_player_id || !f.away_player_id;
 		const settled = f.result_event === 'default';
@@ -578,56 +574,70 @@
 
 		row.append(
 			playerCell(f, 'home', lockedCard),
-			toggles(f, 'home', mayEnter, lag),
-			toggles(f, 'away', mayEnter, lag),
+			toggles(f, mayEnter),
 			playerCell(f, 'away', lockedCard));
 		return row;
 	}
 
+	// A seat: the player's picture and name, a Reserve badge when somebody
+	// other than the position's own player sits in it, and the frame and
+	// position under it. Where this person may put a reserve in, the name is
+	// the way in (UV, 24 Oct): the reserve picker lies invisibly over it, so a
+	// tap on the name opens the phone's own list.
 	function playerCell(f, side, lockedCard) {
 		const cell = node('div', 'cs-player cs-' + side + (f.winner_side === side ? ' is-won' : ''));
 		const id = side === 'home' ? f.home_player_id : f.away_player_id;
 		const name = side === 'home' ? f.home_player : f.away_player;
-		if (id) cell.append(person(id, name));
-		else cell.append(node('span', 'cs-empty', 'Empty seat'));
+		const pos = posOf(f, side);
+		const regular = (lineup.find((l) => l.side === side && l.lineup_slot === pos) || {}).player_id;
+
+		const seat = node('span', 'cs-seat');
+		seat.append(id ? person(id, name) : node('span', 'cs-empty', 'Empty seat'));
+		if (id && regular && id !== regular) seat.append(node('span', 'badge cs-badge', 'Reserve'));
+
+		const pick = f.status === 'pending' && !lockedCard ? reservePick(f, side) : null;
+		if (pick) {
+			seat.classList.add('is-pickable');
+			seat.title = id ? 'Put a reserve in for ' + name : 'Put somebody in this seat';
+			seat.append(pick);
+		}
+		cell.append(seat);
 
 		const sub = [];
 		if (side === 'home') sub.push('Frame ' + f.frame_no);
-		const pos = posOf(f, side);
 		if (pos) sub.push((side === 'home' ? 'H' : 'A') + pos);
-		const regular = (lineup.find((l) => l.side === side && l.lineup_slot === pos) || {}).player_id;
-		if (id && regular && id !== regular) sub.push('Reserve');
 		if (f.result_event === 'default' && f.winner_side === side) sub.push('Walkover');
 		cell.append(node('span', 'cs-sub', sub.join(' · ')));
-
-		if (f.status === 'pending' && !lockedCard) {
-			const pick = reservePick(f, side);
-			if (pick) cell.append(pick);
-		}
 		return cell;
 	}
 
-	// L over W, each a switch: L won the lag (the frame's break_side), W won
-	// the frame. Both sides of a frame are one choice, so switching one on
-	// switches the other side's off. A viewer who may not enter it sees the
-	// switches as they stand, greyed.
-	function toggles(f, side, mayEnter, lag) {
-		const cell = node('div', 'cs-toggles cs-' + side);
-		const keys = lag ? [['lag', 'L', f.break_side === side, 'won the lag'], ['win', 'W', f.winner_side === side, 'won the frame']]
-			: [['win', 'W', f.winner_side === side, 'won the frame']];
-		for (const [action, letter, on, words] of keys) {
-			const line = node('span', 'cs-tog');
-			const box = document.createElement('input');
-			box.type = 'checkbox';
-			box.dataset.control = 'switch';
-			// Side in the action, so the two switches of a frame are told apart
-			// when the page redraws and hands each live one on (tdc-controls.js).
-			box.dataset.action = action + '-' + side;
-			box.dataset.frame = f.frame_no;
-			box.checked = on;
-			box.disabled = !mayEnter;
-			box.setAttribute('aria-label', teamName(side) + ' ' + words + ', frame ' + f.frame_no);
-			line.append(node('span', 'cs-tog-key', letter), box);
+	// L over W, each a three-way switch (UV, 24 Oct): home at the left,
+	// nobody in the middle, away at the right. L is who won the lag (the
+	// frame's break_side), W who won the frame. A viewer who may not enter the
+	// frame sees them as they stand, greyed.
+	function toggles(f, mayEnter) {
+		const cell = node('div', 'cs-toggles');
+		for (const [action, letter, value, words] of [
+			['lag', 'L', f.break_side, 'won the lag'],
+			['win', 'W', f.winner_side, 'won the frame']]) {
+			const line = node('span', 'cs-tog cs-tog-' + action);
+			const pick = document.createElement('select');
+			pick.dataset.control = 'tri';
+			// The lag in the warning colour with a spotted cue ball (UV, 24 Oct),
+			// so it never reads as the result.
+			if (action === 'lag') { pick.dataset.icon = 'cue'; pick.dataset.tone = 'warning'; }
+			// The action and frame tell the page's redraw which live control
+			// this is, so its animation carries on (tdc-controls.js).
+			pick.dataset.action = action;
+			pick.dataset.frame = f.frame_no;
+			pick.append(
+				new Option(match.home_name + ' ' + words, 'home', false, value === 'home'),
+				new Option('Nobody yet', '', false, !value),
+				new Option(match.away_name + ' ' + words, 'away', false, value === 'away'));
+			pick.disabled = !mayEnter;
+			pick.setAttribute('aria-label', (action === 'lag' ? 'Lag' : 'Winner') + ', frame ' + f.frame_no);
+			line.append(node('span', 'cs-tog-key' + (value === 'home' ? ' is-on' : ''), letter), pick,
+				node('span', 'cs-tog-key' + (value === 'away' ? ' is-on' : ''), letter));
 			cell.append(line);
 		}
 		return cell;
@@ -721,9 +731,19 @@
 		const names = node('tr');
 		names.append(node('th', 'cp-label', 'Sessions'));
 		for (const p of range) names.append(headCell('home', p));
-		names.append(node('th', 'cp-sep'));
+		names.append(node('th', 'cp-sep', 'Score'));
 		for (const p of range) names.append(headCell('away', p));
 		thead.append(top, names);
+
+		// The column between the teams is the score: the session's, and the
+		// night's in the totals (UV, 24 Oct). Counted from the frames.
+		const scoreCell = (frames) => {
+			const td = node('td', 'cp-sep cp-score');
+			td.append(node('span', null, String(frames.filter((f) => f.winner_side === 'home').length)),
+				node('span', 'cp-colon', ':'),
+				node('span', null, String(frames.filter((f) => f.winner_side === 'away').length)));
+			return td;
+		};
 
 		const totals = { home: range.map(() => 0), away: range.map(() => 0) };
 		const tbody = node('tbody');
@@ -731,7 +751,7 @@
 			const tr = node('tr');
 			tr.append(node('td', 'cp-label', 'Session ' + s));
 			for (const side of ['home', 'away']) {
-				if (side === 'away') tr.append(node('td', 'cp-sep'));
+				if (side === 'away') tr.append(scoreCell(card.filter((x) => (x.session || 1) === s)));
 				for (const p of range) {
 					const f = card.find((x) => (x.session || 1) === s && posOf(x, side) === p);
 					const td = node('td', 'num cp-cell');
@@ -761,7 +781,7 @@
 		const foot = node('tr');
 		foot.append(node('td', 'cp-label', 'Totals'));
 		for (const side of ['home', 'away']) {
-			if (side === 'away') foot.append(node('td', 'cp-sep'));
+			if (side === 'away') foot.append(scoreCell(card));
 			for (const n of totals[side]) foot.append(node('td', 'num cp-cell', String(n)));
 		}
 		tfoot.append(foot);
@@ -944,52 +964,50 @@
 			return;
 		}
 
-		const box = e.target.closest('input[type="checkbox"][data-action]');
-		if (!box || pairing) return;
-		const [action, side] = box.dataset.action.split('-');
-		if ((action !== 'win' && action !== 'lag') || (side !== 'home' && side !== 'away')) return;
-		const frameNo = parseInt(box.dataset.frame, 10);
+		const tri = e.target.closest('select[data-action="lag"], select[data-action="win"]');
+		if (!tri) return;
+		const action = tri.dataset.action;
+		const side = tri.value === 'home' || tri.value === 'away' ? tri.value : null;
+		const frameNo = parseInt(tri.dataset.frame, 10);
 		const f = card.find((x) => x.frame_no === frameNo);
 		if (!f) { TDC.error(AREA, 'no frame ' + frameNo + ' on this card.', null, els.status); return; }
 
-		// The other side's switch goes off with it, by a click of its own so
-		// it animates too; that click saves nothing (pairing).
-		if (box.checked) {
-			const other = side === 'home' ? 'away' : 'home';
-			const opposite = els.sessions.querySelector(`input[data-action="${action}-${other}"][data-frame="${frameNo}"]`);
-			if (opposite && opposite.checked) {
-				pairing = true;
-				try { opposite.click(); } finally { pairing = false; }
-			}
-		}
+		// The letter beside the chosen end lights at once, not after the re-read.
+		const keys = tri.closest('.cs-tog').querySelectorAll('.cs-tog-key');
+		keys[0].classList.toggle('is-on', side === 'home');
+		keys[1].classList.toggle('is-on', side === 'away');
 
 		// tdc_record_frame writes the whole frame from what it is sent, so each
-		// switch sends the frame as it stands with its own change laid over:
+		// toggle sends the frame as it stands with its own change laid over:
 		// recording the winner keeps the lag, and the lag keeps the winner.
+		// The change is also kept on the frame here until the re-read, so a
+		// lag and a win set in quick succession do not undo each other (the
+		// second used to send the lag as it was before the first).
 		const send = (what, change) => {
-			const p = Object.assign({
-				status: f.status === 'complete' ? 'complete' : 'pending',
+			Object.assign(f, change, { status: change.status || (f.status === 'complete' ? 'complete' : 'pending') });
+			const p = {
+				status: f.status,
 				winner_side: f.winner_side,
 				result_event: f.result_event,
 				break_side: f.break_side
-			}, change);
+			};
 			for (const k of Object.keys(p)) if (p[k] === null || p[k] === undefined) delete p[k];
 			write(what + ' frame ' + frameNo, () => supabaseClient.rpc('tdc_record_frame', {
 				p_match_id: matchId, p_frame_no: frameNo, p_frame: p
 			}));
 		};
 
-		if (action === 'win' && box.checked) {
+		if (action === 'win' && side) {
 			// The winner, and the lag already chosen. Break outcomes and the
 			// richer result events belong to the match page, which has the
 			// controls for them; this grid is for getting results down fast.
 			send('Saving', { status: 'complete', winner_side: side,
 				result_event: f.status === 'complete' && f.winner_side === side && f.result_event ? f.result_event : 'win' });
 		} else if (action === 'win') {
-			// W off clears the result; the lag stays.
+			// W back to the middle clears the result; the lag stays.
 			send('Clearing', { status: 'pending', winner_side: null, result_event: null });
 		} else {
-			send('Saving', { break_side: box.checked ? side : null });
+			send('Saving', { break_side: side });
 		}
 	});
 

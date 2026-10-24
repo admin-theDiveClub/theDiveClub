@@ -28,18 +28,19 @@
 }
 .tdc-ring[data-state="loading"] .ring { opacity: 0.3; }
 .tdc-ring .mark {
-	stroke: var(--color-primary);
+	stroke: var(--ring-accent, var(--color-primary));
 	stroke-width: 10;
 	stroke-dasharray: 100 200;
 	stroke-dashoffset: 100;
 	transition: stroke-dashoffset 0.35s ease;
 }
 .tdc-ring .mark.on { stroke-dashoffset: 0; }
-.tdc-ring .dots { fill: var(--color-primary); }
+.tdc-ring .dots { fill: var(--ring-accent, var(--color-primary)); }
 
 /* The live text a screen reader hears ("Saving", "On", "Ticked"). */
 .tdc-check .sr,
-.tdc-switch .sr {
+.tdc-switch .sr,
+.tdc-tri .sr {
 	position: absolute;
 	width: 1px;
 	height: 1px;
@@ -126,8 +127,77 @@ table .tdc-check { --rs: var(--ring-size-table); }
 	will-change: transform;
 }
 
+/* ── Three-way switch: left, nobody, right (24 Oct) ──────────────────
+   A switch a little longer than usual, with three faint stops. The knob is
+   a ring: empty in the middle, a tick at either end. --p runs 0 (left) to 1
+   (right) and --lit 0 in the middle to 1 at an end, both set by the script. */
+.tdc-tri {
+	--tri-color: var(--color-primary);
+	--ring-accent: var(--tri-color);
+	--p: 0.5;
+	--lit: 0;
+	position: relative;
+	display: inline-block;
+	flex: 0 0 auto;
+	width: var(--tri-width);
+	height: var(--tri-height);
+	vertical-align: middle;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+}
+/* data-tone="warning": the lag on the team card. */
+.tdc-tri[data-tone="warning"] { --tri-color: var(--color-warning); }
+.tdc-tri-track {
+	position: absolute;
+	inset: 0;
+	box-sizing: border-box;
+	border: var(--control-border) solid color-mix(in srgb, var(--tri-color) calc(var(--lit) * 100%), var(--control-line));
+	border-radius: var(--radius-pill);
+	background: color-mix(in srgb, var(--tri-color) calc(var(--lit) * 12%), transparent);
+	box-shadow: 0 0 calc(var(--lit) * 16px) color-mix(in srgb, var(--tri-color) calc(var(--lit) * 30%), transparent);
+	transition: box-shadow 0.15s ease;
+}
+.tdc-tri:hover .tdc-tri-track { box-shadow: var(--glow-primary); }
+.tdc-tri:has(> .tdc-tri-native:focus-visible) .tdc-tri-track {
+	outline: 2px solid var(--tri-color);
+	outline-offset: 3px;
+}
+.tdc-tri-stops {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 calc(var(--tri-height) / 2 - 2px);
+	pointer-events: none;
+}
+.tdc-tri-stops i { width: 4px; height: 4px; border-radius: var(--radius-round); background: var(--control-line); opacity: 0.35; }
+.tdc-tri[data-at="left"] .tdc-tri-stops i:nth-child(1),
+.tdc-tri[data-at="middle"] .tdc-tri-stops i:nth-child(2),
+.tdc-tri[data-at="right"] .tdc-tri-stops i:nth-child(3) { opacity: 0; }
+.tdc-tri-knob {
+	position: absolute;
+	top: calc(var(--tri-height) * 0.09375);
+	left: calc(var(--tri-height) * 0.09375);
+	width: calc(var(--tri-height) * 0.8125);
+	height: calc(var(--tri-height) * 0.8125);
+	transform: translateX(calc(var(--p) * (var(--tri-width) - var(--tri-height))));
+	will-change: transform;
+}
+.tdc-tri > select.tdc-tri-native {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	opacity: 0;
+	pointer-events: none;
+}
+
 .is-disabled.tdc-check,
-.is-disabled.tdc-switch { opacity: 0.4; pointer-events: none; box-shadow: none; }
+.is-disabled.tdc-switch,
+.is-disabled.tdc-tri { opacity: 0.4; pointer-events: none; box-shadow: none; }
 
 @media (prefers-reduced-motion: reduce) {
 	.tdc-ring .ring,
