@@ -427,14 +427,40 @@
 				b.dataset.side = side;
 				actions.append(b);
 			}
+			main.append(actions);
+
+			// Who broke, directly under each side's win button, when the rules
+			// leave it to the table: a lag before every frame, or the sheet.
+			// Pressing the chosen side again takes it off.
+			const tableDecides = match.rules && match.rules.track_breaks
+				&& (match.rules.break_determination === 'lag_each_frame'
+					|| match.rules.break_determination === 'by_schedule');
+			if (tableDecides) {
+				const lag = match.rules.break_determination === 'lag_each_frame';
+				const breaks = node('div', 'btn-row');
+				for (const side of ['home', 'away']) {
+					const b = node('button',
+						'btn btn-sm ' + (f.break_side === side ? 'btn-primary' : 'btn-secondary'),
+						(lag ? 'Lag: ' : 'Breaks: ') + (side === 'home' ? match.home_name : match.away_name));
+					b.type = 'button';
+					b.dataset.action = 'break';
+					b.dataset.frame = f.frame_no;
+					b.dataset.side = side;
+					b.setAttribute('aria-pressed', f.break_side === side ? 'true' : 'false');
+					breaks.append(b);
+				}
+				main.append(breaks);
+			}
+
 			if (f.status === 'complete') {
-				const undo = node('button', 'btn btn-secondary btn-sm', 'Clear');
+				const tail = node('div', 'btn-row');
+				const undo = node('button', 'btn btn-secondary btn-sm', 'Clear result');
 				undo.type = 'button';
 				undo.dataset.action = 'clear';
 				undo.dataset.frame = f.frame_no;
-				actions.append(undo);
+				tail.append(undo);
+				main.append(tail);
 			}
-			main.append(actions);
 		}
 
 		row.append(main);
@@ -617,22 +643,35 @@
 		const b = e.target.closest('button[data-action]');
 		if (!b) return;
 		const frameNo = parseInt(b.dataset.frame, 10);
+		const f = card.find((x) => x.frame_no === frameNo);
+		if (!f) { TDC.error(AREA, 'no frame ' + frameNo + ' on this card.', null, els.status); return; }
+
+		// tdc_record_frame writes the whole frame from what it is sent, so each
+		// button sends the frame as it stands with its own change laid over:
+		// recording the winner keeps the lag, and the lag keeps the winner.
+		const send = (what, change) => {
+			const p = Object.assign({
+				status: f.status === 'complete' ? 'complete' : 'pending',
+				winner_side: f.winner_side,
+				result_event: f.result_event,
+				break_side: f.break_side
+			}, change);
+			for (const k of Object.keys(p)) if (p[k] === null || p[k] === undefined) delete p[k];
+			write(what + ' frame ' + frameNo, () => supabaseClient.rpc('tdc_record_frame', {
+				p_match_id: matchId, p_frame_no: frameNo, p_frame: p
+			}));
+		};
 
 		if (b.dataset.action === 'won') {
-			write('Saving frame ' + frameNo, () => supabaseClient.rpc('tdc_record_frame', {
-				p_match_id: matchId,
-				p_frame_no: frameNo,
-				// Winner and nothing else. Break details and the richer result
-				// events belong to the match page, which has the controls for
-				// them; this grid is for getting a night's results down fast.
-				p_frame: { status: 'complete', winner_side: b.dataset.side, result_event: 'win' }
-			}));
+			// The winner, and the lag already chosen. Break outcomes and the
+			// richer result events belong to the match page, which has the
+			// controls for them; this grid is for getting results down fast.
+			send('Saving', { status: 'complete', winner_side: b.dataset.side,
+				result_event: f.status === 'complete' && f.winner_side === b.dataset.side && f.result_event ? f.result_event : 'win' });
+		} else if (b.dataset.action === 'break') {
+			send('Saving', { break_side: f.break_side === b.dataset.side ? null : b.dataset.side });
 		} else if (b.dataset.action === 'clear') {
-			write('Clearing frame ' + frameNo, () => supabaseClient.rpc('tdc_record_frame', {
-				p_match_id: matchId,
-				p_frame_no: frameNo,
-				p_frame: { status: 'pending' }
-			}));
+			send('Clearing', { status: 'pending', winner_side: null, result_event: null });
 		}
 	});
 
