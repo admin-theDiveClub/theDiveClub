@@ -14,6 +14,9 @@
 //                        the two positions it seats
 //   tdc_card_state     — the two signatures and whether each still matches
 //   tdc_card_changes_since_signing — what moved since you signed
+// Read once, for the banner and the signatures: the league season's info, its
+// reserves, the fixture's round and tables, and the two rosters (names,
+// captains and pictures).
 //
 // A night is sessions (20261023221049). A captain names one player per
 // position — five in a five-man league — and the database builds the night
@@ -24,10 +27,16 @@
 // session, regulars keep their position, no opponent twice) are the
 // database's, and its refusals say which rule.
 //
+// The layout is UV's (24 Oct): a banner with both teams and the card's state;
+// each session as rows of home player, L and W switches for each side (won
+// the lag, won the frame), away player, with the session's totals; a table of
+// every player's frames by session; the result in a banner; the signatures as
+// a form waiting to be signed.
+//
 // Writes: tdc_set_match_squad, tdc_set_lineup_slot, tdc_lock_lineup,
 // tdc_swap_frame_player, tdc_record_frame, tdc_submit_card, tdc_answer_card.
 //
-// Needs: tdc.js, match-settings.js.
+// Needs: tdc.js, match-settings.js, league-nav.js.
 
 (() => {
 	const AREA = 'Team card';
@@ -35,15 +44,23 @@
 
 	const el = (id) => document.getElementById(id);
 	const els = {
-		title: el('m-title'), meta: el('m-meta'),
-		stateLine: el('state-line'), stateDetail: el('state-detail'),
+		title: el('m-title'),
+		jumbo: el('jumbo'), jumboStatus: el('jumbo-status'), stateDetail: el('state-detail'), facts: el('jumbo-facts'),
+		homePic: el('home-pic'), homeName: el('home-name'), awayPic: el('away-pic'), awayName: el('away-name'),
 		setup: el('setup'), sideSwitch: el('side-switch'), sidePick: el('side-pick'),
 		squadHint: el('squad-hint'), squadList: el('squad-list'),
 		orderHint: el('order-hint'), orderList: el('order-list'),
 		lockBtn: el('lock-btn'),
 		otherSide: el('other-side'), otherHead: el('other-head'), otherDetail: el('other-detail'),
-		grid: el('grid'), gridScore: el('grid-score'), gridHint: el('grid-hint'), frames: el('frame-list'),
-		signPanel: el('sign-panel'), signHome: el('sign-home'), signAway: el('sign-away'),
+		grid: el('grid'), sessions: el('session-list'), gridHint: el('grid-hint'),
+		playerTable: el('player-table'), playerNote: el('player-note'),
+		summary: el('summary'), sumDetail: el('sum-detail'),
+		sumHomePic: el('sum-home-pic'), sumHomeName: el('sum-home-name'), sumHomeScore: el('sum-home-score'),
+		sumAwayPic: el('sum-away-pic'), sumAwayName: el('sum-away-name'), sumAwayScore: el('sum-away-score'),
+		signPanel: el('sign-panel'), sfLeague: el('sf-league'), sfDate: el('sf-date'),
+		sfHomeName: el('sf-home-name'), sfHomeScore: el('sf-home-score'), sfHomeSig: el('sf-home-sig'), sfHomeCap: el('sf-home-cap'),
+		sfAwayName: el('sf-away-name'), sfAwayScore: el('sf-away-score'), sfAwaySig: el('sf-away-sig'), sfAwayCap: el('sf-away-cap'),
+		sfDispute: el('sf-dispute'),
 		changedSince: el('changed-since'), changedList: el('changed-list'),
 		signBtn: el('sign-btn'), disputeBtn: el('dispute-btn'),
 		status: el('page-status')
@@ -59,14 +76,19 @@
 
 	// ─── State ───
 	let match = null;          // the row, plus the two team names
+	let info = null;           // the league season: league name, season name, rules
+	let seasonRow = null;      // the season's reserves
+	let fixture = null;        // the fixture this match is on: round, tables
 	let lineupState = null;
 	let lineup = [];
 	let squad = [];
 	let rosters = new Map();   // team id -> its players, for the squad and reserve pickers
+	let pictures = new Map();  // player id -> avatar path, from the two rosters
 	let card = [];
 	let cardState = null;
 	let changes = [];
 	let working = null;        // the side being set up: mine, or the director's choice
+	let pairing = false;       // switching a frame's other side off, which saves nothing itself
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -76,6 +98,7 @@
 	};
 
 	const teamName = (side) => side === 'home' ? match.home_name : match.away_name;
+	const plural = (n, one, many) => (n === 1 ? '1 ' + one : (n || 0) + ' ' + (many || one + 's'));
 
 	function when(iso) {
 		if (!iso) return '';
@@ -85,6 +108,47 @@
 			weekday: 'short', day: 'numeric', month: 'short',
 			hour: '2-digit', minute: '2-digit'
 		});
+	}
+
+	// A team's shield, as on the fixtures and season pages, until teams have
+	// pictures of their own.
+	const SHIELD = 'M12 3l7 3v5c0 4.5-3 8-7 10c-4-2-7-5.5-7-10V6z';
+	function shield() {
+		const NS = 'http://www.w3.org/2000/svg';
+		const svg = document.createElementNS(NS, 'svg');
+		svg.setAttribute('viewBox', '0 0 24 24');
+		svg.setAttribute('aria-hidden', 'true');
+		const path = document.createElementNS(NS, 'path');
+		path.setAttribute('d', SHIELD);
+		path.setAttribute('fill', 'none');
+		path.setAttribute('stroke', 'currentColor');
+		path.setAttribute('stroke-width', '2');
+		path.setAttribute('stroke-linejoin', 'round');
+		svg.append(path);
+		return svg;
+	}
+
+	// A player's picture, or their initials in a circle when they have none.
+	function avatar(playerId, name) {
+		const box = node('span', 'person-pic');
+		const url = TDC.pictureUrl('player-avatars', pictures.get(playerId));
+		if (url) {
+			const img = document.createElement('img');
+			img.src = url;
+			img.alt = '';
+			img.loading = 'lazy';
+			box.append(img);
+		} else {
+			box.textContent = (name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+		}
+		return box;
+	}
+
+	// A name with its picture beside it, everywhere a player is named.
+	function person(playerId, name, cls) {
+		const span = node('span', 'card-person' + (cls ? ' ' + cls : ''));
+		span.append(avatar(playerId, name), node('span', 'card-person-name', name));
+		return span;
 	}
 
 	// ─── The match itself ───
@@ -120,21 +184,49 @@
 		});
 
 		els.title.textContent = match.home_name + ' v ' + match.away_name;
-		els.meta.textContent = when(match.scheduled_at);
+		document.title = match.home_name + ' v ' + match.away_name + ' · The Dive Club';
+		for (const [pic, name, side] of [
+			[els.homePic, els.homeName, 'home'], [els.awayPic, els.awayName, 'away'],
+			[els.sumHomePic, els.sumHomeName, 'home'], [els.sumAwayPic, els.sumAwayName, 'away']]) {
+			pic.replaceChildren(shield());
+			name.textContent = teamName(side);
+		}
+		els.sfHomeName.textContent = match.home_name;
+		els.sfAwayName.textContent = match.away_name;
+
 		// The league's pages, once the match has said which season it is in.
 		TDCLeagueNav.show(match.league_season_id);
 		return true;
 	}
 
+	// ─── The league around it ───
+	// For the banner and the signature form only: a failure here is reported
+	// and the card still loads, because none of it is needed to score.
+	async function loadContext() {
+		const [season, row, fx] = await Promise.all([
+			supabaseClient.rpc('tdc_league_season_info', { p_league_season_id: match.league_season_id }),
+			supabaseClient.from('tbl_league_seasons').select('max_reserves').eq('id', match.league_season_id).maybeSingle(),
+			supabaseClient.from('tbl_league_fixtures').select('round, table_numbers').eq('match_id', matchId).maybeSingle()
+		]);
+		if (season.error) TDC.showSupabaseError(AREA, season.error, els.status);
+		else info = (season.data || [])[0] || null;
+		if (row.error) TDC.showSupabaseError(AREA, row.error, els.status);
+		else seasonRow = row.data;
+		if (fx.error) TDC.showSupabaseError(AREA, fx.error, els.status);
+		else fixture = fx.data;
+	}
+
 	// ─── The rosters behind the squad picker ───
 	// Read once: a roster does not change during a night, and this is two
-	// requests rather than two on every redraw.
+	// requests rather than two on every redraw. They carry each player's
+	// picture too.
 	async function loadRosters() {
 		for (const id of [match.home_team_id, match.away_team_id]) {
 			if (rosters.has(id)) continue;
 			const { data, error } = await supabaseClient.rpc('tdc_team_roster', { p_team_id: id });
 			if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 			rosters.set(id, data || []);
+			for (const r of data || []) if (r.avatar_path) pictures.set(r.player_id, r.avatar_path);
 		}
 		return true;
 	}
@@ -189,48 +281,98 @@
 		const both = locked.home && locked.away;
 		const canSet = working && (lineupState.i_run_it || lineupState.my_side === working);
 
-		renderState(locked, both);
+		renderBanner(locked, both);
 		renderSwitch(both);
 		renderSetup(locked, both, canSet);
 		renderOther(locked, both);
-		renderGrid(both);
+		renderSessions(both);
+		renderPlayers(both);
+		renderSummary(both);
 		renderSignatures(both);
 	}
 
-	function renderState(locked, both) {
+	const score = (side) => card.filter((f) => f.winner_side === side).length;
+	const teamSize = () => (match.rules && match.rules.team_size) || 0;
+
+	// The card's state, as the banner's badge. Each key has a colour in
+	// league.css (.card-state-<key>).
+	function stateOf(both) {
 		const state = cardState && cardState.state;
+		if (!both) return ['lineups', 'Lineups not in'];
+		if (state === 'approved') return ['approved', 'Published'];
+		if (state === 'agreed') return ['agreed', 'Signed by both'];
+		if (state === 'disputed') return ['disputed', 'Disputed'];
+		if (state === 'awaiting') return ['awaiting', 'Waiting on a signature'];
+		return ['playing', 'Playing'];
+	}
+
+	// ─── The banner ───
+	// Both teams, the state as a badge, a line on what happens next, and the
+	// fixture's details as label and value pairs.
+	function renderBanner(locked, both) {
+		const [key, label] = stateOf(both);
+		els.jumbo.className = 'jumbo card-jumbo card-state-' + key;
+		els.jumboStatus.hidden = false;
+		els.jumboStatus.textContent = label;
+		els.stateDetail.textContent = stateDetail(locked, both);
+
+		const facts = [];
+		if (info) facts.push(['League', info.league_name + (info.name ? ' · ' + info.name : '')]);
+		if (match.scheduled_at) {
+			const d = new Date(match.scheduled_at);
+			facts.push(['Date', d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })]);
+			facts.push(['Time', d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })]);
+		} else {
+			facts.push(['Date', 'Not set']);
+		}
+		if (fixture && fixture.round) facts.push(['Round', String(fixture.round)]);
+		if (fixture && fixture.table_numbers && fixture.table_numbers.length) {
+			facts.push([fixture.table_numbers.length === 1 ? 'Table' : 'Tables', fixture.table_numbers.join(', ')]);
+		}
+		const size = teamSize();
+		if (size) facts.push(['Players', size + ' a side']);
+		if (seasonRow) facts.push(['Reserves', seasonRow.max_reserves ? 'Up to ' + seasonRow.max_reserves + ' a team' : 'None']);
+		if (size) facts.push(['Sessions', String(size)]);
+		const frames = card.length || (size ? size * size : 0);
+		if (frames) {
+			const played = card.filter((f) => f.status === 'complete').length;
+			facts.push(['Frames', card.length ? played + ' of ' + frames + ' played' : String(frames)]);
+		}
+		if (!both && lineupState.cutoff_at) facts.push(['Lineups by', when(lineupState.cutoff_at)]);
+
+		els.facts.replaceChildren(...facts.map(([k, v]) => {
+			const row = node('div', 'jumbo-fact');
+			row.append(node('dt', null, k), node('dd', null, v));
+			return row;
+		}));
+	}
+
+	function stateDetail(locked, both) {
+		const state = cardState && cardState.state;
+		let text;
 
 		if (!both) {
 			const waiting = [];
 			if (!locked.home) waiting.push(match.home_name);
 			if (!locked.away) waiting.push(match.away_name);
-			els.stateLine.textContent = 'Lineups not in yet';
-			els.stateDetail.textContent = 'Waiting on ' + waiting.join(' and ')
+			text = 'Waiting on ' + waiting.join(' and ')
 				+ '. The frames are made when the second lineup is locked.'
 				+ (lineupState.cutoff_at
 					? ' A side with nothing in by ' + when(lineupState.cutoff_at) + ' concedes.'
 					: '');
-			return;
-		}
-
-		if (state === 'agreed') {
-			els.stateLine.textContent = 'Both captains have signed';
-			els.stateDetail.textContent = 'The card is agreed. Only the league director can change it now.';
+		} else if (state === 'agreed') {
+			text = 'The card is agreed. Only the league director can change it now.';
 		} else if (state === 'approved') {
-			els.stateLine.textContent = 'Published';
-			els.stateDetail.textContent = 'The league director has approved this result.';
+			text = 'The league director has approved this result.';
 		} else if (state === 'disputed') {
-			els.stateLine.textContent = 'Disputed';
-			els.stateDetail.textContent = (cardState.note || '') + ' The card is open again.';
+			text = (cardState.note || '') + ' The card is open again.';
 		} else if (state === 'awaiting') {
 			const out = cardState.waiting_on;
-			els.stateLine.textContent = 'Waiting on a signature';
-			els.stateDetail.textContent = out === 'both'
+			text = out === 'both'
 				? 'The card changed, so neither signature stands any more.'
-				: 'Waiting on ' + teamName(out) + '.';
+				: 'Waiting on ' + teamName(out) + ' to sign.';
 		} else {
-			els.stateLine.textContent = 'Playing';
-			els.stateDetail.textContent = 'Record each frame as it finishes. Both captains sign at the end.';
+			text = 'Record each frame as it finishes. Both captains sign at the end.';
 		}
 
 		// A lineup locked by the clock rather than by a person is worth saying
@@ -239,9 +381,10 @@
 		if (lineupState.home_by_cutoff) byCutoff.push(match.home_name);
 		if (lineupState.away_by_cutoff) byCutoff.push(match.away_name);
 		if (byCutoff.length) {
-			els.stateDetail.textContent += ' ' + byCutoff.join(' and ')
+			text += ' ' + byCutoff.join(' and ')
 				+ (byCutoff.length === 1 ? ' did not put a lineup in before the cutoff.' : ' did not put lineups in before the cutoff.');
 		}
+		return text.trim();
 	}
 
 	// The director's switch between the two sides, for as long as either has
@@ -273,7 +416,7 @@
 		els.squadList.replaceChildren(...roster.map((r) => {
 			const row = node('div', 'list-row');
 			const main = node('div', 'list-row-main');
-			main.append(node('span', null, r.display_name));
+			main.append(person(r.player_id, r.display_name));
 			const sub = [];
 			if (r.is_captain) sub.push('Captain');
 			if (r.status !== 'active') sub.push(r.status === 'withdrawn' ? 'Withdrawn' : 'Away');
@@ -308,6 +451,7 @@
 			const row = node('div', 'list-row');
 			const main = node('div', 'list-row-main');
 			main.append(node('span', null, 'Position ' + slot.lineup_slot));
+			if (slot.player_id) main.append(person(slot.player_id, slot.display_name, 'card-person-sm'));
 			row.append(main);
 
 			const actions = node('div', 'list-row-actions');
@@ -346,15 +490,22 @@
 			: 'Still choosing. ' + (hidden + named) + ' of ' + theirs.length + ' positions filled so far.';
 	}
 
-	// ─── The grid ───
-	function renderGrid(both) {
+	// ─── The sessions ───
+	// Whether the rules leave the breaker to the table (a lag before every
+	// frame, or the sheet). Only then does a frame have an L to set.
+	function tableDecides() {
+		const r = match.rules || {};
+		return !!(r.track_breaks
+			&& (r.break_determination === 'lag_each_frame' || r.break_determination === 'by_schedule'));
+	}
+
+	// A frame's position on each side. Old cards (no team size) have neither,
+	// and their slot is the position.
+	const posOf = (f, side) => (side === 'home' ? f.home_position : f.away_position) || f.lineup_slot;
+
+	function renderSessions(both) {
 		els.grid.hidden = !both || !card.length;
 		if (els.grid.hidden) return;
-
-		const home = card.filter((f) => f.winner_side === 'home').length;
-		const away = card.filter((f) => f.winner_side === 'away').length;
-		els.gridScore.hidden = false;
-		els.gridScore.textContent = home + ' – ' + away;
 
 		const strict = !!(match.rules && match.rules.strict_frame_order);
 		// Under a strict order only the next unplayed frame may be entered,
@@ -364,110 +515,122 @@
 			? (card.find((f) => f.status === 'pending') || {}).frame_no
 			: null;
 
+		// A note under the sessions, only when there is something to say:
+		// the strict order, seats still empty, and a side with no reserve.
 		const empty = card.filter((f) => f.status === 'pending' && (!f.home_player_id || !f.away_player_id)).length;
-		els.gridHint.textContent = (strict
-			? 'Frames must be played in order, so only frame ' + (nextOpen || '—') + ' can be entered.'
-			: 'Record each frame as it finishes, in any order.')
+		const hint = ((strict ? 'Frames must be played in order, so only frame ' + (nextOpen || '—') + ' can be entered.' : '')
 			+ (empty
 				? ' ' + empty + (empty === 1 ? ' frame has' : ' frames have') + ' an empty seat: put a reserve or a latecomer in, or it is a walkover when the card is signed.'
 				: '')
-			+ noReserveNote();
+			+ noReserveNote()).trim();
+		els.gridHint.hidden = !hint;
+		els.gridHint.textContent = hint;
 
-		// One heading per session. Frames are numbered session by session,
-		// so the card is already in that order.
-		const rows = [];
-		let session = null;
+		// One block per session. Frames are numbered session by session, so
+		// the card is already in that order.
+		const bySession = new Map();
 		for (const f of card) {
-			if (f.session && f.session !== session && card.some((g) => g.session > 1)) {
-				session = f.session;
-				rows.push(node('h3', null, 'Session ' + session));
-			}
-			rows.push(frameRow(f, strict, nextOpen));
+			const s = f.session || 1;
+			if (!bySession.has(s)) bySession.set(s, []);
+			bySession.get(s).push(f);
 		}
-		els.frames.replaceChildren(...rows);
+		const lag = tableDecides();
+		const blocks = [];
+		for (const [s, frames] of bySession) {
+			blocks.push(sessionBlock(bySession.size > 1 ? 'Session ' + s : 'The frames', frames, strict, nextOpen, lag));
+		}
+		els.sessions.replaceChildren(...blocks);
 	}
 
-	function frameRow(f, strict, nextOpen) {
-		const row = node('div', 'list-row');
-		const main = node('div', 'list-row-main');
+	function sessionBlock(heading, frames, strict, nextOpen, lag) {
+		const block = node('section', 'cs-session');
+		block.append(node('h3', 'cs-title', heading));
 
-		const seat = (name) => name || 'empty seat';
-		main.append(node('span', null, 'Frame ' + f.frame_no + ': ' + seat(f.home_player) + '  v  ' + seat(f.away_player)));
+		const grid = node('div', 'cs-grid' + (lag ? ' has-lag' : ''));
+		const head = node('div', 'cs-row cs-head');
+		head.append(node('span', 'cs-team cs-home', match.home_name), node('span', 'cs-team cs-away', match.away_name));
+		grid.append(head);
 
-		const sub = [];
-		if (f.home_position && f.away_position) sub.push('H' + f.home_position + ' v A' + f.away_position);
+		for (const f of frames) grid.append(frameRow(f, strict, nextOpen, lag));
+
+		const total = node('div', 'cs-row cs-total');
+		for (const side of ['home', 'away']) {
+			const cell = node('span', 'cs-tot cs-' + side);
+			cell.append(node('span', 'cs-tot-label', 'Total'),
+				node('span', 'cs-tot-value', String(frames.filter((f) => f.winner_side === side).length)));
+			total.append(cell);
+		}
+		grid.append(total);
+		block.append(grid);
+		return block;
+	}
+
+	function frameRow(f, strict, nextOpen, lag) {
+		const row = node('div', 'cs-row cs-frame');
 		const oneSeat = !f.home_player_id || !f.away_player_id;
-		if (f.result_event === 'default') sub.push('Walkover');
-		else if (f.status === 'complete') sub.push('Won by ' + (f.winner_side === 'home' ? match.home_name : match.away_name));
-		else if (f.status === 'pending' && oneSeat) sub.push('Waiting for a player');
-		else if (f.status === 'pending') sub.push('Not played');
-		if (sub.length) main.append(node('span', 'sub', sub.join(' · ')));
-
-		// A walkover is settled, so there is nothing to enter; and a frame
-		// with an empty seat has nobody to win it until somebody sits down.
 		const settled = f.result_event === 'default';
 		const lockedCard = cardState && (cardState.state === 'agreed' || cardState.state === 'approved');
+		// A walkover is settled, so there is nothing to enter; and a frame
+		// with an empty seat has nobody to win it until somebody sits down.
 		const mayEnter = !settled && !lockedCard && !oneSeat
 			&& (!strict || f.frame_no === nextOpen)
 			&& canRecord(f);
 
-		if (f.status === 'pending' && !lockedCard) {
-			for (const side of ['home', 'away']) {
-				const pick = reservePick(f, side);
-				if (pick) main.append(pick);
-			}
-		}
-
-		if (mayEnter) {
-			const actions = node('div', 'btn-row');
-			for (const side of ['home', 'away']) {
-				const b = node('button',
-					'btn btn-sm ' + (f.winner_side === side ? 'btn-primary' : 'btn-secondary'),
-					(side === 'home' ? match.home_name : match.away_name) + ' won');
-				b.type = 'button';
-				b.dataset.action = 'won';
-				b.dataset.frame = f.frame_no;
-				b.dataset.side = side;
-				actions.append(b);
-			}
-			main.append(actions);
-
-			// Who broke, directly under each side's win button, when the rules
-			// leave it to the table: a lag before every frame, or the sheet.
-			// Pressing the chosen side again takes it off.
-			const tableDecides = match.rules && match.rules.track_breaks
-				&& (match.rules.break_determination === 'lag_each_frame'
-					|| match.rules.break_determination === 'by_schedule');
-			if (tableDecides) {
-				const lag = match.rules.break_determination === 'lag_each_frame';
-				const breaks = node('div', 'btn-row');
-				for (const side of ['home', 'away']) {
-					const b = node('button',
-						'btn btn-sm ' + (f.break_side === side ? 'btn-primary' : 'btn-secondary'),
-						(lag ? 'Lag: ' : 'Breaks: ') + (side === 'home' ? match.home_name : match.away_name));
-					b.type = 'button';
-					b.dataset.action = 'break';
-					b.dataset.frame = f.frame_no;
-					b.dataset.side = side;
-					b.setAttribute('aria-pressed', f.break_side === side ? 'true' : 'false');
-					breaks.append(b);
-				}
-				main.append(breaks);
-			}
-
-			if (f.status === 'complete') {
-				const tail = node('div', 'btn-row');
-				const undo = node('button', 'btn btn-secondary btn-sm', 'Clear result');
-				undo.type = 'button';
-				undo.dataset.action = 'clear';
-				undo.dataset.frame = f.frame_no;
-				tail.append(undo);
-				main.append(tail);
-			}
-		}
-
-		row.append(main);
+		row.append(
+			playerCell(f, 'home', lockedCard),
+			toggles(f, 'home', mayEnter, lag),
+			toggles(f, 'away', mayEnter, lag),
+			playerCell(f, 'away', lockedCard));
 		return row;
+	}
+
+	function playerCell(f, side, lockedCard) {
+		const cell = node('div', 'cs-player cs-' + side + (f.winner_side === side ? ' is-won' : ''));
+		const id = side === 'home' ? f.home_player_id : f.away_player_id;
+		const name = side === 'home' ? f.home_player : f.away_player;
+		if (id) cell.append(person(id, name));
+		else cell.append(node('span', 'cs-empty', 'Empty seat'));
+
+		const sub = [];
+		if (side === 'home') sub.push('Frame ' + f.frame_no);
+		const pos = posOf(f, side);
+		if (pos) sub.push((side === 'home' ? 'H' : 'A') + pos);
+		const regular = (lineup.find((l) => l.side === side && l.lineup_slot === pos) || {}).player_id;
+		if (id && regular && id !== regular) sub.push('Reserve');
+		if (f.result_event === 'default' && f.winner_side === side) sub.push('Walkover');
+		cell.append(node('span', 'cs-sub', sub.join(' · ')));
+
+		if (f.status === 'pending' && !lockedCard) {
+			const pick = reservePick(f, side);
+			if (pick) cell.append(pick);
+		}
+		return cell;
+	}
+
+	// L over W, each a switch: L won the lag (the frame's break_side), W won
+	// the frame. Both sides of a frame are one choice, so switching one on
+	// switches the other side's off. A viewer who may not enter it sees the
+	// switches as they stand, greyed.
+	function toggles(f, side, mayEnter, lag) {
+		const cell = node('div', 'cs-toggles cs-' + side);
+		const keys = lag ? [['lag', 'L', f.break_side === side, 'won the lag'], ['win', 'W', f.winner_side === side, 'won the frame']]
+			: [['win', 'W', f.winner_side === side, 'won the frame']];
+		for (const [action, letter, on, words] of keys) {
+			const line = node('span', 'cs-tog');
+			const box = document.createElement('input');
+			box.type = 'checkbox';
+			box.dataset.control = 'switch';
+			// Side in the action, so the two switches of a frame are told apart
+			// when the page redraws and hands each live one on (tdc-controls.js).
+			box.dataset.action = action + '-' + side;
+			box.dataset.frame = f.frame_no;
+			box.checked = on;
+			box.disabled = !mayEnter;
+			box.setAttribute('aria-label', teamName(side) + ' ' + words + ', frame ' + f.frame_no);
+			line.append(node('span', 'cs-tog-key', letter), box);
+			cell.append(line);
+		}
+		return cell;
 	}
 
 	// Who could come in as a reserve for a side: anybody active on the team
@@ -506,11 +669,12 @@
 		if (!choices.length) return null;
 
 		const pick = document.createElement('select');
+		pick.className = 'cs-reserve';
 		pick.dataset.control = 'none';   // a list of players, inside a frame row
 		pick.dataset.action = 'reserve';
 		pick.dataset.frame = f.frame_id;
 		pick.setAttribute('aria-label', (current ? 'Reserve for ' : 'Player for ') + teamName(side) + ' in frame ' + f.frame_no);
-		pick.append(new Option(current ? teamName(side) + ': reserve…' : teamName(side) + ': who sits here?', '', true, true));
+		pick.append(new Option(current ? 'Reserve…' : 'Who sits here?', '', true, true));
 		for (const r of choices) {
 			pick.append(new Option(r.display_name + (r.player_id === regular ? ' (back in)' : ''), r.player_id));
 		}
@@ -522,6 +686,110 @@
 	function canRecord(f) {
 		if (lineupState.i_run_it || lineupState.my_side) return true;
 		return false;   // a player records their own frame on the match page
+	}
+
+	// ─── Every player's frames ───
+	// One column per position on each side, headed by the player in it
+	// tonight, a row per session: 1 for a frame won, 0 for one lost, a dash
+	// for one not played yet. Totals at the foot. A frame played by a reserve
+	// is marked, since the column is the position's.
+	function renderPlayers(both) {
+		if (!both || !card.length) return;
+		const positions = teamSize() || Math.max(0, ...card.map((f) => Math.max(posOf(f, 'home') || 0, posOf(f, 'away') || 0)));
+		const sessions = [...new Set(card.map((f) => f.session || 1))];
+		const range = Array.from({ length: positions }, (_, i) => i + 1);
+		let reserves = false;
+
+		const headCell = (side, pos) => {
+			const th = node('th', 'cp-player');
+			const slot = lineup.find((l) => l.side === side && l.lineup_slot === pos) || {};
+			if (slot.player_id) {
+				th.append(avatar(slot.player_id, slot.display_name), node('span', 'cp-name', slot.display_name));
+			} else {
+				th.append(node('span', 'cp-name', 'Empty'));
+			}
+			th.append(node('span', 'cp-pos', (side === 'home' ? 'H' : 'A') + pos));
+			return th;
+		};
+
+		const thead = node('thead');
+		const top = node('tr', 'cp-teams');
+		top.append(node('th'));
+		const homeTh = node('th', 'cp-team', match.home_name); homeTh.colSpan = positions;
+		const awayTh = node('th', 'cp-team', match.away_name); awayTh.colSpan = positions;
+		top.append(homeTh, node('th', 'cp-sep'), awayTh);
+		const names = node('tr');
+		names.append(node('th', 'cp-label', 'Sessions'));
+		for (const p of range) names.append(headCell('home', p));
+		names.append(node('th', 'cp-sep'));
+		for (const p of range) names.append(headCell('away', p));
+		thead.append(top, names);
+
+		const totals = { home: range.map(() => 0), away: range.map(() => 0) };
+		const tbody = node('tbody');
+		for (const s of sessions) {
+			const tr = node('tr');
+			tr.append(node('td', 'cp-label', 'Session ' + s));
+			for (const side of ['home', 'away']) {
+				if (side === 'away') tr.append(node('td', 'cp-sep'));
+				for (const p of range) {
+					const f = card.find((x) => (x.session || 1) === s && posOf(x, side) === p);
+					const td = node('td', 'num cp-cell');
+					if (!f || f.status !== 'complete') {
+						td.textContent = '–';
+						td.classList.add('is-open');
+					} else {
+						const won = f.winner_side === side ? 1 : 0;
+						totals[side][p - 1] += won;
+						td.textContent = String(won);
+						if (won) td.classList.add('is-won');
+					}
+					const id = f && (side === 'home' ? f.home_player_id : f.away_player_id);
+					const regular = (lineup.find((l) => l.side === side && l.lineup_slot === p) || {}).player_id;
+					if (id && regular && id !== regular) {
+						td.append(node('sup', 'cp-reserve', '*'));
+						td.title = 'Played by ' + (side === 'home' ? f.home_player : f.away_player) + ', a reserve';
+						reserves = true;
+					}
+					tr.append(td);
+				}
+			}
+			tbody.append(tr);
+		}
+
+		const tfoot = node('tfoot');
+		const foot = node('tr');
+		foot.append(node('td', 'cp-label', 'Totals'));
+		for (const side of ['home', 'away']) {
+			if (side === 'away') foot.append(node('td', 'cp-sep'));
+			for (const n of totals[side]) foot.append(node('td', 'num cp-cell', String(n)));
+		}
+		tfoot.append(foot);
+
+		els.playerTable.replaceChildren(thead, tbody, tfoot);
+		els.playerNote.hidden = !reserves;
+		els.playerNote.textContent = '* A reserve played this frame for that position.';
+	}
+
+	// ─── The result ───
+	function renderSummary(both) {
+		els.summary.hidden = !both || !card.length;
+		if (els.summary.hidden) return;
+		const [key] = stateOf(both);
+		els.summary.className = 'jumbo card-jumbo card-summary card-state-' + key;
+
+		const home = score('home'), away = score('away');
+		els.sumHomeScore.textContent = home;
+		els.sumAwayScore.textContent = away;
+		els.summary.dataset.lead = home > away ? 'home' : away > home ? 'away' : '';
+
+		const played = card.filter((f) => f.status === 'complete').length;
+		const walkovers = card.filter((f) => f.result_event === 'default').length;
+		const parts = [played + ' of ' + plural(card.length, 'frame') + ' played'];
+		if (walkovers) parts.push(plural(walkovers, 'walkover'));
+		const settled = cardState && (cardState.state === 'agreed' || cardState.state === 'approved');
+		if (settled) parts.push(home === away ? 'A draw' : teamName(home > away ? 'home' : 'away') + ' win');
+		els.sumDetail.textContent = parts.join(' · ');
 	}
 
 	// tdc_frame_history reports a change as "winner_side home → away", which
@@ -554,19 +822,47 @@
 	}
 
 	// ─── Signatures ───
+	// A form waiting to be signed: the league, the date, the teams and their
+	// scores side by side, a line for each captain's signature, whether
+	// anything is disputed, then the two buttons.
 	function renderSignatures(both) {
 		els.signPanel.hidden = !both || !card.length;
 		if (els.signPanel.hidden) return;
 
+		els.sfLeague.textContent = info ? info.league_name + (info.name ? ' · ' + info.name : '') : '';
+		els.sfDate.textContent = match.scheduled_at
+			? new Date(match.scheduled_at).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+			: 'No date set';
+		els.sfHomeScore.textContent = score('home');
+		els.sfAwayScore.textContent = score('away');
+
 		const sides = (cardState && cardState.sides) || {};
-		const line = (side) => {
+		const sigLine = (side, line, cap) => {
 			const s = sides[side];
-			if (!s) return teamName(side) + ' — not signed.';
-			return teamName(side) + ' — signed ' + when(s.at)
-				+ (s.current ? '.' : ', but the card has changed since.');
+			line.className = 'sf-line' + (!s ? ' is-empty' : s.current ? ' is-signed' : ' is-stale');
+			line.replaceChildren();
+			if (s) {
+				line.append(node('span', 'sf-signed', 'Signed'),
+					node('span', 'sf-when', when(s.at) + (s.current ? '' : ' · the card changed since')));
+			}
+			const teamId = side === 'home' ? match.home_team_id : match.away_team_id;
+			const captains = (rosters.get(teamId) || []).filter((r) => r.is_captain);
+			cap.replaceChildren();
+			if (captains.length) {
+				cap.append(node('span', 'sf-cap-label', captains.length === 1 ? 'Captain' : 'Captains'));
+				for (const c of captains) cap.append(person(c.player_id, c.display_name, 'card-person-sm'));
+			} else {
+				cap.append(node('span', 'sf-cap-label', 'Captain'));
+			}
 		};
-		els.signHome.textContent = line('home');
-		els.signAway.textContent = line('away');
+		sigLine('home', els.sfHomeSig, els.sfHomeCap);
+		sigLine('away', els.sfAwaySig, els.sfAwayCap);
+
+		const state = cardState && cardState.state;
+		els.sfDispute.className = 'sf-note' + (state === 'disputed' ? ' is-disputed' : '');
+		els.sfDispute.textContent = state === 'disputed'
+			? 'Disputed: ' + (cardState.note || 'no reason given') + '. The card is open again.'
+			: 'No disputes raised on this card.';
 
 		els.changedSince.hidden = !changes.length;
 		els.changedList.replaceChildren(...changes.map((c) => {
@@ -578,14 +874,13 @@
 			return row;
 		}));
 
-		const state = cardState && cardState.state;
 		const mine = working && sides[working];
 		const canSign = working && (lineupState.i_run_it || lineupState.my_side === working)
 			&& state !== 'approved' && state !== 'agreed'
 			&& !(mine && mine.current);
 
 		els.signBtn.hidden = !canSign;
-		els.signBtn.textContent = mine && !mine.current ? 'Sign again' : 'Sign this card';
+		els.signBtn.textContent = (mine && !mine.current ? 'Sign again for ' : 'Sign and submit for ') + teamName(working);
 		els.disputeBtn.hidden = !working || state === 'approved';
 	}
 
@@ -638,23 +933,38 @@
 		}), 'Lineup locked.');
 	});
 
-	els.frames.addEventListener('change', (e) => {
+	// The reserve pickers and the L and W switches, all inside the sessions.
+	els.sessions.addEventListener('change', (e) => {
 		const pick = e.target.closest('[data-action="reserve"]');
-		if (!pick || !pick.value) return;
-		write('Saving', () => supabaseClient.rpc('tdc_swap_frame_player', {
-			p_frame_id: pick.dataset.frame, p_player_id: pick.value
-		}));
-	});
+		if (pick) {
+			if (!pick.value) return;
+			write('Saving', () => supabaseClient.rpc('tdc_swap_frame_player', {
+				p_frame_id: pick.dataset.frame, p_player_id: pick.value
+			}));
+			return;
+		}
 
-	els.frames.addEventListener('click', (e) => {
-		const b = e.target.closest('button[data-action]');
-		if (!b) return;
-		const frameNo = parseInt(b.dataset.frame, 10);
+		const box = e.target.closest('input[type="checkbox"][data-action]');
+		if (!box || pairing) return;
+		const [action, side] = box.dataset.action.split('-');
+		if ((action !== 'win' && action !== 'lag') || (side !== 'home' && side !== 'away')) return;
+		const frameNo = parseInt(box.dataset.frame, 10);
 		const f = card.find((x) => x.frame_no === frameNo);
 		if (!f) { TDC.error(AREA, 'no frame ' + frameNo + ' on this card.', null, els.status); return; }
 
+		// The other side's switch goes off with it, by a click of its own so
+		// it animates too; that click saves nothing (pairing).
+		if (box.checked) {
+			const other = side === 'home' ? 'away' : 'home';
+			const opposite = els.sessions.querySelector(`input[data-action="${action}-${other}"][data-frame="${frameNo}"]`);
+			if (opposite && opposite.checked) {
+				pairing = true;
+				try { opposite.click(); } finally { pairing = false; }
+			}
+		}
+
 		// tdc_record_frame writes the whole frame from what it is sent, so each
-		// button sends the frame as it stands with its own change laid over:
+		// switch sends the frame as it stands with its own change laid over:
 		// recording the winner keeps the lag, and the lag keeps the winner.
 		const send = (what, change) => {
 			const p = Object.assign({
@@ -669,16 +979,17 @@
 			}));
 		};
 
-		if (b.dataset.action === 'won') {
+		if (action === 'win' && box.checked) {
 			// The winner, and the lag already chosen. Break outcomes and the
 			// richer result events belong to the match page, which has the
 			// controls for them; this grid is for getting results down fast.
-			send('Saving', { status: 'complete', winner_side: b.dataset.side,
-				result_event: f.status === 'complete' && f.winner_side === b.dataset.side && f.result_event ? f.result_event : 'win' });
-		} else if (b.dataset.action === 'break') {
-			send('Saving', { break_side: f.break_side === b.dataset.side ? null : b.dataset.side });
-		} else if (b.dataset.action === 'clear') {
+			send('Saving', { status: 'complete', winner_side: side,
+				result_event: f.status === 'complete' && f.winner_side === side && f.result_event ? f.result_event : 'win' });
+		} else if (action === 'win') {
+			// W off clears the result; the lag stays.
 			send('Clearing', { status: 'pending', winner_side: null, result_event: null });
+		} else {
+			send('Saving', { break_side: box.checked ? side : null });
 		}
 	});
 
@@ -720,6 +1031,7 @@
 
 		if (!await loadMatch()) return;
 		if (!await loadRosters()) return;
+		await loadContext();
 
 		// The cutoff is evaluated when somebody opens the night, which is what
 		// makes it lazy — there is no scheduled job. It does nothing unless

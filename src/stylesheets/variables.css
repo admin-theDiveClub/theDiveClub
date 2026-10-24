@@ -86,6 +86,8 @@
   --ring-size-table: 1.75rem;     /* the same in a table row */
   --switch-height: 2.25rem;       /* a switch: a setting */
   --switch-width: 4.2rem;
+  --card-switch-height: 1.6rem;   /* the L and W switches on a league card's frames */
+  --card-switch-width: 3rem;
   --ring-load: 1s;                /* the orbit when nothing is saved; a save orbits exactly as long as its call */
   --ring-spin: 2;                 /* how fast the dots go round, times the demo's speed */
   --ring-draw: 0.4s;              /* drawing an icon, stroke by stroke */

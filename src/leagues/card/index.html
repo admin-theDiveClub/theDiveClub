@@ -2,6 +2,8 @@
 layout: layout.html
 title: Team Card
 description: "The night's card: lineups, every frame, and the two signatures."
+extraStyles:
+  - /stylesheets/league.css
 extraScripts:
   - /scripts/match-settings.js
   - /scripts/league-nav.js
@@ -14,18 +16,24 @@ extraScripts:
 	honest is that there is one frame set, not one screen — this page and the
 	match page read and write the same frames.
 
-	Three things on it, in the order the night happens:
+	In the order the night happens (UV's layout, 24 Oct):
 
-	  1. The squad and the order, until the side locks. The order is one
+	  1. A banner: the two teams with their shields, the card's state as a
+	     badge, and the fixture's details (league, date, time, tables, team
+	     size, reserves, sessions, frames).
+	  2. The squad and the order, until the side locks. The order is one
 	     player per position (five in a five-man league); the night is built
 	     from the two orders and the rotation table at the second lock. It is
 	     a blind exchange — the other side's names are withheld by
 	     tdc_match_lineup until both have locked, so nothing here can leak them.
-	  2. The grid, once the frames exist, grouped by session. Every frame with
-	     its two players, the result entered beside it, and a reserve picker
-	     on each unplayed frame. A seat left empty waits for a reserve or a
+	  3. The sessions, once the frames exist. Each frame a row: the home
+	     player, L (won the lag) and W (won the frame) switches for each side,
+	     the away player; the session's totals under it. A reserve picker on
+	     each unplayed frame. A seat left empty waits for a reserve or a
 	     latecomer until a captain signs, then is a walkover.
-	  3. The two signatures, with what changed since you gave yours.
+	  4. Every player's frames, session by session, as a table.
+	  5. The result: the two teams and their scores, in a banner again.
+	  6. The signatures, laid out as a form waiting to be signed.
 
 	Reached as /leagues/card/?m=<match id>.
 {% endcomment %}
@@ -33,19 +41,31 @@ extraScripts:
 <div class="tdc-card wide">
 	<nav class="league-nav" id="league-nav" data-page="card" data-auto="no" hidden></nav>
 
-	<h1 id="m-title">Team Card</h1>
-	<p class="muted" id="m-meta"></p>
-
-	<div class="panel" id="state-panel">
-		<h2 id="state-line">Loading…</h2>
-		<p class="muted" id="state-detail"></p>
-	</div>
-
 	{% comment %}
-		Before the lock. The squad is who is available tonight; the order is
-		who plays which position. Both are a captain's own side only — the league
-		director gets a side switch instead.
+		The page's heading is the banner's two team names; the h1 says it for
+		a screen reader without a second, visible title above them.
 	{% endcomment %}
+	<h1 class="card-sr" id="m-title">Team Card</h1>
+
+	<section class="jumbo card-jumbo" id="jumbo">
+		<div class="cj-head">
+			<div class="cj-team">
+				<span class="team-pic cj-pic" id="home-pic"></span>
+				<span class="cj-name" id="home-name">Home</span>
+			</div>
+			<div class="cj-mid">
+				<span class="badge jumbo-status" id="jumbo-status" hidden></span>
+				<span class="cj-v">v</span>
+			</div>
+			<div class="cj-team">
+				<span class="team-pic cj-pic" id="away-pic"></span>
+				<span class="cj-name" id="away-name">Away</span>
+			</div>
+		</div>
+		<p class="cj-detail" id="state-detail">Loading…</p>
+		<dl class="jumbo-facts" id="jumbo-facts"></dl>
+	</section>
+
 	{% comment %}
 		The league director's side switch. Outside #setup on purpose: #setup
 		hides once the chosen side is locked, and with the switch inside it the
@@ -58,6 +78,11 @@ extraScripts:
 		</div>
 	</div>
 
+	{% comment %}
+		Before the lock. The squad is who is available tonight; the order is
+		who plays which position. Both are a captain's own side only — the league
+		director gets a side switch instead.
+	{% endcomment %}
 	<div id="setup" hidden>
 		<h2>Who is here tonight</h2>
 		<p class="muted" id="squad-hint"></p>
@@ -82,26 +107,72 @@ extraScripts:
 	</div>
 
 	<div id="grid" hidden>
-		<h2>The card <span class="badge" id="grid-score" hidden></span></h2>
-		<p class="muted" id="grid-hint"></p>
-		<div id="frame-list"></div>
+		<div id="session-list"></div>
+		<p class="muted card-hint" id="grid-hint" hidden></p>
+
+		<h2>Every player's frames</h2>
+		<div class="table-scroll">
+			<table class="tdc-table card-players" id="player-table"></table>
+		</div>
+		<p class="muted card-hint" id="player-note" hidden></p>
 	</div>
 
-	<div class="panel" id="sign-panel" hidden>
+	<section class="jumbo card-jumbo card-summary" id="summary" hidden aria-label="The result">
+		<div class="cj-head">
+			<div class="cj-team">
+				<span class="team-pic cj-pic" id="sum-home-pic"></span>
+				<span class="cj-name" id="sum-home-name">Home</span>
+			</div>
+			<div class="cj-mid">
+				<span class="cj-score"><span id="sum-home-score">0</span><span class="cj-dash">–</span><span id="sum-away-score">0</span></span>
+			</div>
+			<div class="cj-team">
+				<span class="team-pic cj-pic" id="sum-away-pic"></span>
+				<span class="cj-name" id="sum-away-name">Away</span>
+			</div>
+		</div>
+		<p class="cj-detail" id="sum-detail"></p>
+	</section>
+
+	{% comment %}
+		The signatures, as a form waiting to be signed (UV, 24 Oct): the
+		league, the date, the two teams side by side with their scores and a
+		line each for the captain's signature, whether anything is disputed,
+		then Sign and, under it, Raise a dispute. A third of the page on a PC,
+		centred; the full width on a phone.
+	{% endcomment %}
+	<section class="sign-form" id="sign-panel" hidden>
 		<h2>Signatures</h2>
-		<p id="sign-home"></p>
-		<p id="sign-away"></p>
+		<p class="sf-league" id="sf-league"></p>
+		<p class="sf-date" id="sf-date"></p>
+
+		<div class="sf-sides">
+			<div class="sf-side" id="sf-home">
+				<span class="sf-team" id="sf-home-name">Home</span>
+				<span class="sf-score" id="sf-home-score">0</span>
+				<span class="sf-line" id="sf-home-sig"></span>
+				<span class="sf-cap" id="sf-home-cap">Home captain</span>
+			</div>
+			<div class="sf-side" id="sf-away">
+				<span class="sf-team" id="sf-away-name">Away</span>
+				<span class="sf-score" id="sf-away-score">0</span>
+				<span class="sf-line" id="sf-away-sig"></span>
+				<span class="sf-cap" id="sf-away-cap">Away captain</span>
+			</div>
+		</div>
+
+		<p class="sf-note" id="sf-dispute"></p>
 
 		<div id="changed-since" hidden>
 			<p class="muted"><strong>The card changed after you signed:</strong></p>
 			<div id="changed-list"></div>
 		</div>
 
-		<div class="btn-row">
-			<button type="button" class="btn btn-primary btn-sm" id="sign-btn" hidden>Sign this card</button>
-			<button type="button" class="btn btn-danger btn-sm" id="dispute-btn" hidden>Something is wrong</button>
+		<div class="sf-buttons">
+			<button type="button" class="btn btn-primary" id="sign-btn" hidden>Sign and submit</button>
+			<button type="button" class="btn btn-danger" id="dispute-btn" hidden>Raise a dispute</button>
 		</div>
-	</div>
+	</section>
 
 	<div class="status" id="page-status"></div>
 
