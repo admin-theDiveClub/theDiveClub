@@ -26,6 +26,7 @@
 		leaguePart: el('league-part'), rulesPart: el('rules-part'),
 		name: el('l-name'), seasonName: el('s-name'),
 		start: el('s-start'), end: el('s-end'), reserves: el('s-reserves'),
+		sizeRow: el('size-row'), reservesField: el('reserves-field'),
 		main: el('settings-main'), rest: el('settings-rest'),
 		create: el('create-btn'), status: el('create-status')
 	};
@@ -75,13 +76,18 @@
 			...D.layout(main, control)
 		);
 
+		// The team size sits up with the season's reserves (UV, 24 Oct),
+		// not in Team play.
+		const size = live.find((d) => d.key === 'team_size');
+		els.sizeRow.replaceChildren(...(size ? [control(size)] : []), els.reservesField);
+
 		els.rest.replaceChildren();
 		// The league pages are the only ones that show the Team play group:
 		// a lineup cutoff and a strict frame order mean nothing to a social
 		// match or a tournament, so TDCMatchDef keeps that group out of GROUPS
 		// and the other pages never see it.
 		for (const group of D.GROUPS.concat(D.LEAGUE_GROUPS)) {
-			const defs = live.filter((d) => d.group === group && !D.MAIN_KEYS.includes(d.key));
+			const defs = live.filter((d) => d.group === group && !D.MAIN_KEYS.includes(d.key) && d.key !== 'team_size');
 			if (!defs.length) continue;
 
 			const box = document.createElement('details');
@@ -96,7 +102,7 @@
 
 			const head = document.createElement('summary');
 			head.textContent = group;
-			box.append(head, ...D.layout(defs, control));
+			box.append(head, ...D.layout(defs, control, { league: true }));
 			els.rest.append(box);
 		}
 	}
@@ -135,6 +141,8 @@
 		els.intro.textContent = `A new season of ${data.name}. The league's rules carry over.`;
 		els.leaguePart.hidden = true;
 		els.rulesPart.hidden = true;
+		// The team size is the league's rule, not the season's to change.
+		els.sizeRow.replaceChildren(els.reservesField);
 		els.create.textContent = 'Create Season';
 		return true;
 	}

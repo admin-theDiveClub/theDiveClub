@@ -29,6 +29,9 @@
 //            is selected, so typing replaces it, letters are refused, phones
 //            get the number pad, and Enter or leaving it commits it, pulled
 //            into range. Escape undoes. Its label and hint move to its right.
+//            data-stepper="across" lays it on its side, chevrons left and
+//            right, small, for a row of numbers (a fixture's tables); it is
+//            not moved beside a label.
 //   date     <input type="date">. Year, month and day as three steppers, with
 //            a calendar button and a clear button to their left. Pressing a
 //            chevron on an empty date starts it at today; emptying any part,
@@ -218,14 +221,18 @@ const TDCControls = (() => {
 		}
 
 		// The window clips the number, so a changing one can roll through it.
-		const pill = node('span', 'tdc-stepper');
+		// data-stepper="across" lays it on its side (UV, 24 Oct): down on the
+		// left, up on the right, small enough for a row of them (a fixture's
+		// table numbers). It stays where the page put it, not beside a label.
+		const across = input.dataset.stepper === 'across';
+		const pill = node('span', across ? 'tdc-stepper is-across' : 'tdc-stepper');
 		const up = chevron('tdc-stepper-up', 'Increase', input.id && input.id + ':up');
 		const down = chevron('tdc-stepper-down', 'Decrease', input.id && input.id + ':down');
 		const view = node('span', 'tdc-stepper-window');
 		input.replaceWith(pill);
 		view.append(input);
-		pill.append(up, view, down);
-		besideLabel(pill);
+		if (across) pill.append(down, view, up);
+		else { pill.append(up, view, down); besideLabel(pill); }
 
 		const min = () => input.min === '' ? -Infinity : Number(input.min);
 		const max = () => input.max === '' ? Infinity : Number(input.max);
@@ -264,8 +271,10 @@ const TDCControls = (() => {
 			old.setAttribute('aria-hidden', 'true');
 			view.append(old);
 			const timing = { duration: ms, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' };
-			input.animate([{ transform: `translateY(${dir * 100}%)` }, { transform: 'translateY(0)' }], timing);
-			old.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${-dir * 100}%)` }], timing)
+			// On its side it rolls sideways: up comes in from the right.
+			const axis = across ? 'translateX' : 'translateY';
+			input.animate([{ transform: `${axis}(${dir * 100}%)` }, { transform: `${axis}(0)` }], timing);
+			old.animate([{ transform: `${axis}(0)` }, { transform: `${axis}(${-dir * 100}%)` }], timing)
 				.onfinish = () => { old.remove(); if (ghost === old) ghost = null; };
 		}
 

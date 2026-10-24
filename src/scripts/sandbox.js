@@ -72,6 +72,7 @@
 			{ name: '--chevron-stroke',   label: 'Chevron weight', kind: 'size', unit: '',    min: 1,    max: 5,   step: 0.25, use: 'How heavy a chevron\'s line is' },
 			{ name: '--stepper-width',    label: 'Stepper width',  kind: 'size', unit: 'rem', min: 2,    max: 6,   step: 0.05, use: 'How wide a number stepper is' },
 			{ name: '--stepper-number',   label: 'Stepper number', kind: 'size', unit: 'rem', min: 1,    max: 3,   step: 0.05, use: 'How big the number in a stepper is' },
+			{ name: '--stepper-across-number', label: 'Across number', kind: 'size', unit: 'rem', min: 0.7, max: 2, step: 0.05, use: 'How big the number in a stepper on its side is (a fixture\'s table numbers)' },
 			{ name: '--date-year-width',  label: 'Date year',      kind: 'size', unit: 'rem', min: 2.5,  max: 5,   step: 0.05, use: 'How wide a date\'s year pill is' },
 			{ name: '--date-part-width',  label: 'Date month, day', kind: 'size', unit: 'rem', min: 1.8, max: 4,   step: 0.05, use: 'How wide a date\'s month and day pills are' },
 			{ name: '--date-number',      label: 'Date numbers',   kind: 'size', unit: 'rem', min: 0.8,  max: 2,   step: 0.05, use: 'How big the numbers in a date are' },

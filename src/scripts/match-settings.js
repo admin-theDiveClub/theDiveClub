@@ -80,6 +80,7 @@ const TDCMatchDef = (() => {
 	//   when() hides a setting that its parent switch makes irrelevant.
 	//   row    settings next to each other share a name (layout() below).
 	//   rule   draws a line above the setting, inside its group.
+	//   league shown on the league pages only, inside a shared group.
 	//
 	// The order and the groups are UV's (24 Oct). Format is the open part
 	// at the top of a form (MAIN_KEYS); the rest fold away.
@@ -91,7 +92,8 @@ const TDCMatchDef = (() => {
 	// form by looping GROUPS, so a setting in this group is invisible to the
 	// match panel and the create-a-tournament page without either of them
 	// having to know it exists. The league pages loop GROUPS.concat(LEAGUE_GROUPS).
-	// The cutoff and strict order are version 2 of the ruleset (20261022220000);
+	// The lineup cutoff sits in Officials and approval instead, marked
+	// league: true (24 Oct). The cutoff and strict order are version 2 of the ruleset (20261022220000);
 	// team size and the rotation table are version 3 (20261023193153).
 	const LEAGUE_GROUPS = ['Team play'];
 
@@ -154,11 +156,6 @@ const TDCMatchDef = (() => {
 		{ group: 'Timing', scope: 'rules', key: 'extension_seconds', label: 'Extension length', type: 'int', min: 5, max: 120, when: (r) => r.shot_clock_enabled, row: 'shot' },
 
 		{
-			group: 'Team play', scope: 'rules', key: 'lineup_cutoff_hours', label: 'Lineup cutoff (hours)', type: 'int',
-			min: 0, max: 336,
-			hint: 'Hours before a team match. A side with no lineup in by then concedes. 0 for no cutoff.'
-		},
-		{
 			group: 'Team play', scope: 'rules', key: 'strict_frame_order', label: 'Frames in strict order', type: 'bool',
 			hint: 'Nationals forbid changing the order. Off lets a scorer record any frame as it finishes, which is how most league nights actually run.'
 		},
@@ -167,6 +164,8 @@ const TDCMatchDef = (() => {
 			// Only the league pages show this group, and every league has a
 			// team size (UV, 23 Oct). 0 is still valid in a ruleset — it is
 			// what singles and tournaments carry — but not for a league.
+			// The league pages draw it themselves, beside the season's
+			// reserves above the rules (UV, 24 Oct), and leave it out here.
 			min: 2, max: 10,
 			hint: 'Players a side in each session. A five-man team plays five sessions of five frames: 25.'
 		},
@@ -178,7 +177,14 @@ const TDCMatchDef = (() => {
 			when: (r) => r.team_size >= 2
 		},
 
-		{ group: 'Officials and approval', scope: 'rules', key: 'referee_required', label: 'Referee required', type: 'bool' },
+		{ group: 'Officials and approval', scope: 'rules', key: 'referee_required', label: 'Referee required', type: 'bool', row: 'ref' },
+		// Beside referee required on the league pages only (UV, 24 Oct):
+		// league: true, so layout() drops it everywhere else.
+		{
+			group: 'Officials and approval', scope: 'rules', key: 'lineup_cutoff_hours', label: 'Lineup cutoff (hours)', type: 'int',
+			min: 0, max: 336, row: 'ref', league: true,
+			hint: 'Hours before a team match. A side with no lineup in by then concedes. 0 for no cutoff.'
+		},
 		// tbl_matches.referee_player_id (20261024162559), saved through
 		// tdc_set_match_referee, not with the rules. A 'player' control is
 		// playerPicker() below; the ruleset pages never see it (scope 'match').
@@ -346,9 +352,17 @@ const TDCMatchDef = (() => {
 	// above it unless it starts the group. { rows: false } keeps every
 	// setting on its own line (the match page's panel, which is label and
 	// control on one line already) but still draws the lines.
+	//
+	// { league: true } keeps the settings marked league: true (the lineup
+	// cutoff); every other page drops them here. A row left with one member
+	// is a plain line.
 	// ─────────────────────────────────────────────────────────────────
 	function layout(defs, make, opts) {
-		const rows = !opts || opts.rows !== false;
+		opts = opts || {};
+		const rows = opts.rows !== false;
+		defs = defs.filter((d) => !d.league || opts.league);
+		const members = {};
+		for (const d of defs) if (d.row) members[d.row] = (members[d.row] || 0) + 1;
 		const out = [];
 		let row = null;
 		for (const def of defs) {
@@ -358,7 +372,7 @@ const TDCMatchDef = (() => {
 				out.push(line);
 				row = null;
 			}
-			if (!rows || !def.row) { row = null; out.push(make(def)); continue; }
+			if (!rows || !def.row || members[def.row] < 2) { row = null; out.push(make(def)); continue; }
 			if (!row || row.dataset.row !== def.row) {
 				row = document.createElement('div');
 				row.className = 'field-row';
@@ -563,23 +577,45 @@ const TDCMatchDef = (() => {
 			new Option('My own table', 'own', false, own)
 		);
 
+		// Each cell is one frame, numbered as the card numbers them: session by
+		// session, (session − 1) × team size + home position.
+		const frameNo = (s, h) => Object.assign(document.createElement('span'),
+			{ className: 'rotation-frame', textContent: String(s * n + h + 1) });
+
 		const table = document.createElement('table');
-		table.className = 'tdc-table rotation-grid';
+		table.className = own ? 'tdc-table rotation-grid' : 'tdc-table rotation-grid rotation-scorecard';
 		const head = table.createTHead().insertRow();
-		head.append(Object.assign(document.createElement('th'), { textContent: 'Session' }));
+		head.append(Object.assign(document.createElement('th'), { textContent: own ? 'Session' : 'Scorecard' }));
 		for (let h = 1; h <= n; h++) {
 			head.append(Object.assign(document.createElement('th'), { textContent: 'H' + h }));
 		}
-
 		const body = table.createTBody();
-		grid.forEach((away, s) => {
+
+		// The standard rotation as a scorecard: home across, away down, and
+		// the frame in which they meet where the two cross (UV, 24 Oct). It
+		// is fixed, so nothing in it is a menu. Under the cyclic shift every
+		// pairing meets exactly once, so each cell holds one number.
+		if (!own) {
+			for (let a = 1; a <= n; a++) {
+				const tr = body.insertRow();
+				tr.append(Object.assign(document.createElement('th'), { textContent: 'A' + a }));
+				for (let h = 0; h < n; h++) {
+					const s = grid.findIndex((row) => row[h] === a);
+					tr.insertCell().textContent = s === -1 ? '' : String(s * n + h + 1);
+				}
+			}
+		}
+
+		// "My own table": one row per session, a menu per later session.
+		if (own) grid.forEach((away, s) => {
 			const tr = body.insertRow();
 			tr.append(Object.assign(document.createElement('th'), { textContent: String(s + 1) }));
 			away.forEach((a, h) => {
 				const td = tr.insertCell();
+				td.append(frameNo(s, h));
 				// Session 1 is whatever order the captains set. It is not the
 				// LD's to change, so it is shown, not offered.
-				if (s === 0) { td.textContent = 'A' + a; return; }
+				if (s === 0) { td.append('A' + a); return; }
 				const pick = document.createElement('select');
 				pick.id = id + '-' + (s + 1) + '-' + (h + 1);
 				pick.dataset.setting = def.key;
@@ -595,13 +631,42 @@ const TDCMatchDef = (() => {
 		scroll.className = 'table-scroll';
 		scroll.append(table);
 
+		// The same night read as head-to-heads, H1 : A1 …: a second table with
+		// the grid's spacing, one column per session, one row per home
+		// position. Display only — the badges are not buttons.
+		const pairs = document.createElement('table');
+		pairs.className = 'tdc-table rotation-grid rotation-pairs';
+		const pairsHead = pairs.createTHead().insertRow();
+		grid.forEach((away, s) => {
+			pairsHead.append(Object.assign(document.createElement('th'), { textContent: 'Session ' + (s + 1) }));
+		});
+		const pairsBody = pairs.createTBody();
+		for (let h = 0; h < n; h++) {
+			const tr = pairsBody.insertRow();
+			grid.forEach((away, s) => {
+				tr.insertCell().append(
+					frameNo(s, h),
+					Object.assign(document.createElement('span'), { className: 'badge', textContent: 'H' + (h + 1) }),
+					Object.assign(document.createElement('span'), { className: 'rotation-vs', textContent: ':' }),
+					Object.assign(document.createElement('span'), { className: 'badge', textContent: 'A' + away[h] })
+				);
+			});
+		}
+		const pairsScroll = document.createElement('div');
+		pairsScroll.className = 'table-scroll';
+		pairsScroll.append(pairs);
+
+		const views = document.createElement('div');
+		views.className = own ? 'rotation-views own' : 'rotation-views';
+		views.append(scroll, pairsScroll);
+
 		const hint = document.createElement('div');
 		hint.className = 'hint';
 		hint.textContent = own
 			? 'H1 is the home captain\'s first player, A1 the away captain\'s. Choosing a player already in that session swaps the two.'
-			: 'H1 is the home captain\'s first player, A1 the away captain\'s. Each session the away side moves up one, so everybody meets everybody once. Change any session to make the table your own.';
+			: 'H1 is the home captain\'s first player, A1 the away captain\'s. Each session the away side moves up one, so everybody meets everybody once. Choose "My own table" to change it.';
 
-		row.append(label, mode, scroll, hint);
+		row.append(label, mode, views, hint);
 
 		const repeats = rotationRepeats(grid);
 		if (repeats.length) {

@@ -379,6 +379,15 @@ extraScripts:
 			<div class="hint">A chevron goes at its limit and the pill shrinks. Click the number to type one.</div>
 		</div>
 		<div class="field">
+			<label for="sb-c-across-1">Steppers on their side</label>
+			<div class="stepper-row scroll-x">
+				<input type="number" id="sb-c-across-1" min="1" max="99" value="1" data-control="stepper" data-stepper="across" aria-label="Table 1">
+				<input type="number" id="sb-c-across-2" min="1" max="99" value="2" data-control="stepper" data-stepper="across" aria-label="Table 2">
+				<input type="number" id="sb-c-across-3" min="1" max="99" value="12" data-control="stepper" data-stepper="across" aria-label="Table 3">
+			</div>
+			<div class="hint"><code>data-stepper="across"</code>: a row of small numbers, a fixture's tables. The row scrolls sideways when there are many.</div>
+		</div>
+		<div class="field">
 			<label for="sb-c-date">Date</label>
 			<input type="date" id="sb-c-date" data-control="date">
 			<div class="hint">Empty: the first chevron starts it at today. Empty a part to clear it.</div>

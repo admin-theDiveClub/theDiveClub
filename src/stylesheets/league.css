@@ -121,18 +121,96 @@
  * Narrow fixed cells so five fit across a phone at 420px; more than that
  * scrolls sideways inside .table-scroll rather than crushing the menus.
  * The session column and the session-1 row are text, not menus: session 1 is
- * the captains' own order and not the LD's to change.
+ * the captains' own order and not the LD's to change. Under the standard
+ * rotation every cell is text: it is fixed.
+ *
+ * Beside it, the same night as head-to-heads (H1 : A1): a second table
+ * with the same classes, so its headings, rows and lines match, one column
+ * per session. A line separates the two: down the middle when they sit side
+ * by side, across when a phone stacks them. Above 60rem they never stack;
+ * a table too wide for its half scrolls sideways in its own box.
+ * Every frame carries its number in small grey, in both.
  */
+.rotation-views {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	margin-bottom: var(--space-3);
+}
+.rotation-views .table-scroll { max-width: 100%; margin-bottom: 0; }
+.rotation-views .table-scroll + .table-scroll {
+	margin-top: var(--space-3);
+	border-top: 1px solid var(--border-color);
+}
+@media (min-width: 60rem) {
+	.rotation-views {
+		flex-direction: row;
+		justify-content: center;
+		align-items: stretch;
+	}
+	.rotation-views .table-scroll { flex: 0 1 auto; min-width: 0; }
+	.rotation-views .table-scroll + .table-scroll {
+		margin: 0 0 0 var(--space-4);
+		padding-left: var(--space-4);
+		border-top: 0;
+		border-left: 1px solid var(--border-color);
+	}
+}
+.rotation-frame {
+	display: inline-block;
+	min-width: 1.4em;
+	margin-right: 0.3em;
+	font-size: 0.7rem;
+	color: var(--text-muted);
+	text-align: right;
+}
+/* The two tables' rows line up only if they are the same height: text,
+ * badges and (in "My own table") menus all sit in one fixed row. */
+.rotation-views tbody td,
+.rotation-views tbody th { height: 2.4rem; }
+.rotation-views.own tbody td,
+.rotation-views.own tbody th { height: 3.1rem; }
+.rotation-pairs td > * { vertical-align: middle; }
+.rotation-pairs .badge {
+	min-width: 2rem;
+	padding: 0.05rem 0.35rem;
+	line-height: 1.3;
+	text-align: center;
+}
+.rotation-pairs .rotation-vs { margin: 0 0.1rem; color: var(--text-muted); }
 .rotation-grid { width: auto; margin-top: var(--space-3); }
 .rotation-grid th,
-.rotation-grid td { padding: var(--space-2) var(--space-2) var(--space-2) 0; text-align: center; }
+.rotation-grid td { padding: var(--space-2) var(--space-2) var(--space-2) 0; text-align: center; white-space: nowrap; }
 .rotation-grid td:last-child,
 .rotation-grid th:last-child { text-align: center; }
 .rotation-grid tbody th { color: var(--text-muted); }
+/* The standard rotation as a scorecard: every cell a frame number, centred
+ * (the shared table rules right-align the last column). */
+.rotation-scorecard th,
+.rotation-scorecard td,
+.rotation-scorecard th:last-child,
+.rotation-scorecard td:last-child { text-align: center; padding-right: var(--space-2); padding-left: var(--space-2); }
+.rotation-scorecard td { font-variant-numeric: tabular-nums; }
 .tdc-card .rotation-grid select {
 	width: 3.4rem;
 	padding: 0.35rem 1.1rem 0.35rem 0;
 	text-align: center;
+}
+
+/* ── Who runs it: the role, then the name search ──
+ *
+ * Two equal halves rather than the row's narrow columns, where the role's
+ * pill took two and squeezed the search into one. The search box fills its
+ * half so its line runs as wide as its hint. One above the other on a
+ * phone, where two halves are too narrow for either.
+ */
+.official-row { grid-template-columns: 1fr 1fr; column-gap: var(--space-6); }
+.official-row > .field:has(> .tdc-select) { grid-column: auto; }
+.official-row > .field > input[type="search"] { justify-self: stretch; text-align: center; }
+@media (max-width: 40rem) {
+	.official-row { grid-template-columns: minmax(0, 1fr); }
+	/* Between the two fields, not inside each one's label, control and hint. */
+	.official-row > .field + .field { margin-top: var(--space-4); }
 }
 
 /* A warning under a field: allowed, but worth a second look. */
@@ -246,3 +324,215 @@
 }
 .league-tile .badge { margin-top: auto; }
 .league-tile-meta:last-of-type { margin-bottom: var(--space-2); }
+
+/* ── The fixtures page: the planner and every fixture (UV, 24 Oct) ──
+ *
+ * The calendar is the months side by side, scrolling sideways; a night the
+ * league plays is a green dot, the button's own colour, and the chosen one
+ * carries the glow. The weekend's headings are badges.
+ *
+ * A fixture is home | menu | away in one table row, the menu column fixed,
+ * so names and menus line up down the page; names wrap rather than push.
+ * Not inside a .table-scroll: a scroller clips the menu that drops out of
+ * the middle cell. Every button rule below is written against
+ * .tdc-card button, which otherwise makes every button a full-width pill.
+ */
+.cal-months {
+	position: relative;
+	display: flex;
+	gap: var(--space-6);
+	overflow-x: auto;
+	padding: var(--space-2) 0 var(--space-3);
+	margin-bottom: var(--space-3);
+}
+.cal-month { flex: 0 0 auto; }
+/* Centred while they fit; auto margins rather than justify-content, which
+ * would push the first month out of reach once they scroll. */
+.cal-month:first-child { margin-left: auto; }
+.cal-month:last-child { margin-right: auto; }
+.cal-month-name {
+	text-align: center;
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--color-primary);
+	margin-bottom: var(--space-2);
+}
+.cal { border-collapse: collapse; }
+.cal th {
+	padding: 0 0 var(--space-2);
+	font-size: 0.68rem;
+	font-weight: 600;
+	color: var(--text-muted);
+	text-align: center;
+}
+.cal th .badge { padding: 0.1rem 0.4rem; font-size: 0.66rem; }
+.cal td { width: 2.4rem; height: 2.4rem; padding: 0; text-align: center; }
+.cal-num { font-size: 0.85rem; color: var(--text-muted); }
+.cal-today .cal-num { color: var(--text-primary); font-weight: 700; text-decoration: underline; }
+.tdc-card .cal button.cal-day {
+	width: 2rem;
+	height: 2rem;
+	padding: 0;
+	margin: 0;
+	border-radius: var(--radius-round);
+	background: var(--color-primary);
+	color: var(--color-on-primary);
+	font-size: 0.85rem;
+	font-weight: 700;
+	letter-spacing: 0;
+}
+.tdc-card .cal button.cal-day.on { box-shadow: var(--glow-primary); outline: 2px solid var(--text-primary); outline-offset: 2px; }
+
+/* Rounds with no date, and a new round, under the calendar. */
+.undated-rounds {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--space-2);
+	margin-bottom: var(--space-4);
+}
+
+.fx-day-title { text-align: center; margin: var(--space-3) 0; }
+
+/* The chosen night's own buttons, and its Move, centred under the title. */
+.fx-day-actions { justify-content: center; }
+.fx-day-actions > .btn { flex: 0 1 auto; }
+.fx-night-move { margin-bottom: var(--space-4); }
+.fx-night-move .btn-row { justify-content: center; }
+.fx-night-move .btn-row > .btn { flex: 0 1 auto; }
+
+.fx-table {
+	width: 100%;
+	border-collapse: collapse;
+	table-layout: fixed;
+	margin-bottom: var(--space-4);
+}
+.fx-table td { padding: var(--space-2) 0; vertical-align: middle; }
+.fx-table col.fx-col-state { width: var(--space-3); }
+.fx-table col.fx-col-mid { width: 5.5rem; }
+.fx-table td.fx-mid { text-align: center; padding-inline: var(--space-1); }
+.fx-table tr.fx-mine td:not(.fx-state) { background: var(--hover-wash); }
+
+/* A fixture's state: a strip down the left of its row, as the leagues list
+ * draws a season's (UV, 24 Oct). Its name is in the strip for a screen
+ * reader and in its title on hover. */
+.fx-table td.fx-state { padding: var(--space-1) 0; }
+.fx-table td.fx-state::before {
+	content: '';
+	display: block;
+	width: var(--space-1);
+	height: 2.4rem;
+	border-radius: var(--radius-pill);
+	background: var(--strip-color, transparent);
+}
+.fx-state-none        { --strip-color: var(--border-color); }
+.fx-state-scheduled   { --strip-color: var(--color-primary); }
+.fx-state-in_progress { --strip-color: var(--color-success); }
+.fx-state-complete    { --strip-color: var(--text-muted); }
+.fx-state-abandoned   { --strip-color: var(--color-error); }
+
+/* A team: its picture, then its name and how many play for it, a link to
+ * its page (still to come) that glows like a row. The home side faces the
+ * middle from the left, the away side from the right. */
+.fx-team {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	min-width: 0;
+	padding: var(--space-1);
+	border-radius: var(--radius-md);
+	color: inherit;
+	text-decoration: none;
+	transition: box-shadow 0.15s;
+}
+.fx-team:hover,
+.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
+.fx-home .fx-team { flex-direction: row-reverse; text-align: right; }
+.fx-names { display: flex; flex-direction: column; min-width: 0; }
+.fx-name { font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.fx-sub { font-size: 0.75rem; color: var(--text-muted); }
+.fx-bye { display: block; padding-left: var(--space-2); color: var(--text-muted); font-style: italic; }
+.team-pic {
+	flex: 0 0 auto;
+	width: 2rem;
+	height: 2rem;
+	border-radius: var(--radius-round);
+	display: grid;
+	place-items: center;
+	background: var(--hover-wash);
+	color: var(--color-primary);
+}
+.team-pic svg { width: 60%; height: 60%; }
+
+/* A fixture's buttons, one above the other in the middle column: Start,
+ * Move, Remove (or the card and Take off once there is a match). */
+.fx-actions { display: flex; flex-direction: column; gap: var(--space-1); }
+.tdc-card .fx-actions button.btn-sm {
+	width: 100%;
+	padding: 0.3rem 0.4rem;
+	font-size: 0.62rem;
+	letter-spacing: 0.06em;
+}
+.fx-v { color: var(--text-muted); }
+.fx-mid-sub { display: block; margin-top: var(--space-1); font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
+
+/* The tables a fixture is played on, in a small row under it: steppers on
+ * their side that scroll sideways when there are many, and a + and a -. */
+.fx-table tr.fx-tables td { padding: 0 0 var(--space-1); }
+.fx-tables-line {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-2);
+	min-width: 0;
+}
+.fx-tables-line .stepper-row { min-width: 0; }
+.fx-tables-label {
+	flex: 0 0 auto;
+	font-size: 0.66rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+}
+.fx-tables-read { font-size: 0.85rem; color: var(--text-muted); }
+.tdc-card .fx-tables-line button.fx-table-btn {
+	flex: 0 0 auto;
+	width: 1.6rem;
+	height: 1.6rem;
+	padding: 0;
+	margin: 0;
+	border: var(--control-border) solid var(--control-line) !important;
+	border-radius: var(--radius-round);
+	background: transparent;
+	color: var(--control-line);
+	font-size: 0.95rem;
+	line-height: 1;
+	letter-spacing: 0;
+}
+.tdc-card .fx-tables-line button.fx-table-btn:hover { box-shadow: var(--glow-primary); color: var(--color-primary); }
+
+/* A short line between one fixture and the next (UV, 24 Oct). */
+.fx-table tr.fx-sep td { padding: var(--space-1) 0; }
+.fx-sep-line { width: 30%; margin: 0 auto; border-top: 1px solid var(--border-color); }
+
+/* Moving a fixture: the date and time under its row. */
+.fx-table tr.fx-edit td { padding: var(--space-3) 0; }
+.fx-edit .field-row { margin-bottom: var(--space-3); }
+.fx-edit .btn-row { justify-content: center; }
+.fx-edit .btn-row > .btn { flex: 0 1 auto; }
+
+/* Every fixture: each date and time a centred heading across the table. */
+.fx-table tr.fx-when td {
+	padding: var(--space-4) 0 var(--space-2);
+	text-align: center;
+	font-size: 0.68rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--color-primary);
+	border-bottom: 1px solid var(--border-color);
+}
+.fx-add-to { text-align: center; }

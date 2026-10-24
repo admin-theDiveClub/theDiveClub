@@ -67,10 +67,17 @@ extraScripts:
 		</div>
 	</div>
 
-	<div class="field">
-		<label for="s-reserves">Reserves allowed</label>
-		<input type="number" id="s-reserves" inputmode="numeric" min="0" max="10">
-		<div class="hint">This season only. Players a team may have beyond the team size, so a team holds team size + reserves active players. Lowering it never takes anyone off a team: a team over the limit just cannot add anyone until it is under.</div>
+	{% comment %}
+		The season's reserves beside the league's team size (UV, 24 Oct): a
+		team holds the two added together. league-settings.js draws the team
+		size in front of the reserves once the rules are read.
+	{% endcomment %}
+	<div class="field-row" id="size-row" data-row="size">
+		<div class="field" id="reserves-field">
+			<label for="s-reserves">Reserves allowed</label>
+			<input type="number" id="s-reserves" inputmode="numeric" min="0" max="10">
+			<div class="hint">This season only. Players a team may have beyond the team size, so a team holds team size + reserves active players. Lowering it never takes anyone off a team: a team over the limit just cannot add anyone until it is under.</div>
+		</div>
 	</div>
 
 	<p class="muted" id="overrides-note" hidden></p>

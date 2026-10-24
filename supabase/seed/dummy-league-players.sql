@@ -8,18 +8,23 @@
 -- claude/START-HERE.md is that execute_sql auto-commits and is never used to
 -- write, and that rule is worth more than the twenty seconds it saves.
 --
--- **Point it at a league by changing v_season at the top.** Running it again
--- with a different season MOVES the same nineteen players there rather than
--- making nineteen more — they are one set of test accounts, not a set per
--- league. Running it again on the same season resets them: back on the Name
--- Down list, unconfirmed, off any team.
+-- **Point it at a league by changing v_season at the top.** The same nineteen
+-- accounts are used every time — one set of test accounts, not a set per
+-- league. With v_move true, running it with a different season MOVES them
+-- there, out of every other league. With v_move false (24 Oct) they are
+-- added and keep their other leagues: Test_WedSim's teams and lineups need
+-- them. Running it again on the same season resets them there: back on the
+-- Name Down list, unconfirmed, off any team.
 --
 -- The cleanup block at the bottom removes all of it again.
 
 do $$
 declare
-	-- Test_WedSim_8BMTL — 1st Half 1995.
-	v_season uuid := '87929f3a-104a-4227-9819-6aa10d56aabc';
+	-- UI Fixes — Testing (24 Oct). Test_WedSim_8BMTL — 1st Half 1995 was
+	-- 87929f3a-104a-4227-9819-6aa10d56aabc.
+	v_season uuid := 'ffc79915-3fce-4041-bfc1-e30371a21452';
+	-- false: add them here and leave them in every other league.
+	v_move   boolean := false;
 
 	v_names text[] := array[
 		'Thabo Mokoena', 'Ashwin Pillay', 'Johan van Wyk', 'Sipho Dlamini',
@@ -32,7 +37,7 @@ declare
 	v_id    uuid;
 	v_user  uuid;
 	v_email text;
-	v_moved integer;
+	v_moved integer := 0;
 	i       integer;
 begin
 	if not exists (select 1 from public.tbl_league_seasons where id = v_season) then
@@ -62,12 +67,14 @@ begin
 		v_ids := v_ids || v_id;
 	end loop;
 
-	-- Out of any other league first. One set of test accounts, moved where it
-	-- is wanted, rather than nineteen more every time this is pointed
-	-- somewhere new.
-	delete from public.tbl_league_season_entrants
-	where player_id = any(v_ids) and league_season_id <> v_season;
-	get diagnostics v_moved = row_count;
+	-- Out of any other league first, when moving. One set of test accounts,
+	-- moved where it is wanted, rather than nineteen more every time this is
+	-- pointed somewhere new.
+	if v_move then
+		delete from public.tbl_league_season_entrants
+		where player_id = any(v_ids) and league_season_id <> v_season;
+		get diagnostics v_moved = row_count;
+	end if;
 
 	-- Interested and not confirmed, as tdc_league_show_interest leaves them
 	-- since 20261023201147: putting your name down no longer confirms you.

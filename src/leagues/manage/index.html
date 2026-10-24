@@ -51,12 +51,6 @@ extraScripts:
 		</div>
 
 		<div class="field">
-			<label for="paid-confirms">Paid also confirms</label>
-			<input type="checkbox" id="paid-confirms">
-			<div class="hint">Ticking somebody as paid puts them in the league. Leave this off if you confirm on something other than payment.</div>
-		</div>
-
-		<div class="field">
 			<label for="is-listed">Show in the league search</label>
 			<input type="checkbox" id="is-listed">
 			<div class="hint">Off keeps it private. The link below still works either way, so you can share it with the people you want.</div>
@@ -87,6 +81,16 @@ extraScripts:
 		look like one.
 	{% endcomment %}
 	<h2>Players <span class="badge" id="player-count" hidden></span></h2>
+
+	{% comment %}
+		Down here with the lists it moves people between (UV, 24 Oct), not up
+		with how players get in.
+	{% endcomment %}
+	<div class="field">
+		<label for="paid-confirms">Paid also confirms</label>
+		<input type="checkbox" id="paid-confirms">
+		<div class="hint">Ticking somebody as paid puts them in the league. Leave this off if you confirm on something other than payment.</div>
+	</div>
 
 	<div class="transfer" id="transfer">
 		<div class="transfer-box">
@@ -191,16 +195,24 @@ extraScripts:
 
 	<h2>Who runs it</h2>
 
+	{% comment %}
+		The role is the one the person being added gets, so it sits beside the
+		search (UV, 24 Oct: "Role" on its own read as if it set who may run
+		the league). It has to be chosen before a name is picked.
+	{% endcomment %}
 	<div id="official-add">
-		<div class="field">
-			<label for="official-role">Role</label>
-			<select id="official-role"></select>
-		</div>
+		<div class="field-row official-row" data-row="official">
+			<div class="field">
+				<label for="official-role">Their role</label>
+				<select id="official-role"></select>
+				<div class="hint">What the person you pick will be. Choose it before picking them.</div>
+			</div>
 
-		<div class="field" id="official-field">
-			<label for="official-search">Add an official</label>
-			<input type="search" id="official-search" autocomplete="off" placeholder="Search by name">
-			<div class="hint">Two letters or more. They do not have to be a player in the league.</div>
+			<div class="field" id="official-field">
+				<label for="official-search">Add an official by name</label>
+				<input type="search" id="official-search" autocomplete="off" placeholder="Search by name">
+				<div class="hint">Two letters or more. They do not have to be a player in the league.</div>
+			</div>
 		</div>
 
 		<div id="official-results"></div>

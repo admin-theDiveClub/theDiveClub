@@ -53,12 +53,17 @@ extraScripts:
 
 	{% comment %}
 		The season's, not the league's: seasons can differ (UV, 23 Oct). A
-		team's limit on active players is the team size plus this.
+		team's limit on active players is the team size plus this, so the two
+		share a row (UV, 24 Oct): league-new.js draws the team size, a rule of
+		the league's, in front of it. When only a season is being opened the
+		rules are not the page's to change, and the row stays reserves alone.
 	{% endcomment %}
-	<div class="field">
-		<label for="s-reserves">Reserves allowed</label>
-		<input type="number" id="s-reserves" inputmode="numeric" min="0" max="10" value="2">
-		<div class="hint">Players a team may have beyond the team size. With 2, a five-man team holds seven. 0 for no subs.</div>
+	<div class="field-row" id="size-row" data-row="size">
+		<div class="field" id="reserves-field">
+			<label for="s-reserves">Reserves allowed</label>
+			<input type="number" id="s-reserves" inputmode="numeric" min="0" max="10" value="2">
+			<div class="hint">Players a team may have beyond the team size. With 2, a five-man team holds seven. 0 for no subs.</div>
+		</div>
 	</div>
 
 	<!-- The ruleset, built by league-new.js from TDCMatchDef -->

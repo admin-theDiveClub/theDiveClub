@@ -689,3 +689,22 @@ These predate the log. They are recorded here because every one of them is a dec
 *Example:* Rae referees Alice v Bob. Alice records frame 1 as hers; Rae corrects it to Bob's; Alice can no longer change frame 1 ("last set by the referee"), but can still record frame 2. Bob removes Rae as referee, and Alice can change frame 1 again.
 *Rejected:* refusing a player as their own referee (Claude's recommendation); notifying the referee (Claude's recommendation); keeping a removed referee's frames protected.
 *Touches:* `tdc_can_edit_match`, `tdc_score_rank`, `tdc_frame_rank_guard`, `tdc_can_change_match`, `tdc_set_match_referee`, `tdc_search_referees`, `tdc_my_matches`, `tdc_merge_players`, `match-settings.js`, `match-new.js`, `match.js`, `matches.js`, `forms.css`, `match.css`
+
+## 2026-10-24 — The fixtures page is a planner; a fixture is added to the chosen night
+
+*Decided by:* UV (the planner, the calendar, home | menu | away, the menu's actions, the team icon and player count, All fixtures with filters, adding to the chosen night); the mechanism, Claude
+*Replaces:* the schedule as one folding box per round, each fixture's buttons under its names, and Add a fixture as its own panel with a round number.
+*Why:* a director plans by the night, not by round number, and wants the week's games in front of them with the actions out of the way.
+*So:* Add a fixture sits under the chosen night and adds to that night's round at its time (the most common among its fixtures), or to a round with no date, or to New round (the next round number, no date). There is no round box. Rounds with no date cannot be marked on a calendar, so they are offered as buttons under it.
+*Example:* Wednesday 4 November is Round 2 at 19:30. Choose it, pick Cue Tips v Chalk Dust, Add it: the fixture is Round 2, 4 November, 19:30, and appears in that night's table.
+*Rejected:* keeping the round number beside Home and Away (UV first asked for that, then moved Add a fixture under the night instead).
+*Touches:* `leagues/fixtures/index.html`, `league-fixtures.js`, `league.css`
+
+## 2026-10-24 — Several matches a night per team, and a fixture's tables
+
+*Decided by:* UV (matches per team per round, tables per match, table numbers under each fixture, changeable); how the numbers run, Claude
+*Why:* some leagues play each team twice on a night, and a venue wants each game on named tables.
+*So:* Matches per team per round puts that many passes of the round robin into one night and one round number; Days between rounds counts nights. Tables per match numbers each fixture's tables, **restarting for each pass of the night** (a team's second match follows its first, so the tables are free again); a bye has none. A fixture added by hand gets the night's next free numbers, as many as its other fixtures have. Numbers are stored on the fixture (`table_numbers`), changed with steppers on their side, and saved a moment after the last change.
+*Example:* six teams, 2 matches a round, 2 tables a match: round 1 has six fixtures, the first three on tables 1-2, 3-4, 5-6 and the next three on 1-2, 3-4, 5-6 again. Adding a seventh to that night puts it on 7-8.
+*Rejected:* unique tables across the whole night (they would run to 12 for six teams playing twice, which no venue has); numbers worked out on the page from position (lost the moment one is changed by hand).
+*Touches:* migration `20261024191110`, `league-fixtures.js`, `leagues/fixtures/index.html`, `tdc-controls.js`, `controls.css`, `league.css`, `variables.css`, `sandbox.js`

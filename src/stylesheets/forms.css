@@ -461,6 +461,11 @@ textarea:not(:disabled):hover {
 /* A pill wants more room than a stepper or a switch. */
 .field-row > .field:has(> .tdc-select) { grid-column: span 2; }
 
+/* A time as two steppers, hour : minute, until there is a time control
+   (the league fixtures' first round). */
+.time-pair { display: inline-flex; align-items: center; gap: var(--space-2); }
+.time-pair .time-sep { font-weight: 700; color: var(--text-muted); }
+
 /* A line between two parts of one group: the match clock and the shot
    clock, the officials and the approval. Shorter than the group's own
    line, so it does not read as a new group. */
@@ -876,4 +881,18 @@ textarea:not(:disabled):hover {
 .code-item {
 	-webkit-backdrop-filter: blur(var(--surface-blur));
 	backdrop-filter: blur(var(--surface-blur));
+}
+
+/* Text for a screen reader only: the name of something shown as a colour
+   (a fixture's state strip). */
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+	border: 0;
 }

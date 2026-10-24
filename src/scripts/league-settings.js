@@ -36,6 +36,7 @@
 		title: el('l-title'), meta: el('l-meta'), name: el('l-name'),
 		seasonName: el('s-name'), seasonStatus: el('s-status'),
 		start: el('s-start'), end: el('s-end'), reserves: el('s-reserves'),
+		sizeRow: el('size-row'), reservesField: el('reserves-field'),
 		overrides: el('overrides-note'),
 		main: el('settings-main'), rest: el('settings-rest'),
 		save: el('save-btn'), status: el('page-status'),
@@ -106,9 +107,14 @@
 			...D.layout(main, control)
 		);
 
+		// The team size sits up with the season's reserves (UV, 24 Oct),
+		// not in Team play.
+		const size = live.find((d) => d.key === 'team_size');
+		els.sizeRow.replaceChildren(...(size ? [control(size)] : []), els.reservesField);
+
 		els.rest.replaceChildren();
 		for (const group of D.GROUPS.concat(D.LEAGUE_GROUPS)) {
-			const defs = live.filter((d) => d.group === group && !D.MAIN_KEYS.includes(d.key));
+			const defs = live.filter((d) => d.group === group && !D.MAIN_KEYS.includes(d.key) && d.key !== 'team_size');
 			if (!defs.length) continue;
 
 			const box = document.createElement('details');
@@ -122,7 +128,7 @@
 
 			const head = document.createElement('summary');
 			head.textContent = group;
-			box.append(head, ...D.layout(defs, control));
+			box.append(head, ...D.layout(defs, control, { league: true }));
 			els.rest.append(box);
 		}
 	}

@@ -183,6 +183,38 @@
 	color: var(--color-on-primary);
 }
 
+/* ── Stepper on its side (data-stepper="across") ─────────────────────
+   Down on the left, up on the right, the number between (UV, 24 Oct). Small,
+   for a row of them: a fixture's table numbers, which scroll sideways when a
+   venue gives a match many tables. A hidden chevron keeps its place, so a
+   row of these does not shuffle as one reaches its limit. */
+.tdc-stepper.is-across {
+	display: inline-flex;
+	align-items: center;
+	width: auto;
+	padding: 0 var(--space-1);
+	--sn: var(--stepper-across-number);
+	--chevron: calc(var(--chevron-size) * 0.55);
+}
+.tdc-stepper.is-across > .tdc-chevron {
+	width: auto;
+	padding: var(--space-1);
+}
+.tdc-stepper.is-across > .tdc-chevron[hidden] { display: block; visibility: hidden; }
+.tdc-stepper.is-across .tdc-stepper-window {
+	width: calc(var(--chars, 1) * var(--sn) * 0.62 + var(--space-2));
+}
+.tdc-stepper.is-across > .tdc-stepper-down svg { transform: rotate(-90deg); }
+.tdc-stepper.is-across > .tdc-stepper-up svg { transform: rotate(90deg); }
+/* A row of them, scrolling sideways (with .scroll-x for the soft edges). */
+.stepper-row {
+	display: flex;
+	gap: var(--space-2);
+	overflow-x: auto;
+	padding: var(--space-1) var(--space-1);
+}
+.stepper-row > .tdc-stepper { flex: 0 0 auto; }
+
 /* ── Date ─────────────────────────────────────────────────────────────
    The calendar and clear buttons stacked on the left, then year, month and
    day as three small steppers. The real date input sits invisibly under

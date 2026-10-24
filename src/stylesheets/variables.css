@@ -72,6 +72,7 @@
   --chevron-stroke: 2.5;          /* a chevron's line weight */
   --stepper-width: 3.5rem;        /* a number stepper */
   --stepper-number: 1.75rem;      /* the number in it */
+  --stepper-across-number: 1rem;  /* the number in a stepper on its side (a fixture's tables) */
   --date-part-width: 2.6rem;      /* a date's month and day pills */
   --date-year-width: 3.6rem;      /* a date's year pill */
   --date-number: 1.1rem;          /* the numbers in a date */

@@ -1,0 +1,27 @@
+---
+layout: layout.html
+title: Team
+description: "A league team's own page."
+---
+{% comment %}
+	A team's profile page, reached as /leagues/team/?t=<team id>&s=<season id>
+	from a team's name on the fixtures page. Not built yet (UV, 24 Oct: on the
+	list for another time, docs/STATUS.md §4); this page says so rather than
+	the link landing on nothing, and sends the person back to the fixtures.
+{% endcomment %}
+
+<div class="tdc-card">
+	<h1>Team</h1>
+	<p>Team pages are not built yet. They will show the team, its players and its fixtures.</p>
+	<div class="link-row">
+		<a href="/leagues/" id="team-back">Back</a>
+	</div>
+</div>
+
+<script>
+	// Back to the season's fixtures, which is where every link here comes from.
+	(() => {
+		const s = new URLSearchParams(location.search).get('s');
+		if (s) document.getElementById('team-back').href = '/leagues/fixtures/?s=' + encodeURIComponent(s);
+	})();
+</script>
