@@ -105,13 +105,18 @@ const TDCRing = (() => {
 	const leadOf = (t) => (ICONS[t] && ICONS[t].list) ? ICONS[t].list[0].exit : 260;
 
 	// ─── Spin profile scaled to load time L; lead dot reaches `lead` exactly at T = L ───
-	function makeProfile(L, lead) {
+	// spin multiplies the speed (1, the default, is the demo). The site sends
+	// every dot off together from wherever it is (resolve together / now), so
+	// the lead dot no longer has to arrive at L, and the speed can be its own
+	// setting (--ring-spin, UV 24 Oct). The dots keep their quarter-turn
+	// spacing and their gentle start.
+	function makeProfile(L, lead, spin = 1) {
 		L = Math.max(0.05, L);
 		const TA = 0.3 * L;
 		let laps = Math.max(0, Math.round((360 * L * 0.85 - lead) / 360));
 		if (lead + 360 * laps < 30) laps++;
 		const total = lead + 360 * laps;
-		const V = total / (L - TA / 2);
+		const V = spin * total / (L - TA / 2);
 		const GAP = 90 / V;
 		const th = (t) => {
 			if (t <= 0) return 0;
@@ -215,10 +220,11 @@ const TDCRing = (() => {
 				|| (s === 'empty' ? 'Idle' : s === 'loading' ? 'Loading' : ICONS[s].label);
 			for (const k of this.keys) this.els[k].classList.toggle('on', STR[k].icon === s);
 		}
-		// seconds: load time. opts: draw, fade (seconds); lead: ring angle of the first exit (see leadOf)
+		// seconds: load time. opts: draw, fade (seconds); lead: ring angle of the first exit (see leadOf);
+		// spin: how many times the demo's orbit speed (1 by default)
 		load(seconds = 1, opts = {}) {
 			if (this.running) return;
-			this.pr = makeProfile(seconds, opts.lead ?? 260);
+			this.pr = makeProfile(seconds, opts.lead ?? 260, opts.spin ?? 1);
 			this.draw = opts.draw ?? 0.8;
 			this.fade = opts.fade ?? 0.5;
 			this.tf = this.fade * 0.4;

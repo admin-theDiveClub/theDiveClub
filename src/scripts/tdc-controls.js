@@ -531,6 +531,11 @@ const TDCControls = (() => {
 	const LIVE_FOR = 20000;   // ms: a save not answered by then is drawn as it stands
 	const checkKey = (box) => box.id ? '#' + box.id
 		: ['action', 'entrant', 'player', 'box', 'frame'].map((k) => box.dataset[k] || '').join('|');
+	// How many times the demo's orbit speed the dots go round (--ring-spin).
+	const spinOf = (el) => {
+		const n = parseFloat(getComputedStyle(el).getPropertyValue('--ring-spin'));
+		return n > 0 ? n : 1;
+	};
 	const secs = (el, token, fallback) => {
 		const ms = timeMs(el, token);
 		return lessMotion.matches ? fallback : ms / 1000;
@@ -613,7 +618,8 @@ const TDCControls = (() => {
 			c.ring.load(secs(wrap, '--ring-load', 1), {
 				draw: secs(wrap, '--ring-draw', 0.4),
 				fade: secs(wrap, '--ring-fade', 0.1),
-				lead: TDCRing.leadOf(state())
+				lead: TDCRing.leadOf(state()),
+				spin: spinOf(wrap)
 			});
 			liveChecks.set(c.key, c);
 			return true;
@@ -649,7 +655,8 @@ const TDCControls = (() => {
 			c.ring.load(secs(wrap, '--control-reveal', 0.35), {
 				draw: secs(wrap, '--ring-draw', 0.4),
 				fade: secs(wrap, '--ring-fade', 0.1),
-				lead: TDCRing.leadOf(state())
+				lead: TDCRing.leadOf(state()),
+				spin: spinOf(wrap)
 			});
 			c.ring.resolve(state(), { together: true });
 		};
