@@ -62,19 +62,19 @@
 .tdc-select-next svg { transform: rotate(90deg); }
 
 /* ── Where a control sits in its field ───────────────────────────────
-   Every control is centred in its row (UV, 24 Oct). A vertical one (a
-   stepper, a date) has its label and hint to its right, on the bottom
-   line, and the control and its words are one pair centred together, a
-   gap apart; the script marks the field .field-beside. A switch and a
-   ring (status.css) sit the same way. The words column is only as wide
-   as its words, up to a measure, so a short label does not push the pair
-   off centre. A select pill keeps its label and hint above and below,
-   centred with it (.field-centred). */
+   A control with its label beside it (a stepper, a date, a switch, a ring;
+   the script marks the field .field-beside) lines up with every other down
+   the page (UV, 24 Oct): two equal columns, the control's right edge on the
+   page's centre line, its label and hint to the right of the line, on the
+   bottom line of the row. A control wider than half the row (a date on a
+   narrow phone) takes the room it needs and the line moves for that row
+   only, so the two dates of a pair still line up with each other. A
+   select pill keeps its label and hint above and below, centred with it
+   (.field-centred). */
 .field.field-beside {
 	display: grid;
-	grid-template-columns: auto fit-content(14rem);
+	grid-template-columns: minmax(max-content, 1fr) 1fr;
 	grid-template-rows: 1fr auto auto;
-	justify-content: center;
 	column-gap: var(--space-4);
 }
 .field-beside > .tdc-stepper,
@@ -83,8 +83,13 @@
 .field-beside > .tdc-check {
 	grid-column: 1;
 	grid-row: 1 / -1;
+	justify-self: end;
 	align-self: center;
 }
+
+/* A field the page has just taken away, fading out as its space closes
+   (tdc-controls.js). Nothing in it can be pressed. */
+.tdc-gone { pointer-events: none; }
 .field-beside > label { grid-column: 2; grid-row: 2; }
 .field-beside > .hint { grid-column: 2; grid-row: 3; }
 

@@ -118,9 +118,11 @@ const TDCControls = (() => {
 
 	// A chevron button. It points up; controls.css turns it for each use.
 	const CHEVRON = '<svg viewBox="0 0 24 14" aria-hidden="true"><path pathLength="100" d="M3 11.5 12 3l9 8.5"/></svg>';
-	function chevron(cls, label) {
+	// key: which field's chevron this is (see drawIcon), when the field has an id.
+	function chevron(cls, label, key) {
 		const b = node('button', 'tdc-chevron ' + cls);
 		b.type = 'button';
+		if (key) b.dataset.iconKey = key;
 		b.tabIndex = -1;   // the real element takes the keyboard; one tab stop, not several
 		b.setAttribute('aria-label', label);
 		b.innerHTML = CHEVRON;
@@ -150,6 +152,13 @@ const TDCControls = (() => {
 	// straight away (UV, 24 Oct). Each stroke (an SVG part with pathLength
 	// 100) takes its own slice of the time, in order; undrawing runs them
 	// backwards. gone(true / false) is the control's own way of hiding it.
+	//
+	// Only what the person's own input changes moves (UV, 24 Oct). A page
+	// that rebuilds its form after every change makes every control again,
+	// so an icon is remembered by its field (data-icon-key, from the field's
+	// id): a rebuilt one that was showing before shows at once, and draws in
+	// only if it was not.
+	const iconSeen = new Map();   // key -> shown
 	function drawIcon(el, show, gone) {
 		if (el.tdcShown === show) return;
 		const first = el.tdcShown === undefined;
@@ -157,7 +166,14 @@ const TDCControls = (() => {
 		clearTimeout(el.tdcGoing);
 		const strokes = [...el.querySelectorAll('svg [pathLength]')];
 		for (const s of strokes) s.getAnimations().forEach((a) => a.cancel());
-		if (first && !show) { gone(true); return; }
+		const key = el.dataset.iconKey;
+		const before = key ? iconSeen.get(key) : undefined;
+		if (key) iconSeen.set(key, show);
+		if (first && (!show || before === true)) {
+			gone(!show);
+			for (const s of strokes) s.style.strokeDashoffset = show ? '0' : '100';
+			return;
+		}
 
 		const ms = timeMs(el, '--ring-draw');
 		el.classList.toggle('is-going', !show);
@@ -201,8 +217,8 @@ const TDCControls = (() => {
 
 		// The window clips the number, so a changing one can roll through it.
 		const pill = node('span', 'tdc-stepper');
-		const up = chevron('tdc-stepper-up', 'Increase');
-		const down = chevron('tdc-stepper-down', 'Decrease');
+		const up = chevron('tdc-stepper-up', 'Increase', input.id && input.id + ':up');
+		const down = chevron('tdc-stepper-down', 'Decrease', input.id && input.id + ':down');
 		const view = node('span', 'tdc-stepper-window');
 		input.replaceWith(pill);
 		view.append(input);
@@ -388,6 +404,10 @@ const TDCControls = (() => {
 		};
 		const pick = tool('tdc-date-pick', 'choose from a calendar', CALENDAR);
 		const clear = tool('tdc-date-clear', 'clear the date', CLEAR);
+		if (real.id) {
+			pick.dataset.iconKey = real.id + ':pick';
+			clear.dataset.iconKey = real.id + ':clear';
+		}
 		const tools = node('span', 'tdc-date-tools');
 
 		const box = node('span', 'tdc-date');
@@ -526,6 +546,7 @@ const TDCControls = (() => {
 		const state = () => c.box.checked ? ON : OFF;
 
 		const wrap = c.wrap = node('span', isSwitch ? 'tdc-switch' : 'tdc-check');
+		wrap.tdcCheck = c;
 		const face = node('span', 'tdc-ring');
 		face.innerHTML = TDCRing.svg(5);
 		if (isSwitch) {
@@ -608,6 +629,18 @@ const TDCControls = (() => {
 			}, 0);
 		});
 
+		// Newly shown on the page (a setting that brings it into view): its icon
+		// draws in as the demo's does, a short orbit and the drawing.
+		c.appear = () => {
+			if (c.ring.busy) return;
+			c.ring.load(secs(wrap, '--ring-min', 0.2), {
+				draw: secs(wrap, '--ring-draw', 0.8),
+				fade: secs(wrap, '--ring-fade', 0.5),
+				lead: TDCRing.leadOf(state())
+			});
+			c.ring.resolve(state());
+		};
+
 		// Clicking the drawing clicks the checkbox, which toggles it and tells
 		// the page.
 		wrap.addEventListener('click', (e) => {
@@ -653,8 +686,8 @@ const TDCControls = (() => {
 		}
 
 		const box = node('span', 'tdc-select');
-		const prev = chevron('tdc-select-prev', 'Previous option');
-		const next = chevron('tdc-select-next', 'Next option');
+		const prev = chevron('tdc-select-prev', 'Previous option', select.id && select.id + ':prev');
+		const next = chevron('tdc-select-next', 'Next option', select.id && select.id + ':next');
 		const track = node('span', 'tdc-select-track scroll-x');
 		// The green pill is its own layer under the options, so it can slide
 		// over and change width to the next one (UV, 24 Oct).
@@ -780,6 +813,99 @@ const TDCControls = (() => {
 		}).observe(track);
 	}, 'select:not([multiple]):not(table select)');
 
+	// ─── Fields come and go smoothly ───
+	// A page that rebuilds its form after a change (the ruleset on the new
+	// league, league settings and new tournament pages, the match panel)
+	// shows some fields and hides others. Rather than jump, a field or
+	// section that is new fades in as its space opens, its icons drawing in,
+	// and one that has gone fades out as its space closes (UV, 24 Oct). Done
+	// here rather than in each page: the form is looked at as a change
+	// starts, again once the page has rebuilt it in that same moment, and the
+	// two are compared, a field known by its control's id and a folding
+	// section by its data-group. A field that merely stays does not move.
+	const ITEMS = '.field, details.set-group';
+	let before = null;   // the form as the change started, until the page has had its turn
+	const itemKey = (el) => {
+		if (el.matches('details')) return el.dataset.group ? 'group:' + el.dataset.group : null;
+		const control = el.querySelector('[id]');
+		return control ? '#' + control.id : null;
+	};
+	const keyedItem = (el) => el && el.matches(ITEMS) && !el.classList.contains('tdc-gone') && itemKey(el);
+	function sibling(el, dir) {
+		let s = el[dir];
+		while (s && !keyedItem(s)) s = s[dir];
+		return s ? itemKey(s) : null;
+	}
+	function snapshot() {
+		const map = new Map();
+		for (const el of document.querySelectorAll(ITEMS)) {
+			if (el.closest('table, .tdc-gone')) continue;
+			const key = itemKey(el);
+			if (!key) continue;
+			const parent = el.parentElement.closest(ITEMS);
+			map.set(key, {
+				el,
+				parent: parent ? itemKey(parent) : null,
+				prev: sibling(el, 'previousElementSibling'),
+				next: sibling(el, 'nextElementSibling'),
+				container: el.parentElement
+			});
+		}
+		return map;
+	}
+
+	// Open (or, with out, close) an item's space while it fades.
+	function grow(el, ms, out) {
+		const cs = getComputedStyle(el);
+		const open = {
+			height: el.offsetHeight + 'px', opacity: 1,
+			marginTop: cs.marginTop, marginBottom: cs.marginBottom,
+			paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom
+		};
+		const shut = { height: '0px', opacity: 0, marginTop: '0px', marginBottom: '0px', paddingTop: '0px', paddingBottom: '0px' };
+		el.style.overflow = 'hidden';
+		const a = el.animate(out ? [open, shut] : [shut, open], { duration: ms, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' });
+		return a.finished.catch(() => {}).then(() => { el.style.overflow = ''; });
+	}
+
+	// Returns the form as it is now, to compare the next batch against.
+	function morph(old) {
+		const now = snapshot();
+		const ms = timeMs(document.body, '--control-reveal');
+		for (const [key, it] of now) {
+			if (old.has(key)) continue;
+			if (it.parent && !old.has(it.parent)) continue;   // its section is new and comes in whole
+			if (ms) grow(it.el, ms, false);
+			// A switch or ring draws its icon in as the demo does; steppers and
+			// pills already draw theirs, being new to the page.
+			for (const w of it.el.querySelectorAll('.tdc-switch, .tdc-check')) if (w.tdcCheck) w.tdcCheck.appear();
+		}
+		// Gone ones go back where they were, each after the field above it
+		// (or after that field's own fading copy, when it went too), to fade.
+		const fading = new Map();
+		for (const [key, it] of old) {
+			if (now.has(key)) continue;
+			if (it.parent && !now.has(it.parent)) continue;   // goes with its section
+			const el = it.el;                                // thrown away by the page, still whole
+			if (el.isConnected) continue;
+			// Its icons are forgotten, so if it comes back they draw in again.
+			for (const i of el.querySelectorAll('[data-icon-key]')) iconSeen.delete(i.dataset.iconKey);
+			if (!ms) continue;
+			const above = it.prev && ((now.get(it.prev) || {}).el || fading.get(it.prev));
+			const below = it.next && (now.get(it.next) || {}).el;
+			if (above) above.after(el);
+			else if (below) below.before(el);
+			else if (it.container.isConnected) it.container.append(el);
+			else continue;
+			fading.set(key, el);
+			el.classList.add('tdc-gone');
+			el.setAttribute('aria-hidden', 'true');
+			el.inert = true;
+			grow(el, ms, true).then(() => el.remove());
+		}
+		return now;
+	}
+
 	// ─── Start ───
 	// Wait for every script at the end of the page, so a kind defined in a
 	// later file is known before anything is called unknown.
@@ -791,10 +917,22 @@ const TDCControls = (() => {
 			}
 		}
 		scan(document);
+
+		// The form as each change starts (capture: before the page hears it),
+		// kept until the page has had its turn. The browser hands over DOM
+		// changes between one listener and the next, so a control's own small
+		// change can arrive before the page's rebuild: each batch is compared
+		// with the form as the batch before left it.
+		document.addEventListener('change', () => {
+			before = snapshot();
+			setTimeout(() => { before = null; }, 0);
+		}, true);
+
 		new MutationObserver((changes) => {
 			for (const c of changes) for (const n of c.addedNodes) {
 				if (n.nodeType === 1) scan(n);
 			}
+			if (before) before = morph(before);
 		}).observe(document.body, { childList: true, subtree: true });
 	}
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);

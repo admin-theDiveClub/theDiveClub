@@ -76,7 +76,8 @@
 			{ name: '--date-part-width',  label: 'Date month, day', kind: 'size', unit: 'rem', min: 1.8, max: 4,   step: 0.05, use: 'How wide a date\'s month and day pills are' },
 			{ name: '--date-number',      label: 'Date numbers',   kind: 'size', unit: 'rem', min: 0.8,  max: 2,   step: 0.05, use: 'How big the numbers in a date are' },
 			{ name: '--select-text',      label: 'Select options', kind: 'size', unit: 'rem', min: 0.6,  max: 1.2, step: 0.05, use: 'How big an option in a select pill is' },
-			{ name: '--control-motion',   label: 'Motion',         kind: 'size', unit: 's',   min: 0,    max: 0.8, step: 0.02, use: 'How long a number takes to roll and the green pill to slide. 0 for none' }
+			{ name: '--control-motion',   label: 'Motion',         kind: 'size', unit: 's',   min: 0,    max: 0.8, step: 0.02, use: 'How long a number takes to roll and the green pill to slide. 0 for none' },
+			{ name: '--control-reveal',   label: 'Reveal',         kind: 'size', unit: 's',   min: 0,    max: 1,   step: 0.05, use: 'How long a field takes to fade in or out, its space opening or closing, when a setting shows or hides it. 0 for none' }
 		]],
 		['Ring and switch', [
 			{ name: '--ring-size',        label: 'Ring',           kind: 'size', unit: 'rem', min: 1.25, max: 4,   step: 0.05, use: 'How big a ring is: a tick against a person or a thing (paid, here tonight)' },

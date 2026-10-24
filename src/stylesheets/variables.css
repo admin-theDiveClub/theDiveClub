@@ -77,6 +77,7 @@
   --date-number: 1.1rem;          /* the numbers in a date */
   --select-text: 0.85rem;         /* an option in a select pill */
   --control-motion: 0.22s;        /* a rolling number, a sliding pill */
+  --control-reveal: 0.35s;        /* a field fading in or out as its space opens or closes */
   /* The ring and the switch (status.css), and every icon drawing itself */
   --ring-size: 2.25rem;           /* a ring: a tick against a person or a thing */
   --ring-size-table: 1.75rem;     /* the same in a table row */
