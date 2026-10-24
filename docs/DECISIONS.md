@@ -567,3 +567,12 @@ These predate the log. They are recorded here because every one of them is a dec
 *Example:* in Test Tournament - 2, UV (a player and its scorer) can tap who won the lag in his match against Linton, but the race length and approval are greyed out. Owner@TDC, its director, can change both until the result is approved.
 *Rejected:* the lag winner directors-only as well (players lag at the table, and the director is often not there).
 *Touches:* `tdc_update_match_settings`, `tdc_set_match_time`, `private.tdc_can_change_match`, `match.js`
+
+## 2026-10-24 — A team frame's players change only through the reserve picker
+
+*Decided by:* UV (audit A4), choosing the "three taps" correction over a second route
+*Why:* `tdc_record_frame` accepted a list of who played, and on a team card nothing checked it. Being in a frame grants edit rights, so a hand-made request could seat an outsider who could then score the match, put a player in the other side's seat, or replace a player's own opponent. Checking each named player against the team (the audit's first suggestion) would still have let a captain skip the three reserve rules and reach the other side's seat with a real team member, and it would have refused frames whose player has since changed team.
+*So:* migration `20261024084837`. On a team card `tdc_record_frame` never changes who is in a frame and never makes one. `tdc_swap_frame_player` is the one way into a team frame. A league director correcting who played a **finished** frame clears the result, puts the right player in with the picker, and records it again.
+*Example:* Ann is recorded as winning frame 7, but Gus played it. The LD presses Clear result on frame 7, chooses Gus in the picker, and presses Hosts won.
+*Rejected:* letting the league director (only) send a changed list through `tdc_record_frame`, each player checked against their team — more code, and a second way in that skips the reserve rules.
+*Touches:* `tdc_record_frame`

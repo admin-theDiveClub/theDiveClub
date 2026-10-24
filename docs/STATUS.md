@@ -4,9 +4,9 @@
 
 Updated at every milestone, in the same breath as giving UV a commit subject. Never batched to the end of a session.
 
-Last updated: **24 Oct 2026** (A2 and A3: a competition match's rules and time are the director's)
+Last updated: **24 Oct 2026** (A4: a team frame's players come from the lineup)
 
-**Production is current through `20261024080007`** (checked against production's migration list, 24 Oct). **Waiting to push: `20261024082447`** (A2/A3). Push it **before** deploying the site: the match page asks `tdc_may_change_match`, which that migration adds.
+**Production is current through `20261024082447`** (A2/A3; checked against production's migration list, 24 Oct). **Waiting to push: `20261024084837`** (A4). It changes no page, so the order against a deploy does not matter.
 
 ---
 
@@ -16,7 +16,8 @@ Nothing here can be done by Claude.
 
 | | What | Why it matters |
 |---|---|---|
-| 00 | **Push `20261024082447`, deploy, then try A2/A3** | In **Test Tournament - 2**, open Linton Paul v UV (in progress, 1 frame). **As UV** (a player and its scorer): the panel says the rules and time are set by whoever runs the tournament; every setting and the time are greyed out except **Lag winner**, which still saves. **As Owner@TDC** (its director): everything is open; change the time and it saves. No notification will arrive when Owner@TDC moves it (B7). Ignore the "Social match" line at the top of the panel (§6) |
+| 00a | **Push `20261024084837` (A4)** | Nothing to see: the card sends neither of the things it refuses. After pushing, record one result and one lag on Team 0 v Team 3 (frame 15 has Thabo Mokoena in it, who has since moved to Team 2; it must still save) |
+| 00 | **Deploy if not done, then try A2/A3** (migration pushed, confirmed 24 Oct) | In **Test Tournament - 2**, open Linton Paul v UV (in progress, 1 frame). **As UV** (a player and its scorer): the panel says the rules and time are set by whoever runs the tournament; every setting and the time are greyed out except **Lag winner**, which still saves. **As Owner@TDC** (its director): everything is open; change the time and it saves. No notification will arrive when Owner@TDC moves it (B7). Ignore the "Social match" line at the top of the panel (§6) |
 | 0a | **Try the league settings page** | After pushing `20261023193153` and deploying: open Test_WedSim_8BMTL → Settings (TestTuesday and Test 8BMTL were cleared on 23 Oct). Set team size 5, look at the rotation grid, change one cell in session 2 and watch it swap, save. The message should say **2 matches now use these rules** (neither has started) and none kept. To see the card follow it, try team size 4 once: a match's card should then offer 16 slots, not 25. Set it back to 5 afterwards |
 | 0a2 | **Try the team limit** | After pushing `20261023213048` and deploying: Test_WedSim's teams should each read **5 of 7 active** (reserves default to 2). From your captain account, claim two more onto Team 0 (7 of 7), then try a third: refused, "Team 0 is full". Mark one player **Away**: 6 of 7, and Claim works again. As that player (or you), press **Back** while the team is full: refused. As Owner@TDC, set Reserves allowed to 1 in Settings: the manage page should warn that Team 0 is over the limit |
 | 0a3 | **Finish the night on the new card** | **Checked against production 24 Oct 09:58:** Team 0 v Team 3 locked both sides, built 25 frames, every pairing matches the rotation, 7 frames recorded each with its own lag (4–3). **Still untried:** an empty seat, a reserve, signing. Both sides were full, so try them on Team 1 v Team 2. **A reserve needs somebody beyond the five**: every team has exactly five, so first add a sixth to one team (the limit is 7). All 20 entrants are already placed, so there is nobody to claim: as Owner@TDC, add Owner@TDC itself (or any other account) on the manage page and put them on Team 1. Without one there is no picker, only a note saying so. Then leave one position empty on one side; put a reserve into one of its frames; try the same reserve again in that session (refused: rule 1); try a regular in the empty seat (refused: rule 2); sign, and the seats still empty become walkovers. **Its cutoff is 8 hours (11:30 on 24 Oct)**: set it to 0 first, or both sides lock empty and the night has no frames |
@@ -39,8 +40,8 @@ Found in a read-only review of every migration, the front end, the edge function
 
 | | Where | What happens | Fix |
 |---|---|---|---|
-| A2 + A3 | `tdc_update_match_settings`, `tdc_set_match_time` | A player could change a competition match's rules after approval (e.g. approval off, which unpublished it), or move it and its lineup cutoff | **Written and tested 24 Oct: `20261024082447` plus `match.js`, waiting for UV to push and deploy** (`docs/systems/matches.md`). Directors only, never once settled; the lag winner stays with the players |
-| A4 | `tdc_record_frame`, team matches | Players named in a frame are not checked against the teams' rosters, and being in a frame grants edit rights | Check each player is an active entrant of that side |
+| A2 + A3 | `tdc_update_match_settings`, `tdc_set_match_time` | A player could change a competition match's rules after approval (e.g. approval off, which unpublished it), or move it and its lineup cutoff | **Pushed (`20261024082447`); `match.js` deploys with the site.** UV to try it (§1, 00). Directors only, never once settled; the lag winner stays with the players |
+| A4 | `tdc_record_frame`, team matches | A sent player list could put anybody into a team frame, and being in a frame grants edit rights | **Written and tested 24 Oct: `20261024084837`, waiting for UV to push** (`docs/systems/leagues.md`). On a team card it never changes who is in a frame or makes one; the reserve picker is the one way in |
 | A5 | `private.tdc_merge_players` | Misses `tbl_league_match_squad`, `tbl_league_match_order` and `tbl_notification_prefs`; a merge empties lineups | Add them; run the migration's foreign-key query |
 
 ### Before more real players join
