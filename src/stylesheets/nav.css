@@ -13,7 +13,7 @@
 	background: var(--bg-surface);
 	border-bottom: 1px solid var(--border-color);
 	z-index: 100;
-	transition: transform 0.25s ease;
+	transition: transform var(--nav-slide) ease;
 }
 /* Slid away while reading down the page (nav.js, UV 24 Oct). */
 .site-nav.is-hidden { transform: translateY(-100%); }

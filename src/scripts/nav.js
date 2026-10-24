@@ -424,14 +424,14 @@
 	})();
 
 	// ─── Hiding on scroll (UV, 24 Oct) ────────────────────────────────
-	// Any scroll down slides the bar away, closing whatever was open on it.
-	// It comes back at the top of the page, or after one long scroll up
-	// (SHOW_AFTER_UP pixels without turning back down), so a small nudge up
-	// while reading does not bring it back. Tabbing into it brings it back.
+	// One long scroll down (SCROLL_FOR pixels without turning back up) slides
+	// the bar away, closing whatever was open on it; one long scroll up brings
+	// it back, as does the top of the page or tabbing into it. A small nudge
+	// either way while reading does nothing (UV, 25 Oct: 200 both ways).
 	const navBar = document.querySelector('.site-nav');
-	const SHOW_AFTER_UP = 200;
+	const SCROLL_FOR = 200;
 	let lastY = Math.max(0, window.scrollY);
-	let upBy = 0;
+	let upBy = 0, downBy = 0;
 
 	function setNavHidden(hide) {
 		if (!navBar || navBar.classList.contains('is-hidden') === hide) return;
@@ -447,11 +447,15 @@
 		const y = Math.max(0, window.scrollY);   // a phone's bounce past the top reads negative
 		const dy = y - lastY;
 		lastY = y;
-		if (y <= 4) { upBy = 0; setNavHidden(false); return; }
-		if (dy > 0) { upBy = 0; setNavHidden(true); }
-		else if (dy < 0) {
+		if (y <= 4) { upBy = 0; downBy = 0; setNavHidden(false); return; }
+		if (dy > 0) {
+			upBy = 0;
+			downBy += dy;
+			if (downBy >= SCROLL_FOR) setNavHidden(true);
+		} else if (dy < 0) {
+			downBy = 0;
 			upBy -= dy;
-			if (upBy >= SHOW_AFTER_UP) setNavHidden(false);
+			if (upBy >= SCROLL_FOR) setNavHidden(false);
 		}
 	}, { passive: true });
 
