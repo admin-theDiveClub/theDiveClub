@@ -168,7 +168,9 @@ const TDCControls = (() => {
 		for (const s of strokes) s.getAnimations().forEach((a) => a.cancel());
 		const key = el.dataset.iconKey;
 		const before = key ? iconSeen.get(key) : undefined;
-		if (key) iconSeen.set(key, show);
+		// Only a control on the page says what its field's icons show; one the
+		// page has thrown away must not tell its replacement otherwise.
+		if (key && el.isConnected) iconSeen.set(key, show);
 		if (first && (!show || before === true)) {
 			gone(!show);
 			for (const s of strokes) s.style.strokeDashoffset = show ? '0' : '100';
@@ -282,6 +284,13 @@ const TDCControls = (() => {
 
 		// Pointers step on press and repeat while held; a keyboard or screen
 		// reader activating the button arrives as a click with no pointer.
+		//
+		// The press ends wherever the finger comes up. A page that rebuilds
+		// its form after the step (the ruleset pages) replaces this stepper
+		// under the finger, so the release lands on the new one; listening
+		// only here once left the old one stepping, unseen, to its limit,
+		// where it told the new one its chevron had gone (24 Oct). And a
+		// stepper that is no longer on the page stops.
 		let timer = null;
 		const stop = () => { clearTimeout(timer); timer = null; };
 		for (const [b, dir] of [[up, 1], [down, -1]]) {
@@ -289,11 +298,13 @@ const TDCControls = (() => {
 				if (e.button !== 0) return;
 				step(dir);
 				const repeat = () => {
-					if (!b.tdcShown) return stop();
+					if (!b.tdcShown || !pill.isConnected) return stop();
 					step(dir);
 					timer = setTimeout(repeat, HOLD_EVERY);
 				};
 				timer = setTimeout(repeat, HOLD_DELAY);
+				window.addEventListener('pointerup', stop, { once: true });
+				window.addEventListener('pointercancel', stop, { once: true });
 			});
 			b.addEventListener('pointerup', stop);
 			b.addEventListener('pointerleave', stop);
