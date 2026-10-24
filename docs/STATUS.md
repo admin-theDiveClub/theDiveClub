@@ -4,7 +4,7 @@
 
 Updated at every milestone, in the same breath as giving UV a commit subject. Never batched to the end of a session.
 
-Last updated: **24 Oct 2026** (the leagues page, league status and search filters, 1:10:1 on a PC)
+Last updated: **24 Oct 2026** (custom controls: the stepper, the three-part date, the select pill, all in the sandbox; Starts / Ends side by side; the cream calendar icon)
 
 **Production is current through `20261024102616`** (league status and the search filters; checked against production's migration list, 24 Oct). Nothing waiting to push. The league pages built on it can deploy.
 
@@ -103,6 +103,7 @@ In the order it probably makes sense.
 
 | What | Notes |
 |---|---|
+| **The custom controls on every page** | Built 24 Oct (`scripts/tdc-controls.js`, `controls.css`), all on trial on `/leagues/new/` only: the **stepper** on Reserves allowed, the **date** (three steppers, a calendar and a clear button) on Starts and Ends, the **select pill** on every dropdown; numbers roll, the green pill slides, and steppers and dates have their label beside them. **Waiting on UV**: try them there, then decide how each sits on each page, and whether the three-part date stays. Going site-wide is `data-controls` on a container (or `<body>` in `layout.html`) once the layouts are agreed. Number fields today: `/leagues/settings/` (reserves), `/leagues/fixtures/` (days between, round), `/tournaments/new/` (limit, fee), `/staff/codes/`, `/staff/credits/`, and the generated ones in the match settings, the match page, the new-match page, the entrants page (seed) and the bracket's score boxes. Fields with no `max` (the fee, credits) always show both chevrons. More controls from UV to follow, each one `define()` in the same file |
 | **A player cannot start their own match** | With `create_matches: manual` a player sees their fixture, has no way in, and no explanation. **UV, 22 Oct: a communication problem, to be solved when the rounds are drawn properly with progression arrows** — not a schema gap. The TD already gets a hint |
 
 ---

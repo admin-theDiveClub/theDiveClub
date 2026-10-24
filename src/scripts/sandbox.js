@@ -43,7 +43,10 @@
 	/* ── What is specified ─────────────────────────────────────────────
 	   Only the values that are chosen by hand. Everything else (the hover
 	   wash, the panel shadow, the scrim colour) is built from these in
-	   variables.css. kind: colour | rgba (colour + opacity) | alpha | px (a blur in pixels). */
+	   variables.css. kind: colour | rgba (colour + opacity) | alpha | px (a blur in pixels)
+	   | size (a slider from min to max in steps of step, written with unit).
+	   A colour the file builds from another (var(--text-primary)) shows the
+	   colour it comes to, and becomes a value of its own once it is changed. */
 	var TOKENS = [
 		['Brand', [
 			{ name: '--color-primary',    label: 'Primary',        kind: 'colour', use: 'Buttons, links, field labels, focus lines, the winning score' },
@@ -59,7 +62,21 @@
 			{ name: '--text-muted',       label: 'Muted text',     kind: 'colour', use: 'Hints, detail lines, placeholders' }
 		]],
 		['Lines', [
-			{ name: '--border-color',     label: 'Border',         kind: 'colour', use: 'Field lines, card and tile edges, dividers' }
+			{ name: '--border-color',     label: 'Border',         kind: 'colour', use: 'Field lines, card and tile edges, dividers' },
+			{ name: '--scrollbar-size',   label: 'Scrollbar',      kind: 'size', unit: 'px', min: 2, max: 16, step: 1, use: 'How thick every scrollbar is' }
+		]],
+		['Controls', [
+			{ name: '--control-line',     label: 'Control line',   kind: 'colour', use: 'The outline and chevrons of a stepper, a date and a select pill, and the calendar icon on every date field. Follows Text until chosen' },
+			{ name: '--control-border',   label: 'Outline',        kind: 'size', unit: 'px',  min: 0,    max: 6,   step: 0.5,  use: 'How thick a control\'s outline is' },
+			{ name: '--chevron-size',     label: 'Chevron',        kind: 'size', unit: 'rem', min: 0.75, max: 3,   step: 0.05, use: 'How wide a stepper\'s chevrons are; a date\'s and a select\'s are drawn smaller from it' },
+			{ name: '--chevron-stroke',   label: 'Chevron weight', kind: 'size', unit: '',    min: 1,    max: 5,   step: 0.25, use: 'How heavy a chevron\'s line is' },
+			{ name: '--stepper-width',    label: 'Stepper width',  kind: 'size', unit: 'rem', min: 2,    max: 6,   step: 0.05, use: 'How wide a number stepper is' },
+			{ name: '--stepper-number',   label: 'Stepper number', kind: 'size', unit: 'rem', min: 1,    max: 3,   step: 0.05, use: 'How big the number in a stepper is' },
+			{ name: '--date-year-width',  label: 'Date year',      kind: 'size', unit: 'rem', min: 2.5,  max: 5,   step: 0.05, use: 'How wide a date\'s year pill is' },
+			{ name: '--date-part-width',  label: 'Date month, day', kind: 'size', unit: 'rem', min: 1.8, max: 4,   step: 0.05, use: 'How wide a date\'s month and day pills are' },
+			{ name: '--date-number',      label: 'Date numbers',   kind: 'size', unit: 'rem', min: 0.8,  max: 2,   step: 0.05, use: 'How big the numbers in a date are' },
+			{ name: '--select-text',      label: 'Select options', kind: 'size', unit: 'rem', min: 0.6,  max: 1.2, step: 0.05, use: 'How big an option in a select pill is' },
+			{ name: '--control-motion',   label: 'Motion',         kind: 'size', unit: 's',   min: 0,    max: 0.8, step: 0.02, use: 'How long a number takes to roll and the green pill to slide. 0 for none' }
 		]],
 		['States', [
 			{ name: '--color-success',    label: 'Success',        kind: 'colour', use: 'Success messages, Paid badge, staff tile glow' },
@@ -274,7 +291,8 @@
 		['Success on page',    '--color-success',    '--bg-base'],
 		['Warning on page',    '--color-warning',    '--bg-base'],
 		['Error on page',      '--color-error',      '--bg-base'],
-		['Owner on page',      '--color-owner',      '--bg-base']
+		['Owner on page',      '--color-owner',      '--bg-base'],
+		['Control line on page', '--control-line',   '--bg-base']
 	];
 	function rating(r) {
 		if (r >= 7)   return ['AAA', 'paid'];
@@ -391,7 +409,7 @@
 
 				var ctl = { row: row, edited: edited };
 
-				if (spec.kind !== 'alpha') {
+				if (spec.kind !== 'alpha' && spec.kind !== 'size') {
 					var wrap = document.createElement('div');
 					wrap.className = 'sb-colour';
 					var picker = document.createElement('input');
@@ -430,16 +448,23 @@
 					var line = document.createElement('div');
 					line.className = 'sb-alpha';
 					var alphaLabel = document.createElement('label');
-					alphaLabel.textContent = spec.kind === 'rgba' ? 'Opacity' : (spec.kind === 'px' ? 'Blur' : 'Opacity of the black');
+					alphaLabel.textContent = spec.kind === 'rgba' ? 'Opacity' : (spec.kind === 'px' ? 'Blur' : (spec.kind === 'size' ? 'Size' : 'Opacity of the black'));
 					var out = document.createElement('output');
 					out.className = 'sb-val';
 					alphaLabel.appendChild(out);
 					var range = document.createElement('input');
 					range.type = 'range';
-					range.min = '0';
-					range.max = spec.kind === 'px' ? '40' : '1';
-					range.step = spec.kind === 'px' ? '1' : '0.01';
-					range.setAttribute('aria-label', spec.label + ' opacity');
+					if (spec.kind === 'size') {
+						range.min = String(spec.min);
+						range.max = String(spec.max);
+						range.step = String(spec.step);
+						range.setAttribute('aria-label', spec.label);
+					} else {
+						range.min = '0';
+						range.max = spec.kind === 'px' ? '40' : '1';
+						range.step = spec.kind === 'px' ? '1' : '0.01';
+						range.setAttribute('aria-label', spec.label + ' opacity');
+					}
 					line.appendChild(alphaLabel);
 					line.appendChild(range);
 					row.appendChild(line);
@@ -449,6 +474,11 @@
 					range.addEventListener('input', function () {
 						if (spec.kind === 'rgba') writeColour(spec, ctl);
 						else if (spec.kind === 'px') setDraft(spec.name, range.value + 'px');
+						else if (spec.kind === 'size') {
+							var v = trimNum(range.value, 3) + spec.unit;
+							out.textContent = v;
+							setDraft(spec.name, v);
+						}
 						else setDraft(spec.name, trimNum(range.value, 2));
 					});
 				}
@@ -476,6 +506,14 @@
 		}
 	}
 
+	/* A colour the file builds from another (var(--text-primary)): the colour
+	   the page comes to, read off the page. null for a plain value. */
+	function builtColour(name, value) {
+		if (!/^var\(/.test(String(value).trim())) return null;
+		var c = colourOf(name);
+		return { hex: toHex(c[0], c[1], c[2]), alpha: null };
+	}
+
 	/* Show the current theme's values in the controls. */
 	function syncControls() {
 		Object.keys(rows).forEach(function (name) {
@@ -486,14 +524,14 @@
 				return;
 			}
 			try {
-				if (spec.kind === 'px') {
+				if (spec.kind === 'px' || spec.kind === 'size') {
 					ctl.alpha.value = parseFloat(value);
 					ctl.alphaOut.textContent = value;
 				} else if (spec.kind === 'alpha') {
 					ctl.alpha.value = value;
 					ctl.alphaOut.textContent = trimNum(value, 3);
 				} else {
-					var c = parseColour(value);
+					var c = builtColour(name, value) || parseColour(value);
 					ctl.picker.value = c.hex;
 					ctl.hex.value = c.hex;
 					if (spec.kind === 'rgba') {

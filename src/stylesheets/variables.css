@@ -62,6 +62,24 @@
   --scrollbar-thumb: color-mix(in srgb, var(--text-muted) 70%, transparent);
   --scrollbar-size: 6px;
 
+  /* ── Custom controls (controls.css) ─────────────────────────────
+     The outline and chevrons of a control, and the calendar icon on a date
+     field: cream, built from the text colour until one is chosen on
+     /sandbox/. The rest are the controls' sizes, also set there. */
+  --control-line: var(--text-primary);
+  --control-border: 2px;          /* the pill's outline */
+  --chevron-size: 1.5rem;         /* a chevron's width */
+  --chevron-stroke: 2.5;          /* a chevron's line weight */
+  --stepper-width: 3.5rem;        /* a number stepper */
+  --stepper-number: 1.75rem;      /* the number in it */
+  --date-part-width: 2.6rem;      /* a date's month and day pills */
+  --date-year-width: 3.6rem;      /* a date's year pill */
+  --date-number: 1.1rem;          /* the numbers in a date */
+  --select-text: 0.85rem;         /* an option in a select pill */
+  --control-motion: 0.22s;        /* a rolling number, a sliding pill */
+  --icon-clear: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6 6 18'/%3E%3C/svg%3E");
+  --icon-calendar: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E");
+
   /* ── Space ─────────────────────────────────────────────────────────
      One scale. Reach for the nearest step rather than a new decimal. */
   --space-1: 0.25rem;

@@ -84,6 +84,19 @@ body {
 		scrollbar-color: var(--scrollbar-thumb) transparent;
 	}
 }
+
+/* The calendar icon on every date and date-time field, in cream (UV,
+   24 Oct). Chrome, Edge and Safari on a Mac draw it as the background of
+   this part, so a cream fill cut to a calendar shape replaces it. Firefox
+   draws its own icon and offers no part to style; an iPhone shows none. */
+::-webkit-calendar-picker-indicator {
+	background: var(--control-line);
+	-webkit-mask: var(--icon-calendar) center / contain no-repeat;
+	mask: var(--icon-calendar) center / contain no-repeat;
+	opacity: 1;
+	cursor: pointer;
+}
+
 a {
 	color: var(--color-primary);
 	text-decoration: none;

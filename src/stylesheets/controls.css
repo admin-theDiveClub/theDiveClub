@@ -1,0 +1,292 @@
+/* Custom controls: the visuals for scripts/tdc-controls.js. Loaded on every
+   page by layout.html, after forms.css. Each control is an ordinary form
+   element that opts in (data-control, or data-controls on a container); the
+   script builds the furniture round it and this file draws it. Every size and
+   colour is a token in variables.css, set from /sandbox/. */
+
+/* ── Shared ───────────────────────────────────────────────────────────
+   The outlined pill, its glow, and the chevron. A control glows on hover
+   like a row, and keeps glowing while it is being typed into or has the
+   keyboard (UV, 24 Oct). */
+.tdc-stepper,
+.tdc-select {
+	position: relative;
+	border: var(--control-border) solid var(--control-line);
+	border-radius: var(--radius-pill);
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.tdc-stepper:hover,
+.tdc-select:hover,
+.tdc-stepper:focus-within,
+.tdc-select:focus-within { box-shadow: var(--glow-primary); }
+.tdc-stepper:focus-within,
+.tdc-select:focus-within { border-color: var(--color-primary); }
+.is-disabled.tdc-stepper,
+.is-disabled.tdc-select { opacity: 0.4; box-shadow: none; pointer-events: none; }
+
+.tdc-stepper > .tdc-chevron,
+.tdc-select > .tdc-chevron {
+	display: block;
+	margin: 0;
+	border: none;
+	border-radius: 0;
+	background: none;
+	color: var(--control-line);
+	cursor: pointer;
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
+}
+.tdc-chevron svg {
+	display: block;
+	width: var(--chevron, var(--chevron-size));
+	height: auto;
+	margin: 0 auto;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: var(--chevron-stroke);
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+.tdc-chevron:hover { color: var(--color-primary); }
+.tdc-stepper-down svg { transform: rotate(180deg); }
+.tdc-select-prev svg { transform: rotate(-90deg); }
+.tdc-select-next svg { transform: rotate(90deg); }
+
+/* ── Where a control sits in its field ───────────────────────────────
+   Every control is centred in the space it has (UV, 24 Oct). A vertical
+   one (a stepper, a date) takes the left of its row with its label and
+   hint to the right, sitting on the bottom line; the script marks the
+   field .field-beside. A select pill keeps its label above. */
+.field.field-beside {
+	display: grid;
+	grid-template-columns: minmax(max-content, 1fr) 1fr;
+	grid-template-rows: 1fr auto auto;
+	column-gap: var(--space-4);
+}
+.field-beside > .tdc-stepper,
+.field-beside > .tdc-date {
+	grid-column: 1;
+	grid-row: 1 / -1;
+	justify-self: center;
+	align-self: center;
+}
+.field-beside > label { grid-column: 2; grid-row: 2; }
+.field-beside > .hint { grid-column: 2; grid-row: 3; }
+
+/* Two such fields side by side only where both fit with their labels: a
+   PC, not a phone. */
+.field-pair:has(> .field-beside) {
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+	row-gap: 1.6rem;
+}
+
+.field > .tdc-select {
+	display: flex;
+	width: fit-content;
+	margin-inline: auto;
+}
+
+/* ── Stepper ──────────────────────────────────────────────────────────
+   A number in a pill, a chevron above and below (UV, 24 Oct). A chevron
+   at its limit is hidden by the script and the pill shrinks with it.
+   --sw, --sn and --chevron let a control built from steppers (the date)
+   size them without new rules. */
+.tdc-stepper {
+	display: inline-grid;
+	justify-items: center;
+	row-gap: var(--space-1);
+	width: var(--sw, var(--stepper-width));
+	padding: var(--space-3) 0;
+}
+.tdc-stepper > .tdc-chevron {
+	width: 100%;
+	padding: var(--space-1) 0;
+}
+
+/* The window the number rolls through: a changing number slides in from
+   above or below and pushes the old one (the ghost) out the other side. */
+.tdc-stepper-window {
+	position: relative;
+	display: block;
+	width: 100%;
+	overflow: hidden;
+}
+.tdc-stepper input,
+.tdc-stepper-ghost {
+	color: var(--color-primary);
+	font-family: inherit;
+	font-size: var(--sn, var(--stepper-number));
+	font-weight: 700;
+	line-height: 1.2;
+	text-align: center;
+}
+.tdc-stepper-ghost {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+/* The number: no line of its own, no native spinners. */
+.tdc-stepper input {
+	display: block;
+	width: 100%;
+	padding: 0;
+	border: none;
+	border-radius: var(--radius-sm);
+	background: transparent;
+	appearance: textfield;
+	-moz-appearance: textfield;
+}
+.tdc-stepper input::-webkit-inner-spin-button,
+.tdc-stepper input::-webkit-outer-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+.tdc-stepper input::placeholder { color: var(--text-muted); font-weight: 400; }
+.tdc-stepper input:focus { outline: none; }
+.tdc-stepper input::selection {
+	background: var(--color-primary);
+	color: var(--color-on-primary);
+}
+
+/* ── Date ─────────────────────────────────────────────────────────────
+   The calendar and clear buttons stacked on the left, then year, month and
+   day as three small steppers. The real date input sits invisibly under
+   the calendar button, so the browser's calendar opens beside it. */
+.tdc-date {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-1);
+	max-width: 100%;
+}
+.tdc-date .tdc-stepper {
+	--sw: var(--date-part-width);
+	--sn: var(--date-number);
+	--chevron: calc(var(--chevron-size) * 0.66);
+	padding: var(--space-2) 0;
+}
+.tdc-date .tdc-stepper.is-year { --sw: var(--date-year-width); }
+
+.tdc-date-tools {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+	margin-right: var(--space-1);
+}
+.tdc-date-tools > button {
+	display: block;
+	width: 1.5rem;
+	height: 1.5rem;
+	margin: 0;
+	padding: 0;
+	border: none;
+	border-radius: 0;
+	background: var(--control-line);
+	-webkit-mask: var(--icon, none) center / contain no-repeat;
+	mask: var(--icon, none) center / contain no-repeat;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+}
+.tdc-date-tools > button:hover { background: var(--color-primary); }
+.tdc-date-tools > .tdc-date-pick { --icon: var(--icon-calendar); }
+.tdc-date-tools > .tdc-date-clear { --icon: var(--icon-clear); }
+.tdc-date-tools > .tdc-date-clear.is-empty { visibility: hidden; }
+
+.tdc-date-tools > input[type="date"] {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 1.5rem;
+	height: 1px;
+	padding: 0;
+	border: none;
+	opacity: 0;
+	pointer-events: none;
+}
+
+/* ── Select ───────────────────────────────────────────────────────────
+   The options side by side in a horizontal pill, the chosen one in a
+   green pill that slides over and takes the next one's width (UV,
+   24 Oct). Too many to fit and the options scroll sideways inside it. An
+   arrow with nowhere to go is hidden but keeps its place, so the options
+   never shift under a finger. The real select sits invisibly inside,
+   keeping the keyboard. */
+.tdc-select {
+	display: inline-flex;
+	align-items: center;
+	max-width: 100%;
+	padding: var(--space-1);
+}
+.tdc-select > .tdc-chevron {
+	flex: 0 0 auto;
+	width: auto;
+	padding: var(--space-1) var(--space-2);
+	--chevron: calc(var(--chevron-size) * 0.6);
+}
+.tdc-select > .tdc-chevron.is-end { visibility: hidden; }
+
+.tdc-select-track {
+	position: relative;
+	flex: 1 1 auto;
+	min-width: 0;
+	display: flex;
+	gap: 2px;
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+.tdc-select-track::-webkit-scrollbar { display: none; }
+
+/* The green pill. Placed by the script; it slides only once the track is
+   marked animated, so the first drawing does not sweep in from the left. */
+.tdc-select-thumb {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	border-radius: var(--radius-pill);
+	background: var(--color-primary);
+	pointer-events: none;
+}
+.tdc-select-track.is-animated .tdc-select-thumb {
+	transition-property: transform, width;
+	transition-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.tdc-select .tdc-select-option {
+	position: relative;
+	z-index: 1;
+	flex: 0 0 auto;
+	width: auto;
+	margin: 0;
+	padding: var(--space-2) var(--space-3);
+	border: none;
+	border-radius: var(--radius-pill);
+	background: none;
+	color: var(--text-primary);
+	font-family: inherit;
+	font-size: var(--select-text);
+	font-weight: 600;
+	letter-spacing: normal;
+	text-transform: none;
+	white-space: nowrap;
+	cursor: pointer;
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
+	transition: background-color 0.15s ease, color var(--control-motion) ease;
+}
+.tdc-select .tdc-select-option:not(.is-selected):hover { background: var(--hover-wash); }
+.tdc-select .tdc-select-option.is-selected { color: var(--color-on-primary); }
+.tdc-select .tdc-select-option:disabled { opacity: 0.4; cursor: default; }
+
+.tdc-select > select {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	border: none;
+	opacity: 0;
+	pointer-events: none;
+}

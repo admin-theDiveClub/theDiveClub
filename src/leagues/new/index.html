@@ -21,7 +21,12 @@ extraScripts:
 	was made and its season was not.
 {% endcomment %}
 
-<div class="tdc-card">
+{% comment %}
+	data-controls="select": every dropdown on this page is the select pill
+	(tdc-controls.js), on trial here before it goes anywhere else. The dates
+	and Reserves allowed opt in one by one.
+{% endcomment %}
+<div class="tdc-card" data-controls="select">
 	<h1 id="page-title">New League</h1>
 	<p id="page-intro">A league is made once. Each year, or term, is a season of it, with its own players and teams.</p>
 
@@ -39,24 +44,27 @@ extraScripts:
 		<div class="hint">Two characters or more.</div>
 	</div>
 
-	<div class="field">
-		<label for="s-start">Starts</label>
-		<input type="date" id="s-start">
-		<div class="hint">Leave blank if you have not set a date.</div>
-	</div>
-
-	<div class="field">
-		<label for="s-end">Ends</label>
-		<input type="date" id="s-end">
+	<div class="field-pair">
+		<div class="field">
+			<label for="s-start">Starts</label>
+			<input type="date" id="s-start" data-control="date">
+			<div class="hint">Leave blank if you have not set a date.</div>
+		</div>
+		<div class="field">
+			<label for="s-end">Ends</label>
+			<input type="date" id="s-end" data-control="date">
+		</div>
 	</div>
 
 	{% comment %}
 		The season's, not the league's: seasons can differ (UV, 23 Oct). A
 		team's limit on active players is the team size plus this.
+		data-control="stepper": the first field on the custom number control
+		(tdc-controls.js), on trial here before it goes anywhere else.
 	{% endcomment %}
 	<div class="field">
 		<label for="s-reserves">Reserves allowed</label>
-		<input type="number" id="s-reserves" inputmode="numeric" min="0" max="10" value="2">
+		<input type="number" id="s-reserves" inputmode="numeric" min="0" max="10" value="2" data-control="stepper">
 		<div class="hint">Players a team may have beyond the team size. With 2, a five-man team holds seven. 0 for no subs.</div>
 	</div>
 

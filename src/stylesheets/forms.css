@@ -46,11 +46,24 @@
 	color: var(--color-primary);
 	margin-bottom: 0.45rem;
 }
-.field .hint {
+.field .hint,
+.field-pair > .hint {
 	font-size: 0.8rem;
 	color: var(--text-muted);
 	margin-top: 0.45rem;
 }
+
+/* Two fields that are one answer, side by side at every width: Starts and
+   Ends (UV, 24 Oct). A hint for both goes after the two fields and spans
+   them. */
+.field-pair {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	column-gap: var(--space-4);
+	margin-bottom: 1.6rem;
+}
+.field-pair > .field { margin-bottom: 0; min-width: 0; }
+.field-pair > .hint { grid-column: 1 / -1; }
 
 /* A line, not a box. Less furniture on a page that is mostly fields, and it
    keeps the eye moving down the form. */
@@ -81,13 +94,14 @@
 /* The hover glow on every field you type into or choose from, on every page
    (UV, 24 Oct), the match page's included. A field is a line, so the line
    glows (--glow-line) rather than a box appearing round it. Not on
-   checkboxes, radios or anything disabled. */
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]):not(:disabled),
+   checkboxes, radios or anything disabled, nor a custom control
+   (data-control), which draws its own in controls.css. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]):not([data-control]):not(:disabled),
 select:not(:disabled),
 textarea:not(:disabled) {
 	transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]):not(:disabled):hover,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]):not([data-control]):not(:disabled):hover,
 select:not(:disabled):hover,
 textarea:not(:disabled):hover {
 	box-shadow: var(--glow-line);

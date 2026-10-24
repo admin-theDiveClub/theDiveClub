@@ -22,6 +22,7 @@
 	<link rel="stylesheet" href="/stylesheets/global.css?v={{ build.version }}">
 	<link rel="stylesheet" href="/stylesheets/nav.css?v={{ build.version }}">
 	<link rel="stylesheet" href="/stylesheets/forms.css?v={{ build.version }}">
+	<link rel="stylesheet" href="/stylesheets/controls.css?v={{ build.version }}">
 	{% if extraStyles %}
 		{% for style in extraStyles %}
 			<link rel="stylesheet" href="{{ style }}?v={{ build.version }}">
@@ -41,6 +42,7 @@
 	<script src="/scripts/vendor/supabase.js?v={{ build.version }}"></script>
 	<script src="/scripts/supabaseClient.js?v={{ build.version }}"></script>
 	<script src="/scripts/tdc.js?v={{ build.version }}"></script>
+	<script src="/scripts/tdc-controls.js?v={{ build.version }}"></script>
 
 	{% if extraScripts %}
 		{% for script in extraScripts %}
