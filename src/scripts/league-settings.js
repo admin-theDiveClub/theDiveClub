@@ -34,6 +34,8 @@
 	const el = (id) => document.getElementById(id);
 	const els = {
 		title: el('l-title'), meta: el('l-meta'), name: el('l-name'),
+		picPreview: el('pic-preview'), picChoose: el('pic-choose'), picRemove: el('pic-remove'),
+		picFile: el('pic-file'), picStatus: el('pic-status'),
 		seasonName: el('s-name'), seasonStatus: el('s-status'),
 		start: el('s-start'), end: el('s-end'), reserves: el('s-reserves'),
 		sizeRow: el('size-row'), reservesField: el('reserves-field'),
@@ -148,6 +150,122 @@
 		if (again) again.focus({ preventScroll: true });
 	});
 
+	// ─── The league's picture ───
+	// As a profile picture is (profile.js): prepared in the browser (square,
+	// 512px, re-encoded, EXIF gone), uploaded under a new random name into the
+	// league's folder of league-pictures, then named on the league through
+	// tdc_set_league_picture, which hands back the old one to delete. Saved
+	// at once, not with the Save button.
+	const PICTURE_BUCKET = 'league-pictures';
+	let picturePath = null;
+
+	function trophy() {
+		const NS = 'http://www.w3.org/2000/svg';
+		const svg = document.createElementNS(NS, 'svg');
+		svg.setAttribute('viewBox', '0 0 24 24');
+		svg.setAttribute('aria-hidden', 'true');
+		const path = document.createElementNS(NS, 'path');
+		path.setAttribute('fill', 'currentColor');
+		path.setAttribute('d', 'M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z');
+		svg.append(path);
+		return svg;
+	}
+
+	function showPicture() {
+		const url = TDC.pictureUrl(PICTURE_BUCKET, picturePath);
+		if (url) {
+			const img = document.createElement('img');
+			img.src = url;
+			img.alt = 'The league\u2019s picture';
+			els.picPreview.replaceChildren(img);
+		} else {
+			els.picPreview.replaceChildren(trophy());
+		}
+		els.picRemove.hidden = !picturePath;
+		els.picChoose.textContent = picturePath ? 'Change the picture' : 'Choose a picture';
+	}
+
+	function pictureBusy(on) {
+		els.picChoose.disabled = on;
+		els.picRemove.disabled = on;
+	}
+
+	els.picChoose.addEventListener('click', () => els.picFile.click());
+
+	els.picFile.addEventListener('change', async () => {
+		const file = els.picFile.files && els.picFile.files[0];
+		els.picFile.value = '';
+		if (!file || !leagueId) return;
+
+		pictureBusy(true);
+		TDC.status(els.picStatus, 'Preparing the picture…', '');
+		try {
+			const blob = await TDC.preparePicture(file, 512, AREA, els.picStatus);
+			if (!blob) return;
+
+			// A new name every time, so no cached copy of the old picture is
+			// served in its place.
+			const ext = blob.type === 'image/webp' ? 'webp' : 'jpg';
+			const path = `${leagueId}/${crypto.randomUUID()}.${ext}`;
+
+			TDC.status(els.picStatus, 'Uploading…', '');
+			const { error: upErr } = await supabaseClient.storage
+				.from(PICTURE_BUCKET).upload(path, blob, { contentType: blob.type, upsert: false });
+			if (upErr) { TDC.showSupabaseError(AREA, upErr, els.picStatus); return; }
+
+			const { data: old, error } = await supabaseClient.rpc('tdc_set_league_picture', {
+				p_league_id: leagueId, p_path: path
+			});
+			if (error) {
+				// Not named on the league, so the file just uploaded is an orphan.
+				await supabaseClient.storage.from(PICTURE_BUCKET).remove([path]);
+				TDC.showSupabaseError(AREA, error, els.picStatus);
+				return;
+			}
+
+			picturePath = path;
+			showPicture();
+			TDC.status(els.picStatus, 'Picture saved.', 'success');
+			if (old) {
+				const { error: delErr } = await supabaseClient.storage.from(PICTURE_BUCKET).remove([old]);
+				// The new picture is already the league's; the old file only takes up room.
+				if (delErr) console.error('[' + AREA + '] could not delete the old picture', delErr);
+			}
+		} catch (err) {
+			TDC.error(AREA, 'unexpected problem saving the picture.', err, els.picStatus);
+		} finally {
+			pictureBusy(false);
+		}
+	});
+
+	els.picRemove.addEventListener('click', async () => {
+		if (!picturePath || !leagueId) return;
+		if (!confirm('Remove the league\u2019s picture?\n\nIts pages show the trophy again.')) return;
+
+		pictureBusy(true);
+		TDC.status(els.picStatus, 'Removing…', '');
+		try {
+			// Cleared on the league first: if the file delete fails, the picture
+			// is already gone from every page.
+			const { data: old, error } = await supabaseClient.rpc('tdc_set_league_picture', {
+				p_league_id: leagueId, p_path: null
+			});
+			if (error) { TDC.showSupabaseError(AREA, error, els.picStatus); return; }
+
+			picturePath = null;
+			showPicture();
+			if (old) {
+				const { error: delErr } = await supabaseClient.storage.from(PICTURE_BUCKET).remove([old]);
+				if (delErr) console.error('[' + AREA + '] could not delete the picture file', delErr);
+			}
+			TDC.status(els.picStatus, 'Picture removed.', 'success');
+		} catch (err) {
+			TDC.error(AREA, 'unexpected problem removing the picture.', err, els.picStatus);
+		} finally {
+			pictureBusy(false);
+		}
+	});
+
 	// ─── Reading ───
 	async function load() {
 		const info = await supabaseClient.rpc('tdc_league_season_info', { p_league_season_id: seasonId });
@@ -190,7 +308,7 @@
 			: '';
 
 		const league = await supabaseClient
-			.from('tbl_leagues').select('name, rules').eq('id', leagueId).maybeSingle();
+			.from('tbl_leagues').select('name, rules, picture_path').eq('id', leagueId).maybeSingle();
 		if (league.error) { TDC.showSupabaseError(AREA, league.error, els.status); return false; }
 		if (!league.data) {
 			TDC.error(AREA, 'the league for this season could not be read.', { leagueId }, els.status);
@@ -199,6 +317,8 @@
 
 		els.title.textContent = league.data.name + ' — Settings';
 		els.name.value = league.data.name;
+		picturePath = league.data.picture_path;
+		showPicture();
 		rules = upgrade(league.data.rules);
 		D.tidyRules(rules);
 		renderSettings();

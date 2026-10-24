@@ -286,7 +286,7 @@
 	// signed in may read; the rest of the banner is in the season info.
 	async function loadSeasonRow() {
 		const { data, error } = await supabaseClient
-			.from('tbl_league_seasons').select('status, max_reserves, entry_mode').eq('id', seasonId).maybeSingle();
+			.from('tbl_league_seasons').select('status, max_reserves, entry_mode, tbl_leagues(picture_path)').eq('id', seasonId).maybeSingle();
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		seasonRow = data;
 		return true;
@@ -317,6 +317,17 @@
 		els.jumbo.className = 'jumbo' + (status ? ' league-status-' + status : '');
 		els.jumboStatus.hidden = !status;
 		els.jumboStatus.textContent = status ? (D.LEAGUE_STATUS[status] || status) : '';
+
+		// The league's own picture, or the trophy it had until it had one.
+		const picture = TDC.pictureUrl('league-pictures', seasonRow && seasonRow.tbl_leagues && seasonRow.tbl_leagues.picture_path);
+		if (picture) {
+			const img = document.createElement('img');
+			img.src = picture;
+			img.alt = '';
+			els.jumboPic.replaceChildren(img);
+		} else {
+			els.jumboPic.replaceChildren(svgIcon(TROPHY, true));
+		}
 
 		const facts = [];
 		facts.push(['Game', D.DISCIPLINE[rules.discipline] || rules.discipline || 'Not set']);

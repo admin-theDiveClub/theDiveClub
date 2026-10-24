@@ -103,7 +103,7 @@
 		// The league's picture: the default icon until leagues have their own
 		// (to be set on the league's settings; docs/STATUS.md).
 		const pic = el('div', 'row-table-pic');
-		pic.append(leagueIcon());
+		pic.append(leagueIcon(l.league_season_id));
 
 		// Ranking waits for standings (docs/design/leagues.md §6).
 		const stats = el('div', 'row-table-stats');
@@ -137,9 +137,18 @@
 		suspended: 'Suspended'
 	};
 
-	// Every league's picture until leagues can have their own (to be set on
-	// the league's settings, UV 24 Oct): a trophy, in the brand colour.
-	function leagueIcon() {
+	// A league's own picture (set on its settings, migration 20261024202149),
+	// or a trophy in the brand colour for a league that has none.
+	let pictures = new Map();   // league season id -> picture address
+	function leagueIcon(seasonId) {
+		const url = pictures.get(seasonId);
+		if (url) {
+			const img = document.createElement('img');
+			img.src = url;
+			img.alt = '';
+			img.loading = 'lazy';
+			return img;
+		}
 		const NS = 'http://www.w3.org/2000/svg';
 		const svg = document.createElementNS(NS, 'svg');
 		svg.setAttribute('viewBox', '0 0 24 24');
@@ -159,7 +168,7 @@
 		box.href = '/leagues/join/?s=' + encodeURIComponent(l.league_season_id);
 
 		const pic = el('div', 'league-tile-pic');
-		pic.append(leagueIcon());
+		pic.append(leagueIcon(l.league_season_id));
 		box.append(pic, el('div', 'league-tile-name', l.league_name));
 
 		// Three short lines: the format, when and where, and where it stands.
@@ -214,7 +223,24 @@
 			els.openList.replaceChildren(el('p', 'muted', why));
 			return;
 		}
+		await loadPictures(data);
+		if (run !== searchRun) return;
 		els.openList.replaceChildren(...data.map(tile));
+	}
+
+	// The pictures of the leagues these seasons belong to, in one read: the
+	// season's league, embedded. Added to what is already known, so the list
+	// and the search share them.
+	async function loadPictures(rows) {
+		const ids = rows.map((r) => r.league_season_id).filter((id) => !pictures.has(id));
+		if (!ids.length) return;
+		const { data, error } = await supabaseClient
+			.from('tbl_league_seasons').select('id, tbl_leagues(picture_path)').in('id', ids);
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+		for (const r of data || []) {
+			const path = r.tbl_leagues && r.tbl_leagues.picture_path;
+			pictures.set(r.id, TDC.pictureUrl('league-pictures', path));
+		}
 	}
 
 	let typingTimer = null;
@@ -238,6 +264,7 @@
 			return;
 		}
 
+		await loadPictures(data);
 		els.list.replaceChildren(header(), ...data.map(row));
 		els.intro.textContent = data.length === 1
 			? 'One league season.'

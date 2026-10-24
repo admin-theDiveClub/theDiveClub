@@ -459,7 +459,25 @@
 		const active = players.filter((p) => p.status === 'active').length;
 		els.count.textContent = active === 1 ? '1 in the league' : active + ' in the league';
 
-		els.rows.replaceChildren(...inLeague.map(playerRow));
+		// A heading row each time the team changes (UV, 24 Oct): the list
+		// comes from the server sorted by team, players on no team last.
+		const out = [];
+		let team;
+		for (const p of inLeague) {
+			if (p.team_id !== team) {
+				team = p.team_id;
+				const tr = node('tr', 'team-sep');
+				const td = node('td');
+				td.colSpan = 7;
+				const n = inLeague.filter((x) => x.team_id === team).length;
+				td.append(node('span', 'team-sep-name', p.team_name || 'No team yet'),
+					node('span', 'team-sep-count', n === 1 ? '1 player' : n + ' players'));
+				tr.append(td);
+				out.push(tr);
+			}
+			out.push(playerRow(p));
+		}
+		els.rows.replaceChildren(...out);
 		renderTransfer();
 	}
 

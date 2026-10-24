@@ -203,5 +203,52 @@ const TDC = (() => {
 		return { write, get pending() { return pending; } };
 	}
 
-	return { error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer };
+	// ─── A picture for upload ───
+	// A profile picture or a league's: the middle square, shrunk to size px,
+	// re-encoded as WebP (JPEG where the browser cannot). Re-encoding drops
+	// the EXIF block, and with it a phone photo's GPS position. Returns a
+	// Blob, or null having said why (a HEIC the browser cannot read is the
+	// likely failure). Shared by the profile page and league settings.
+	async function preparePicture(file, size, area, statusEl) {
+		let bitmap;
+		try {
+			// from-image so a photo taken sideways is not saved sideways.
+			bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+		} catch (err) {
+			error(area, 'that image could not be read. Try a JPEG or PNG.', err, statusEl);
+			return null;
+		}
+
+		const side = Math.min(bitmap.width, bitmap.height);
+		const canvas = document.createElement('canvas');
+		canvas.width = size;
+		canvas.height = size;
+		const ctx = canvas.getContext('2d');
+		if (!ctx) {
+			error(area, 'this browser would not give us a canvas to resize the picture.', null, statusEl);
+			return null;
+		}
+		ctx.drawImage(bitmap,
+			(bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side,
+			0, 0, size, size);
+		if (bitmap.close) bitmap.close();
+
+		// toBlob quietly falls back to PNG for a type it does not know, so the
+		// type is checked rather than trusted.
+		for (const type of ['image/webp', 'image/jpeg']) {
+			const blob = await new Promise((resolve) => canvas.toBlob(resolve, type, 0.85));
+			if (blob && blob.type === type) return blob;
+		}
+		error(area, 'the picture could not be prepared for upload.', null, statusEl);
+		return null;
+	}
+
+	// The address of a picture in a public bucket (player-avatars,
+	// league-pictures), or null for none.
+	function pictureUrl(bucket, path) {
+		if (!path) return null;
+		return supabaseClient.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+	}
+
+	return { error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer, preparePicture, pictureUrl };
 })();

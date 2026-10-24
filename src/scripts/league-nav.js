@@ -1,7 +1,8 @@
 // The league pages' own navigation (UV, 24 Oct): every page of a league
 // season in one horizontal pill at the top of the page, the current one in
 // the green pill, as a select pill shows its choice. It replaced the links
-// each page carried at its foot, some of them shown only now and then.
+// each page carried at its foot, some of them shown only now and then. All
+// leagues is not in it: the site's own menu has that (UV, 24 Oct).
 //
 // A page puts <nav class="league-nav" id="league-nav" data-page="<key>">
 // where it wants it. With ?s=<league season id> in the address the bar
@@ -23,8 +24,7 @@ const TDCLeagueNav = (() => {
 		['fixtures', 'Fixtures', (s) => '/leagues/fixtures/?s=' + s, false],
 		['manage', 'Run it', (s) => '/leagues/manage/?s=' + s, true],
 		['settings', 'Settings', (s) => '/leagues/settings/?s=' + s, true],
-		['new', 'New season', (s, info) => '/leagues/new/?l=' + encodeURIComponent(info.league_id), true],
-		['leagues', 'All leagues', () => '/leagues/', false]
+		['new', 'New season', (s, info) => '/leagues/new/?l=' + encodeURIComponent(info.league_id), true]
 	];
 
 	async function show(seasonId) {

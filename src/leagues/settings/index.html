@@ -36,6 +36,26 @@ extraScripts:
 	</div>
 
 	{% comment %}
+		The league's picture (migration 20261024202149), shown on its season
+		page, the leagues list and the league search. Saved the moment it is
+		chosen, not with the Save button below: a picture is a file, uploaded
+		and then named on the league, as a profile picture is.
+	{% endcomment %}
+	<div class="field league-pic-field">
+		<label for="pic-choose">League picture</label>
+		<div class="league-pic-row">
+			<div class="jumbo-pic" id="pic-preview"></div>
+			<div class="btn-row">
+				<button type="button" class="btn btn-secondary btn-sm" id="pic-choose">Choose a picture</button>
+				<button type="button" class="btn btn-danger btn-sm" id="pic-remove" hidden>Remove</button>
+			</div>
+		</div>
+		<input type="file" id="pic-file" accept="image/*" hidden>
+		<div class="hint">Every season of the league shares it. Cropped to a square from the middle, and saved as soon as you choose it.</div>
+		<div class="status" id="pic-status"></div>
+	</div>
+
+	{% comment %}
 		This season's own name and dates, as set on the new-league page. Saved
 		with tdc_update_league_season. The dates live on the season period,
 		which another league can share; a shared one is refused rather than

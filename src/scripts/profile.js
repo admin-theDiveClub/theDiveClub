@@ -266,42 +266,9 @@
 		}
 	}
 
-	// Crop the middle square, shrink it, re-encode. Returns a Blob, or null and
-	// says why — a HEIC the browser can't decode is the likely failure.
-	async function processPicture(file) {
-		let bitmap;
-		try {
-			// from-image so a photo taken sideways is not saved sideways.
-			bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
-		} catch (err) {
-			TDC.error(AREA, 'that image could not be read. Try a JPEG or PNG.', err, els.avatarStatus);
-			return null;
-		}
-
-		const side = Math.min(bitmap.width, bitmap.height);
-		const canvas = document.createElement('canvas');
-		canvas.width = AVATAR_SIZE;
-		canvas.height = AVATAR_SIZE;
-		const ctx = canvas.getContext('2d');
-		if (!ctx) {
-			TDC.error(AREA, 'this browser would not give us a canvas to resize the picture.', null, els.avatarStatus);
-			return null;
-		}
-		ctx.drawImage(bitmap,
-			(bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side,
-			0, 0, AVATAR_SIZE, AVATAR_SIZE);
-		if (bitmap.close) bitmap.close();
-
-		// WebP where the browser can encode it, JPEG where it can't. toBlob
-		// quietly falls back to PNG for a type it does not know, so the type is
-		// checked rather than trusted.
-		for (const type of ['image/webp', 'image/jpeg']) {
-			const blob = await new Promise((resolve) => canvas.toBlob(resolve, type, 0.85));
-			if (blob && blob.type === type) return blob;
-		}
-		TDC.error(AREA, 'the picture could not be prepared for upload.', null, els.avatarStatus);
-		return null;
-	}
+	// Cropped, shrunk and re-encoded by TDC.preparePicture (tdc.js), which the
+	// league settings page shares.
+	const processPicture = (file) => TDC.preparePicture(file, AVATAR_SIZE, AREA, els.avatarStatus);
 
 	showAvatar(player.avatar_path);
 

@@ -738,3 +738,42 @@
 .person-names { display: flex; flex-direction: column; min-width: 0; }
 .person-name { font-weight: 600; overflow-wrap: break-word; }
 .person-sub { font-size: 0.78rem; color: var(--text-muted); }
+
+/* ── A league's own picture (24 Oct) ──
+ * In the banner, a search tile and the settings page's preview: the round
+ * frame clips it, the picture fills it. Without one, the trophy. */
+.jumbo-pic,
+.league-tile-pic { overflow: hidden; }
+.jumbo-pic img,
+.league-tile-pic img { width: 100%; height: 100%; object-fit: cover; }
+
+/* The settings page: the preview beside its two buttons. */
+.league-pic-row {
+	display: flex;
+	align-items: center;
+	gap: var(--space-4);
+	margin-top: var(--space-2);
+}
+.league-pic-row .btn-row { margin-bottom: 0; }
+.league-pic-row .btn-row > .btn { flex: 0 1 auto; }
+.league-pic-field .status { margin-top: var(--space-2); }
+
+/* ── Teams and payment on the manage page: a heading row for each team ──
+ * (UV, 24 Oct) The team's name and how many of the table's players are on
+ * it, across the whole table, a line above it to part one team from the
+ * next. */
+.tdc-table tr.team-sep td {
+	padding: var(--space-4) 0 var(--space-2);
+	border-top: 1px solid var(--color-primary);
+	border-bottom: 1px solid var(--border-color);
+	text-align: left;
+}
+.tdc-table tr.team-sep:first-child td { border-top: none; padding-top: var(--space-2); }
+.team-sep-name {
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--color-primary);
+}
+.team-sep-count { margin-left: var(--space-2); font-size: 0.75rem; color: var(--text-muted); }

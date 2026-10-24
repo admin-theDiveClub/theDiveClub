@@ -735,3 +735,11 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* the season, fixtures, manage, settings and card pages share one bar at the top: Season, Fixtures, Run it, Settings, New season, All leagues, the current page in the green pill, scrolling sideways on a phone. Run it, Settings and New season are offered only to the people running the league; to a player they would only be refused.
 *Rejected:* showing every page to everybody (a player would meet a refusal); a menu that opens (UV asked for the pill, not a dropdown).
 *Touches:* `league-nav.js`, `forms.css`, the five league pages and their scripts
+
+## 2026-10-24 — A league's own picture, per league
+
+*Decided by:* UV (a picture set on the league's settings, as a profile picture is); per league rather than per season, Claude (the STATUS note left it open)
+*Why:* the trophy stood in for every league; a club wants its own badge on its league.
+*So:* `tbl_leagues.picture_path` and a public `league-pictures` bucket, built as `player-avatars` is: prepared in the browser (square, 512 px, re-encoded, EXIF gone), a new random name each time, the old file deleted. Whoever may manage the league uploads and sets it, through `tdc_set_league_picture`. Every season of a league shows the same picture: on the season page's banner, the leagues list and the league search. Saved the moment it is chosen, not with the settings page's Save.
+*Rejected:* a picture per season (a league's badge does not change each year; a season could get its own later without undoing this).
+*Touches:* migration `20261024202149`, `league-settings.js`, `leagues/settings/index.html`, `league-season.js`, `leagues.js`, `tdc.js`, `profile.js`, `league.css`

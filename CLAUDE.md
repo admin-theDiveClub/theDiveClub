@@ -112,6 +112,7 @@ Breaking any of these is how the project goes wrong.
   - The bucket is **public** on purpose: a player's picture has to appear next to their name on pages that people see without signing in (a tournament follow page, a league table), and asking for a signed URL for every face on a page is slow. Public does not mean findable — the random path can't be guessed from a name and nothing lists the bucket.
   - The browser crops, shrinks (512px) and re-encodes the picture before upload. That keeps it around 40 KB and, importantly, **strips EXIF**: phone photos carry the GPS coordinates of where they were taken.
   - Each upload gets a new random filename and the old file is deleted afterwards, so a cached copy of the old picture can never be served in its place.
+  - `league-pictures` (migration `league_pictures`, 24 Oct): a league's own picture, built the same way. Path `<league_id>/<random>.webp`, held in `tbl_leagues.picture_path`, set only through `tdc_set_league_picture`; whoever may manage the league (`private.tdc_can_manage_league`) may upload. In a storage rule's subquery write `objects.name`, never a bare `name`: inside a subquery on `tbl_leagues` it means the league's name, and nothing matches.
 
 ## 9. Lessons that cost real time
 
