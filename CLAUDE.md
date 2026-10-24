@@ -117,6 +117,7 @@ Breaking any of these is how the project goes wrong.
 
 - **Patch a function's text; never retype it.** Retyping dropped two guards from `tdc_merge_players` once and silently rewrote half of `tdc_card_state` another time. Copy the latest definition from the migrations, change only what is meant, and diff against the original with comments stripped. Every time.
 - **Test a migration locally before UV pushes it**: `npx supabase db reset` rebuilds a clean copy from every migration, then `npx supabase test db`. Extract function text from a freshly reset database, never one left over from an earlier session. **Never add `--linked`** to either.
+- **Check production's migration list before changing a migration you believe is unpushed.** On 24 Oct `20261024094617` was extended after UV had already pushed it; production kept the old content, and `db push` skips a version it has, so the rest would never have arrived. Anything new goes in a new migration once there is any doubt.
 - **The live database has no rollback.** Any direct SQL connection to production is for reading only. Writes go through migrations that UV pushes.
 - **`_site/` can be badly stale.** It was 27 hours behind `src/` on 21 Oct and sent an investigation down the wrong road. Never edit it; never trust its age.
 - **The service worker caches aggressively.** When UV says a change has not appeared, suspect it (and a stale deploy) first.

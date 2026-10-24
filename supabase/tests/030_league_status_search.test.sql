@@ -1,5 +1,5 @@
 -- A league season's status, and the league search's filters (migration
--- 20261024094617).
+-- 20261024102616).
 --
 -- UV, 24 Oct:
 --   • the status is the league director's to set: taking entries, running,

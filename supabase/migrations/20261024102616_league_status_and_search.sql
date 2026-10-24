@@ -1,7 +1,12 @@
--- A league season's status, set by its director; the leagues list shows each
--- season's dates, format, size and status; the league search filters.
+-- A league season's status, set by its director; the leagues list shows it;
+-- the league search filters.
 --
--- UV, 24 Oct, three requests for /leagues/:
+-- Follows 20261024094617, which gave tdc_my_leagues the dates, discipline,
+-- team size and counts. This was first written into that same file after it
+-- had already been pushed, so production never ran it; it is here under a
+-- new number instead, and 20261024094617 is back exactly as production ran it.
+--
+-- UV, 24 Oct:
 --
 -- 1. A status per season, SET BY THE LEAGUE DIRECTOR. This replaces the
 --    22 Oct decision "no status column on a league season; derive it from the
@@ -14,26 +19,13 @@
 --      finished        the season is over
 --    A check constraint, not a lookup table: a new status needs a migration
 --    either way, and the labels and colours live with the pages
---    (TDCMatchDef.LEAGUE_STATUS, forms.css / league.css). Seasons that already
---    have fixtures start as running; the rest as taking entries.
+--    (TDCMatchDef.LEAGUE_STATUS, league.css). Seasons that already have
+--    fixtures start as running; the rest as taking entries.
 --    tdc_set_league_season_status is the one way to change it, for whoever
 --    may run the season (private.tdc_can_run_league).
 --
--- 2. The rows under "Your Leagues": tdc_my_leagues gains
---      ends_on       the season period's end, as starts_on is its start
---      discipline    from the season's merged rules (the league's, with the
---                    season's overrides), read through
---                    private.tdc_rules_for_league_season, the one place that
---                    merge is done
---      team_size     the same rules, through private.tdc_team_size
---      team_count    teams in the season
---      player_count  active players in the season (UV: the whole league, not
---                    one team). Name Down, withdrawn, inactive and suspended
---                    are not counted, as nothing that decides who plays
---                    counts them
---      status        above
---    Counts only, no names: the caller already sees these seasons, because
---    they run them or are entered in them.
+-- 2. tdc_my_leagues returns the status too. Patched from 20261024094617;
+--    the diff is the one added column.
 --
 -- 3. Filters on the league search: discipline, status, and team or singles.
 --    tdc_search_leagues gains p_discipline, p_status and p_kind ('team' or
@@ -44,17 +36,15 @@
 --    (docs/STATUS.md); until then 'singles' finds nothing, honestly. What the
 --    search returns is unchanged otherwise: listed seasons a player can get
 --    into (entry mode not ld_only), whatever their status. A filter value it
---    does not know is refused rather than quietly finding nothing.
+--    does not know is refused rather than quietly finding nothing. Patched
+--    from 20261023100000; it became plpgsql for that refusal, and the query
+--    is the old one plus the filters.
 --
--- tdc_my_leagues and tdc_search_leagues are dropped and recreated for their
--- return types (and the search for its parameters), so their grants are
--- redone as before. Both patched from their definitions (20261022190000 and
--- 20261023100000), extracted from a freshly reset local database; the diffs
--- are additions only, apart from the search becoming plpgsql so it can refuse
--- an unknown filter.
+-- Both functions are dropped and recreated for their return types (and the
+-- search for its parameters), so their grants are redone as before.
 --
 -- The site must not deploy before this is pushed: leagues.js and
--- league-settings.js read the new columns and call the new function.
+-- league-settings.js read the status and call the new function.
 
 -- ─── 1. Status ───
 

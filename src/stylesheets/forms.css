@@ -562,12 +562,15 @@
 	text-decoration: none;
 	transition: box-shadow 0.15s;
 }
+/* A thin gap between rows with the line in the middle of it (UV, 24 Oct), so
+   each row, and its strip, reads as its own. */
+.row-table-row + .row-table-row { margin-top: var(--space-1); }
 .row-table-row::after {
 	content: '';
 	position: absolute;
 	left: var(--space-3);
 	right: var(--space-3);
-	bottom: 0;
+	bottom: calc(var(--space-1) / -2);
 	border-bottom: 1px solid var(--border-color);
 }
 .row-table-row:last-child::after,

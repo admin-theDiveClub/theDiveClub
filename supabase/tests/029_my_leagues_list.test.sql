@@ -1,5 +1,5 @@
 -- The leagues list: each season's dates, format, size and status (migration
--- 20261024094617).
+-- 20261024094617, and the status from 20261024102616).
 --
 -- tdc_my_leagues gained ends_on, discipline, team_size, team_count,
 -- player_count and status for the "Your Leagues" rows on /leagues/ (UV,

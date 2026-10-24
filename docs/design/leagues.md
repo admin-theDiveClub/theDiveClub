@@ -50,7 +50,7 @@ way.
 >
 > **Changed by UV on 24 Oct:** a league season *does* have a status, set by its
 > director rather than derived — taking entries, running, on break, finished,
-> more to come (`20261024094617`). And singles leagues should exist (team size
+> more to come (`20261024102616`). And singles leagues should exist (team size
 > 1), which is not built yet. Both in `docs/DECISIONS.md`.
 
 **Teams do not persist across seasons.** A new entity each season carrying

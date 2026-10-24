@@ -90,7 +90,7 @@ const TDCMatchDef = (() => {
 	// team size and the rotation table are version 3 (20261023193153).
 	const LEAGUE_GROUPS = ['Team play'];
 
-	// A league season's status, set by its director (20261024094617). Not a
+	// A league season's status, set by its director (20261024102616). Not a
 	// match rule, but the league pages' one list of them, in the order the
 	// settings page offers them. The database's check constraint holds the
 	// same keys; a new status goes in both. Each key has a colour in league.css
