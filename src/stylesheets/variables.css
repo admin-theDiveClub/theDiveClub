@@ -84,8 +84,8 @@
   --switch-height: 2.25rem;       /* a switch: a setting */
   --switch-width: 4.2rem;
   --ring-load: 1s;                /* the orbit when nothing is saved, and its speed; a save orbits exactly as long as its call */
-  --ring-draw: 0.8s;              /* drawing an icon, stroke by stroke */
-  --ring-fade: 0.5s;              /* the dots fading once drawn */
+  --ring-draw: 0.4s;              /* drawing an icon, stroke by stroke */
+  --ring-fade: 0.1s;              /* the dots fading once drawn */
   /* The native calendar icon on a date-and-time field (global.css) */
   --icon-calendar: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E");
 

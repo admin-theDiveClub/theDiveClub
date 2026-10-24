@@ -665,3 +665,9 @@ These predate the log. They are recorded here because every one of them is a dec
 *Replaces:* the 0.2 s re-timed orbit (`--ring-min`, `RingStatus.retime`) from earlier the same day, which still made the lead dot come round to a set exit point.
 *So:* `resolve(target, { now: true })`: every dot leaves from where it is, on the demo's curved exit, to the stroke start nearest it. A box that saves uses it as soon as the network has been quiet for 50 ms (down from 150; the gap it guards, a page's re-read starting after its write, is a few milliseconds). Measured with a 50 ms save: dots leave at 0.21 s (from 1.37 s with the 1 s profile). A box in a form keeps the demo's timing, 1 s.
 *Touches:* `ring-status.js`, `tdc-controls.js`, `supabaseClient.js`, `variables.css`, `sandbox.js`
+
+## 2026-10-24 — Draw 0.4 s, fade 0.1 s; the dots leave together and the knob moves with them
+
+*Decided by:* UV
+*So:* `--ring-draw` 0.4 s (from 0.8) and `--ring-fade` 0.1 s (from 0.5). The draw time is shared with the chevrons, calendar and cross drawing themselves, so those are quicker too. UV saw a switch stutter between loading and drawing: its knob followed the strokes drawn, so it stood still while the dots flew off the ring to the strokes, then lurched. `onProgress` now follows the dots along their whole paths with their easing; and every dot now leaves at once (`resolve` `together` at the load time for a form box, `now` for a save), because with the demo's timing each dot waited for its own exit point, so the knob started with the first and jerked forward as the others left (UV: "the circle starts moving before the load is actually done"). Measured on a form switch: all four dots leave at 1.05 s and the knob glides, each frame's step shrinking steadily, done 0.42 s later; a saving switch the same at the end of its call; unticked rings fade their dots together.
+*Touches:* `ring-status.js`, `tdc-controls.js`, `variables.css`

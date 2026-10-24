@@ -10,8 +10,9 @@
 //     labels   what the hidden live text says for each state
 //   .load(seconds, { draw, fade, lead })  start the orbit; the lead dot leaves
 //     the ring at `seconds`, and the dots keep orbiting until .resolve()
-//   .resolve(iconName | 'empty', { now })  pick the end state, any time after
-//     load; with now, the dots leave from wherever they are, at once
+//   .resolve(iconName | 'empty', { together, now })  pick the end state, any
+//     time after load. together: every dot leaves at once, from wherever it
+//     is, at the load time; now: the same, straight away
 //   .setState(state)  jump straight to a state, no animation
 //   TDCRing.leadOf(icon)  the lead angle for load() when the end is known
 //
@@ -229,15 +230,19 @@ const TDCRing = (() => {
 			this.dotsG.style.display = '';
 			this.raf = requestAnimationFrame(this.frame);
 		}
-		// opts.now: draw from wherever the dots are, the moment this is
-		// called, rather than when the lead dot reaches its exit at the load
-		// time (the demo's way, the default). The exit is a curve, so it can
-		// leave the ring at any point (UV, 24 Oct). A save's answer uses it:
-		// the drawing starts the moment the call is back.
+		// The demo's way (the default): each dot leaves when it comes round to
+		// its own exit point, the lead dot exactly at the load time.
+		// opts.together: at the load time every dot leaves at once, from
+		// wherever it is, on its curve (the exit can leave the ring at any
+		// point, UV 24 Oct), so whatever rides on the progress (a switch's
+		// knob) moves in one glide rather than starting with the first dot and
+		// lurching as the others follow. opts.now: the same, the moment this is
+		// called; a save's answer uses it.
 		resolve(target, opts = {}) {
 			if (!this.running || this.target) return;
 			this.target = target;
 			this.now = !!opts.now;
+			this.together = !!(opts.now || opts.together);
 			if (this.reduce.matches) this.finish();
 		}
 		plan() {
@@ -248,9 +253,9 @@ const TDCRing = (() => {
 			if (this.target === 'empty') return;
 			const ic = ICONS[this.target];
 
-			// Now: every dot leaves from wherever it is, on its curve, at once;
+			// Together: every dot leaves from wherever it is at tp, at once;
 			// each goes to the stroke nearest it (dot 0 still takes stroke 0).
-			if (this.now) {
+			if (this.together) {
 				const at = (k) => {
 					const a = nrm(pr.th(tp - k * pr.GAP));
 					return [a, C + R * Math.sin(a * D2R), C - R * Math.cos(a * D2R)];
@@ -294,6 +299,7 @@ const TDCRing = (() => {
 			if (this.target && !this.planned) this.plan();
 			let done = this.planned;
 			let opSum = 0;
+			let travelled = 0;   // how far the dots are along their paths, curve and stroke, summed
 			const rev = this.rev;
 			for (const k of this.keys) rev[k] = 0;
 			for (let k = 0; k < 4; k++) {
@@ -301,7 +307,9 @@ const TDCRing = (() => {
 				if (this.planned && this.target === 'empty') {
 					const a = pr.th(T - k * pr.GAP) * D2R;
 					x = C + R * Math.sin(a); y = C - R * Math.cos(a);
-					op = Math.max(0, 1 - Math.max(0, (T - this.tp - k * pr.GAP) / this.fade));
+					// Together, the dots fade as one; otherwise one after another.
+					const lag = this.together ? 0 : k * pr.GAP;
+					op = Math.max(0, 1 - Math.max(0, (T - this.tp - lag) / this.fade));
 					if (op > 0) done = false;
 				} else if (!this.planned || T < this.peel[k]) {
 					const a = pr.th(T - k * pr.GAP) * D2R;
@@ -311,6 +319,7 @@ const TDCRing = (() => {
 					const p = this.paths[k];
 					const u = Math.min(1, (T - this.peel[k]) / p.T);
 					const sd = p.total * (1 - (1 - u) * (1 - u));
+					travelled += sd / p.total;
 					const q = posAt(p, sd);
 					x = q[0]; y = q[1];
 					if (u < 1) done = false;
@@ -335,15 +344,13 @@ const TDCRing = (() => {
 					this.prev[k] = rev[k];
 				}
 			}
+			// Progress follows the dots along their whole paths, the curve off
+			// the ring as well as the stroke, so whatever rides on it (a
+			// switch's knob) sets off the moment the load is done and moves at
+			// the dots' pace. Measured by strokes drawn, it stood still while
+			// the dots flew to the strokes and then lurched (UV saw it, 24 Oct).
 			if (this.planned && this.onProgress) {
-				let p;
-				if (this.target === 'empty') p = 1 - opSum / 4;
-				else {
-					const list = ICONS[this.target].list;
-					let sum = 0;
-					for (const s of list) sum += rev[s.key] || 0;
-					p = sum / list.length;
-				}
+				const p = this.target === 'empty' ? 1 - opSum / 4 : travelled / 4;
 				this.onProgress(p, this.target);
 			}
 			if (done) this.finish();

@@ -611,15 +611,20 @@ const TDCControls = (() => {
 		function start() {
 			if (c.ring.busy) return false;
 			c.ring.load(secs(wrap, '--ring-load', 1), {
-				draw: secs(wrap, '--ring-draw', 0.8),
-				fade: secs(wrap, '--ring-fade', 0.5),
+				draw: secs(wrap, '--ring-draw', 0.4),
+				fade: secs(wrap, '--ring-fade', 0.1),
 				lead: TDCRing.leadOf(state())
 			});
 			liveChecks.set(c.key, c);
 			return true;
 		}
+		// Every dot leaves at once and the knob glides in one movement: at the
+		// load time for a box in a form, the moment the network is quiet for
+		// one that saves. Dots leaving one by one, as the demo times them,
+		// started the knob with the first and jerked it as the others left
+		// (UV saw it, 24 Oct).
 		function finishWhen(online) {
-			if (!online) { c.ring.resolve(state()); return; }
+			if (!online) { c.ring.resolve(state(), { together: true }); return; }
 			const late = new Promise((r) => setTimeout(r, LIVE_FOR));
 			Promise.race([TDCNet.quiet(), late]).then(() => c.ring.resolve(state(), { now: true }));
 		}
@@ -642,11 +647,11 @@ const TDCControls = (() => {
 		c.appear = () => {
 			if (c.ring.busy) return;
 			c.ring.load(secs(wrap, '--control-reveal', 0.35), {
-				draw: secs(wrap, '--ring-draw', 0.8),
-				fade: secs(wrap, '--ring-fade', 0.5),
+				draw: secs(wrap, '--ring-draw', 0.4),
+				fade: secs(wrap, '--ring-fade', 0.1),
 				lead: TDCRing.leadOf(state())
 			});
-			c.ring.resolve(state());
+			c.ring.resolve(state(), { together: true });
 		};
 
 		// Clicking the drawing clicks the checkbox, which toggles it and tells
