@@ -202,6 +202,7 @@
 
 		const tick = document.createElement('input');
 		tick.type = 'checkbox';
+		tick.dataset.control = 'ring';   // a tick against a person, not a setting
 		tick.checked = picked[box].has(p.entrant_id);
 		tick.dataset.box = box;
 		tick.dataset.entrant = p.entrant_id;
@@ -394,6 +395,7 @@
 	function checkbox(p, action, checked, label, disabled) {
 		const box = document.createElement('input');
 		box.type = 'checkbox';
+		box.dataset.control = 'ring';   // a tick against a person, not a setting
 		box.checked = !!checked;
 		box.disabled = !!disabled;
 		box.dataset.entrant = p.entrant_id;

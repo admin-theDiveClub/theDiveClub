@@ -48,6 +48,15 @@
 	stroke-linejoin: round;
 }
 .tdc-chevron:hover { color: var(--color-primary); }
+
+/* Every drawn icon in a control (pathLength 100) can draw itself in and
+   out: the script moves the dash offset, 100 hidden to 0 drawn. An icon
+   undrawing cannot be pressed. */
+.tdc-chevron svg [pathLength],
+.tdc-date-tools svg [pathLength] { stroke-dasharray: 100 200; }
+.tdc-chevron.is-going,
+.tdc-date-tools > .is-going { pointer-events: none; }
+
 .tdc-stepper-down svg { transform: rotate(180deg); }
 .tdc-select-prev svg { transform: rotate(-90deg); }
 .tdc-select-next svg { transform: rotate(90deg); }
@@ -56,10 +65,11 @@
    Every control is centred in its row (UV, 24 Oct). A vertical one (a
    stepper, a date) has its label and hint to its right, on the bottom
    line, and the control and its words are one pair centred together, a
-   gap apart; the script marks the field .field-beside. The words column
-   is only as wide as its words, up to a measure, so a short label does
-   not push the pair off centre. A select pill keeps its label and hint
-   above and below, centred with it (.field-centred). */
+   gap apart; the script marks the field .field-beside. A switch and a
+   ring (status.css) sit the same way. The words column is only as wide
+   as its words, up to a measure, so a short label does not push the pair
+   off centre. A select pill keeps its label and hint above and below,
+   centred with it (.field-centred). */
 .field.field-beside {
 	display: grid;
 	grid-template-columns: auto fit-content(14rem);
@@ -68,7 +78,9 @@
 	column-gap: var(--space-4);
 }
 .field-beside > .tdc-stepper,
-.field-beside > .tdc-date {
+.field-beside > .tdc-date,
+.field-beside > .tdc-switch,
+.field-beside > .tdc-check {
 	grid-column: 1;
 	grid-row: 1 / -1;
 	align-self: center;
@@ -199,15 +211,22 @@
 	padding: 0;
 	border: none;
 	border-radius: 0;
-	background: var(--control-line);
-	-webkit-mask: var(--icon, none) center / contain no-repeat;
-	mask: var(--icon, none) center / contain no-repeat;
+	background: none;
+	color: var(--control-line);
 	cursor: pointer;
 	-webkit-tap-highlight-color: transparent;
 }
-.tdc-date-tools > button:hover { background: var(--color-primary); }
-.tdc-date-tools > .tdc-date-pick { --icon: var(--icon-calendar); }
-.tdc-date-tools > .tdc-date-clear { --icon: var(--icon-clear); }
+.tdc-date-tools > button svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+.tdc-date-tools > button:hover { color: var(--color-primary); }
 .tdc-date-tools > .tdc-date-clear.is-empty { visibility: hidden; }
 
 .tdc-date-tools > input[type="date"] {

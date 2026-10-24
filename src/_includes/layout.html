@@ -23,6 +23,7 @@
 	<link rel="stylesheet" href="/stylesheets/nav.css?v={{ build.version }}">
 	<link rel="stylesheet" href="/stylesheets/forms.css?v={{ build.version }}">
 	<link rel="stylesheet" href="/stylesheets/controls.css?v={{ build.version }}">
+	<link rel="stylesheet" href="/stylesheets/status.css?v={{ build.version }}">
 	{% if extraStyles %}
 		{% for style in extraStyles %}
 			<link rel="stylesheet" href="{{ style }}?v={{ build.version }}">
@@ -30,10 +31,11 @@
 	{% endif %}
 	<!-- ?v= build stamp: changes on every build, so browsers fetch fresh styles and scripts after each deploy -->
 </head>
-<!-- data-controls: every number field, date and dropdown on the site is a custom
-     control (scripts/tdc-controls.js), except inside a table or where marked
-     data-control="none". -->
-<body data-controls="stepper date select">
+<!-- data-controls: every number field, date, dropdown and checkbox on the site is
+     a custom control (scripts/tdc-controls.js), except a number, date or
+     dropdown inside a table, or anything marked data-control="none". A checkbox
+     is a switch unless made with data-control="ring". -->
+<body data-controls="stepper date select switch">
 	{% unless hideNav %}
 		{% include "nav.html" %}
 	{% endunless %}
@@ -45,6 +47,7 @@
 	<script src="/scripts/vendor/supabase.js?v={{ build.version }}"></script>
 	<script src="/scripts/supabaseClient.js?v={{ build.version }}"></script>
 	<script src="/scripts/tdc.js?v={{ build.version }}"></script>
+	<script src="/scripts/ring-status.js?v={{ build.version }}"></script>
 	<script src="/scripts/tdc-controls.js?v={{ build.version }}"></script>
 
 	{% if extraScripts %}

@@ -93,6 +93,16 @@ extraScripts:
 								<option>10-Ball</option>
 							</select>
 						</div>
+						<div class="field" data-label="Switch" data-uses="--control-line --control-border --switch-height --switch-width --ring-load --ring-draw --ring-fade --color-primary">
+							<label for="sb-m-breaks" data-label="Field label" data-uses="--color-primary">Record who breaks</label>
+							<input type="checkbox" id="sb-m-breaks" checked>
+							<div class="hint" data-label="Field hint" data-uses="--text-muted">A setting: tick on, cross off.</div>
+						</div>
+						<div class="field" data-label="Ring" data-uses="--control-line --ring-size --ring-load --ring-draw --ring-fade --color-primary">
+							<label for="sb-m-paid" data-label="Field label" data-uses="--color-primary">Paid</label>
+							<input type="checkbox" id="sb-m-paid" data-control="ring">
+							<div class="hint" data-label="Field hint" data-uses="--text-muted">A tick against a person: tick or empty.</div>
+						</div>
 
 						<button type="button" class="btn btn-primary" data-label="Main button" data-uses="--color-primary --color-on-primary">Start match</button>
 						<button type="button" class="btn btn-secondary" data-label="Quiet button" data-uses="--border-color --text-primary">Cancel</button>
@@ -383,6 +393,25 @@ extraScripts:
 				<option>Free play</option>
 			</select>
 			<div class="hint">Too many to fit and the options scroll inside the pill.</div>
+		</div>
+		<div class="field-pair">
+			<div class="field">
+				<label for="sb-c-switch">Switch</label>
+				<input type="checkbox" id="sb-c-switch">
+				<div class="hint">Every checkbox: a setting.</div>
+			</div>
+			<div class="field">
+				<label for="sb-c-ring">Ring</label>
+				<input type="checkbox" id="sb-c-ring" data-control="ring" checked>
+				<div class="hint">data-control="ring": a tick against a person.</div>
+			</div>
+		</div>
+		<p class="muted">Here nothing is saved, so the dots orbit for the Load time under Ring and switch. On a page that saves as it changes they orbit until the save comes back. A ring in a table is smaller:</p>
+		<div class="table-scroll">
+			<table class="tdc-table">
+				<thead><tr><th>Entrant</th><th>Paid</th></tr></thead>
+				<tbody><tr><td>First Player</td><td><input type="checkbox" data-control="ring" aria-label="Paid: First Player"></td></tr></tbody>
+			</table>
 		</div>
 
 		<h2>Status lines</h2>

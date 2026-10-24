@@ -117,7 +117,7 @@ const TDCControls = (() => {
 	};
 
 	// A chevron button. It points up; controls.css turns it for each use.
-	const CHEVRON = '<svg viewBox="0 0 24 14" aria-hidden="true"><path d="M3 11.5 12 3l9 8.5"/></svg>';
+	const CHEVRON = '<svg viewBox="0 0 24 14" aria-hidden="true"><path pathLength="100" d="M3 11.5 12 3l9 8.5"/></svg>';
 	function chevron(cls, label) {
 		const b = node('button', 'tdc-chevron ' + cls);
 		b.type = 'button';
@@ -131,15 +131,51 @@ const TDCControls = (() => {
 
 	const labelFor = (el) => el.id ? document.querySelector(`label[for="${CSS.escape(el.id)}"]`) : null;
 
-	// How long a control's movement takes (--control-motion), in ms; 0 when
-	// the device asks for less motion.
+	// A time token (--control-motion, --ring-draw ...) in ms; 0 when the
+	// device asks for less motion.
 	const lessMotion = matchMedia('(prefers-reduced-motion: reduce)');
-	function motionMs(el) {
+	function timeMs(el, token) {
 		if (lessMotion.matches) return 0;
-		const v = getComputedStyle(el).getPropertyValue('--control-motion').trim();
+		const v = getComputedStyle(el).getPropertyValue(token).trim();
 		const n = parseFloat(v);
 		if (isNaN(n)) return 0;
 		return v.endsWith('ms') ? n : n * 1000;
+	}
+	const motionMs = (el) => timeMs(el, '--control-motion');
+
+	// ─── Icons draw themselves ───
+	// Every icon in a control draws in stroke by stroke when it appears (the
+	// page opens, a chevron comes back from its limit, the date's cross once
+	// there is a date) and undraws when it goes, in the ring's draw time,
+	// straight away (UV, 24 Oct). Each stroke (an SVG part with pathLength
+	// 100) takes its own slice of the time, in order; undrawing runs them
+	// backwards. gone(true / false) is the control's own way of hiding it.
+	function drawIcon(el, show, gone) {
+		if (el.tdcShown === show) return;
+		const first = el.tdcShown === undefined;
+		el.tdcShown = show;
+		clearTimeout(el.tdcGoing);
+		const strokes = [...el.querySelectorAll('svg [pathLength]')];
+		for (const s of strokes) s.getAnimations().forEach((a) => a.cancel());
+		if (first && !show) { gone(true); return; }
+
+		const ms = timeMs(el, '--ring-draw');
+		el.classList.toggle('is-going', !show);
+		if (show) gone(false);
+		const slice = ms / Math.max(1, strokes.length);
+		(show ? strokes : strokes.slice().reverse()).forEach((s, i) => {
+			s.style.strokeDashoffset = show ? '0' : '100';
+			if (!ms) return;
+			s.animate([{ strokeDashoffset: show ? 100 : 0 }, { strokeDashoffset: show ? 0 : 100 }],
+				{ duration: slice, delay: i * slice, easing: 'ease-out', fill: 'backwards' });
+		});
+		if (!show) {
+			el.tdcGoing = setTimeout(() => {
+				if (el.tdcShown) return;
+				gone(true);
+				el.classList.remove('is-going');
+			}, ms);
+		}
 	}
 
 	// A vertical control sits beside its label and hint rather than under
@@ -181,8 +217,8 @@ const TDCControls = (() => {
 		// is as wide as the longest number it can hold (--chars).
 		function sync() {
 			const v = input.valueAsNumber;
-			up.hidden = !isNaN(v) && v >= max();
-			down.hidden = !isNaN(v) && v <= min();
+			drawIcon(up, isNaN(v) || v < max(), (g) => { up.hidden = g; });
+			drawIcon(down, isNaN(v) || v > min(), (g) => { down.hidden = g; });
 			pill.classList.toggle('is-disabled', input.disabled);
 			pill.style.setProperty('--chars', Math.max(1, input.value.length, input.max.length, input.min.length));
 			roll();
@@ -237,7 +273,7 @@ const TDCControls = (() => {
 				if (e.button !== 0) return;
 				step(dir);
 				const repeat = () => {
-					if (b.hidden) return stop();
+					if (!b.tdcShown) return stop();
 					step(dir);
 					timer = setTimeout(repeat, HOLD_EVERY);
 				};
@@ -299,6 +335,11 @@ const TDCControls = (() => {
 	}, 'input[type="number"]:not(table input)');
 
 	// ─── Date ───
+	// The date's two icons, in a 24 box: the calendar (body, rule, two rings)
+	// and the cross, each drawn stroke by stroke.
+	const CALENDAR = ['M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z',
+		'M3 10h18', 'M8 3v4', 'M16 3v4'];
+	const CLEAR = ['M6 6l12 12', 'M18 6 6 18'];
 	const pad = (n, width) => String(n).padStart(width, '0');
 	const daysIn = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate();   // m is 1–12
 	const todayParts = () => {
@@ -336,14 +377,17 @@ const TDCControls = (() => {
 		// The calendar and the clear button stack to the left of the numbers
 		// (UV, 24 Oct). The real input sits invisibly under the calendar, so
 		// the browser's own picker opens beside it.
-		const tool = (cls, label) => {
+		// Drawn icons, so they can draw themselves in like every other.
+		const tool = (cls, label, strokes) => {
 			const b = node('button', cls);
 			b.type = 'button';
 			b.setAttribute('aria-label', `${name}: ${label}`);
+			b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">'
+				+ strokes.map((d) => `<path pathLength="100" d="${d}"/>`).join('') + '</svg>';
 			return b;
 		};
-		const pick = tool('tdc-date-pick', 'choose from a calendar');
-		const clear = tool('tdc-date-clear', 'clear the date');
+		const pick = tool('tdc-date-pick', 'choose from a calendar', CALENDAR);
+		const clear = tool('tdc-date-clear', 'clear the date', CLEAR);
 		const tools = node('span', 'tdc-date-tools');
 
 		const box = node('span', 'tdc-date');
@@ -363,7 +407,7 @@ const TDCControls = (() => {
 			month.value = m ? m[2] : '';
 			day.value = m ? m[3] : '';
 			day.max = m ? daysIn(Number(m[1]), Number(m[2])) : 31;
-			clear.classList.toggle('is-empty', !m);
+			drawIcon(clear, !!m, (g) => clear.classList.toggle('is-empty', g));
 		}
 
 		function write(value) {
@@ -429,7 +473,157 @@ const TDCControls = (() => {
 
 		onPropSet(real, ['value'], show);
 		show();
+		drawIcon(pick, true, () => {});
 	}, 'input[type="date"]:not(table input)');
+
+	// ─── Ring and switch (checkboxes) ───
+	// UV's ring status design (ring-status.js) on every checkbox (24 Oct). The
+	// switch is for a setting: tick on, cross off, its knob sliding in step
+	// with the drawing. The ring is for a tick against a person or a thing
+	// (paid, here tonight, picked): a tick or empty. Every checkbox is a switch
+	// unless it is made with data-control="ring".
+	//
+	// The checkbox stays the real one, invisible but focusable: Space and its
+	// label still toggle it, and pages read .checked and hear change as
+	// before. When it changes the dots orbit for as long as the site's own
+	// call takes (TDCNet, supabaseClient.js): a box that saves as it changes
+	// draws its answer once the network is quiet, after the page's re-read,
+	// so what is drawn is what the database kept. A box in a form, with
+	// nothing to wait for, orbits for --ring-load (1 s). Draw and fade are
+	// fixed tokens too (--ring-draw, --ring-fade).
+	//
+	// Pages draw themselves again after every write, which makes a new
+	// checkbox. The live control is handed on to it by the box's id, or by its
+	// data-action with the row's data-entrant / data-player, so the animation
+	// carries on through the rebuild.
+	const liveChecks = new Map();
+	const LIVE_FOR = 20000;   // ms: a save not answered by then is drawn as it stands
+	const checkKey = (box) => box.id ? '#' + box.id
+		: ['action', 'entrant', 'player', 'box', 'frame'].map((k) => box.dataset[k] || '').join('|');
+	const secs = (el, token, fallback) => {
+		const ms = timeMs(el, token);
+		return lessMotion.matches ? fallback : ms / 1000;
+	};
+
+	function checkControl(box, kind) {
+		if (box.type !== 'checkbox') {
+			TDC.error(AREA, `a ${kind} must be an <input type="checkbox">.`, box);
+			return;
+		}
+		const key = checkKey(box);
+		const was = liveChecks.get(key);
+		const c = was && was.kind === kind && was.ring.busy ? was : makeCheck(kind, box);
+		box.replaceWith(c.wrap);
+		c.bind(box, key);
+		besideLabel(c.wrap);
+	}
+
+	function makeCheck(kind, first) {
+		const isSwitch = kind === 'switch';
+		const ON = 'tick';
+		const OFF = isSwitch ? 'cross' : 'empty';
+		const c = { kind, box: null, key: null };
+		const state = () => c.box.checked ? ON : OFF;
+
+		const wrap = c.wrap = node('span', isSwitch ? 'tdc-switch' : 'tdc-check');
+		const face = node('span', 'tdc-ring');
+		face.innerHTML = TDCRing.svg(5);
+		if (isSwitch) {
+			const knob = node('span', 'tdc-switch-knob');
+			knob.append(face);
+			wrap.append(node('span', 'tdc-switch-track'), knob);
+		} else {
+			wrap.append(face);
+		}
+
+		// The knob and the track follow --p, 0 off to 1 on (status.css).
+		let knobAt = 0, fromAt = 0, moving = false;
+		const place = (p) => { knobAt = p; wrap.style.setProperty('--p', p.toFixed(3)); };
+
+		c.ring = new TDCRing.RingStatus(face, {
+			icons: isSwitch ? [ON, OFF] : [ON],
+			labels: isSwitch ? { tick: 'On', cross: 'Off', loading: 'Saving' } : { tick: 'Ticked', empty: 'Not ticked', loading: 'Saving' },
+			initial: first.checked ? ON : OFF,
+			onProgress: isSwitch ? (p, target) => {
+				if (!moving) { moving = true; fromAt = knobAt; }
+				place(fromAt + ((target === ON ? 1 : 0) - fromAt) * p);
+			} : null
+		});
+		if (isSwitch) place(first.checked ? 1 : 0);
+
+		c.ring.onDone = () => {
+			moving = false;
+			liveChecks.delete(c.key);
+			// Changed again while it was drawing: draw that too.
+			if (c.ring.state !== state()) run(false);
+		};
+
+		// The orbit starts at once, aimed at the new state, and is registered
+		// as live before the page's own handler runs: a page that rebuilds its
+		// form inside that handler (the ruleset on /leagues/new/) hands this
+		// control straight to the new checkbox. Whether to wait for the
+		// network is decided once the handler has had its turn: if it asked
+		// the database anything, the answer is drawn when the network is
+		// quiet; if not, at once (the orbit still runs for --ring-load).
+		let mark = 0;
+		const watching = typeof TDCNet !== 'undefined';
+		function start() {
+			if (c.ring.busy) return false;
+			c.ring.load(secs(wrap, '--ring-load', 1), {
+				draw: secs(wrap, '--ring-draw', 0.8),
+				fade: secs(wrap, '--ring-fade', 0.5),
+				lead: TDCRing.leadOf(state())
+			});
+			liveChecks.set(c.key, c);
+			return true;
+		}
+		function run(online) {
+			if (!start()) return;
+			finishWhen(online);
+		}
+		function finishWhen(online) {
+			if (!online) { c.ring.resolve(state()); return; }
+			const late = new Promise((r) => setTimeout(r, LIVE_FOR));
+			Promise.race([TDCNet.quiet(), late]).then(() => setTimeout(() => c.ring.resolve(state()), 0));
+		}
+
+		wrap.addEventListener('change', (e) => {
+			if (e.target === c.box && watching) mark = TDCNet.started;
+		}, true);
+		wrap.addEventListener('change', (e) => {
+			if (e.target !== c.box || !start()) return;
+			setTimeout(() => finishWhen(watching && TDCNet.started > mark), 0);
+		});
+
+		// Clicking the drawing clicks the checkbox, which toggles it and tells
+		// the page; nothing while it is still drawing.
+		wrap.addEventListener('click', (e) => {
+			if (e.target === c.box || c.box.disabled || c.ring.busy) return;
+			c.box.click();
+		});
+
+		c.bind = (box, key) => {
+			if (c.box && c.box !== box) c.box.remove();   // the one the page threw away
+			c.box = box;
+			c.key = key;
+			box.classList.add('tdc-check-native');
+			if (isSwitch) box.setAttribute('role', 'switch');
+			wrap.append(box);
+			wrap.classList.toggle('is-disabled', box.disabled);
+			// Set from a script (a page filling its form): show it, no animation.
+			onPropSet(box, ['checked'], () => {
+				if (c.ring.busy || c.box !== box) return;
+				c.ring.setState(state());
+				if (isSwitch) place(box.checked ? 1 : 0);
+			});
+			new MutationObserver(() => wrap.classList.toggle('is-disabled', box.disabled))
+				.observe(box, { attributes: true, attributeFilter: ['disabled'] });
+		};
+		return c;
+	}
+
+	define('switch', (box) => checkControl(box, 'switch'), 'input[type="checkbox"]');
+	define('ring', (box) => checkControl(box, 'ring'), null);
 
 	// ─── Select ───
 	// Where each select's green pill was the moment an option was chosen, by
@@ -501,8 +695,8 @@ const TDCControls = (() => {
 				if (on) chosen = b;
 			}
 			const open = enabled();
-			prev.classList.toggle('is-end', !open.some((i) => i < at));
-			next.classList.toggle('is-end', !open.some((i) => i > at));
+			drawIcon(prev, open.some((i) => i < at), (g) => prev.classList.toggle('is-end', g));
+			drawIcon(next, open.some((i) => i > at), (g) => next.classList.toggle('is-end', g));
 			box.classList.toggle('is-disabled', select.disabled);
 			placeThumb(chosen);
 			reveal(chosen, track.classList.contains('is-animated'));

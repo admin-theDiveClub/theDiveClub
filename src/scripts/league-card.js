@@ -282,6 +282,7 @@
 			const actions = node('div', 'list-row-actions');
 			const box = document.createElement('input');
 			box.type = 'checkbox';
+			box.dataset.control = 'ring';   // a tick against a person, not a setting
 			box.checked = inSquad.has(r.player_id);
 			// The database refuses anybody not active (away or withdrawn);
 			// saying so here spares a pointless tap. Confirmation is not asked

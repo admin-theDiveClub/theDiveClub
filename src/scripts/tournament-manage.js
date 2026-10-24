@@ -135,6 +135,7 @@
 	function paidCell(e) {
 		const box = document.createElement('input');
 		box.type = 'checkbox';
+		box.dataset.control = 'ring';   // a tick against a person, not a setting
 		box.checked = !!e.paid;
 		box.dataset.entrant = e.entrant_id;
 		box.dataset.action = 'paid';

@@ -78,6 +78,15 @@
 			{ name: '--select-text',      label: 'Select options', kind: 'size', unit: 'rem', min: 0.6,  max: 1.2, step: 0.05, use: 'How big an option in a select pill is' },
 			{ name: '--control-motion',   label: 'Motion',         kind: 'size', unit: 's',   min: 0,    max: 0.8, step: 0.02, use: 'How long a number takes to roll and the green pill to slide. 0 for none' }
 		]],
+		['Ring and switch', [
+			{ name: '--ring-size',        label: 'Ring',           kind: 'size', unit: 'rem', min: 1.25, max: 4,   step: 0.05, use: 'How big a ring is: a tick against a person or a thing (paid, here tonight)' },
+			{ name: '--ring-size-table',  label: 'Ring in a table', kind: 'size', unit: 'rem', min: 1,   max: 3,   step: 0.05, use: 'The same ring in a table row' },
+			{ name: '--switch-height',    label: 'Switch height',  kind: 'size', unit: 'rem', min: 1.25, max: 4,   step: 0.05, use: 'How tall a switch is; its knob is a ring of 0.8 of this' },
+			{ name: '--switch-width',     label: 'Switch width',   kind: 'size', unit: 'rem', min: 2.5,  max: 7,   step: 0.05, use: 'How wide a switch is; the knob travels this less the height' },
+			{ name: '--ring-load',        label: 'Load (nothing to save)', kind: 'size', unit: 's', min: 0, max: 3, step: 0.1, use: 'How long the dots orbit when a box is only filling a form. A box that saves orbits for as long as its call takes' },
+			{ name: '--ring-draw',        label: 'Draw',           kind: 'size', unit: 's',   min: 0.2,  max: 2,   step: 0.1,  use: 'How long an icon takes to draw, stroke by stroke: the ring\'s tick and cross, and the chevrons, calendar and cross of the other controls' },
+			{ name: '--ring-fade',        label: 'Fade',           kind: 'size', unit: 's',   min: 0.1,  max: 1.5, step: 0.1,  use: 'How long the dots take to fade once the icon is drawn' }
+		]],
 		['States', [
 			{ name: '--color-success',    label: 'Success',        kind: 'colour', use: 'Success messages, Paid badge, staff tile glow' },
 			{ name: '--color-warning',    label: 'Warning',        kind: 'colour', use: 'Warning badge, offline indicator' },

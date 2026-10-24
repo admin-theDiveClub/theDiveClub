@@ -1,0 +1,135 @@
+/* The ring and the switch: UV's ring status design (scripts/ring-status.js)
+   on every checkbox, built by scripts/tdc-controls.js. Loaded on every page by
+   layout.html, after controls.css. Every size and time is a token in
+   variables.css, set from /sandbox/.
+
+   The ring is the cream control line; the icon it draws and the dots are the
+   brand colour; its middle stays transparent. The checkbox itself sits
+   invisibly over the drawing, so the keyboard and its label still work. */
+
+/* ── The ring ────────────────────────────────────────────────────────── */
+.tdc-ring {
+	display: block;
+	width: 100%;
+	height: 100%;
+	color: var(--control-line);
+	line-height: 0;
+}
+.tdc-ring svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+	stroke-width: 5;
+}
+.tdc-ring .ring {
+	stroke: var(--control-line);
+	transition: opacity 0.35s ease;
+}
+.tdc-ring[data-state="loading"] .ring { opacity: 0.3; }
+.tdc-ring .mark {
+	stroke: var(--color-primary);
+	stroke-width: 10;
+	stroke-dasharray: 100 200;
+	stroke-dashoffset: 100;
+	transition: stroke-dashoffset 0.35s ease;
+}
+.tdc-ring .mark.on { stroke-dashoffset: 0; }
+.tdc-ring .dots { fill: var(--color-primary); }
+
+/* The live text a screen reader hears ("Saving", "On", "Ticked"). */
+.tdc-check .sr,
+.tdc-switch .sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
+
+/* ── The checkbox underneath ─────────────────────────────────────────
+   Invisible, over the whole control, and still focusable. Three classes'
+   weight, so a page's own checkbox rule (league.css .transfer-row, forms.css
+   .field) cannot pull it back into view. */
+.tdc-check > input.tdc-check-native[type="checkbox"],
+.tdc-switch > input.tdc-check-native[type="checkbox"] {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	opacity: 0;
+	pointer-events: none;
+}
+
+/* ── Ring: a tick against a person or a thing ────────────────────────
+   Tick or empty. Smaller inside a table, where it sits in a row. */
+.tdc-check {
+	position: relative;
+	display: inline-block;
+	flex: 0 0 auto;
+	width: var(--rs, var(--ring-size));
+	height: var(--rs, var(--ring-size));
+	border-radius: var(--radius-round);
+	vertical-align: middle;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+	transition: box-shadow 0.15s ease;
+}
+table .tdc-check { --rs: var(--ring-size-table); }
+.tdc-check:hover { box-shadow: var(--glow-primary); }
+.tdc-check:has(> .tdc-check-native:focus-visible) {
+	outline: 2px solid var(--color-primary);
+	outline-offset: 4px;
+}
+
+/* ── Switch: a setting ───────────────────────────────────────────────
+   Tick on, cross off, never an empty ring. The knob is a ring; it slides
+   in step with the drawing, and the track lights with it. --p runs from 0
+   (off) to 1 (on), set by the script; the knob travels the switch's width
+   less its height. */
+.tdc-switch {
+	--p: 0;
+	position: relative;
+	display: inline-block;
+	flex: 0 0 auto;
+	width: var(--switch-width);
+	height: var(--switch-height);
+	vertical-align: middle;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+}
+.tdc-switch-track {
+	position: absolute;
+	inset: 0;
+	box-sizing: border-box;
+	border: var(--control-border) solid color-mix(in srgb, var(--color-primary) calc(var(--p) * 100%), var(--control-line));
+	border-radius: var(--radius-pill);
+	background: color-mix(in srgb, var(--color-primary) calc(var(--p) * 12%), transparent);
+	box-shadow: 0 0 calc(var(--p) * 16px) color-mix(in srgb, var(--color-primary) calc(var(--p) * 30%), transparent);
+	transition: box-shadow 0.15s ease;
+}
+.tdc-switch:hover .tdc-switch-track { box-shadow: var(--glow-primary); }
+.tdc-switch:has(> .tdc-check-native:focus-visible) .tdc-switch-track {
+	outline: 2px solid var(--color-primary);
+	outline-offset: 3px;
+}
+.tdc-switch-knob {
+	position: absolute;
+	top: calc(var(--switch-height) * 0.09375);
+	left: calc(var(--switch-height) * 0.09375);
+	width: calc(var(--switch-height) * 0.8125);
+	height: calc(var(--switch-height) * 0.8125);
+	transform: translateX(calc(var(--p) * (var(--switch-width) - var(--switch-height))));
+	will-change: transform;
+}
+
+.is-disabled.tdc-check,
+.is-disabled.tdc-switch { opacity: 0.4; pointer-events: none; box-shadow: none; }
+
+@media (prefers-reduced-motion: reduce) {
+	.tdc-ring .ring,
+	.tdc-ring .mark { transition: none; }
+}
