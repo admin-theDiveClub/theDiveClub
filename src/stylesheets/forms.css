@@ -937,3 +937,20 @@ textarea:not(:disabled):hover {
 a.league-nav-item:hover,
 a.league-nav-item:focus-visible { background: var(--hover-wash); outline: none; }
 .league-nav-item[aria-current="page"] { background: var(--color-primary); color: var(--color-on-primary); }
+
+/* ── A shadow under every picture circle (UV, 24 Oct) ────────────────
+   Profile pictures wherever they are (the nav, the match page, the player
+   picker, the profile page, a league's people) and the league and team
+   pictures that stand beside them. One shadow, --shadow-pic, its strength
+   set on /sandbox/ (Depth: Picture shadow). Here because every page loads
+   this file; the circles themselves are styled in their own stylesheets. */
+.nav-avatar,
+.avatar,
+.avatar-large,
+.chosen-avatar,
+.person-pic,
+.row-table-pic,
+.league-tile-pic,
+.jumbo-pic,
+.team-pic,
+.sb-mock-avatar { box-shadow: var(--shadow-pic); }

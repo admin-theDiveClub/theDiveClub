@@ -614,7 +614,19 @@
 }
 .jumbo-pic svg { width: 58%; height: 58%; }
 .jumbo-main { min-width: 0; text-align: left; }
-.jumbo-main h1 { margin: var(--space-1) 0 0; text-align: left; overflow-wrap: break-word; }
+/* The name with its status badge to the right, on the heading's bottom
+ * line (UV, 24 Oct). The badge sits in the heading after the name, so when a
+ * long name wraps it stays beside the last line. In the body's type, not
+ * the heading's capitals. */
+.jumbo-main h1 { margin: 0; text-align: left; overflow-wrap: break-word; }
+.jumbo-title .jumbo-status {
+	margin-left: var(--space-2);
+	vertical-align: baseline;
+	font-family: var(--font-body);
+	text-transform: none;
+	letter-spacing: normal;
+	white-space: nowrap;
+}
 .tdc-card .jumbo-season { margin: var(--space-1) 0 0; color: var(--text-muted); text-align: left; }
 .jumbo-status { border-color: var(--strip-color, var(--color-primary)); color: var(--strip-color, var(--color-primary)); }
 

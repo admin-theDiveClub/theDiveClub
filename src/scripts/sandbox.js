@@ -98,6 +98,7 @@
 		]],
 		['Depth', [
 			{ name: '--shadow-alpha',     label: 'Shadow strength', kind: 'alpha', use: 'How dark the shadow under floating panels is (black at this opacity)' },
+			{ name: '--pic-shadow-alpha', label: 'Picture shadow', kind: 'alpha', use: 'How dark the shadow under every picture circle is: profile pictures (the nav's too), league and team pictures' },
 			{ name: '--scrim-alpha',      label: 'Dim strength',    kind: 'alpha', use: 'How dark the page goes behind a slide-over panel (black at this opacity)' }
 		]]
 	];

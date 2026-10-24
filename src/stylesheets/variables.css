@@ -39,8 +39,10 @@
      them. Set from the palette section of /sandbox/. */
   --shadow-alpha: 0;       /* floating panels and menus */
   --scrim-alpha: 0.38;        /* the dim behind a slide-over panel */
+  --pic-shadow-alpha: 0.45;   /* under every picture circle (24 Oct) */
 
   --shadow-panel: 0 10px 30px rgba(0, 0, 0, var(--shadow-alpha));
+  --shadow-pic: 0 3px 8px rgba(0, 0, 0, var(--pic-shadow-alpha));
   --scrim: rgba(0, 0, 0, var(--scrim-alpha));
 
   /* A hover that lifts a surface without introducing another colour. Built
@@ -136,6 +138,7 @@
   /* Shadows on a cream page read as dirt at the dark-theme alphas. */
   --shadow-alpha: 0;
   --scrim-alpha: 0.47;
+  --pic-shadow-alpha: 0.2;
   --surface-blur: 8px;
 
   /* Logo. Set from the artwork section of /sandbox/. */
