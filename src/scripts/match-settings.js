@@ -179,10 +179,13 @@ const TDCMatchDef = (() => {
 		},
 
 		{ group: 'Officials and approval', scope: 'rules', key: 'referee_required', label: 'Referee required', type: 'bool' },
-		// No column for this yet, so it lives only on the screen it is typed on.
-		// The create page leaves it out rather than offering a control that
-		// forgets what you told it.
-		{ group: 'Officials and approval', scope: 'match', key: 'referee', label: 'Referee', type: 'text', placeholder: 'None', stored: false },
+		// tbl_matches.referee_player_id (20261024162559), saved through
+		// tdc_set_match_referee, not with the rules. A 'player' control is
+		// playerPicker() below; the ruleset pages never see it (scope 'match').
+		{
+			group: 'Officials and approval', scope: 'match', key: 'referee', label: 'Referee', type: 'player',
+			hint: 'Anyone with an account. Scores the match, and the players cannot overrule their frames.'
+		},
 		{ group: 'Officials and approval', scope: 'rules', key: 'score_entry_mode', label: 'Scores entered by', type: 'select', options: () => SCORE_ENTRY },
 		{ group: 'Officials and approval', scope: 'rules', key: 'approval_mode', label: 'Approval', type: 'select', options: () => APPROVAL, rule: true },
 		{ group: 'Officials and approval', scope: 'rules', key: 'dispute_window_hours', label: 'Dispute window (hours)', type: 'int', min: 0, max: 336, when: (r) => r.approval_mode === 'dispute_window' || r.approval_mode === 'both' }
@@ -368,6 +371,107 @@ const TDCMatchDef = (() => {
 	}
 
 	// ─────────────────────────────────────────────────────────────────
+	// Picking a player (the referee)
+	//
+	// A search box like New Match's opponent search, or the chosen player
+	// with Change and Remove. It is not an input with data-setting, so the
+	// pages' change handlers pass it by; the page hears about a pick through
+	// onPick(player | null) and decides whether that saves (the match page)
+	// or waits for Start Match (New Match).
+	//
+	//   id        the search box's id, for the page's label
+	//   chosen    { id, display_name, full_name } or null
+	//   disabled  shows the name (or None) and nothing to press
+	//   status    where a failed search is reported
+	//
+	// Searches tdc_search_referees, which unlike the opponent search finds
+	// the person searching: you may referee your own match (UV, 24 Oct).
+	// ─────────────────────────────────────────────────────────────────
+	function playerPicker({ id, chosen, disabled, status, onPick }) {
+		const AREA = 'Referee';
+		const wrap = document.createElement('div');
+		wrap.className = 'player-pick';
+
+		const el = (tag, cls, text) => {
+			const n = document.createElement(tag);
+			if (cls) n.className = cls;
+			if (text !== undefined) n.textContent = text;
+			return n;
+		};
+		const linkButton = (text, onClick) => {
+			const b = el('button', 'pick-link', text);
+			b.type = 'button';
+			b.addEventListener('click', onClick);
+			return b;
+		};
+
+		function showChosen() {
+			const line = el('div', 'pick-chosen');
+			const names = el('div', 'pick-names');
+			names.append(el('div', 'pick-display', chosen.display_name));
+			if (chosen.full_name && chosen.full_name !== chosen.display_name) {
+				names.append(el('div', 'pick-full', chosen.full_name));
+			}
+			line.append(names);
+			if (!disabled) {
+				line.append(
+					linkButton('Change', () => showSearch(true)),
+					linkButton('Remove', () => onPick(null))
+				);
+			}
+			wrap.replaceChildren(line);
+		}
+
+		function showSearch(changing) {
+			const input = el('input');
+			input.type = 'search';
+			input.id = id;
+			input.autocomplete = 'off';
+			input.placeholder = 'Search players';
+			const results = el('div', 'pick-results');
+
+			let run = 0;
+			let timer = null;
+			input.addEventListener('input', () => {
+				clearTimeout(timer);
+				const term = input.value;
+				timer = setTimeout(() => search(term), 250);
+			});
+
+			async function search(term) {
+				const mine = ++run;
+				if (term.trim().length < 2) { results.replaceChildren(); return; }
+				const { data, error } = await supabaseClient.rpc('tdc_search_referees', { p_query: term, p_limit: 20 });
+				if (mine !== run) return;   // a later keystroke has overtaken this one
+				if (error) { TDC.showSupabaseError(AREA, error, status); return; }
+				if (!data.length) {
+					results.replaceChildren(el('p', 'muted', 'Nobody by that name. A referee needs an account.'));
+					return;
+				}
+				results.replaceChildren(...data.map((p) => {
+					const b = el('button', 'pick-result');
+					b.type = 'button';
+					b.append(el('span', 'result-name', p.display_name));
+					if (p.full_name) b.append(el('span', 'result-sub', p.full_name));
+					b.addEventListener('click', () => onPick(p));
+					return b;
+				}));
+			}
+
+			wrap.replaceChildren(input, results);
+			if (changing) {
+				wrap.append(linkButton('Keep ' + chosen.display_name, showChosen));
+				input.focus();
+			}
+		}
+
+		if (chosen) showChosen();
+		else if (disabled) wrap.append(el('div', 'pick-none', 'None'));
+		else showSearch(false);
+		return wrap;
+	}
+
+	// ─────────────────────────────────────────────────────────────────
 	// The rotation table (version 3)
 	//
 	// One row per session; row s names the away position that meets home
@@ -537,7 +641,7 @@ const TDCMatchDef = (() => {
 		DISCIPLINE, BREAK_OUTCOME, RESULT_EVENT, RESULT_SHORT, BREAK_DETERMINATION,
 		WIN_CONDITION, TIME_EXPIRY, TIEBREAK, SCORE_ENTRY, APPROVAL, SIDE_TAG, SIDES,
 		GROUPS, LEAGUE_GROUPS, LEAGUE_STATUS, SETTINGS, DEFAULT_RULES, LEAGUE_DEFAULT_RULES, MAIN_KEYS,
-		control, layout, liveRuleKeys, readValue,
+		control, layout, liveRuleKeys, readValue, playerPicker,
 		cyclicRotation, rotationGrid, rotationRepeats, applyRotation, tidyRules,
 		setSideNames(fn) { sideNames = fn; }
 	};

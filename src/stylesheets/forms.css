@@ -367,6 +367,46 @@ textarea:not(:disabled):hover {
 	letter-spacing: normal; text-transform: none;
 }
 
+/* Picking a player: the referee, on New Match and the match page's panel
+   (TDCMatchDef.playerPicker). Two classes deep, so .tdc-card button's
+   full-width pill does not win. */
+.player-pick .pick-results { margin-top: 0.5rem; }
+.player-pick .pick-result {
+	display: block;
+	width: 100%;
+	text-align: left;
+	padding: 0.75rem;
+	margin: 0 0 0.5rem;
+	border: 1px solid var(--border-color);
+	border-radius: 6px;
+	background: var(--bg-surface);
+	color: var(--text-primary);
+	font: inherit;
+	font-weight: normal;
+	letter-spacing: normal;
+	text-transform: none;
+	height: auto;
+}
+.player-pick .pick-chosen {
+	display: flex;
+	align-items: center;
+	gap: 0.85rem;
+	padding: 0.4rem 0;
+}
+.player-pick .pick-names { flex: 1 1 auto; min-width: 0; }
+.player-pick .pick-display { font-weight: 600; }
+.player-pick .pick-full { font-size: 0.82rem; color: var(--text-muted); }
+.player-pick .pick-none { padding: 0.4rem 0; color: var(--text-muted); }
+.player-pick .pick-link {
+	flex: 0 0 auto; width: auto; height: auto; margin: 0.4rem 0 0; padding: 0 0 2px;
+	background: none; border: none; border-radius: 0;
+	border-bottom: 1px solid var(--color-primary);
+	color: var(--text-primary);
+	font-size: 0.85rem; font-weight: normal;
+	letter-spacing: normal; text-transform: none;
+}
+.player-pick .pick-chosen .pick-link { margin: 0; }
+
 /* Everything that is not a main setting, folded away until wanted. */
 .set-group {
 	border-top: 1px solid var(--border-color);

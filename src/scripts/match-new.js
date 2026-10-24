@@ -37,6 +37,7 @@
 	const rules = Object.assign({}, D.DEFAULT_RULES);
 	let firstBreakSide = null;
 	let opponent = null;
+	let referee = null;             // saved by a second call once the match exists
 	const openGroups = new Set();   // which collapsed groups the person has opened
 	let me = null;
 
@@ -80,6 +81,20 @@
 		const row = node('div', 'field');
 		const label = node('label', null, def.label);
 		label.htmlFor = 'new-' + def.key;
+
+		// The referee is a search, not an input: picking someone redraws the
+		// form with them chosen, and nothing saves until Start Match.
+		if (def.type === 'player') {
+			label.htmlFor = 'new-referee-search';
+			row.append(label, D.playerPicker({
+				id: 'new-referee-search',
+				chosen: referee,
+				status: els.status,
+				onPick: (p) => { referee = p; renderSettings(); }
+			}));
+			if (def.hint) row.append(node('div', 'hint', def.hint));
+			return row;
+		}
 
 		const value = valueOf(def);
 		let input;
@@ -272,6 +287,19 @@
 			if (timeError) {
 				console.error('[' + AREA + '] the match was created but the time was not saved.', timeError);
 				TDC.status(els.status, 'Match started, but the time was not saved. Set it on the match page.', '');
+			}
+		}
+
+		// The referee likewise: a second call, and a failure leaves a match
+		// with no referee, which the match page can put right.
+		if (referee) {
+			const { error: refError } = await supabaseClient.rpc('tdc_set_match_referee', {
+				p_match_id: data,
+				p_player_id: referee.id
+			});
+			if (refError) {
+				console.error('[' + AREA + '] the match was created but the referee was not saved.', refError);
+				TDC.status(els.status, 'Match started, but the referee was not saved. Set it on the match page.', '');
 			}
 		}
 

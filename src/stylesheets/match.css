@@ -571,6 +571,7 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
 /* A line, not a box. Less furniture on a panel that is mostly fields. */
 .set-row select,
 .set-row input[type="text"],
+.set-row input[type="search"],
 .set-row input[type="number"] {
 	width: 100%;
 	padding: 0.5rem 0;
@@ -586,6 +587,7 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
 }
 .set-row select:focus,
 .set-row input[type="text"]:focus,
+.set-row input[type="search"]:focus,
 .set-row input[type="number"]:focus {
 	outline: none;
 	border-bottom-color: var(--color-primary);

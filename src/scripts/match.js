@@ -1169,6 +1169,22 @@
 		label.textContent = def.label;
 		label.htmlFor = 'set-' + def.key;
 
+		// The referee is a search, saved on its own (persistReferee), and only
+		// by whoever may change the rules: a referee scores, they do not pick
+		// who referees (UV, 24 Oct).
+		if (def.type === 'player') {
+			label.htmlFor = 'set-referee-search';
+			row.append(label, TDCMatchDef.playerPicker({
+				id: 'set-referee-search',
+				chosen: MATCH.referee ? PLAYERS[MATCH.referee] || null : null,
+				disabled: !canChange || settled(),
+				status: els.stageStatus,
+				onPick: persistReferee
+			}));
+			if (def.hint) row.append(div('set-hint', def.hint));
+			return row;
+		}
+
 		const value = settingValue(def);
 		let input;
 
@@ -1355,9 +1371,21 @@
 		draft = newDraft();
 		scheduleSettingsRender(input.id);
 
-		// "referee" is still only on this page — there is no column for it yet,
-		// so sending it would be a lie. Everything else is stored.
-		if (liveMatchId && def.key !== 'referee') persistSettings();
+		if (liveMatchId) persistSettings();
+	}
+
+	// A column, not a rule, like the time: tdc_set_match_referee, which
+	// re-derives nothing and leaves card_version alone. Read back after, so
+	// the name shown is the one stored.
+	async function persistReferee(player) {
+		if (!liveMatchId) return;
+		if (isOffline()) { blockedOffline('Changing the referee'); return; }
+
+		const { error } = await inTurn('Saving the referee…', () => supabaseClient.rpc('tdc_set_match_referee', {
+			p_match_id: liveMatchId,
+			p_player_id: player ? player.id : null
+		}));
+		await savingFinished(error, player ? `${player.display_name} is refereeing.` : 'Referee removed.');
 	}
 
 	const openPanel  = () => { els.panel.hidden = false; els.scrim.hidden = false; };
@@ -1761,7 +1789,7 @@
 		const { data: m, error } = await supabaseClient
 			.from('tbl_matches')
 			.select('id, venue_id, scheduled_at, first_break_side, sanctioned, rules, status, card_version,'
-				+ ' home_side_kind, home_player_id, away_side_kind, away_player_id')
+				+ ' home_side_kind, home_player_id, away_side_kind, away_player_id, referee_player_id')
 			.eq('id', id)
 			.maybeSingle();
 
@@ -1820,7 +1848,7 @@
 		});
 
 		const players = await loadPlayers([
-			m.home_player_id, m.away_player_id,
+			m.home_player_id, m.away_player_id, m.referee_player_id,
 			...rows.flatMap((f) => (f.tbl_frame_participants || []).map((p) => p.player_id)),
 			...rows.map((f) => f.referee_player_id)
 		]);
@@ -1854,7 +1882,9 @@
 				// invented, so nobody reads it as a real table number.
 				tables: ['Table not set'],
 				scheduled_at: m.scheduled_at,
-				referee: null,
+				// The match's own referee (20261024162559), a player id; the
+				// name is in players like everybody else's.
+				referee: m.referee_player_id,
 				first_break_side: m.first_break_side,
 				home: { name: nameOf(m.home_player_id), crest_url: null, players: [m.home_player_id] },
 				away: { name: nameOf(m.away_player_id), crest_url: null, players: [m.away_player_id] },

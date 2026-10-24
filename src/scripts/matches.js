@@ -50,9 +50,10 @@
 
 	// The scoreline is this player's frames first, always. Someone reading their
 	// own list should not have to work out which number is theirs.
+	// A match this player referees reads home first, with nobody's side picked out.
 	function scoreline(m) {
 		const wrap = el('span', 'match-score');
-		const mine = el('strong', m.my_frames > m.their_frames ? 'win' : '', String(m.my_frames));
+		const mine = el('strong', !m.refereeing && m.my_frames > m.their_frames ? 'win' : '', String(m.my_frames));
 		wrap.append(mine, el('span', 'dash', '–'), el('span', '', String(m.their_frames)));
 		return wrap;
 	}
@@ -63,7 +64,8 @@
 		a.href = '/match/?id=' + encodeURIComponent(m.id);
 
 		const top = el('div', 'match-top');
-		top.append(el('span', 'match-opponent', 'vs ' + m.opponent), scoreline(m));
+		// For a refereed match the function sends both names ("Alice v Bob").
+		top.append(el('span', 'match-opponent', m.refereeing ? m.opponent : 'vs ' + m.opponent), scoreline(m));
 
 		const meta = el('div', 'match-meta');
 		const bits = [];
@@ -87,6 +89,7 @@
 		else if (card === 'disputed') tags.append(el('span', 'badge disputed', 'Disputed'));
 		else if (m.status === 'in_progress') tags.append(el('span', 'badge', 'In progress'));
 
+		if (m.refereeing) tags.append(el('span', 'badge', 'Referee'));
 		if (m.status === 'abandoned') tags.append(el('span', 'badge', 'Abandoned'));
 		if (m.sanctioned) tags.append(el('span', 'badge verified', 'Sanctioned'));
 

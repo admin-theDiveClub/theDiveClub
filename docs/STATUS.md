@@ -4,9 +4,9 @@
 
 Updated at every milestone, in the same breath as giving UV a commit subject. Never batched to the end of a session.
 
-Last updated: **24 Oct 2026** (custom controls: the stepper, the three-part date, the select pill, all in the sandbox; Starts / Ends side by side; the cream calendar icon)
+Last updated: **24 Oct 2026** (a match's own referee, picked from the players)
 
-**Production is current through `20261024102616`** (league status and the search filters; checked against production's migration list, 24 Oct). Nothing waiting to push. The league pages built on it can deploy.
+**Production is current through `20261024102616`** (league status and the search filters; checked against production's migration list, 24 Oct). **Waiting to push: `20261024162559` (match referee). Push it before deploying**: `match.js` reads the new column, and without it the match page fails to load.
 
 ---
 
@@ -16,6 +16,7 @@ Nothing here can be done by Claude.
 
 | | What | Why it matters |
 |---|---|---|
+| 0000 | **Push `20261024162559`, deploy, then try the referee** | Start a social match on `/matches/new/` against a second account, open Officials and approval, search for a third account as Referee, Start. On the match page the panel shows them. **As the referee:** you can score, the settings are greyed out, and the match is in your `/matches/` list as "A v B" with a Referee tag. Record frame 1. **As a player:** change frame 1 and you're refused ("last set by the referee"); remove the referee in the panel, and frame 1 can be changed again. Claude checks the rows |
 | 000 | **Deploy (migration pushed, confirmed 24 Oct), then try `/leagues/`** | Test_WedSim_8BMTL starts as **Running** (it has fixtures) and New League Test as **Taking entries**. On `/leagues/`: your rows show status, discipline and team size under the name, a coloured strip, and Starts / Ends / Ranking / Teams (4 teams, 20 players) as columns on the PC. In the search: the filters (Singles says there are none yet), the tiles scrolling sideways. As Owner@TDC, Settings → Status → On break → Save: the strip turns amber. Then glance at any other page on the PC: everything is 10/12 wide now |
 | 00b | **Retest the merge** (A5 is pushed, confirmed 24 Oct) | This is item 2 below. Production has **no walk-in records** (checked 24 Oct), so make one first. As Owner@TDC on `/staff/`, add a walk-in; then on `/staff/link/` link it to a dummy Test_WedSim player who is in a lineup (e.g. Dylan Fourie, Team 0 position 5). **It cannot be undone**: the dummy's player record becomes the walk-in's. Afterwards Team 0 v Team 3 should still show them at position 5 with their frames. Claude checks the rows |
 | 00a | **Try A4** (pushed, confirmed 24 Oct) | Nothing to see: the card sends neither of the things it refuses. Record one result and one lag on Team 0 v Team 3 (frame 15 has Thabo Mokoena in it, who has since moved to Team 2; it must still save) |
@@ -169,7 +170,10 @@ Real, small, and none of them blocking.
 | Settings writes are still last-write-wins | Frames are guarded, settings are not |
 | The match list and nav are not live | Everything else is |
 | A future fixture does not read as upcoming in the match list | |
-| `referee` is marked `stored: false` with no column | It lives only on the screen it is typed on |
+| **New Match's second calls fail out of sight** | The time and (since 24 Oct) the referee are saved after `tdc_create_match`; if either fails the page writes a status line and leaves for the match at once, so only the console says so. The match page can put both right. Found 24 Oct with the referee |
+| **Venue staff are rank 0 against a match referee** | In a social match at a venue, staff may score but cannot change a frame the referee set (staff outrank only inside a tournament that belongs to their venue). Nobody has hit it; found 24 Oct |
+| **The rank refusal says "tournament director" in a league** | A league director is rank 100 since 24 Oct, and `tdc_frame_rank_guard` names rank 100 "the tournament director". It reaches a league only when a league match has a referee. Wording only |
+| `tbl_frames.referee_player_id` is written by nothing | A per-frame referee from the first scoring migration, carried by the merge, never set by a page. Unrelated to the match's own referee (24 Oct) |
 | PWA icons are still the old silver artwork | `src/resources/icons/*` |
 | Email assets are pre-refresh | `email-wordmark.png`, `email-dive.gif` |
 | Duplicate light/dark SVGs are byte-identical | `logo-mark-*`, `logo-primary-*`. One of each is redundant, or one was never made |
