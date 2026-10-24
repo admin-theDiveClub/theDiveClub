@@ -558,3 +558,12 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by:* UV, confirming Claude's reading of design §3
 *So:* a reserve goes into one frame, which is one position in one session, through `tdc_swap_frame_player`. (1) Nobody plays two frames in a session. (2) A player in tonight's order keeps their position: only someone **not** in the order can come in, and a position's own player can be put back, which undoes a reserve. (3) A reserve never meets the same opponent twice in the night. Each refusal names the rule. A regular meeting someone twice because the LD's rotation repeats a pairing is still allowed (23 Oct).
 *Example:* Team 0 is Ann, Ben, Cal, Dee, Eve; Gus is the reserve. Gus covers Ben in session 3, so he can't also cover Dee in session 3. Ann can't move to position 4 to cover Dee. If Gus met their A3 in session 2, he can't take a frame against A3 in session 4.
+
+## 2026-10-24 — A competition match's rules and time are the director's; the lag winner stays with the players
+
+*Decided by:* UV (from the audit, A2 and A3), with the lag winner on Claude's recommendation
+*Why:* in a tournament a player could change their own match's rules after it was approved, for example turning approval off, which unpublished the result. On a league match, moving the time also moved the lineup cutoff.
+*So:* migration `20261024082447`. In a tournament or league, only the people running it change a match's rules or time, and nobody does once the result is settled or approved; a director sends it back first. **Who won the lag is not a rule.** It is recorded by whoever may score, and goes through the same function with the rules unchanged, so it is let through. Referees and scorers are treated as players: they score, they don't change rules.
+*Example:* in Test Tournament - 2, UV (a player and its scorer) can tap who won the lag in his match against Linton, but the race length and approval are greyed out. Owner@TDC, its director, can change both until the result is approved.
+*Rejected:* the lag winner directors-only as well (players lag at the table, and the director is often not there).
+*Touches:* `tdc_update_match_settings`, `tdc_set_match_time`, `private.tdc_can_change_match`, `match.js`

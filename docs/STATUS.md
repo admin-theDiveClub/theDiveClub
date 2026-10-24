@@ -4,9 +4,9 @@
 
 Updated at every milestone, in the same breath as giving UV a commit subject. Never batched to the end of a session.
 
-Last updated: **24 Oct 2026** (just after midnight: the lineup is one per position; reserves under three rules)
+Last updated: **24 Oct 2026** (A2 and A3: a competition match's rules and time are the director's)
 
-**Database is current through `20261024080007`** (checked against production's migration list, 24 Oct). **Nothing is waiting to push.**
+**Production is current through `20261024080007`** (checked against production's migration list, 24 Oct). **Waiting to push: `20261024082447`** (A2/A3). Push it **before** deploying the site: the match page asks `tdc_may_change_match`, which that migration adds.
 
 ---
 
@@ -16,6 +16,7 @@ Nothing here can be done by Claude.
 
 | | What | Why it matters |
 |---|---|---|
+| 00 | **Push `20261024082447`, deploy, then try A2/A3** | In **Test Tournament - 2**, open Linton Paul v UV (in progress, 1 frame). **As UV** (a player and its scorer): the panel says the rules and time are set by whoever runs the tournament; every setting and the time are greyed out except **Lag winner**, which still saves. **As Owner@TDC** (its director): everything is open; change the time and it saves. No notification will arrive when Owner@TDC moves it (B7). Ignore the "Social match" line at the top of the panel (§6) |
 | 0a | **Try the league settings page** | After pushing `20261023193153` and deploying: open Test_WedSim_8BMTL → Settings (TestTuesday and Test 8BMTL were cleared on 23 Oct). Set team size 5, look at the rotation grid, change one cell in session 2 and watch it swap, save. The message should say **2 matches now use these rules** (neither has started) and none kept. To see the card follow it, try team size 4 once: a match's card should then offer 16 slots, not 25. Set it back to 5 afterwards |
 | 0a2 | **Try the team limit** | After pushing `20261023213048` and deploying: Test_WedSim's teams should each read **5 of 7 active** (reserves default to 2). From your captain account, claim two more onto Team 0 (7 of 7), then try a third: refused, "Team 0 is full". Mark one player **Away**: 6 of 7, and Claim works again. As that player (or you), press **Back** while the team is full: refused. As Owner@TDC, set Reserves allowed to 1 in Settings: the manage page should warn that Team 0 is over the limit |
 | 0a3 | **Finish the night on the new card** | **Checked against production 24 Oct 09:58:** Team 0 v Team 3 locked both sides, built 25 frames, every pairing matches the rotation, 7 frames recorded each with its own lag (4–3). **Still untried:** an empty seat, a reserve, signing. Both sides were full, so try them on Team 1 v Team 2. **A reserve needs somebody beyond the five**: every team has exactly five, so first add a sixth to one team (the limit is 7). All 20 entrants are already placed, so there is nobody to claim: as Owner@TDC, add Owner@TDC itself (or any other account) on the manage page and put them on Team 1. Without one there is no picker, only a note saying so. Then leave one position empty on one side; put a reserve into one of its frames; try the same reserve again in that session (refused: rule 1); try a regular in the empty seat (refused: rule 2); sign, and the seats still empty become walkovers. **Its cutoff is 8 hours (11:30 on 24 Oct)**: set it to 0 first, or both sides lock empty and the night has no frames |
@@ -38,12 +39,9 @@ Found in a read-only review of every migration, the front end, the edge function
 
 | | Where | What happens | Fix |
 |---|---|---|---|
-| A1 | `tdc_delete_match` | Any player in a tournament or league match could delete it | **Done 24 Oct: `20261024080007` (pushed) plus `match.js`.** Only the people running the competition; the match page hides the button otherwise. Also fixes deleting any match with a frame, broken since 21 Oct (`docs/systems/matches.md`) |
-| A2 | `tdc_update_match_settings` (`20261015180000`) | Refuses an *agreed* card but not an *approved* one, so a player can change a competition match's rules (e.g. approval off), which reopens the card | Competition matches: directors only, and never after approval |
-| A3 | `tdc_set_match_time` | Same gap — players can move a competition match, which also moves the lineup cutoff | Same guard as A2 |
+| A2 + A3 | `tdc_update_match_settings`, `tdc_set_match_time` | A player could change a competition match's rules after approval (e.g. approval off, which unpublished it), or move it and its lineup cutoff | **Written and tested 24 Oct: `20261024082447` plus `match.js`, waiting for UV to push and deploy** (`docs/systems/matches.md`). Directors only, never once settled; the lag winner stays with the players |
 | A4 | `tdc_record_frame`, team matches | Players named in a frame are not checked against the teams' rosters, and being in a frame grants edit rights | Check each player is an active entrant of that side |
 | A5 | `private.tdc_merge_players` | Misses `tbl_league_match_squad`, `tbl_league_match_order` and `tbl_notification_prefs`; a merge empties lineups | Add them; run the migration's foreign-key query |
-| A8 | Reopening | UV, 23 Oct (`docs/DECISIONS.md`): **a settled card is final for players**; only a TD/LD can open it again. Today either player can reopen a settled social card, and a player's reopen of a published tournament card half-works (says in progress, stays locked). *Send back now unlocks — done with A7* | **Written and tested: `20261023190825` plus `match.js`, waiting for UV to push and deploy.** Reopen is withdraw-only; the button is gone; test plan 7.5 / 11.3 / 11.5 updated |
 
 ### Before more real players join
 
@@ -55,7 +53,7 @@ Found in a read-only review of every migration, the front end, the edge function
 | B4 | `tdc_staff_link_account` | Staff at any venue can attach any walk-in to any account, with no consent and no venue link. Owner/admin only, walk-in tied to that venue, user confirms |
 | B5 | `tdc_add_my_identifier` | Reveals whether an SA ID, phone or email belongs to someone else. Generic message and a rate limit |
 | B6 | `tdc_remove_entrant` | Hard delete blanks decided bracket history. Refuse once they have played; mark withdrawn |
-| B7 | `notify-card` | A match player can repeat a notification, or send one that doesn't match the card. Check the event exists; ignore repeats within a few minutes |
+| B7 | `notify-card` | A match player can repeat a notification, or send one that doesn't match the card. Check the event exists; ignore repeats within a few minutes. **Also (found 24 Oct with A2/A3):** it accepts only a caller who is in the match, so when a director or venue staff who isn't playing moves a match (or deletes one, A1), nobody is told, while the page says "Both players have been told". The failure goes only to the console. Let `notify-card` accept whoever `private.tdc_can_change_match` / `tdc_can_delete_match` allows, or have the page stop claiming it |
 | B8 | Leagues and `score_entry_mode` | The competition lookup only knows tournaments, so a league's score-entry mode, rank protection and publishing don't apply. Extend it, or record that leagues don't use them |
 | B9 | **Account deletion** | Decide the flow (POPIA). Also see §6 on deleting an account leaving a league player behind |
 
@@ -149,6 +147,7 @@ Real, small, and none of them blocking.
 |---|---|
 | **`tbl_tournament_entrants` can be read directly by any signed-in player** | `paid_at` and the TD's `notes` come back from the API with no function in the way. The 21 Oct gate on `tdc_tournament_entrants` closed the function, not the table: the `select … using (true)` policy and grant are still there. Found 22 Oct while building the league equivalent. The fix is a migration revoking the grant and dropping the policy, after checking no page selects from the table directly. Now item B2 in §1a |
 | League pages not built yet | Per-season rule overrides, continuing a team from an earlier season, a venue picker. None blocks lineups. **When per-season overrides get a form, `tdc_update_league_season` must call `private.tdc_refreeze_league_matches`** as `tdc_update_league` does (23 Oct), or a season's change will not reach its unstarted matches |
+| **The match page calls every match "Social match"** | `loadMatch()` hard-codes `context: social`, so a tournament match's panel reads "Social match · not part of a league or tournament", which since A2 sits right above "The rules and the time are set by whoever runs this tournament." It needs a real lookup of the tournament, round and name. Found 24 Oct |
 | `strict_frame_order` is obeyed by the card only | The scorecard offers only the next unplayed frame when it is on. `/match/` does not know about it, which does not matter while `/match/` refuses team matches |
 | **Deleting an account leaves an accountless league player** | `tbl_players.user_id` is `ON DELETE SET NULL`, so removing an auth user leaves the player row behind — still on any league's list, which is the one thing a league player may not be. The trigger that enforces it is insert-only on purpose (the walk-in merge needs that). Found 23 Oct while writing the dummy-player cleanup. Unlikely but real; the fix is either a cascade or a nightly check |
 | **The 23 version 1 ruleset keys are not type-checked** | `private.tdc_check_match_rules` checks that the keys are present and that the enumerated values are known, but never that `win_condition_target` is a number or `draws_allowed` a boolean. The two version 2 keys added 22 Oct are checked; the older ones are a job of their own. The design note calls this jsonb quietly becoming an unvalidated config format the heaviest standing risk in the system |

@@ -97,6 +97,7 @@
 		scrim: el('panel-scrim'),
 		panel: el('settings-panel'), panelClose: el('panel-close'),
 		contextLine: el('context-line'), badgeRow: el('badge-row'), panelNote: el('panel-note'),
+		changeNote: el('change-note'),
 		when: el('match-when'),
 		setGroups: el('set-groups'),
 		notice: el('match-notice'),
@@ -1203,8 +1204,12 @@
 		input.id = 'set-' + def.key;
 		input.dataset.setting = def.key;
 		// A watcher sees the match's settings but cannot change them. Disabled
-		// rather than hidden: knowing it is a race to 7 is the point.
-		if (!canEdit) input.disabled = true;
+		// rather than hidden: knowing it is a race to 7 is the point. In a
+		// tournament the players see them disabled too: the rules are the
+		// director's (audit A2, 24 Oct). The lag winner is not a rule: whoever
+		// may score records it, and the database lets it through with the
+		// rules unchanged.
+		if (!(def.key === 'first_break_side' ? canEdit : canChange)) input.disabled = true;
 
 		row.append(label, input);
 		if (def.hint) row.append(div('set-hint', def.hint));
@@ -1225,6 +1230,9 @@
 		);
 
 		renderWhen();
+		// Said only to somebody who can score but not change the rules, so a
+		// watcher is not told about a tournament they are not in.
+		els.changeNote.hidden = canChange || !canEdit;
 
 		els.setGroups.replaceChildren();
 		for (const group of GROUPS) {
@@ -1260,7 +1268,7 @@
 		if (document.activeElement !== els.when) {
 			els.when.value = localInputValue(MATCH.scheduled_at);
 		}
-		els.when.disabled = !canEdit || settled();
+		els.when.disabled = !canChange || settled();
 	}
 
 	async function persistWhen() {
@@ -2255,6 +2263,10 @@
 	// Deleting is a narrower right than scoring: in a tournament or league
 	// match only the people running it may (audit A1, 24 Oct).
 	let canDelete = false;
+	// Changing the rules and the time is narrower too: in a tournament or
+	// league match only the people running it may (audit A2/A3, 24 Oct).
+	// The lag winner is not part of this; it stays with canEdit.
+	let canChange = false;
 	// Why not, when the answer is no because of the tournament's rules rather
 	// than because this person is a stranger to the match. Null otherwise.
 	let noEditNote = null;
@@ -2847,6 +2859,17 @@
 			TDC.showSupabaseError(AREA, deleteError, els.stageStatus);
 		} else {
 			canDelete = mayDelete === true;
+		}
+
+		// And the same for the rules and the time, from the helper both
+		// functions ask.
+		const { data: mayChange, error: changeError } = await supabaseClient
+			.rpc('tdc_may_change_match', { p_match_id: liveMatchId });
+		if (changeError) {
+			canChange = false;
+			TDC.showSupabaseError(AREA, changeError, els.stageStatus);
+		} else {
+			canChange = mayChange === true;
 		}
 
 		// A player who finds the scoring buttons gone deserves a sentence

@@ -80,6 +80,7 @@ Call the `tdc_` functions as the user who would call them from the website, neve
 | `023_league_team_limit.test.sql` | A team's limit (team size + reserves): a captain refused at it, the LD past it, away freeing a place and back refused while full, who may mark a player away, the only captain, withdrawn not counting, lowering reserves, every league needing a team size |
 | `024_league_lineup_sessions.test.sql` | A three-man night: three positions, nine frames built by the rotation, an empty seat waiting rather than a walkover, the three reserve rules and putting a regular back, a captain kept out of the other side's seats, signing turning empty seats into walkovers with the signature still current |
 | `025_match_delete.test.sql` | Who may delete a match: either player of a social one (and a stranger refused), only the director of a tournament match, only the league director of a league match (a captain with a frame refused); a match with frames really deleted |
+| `026_match_settings.test.sql` | Who may change a match's rules and time: either player of a social one, only the director of a tournament match (a player and a referee refused, but a player may still record the lag winner with the rules unchanged), only the league director of a league match (a captain refused); nobody once the card is settled or approved, directors included |
 
 **A league needs a team size since `20261023213048`**, and `tests.rules()` carries `team_size: 0` (it is `DEFAULT_RULES`, for matches). A test that makes a league passes `tests.rules('{"team_size": 5}')` or similar.
 
