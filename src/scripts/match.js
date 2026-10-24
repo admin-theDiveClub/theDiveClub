@@ -2034,12 +2034,12 @@
 		} else if (canEdit && !MATCH.sanctioned && (!waiting || mine)) {
 			// While a card is waiting, only the person who sent it can take it
 			// back. The other player's way in is to say what is wrong.
-			if (confirmingDelete) {
+			if (confirmingDelete && canDelete) {
 				actions.push(mbtn('Yes, delete this match', '', { act: 'deleteconfirm' }),
 					mbtn('Keep it', '', { act: 'deletecancel' }));
 			} else {
 				if (waiting) actions.push(mbtn('Withdraw', '', { act: 'reopencard' }));
-				actions.push(mbtn('Delete match', '', { act: 'deletematch' }));
+				if (canDelete) actions.push(mbtn('Delete match', '', { act: 'deletematch' }));
 			}
 		}
 		els.resultActions.replaceChildren(...actions);
@@ -2150,7 +2150,7 @@
 
 		// Deleting is for a match started by mistake. It takes the frames with
 		// it, so it asks twice.
-		if (canEdit && !MATCH.sanctioned) {
+		if (canDelete && !MATCH.sanctioned) {
 			rows.push(confirmingDelete
 				? rowOf(
 					mbtn('Yes, delete this match', '', { act: 'deleteconfirm' }),
@@ -2252,6 +2252,9 @@
 	// cannot score is a small annoyance, a scorer whose frames are all refused
 	// is a ruined night.
 	let canEdit = false;
+	// Deleting is a narrower right than scoring: in a tournament or league
+	// match only the people running it may (audit A1, 24 Oct).
+	let canDelete = false;
 	// Why not, when the answer is no because of the tournament's rules rather
 	// than because this person is a stranger to the match. Null otherwise.
 	let noEditNote = null;
@@ -2833,6 +2836,17 @@
 			TDC.showSupabaseError(AREA, editError, els.stageStatus);
 		} else {
 			canEdit = mayEdit === true;
+		}
+
+		// The same helper the delete itself asks, so the button is never
+		// offered to somebody it would refuse.
+		const { data: mayDelete, error: deleteError } = await supabaseClient
+			.rpc('tdc_may_delete_match', { p_match_id: liveMatchId });
+		if (deleteError) {
+			canDelete = false;
+			TDC.showSupabaseError(AREA, deleteError, els.stageStatus);
+		} else {
+			canDelete = mayDelete === true;
 		}
 
 		// A player who finds the scoring buttons gone deserves a sentence
