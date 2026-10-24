@@ -15,8 +15,10 @@ const TDCNet = (() => {
 	let calm = null;
 
 	// Quiet means nothing in flight for a moment, so a page's re-read straight
-	// after its write is waited for too.
-	const QUIET_MS = 150;
+	// after its write is waited for too. That gap is a few promise steps and
+	// the sign-in token, so the moment is short: the ring draws as soon as the
+	// network really is done.
+	const QUIET_MS = 50;
 	function settle() {
 		clearTimeout(calm);
 		if (inflight) return;

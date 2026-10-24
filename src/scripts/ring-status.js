@@ -10,7 +10,8 @@
 //     labels   what the hidden live text says for each state
 //   .load(seconds, { draw, fade, lead })  start the orbit; the lead dot leaves
 //     the ring at `seconds`, and the dots keep orbiting until .resolve()
-//   .resolve(iconName | 'empty')  pick the end state, any time after load
+//   .resolve(iconName | 'empty', { now })  pick the end state, any time after
+//     load; with now, the dots leave from wherever they are, at once
 //   .setState(state)  jump straight to a state, no animation
 //   TDCRing.leadOf(icon)  the lead angle for load() when the end is known
 //
@@ -216,8 +217,7 @@ const TDCRing = (() => {
 		// seconds: load time. opts: draw, fade (seconds); lead: ring angle of the first exit (see leadOf)
 		load(seconds = 1, opts = {}) {
 			if (this.running) return;
-			this.lead = opts.lead ?? 260;
-			this.pr = makeProfile(seconds, this.lead);
+			this.pr = makeProfile(seconds, opts.lead ?? 260);
 			this.draw = opts.draw ?? 0.8;
 			this.fade = opts.fade ?? 0.5;
 			this.tf = this.fade * 0.4;
@@ -229,27 +229,50 @@ const TDCRing = (() => {
 			this.dotsG.style.display = '';
 			this.raf = requestAnimationFrame(this.frame);
 		}
-		// A new load time for an orbit that has only just started: the control
-		// learns a moment after the click, before the dots have moved, whether
-		// it is waiting on a save. The load time sets the orbit's speed and when
-		// the lead dot reaches its exit, so a short one lets a quick save be
-		// drawn quickly; a slow save keeps the dots going round until resolve.
-		retime(seconds) {
-			if (!this.running || this.T > 0.05) return;
-			this.pr = makeProfile(seconds, this.lead);
-		}
-		resolve(target) {
+		// opts.now: draw from wherever the dots are, the moment this is
+		// called, rather than when the lead dot reaches its exit at the load
+		// time (the demo's way, the default). The exit is a curve, so it can
+		// leave the ring at any point (UV, 24 Oct). A save's answer uses it:
+		// the drawing starts the moment the call is back.
+		resolve(target, opts = {}) {
 			if (!this.running || this.target) return;
 			this.target = target;
+			this.now = !!opts.now;
 			if (this.reduce.matches) this.finish();
 		}
 		plan() {
 			const pr = this.pr;
 			this.planned = true;
-			const tp = Math.max(this.T, pr.L);
+			const tp = this.now ? this.T : Math.max(this.T, pr.L);
 			this.tp = tp;
 			if (this.target === 'empty') return;
 			const ic = ICONS[this.target];
+
+			// Now: every dot leaves from wherever it is, on its curve, at once;
+			// each goes to the stroke nearest it (dot 0 still takes stroke 0).
+			if (this.now) {
+				const at = (k) => {
+					const a = nrm(pr.th(tp - k * pr.GAP));
+					return [a, C + R * Math.sin(a * D2R), C - R * Math.cos(a * D2R)];
+				};
+				const dots = [0, 1, 2, 3].map(at);
+				let best = null, bs = 0;
+				for (const as of ic.assign) {
+					let s = 0;
+					for (let k = 0; k < 4; k++) {
+						const S = ic.list[as[k]].S;
+						s += Math.hypot(S[0] - dots[k][1], S[1] - dots[k][2]);
+					}
+					if (!best || s < bs) { best = as; bs = s; }
+				}
+				this.peel = []; this.paths = [];
+				for (let k = 0; k < 4; k++) {
+					this.peel.push(tp);
+					this.paths.push(buildPath(ic.list[best[k]], dots[k][0], this.draw));
+				}
+				return;
+			}
+
 			const wait = (k, ex) => pr.peelTime(k, ex, tp) - tp;
 			let best = null, bm = 0, bs = 0;
 			for (const as of ic.assign) {

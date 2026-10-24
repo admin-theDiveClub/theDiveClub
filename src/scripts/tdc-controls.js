@@ -583,11 +583,12 @@ const TDCControls = (() => {
 		// as live before the page's own handler runs: a page that rebuilds its
 		// form inside that handler (the ruleset on /leagues/new/) hands this
 		// control straight to the new checkbox. Whether to wait for the
-		// network is decided once the handler has had its turn, before the
-		// dots have moved: if it asked the database anything, the orbit is
-		// re-timed to --ring-min (0.2 s), so a quick save is drawn quickly and
-		// a slow one keeps the dots going round until the network is quiet;
-		// if not, it orbits for --ring-load (1 s).
+		// network is decided once the handler has had its turn: if it asked
+		// the database anything, the dots go round for exactly as long as the
+		// call (and the page's re-read) takes, and the moment the network is
+		// quiet they leave from wherever they are and draw (resolve, now; no
+		// minimum, UV 24 Oct); if not, the drawing waits for --ring-load (1 s),
+		// as in the demo.
 		//
 		// A click is never ignored, drawing or not (UV, 24 Oct). It toggles
 		// the box and the page saves it (queued behind the others, TDC.writer);
@@ -596,10 +597,9 @@ const TDCControls = (() => {
 		let mark = 0;
 		let saves = false;   // whether this box saves as it changes, learnt from its first change
 		const watching = typeof TDCNet !== 'undefined';
-		const loadFor = () => saves ? secs(wrap, '--ring-min', 0.2) : secs(wrap, '--ring-load', 1);
 		function start() {
 			if (c.ring.busy) return false;
-			c.ring.load(loadFor(), {
+			c.ring.load(secs(wrap, '--ring-load', 1), {
 				draw: secs(wrap, '--ring-draw', 0.8),
 				fade: secs(wrap, '--ring-fade', 0.5),
 				lead: TDCRing.leadOf(state())
@@ -610,8 +610,7 @@ const TDCControls = (() => {
 		function finishWhen(online) {
 			if (!online) { c.ring.resolve(state()); return; }
 			const late = new Promise((r) => setTimeout(r, LIVE_FOR));
-			Promise.race([TDCNet.quiet(), late])
-				.then(() => setTimeout(() => c.ring.resolve(state()), 0));
+			Promise.race([TDCNet.quiet(), late]).then(() => c.ring.resolve(state(), { now: true }));
 		}
 
 		wrap.addEventListener('change', (e) => {
@@ -621,19 +620,17 @@ const TDCControls = (() => {
 			if (e.target !== c.box) return;
 			const fresh = start();
 			setTimeout(() => {
-				if (watching && TDCNet.started > mark && !saves) {
-					saves = true;
-					c.ring.retime(loadFor());
-				}
+				if (watching && TDCNet.started > mark) saves = true;
 				if (fresh) finishWhen(saves);
 			}, 0);
 		});
 
 		// Newly shown on the page (a setting that brings it into view): its icon
-		// draws in as the demo's does, a short orbit and the drawing.
+		// draws in as the demo's does, orbiting while its field fades in and
+		// drawing as it lands.
 		c.appear = () => {
 			if (c.ring.busy) return;
-			c.ring.load(secs(wrap, '--ring-min', 0.2), {
+			c.ring.load(secs(wrap, '--control-reveal', 0.35), {
 				draw: secs(wrap, '--ring-draw', 0.8),
 				fade: secs(wrap, '--ring-fade', 0.5),
 				lead: TDCRing.leadOf(state())

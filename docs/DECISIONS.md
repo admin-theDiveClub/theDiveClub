@@ -658,3 +658,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* a beside-control's right edge sits on the page's centre line, its words to the right; a control wider than half the row moves the line for its row only, so the two dates of a pair line up. Icons are remembered by field, so a rebuild redraws none that were already showing. `tdc-controls.js` compares the form before and after each change and fades new fields in (icons drawing, switches and rings running a short orbit) and gone ones out in place, for every page, with no page edits.
 *Rejected:* a morph helper each page calls around its rebuild (every rebuilding page edited, and the next one forgotten); fitting the date into half a phone's width by shrinking it (too small to tap on a 360px phone).
 *Touches:* `tdc-controls.js`, `controls.css`, `variables.css`, `sandbox.js`
+
+## 2026-10-24 — A save's ring draws the moment the call is back
+
+*Decided by:* UV ("The point of the animation being set to curve is that it doesn't have to actually meet the point to start drawing. Let the drawing truly start when the load is done.")
+*Replaces:* the 0.2 s re-timed orbit (`--ring-min`, `RingStatus.retime`) from earlier the same day, which still made the lead dot come round to a set exit point.
+*So:* `resolve(target, { now: true })`: every dot leaves from where it is, on the demo's curved exit, to the stroke start nearest it. A box that saves uses it as soon as the network has been quiet for 50 ms (down from 150; the gap it guards, a page's re-read starting after its write, is a few milliseconds). Measured with a 50 ms save: dots leave at 0.21 s (from 1.37 s with the 1 s profile). A box in a form keeps the demo's timing, 1 s.
+*Touches:* `ring-status.js`, `tdc-controls.js`, `supabaseClient.js`, `variables.css`, `sandbox.js`
