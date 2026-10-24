@@ -8,6 +8,7 @@
 	align-items: center;
 	justify-content: space-between;
 	padding: 0 1rem;
+	background: var(--bg-surface);
 	border-bottom: 1px solid var(--border-color);
 	z-index: 100;
 	transition: transform 0.25s ease;
@@ -18,13 +19,16 @@
 /* The bar's frosted glass is a layer behind it, not the bar itself (UV,
    24 Oct). A backdrop-filter on the bar makes it a backdrop root, and the
    tray and the profile panel inside it then blur only the bar, not the page,
-   so their own blur showed nothing. */
+   so their own blur showed nothing. The colour stays on the bar itself:
+   Safari on an iPhone tints and blurs the strip round the Dynamic Island
+   from the background colour of the bar at the top, and with the colour
+   moved to this layer the strip went plain (UV, 25 Oct). The layer blurs
+   the page; the bar's colour sits over it, as before. */
 .site-nav::before {
 	content: "";
 	position: absolute;
 	inset: 0;
 	z-index: -1;
-	background: var(--bg-surface);
 	backdrop-filter: blur(var(--surface-blur));
 	-webkit-backdrop-filter: blur(var(--surface-blur));
 }
