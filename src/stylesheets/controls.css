@@ -53,21 +53,24 @@
 .tdc-select-next svg { transform: rotate(90deg); }
 
 /* ── Where a control sits in its field ───────────────────────────────
-   Every control is centred in the space it has (UV, 24 Oct). A vertical
-   one (a stepper, a date) takes the left of its row with its label and
-   hint to the right, sitting on the bottom line; the script marks the
-   field .field-beside. A select pill keeps its label above. */
+   Every control is centred in its row (UV, 24 Oct). A vertical one (a
+   stepper, a date) has its label and hint to its right, on the bottom
+   line, and the control and its words are one pair centred together, a
+   gap apart; the script marks the field .field-beside. The words column
+   is only as wide as its words, up to a measure, so a short label does
+   not push the pair off centre. A select pill keeps its label and hint
+   above and below, centred with it (.field-centred). */
 .field.field-beside {
 	display: grid;
-	grid-template-columns: minmax(max-content, 1fr) 1fr;
+	grid-template-columns: auto fit-content(14rem);
 	grid-template-rows: 1fr auto auto;
+	justify-content: center;
 	column-gap: var(--space-4);
 }
 .field-beside > .tdc-stepper,
 .field-beside > .tdc-date {
 	grid-column: 1;
 	grid-row: 1 / -1;
-	justify-self: center;
 	align-self: center;
 }
 .field-beside > label { grid-column: 2; grid-row: 2; }
@@ -85,6 +88,8 @@
 	width: fit-content;
 	margin-inline: auto;
 }
+.field.field-centred > label,
+.field.field-centred > .hint { text-align: center; }
 
 /* ── Stepper ──────────────────────────────────────────────────────────
    A number in a pill, a chevron above and below (UV, 24 Oct). A chevron
@@ -237,8 +242,12 @@
 }
 .tdc-select-track::-webkit-scrollbar { display: none; }
 
-/* The green pill. Placed by the script; it slides only once the track is
-   marked animated, so the first drawing does not sweep in from the left. */
+/* The green pill. Placed by the script; it slides only while the track is
+   marked animated, so the first drawing, a resize and the jump back to
+   where a rebuilt select's pill was do not slide. transition-property must
+   be none here, not left out: the script sets the duration inline, and the
+   property's default (all) would animate those jumps too, which made the
+   slide start from the wrong place (seen going left, 24 Oct). */
 .tdc-select-thumb {
 	position: absolute;
 	top: 0;
@@ -247,6 +256,7 @@
 	border-radius: var(--radius-pill);
 	background: var(--color-primary);
 	pointer-events: none;
+	transition-property: none;
 }
 .tdc-select-track.is-animated .tdc-select-thumb {
 	transition-property: transform, width;

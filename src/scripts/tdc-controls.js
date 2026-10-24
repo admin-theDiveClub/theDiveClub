@@ -142,8 +142,12 @@ const TDCControls = (() => {
 	// A vertical control sits beside its label and hint rather than under
 	// them (UV, 24 Oct): marks its .field so controls.css can lay it out.
 	function besideLabel(control) {
+		markField(control, 'field-beside');
+	}
+	// A control centred under its label: the label and hint centre with it.
+	function markField(control, cls) {
 		const field = control.parentElement;
-		if (field && field.classList.contains('field')) field.classList.add('field-beside');
+		if (field && field.classList.contains('field')) field.classList.add(cls);
 	}
 
 	// ─── Stepper ───
@@ -446,6 +450,7 @@ const TDCControls = (() => {
 		thumb.setAttribute('aria-hidden', 'true');
 		select.replaceWith(box);
 		box.append(prev, track, next, select);
+		markField(box, 'field-centred');
 
 		const enabled = () => [...select.options].map((o, i) => o.disabled ? -1 : i).filter((i) => i >= 0);
 		const chosenButton = () => track.querySelector('.tdc-select-option.is-selected');
