@@ -39,8 +39,7 @@
 		sizeRow: el('size-row'), reservesField: el('reserves-field'),
 		overrides: el('overrides-note'),
 		main: el('settings-main'), rest: el('settings-rest'),
-		save: el('save-btn'), status: el('page-status'),
-		manageLink: el('manage-link')
+		save: el('save-btn'), status: el('page-status')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -332,7 +331,6 @@
 			TDC.error(AREA, 'no league season in the address. Open this page from the league.', null, els.status);
 			return;
 		}
-		els.manageLink.href = '/leagues/manage/?s=' + encodeURIComponent(seasonId);
 
 		// Settled before anything is drawn. tdc_update_league asks whether the
 		// caller may manage the league, which a season's director always may.

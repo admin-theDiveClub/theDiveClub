@@ -38,8 +38,7 @@
 		teamCount: el('team-count'), teamList: el('team-list'), teamEmpty: el('team-empty'),
 		officialList: el('official-list'),
 		status: el('page-status'),
-		manageLink: el('manage-link'), manageSep: el('manage-sep'),
-		fixturesLink: el('fixtures-link'), meCard: el('me-card')
+		meCard: el('me-card')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -164,9 +163,6 @@
 		els.meta.textContent = info.name;
 		els.jumboPic.replaceChildren(svgIcon(TROPHY, true));
 
-		els.manageLink.hidden = !info.i_run_it;
-		els.manageSep.hidden = !info.i_run_it;
-		if (info.i_run_it) els.manageLink.href = '/leagues/manage/?s=' + encodeURIComponent(seasonId);
 		return true;
 	}
 
@@ -700,7 +696,6 @@
 			return;
 		}
 
-		els.fixturesLink.href = '/leagues/fixtures/?s=' + encodeURIComponent(seasonId);
 
 		const me = await TDC.getMyPlayer(AREA, session.user.id, els.status);
 		if (!me) return;

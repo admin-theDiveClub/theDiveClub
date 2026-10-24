@@ -5,6 +5,7 @@ description: "The league's schedule, round by round."
 extraStyles:
   - /stylesheets/league.css
 extraScripts:
+  - /scripts/league-nav.js
   - /scripts/league-fixtures.js
 ---
 {% comment %}
@@ -28,6 +29,8 @@ extraScripts:
 {% endcomment %}
 
 <div class="tdc-card wide">
+	<nav class="league-nav" id="league-nav" data-page="fixtures" hidden></nav>
+
 	<h1 id="l-name">Fixtures</h1>
 	<p class="muted" id="l-meta"></p>
 
@@ -191,11 +194,4 @@ extraScripts:
 
 	<div class="status" id="page-status"></div>
 
-	<div class="link-row">
-		<a href="#" id="season-link">The season</a>
-		<span id="manage-sep" hidden>&nbsp;·&nbsp;</span>
-		<a href="#" id="manage-link" hidden>Run this season</a>
-		&nbsp;·&nbsp;
-		<a href="/leagues/">Back to leagues</a>
-	</div>
 </div>

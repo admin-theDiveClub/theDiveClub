@@ -43,8 +43,7 @@
 		addHome: el('add-home'), addAway: el('add-away'), addBtn: el('add-btn'),
 		fFrom: el('f-from'), fTo: el('f-to'), fTeam: el('f-team'), fStatus: el('f-status'), fByes: el('f-byes'),
 		allView: el('all-view'), allTable: el('all-table'), empty: el('fixtures-empty'), allNone: el('all-none'),
-		status: el('page-status'),
-		seasonLink: el('season-link'), manageLink: el('manage-link'), manageSep: el('manage-sep')
+		status: el('page-status')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -206,9 +205,6 @@
 
 		els.generatePanel.hidden = !iRunIt;
 		els.addPanel.hidden = !iRunIt;
-		els.manageLink.hidden = !iRunIt;
-		els.manageSep.hidden = !iRunIt;
-		if (iRunIt) els.manageLink.href = '/leagues/manage/?s=' + encodeURIComponent(seasonId);
 		return true;
 	}
 
@@ -1201,7 +1197,6 @@
 			return;
 		}
 
-		els.seasonLink.href = '/leagues/season/?s=' + encodeURIComponent(seasonId);
 
 		if (!await loadInfo()) return;
 		showTimesHint();

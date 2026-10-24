@@ -6,6 +6,7 @@ extraStyles:
   - /stylesheets/league.css
 extraScripts:
   - /scripts/match-settings.js
+  - /scripts/league-nav.js
   - /scripts/league-season.js
 ---
 {% comment %}
@@ -28,6 +29,8 @@ extraScripts:
 {% endcomment %}
 
 <div class="tdc-card wide">
+	<nav class="league-nav" id="league-nav" data-page="season" hidden></nav>
+
 	<section class="jumbo" id="jumbo">
 		<div class="jumbo-pic" id="jumbo-pic"></div>
 		<div class="jumbo-main">
@@ -72,11 +75,4 @@ extraScripts:
 
 	<div class="status" id="page-status"></div>
 
-	<div class="link-row">
-		<a href="#" id="fixtures-link">Fixtures</a>
-		&nbsp;·&nbsp;
-		<a href="#" id="manage-link" hidden>Run this season</a>
-		<span id="manage-sep" hidden>&nbsp;·&nbsp;</span>
-		<a href="/leagues/">Back to leagues</a>
-	</div>
 </div>

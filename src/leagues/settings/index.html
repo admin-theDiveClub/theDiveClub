@@ -6,6 +6,7 @@ extraStyles:
   - /stylesheets/league.css
 extraScripts:
   - /scripts/match-settings.js
+  - /scripts/league-nav.js
   - /scripts/league-settings.js
 ---
 {% comment %}
@@ -23,6 +24,8 @@ extraScripts:
 {% endcomment %}
 
 <div class="tdc-card wide">
+	<nav class="league-nav" id="league-nav" data-page="settings" hidden></nav>
+
 	<h1 id="l-title">League Settings</h1>
 	<p class="muted" id="l-meta"></p>
 
@@ -91,7 +94,4 @@ extraScripts:
 	<button type="button" class="btn-primary" id="save-btn" disabled>Save</button>
 	<div class="status" id="page-status"></div>
 
-	<div class="link-row">
-		<a href="#" id="manage-link">Back to the league</a>
-	</div>
 </div>

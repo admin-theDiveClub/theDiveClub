@@ -5,6 +5,7 @@ description: "Add players, make teams and see who has confirmed."
 extraStyles:
   - /stylesheets/league.css
 extraScripts:
+  - /scripts/league-nav.js
   - /scripts/league-manage.js
 ---
 {% comment %}
@@ -24,6 +25,8 @@ extraScripts:
 {% endcomment %}
 
 <div class="tdc-card wide">
+	<nav class="league-nav" id="league-nav" data-page="manage" hidden></nav>
+
 	<h1 id="l-name">League</h1>
 	<p class="muted" id="l-meta"></p>
 
@@ -233,15 +236,4 @@ extraScripts:
 
 	<div class="status" id="page-status"></div>
 
-	<div class="link-row">
-		<a href="#" id="fixtures-link">Fixtures</a>
-		&nbsp;·&nbsp;
-		<a href="#" id="settings-link">Settings</a>
-		&nbsp;·&nbsp;
-		<a href="#" id="season-link">How players see it</a>
-		&nbsp;·&nbsp;
-		<a href="#" id="new-season-link">Open another season</a>
-		&nbsp;·&nbsp;
-		<a href="/leagues/">Back to leagues</a>
-	</div>
 </div>

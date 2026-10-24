@@ -46,7 +46,7 @@
 		signPanel: el('sign-panel'), signHome: el('sign-home'), signAway: el('sign-away'),
 		changedSince: el('changed-since'), changedList: el('changed-list'),
 		signBtn: el('sign-btn'), disputeBtn: el('dispute-btn'),
-		status: el('page-status'), fixturesLink: el('fixtures-link')
+		status: el('page-status')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -121,7 +121,8 @@
 
 		els.title.textContent = match.home_name + ' v ' + match.away_name;
 		els.meta.textContent = when(match.scheduled_at);
-		els.fixturesLink.href = '/leagues/fixtures/?s=' + encodeURIComponent(match.league_season_id);
+		// The league's pages, once the match has said which season it is in.
+		TDCLeagueNav.show(match.league_season_id);
 		return true;
 	}
 

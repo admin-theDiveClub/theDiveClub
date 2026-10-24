@@ -4,6 +4,7 @@ title: Team Card
 description: "The night's card: lineups, every frame, and the two signatures."
 extraScripts:
   - /scripts/match-settings.js
+  - /scripts/league-nav.js
   - /scripts/league-card.js
 ---
 {% comment %}
@@ -30,6 +31,8 @@ extraScripts:
 {% endcomment %}
 
 <div class="tdc-card wide">
+	<nav class="league-nav" id="league-nav" data-page="card" data-auto="no" hidden></nav>
+
 	<h1 id="m-title">Team Card</h1>
 	<p class="muted" id="m-meta"></p>
 
@@ -102,9 +105,4 @@ extraScripts:
 
 	<div class="status" id="page-status"></div>
 
-	<div class="link-row">
-		<a href="#" id="fixtures-link">All fixtures</a>
-		&nbsp;·&nbsp;
-		<a href="/leagues/">Back to leagues</a>
-	</div>
 </div>

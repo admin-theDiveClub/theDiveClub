@@ -896,3 +896,44 @@ textarea:not(:disabled):hover {
 	white-space: nowrap;
 	border: 0;
 }
+
+/* ── A league's pages (league-nav.js, UV 24 Oct) ─────────────────────
+   Every page of a league season in one horizontal pill at the top of the
+   page, drawn like a select pill: the outline, the options side by side,
+   the current page in the green pill. It scrolls sideways when it does not
+   fit (the soft edges from .scroll-x), and is centred when it does. */
+.league-nav {
+	display: flex;
+	width: fit-content;
+	max-width: 100%;
+	margin: 0 auto var(--space-5);
+	padding: var(--space-1);
+	border: var(--control-border) solid var(--control-line);
+	border-radius: var(--radius-pill);
+}
+.league-nav[hidden] { display: none; }
+/* The outline stays put; the pages scroll inside it, as a select pill's
+   options do. */
+.league-nav-track {
+	display: flex;
+	gap: 2px;
+	min-width: 0;
+	overflow-x: auto;
+	scrollbar-width: none;
+	border-radius: var(--radius-pill);
+}
+.league-nav-track::-webkit-scrollbar { display: none; }
+.league-nav-item {
+	flex: 0 0 auto;
+	padding: var(--space-2) var(--space-3);
+	border-radius: var(--radius-pill);
+	color: var(--text-primary);
+	font-size: var(--select-text);
+	font-weight: 600;
+	white-space: nowrap;
+	text-decoration: none;
+	transition: background-color 0.15s ease;
+}
+a.league-nav-item:hover,
+a.league-nav-item:focus-visible { background: var(--hover-wash); outline: none; }
+.league-nav-item[aria-current="page"] { background: var(--color-primary); color: var(--color-on-primary); }

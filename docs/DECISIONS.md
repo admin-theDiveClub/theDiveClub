@@ -727,3 +727,11 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* the season page opens with a banner (the league's picture, name, season, status, and how it is played, the venue linked) and the league's numbers, counted from the fixtures and teams. A team's name anywhere on the fixtures page opens the season page with that team expanded and in view. Every player and official shows their picture and links to a player page; the venue links to a venue page; both pages say they are not built yet. How many have confirmed, which "Ready to begin?" said, is now one of the numbers, for the people who could see it before.
 *Rejected:* a separate team page for now (UV: on the list for another time).
 *Touches:* migration `20261024195612`, `league-season.js`, `leagues/season/index.html`, `league-fixtures.js`, `league.css`, `venues/index.html`, `players/index.html`
+
+## 2026-10-24 — A league's pages are one pill at the top of each
+
+*Decided by:* UV (always there, every page, a horizontal pill); who sees which, Claude
+*Replaces:* the links at the foot of each league page, different on each and some shown only to the director.
+*So:* the season, fixtures, manage, settings and card pages share one bar at the top: Season, Fixtures, Run it, Settings, New season, All leagues, the current page in the green pill, scrolling sideways on a phone. Run it, Settings and New season are offered only to the people running the league; to a player they would only be refused.
+*Rejected:* showing every page to everybody (a player would meet a refusal); a menu that opens (UV asked for the pill, not a dropdown).
+*Touches:* `league-nav.js`, `forms.css`, the five league pages and their scripts
