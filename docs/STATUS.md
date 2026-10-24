@@ -6,7 +6,7 @@ Updated at every milestone, in the same breath as giving UV a commit subject. Ne
 
 Last updated: **24 Oct 2026** (just after midnight: the lineup is one per position; reserves under three rules)
 
-**Database is current through `20261023221049`** (checked against production's migration list, 24 Oct 09:58). **Waiting to push: `20261024080007`** (audit A1: who may delete a match; deleting a match with frames works again). **Push it before deploying the site**: the match page asks `tdc_may_delete_match`, which only this migration has, and shows no Delete button if the question fails.
+**Database is current through `20261024080007`** (checked against production's migration list, 24 Oct). **Nothing is waiting to push.**
 
 ---
 
@@ -38,7 +38,7 @@ Found in a read-only review of every migration, the front end, the edge function
 
 | | Where | What happens | Fix |
 |---|---|---|---|
-| A1 | `tdc_delete_match` | Any player in a tournament or league match could delete it | **Written and tested: `20261024080007` plus `match.js`, waiting for UV to push and deploy.** Only the people running the competition; the match page hides the button otherwise. Also fixes deleting any match with a frame, broken since 21 Oct (`docs/systems/matches.md`) |
+| A1 | `tdc_delete_match` | Any player in a tournament or league match could delete it | **Done 24 Oct: `20261024080007` (pushed) plus `match.js`.** Only the people running the competition; the match page hides the button otherwise. Also fixes deleting any match with a frame, broken since 21 Oct (`docs/systems/matches.md`) |
 | A2 | `tdc_update_match_settings` (`20261015180000`) | Refuses an *agreed* card but not an *approved* one, so a player can change a competition match's rules (e.g. approval off), which reopens the card | Competition matches: directors only, and never after approval |
 | A3 | `tdc_set_match_time` | Same gap — players can move a competition match, which also moves the lineup cutoff | Same guard as A2 |
 | A4 | `tdc_record_frame`, team matches | Players named in a frame are not checked against the teams' rosters, and being in a frame grants edit rights | Check each player is an active entrant of that side |
