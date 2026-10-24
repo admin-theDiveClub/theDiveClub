@@ -576,3 +576,12 @@ These predate the log. They are recorded here because every one of them is a dec
 *Example:* Ann is recorded as winning frame 7, but Gus played it. The LD presses Clear result on frame 7, chooses Gus in the picker, and presses Hosts won.
 *Rejected:* letting the league director (only) send a changed list through `tdc_record_frame`, each player checked against their team — more code, and a second way in that skips the reserve rules.
 *Touches:* `tdc_record_frame`
+
+## 2026-10-24 — In a walk-in merge, a clash keeps the account's row
+
+*Decided by:* UV (audit A5): *"Always keep account's and remove walk-in."*
+*Why:* the merge moves everything from the signup record (the account's) onto the walk-in record. Where both have a row that cannot coexist (a notification setting for the same category, places in the same match's squad or lineup), one has to go. The account's is the person's own recent choice; the walk-in's was typed by staff, or written some other way.
+*So:* migration `20261024090641`. The account's setting wins. In any match where the account is in the squad or lineup, the walk-in's squad row is deleted and its positions emptied, which is what a captain clearing a position leaves. The merge never fails on a duplicate there. A walk-in cannot reach these tables through any function, so this covers direct writes only.
+*Example:* Ken's account is at Hosts position 1 in Tuesday's match and has league notifications off. His walk-in record somehow sits at Guests position 2 with them on. After the link, Ken is at Hosts position 1, Guests position 2 is empty, and league notifications are off.
+*Rejected:* refusing the merge on a lineup clash with a plain message (Claude's recommendation, matching the existing "played each other" guards).
+*Touches:* `private.tdc_merge_players`

@@ -4,9 +4,9 @@
 
 Updated at every milestone, in the same breath as giving UV a commit subject. Never batched to the end of a session.
 
-Last updated: **24 Oct 2026** (A4: a team frame's players come from the lineup)
+Last updated: **24 Oct 2026** (A5: the walk-in merge keeps squads, lineups and notification settings)
 
-**Production is current through `20261024082447`** (A2/A3; checked against production's migration list, 24 Oct). **Waiting to push: `20261024084837`** (A4). It changes no page, so the order against a deploy does not matter.
+**Production is current through `20261024082447`** (A2/A3; checked against production's migration list, 24 Oct). **Waiting to push: `20261024084837`** (A4) **and `20261024090641`** (A5). Neither changes a page, so the order against a deploy does not matter.
 
 ---
 
@@ -16,6 +16,7 @@ Nothing here can be done by Claude.
 
 | | What | Why it matters |
 |---|---|---|
+| 00b | **Push `20261024090641` (A5), then retest the merge** | This is item 2 below. Production has **no walk-in records** (checked 24 Oct), so make one first. As Owner@TDC on `/staff/`, add a walk-in; then on `/staff/link/` link it to a dummy Test_WedSim player who is in a lineup (e.g. Dylan Fourie, Team 0 position 5). **It cannot be undone**: the dummy's player record becomes the walk-in's. Afterwards Team 0 v Team 3 should still show them at position 5 with their frames. Claude checks the rows |
 | 00a | **Push `20261024084837` (A4)** | Nothing to see: the card sends neither of the things it refuses. After pushing, record one result and one lag on Team 0 v Team 3 (frame 15 has Thabo Mokoena in it, who has since moved to Team 2; it must still save) |
 | 00 | **Deploy if not done, then try A2/A3** (migration pushed, confirmed 24 Oct) | In **Test Tournament - 2**, open Linton Paul v UV (in progress, 1 frame). **As UV** (a player and its scorer): the panel says the rules and time are set by whoever runs the tournament; every setting and the time are greyed out except **Lag winner**, which still saves. **As Owner@TDC** (its director): everything is open; change the time and it saves. No notification will arrive when Owner@TDC moves it (B7). Ignore the "Social match" line at the top of the panel (§6) |
 | 0a | **Try the league settings page** | After pushing `20261023193153` and deploying: open Test_WedSim_8BMTL → Settings (TestTuesday and Test 8BMTL were cleared on 23 Oct). Set team size 5, look at the rotation grid, change one cell in session 2 and watch it swap, save. The message should say **2 matches now use these rules** (neither has started) and none kept. To see the card follow it, try team size 4 once: a match's card should then offer 16 slots, not 25. Set it back to 5 afterwards |
@@ -26,7 +27,7 @@ Nothing here can be done by Claude.
 | 0d | **Try the league pages on a phone** | Steps 2 and 3 are pushed and were proven only on a throwaway Postgres driven by headless Chromium. At `/leagues/`: create a league, add a second account, make two teams, confirm as both, generate the fixtures, start a match |
 | 1 | **Play through sections 8, 11, 12, 13 and 14 of the test plan** | Several builds are proven only against a scratch database. The logic is verified; a real league night is not |
 | 1b | **Try the bracket editor on a real draw** | Insert a prelim, add a match to it, click an arrow to rewire, remove a match. Proven against a scratch database and rendered in headless Chromium; never driven by a person. **Check a tournament with a third-place playoff in particular** — it was broken from 22 Oct until this build and nobody hit it |
-| 2 | **Retest the walk-in merge via `/staff/link/`** | The one thing left that could lose real data. Changed again on 21 Oct by the merge fix, so earlier testing no longer counts |
+| 2 | **Retest the walk-in merge via `/staff/link/`** | The one thing left that could lose real data. Changed on 21 Oct and again on 24 Oct (A5), so earlier testing no longer counts. Now covered locally by `028_merge_players`; the steps are in 00b |
 | 3 | **Enable the signup bot check** (Turnstile or hCaptcha) | Self-entry currently rests on a confirmed email address alone. The bot check is the other half of "a verified account" |
 | 4 | **Set the black-alpha values** for the refreshed branding | UV sets them himself on `/sandbox/` (palette Depth strengths and the logo controls) and saves them into `variables.css` (22 Oct). Done once he has saved and committed them |
 
@@ -42,7 +43,7 @@ Found in a read-only review of every migration, the front end, the edge function
 |---|---|---|---|
 | A2 + A3 | `tdc_update_match_settings`, `tdc_set_match_time` | A player could change a competition match's rules after approval (e.g. approval off, which unpublished it), or move it and its lineup cutoff | **Pushed (`20261024082447`); `match.js` deploys with the site.** UV to try it (§1, 00). Directors only, never once settled; the lag winner stays with the players |
 | A4 | `tdc_record_frame`, team matches | A sent player list could put anybody into a team frame, and being in a frame grants edit rights | **Written and tested 24 Oct: `20261024084837`, waiting for UV to push** (`docs/systems/leagues.md`). On a team card it never changes who is in a frame or makes one; the reserve picker is the one way in |
-| A5 | `private.tdc_merge_players` | Misses `tbl_league_match_squad`, `tbl_league_match_order` and `tbl_notification_prefs`; a merge empties lineups | Add them; run the migration's foreign-key query |
+| A5 | `private.tdc_merge_players` | Missed `tbl_league_match_squad`, `tbl_league_match_order` and `tbl_notification_prefs`; a merge emptied lineups and reset notification settings | **Written and tested 24 Oct: `20261024090641`, waiting for UV to push** (`docs/systems/foundations.md`). All 22 references handled; on a clash the account's row wins |
 
 ### Before more real players join
 
