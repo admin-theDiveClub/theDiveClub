@@ -11,6 +11,10 @@
 // and sending the merged copy back would bake one season's changes into the
 // whole league.
 //
+// The season's status (24 Oct) is the league director's: taking entries,
+// running, on break, finished (TDCMatchDef.LEAGUE_STATUS), saved with its
+// own call between the two below, and only when it changed.
+//
 // Saving is two writes, the season first. tdc_update_league_season takes the
 // season's name, and its dates only when they changed: the dates live on the
 // season period, which another league can share, and a shared one is refused
@@ -30,7 +34,8 @@
 	const el = (id) => document.getElementById(id);
 	const els = {
 		title: el('l-title'), meta: el('l-meta'), name: el('l-name'),
-		seasonName: el('s-name'), start: el('s-start'), end: el('s-end'), reserves: el('s-reserves'),
+		seasonName: el('s-name'), seasonStatus: el('s-status'),
+		start: el('s-start'), end: el('s-end'), reserves: el('s-reserves'),
 		overrides: el('overrides-note'),
 		main: el('settings-main'), rest: el('settings-rest'),
 		save: el('save-btn'), status: el('page-status'),
@@ -49,6 +54,7 @@
 	let leagueId = null;
 	let rules = null;
 	let savedDates = { start: '', end: '' };   // as last read, to send only a change
+	let savedStatus = '';                      // likewise
 	// Team play is what this page is mostly for, so it starts open.
 	const openGroups = new Set(['Team play']);
 	let busy = false;
@@ -59,6 +65,12 @@
 		if (text !== undefined) n.textContent = text;
 		return n;
 	};
+
+	els.seasonStatus.append(...Object.entries(D.LEAGUE_STATUS).map(([value, text]) => {
+		const o = node('option', null, text);
+		o.value = value;
+		return o;
+	}));
 
 	// A league made before 23 Oct is at version 1 or 2. Every key added since
 	// defaults to how the system already behaved — no cutoff, any order, no
@@ -150,13 +162,19 @@
 
 		// Not in tdc_league_season_info; the season row is readable directly.
 		const row = await supabaseClient
-			.from('tbl_league_seasons').select('max_reserves').eq('id', seasonId).maybeSingle();
+			.from('tbl_league_seasons').select('max_reserves, status').eq('id', seasonId).maybeSingle();
 		if (row.error) { TDC.showSupabaseError(AREA, row.error, els.status); return false; }
 		if (!row.data) {
-			TDC.error(AREA, 'the season\'s reserves could not be read.', { seasonId }, els.status);
+			TDC.error(AREA, 'the season\'s reserves and status could not be read.', { seasonId }, els.status);
 			return false;
 		}
 		els.reserves.value = row.data.max_reserves;
+		if (!D.LEAGUE_STATUS[row.data.status]) {
+			TDC.error(AREA, 'this season has a status the page does not know: ' + row.data.status, { seasonId }, els.status);
+			return false;
+		}
+		savedStatus = row.data.status;
+		els.seasonStatus.value = savedStatus;
 
 		// A season's own changes still apply on top. There is no form for
 		// them yet, so the director is at least told they exist.
@@ -260,6 +278,21 @@
 			return;
 		}
 
+		// The status is its own call (tdc_set_league_season_status), sent only
+		// when it changed. A refusal here leaves the season's other changes in.
+		if (els.seasonStatus.value !== savedStatus) {
+			const st = await supabaseClient.rpc('tdc_set_league_season_status', {
+				p_league_season_id: seasonId, p_status: els.seasonStatus.value
+			});
+			if (st.error) {
+				busy = false;
+				els.save.disabled = false;
+				TDC.showSupabaseError(AREA, st.error, els.status);
+				els.status.textContent += ' The season\'s name, dates and reserves were saved; its status and the league\'s name and rules were not.';
+				return;
+			}
+		}
+
 		const { data, error } = await supabaseClient.rpc('tdc_update_league', {
 			p_league_id: leagueId,
 			p_name: name,
@@ -274,7 +307,7 @@
 			els.save.disabled = false;
 			TDC.showSupabaseError(AREA, error, els.status);
 			// Said, because half of it did land.
-			els.status.textContent += ' The season\'s name, dates and reserves were saved; the league\'s name and rules were not.';
+			els.status.textContent += ' The season\'s name, dates, reserves and status were saved; the league\'s name and rules were not.';
 			return;
 		}
 

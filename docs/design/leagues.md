@@ -47,6 +47,11 @@ way.
 > control them, claiming players who have confirmed. Players can be added
 > mid-season by the director and are then claimed. Captains inviting players is
 > deferred.
+>
+> **Changed by UV on 24 Oct:** a league season *does* have a status, set by its
+> director rather than derived — taking entries, running, on break, finished,
+> more to come (`20261024094617`). And singles leagues should exist (team size
+> 1), which is not built yet. Both in `docs/DECISIONS.md`.
 
 **Teams do not persist across seasons.** A new entity each season carrying
 `league_season_id`, with a nullable `team_lineage_id` linking successive

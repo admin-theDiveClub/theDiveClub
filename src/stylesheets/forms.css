@@ -268,7 +268,7 @@
 	color: inherit;
 	text-decoration: none;
 }
-.match-card:hover { border-color: var(--color-primary); }
+.match-card:hover { border-color: var(--color-primary); box-shadow: var(--glow-primary); }
 .match-top {
 	display: flex;
 	align-items: baseline;
@@ -399,6 +399,17 @@
 /* A card that holds a table or a list rather than a form. */
 .tdc-card.wide { max-width: 860px; }
 
+/* On a PC every page fills ten of twelve columns, a column's margin either
+   side (UV, 24 Oct: "1:10:1", Bootstrap's large breakpoint). Everything in it
+   stretches, forms included. A phone and a tablet keep the column above. */
+@media (min-width: 992px) {
+	.tdc-card,
+	.tdc-card.wide {
+		max-width: none;
+		width: calc(100% * 10 / 12);
+	}
+}
+
 /* The button shape, lifted off ".tdc-card button" so it can be used
    anywhere. .tdc-card button still gets it for free. */
 .btn,
@@ -505,6 +516,141 @@
 .list-row-main { flex: 1 1 auto; min-width: 0; }
 .list-row-main .sub { display: block; font-size: 0.82rem; color: var(--text-muted); }
 .list-row-actions { flex: 0 0 auto; display: flex; gap: var(--space-2); }
+
+/* ── Row table ───────────────────────────────────────────────────────
+   A table of things you open: each row a link, a heading with a line
+   under it, badges in a column of their own, then data columns. Built on
+   /leagues/ (24 Oct) and shared from here.
+
+     .row-table                 the list; set --row-cols for the PC tracks
+       .row-table-head          the header row, shown on a PC only
+       a.row-table-row          one row
+         .row-table-strip       optional: a status colour down the left
+         .row-table-main        h3 + .row-table-meta
+         .row-table-badges      badges, stacked
+         .row-table-stats       the data columns
+           .row-table-stat      .row-table-label + value (+ .sub)
+
+   On a phone the data columns sit in a labelled strip under the heading.
+   On a PC they become the row's own columns under the header row, every
+   row sharing --row-cols so the columns line up. Explicit grid tracks, not
+   a flex line, so the heading's 1fr cannot be squeezed away (docs/ui.md §3).
+
+   The row is padded on every side and pulled out by the same amount, so its
+   text stays in line with the headings around it while the glow has room.
+   The line under it is drawn inset (::after), not as its border, so it stays
+   straight under the glow's rounded corners and ends where the text ends.
+   The strip sits in that pulled-out margin and takes the row's left
+   corners. */
+.row-table {
+	--row-cols: minmax(0, 1fr) auto;
+	--row-radius: var(--radius-md);
+	margin-bottom: var(--space-5);
+}
+.row-table-head { display: none; }
+
+.row-table-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: var(--space-3);
+	align-items: center;
+	position: relative;
+	padding: var(--space-3);
+	margin: 0 calc(-1 * var(--space-3));
+	border-radius: var(--row-radius);
+	color: inherit;
+	text-decoration: none;
+	transition: box-shadow 0.15s;
+}
+.row-table-row::after {
+	content: '';
+	position: absolute;
+	left: var(--space-3);
+	right: var(--space-3);
+	bottom: 0;
+	border-bottom: 1px solid var(--border-color);
+}
+.row-table-row:last-child::after,
+.row-table-row:hover::after,
+.row-table-row:focus-visible::after { display: none; }
+.row-table-row:hover,
+.row-table-row:focus-visible {
+	box-shadow: var(--glow-primary);
+	outline: none;
+}
+
+/* Default green: the brand colour. A page sets --strip-color per status. */
+.row-table-strip {
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: var(--space-2);
+	background: var(--strip-color, var(--color-primary));
+	border-radius: var(--row-radius) 0 0 var(--row-radius);
+}
+
+.row-table-row h3 {
+	margin: 0 0 var(--space-1);
+	font-size: 0.95rem;
+	line-height: 1.2;
+	overflow-wrap: anywhere;
+}
+.row-table-meta {
+	font-size: 0.85rem;
+	color: var(--text-muted);
+	line-height: 1.4;
+}
+
+.row-table-badges {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: var(--space-1);
+}
+.row-table-badges .badge { white-space: nowrap; }
+
+.row-table-stats {
+	grid-column: 1 / -1;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+	gap: var(--space-2);
+}
+.row-table-stat {
+	display: flex;
+	flex-direction: column;
+	font-size: 0.85rem;
+	line-height: 1.3;
+	min-width: 0;
+}
+.row-table-stat .sub {
+	font-size: 0.75rem;
+	color: var(--text-muted);
+}
+
+.row-table-label,
+.row-table-head {
+	font-size: 0.65rem;
+	font-weight: 600;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+}
+.row-table-label { margin-bottom: 0.1rem; }
+
+@media (min-width: 992px) {
+	.row-table-head {
+		display: grid;
+		grid-template-columns: var(--row-cols);
+		gap: var(--space-3);
+		padding-bottom: var(--space-2);
+		border-bottom: 1px solid var(--border-color);
+	}
+	.row-table-row { grid-template-columns: var(--row-cols); }
+	.row-table-badges { align-items: flex-start; }
+	.row-table-stats { display: contents; }
+	.row-table-label { display: none; }
+}
 
 /* Nothing here yet, and that is not an error. */
 .empty {

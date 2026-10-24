@@ -137,3 +137,105 @@
 
 /* A warning under a field: allowed, but worth a second look. */
 .field .hint.warn { color: var(--color-warning); }
+
+/* ── Sections divided by a line ──
+ *
+ * The same rule the profile page carries inline. If a third page wants it,
+ * it belongs in forms.css.
+ */
+.section { border-top: 1px solid var(--border-color); padding-top: var(--space-2); margin-top: var(--space-6); }
+.section:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
+
+/* ── Your leagues on /leagues/ ──
+ *
+ * A .row-table (forms.css). Only its PC column tracks are this page's:
+ * the name, the badges, starts, ends, ranking, teams.
+ */
+.row-table.league-rows { --row-cols: minmax(0, 1fr) 9rem 6.5rem 6.5rem 4.5rem 6.5rem; }
+
+/* A season's status colour, on the row's strip and the search tile's edge.
+ * The keys are TDCMatchDef.LEAGUE_STATUS; a new status needs a line here. */
+.league-status-taking_entries { --strip-color: var(--color-primary); }
+.league-status-running        { --strip-color: var(--color-success); }
+.league-status-on_break       { --strip-color: var(--color-warning); }
+.league-status-finished       { --strip-color: var(--text-muted); }
+
+/* ── Search for a League ──
+ *
+ * The search bar and its filters centred over the full width of the page;
+ * the results one row of tiles that scrolls sideways, snapping to a tile.
+ */
+.league-search {
+	max-width: 36rem;
+	margin: 0 auto var(--space-4);
+}
+.league-search .hint { text-align: center; }
+
+.league-filters {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: var(--space-3);
+}
+.league-filters .field { margin-bottom: var(--space-3); }
+
+.league-tiles {
+	display: grid;
+	grid-auto-flow: column;
+	grid-auto-columns: 12.5rem;
+	gap: var(--space-3);
+	overflow-x: auto;
+	scroll-snap-type: x mandatory;
+	/* Room for the glow, which overflow would otherwise clip. */
+	padding: var(--space-3) var(--space-1) var(--space-4);
+	margin-bottom: var(--space-4);
+}
+/* Nothing found: a sentence, not a column of tiles. */
+.league-tiles.is-empty { display: block; padding: 0; text-align: center; }
+
+/* A result: badge-shaped, the league's picture on top (a default icon until
+ * leagues have their own), the name and details under it, and the status
+ * along the top edge. */
+.league-tile {
+	scroll-snap-align: start;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	gap: var(--space-1);
+	padding: var(--space-4) var(--space-3) var(--space-3);
+	border: 1px solid var(--border-color);
+	border-top: var(--space-1) solid var(--strip-color, var(--color-primary));
+	border-radius: var(--radius-lg);
+	background: var(--bg-surface);
+	color: inherit;
+	text-decoration: none;
+	transition: box-shadow 0.15s;
+	min-width: 0;
+}
+.league-tile:hover,
+.league-tile:focus-visible { box-shadow: var(--glow-primary); outline: none; }
+
+.league-tile-pic {
+	width: 3.5rem;
+	height: 3.5rem;
+	border-radius: var(--radius-round);
+	display: grid;
+	place-items: center;
+	background: var(--hover-wash);
+	color: var(--color-primary);
+	margin-bottom: var(--space-2);
+}
+.league-tile-pic svg { width: 60%; height: 60%; }
+
+.league-tile-name {
+	font-weight: 600;
+	line-height: 1.25;
+	overflow-wrap: anywhere;
+}
+.league-tile-meta {
+	font-size: 0.78rem;
+	color: var(--text-muted);
+	line-height: 1.35;
+}
+.league-tile .badge { margin-top: auto; }
+.league-tile-meta:last-of-type { margin-bottom: var(--space-2); }

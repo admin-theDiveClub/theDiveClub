@@ -47,6 +47,11 @@
      from the text colour, so it follows the theme. */
   --hover-wash: color-mix(in srgb, var(--text-primary) 6%, transparent);
 
+  /* The hover glow: something you can open, lit in the brand colour. Built
+     from the primary, so it follows the theme. */
+  --glow-primary: 0 0 0 1px color-mix(in srgb, var(--color-primary) 55%, transparent),
+                  0 0 16px color-mix(in srgb, var(--color-primary) 30%, transparent);
+
   /* ── Space ─────────────────────────────────────────────────────────
      One scale. Reach for the nearest step rather than a new decimal. */
   --space-1: 0.25rem;

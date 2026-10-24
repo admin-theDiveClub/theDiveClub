@@ -90,6 +90,18 @@ const TDCMatchDef = (() => {
 	// team size and the rotation table are version 3 (20261023193153).
 	const LEAGUE_GROUPS = ['Team play'];
 
+	// A league season's status, set by its director (20261024094617). Not a
+	// match rule, but the league pages' one list of them, in the order the
+	// settings page offers them. The database's check constraint holds the
+	// same keys; a new status goes in both. Each key has a colour in league.css
+	// (.league-status-<key>).
+	const LEAGUE_STATUS = {
+		taking_entries: 'Taking entries',
+		running: 'Running',
+		on_break: 'On break',
+		finished: 'Finished'
+	};
+
 	const SETTINGS = [
 		// No column for this yet, so it lives only on the screen it is typed on.
 		// The create page leaves it out rather than offering a control that
@@ -487,7 +499,7 @@ const TDCMatchDef = (() => {
 	return {
 		DISCIPLINE, BREAK_OUTCOME, RESULT_EVENT, RESULT_SHORT, BREAK_DETERMINATION,
 		WIN_CONDITION, TIME_EXPIRY, TIEBREAK, SCORE_ENTRY, APPROVAL, SIDE_TAG, SIDES,
-		GROUPS, LEAGUE_GROUPS, SETTINGS, DEFAULT_RULES, LEAGUE_DEFAULT_RULES, MAIN_KEYS,
+		GROUPS, LEAGUE_GROUPS, LEAGUE_STATUS, SETTINGS, DEFAULT_RULES, LEAGUE_DEFAULT_RULES, MAIN_KEYS,
 		control, liveRuleKeys, readValue,
 		cyclicRotation, rotationGrid, rotationRepeats, applyRotation, tidyRules,
 		setSideNames(fn) { sideNames = fn; }

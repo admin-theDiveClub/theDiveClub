@@ -44,6 +44,17 @@ extraScripts:
 		<div class="hint">This season only.</div>
 	</div>
 
+	{% comment %}
+		Set by the league director, nothing derives it (UV, 24 Oct). Players
+		see it on /leagues/ and can search by it. Filled from
+		TDCMatchDef.LEAGUE_STATUS.
+	{% endcomment %}
+	<div class="field">
+		<label for="s-status">Status</label>
+		<select id="s-status"></select>
+		<div class="hint">This season only. Shown on the leagues list and in the league search.</div>
+	</div>
+
 	<div class="field">
 		<label for="s-start">Starts</label>
 		<input type="date" id="s-start">

@@ -5,6 +5,7 @@ description: "Leagues you run or play in."
 extraStyles:
   - /stylesheets/league.css
 extraScripts:
+  - /scripts/match-settings.js
   - /scripts/leagues.js
 ---
 {% comment %}
@@ -18,26 +19,64 @@ extraScripts:
 
 <div class="tdc-card">
 	<h1>Leagues</h1>
-	<p class="muted" id="intro">Leagues you run or play in.</p>
 
-	<a href="/leagues/new/" class="btn-primary btn-link" id="new-league">Create a League</a>
-
-	<div id="league-list"></div>
+	{% comment %}
+		A .row-table (forms.css): on a PC each season's dates and counts are
+		columns; on a phone they drop to a small row under the league's name.
+	{% endcomment %}
+	<div class="section">
+		<h2>Your Leagues</h2>
+		<p class="muted" id="intro">Leagues you run or play in.</p>
+		<div class="row-table league-rows" id="league-list"></div>
+	</div>
 
 	{% comment %}
 		Leagues looking for players. Only the ones whose director has listed
 		them and opened them to names appear — a league in the results that
 		nobody can join is a dead end with a name on it.
 	{% endcomment %}
-	<h2>Looking for players</h2>
+	<div class="section">
+		<h2>Search for a League</h2>
 
-	<div class="field">
-		<label for="league-search">Find a league</label>
-		<input type="search" id="league-search" autocomplete="off" placeholder="Name, season or venue">
-		<div class="hint">Leave it empty to see them all.</div>
+		{% comment %}
+			Filtered in the database (tdc_search_leagues). The discipline and
+			status menus are filled from TDCMatchDef by leagues.js. Singles
+			finds nothing until singles leagues exist (docs/STATUS.md).
+		{% endcomment %}
+		<div class="league-search">
+			<div class="field">
+				<label for="league-search">Find a league</label>
+				<input type="search" id="league-search" autocomplete="off" placeholder="Name, season or venue">
+				<div class="hint">Leave it empty to see them all.</div>
+			</div>
+
+			<div class="league-filters">
+				<div class="field">
+					<label for="filter-discipline">Discipline</label>
+					<select id="filter-discipline"><option value="">All</option></select>
+				</div>
+				<div class="field">
+					<label for="filter-status">Status</label>
+					<select id="filter-status"><option value="">All</option></select>
+				</div>
+				<div class="field">
+					<label for="filter-kind">Type</label>
+					<select id="filter-kind">
+						<option value="">All</option>
+						<option value="team">Team</option>
+						<option value="singles">Singles</option>
+					</select>
+				</div>
+			</div>
+		</div>
+
+		<div class="league-tiles" id="open-list"></div>
 	</div>
 
-	<div id="open-list"></div>
+	<div class="section">
+		<h2>Run a league</h2>
+		<a href="/leagues/new/" class="btn-primary btn-link" id="new-league">Create a League</a>
+	</div>
 
 	<div class="status" id="list-status"></div>
 </div>

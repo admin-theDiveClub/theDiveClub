@@ -380,6 +380,30 @@ extraScripts:
 			</table>
 		</div>
 
+		<h2>Row table</h2>
+		<p class="muted">Each row opens something; hover for the glow. The data columns sit under the heading on a phone and become columns on a PC.</p>
+		<div class="row-table" style="--row-cols: minmax(0, 1fr) 9rem 6.5rem 6.5rem">
+			<div class="row-table-head" aria-hidden="true"><span>Name</span><span></span><span>Starts</span><span>Players</span></div>
+			<a href="#sb-components" class="row-table-row">
+				<span class="row-table-strip" aria-hidden="true"></span>
+				<div class="row-table-main"><h3>A Row With A Strip</h3><div class="row-table-meta">Details under the heading</div></div>
+				<div class="row-table-badges"><span class="badge live">Captain</span><span class="badge">Team 0</span></div>
+				<div class="row-table-stats">
+					<div class="row-table-stat"><span class="row-table-label">Starts</span><span>4 Nov 2026</span></div>
+					<div class="row-table-stat"><span class="row-table-label">Players</span><span>20</span><span class="sub">4 teams</span></div>
+				</div>
+			</a>
+			<a href="#sb-components" class="row-table-row">
+				<span class="row-table-strip" aria-hidden="true" style="--strip-color: var(--color-warning)"></span>
+				<div class="row-table-main"><h3>Another Row</h3><div class="row-table-meta">A strip can take any colour</div></div>
+				<div class="row-table-badges"><span class="badge needs-you">Needs you</span></div>
+				<div class="row-table-stats">
+					<div class="row-table-stat"><span class="row-table-label">Starts</span><span>—</span></div>
+					<div class="row-table-stat"><span class="row-table-label">Players</span><span>0</span></div>
+				</div>
+			</a>
+		</div>
+
 		<h2>Rows, panels and empty states</h2>
 		<div class="list-row">
 			<div class="list-row-main">A list row<span class="sub">With a second line</span></div>

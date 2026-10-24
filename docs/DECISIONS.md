@@ -585,3 +585,34 @@ These predate the log. They are recorded here because every one of them is a dec
 *Example:* Ken's account is at Hosts position 1 in Tuesday's match and has league notifications off. His walk-in record somehow sits at Guests position 2 with them on. After the link, Ken is at Hosts position 1, Guests position 2 is empty, and league notifications are off.
 *Rejected:* refusing the merge on a lineup clash with a plain message (Claude's recommendation, matching the existing "played each other" guards).
 *Touches:* `private.tdc_merge_players`
+
+## 2026-10-24 — A league season's status is set by its director
+
+*Decided by:* UV
+*Replaces:* the 22 Oct rule "no status column on a league season; derive it from the fixtures" (`docs/systems/leagues.md`).
+*Why:* the leagues list wanted a status colour and the search a status filter. Claude offered a status derived from the fixtures and dates; UV: *"Status should be something set by LD. We should include things like on break (maybe for holidays)."* A break is something only the director knows; no fixture says it.
+*So:* migration `20261024094617`. `tbl_league_seasons.status`, one of taking entries (the default), running, on break, finished — *"we will add more later"*. Set on the settings page through `tdc_set_league_season_status`, by whoever may run the season. Seasons that already had fixtures started as running. It colours the strip on `/leagues/` and the edge of a search tile, and the search filters by it.
+*Rejected:* deriving it (taking names / under way / finished) from fixtures and dates; a status that is only how you get in (join now / name down).
+*Touches:* `tbl_league_seasons`, `tdc_set_league_season_status`, `tdc_my_leagues`, `tdc_search_leagues`, `league-settings.js`, `leagues.js`
+
+## 2026-10-24 — Singles leagues should exist
+
+*Decided by:* UV
+*Replaces, once built:* "Every league has a team size" (23 Oct), which made a team size of 2 to 10 compulsory.
+*Why:* UV wants the league search to filter team leagues from singles leagues, and a singles league is a league like any other.
+*So:* a team size of 1 will mean singles. **Not built**: it reaches lineups, the card, the team limit and the rotation, so it is its own piece of league work (`docs/STATUS.md` §3). The search's team / singles filter is built already and finds no singles league until then.
+
+## 2026-10-24 — Every page fills ten of twelve columns on a PC, and everything stretches
+
+*Decided by:* UV
+*Why:* every page was a 400px column whatever the screen (`docs/ui.md` §2, "Make it work on a PC"). UV: *"up to 1:10:1 if that makes sense (bootstrap logic)"*, then *"Let the 1:10:1 rule apply across the site for desktop."*
+*So:* from 992px (Bootstrap's large breakpoint) every `.tdc-card` is `calc(100% * 10 / 12)` wide, with a column's margin either side. Fields, buttons and tables stretch with it, forms included. Phones and tablets keep the column. `/match/`, the home page and the owner board have their own layouts and are unchanged.
+*Rejected:* fields kept to 400px inside a wide page (Claude's recommendation); widening only list and table pages.
+*Touches:* `forms.css`
+
+## 2026-10-24 — The league search shows every status, but only leagues you can get into
+
+*Decided by:* Claude, following UV's status filter
+*Why:* a status filter is pointless if the search can only ever return leagues taking entries. But the search was built (23 Oct) to show only listed leagues a player can get into, because "a league in the results that nobody can join is a dead end with a name on it".
+*So:* `tdc_search_leagues` returns listed seasons whose entry is not LD-only, whatever their status, and the filters narrow that. A running league that still lets players put their names down is found under Running.
+*Rejected:* showing LD-only leagues too, which is a separate question about whether the search is for joining or for browsing.

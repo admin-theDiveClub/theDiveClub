@@ -116,6 +116,7 @@
 }
 .sandbox .sb-mock .tdc-card {
 	max-width: none;
+	width: auto;
 	margin: 0;
 	padding: var(--space-4);
 }
