@@ -52,7 +52,6 @@
 	const openTeams = new Set();
 	let officials = [];
 	let pool = [];
-	let busy = false;           // one write at a time
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -502,26 +501,12 @@
 	}
 
 	// ─── Writing ───
-	async function write(what, fn) {
-		if (busy) return false;
-		busy = true;
-		TDC.status(els.status, what + '…', '');
-
-		const { error } = await fn();
-		if (error) {
-			// Put the screen back to what the server holds, then say why.
-			await loadAll();
-			busy = false;
-			TDC.showSupabaseError(AREA, error, els.status);
-			return false;
-		}
-
-		const ok = await loadAll();
-		busy = false;
-		if (ok) TDC.status(els.status, '', '');
-		TDC.flushPushes();
-		return ok;
-	}
+	// Queued, never refused (TDC.writer). Read again once a burst has saved;
+	// a failed save puts the screen back to what the server holds, then says
+	// why.
+	const { write } = TDC.writer({
+		area: AREA, status: els.status, reload: loadAll, after: () => TDC.flushPushes()
+	});
 
 	// ─── Start ───
 	(async () => {

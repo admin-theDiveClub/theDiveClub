@@ -59,7 +59,6 @@
 	// ─── State ───
 	let entrants = [];
 	let officials = [];
-	let busy = false;       // one write at a time, so two clicks cannot race
 	// Only the people running the tournament get here at all now — see the
 	// redirect at the bottom. Kept because every control still asks it, so
 	// nothing is enabled by a re-read going wrong.
@@ -256,19 +255,18 @@
 
 	// Changing a setting re-reads the tournament rather than trusting the
 	// control, for the same reason the entrant list does.
-	async function saveEntrySetting(what, args) {
-		if (busy) return;
-		busy = true;
-		TDC.status(els.status, what + '…', '');
-
-		const { error } = await supabaseClient.rpc('tdc_update_tournament',
-			Object.assign({ p_tournament_id: tournamentId }, args));
-
-		busy = false;
-		if (error) { TDC.showSupabaseError(AREA, error, els.status); }
-		const t = await loadTournament();
-		if (t) renderEntrySettings(t);
-		if (!error) TDC.status(els.status, '', '');
+	// Queued with every other save on the page, never refused (TDC.writer).
+	const entryWriter = TDC.writer({
+		area: AREA, status: els.status,
+		reload: async () => {
+			const t = await loadTournament();
+			if (t) renderEntrySettings(t);
+			return !!t;
+		}
+	});
+	function saveEntrySetting(what, args) {
+		return entryWriter.write(what, () => supabaseClient.rpc('tdc_update_tournament',
+			Object.assign({ p_tournament_id: tournamentId }, args)));
 	}
 
 	els.entryMode.addEventListener('change', () =>
@@ -342,19 +340,14 @@
 			: 'Only you can open this until you share the poster, below.';
 	}
 
-	async function poster(what, args) {
-		if (busy) return;
-		busy = true;
-		TDC.status(els.posterStatus, what + '…', '');
-
-		const { error } = await supabaseClient.rpc(args.fn,
-			Object.assign({ p_tournament_id: tournamentId }, args.params || {}));
-
-		busy = false;
-		if (error) { TDC.showSupabaseError(AREA, error, els.posterStatus); return; }
-
-		await loadPoster();
-		TDC.status(els.posterStatus, args.done || '', args.done ? 'success' : '');
+	const posterWriter = TDC.writer({
+		area: AREA, status: els.posterStatus,
+		reload: async () => { await loadPoster(); return true; }
+	});
+	function poster(what, args) {
+		return posterWriter.write(what, () => supabaseClient.rpc(args.fn,
+			Object.assign({ p_tournament_id: tournamentId }, args.params || {})),
+		() => args.done || '');
 	}
 
 	els.posterBuild.addEventListener('click', () => poster('Generating', {
@@ -511,34 +504,23 @@
 	});
 
 	// ─── Writing ───
-	// Every write goes through here: one at a time, the list re-read
-	// afterwards, and nothing swallowed quietly.
-	async function write(what, fn) {
-		if (busy) return false;
-		busy = true;
-		TDC.status(els.status, what + '…', '');
-
-		const { error } = await fn();
-		if (error) {
-			busy = false;
-			TDC.showSupabaseError(AREA, error, els.status);
-			// The screen still shows what the person just clicked, which is now
-			// a lie. Re-reading puts it back to what the server actually holds.
-			await loadEntrants();
-			return false;
-		}
-
-		const ok = await loadEntrants();
-		await loadOfficials();
-		busy = false;
-		if (ok) TDC.status(els.status, '', '');
-
-		// Anything that just caused a notification goes out now rather than
-		// waiting for the next page load. Not awaited: the person is waiting
-		// on the list, not on somebody else's phone buzzing.
-		TDC.flushPushes();
-		return ok;
-	}
+	// Every write goes through here: queued, never refused (TDC.writer), the
+	// list read again once a burst of clicks has saved, and nothing swallowed
+	// quietly. A failed write's re-read puts the screen back to what the
+	// server holds, so it no longer shows what was clicked.
+	//
+	// Anything that caused a notification goes out once the burst is saved
+	// rather than at the next page load. Not awaited: the person is waiting
+	// on the list, not on somebody else's phone buzzing.
+	const { write } = TDC.writer({
+		area: AREA, status: els.status,
+		reload: async () => {
+			const ok = await loadEntrants();
+			await loadOfficials();
+			return ok;
+		},
+		after: () => TDC.flushPushes()
+	});
 
 	async function addEntrant(playerId, name) {
 		const done = await write('Adding ' + name, () =>

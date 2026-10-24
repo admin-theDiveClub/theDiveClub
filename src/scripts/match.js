@@ -1289,11 +1289,10 @@
 		// Nothing to say and nobody to tell if it has not moved.
 		if ((MATCH.scheduled_at || null) === iso) return;
 
-		savingStarted('Saving the time…');
-		const { error } = await supabaseClient.rpc('tdc_set_match_time', {
+		const { error } = await inTurn('Saving the time…', () => supabaseClient.rpc('tdc_set_match_time', {
 			p_match_id: liveMatchId,
 			p_scheduled_at: iso
-		});
+		}));
 		await savingFinished(error, iso ? 'Time saved. Both players have been told.' : 'Time cleared.');
 		if (!error) tellTheOther('time_set');
 	}
@@ -2470,31 +2469,86 @@
 		return payload;
 	}
 
-	function savingStarted(message) {
+	// ─── Saves, one after another ───
+	// A quick second tap is never refused (UV, 24 Oct). Saves go into the
+	// site's write queue (TDC.queued) and run in the order they were made,
+	// never two at once, and the match is read back once, after the last of a
+	// burst, so a frame tapped while another is saving does not blink off the
+	// screen. Before, two quick taps ran at once and the second carried a
+	// card_version the first had already moved on, so it was refused as
+	// "someone else has scored".
+	//
+	// Every save still checks the card. One queued behind another expects
+	// the version the save before it left, read straight back (readVersion),
+	// so a burst of this screen's own taps is never taken for somebody
+	// else's, while a real second scorer is still caught. Once that happens
+	// the rest of the burst is not sent, rather than written over their
+	// frames, and the player is told how many taps that was.
+	const NOT_SENT = { message: 'not sent: the card had moved on' };
+	let burst = { errors: [], ok: '', stopped: false, notSent: 0, wasOver: false };
+
+	// write() is called when this save's turn comes, so it reads cardVersion
+	// then. Resolves to { data, error }; pair it with savingFinished().
+	function inTurn(message, write) {
+		if (saving === 0) burst = { errors: [], ok: '', stopped: false, notSent: 0, wasOver: lastKnownOver };
 		saving += 1;
-		TDC.status(els.stageStatus, message, '');
+		return TDC.queued(async () => {
+			if (burst.stopped) { burst.notSent += 1; return { data: null, error: NOT_SENT }; }
+			TDC.status(els.stageStatus, message, '');
+			let res;
+			try { res = (await write()) || {}; } catch (err) { res = { data: null, error: err }; }
+			if (res.error && res.error.code === 'TDC01') burst.stopped = true;
+			else if (!res.error && saving > 1) await readVersion();
+			return res;
+		});
 	}
 
+	async function readVersion() {
+		const { data, error } = await supabaseClient
+			.from('tbl_matches').select('card_version').eq('id', liveMatchId).maybeSingle();
+		if (error || !data) {
+			// The next save then carries the old version and is refused as a
+			// moved card: safe, if wrongly worded.
+			TDC.error(AREA, 'could not read the card version between two saves.', error);
+			return;
+		}
+		cardVersion = data.card_version;
+	}
+
+	// True for the last save of a burst, which is the one that read the match
+	// back and said how it went.
 	async function savingFinished(error, okMessage) {
 		saving -= 1;
+		if (error) { if (error !== NOT_SENT) burst.errors.push(error); }
+		else if (okMessage) burst.ok = okMessage;
+		if (saving > 0) return false;
+
+		const b = burst;
 		await reloadFromServer();
 
 		// Somebody else scored while this screen was looking at an older card.
 		// The write was refused, and the reload above has already put their
 		// version on screen — so this says what happened rather than showing a
 		// database message, and the score in front of the player is the real one.
-		if (error && error.code === 'TDC01') {
+		const moved = b.errors.find((e) => e.code === 'TDC01');
+		if (moved) {
+			const more = b.notSent
+				? ` The ${b.notSent === 1 ? 'change' : b.notSent + ' changes'} you made after it ${b.notSent === 1 ? 'was' : 'were'} not sent either.`
+				: '';
 			showNotice('<strong>Someone else has scored this match.</strong> Your last change was '
-				+ 'not saved, because it was aimed at the card as it was before theirs. '
-				+ 'The score above is up to date — check it, then carry on.', 'error');
+				+ 'not saved, because it was aimed at the card as it was before theirs.' + more
+				+ ' The score above is up to date — check it, then carry on.', 'error');
 			TDC.status(els.stageStatus, 'Not saved — the card had already moved on.', '');
-			console.error('[' + AREA + '] write refused: ' + (error.details || error.message));
-			return;
+			console.error('[' + AREA + '] write refused: ' + (moved.details || moved.message));
+			return true;
 		}
 
-		if (error) {
-			TDC.showSupabaseError(AREA, error, els.stageStatus);
-			return;
+		if (b.errors.length) {
+			TDC.showSupabaseError(AREA, b.errors[b.errors.length - 1], els.stageStatus);
+			if (b.errors.length > 1) {
+				els.stageStatus.textContent = `${b.errors.length} changes were not saved. The last: ` + els.stageStatus.textContent;
+			}
+			return true;
 		}
 
 		// The reload above has brought in whatever arrived while this was busy,
@@ -2502,7 +2556,7 @@
 		// player is already looking at.
 		if (staleKnown) { staleKnown = false; hideNotice(); }
 
-		if (okMessage) TDC.status(els.stageStatus, okMessage, 'success');
+		if (b.ok) TDC.status(els.stageStatus, b.ok, 'success');
 
 		// An official editing somebody else's card writes them a notification
 		// (20261022110000), so the push for it goes out now rather than
@@ -2514,6 +2568,7 @@
 		// trip to the hot path for nothing — on a bad signal at the bar, that
 		// is the one place it would be felt.
 		if (!mySide()) TDC.flushPushes();
+		return true;
 	}
 
 	async function reloadFromServer() {
@@ -2590,10 +2645,6 @@
 	async function persistFrame(no, okMessage) {
 		if (!liveMatchId) return;
 
-		// Read before anything is written or reloaded: the frame being saved is
-		// already in MATCH, so asking afterwards would always say "it was over".
-		const wasOver = lastKnownOver;
-
 		const f = frameByNo(no);
 		if (!f) { TDC.error(AREA, 'nothing to save: no frame numbered ' + no, null, els.stageStatus); return; }
 
@@ -2603,15 +2654,19 @@
 			return;
 		}
 
-		savingStarted(`Saving frame ${no}…`);
-		const { error } = await supabaseClient.rpc('tdc_record_frame', {
+		// What was tapped, taken now: the save may wait its turn behind others.
+		const payload = framePayload(f);
+		const { error } = await inTurn(`Saving frame ${no}…`, () => supabaseClient.rpc('tdc_record_frame', {
 			p_match_id: liveMatchId,
 			p_frame_no: no,
-			p_frame: framePayload(f),
+			p_frame: payload,
 			p_card_version: cardVersion
-		});
-		await savingFinished(error, okMessage);
-		await refreshCardAfterWrite(wasOver);
+		}));
+		// Whether the match was over before the burst began (inTurn reads it
+		// before anything is written or reloaded: the frame being saved is
+		// already in MATCH, so asking afterwards would always say "it was over").
+		const wasOver = burst.wasOver;
+		if (await savingFinished(error, okMessage)) await refreshCardAfterWrite(wasOver);
 	}
 
 	// Settings and the lag winner go together, because both move the whole
@@ -2620,12 +2675,14 @@
 	async function persistSettings() {
 		if (!liveMatchId) return;
 
-		savingStarted('Saving settings…');
-		const { data, error } = await supabaseClient.rpc('tdc_update_match_settings', {
+		// The settings as they are now: the save may wait its turn.
+		const rules = JSON.parse(JSON.stringify(MATCH.rules));
+		const firstBreak = MATCH.first_break_side;
+		const { data, error } = await inTurn('Saving settings…', () => supabaseClient.rpc('tdc_update_match_settings', {
 			p_match_id: liveMatchId,
-			p_rules: MATCH.rules,
-			p_first_break_side: MATCH.first_break_side
-		});
+			p_rules: rules,
+			p_first_break_side: firstBreak
+		}));
 
 		let message = 'Settings saved.';
 		if (!error && data) {
@@ -2651,12 +2708,11 @@
 			return;
 		}
 
-		savingStarted(`Removing frame ${no}…`);
-		const { error } = await supabaseClient.rpc('tdc_remove_frame', {
+		const { error } = await inTurn(`Removing frame ${no}…`, () => supabaseClient.rpc('tdc_remove_frame', {
 			p_match_id: liveMatchId,
 			p_frame_no: no,
 			p_card_version: cardVersion
-		});
+		}));
 		await savingFinished(error, `Frame ${no} removed.`);
 	}
 

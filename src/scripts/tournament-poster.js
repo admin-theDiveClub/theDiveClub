@@ -70,7 +70,6 @@
 
 	// ─── State ───
 	let snap = null;
-	let busy = false;
 
 	// ─────────────────────────────────────────────────────────────────
 	// Dates
@@ -439,35 +438,24 @@
 	// patched: the counts on the poster are part of the snapshot, so they do
 	// not move until the TD regenerates it, and pretending otherwise here
 	// would be the page inventing a number.
-	async function enter(status) {
-		if (busy) return;
-		busy = true;
-		TDC.status(els.entryStatus, 'Entering…', '');
+	// Queued, never refused (TDC.writer): a second press of the same button
+	// joins the first.
+	const entryWriter = TDC.writer({
+		area: AREA, status: els.entryStatus,
+		reload: async () => { await loadEntry(true); return true; }
+	});
 
-		const { error } = await supabaseClient.rpc('tdc_enter_tournament', {
+	function enter(status) {
+		return entryWriter.write('Entering', () => supabaseClient.rpc('tdc_enter_tournament', {
 			p_tournament_id: tournamentId, p_status: status
-		});
-		busy = false;
-
-		if (error) { TDC.showSupabaseError(AREA, error, els.entryStatus); return; }
-		TDC.status(els.entryStatus, status === 'confirmed' ? 'You are in.' : 'Noted.', '');
-		await loadEntry(true);
+		}), () => status === 'confirmed' ? 'You are in.' : 'Noted.', { single: 'enter-' + status });
 	}
 
 	async function withdraw() {
 		if (!confirm('Withdraw from this tournament?')) return;
-		if (busy) return;
-		busy = true;
-		TDC.status(els.entryStatus, 'Withdrawing…', '');
-
-		const { error } = await supabaseClient.rpc('tdc_withdraw_from_tournament', {
+		return entryWriter.write('Withdrawing', () => supabaseClient.rpc('tdc_withdraw_from_tournament', {
 			p_tournament_id: tournamentId
-		});
-		busy = false;
-
-		if (error) { TDC.showSupabaseError(AREA, error, els.entryStatus); return; }
-		TDC.status(els.entryStatus, 'Withdrawn.', '');
-		await loadEntry(true);
+		}), () => 'Withdrawn.', { single: 'withdraw' });
 	}
 
 	// ─── Rendering the whole thing ───

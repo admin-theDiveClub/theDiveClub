@@ -82,7 +82,8 @@
   --ring-size-table: 1.75rem;     /* the same in a table row */
   --switch-height: 2.25rem;       /* a switch: a setting */
   --switch-width: 4.2rem;
-  --ring-load: 1s;                /* the orbit when nothing is saved; a save takes as long as its call */
+  --ring-load: 1s;                /* the orbit when nothing is saved, and its speed */
+  --ring-min: 0.2s;               /* the shortest orbit for a save; a slow save orbits as long as it takes */
   --ring-draw: 0.8s;              /* drawing an icon, stroke by stroke */
   --ring-fade: 0.5s;              /* the dots fading once drawn */
   /* The native calendar icon on a date-and-time field (global.css) */

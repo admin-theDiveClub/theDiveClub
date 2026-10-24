@@ -111,5 +111,97 @@ const TDC = (() => {
 		}
 	}
 
-	return { error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes };
+	// ─── Saving: one queue, nothing turned away ───
+	// A click is never refused because an earlier save is still going (UV,
+	// 24 Oct). Every save on a page waits its turn in this one queue and runs
+	// in the order it was made, never two at once, so two saves cannot race
+	// and finish the wrong way round. That race is why pages used to have a
+	// "busy" flag that dropped the second click, without saying so.
+	let writeTail = Promise.resolve();
+	function queued(task) {
+		const run = writeTail.then(task);
+		writeTail = run.catch(() => {});
+		return run;
+	}
+
+	// A page's saves. Each goes into the queue; the page is read again once,
+	// when the last save of a burst has finished, so quick clicks do not
+	// flicker back while the others are still saving (and a ring stays
+	// orbiting until then). A failed save does not stop the rest: the errors
+	// are kept and shown after that re-read, so it cannot wipe them, and the
+	// re-read shows what the database actually holds.
+	//
+	//   const { write } = TDC.writer({ area, status: el, reload, after });
+	//   const ok = await write('Saving', () => supabaseClient.rpc(...), done);
+	//     reload  async, read the page again; returns true / false
+	//     after   once a burst has saved and been read again (pushes)
+	//     done    (data) => the message for success, optional
+	//   ok is true when this save worked and the re-read after it did.
+	//
+	// A big action (generate the fixtures, redraw, save the settings) passes
+	// { single: key }: pressing it again while it is still waiting or running
+	// joins the first press rather than doing it twice. Nothing is refused;
+	// the second press simply is the first. The key says what counts as the
+	// same press ('generate', or 'start-' + a fixture's id); true means the
+	// action's own words.
+	function writer({ area, status: statusEl, reload, after }) {
+		let pending = 0;
+		let errors = [];
+		let message = '';
+		let batch = null;
+		const singles = new Map();   // what -> the press already in hand
+
+		async function finish(b) {
+			let ok = true;
+			try { ok = reload ? (await reload()) !== false : true; }
+			catch (err) { ok = false; error(area, 'could not read the page again after saving.', err, statusEl); }
+			if (errors.length) {
+				showSupabaseError(area, errors[errors.length - 1], statusEl);
+				if (errors.length > 1 && statusEl) {
+					statusEl.textContent = `${errors.length} changes were not saved. The last: ` + statusEl.textContent;
+				}
+			} else if (ok) {
+				status(statusEl, message, message ? 'success' : '');
+			}
+			errors = [];
+			message = '';
+			if (after) after();
+			b.resolve(ok);
+		}
+
+		function write(what, fn, done, opts) {
+			if (opts && opts.single) {
+				const key = opts.single === true ? what : opts.single;
+				if (singles.has(key)) return singles.get(key);
+				const first = write(what, fn, done);
+				singles.set(key, first);
+				first.finally(() => singles.delete(key));
+				return first;
+			}
+			if (!batch) {
+				let resolve;
+				batch = { promise: new Promise((r) => { resolve = r; }), resolve: (v) => resolve(v) };
+			}
+			const b = batch;
+			pending++;
+			let failed = false;
+			queued(async () => {
+				status(statusEl, what + '…', '');
+				let res;
+				try { res = (await fn()) || {}; } catch (err) { res = { error: err }; }
+				if (res.error) { failed = true; errors.push(res.error); }
+				else if (done) message = done(res.data) || '';
+			}).finally(() => {
+				pending--;
+				if (pending) return;
+				batch = null;
+				queued(() => finish(b));
+			});
+			return b.promise.then((ok) => ok && !failed);
+		}
+
+		return { write, get pending() { return pending; } };
+	}
+
+	return { error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer };
 })();

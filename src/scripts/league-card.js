@@ -67,7 +67,6 @@
 	let cardState = null;
 	let changes = [];
 	let working = null;        // the side being set up: mine, or the director's choice
-	let busy = false;
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -590,25 +589,13 @@
 	}
 
 	// ─── Writing ───
-	async function write(what, fn, done) {
-		if (busy) return false;
-		busy = true;
-		TDC.status(els.status, what + '…', '');
-
-		const { error } = await fn();
-		if (error) {
-			await loadAll();
-			busy = false;
-			TDC.showSupabaseError(AREA, error, els.status);
-			return false;
-		}
-
-		const ok = await loadAll();
-		busy = false;
-		if (ok) TDC.status(els.status, done || '', done ? 'success' : '');
-		TDC.flushPushes();
-		return ok;
-	}
+	// Queued, never refused (TDC.writer): a captain ticking down a squad or
+	// recording frame after frame is never told to wait. The card is read
+	// again once a burst has saved; a failed save's error is shown after it.
+	const cardWriter = TDC.writer({
+		area: AREA, status: els.status, reload: loadAll, after: () => TDC.flushPushes()
+	});
+	const write = (what, fn, done) => cardWriter.write(what, fn, done ? () => done : null);
 
 	// ─── What people press ───
 	els.sidePick.addEventListener('change', async () => {

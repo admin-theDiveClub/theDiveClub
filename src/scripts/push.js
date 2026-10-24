@@ -162,8 +162,6 @@ document.getElementById('notif-preset-1').addEventListener('click', () => {
 		admin:      'Anything about your account itself.'
 	};
 
-	let busy = false;
-
 	function row(pref) {
 		const field = document.createElement('div');
 		field.className = 'field';
@@ -191,25 +189,20 @@ document.getElementById('notif-preset-1').addEventListener('click', () => {
 		return field;
 	}
 
-	async function save(category, enabled, control) {
-		if (busy) return;
-		busy = true;
-		TDC.status(status, 'Saving…', '');
-
-		const { error } = await supabaseClient.rpc('tdc_set_notification_pref', {
-			p_category: category,
-			p_enabled: enabled
-		});
-		busy = false;
-
-		if (error) {
+	// Queued, never refused (TDC.writer): flicking three switches quickly
+	// saves all three, in order.
+	const prefWriter = TDC.writer({ area: AREA, status });
+	function save(category, enabled, control) {
+		return prefWriter.write('Saving', async () => {
+			const res = await supabaseClient.rpc('tdc_set_notification_pref', {
+				p_category: category,
+				p_enabled: enabled
+			});
 			// Put the switch back: leaving it where the finger left it says
 			// the setting changed when it did not.
-			control.checked = !enabled;
-			TDC.showSupabaseError(AREA, error, status);
-			return;
-		}
-		TDC.status(status, 'Saved.', 'success');
+			if (res.error) control.checked = !enabled;
+			return res;
+		}, () => 'Saved.');
 	}
 
 	(async () => {

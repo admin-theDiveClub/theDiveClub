@@ -56,7 +56,6 @@
 	let season = null;         // the season row, for the entry settings
 	let teams = [];
 	let officials = [];
-	let busy = false;       // one write at a time, so two clicks cannot race
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -697,34 +696,17 @@
 	}
 
 	// ─── Writing ───
-	// Every write goes through here: one at a time, everything read again
-	// afterwards, and nothing swallowed quietly.
-	async function write(what, fn, done) {
-		if (busy) return false;
-		busy = true;
-		TDC.status(els.status, what + '…', '');
-
-		const { data, error } = await fn();
-		if (error) {
-			// The screen still shows what the person just clicked, which is now
-			// a lie. Re-reading puts it back to what the server actually holds,
-			// and the error is put up after so the re-read cannot wipe it.
-			await loadAll();
-			busy = false;
-			TDC.showSupabaseError(AREA, error, els.status);
-			return false;
-		}
-
-		const ok = await loadAll();
-		busy = false;
-		if (ok) TDC.status(els.status, done ? done(data) : '', done ? 'success' : '');
-
-		// Adding a player writes a notification inside the database. It goes
-		// out now rather than at the next page load. Not awaited: the person
-		// is waiting on the list, not on somebody else's phone buzzing.
-		TDC.flushPushes();
-		return ok;
-	}
+	// Every write goes through here: queued, never refused (TDC.writer),
+	// everything read again once a burst of clicks has saved, and nothing
+	// swallowed quietly. A failed write's re-read puts the screen back to
+	// what the server holds, and the error is put up after it.
+	//
+	// Adding a player writes a notification inside the database. It goes out
+	// once the burst is saved rather than at the next page load. Not awaited:
+	// the person is waiting on the list, not on somebody else's phone buzzing.
+	const { write } = TDC.writer({
+		area: AREA, status: els.status, reload: loadAll, after: () => TDC.flushPushes()
+	});
 
 	// ─── Start ───
 	(async () => {

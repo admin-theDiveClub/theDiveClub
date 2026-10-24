@@ -551,25 +551,34 @@ const TDCControls = (() => {
 		});
 		if (isSwitch) place(first.checked ? 1 : 0);
 
+		// Changed again while it was drawing: draw that too, the same way.
 		c.ring.onDone = () => {
 			moving = false;
 			liveChecks.delete(c.key);
-			// Changed again while it was drawing: draw that too.
-			if (c.ring.state !== state()) run(false);
+			if (c.ring.state !== state() && start()) finishWhen(saves);
 		};
 
 		// The orbit starts at once, aimed at the new state, and is registered
 		// as live before the page's own handler runs: a page that rebuilds its
 		// form inside that handler (the ruleset on /leagues/new/) hands this
 		// control straight to the new checkbox. Whether to wait for the
-		// network is decided once the handler has had its turn: if it asked
-		// the database anything, the answer is drawn when the network is
-		// quiet; if not, at once (the orbit still runs for --ring-load).
+		// network is decided once the handler has had its turn, before the
+		// dots have moved: if it asked the database anything, the orbit is
+		// re-timed to --ring-min (0.2 s), so a quick save is drawn quickly and
+		// a slow one keeps the dots going round until the network is quiet;
+		// if not, it orbits for --ring-load (1 s).
+		//
+		// A click is never ignored, drawing or not (UV, 24 Oct). It toggles
+		// the box and the page saves it (queued behind the others, TDC.writer);
+		// an orbit still running simply draws whatever the box holds by then,
+		// and one already drawing draws again once it has finished.
 		let mark = 0;
+		let saves = false;   // whether this box saves as it changes, learnt from its first change
 		const watching = typeof TDCNet !== 'undefined';
+		const loadFor = () => saves ? secs(wrap, '--ring-min', 0.2) : secs(wrap, '--ring-load', 1);
 		function start() {
 			if (c.ring.busy) return false;
-			c.ring.load(secs(wrap, '--ring-load', 1), {
+			c.ring.load(loadFor(), {
 				draw: secs(wrap, '--ring-draw', 0.8),
 				fade: secs(wrap, '--ring-fade', 0.5),
 				lead: TDCRing.leadOf(state())
@@ -577,28 +586,32 @@ const TDCControls = (() => {
 			liveChecks.set(c.key, c);
 			return true;
 		}
-		function run(online) {
-			if (!start()) return;
-			finishWhen(online);
-		}
 		function finishWhen(online) {
 			if (!online) { c.ring.resolve(state()); return; }
 			const late = new Promise((r) => setTimeout(r, LIVE_FOR));
-			Promise.race([TDCNet.quiet(), late]).then(() => setTimeout(() => c.ring.resolve(state()), 0));
+			Promise.race([TDCNet.quiet(), late])
+				.then(() => setTimeout(() => c.ring.resolve(state()), 0));
 		}
 
 		wrap.addEventListener('change', (e) => {
 			if (e.target === c.box && watching) mark = TDCNet.started;
 		}, true);
 		wrap.addEventListener('change', (e) => {
-			if (e.target !== c.box || !start()) return;
-			setTimeout(() => finishWhen(watching && TDCNet.started > mark), 0);
+			if (e.target !== c.box) return;
+			const fresh = start();
+			setTimeout(() => {
+				if (watching && TDCNet.started > mark && !saves) {
+					saves = true;
+					c.ring.retime(loadFor());
+				}
+				if (fresh) finishWhen(saves);
+			}, 0);
 		});
 
 		// Clicking the drawing clicks the checkbox, which toggles it and tells
-		// the page; nothing while it is still drawing.
+		// the page.
 		wrap.addEventListener('click', (e) => {
-			if (e.target === c.box || c.box.disabled || c.ring.busy) return;
+			if (e.target === c.box || c.box.disabled) return;
 			c.box.click();
 		});
 

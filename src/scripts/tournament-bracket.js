@@ -79,7 +79,6 @@
 	let tournament = null;
 	let fixtures = [];
 	let readOnly = true;
-	let busy = false;
 	// The fixture whose score the TD is typing, if any. One at a time: two
 	// half-filled score forms on one bracket is a mis-tap waiting to happen.
 	let entering = null;
@@ -542,8 +541,6 @@
 	}
 
 	async function trySwap(f, entrantId, why) {
-		if (busy) return;
-		busy = true;
 		TDC.status(els.status, 'Checking…', '');
 
 		const args = {
@@ -554,8 +551,9 @@
 		};
 
 		// The rehearsal. p_apply defaults to false, so this changes nothing.
-		const { data, error } = await supabaseClient.rpc('tdc_swap_fixture_player', args);
-		busy = false;
+		const checked = await rehearse('swap', () => supabaseClient.rpc('tdc_swap_fixture_player', args));
+		if (!checked) return;
+		const { data, error } = checked;
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
 
 		// Nothing to do, said rather than confirmed and applied as a no-op.
@@ -980,11 +978,10 @@
 	}
 
 	els.roundRulesSave.addEventListener('click', async () => {
-		if (busy || !editingRound) return;
+		if (!editingRound) return;
 		const { bracket, round } = editingRound;
 		const later = els.roundRulesLater.checked;
 
-		busy = true;
 		TDC.status(els.roundRulesStatus, 'Checking…', '');
 
 		const args = {
@@ -996,8 +993,9 @@
 		};
 
 		// The rehearsal. p_apply defaults to false, so this changes nothing.
-		const { data, error } = await supabaseClient.rpc('tdc_set_round_rules', args);
-		busy = false;
+		const checked = await rehearse('round-rules', () => supabaseClient.rpc('tdc_set_round_rules', args));
+		if (!checked) return;
+		const { data, error } = checked;
 		if (error) { TDC.showSupabaseError(AREA, error, els.roundRulesStatus); return; }
 
 		if (!confirm(roundRulesWarning(data))) {
@@ -1011,7 +1009,7 @@
 	});
 
 	els.roundRulesClear.addEventListener('click', async () => {
-		if (busy || !editingRound) return;
+		if (!editingRound) return;
 		const { bracket, round } = editingRound;
 		const later = els.roundRulesLater.checked;
 
@@ -1322,7 +1320,7 @@
 	}
 
 	els.wiringSave.addEventListener('click', async () => {
-		if (busy || !wiring) return;
+		if (!wiring) return;
 		const f = fixtures.find((x) => x.fixture_id === wiring);
 		if (!f) { closeWiring(); return; }
 
@@ -1347,27 +1345,37 @@
 			return;
 		}
 
-		busy = true;
 		TDC.status(els.wiringStatus, 'Checking…', '');
 
 		// Rehearse every change first, so the TD confirms once against the
 		// whole thing rather than being asked twice halfway through.
+		const fixtureId = wiring;
+		const answers = await rehearse('wiring', async () => {
+			const got = [];
+			for (const w of wanted) {
+				const r = await supabaseClient.rpc('tdc_set_fixture_source', {
+					p_fixture_id: fixtureId,
+					p_side: w.side,
+					p_source_type: w.kind,
+					p_source_ref: w.ref
+				});
+				got.push(r);
+				if (r.error) break;
+			}
+			return got;
+		});
+		if (!answers) return;
 		const lines = [];
-		for (const w of wanted) {
-			const { data, error } = await supabaseClient.rpc('tdc_set_fixture_source', {
-				p_fixture_id: wiring,
-				p_side: w.side,
-				p_source_type: w.kind,
-				p_source_ref: w.ref
-			});
-			if (error) { busy = false; TDC.showSupabaseError(AREA, error, els.wiringStatus); return; }
+		for (const [i, w] of wanted.entries()) {
+			if (!answers[i]) break;
+			const { data, error } = answers[i];
+			if (error) { TDC.showSupabaseError(AREA, error, els.wiringStatus); return; }
 			if (data && data.note) continue;
 			lines.push(`${w.side === 'home' ? 'Top' : 'Bottom'} slot: ${data.from} → ${data.to}`
 				+ (data.displaces ? `\n  turns ${data.displaces} out of it` : '')
 				+ (data.award_cleared && data.award_cleared.entrant
 					? `\n  clears the bye that sent ${data.award_cleared.entrant} through` : ''));
 		}
-		busy = false;
 
 		if (!lines.length) { TDC.status(els.wiringStatus, 'Nothing changed.', ''); return; }
 		if (!confirm(lines.join('\n\n') + '\n\nGo ahead?')) {
@@ -1398,12 +1406,11 @@
 	// Renumbering is the one operation here that touches rounds a TD is not
 	// looking at.
 	async function insertRound(before) {
-		if (busy) return;
-		busy = true;
 		TDC.status(els.status, 'Checking\u2026', '');
 		const args = { p_tournament_id: tournamentId, p_before_round: before, p_bracket: 'main' };
-		const { data, error } = await supabaseClient.rpc('tdc_insert_round', args);
-		busy = false;
+		const checked = await rehearse('insert-round', () => supabaseClient.rpc('tdc_insert_round', args));
+		if (!checked) return;
+		const { data, error } = checked;
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
 
 		const lines = [`A new empty round goes in at ${before}.`, ''];
@@ -1423,11 +1430,10 @@
 	}
 
 	async function removeFixture(id) {
-		if (busy) return;
-		busy = true;
 		TDC.status(els.status, 'Checking\u2026', '');
-		const { data, error } = await supabaseClient.rpc('tdc_remove_fixture', { p_fixture_id: id });
-		busy = false;
+		const checked = await rehearse('remove-' + id, () => supabaseClient.rpc('tdc_remove_fixture', { p_fixture_id: id }));
+		if (!checked) return;
+		const { data, error } = checked;
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
 
 		// Anything still wired to it has to be repointed first. Said with the
@@ -1492,33 +1498,37 @@
 	});
 
 	// ─── Writing ───
-	// One at a time, resolve after, then re-read. The server owns the bracket.
-	async function write(what, fn) {
-		if (busy) return false;
-		busy = true;
-		TDC.status(els.status, what + '…', '');
-
-		const { error } = await fn();
-		if (error) {
-			busy = false;
-			TDC.showSupabaseError(AREA, error, els.status);
-			await loadDraw();
-			return false;
+	// Queued, never refused (TDC.writer): resolve after, then re-read, once a
+	// burst has saved. The server owns the bracket.
+	const drawWriter = TDC.writer({
+		area: AREA, status: els.status,
+		reload: async () => {
+			await resolve();
+			const ok = await loadDraw();
+			if (ok) {
+				// The tournament row too, not just the draw: the two run settings
+				// live on it, and a save that did not re-read would leave the
+				// selects showing what was asked for rather than what was stored.
+				await loadTournament();
+				await loadStatus();
+				await checkDrift();
+			}
+			return ok;
 		}
+	});
+	function write(what, fn) { return drawWriter.write(what, fn); }
 
-		await resolve();
-		const ok = await loadDraw();
-		busy = false;
-		if (ok) {
-			TDC.status(els.status, '', '');
-			// The tournament row too, not just the draw: the two run settings
-			// live on it, and a save that did not re-read would leave the
-			// selects showing what was asked for rather than what was stored.
-			await loadTournament();
-			await loadStatus();
-			await checkDrift();
-		}
-		return ok;
+	// A rehearsal (the database says what would change and the TD confirms)
+	// waits its turn behind any save still going, so it is asked about the
+	// draw as it will be. A second press of the same button while its check
+	// is still out is the same press: it gets null and stops, so no second
+	// question is asked.
+	const checking = new Set();
+	async function rehearse(key, fn) {
+		if (checking.has(key)) return null;
+		checking.add(key);
+		try { return await TDC.queued(fn); }
+		finally { checking.delete(key); }
 	}
 
 	// ─── How many entrants are waiting ───
@@ -1564,17 +1574,16 @@
 	// is what the person is asked to confirm, so the warning they read is the
 	// real one rather than a guess written here.
 	els.redraw.addEventListener('click', async () => {
-		if (busy) return;
 		const confirmedOnly = els.who.value === 'confirmed';
 
-		busy = true;
 		TDC.status(els.status, 'Redrawing…', '');
-		const { error } = await supabaseClient.rpc('tdc_generate_draw', {
+		const tried = await rehearse('redraw', () => supabaseClient.rpc('tdc_generate_draw', {
 			p_tournament_id: tournamentId,
 			p_confirmed_only: confirmedOnly,
 			p_replace: true
-		});
-		busy = false;
+		}));
+		if (!tried) return;
+		const { error } = tried;
 
 		if (!error) {
 			await write('Redrawing', async () => ({ error: null }));
@@ -1746,7 +1755,7 @@
 		// half-made swap: the picker holds a chosen name and a typed reason.
 		clearTimeout(liveTimer);
 		liveTimer = setTimeout(() => {
-			if (busy || entering || swapping || editingRound || wiring) return;
+			if (drawWriter.pending || checking.size || entering || swapping || editingRound || wiring) return;
 			loadDraw().then(() => { if (!readOnly) checkDrift(); });
 		}, 400);
 	}

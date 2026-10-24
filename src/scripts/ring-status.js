@@ -216,7 +216,8 @@ const TDCRing = (() => {
 		// seconds: load time. opts: draw, fade (seconds); lead: ring angle of the first exit (see leadOf)
 		load(seconds = 1, opts = {}) {
 			if (this.running) return;
-			this.pr = makeProfile(seconds, opts.lead ?? 260);
+			this.lead = opts.lead ?? 260;
+			this.pr = makeProfile(seconds, this.lead);
 			this.draw = opts.draw ?? 0.8;
 			this.fade = opts.fade ?? 0.5;
 			this.tf = this.fade * 0.4;
@@ -227,6 +228,15 @@ const TDCRing = (() => {
 			if (this.reduce.matches) return;
 			this.dotsG.style.display = '';
 			this.raf = requestAnimationFrame(this.frame);
+		}
+		// A new load time for an orbit that has only just started: the control
+		// learns a moment after the click, before the dots have moved, whether
+		// it is waiting on a save. The load time sets the orbit's speed and when
+		// the lead dot reaches its exit, so a short one lets a quick save be
+		// drawn quickly; a slow save keeps the dots going round until resolve.
+		retime(seconds) {
+			if (!this.running || this.T > 0.05) return;
+			this.pr = makeProfile(seconds, this.lead);
 		}
 		resolve(target) {
 			if (!this.running || this.target) return;

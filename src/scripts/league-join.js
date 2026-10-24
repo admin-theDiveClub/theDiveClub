@@ -30,7 +30,6 @@
 
 	const seasonId = new URLSearchParams(location.search).get('s');
 	let info = null;
-	let busy = false;
 
 	function day(s) {
 		if (!s) return '';
@@ -114,22 +113,16 @@
 			: 'Put my name down';
 	}
 
-	els.interestBtn.addEventListener('click', async () => {
-		if (busy) return;
-		busy = true;
-		TDC.status(els.status, 'Putting your name down…', '');
-
-		const { data, error } = await supabaseClient.rpc('tdc_league_show_interest', {
+	// Queued, never refused (TDC.writer); a second press joins the first.
+	const joinWriter = TDC.writer({
+		area: AREA, status: els.status,
+		reload: async () => { await load(); return true; },
+		after: () => TDC.flushPushes()
+	});
+	els.interestBtn.addEventListener('click', () => {
+		joinWriter.write('Putting your name down', () => supabaseClient.rpc('tdc_league_show_interest', {
 			p_league_season_id: seasonId
-		});
-		busy = false;
-		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
-
-		await load();
-		TDC.status(els.status, data === 'active'
-			? 'You are in.'
-			: 'Your name is down.', 'success');
-		TDC.flushPushes();
+		}), (data) => data === 'active' ? 'You are in.' : 'Your name is down.', { single: true });
 	});
 
 	(async () => {

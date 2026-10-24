@@ -83,7 +83,8 @@
 			{ name: '--ring-size-table',  label: 'Ring in a table', kind: 'size', unit: 'rem', min: 1,   max: 3,   step: 0.05, use: 'The same ring in a table row' },
 			{ name: '--switch-height',    label: 'Switch height',  kind: 'size', unit: 'rem', min: 1.25, max: 4,   step: 0.05, use: 'How tall a switch is; its knob is a ring of 0.8 of this' },
 			{ name: '--switch-width',     label: 'Switch width',   kind: 'size', unit: 'rem', min: 2.5,  max: 7,   step: 0.05, use: 'How wide a switch is; the knob travels this less the height' },
-			{ name: '--ring-load',        label: 'Load (nothing to save)', kind: 'size', unit: 's', min: 0, max: 3, step: 0.1, use: 'How long the dots orbit when a box is only filling a form. A box that saves orbits for as long as its call takes' },
+			{ name: '--ring-load',        label: 'Load (nothing to save)', kind: 'size', unit: 's', min: 0, max: 3, step: 0.1, use: 'How long the dots orbit when a box is only filling a form, and how fast they go' },
+			{ name: '--ring-min',         label: 'Shortest save',  kind: 'size', unit: 's',   min: 0,    max: 1,   step: 0.05, use: 'The least a box that saves orbits for. A slow save orbits for as long as it takes, so the dots show it is still going' },
 			{ name: '--ring-draw',        label: 'Draw',           kind: 'size', unit: 's',   min: 0.2,  max: 2,   step: 0.1,  use: 'How long an icon takes to draw, stroke by stroke: the ring\'s tick and cross, and the chevrons, calendar and cross of the other controls' },
 			{ name: '--ring-fade',        label: 'Fade',           kind: 'size', unit: 's',   min: 0.1,  max: 1.5, step: 0.1,  use: 'How long the dots take to fade once the icon is drawn' }
 		]],

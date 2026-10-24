@@ -54,7 +54,6 @@
 	let iRunIt = false;
 	let myTeamId = null;        // so a captain can find their own night
 	let moving = null;      // the one fixture whose date is being changed
-	let busy = false;       // one write at a time, so two clicks cannot race
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -403,7 +402,7 @@
 			p_days_between: days,
 			p_replace: replace,
 			p_detach_matches: replace
-		}), (made) => made + (made === 1 ? ' fixture made.' : ' fixtures made.'));
+		}), (made) => made + (made === 1 ? ' fixture made.' : ' fixtures made.'), { single: 'generate' });
 	});
 
 	els.clearBtn.addEventListener('click', () => {
@@ -416,7 +415,7 @@
 		write('Clearing', () => supabaseClient.rpc('tdc_clear_league_fixtures', {
 			p_league_season_id: seasonId,
 			p_detach_matches: true
-		}));
+		}), null, { single: 'clear' });
 	});
 
 	// ─── Adding one by hand ───
@@ -448,7 +447,7 @@
 			// Said plainly, because there is nowhere to send them yet: the
 			// match page cannot open a team match until the scorecard exists.
 			write('Starting', () => supabaseClient.rpc('tdc_create_league_match', { p_fixture_id: id }),
-				() => 'Match created. Open the card to set the lineups.');
+				() => 'Match created. Open the card to set the lineups.', { single: 'start-' + id });
 		} else if (button.dataset.action === 'detach') {
 			if (!confirm('Take the match off this fixture?\n\nThe match and any frames on it are kept — it just stops being part of the schedule.')) return;
 			write('Taking it off', () => supabaseClient.rpc('tdc_detach_league_match', { p_fixture_id: id }));
@@ -491,31 +490,14 @@
 	}
 
 	// ─── Writing ───
-	// Every write goes through here: one at a time, the list read again
-	// afterwards, and nothing swallowed quietly.
-	async function write(what, fn, done) {
-		if (busy) return false;
-		busy = true;
-		TDC.status(els.status, what + '…', '');
-
-		const { data, error } = await fn();
-		if (error) {
-			// The screen still shows what the person just clicked, which is
-			// now a lie. Re-reading puts it back to what the server holds, and
-			// the message goes up after so the re-read cannot wipe it.
-			await loadAll();
-			busy = false;
-			TDC.showSupabaseError(AREA, error, els.status);
-			return false;
-		}
-
-		const ok = await loadAll();
-		busy = false;
-		if (ok) TDC.status(els.status, done ? done(data) : '', done ? 'success' : '');
-
-		TDC.flushPushes();
-		return ok;
-	}
+	// Every write goes through here: queued, never refused (TDC.writer), the
+	// list read again once a burst has saved, and nothing swallowed quietly.
+	// A failed write's re-read puts the screen back to what the server holds,
+	// and the message goes up after so the re-read cannot wipe it. Generate,
+	// clear and start pass { single }, so a double tap does them once.
+	const { write } = TDC.writer({
+		area: AREA, status: els.status, reload: loadAll, after: () => TDC.flushPushes()
+	});
 
 	// ─── Start ───
 	(async () => {
