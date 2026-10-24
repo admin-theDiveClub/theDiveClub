@@ -368,7 +368,8 @@
 			: 'Record each frame as it finishes, in any order.')
 			+ (empty
 				? ' ' + empty + (empty === 1 ? ' frame has' : ' frames have') + ' an empty seat: put a reserve or a latecomer in, or it is a walkover when the card is signed.'
-				: '');
+				: '')
+			+ noReserveNote();
 
 		// One heading per session. Frames are numbered session by session,
 		// so the card is already in that order.
@@ -467,6 +468,25 @@
 		return row;
 	}
 
+	// Who could come in as a reserve for a side: anybody active on the team
+	// who is not in tonight's order (rule 2). The same test reservePick uses.
+	function reservesFor(side) {
+		const teamId = side === 'home' ? match.home_team_id : match.away_team_id;
+		const inOrder = new Set(lineup.filter((l) => l.side === side && l.player_id).map((l) => l.player_id));
+		return (rosters.get(teamId) || []).filter((r) => r.status === 'active' && !inOrder.has(r.player_id));
+	}
+
+	// A team with nobody beyond tonight's order has no reserve picker, which
+	// on its own reads as a missing feature (UV, 24 Oct). Said once, per side
+	// this person controls, with where to get one.
+	function noReserveNote() {
+		const mine = lineupState.i_run_it ? ['home', 'away'] : (lineupState.my_side ? [lineupState.my_side] : []);
+		const without = mine.filter((side) => !reservesFor(side).length).map(teamName);
+		if (!without.length) return '';
+		return ' ' + without.join(' and ') + (without.length === 1 ? ' has' : ' have')
+			+ ' nobody beyond tonight\'s lineup, so there is no reserve to put in. A captain claims one on the season page; the limit is the team size plus the season\'s reserves.';
+	}
+
 	// The reserve picker for one seat of one frame: a captain's own side, or
 	// either side for the director. It offers the people rule 2 allows — the
 	// position's own player (to undo a reserve) and anybody active on the team
@@ -478,13 +498,9 @@
 		const teamId = side === 'home' ? match.home_team_id : match.away_team_id;
 		const position = side === 'home' ? f.home_position : f.away_position;
 		const current = side === 'home' ? f.home_player_id : f.away_player_id;
-		const order = lineup.filter((l) => l.side === side && l.player_id);
-		const inOrder = new Set(order.map((l) => l.player_id));
-		const regular = (order.find((l) => l.lineup_slot === position) || {}).player_id;
-
-		const choices = (rosters.get(teamId) || []).filter((r) => r.status === 'active'
-			&& r.player_id !== current
-			&& (r.player_id === regular || !inOrder.has(r.player_id)));
+		const regular = (lineup.find((l) => l.side === side && l.lineup_slot === position) || {}).player_id;
+		const back = (rosters.get(teamId) || []).filter((r) => r.player_id === regular && r.status === 'active');
+		const choices = back.concat(reservesFor(side)).filter((r) => r.player_id !== current);
 		if (!choices.length) return null;
 
 		const pick = document.createElement('select');
