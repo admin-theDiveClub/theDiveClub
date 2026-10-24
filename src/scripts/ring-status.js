@@ -52,7 +52,10 @@ const TDCRing = (() => {
 		gear:  { label: 'Settings', strokes: ['M50.0 23.0L53.8 23.3L54.8 30.6L60.3 32.9L66.2 28.4L71.6 33.8L67.1 39.7L69.4 45.2L76.7 46.2L76.7 53.8L69.4 54.8L67.1 60.3L71.6 66.2L66.2 71.6L60.3 67.1L54.8 69.4L53.8 76.7L50.0 77.0', 'M50.0 23.0L46.2 23.3L45.2 30.6L39.7 32.9L33.8 28.4L28.4 33.8L32.9 39.7L30.6 45.2L23.3 46.2L23.3 53.8L30.6 54.8L32.9 60.3L28.4 66.2L33.8 71.6L39.7 67.1L45.2 69.4L46.2 76.7L50.0 77.0', 'M50 42A8 8 0 1 1 50 58A8 8 0 1 1 50 42'] },
 		bell:  { label: 'Notifications', strokes: ['M34 62C37 58 38 54 38 46C38 38 43 33 50 33', 'M66 62C63 58 62 54 62 46C62 38 57 33 50 33', 'M34 62L66 62', 'M44 68C45 72 55 72 56 68'] },
 		user:  { label: 'Profile', strokes: ['M50 31A9 9 0 1 1 50 49A9 9 0 1 1 50 31', 'M31 70C31 58 40 54 50 54C60 54 69 58 69 70'] },
-		smile: { label: 'Happy',   strokes: ['M36 56C42 66 58 66 64 56', 'M40 37L40 42', 'M60 37L60 42'] }
+		smile: { label: 'Happy',   strokes: ['M36 56C42 66 58 66 64 56', 'M40 37L40 42', 'M60 37L60 42'] },
+		// Added 24 Oct for the league fixtures' buttons (Move, Take match off).
+		calendar: { label: 'Moved', strokes: ['M30 36L70 36L70 70L30 70L30 36', 'M30 47L70 47', 'M40 29L40 40', 'M60 29L60 40'] },
+		minus: { label: 'Taken off', strokes: ['M30 50L70 50'] }
 	};
 	const NAMES = Object.keys(ICONS);
 	const STR = {};   // key -> stroke geometry

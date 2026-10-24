@@ -478,8 +478,9 @@
 		renderNightActions(rows);
 
 		const dayTime = selected.day ? mostCommon(rows.map((f) => time24(new Date(f.scheduled_at)))) : null;
-		els.dayTable.replaceChildren(columns(), ...rows.flatMap((f) => fixtureRows(f, 'day', dayTime)));
+		els.dayTable.replaceChildren(...rows.flatMap((f) => fixtureRows(f, 'day', dayTime)));
 		els.dayTable.hidden = !rows.length;
+		wakeIcons(els.dayTable);
 		els.dayEmpty.hidden = !!rows.length;
 		els.dayEmpty.textContent = !fixtures.length && !iRunIt
 			? 'No fixtures yet.'
@@ -499,20 +500,25 @@
 	function renderNightActions(rows) {
 		const startable = rows.filter((f) => !f.is_bye && !f.match_id).length;
 		const removable = rows.filter((f) => !f.match_id).length;
+		// The same icons as a fixture's, each with a caption: these act on
+		// the whole night.
 		const buttons = [];
-		const button = (action, label, cls) => {
-			const b = node('button', 'btn btn-sm ' + cls, label);
-			b.type = 'button';
-			b.dataset.night = action;
-			return b;
+		const button = (action, icon, caption, label, tone) => {
+			const box = node('div', 'fx-night-btn');
+			box.append(iconButton(icon, label, tone, { night: action }, 'night:' + action),
+				node('span', 'fx-night-caption', caption));
+			return box;
 		};
 		if (iRunIt && rows.length) {
-			if (startable) buttons.push(button('start', 'Start all (' + startable + ')', 'btn-primary'));
-			buttons.push(button('move', movingNight ? 'Close' : (selected.day ? 'Move all' : 'Date all'), 'btn-secondary'));
-			if (removable) buttons.push(button('remove', 'Remove all (' + removable + ')', 'btn-danger'));
+			if (startable) buttons.push(button('start', 'play', 'Start all (' + startable + ')', 'Start every match on this night', ''));
+			buttons.push(movingNight
+				? button('move', 'cross', 'Close', 'Close the night’s move', '')
+				: button('move', 'calendar', selected.day ? 'Move all' : 'Date all', 'Move every fixture on this night', ''));
+			if (removable) buttons.push(button('remove', 'cross', 'Remove all (' + removable + ')', 'Remove every fixture on this night', 'danger'));
 		}
 		els.dayActions.replaceChildren(...buttons);
 		els.dayActions.hidden = !buttons.length;
+		wakeIcons(els.dayActions);
 
 		els.dayMove.replaceChildren();
 		if (!movingNight || !iRunIt || !rows.length) { movingNight = false; return; }
@@ -598,6 +604,8 @@
 		return td;
 	}
 
+	// [action, icon, what it does, tone]. The icons are the ring status set
+	// (ring-status.js): play, calendar, cross, arrow, minus (UV, 24 Oct).
 	function actions(f) {
 		const items = [];
 		// The card is for whoever is playing, not only for the director: a
@@ -605,14 +613,76 @@
 		// decides for itself what they may do once they are there.
 		if (f.match_id) {
 			const mine = myTeamId && (f.home_team_id === myTeamId || f.away_team_id === myTeamId);
-			items.push(['open', mine ? 'My card' : 'Card', mine ? 'btn-primary' : 'btn-secondary']);
+			items.push(['open', 'arrow', mine ? 'Open my card' : 'Open the card', '']);
 		}
 		if (!iRunIt) return items;
-		if (!f.is_bye && !f.match_id) items.push(['start', 'Start', 'btn-primary']);
-		if (f.match_id) items.push(['detach', 'Take off', 'btn-secondary']);
-		items.push(['move', moving && moving.endsWith(':' + f.fixture_id) ? 'Close' : 'Move', 'btn-secondary']);
-		if (!f.match_id) items.push(['remove', 'Remove', 'btn-danger']);
+		if (!f.is_bye && !f.match_id) items.push(['start', 'play', 'Start the match', '']);
+		if (f.match_id) items.push(['detach', 'minus', 'Take the match off', '']);
+		const open = moving && moving.endsWith(':' + f.fixture_id);
+		items.push(['move', open ? 'cross' : 'calendar', open ? 'Close the move' : 'Move it', '']);
+		if (!f.match_id) items.push(['remove', 'cross', 'Remove it', 'danger']);
 		return items;
+	}
+
+	// ─── Icon buttons ───
+	// A round button with a ring icon: the icon draws itself in the first time
+	// the button appears, and a redraw of the page leaves one already showing
+	// as it is (only what is new moves). Pressing it sets its dots orbiting
+	// until the page is read again. The ring is made once the button is on the
+	// page (wakeIcons), since the engine measures the icon's strokes there.
+	const iconsSeen = new Set();
+	function iconButton(icon, label, tone, data, key) {
+		const b = node('button', 'fx-icon' + (tone ? ' fx-icon-' + tone : ''));
+		b.type = 'button';
+		b.title = label;
+		b.setAttribute('aria-label', label);
+		Object.assign(b.dataset, data, { icon, iconKey: key });
+		const face = node('span', 'tdc-ring');
+		face.innerHTML = TDCRing.svg(6);
+		b.append(face);
+		return b;
+	}
+
+	const tokenSecs = (name, fallback) => {
+		const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+		const n = parseFloat(v);
+		return isNaN(n) ? fallback : (v.endsWith('ms') ? n / 1000 : n);
+	};
+
+	function wakeIcons(root) {
+		for (const b of root.querySelectorAll('.fx-icon:not([data-awake])')) {
+			b.dataset.awake = 'yes';
+			const icon = b.dataset.icon;
+			const seen = iconsSeen.has(b.dataset.iconKey + ':' + icon);
+			iconsSeen.add(b.dataset.iconKey + ':' + icon);
+			const face = b.querySelector('.tdc-ring');
+			try {
+				b.tdcRing = new TDCRing.RingStatus(face, {
+					icons: [icon],
+					labels: { [icon]: b.getAttribute('aria-label'), empty: b.getAttribute('aria-label'), loading: 'Working' },
+					initial: seen || lessMotion.matches ? icon : 'empty'
+				});
+			} catch (err) {
+				TDC.error(AREA, 'an icon could not be drawn: ' + icon, err);
+				continue;
+			}
+			if (seen || lessMotion.matches) continue;
+			b.tdcRing.load(tokenSecs('--control-reveal', 0.35), {
+				draw: tokenSecs('--ring-draw', 0.4), fade: tokenSecs('--ring-fade', 0.1),
+				lead: TDCRing.leadOf(icon), spin: tokenSecs('--ring-spin', 1) || 1
+			});
+			b.tdcRing.resolve(icon, { together: true });
+		}
+	}
+
+	// A pressed button orbits while its write is out; the read afterwards
+	// redraws the page and puts a settled button in its place.
+	function working(b) {
+		if (!b.tdcRing || b.tdcRing.busy || lessMotion.matches) return;
+		b.tdcRing.load(tokenSecs('--ring-load', 1), {
+			draw: tokenSecs('--ring-draw', 0.4), fade: tokenSecs('--ring-fade', 0.1),
+			lead: TDCRing.leadOf(b.dataset.icon), spin: tokenSecs('--ring-spin', 1) || 1
+		});
 	}
 
 	const fixtureName = (f) => f.is_bye ? f.home_name + '’s bye' : f.home_name + ' v ' + f.away_name;
@@ -622,8 +692,11 @@
 		const tr = node('tr', 'fx-row');
 		if (myTeamId && (f.home_team_id === myTeamId || f.away_team_id === myTeamId)) tr.classList.add('fx-mine');
 
+		// The strip runs the fixture's whole height: its row and the tables
+		// row under it (UV, 24 Oct).
 		const state = stateOf(f);
 		const strip = node('td', 'fx-state fx-state-' + state);
+		strip.rowSpan = f.is_bye ? 1 : 2;
 		if (state !== 'bye') {
 			strip.title = STATE[state] || state;
 			strip.append(node('span', 'visually-hidden', STATE[state] || state));
@@ -633,13 +706,9 @@
 		const items = actions(f);
 		if (items.length) {
 			const box = node('div', 'fx-actions');
-			for (const [action, label, cls] of items) {
-				const b = node('button', 'btn btn-sm ' + cls, label);
-				b.type = 'button';
-				b.dataset.action = action;
-				b.dataset.fixture = f.fixture_id;
-				b.dataset.where = where;
-				box.append(b);
+			for (const [action, icon, label, tone] of items) {
+				box.append(iconButton(icon, label + ': ' + fixtureName(f), tone,
+					{ action, fixture: f.fixture_id, where }, key + ':' + action));
 			}
 			mid.append(box);
 		} else {
@@ -671,7 +740,6 @@
 	// last change. The row scrolls sideways when a venue gives a match many.
 	function tablesRow(f, where) {
 		const tr = node('tr', 'fx-tables');
-		tr.append(node('td'));
 		const td = node('td');
 		td.colSpan = 3;
 		const nums = f.table_numbers || [];
@@ -758,15 +826,6 @@
 		return tr;
 	}
 
-	// The four columns, fixed here: a fixed-layout table otherwise takes its
-	// widths from its first row, which in every fixture's table is a date
-	// across all of them.
-	function columns() {
-		const group = node('colgroup');
-		group.append(node('col', 'fx-col-state'), node('col'), node('col', 'fx-col-mid'), node('col'));
-		return group;
-	}
-
 	// ─── Every fixture ───
 	function passes(f) {
 		const from = els.fFrom.value;
@@ -811,8 +870,9 @@
 			}
 			out.push(...fixtureRows(f, 'all'));
 		}
-		els.allTable.replaceChildren(columns(), ...out);
+		els.allTable.replaceChildren(...out);
 		els.allTable.hidden = !rows.length;
+		wakeIcons(els.allTable);
 		els.allNone.hidden = !fixtures.length || !!rows.length;
 	}
 
@@ -958,12 +1018,12 @@
 			fade([els.dayView], () => renderDay(nights()));
 			return;
 		}
-		if (night) { actNight(night.dataset.night); return; }
+		if (night) { actNight(night.dataset.night, night); return; }
 		if (action) act(action);
 	});
 
 	// The chosen night's own buttons, on every fixture in it.
-	function actNight(what) {
+	function actNight(what, button) {
 		const map = nights();
 		const rows = selectedFixtures(map);
 		switch (what) {
@@ -971,6 +1031,7 @@
 				const todo = rows.filter((f) => !f.is_bye && !f.match_id);
 				if (!todo.length) return;
 				if (!confirm(`Start ${plural(todo.length, 'match')} on this night?`)) return;
+				working(button);
 				for (const f of todo) {
 					write('Starting', () => supabaseClient.rpc('tdc_create_league_match', { p_fixture_id: f.fixture_id }),
 						() => 'Matches created. Open a card to set its lineups.', { single: 'start-' + f.fixture_id });
@@ -983,6 +1044,7 @@
 				if (!todo.length) return;
 				const note = kept ? `\n\n${plural(kept, 'fixture')} with a match ${kept === 1 ? 'stays' : 'stay'}: take the match off first.` : '';
 				if (!confirm(`Remove ${plural(todo.length, 'fixture')} from the schedule?` + note)) return;
+				working(button);
 				for (const f of todo) {
 					write('Removing', () => supabaseClient.rpc('tdc_remove_league_fixture', { p_fixture_id: f.fixture_id }));
 				}
@@ -1031,16 +1093,19 @@
 				location.href = '/leagues/card/?m=' + encodeURIComponent(f.match_id);
 				return;
 			case 'start':
+				working(button);
 				// Said plainly: the lineups come next, on the card.
 				write('Starting', () => supabaseClient.rpc('tdc_create_league_match', { p_fixture_id: id }),
 					() => 'Match created. Open the card to set the lineups.', { single: 'start-' + id });
 				return;
 			case 'detach':
 				if (!confirm('Take the match off this fixture?\n\nThe match and any frames on it are kept — it just stops being part of the schedule.')) return;
+				working(button);
 				write('Taking it off', () => supabaseClient.rpc('tdc_detach_league_match', { p_fixture_id: id }));
 				return;
 			case 'remove':
 				if (!confirm(`Remove ${fixtureName(f)} from the schedule?`)) return;
+				working(button);
 				write('Removing', () => supabaseClient.rpc('tdc_remove_league_fixture', { p_fixture_id: id }));
 				return;
 			case 'move': {

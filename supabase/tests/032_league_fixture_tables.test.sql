@@ -1,15 +1,17 @@
--- Matches per team per round and table numbers (migration 20261024191110).
+-- Matches per team per round and table numbers (migrations 20261024191110,
+-- 20261024194237: tables run on through a night).
 --
 --   four teams, once each, 2 matches a round, 2 tables a match
 --     → 3 passes of the round robin; passes 1 and 2 share round 1, pass 3 is
 --       round 2 on its own night
 --     → each team plays twice in round 1 and once in round 2
---     → tables restart each pass: {1,2} and {3,4}
+--     → tables run on through the night: {1,2}, {3,4}, {5,6}, {7,8}, so no
+--       team plays both its matches on the same table
 --   five teams (byes): a bye has no tables
 --   adding and changing a fixture's tables; the limits
 begin;
 \ir _helpers.psql
-select plan(14);
+select plan(15);
 
 select tests.create_user('Tab LD') as ld \gset
 select tests.create_user('Tab P1') as p1 \gset
@@ -50,7 +52,15 @@ select is((select array_agg(distinct position order by position) from public.tbl
 	array[1, 2, 3, 4], 'positions run on through the night');
 
 select is((select array_agg(table_numbers::text order by position) from public.tbl_league_fixtures where league_season_id = :'season' and round = 1),
-	array['{1,2}', '{3,4}', '{1,2}', '{3,4}'], 'tables restart for the second pass of the night');
+	array['{1,2}', '{3,4}', '{5,6}', '{7,8}'], 'every fixture of the night has its own tables, the second pass included');
+select is((
+	select count(*)::integer from (
+		select team, t from public.tbl_league_fixtures f,
+			lateral (values (f.home_team_id), (f.away_team_id)) x(team),
+			lateral unnest(f.table_numbers) t
+		where f.league_season_id = :'season' and f.round = 1
+		group by team, t having count(*) > 1) d),
+	0, 'no team plays two of the night''s matches on the same table');
 
 -- Adding and changing.
 select tests.sign_in(:'ld');

@@ -708,3 +708,13 @@ These predate the log. They are recorded here because every one of them is a dec
 *Example:* six teams, 2 matches a round, 2 tables a match: round 1 has six fixtures, the first three on tables 1-2, 3-4, 5-6 and the next three on 1-2, 3-4, 5-6 again. Adding a seventh to that night puts it on 7-8.
 *Rejected:* unique tables across the whole night (they would run to 12 for six teams playing twice, which no venue has); numbers worked out on the page from position (lost the moment one is changed by hand).
 *Touches:* migration `20261024191110`, `league-fixtures.js`, `leagues/fixtures/index.html`, `tdc-controls.js`, `controls.css`, `league.css`, `variables.css`, `sandbox.js`
+
+## 2026-10-24 — Table numbers run on through the night
+
+*Decided by:* UV
+*Replaces:* the numbering in "Several matches a night per team, and a fixture's tables" above, which restarted the tables at each pass of the round robin.
+*Why:* restarting put a team's second match back on the tables of its first whenever it held the same place in both passes. UV: every match on a night gets different tables by default, and a team should not play all its matches on one table; the director changes numbers by hand if the venue needs otherwise.
+*So:* Generate numbers every fixture of a night on from the last: with 2 tables a match, {1,2}, {3,4}, {5,6}… Since no two fixtures of a night share a table, a team playing twice is on different tables each time. A fixture added by hand already took the night's next free numbers.
+*Example:* six teams, 2 matches a round, 2 tables a match: round 1's six fixtures are on 1-2, 3-4, 5-6, 7-8, 9-10, 11-12. Alpha plays on 1-2 and later on 9-10.
+*Rejected:* reusing tables across passes while shuffling which team gets which (it still needs a venue's table count to be worth anything, and nothing records that).
+*Touches:* migration `20261024194237`, `032_league_fixture_tables.test.sql`

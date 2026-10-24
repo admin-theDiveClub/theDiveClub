@@ -396,34 +396,56 @@
 
 .fx-day-title { text-align: center; margin: var(--space-3) 0; }
 
-/* The chosen night's own buttons, and its Move, centred under the title. */
-.fx-day-actions { justify-content: center; }
-.fx-day-actions > .btn { flex: 0 1 auto; }
+/* The chosen night's own buttons, and its Move, centred under the title:
+ * the fixtures' icons, each with a caption under it. */
+.fx-day-actions { justify-content: center; gap: var(--space-5); }
+.fx-night-btn {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--space-1);
+}
+.tdc-card .fx-night-btn button.fx-icon { width: 2.6rem; height: 2.6rem; }
+.fx-night-caption {
+	font-size: 0.66rem;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+}
 .fx-night-move { margin-bottom: var(--space-4); }
 .fx-night-move .btn-row { justify-content: center; }
 .fx-night-move .btn-row > .btn { flex: 0 1 auto; }
 
+/* Only as wide as the fixtures need, centred (UV, 24 Oct); names wrap on a
+ * phone rather than push the table past the card. */
 .fx-table {
-	width: 100%;
+	width: auto;
+	max-width: 100%;
+	margin: 0 auto var(--space-4);
 	border-collapse: collapse;
-	table-layout: fixed;
-	margin-bottom: var(--space-4);
 }
 .fx-table td { padding: var(--space-2) 0; vertical-align: middle; }
-.fx-table col.fx-col-state { width: var(--space-3); }
-.fx-table col.fx-col-mid { width: 5.5rem; }
-.fx-table td.fx-mid { text-align: center; padding-inline: var(--space-1); }
+.fx-table td.fx-mid { text-align: center; padding-inline: var(--space-3); }
 .fx-table tr.fx-mine td:not(.fx-state) { background: var(--hover-wash); }
 
-/* A fixture's state: a strip down the left of its row, as the leagues list
+/* A fixture's state: a strip down the left of the fixture, the full height
+ * of its row and its tables row (the cell spans both), as the leagues list
  * draws a season's (UV, 24 Oct). Its name is in the strip for a screen
  * reader and in its title on hover. */
-.fx-table td.fx-state { padding: var(--space-1) 0; }
+.fx-table td.fx-state {
+	position: relative;
+	width: var(--space-1);
+	min-width: var(--space-1);
+	padding: 0 var(--space-2) 0 0;
+}
 .fx-table td.fx-state::before {
 	content: '';
-	display: block;
+	position: absolute;
+	top: var(--space-1);
+	bottom: var(--space-1);
+	left: 0;
 	width: var(--space-1);
-	height: 2.4rem;
 	border-radius: var(--radius-pill);
 	background: var(--strip-color, transparent);
 }
@@ -451,7 +473,7 @@
 .fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 .fx-home .fx-team { flex-direction: row-reverse; text-align: right; }
 .fx-names { display: flex; flex-direction: column; min-width: 0; }
-.fx-name { font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.fx-name { font-weight: 600; line-height: 1.25; overflow-wrap: break-word; }
 .fx-sub { font-size: 0.75rem; color: var(--text-muted); }
 .fx-bye { display: block; padding-left: var(--space-2); color: var(--text-muted); font-style: italic; }
 .team-pic {
@@ -466,21 +488,42 @@
 }
 .team-pic svg { width: 60%; height: 60%; }
 
-/* A fixture's buttons, one above the other in the middle column: Start,
- * Move, Remove (or the card and Take off once there is a match). */
-.fx-actions { display: flex; flex-direction: column; gap: var(--space-1); }
-.tdc-card .fx-actions button.btn-sm {
-	width: 100%;
-	padding: 0.3rem 0.4rem;
-	font-size: 0.62rem;
-	letter-spacing: 0.06em;
+/* A fixture's buttons, side by side in the middle column: Start, Move,
+ * Remove (or the card and Take off once there is a match), each a ring
+ * icon that draws itself in (ring-status.js, status.css). Remove's icon is
+ * the error colour. Each says what it does in its title and label. */
+.fx-actions { display: flex; justify-content: center; gap: var(--space-1); }
+.tdc-card button.fx-icon {
+	flex: 0 0 auto;
+	width: 2.1rem;
+	height: 2.1rem;
+	padding: 0;
+	margin: 0;
+	border: none;
+	border-radius: var(--radius-round);
+	background: transparent;
+	cursor: pointer;
+	transition: box-shadow 0.15s ease;
+	-webkit-tap-highlight-color: transparent;
+}
+.tdc-card button.fx-icon:hover,
+.tdc-card button.fx-icon:focus-visible { box-shadow: var(--glow-primary); outline: none; }
+.fx-icon-danger .tdc-ring .mark { stroke: var(--color-error); }
+.fx-icon-danger .tdc-ring .dots { fill: var(--color-error); }
+.fx-icon .sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
 }
 .fx-v { color: var(--text-muted); }
 .fx-mid-sub { display: block; margin-top: var(--space-1); font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
 
 /* The tables a fixture is played on, in a small row under it: steppers on
  * their side that scroll sideways when there are many, and a + and a -. */
-.fx-table tr.fx-tables td { padding: 0 0 var(--space-1); }
+.fx-table tr.fx-tables td:not(.fx-state) { padding: 0 0 var(--space-1); }
 .fx-tables-line {
 	display: flex;
 	align-items: center;
