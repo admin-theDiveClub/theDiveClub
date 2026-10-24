@@ -59,6 +59,31 @@ body {
 	font-family: var(--font-body);
 	min-height: 100vh;
 }
+
+/* Scrollbars, everywhere: the grey thumb and nothing else (no track, no
+   arrows), the look of Chrome on a phone (UV, 24 Oct). Chrome, Edge and
+   Safari draw it from the ::-webkit-scrollbar parts. Firefox has no such
+   parts, so it gets the standard properties instead: thin, grey, no track.
+   The two are kept apart because Chrome ignores the parts once
+   scrollbar-color is set. */
+::-webkit-scrollbar {
+	width: var(--scrollbar-size);
+	height: var(--scrollbar-size);
+	background: transparent;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-button { display: none; }
+::-webkit-scrollbar-thumb {
+	background: var(--scrollbar-thumb);
+	border-radius: var(--radius-pill);
+}
+@supports not selector(::-webkit-scrollbar) {
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: var(--scrollbar-thumb) transparent;
+	}
+}
 a {
 	color: var(--color-primary);
 	text-decoration: none;

@@ -94,6 +94,11 @@ Branding: UV moved to **black elements with alpha** for shadows and gradients in
 
 ### Decisions already made — do not reopen without asking
 
+- **Every field glows on hover (UV, 24 Oct)**, on every page: text boxes, number and date fields, text areas and selects, not checkboxes, radios or anything disabled. A field is a line, not a box, so the line glows (`--glow-line`: the underline lit green with a soft light below) rather than the rows' box glow (`--glow-primary`) appearing round it.
+- **Scrollbars are a grey thumb and nothing else (UV, 24 Oct)**, site-wide in `global.css`: no track, no arrows, as Chrome draws them on a phone. Chrome, Edge and Safari use the `::-webkit-scrollbar` parts; Firefox gets `scrollbar-width: thin` and the same grey, kept behind `@supports not selector(::-webkit-scrollbar)` because Chrome ignores the parts once `scrollbar-color` is set. `--scrollbar-thumb` and `--scrollbar-size` in `variables.css`.
+- **Anything that scrolls sideways fades at its edges (UV, 24 Oct)**, only on a side with more to scroll to: every `.table-scroll`, and `.scroll-x` for anything else (the league search tiles). A mask driven by a scroll-driven animation, so no wrapper or script; Firefox and older Safari show plain edges.
+- **Headings are centred on every page (UV, 24 Oct)**, `h1` and `h2` in a `.tdc-card` together with the line straight under one (`h1 + p`, `h2 + p.muted`). `h3` and below belong to rows, boxes and lists and stay left. `/match/`, the home page and the board do not use `.tdc-card`.
+
 - **The nav reload button is hidden in a browser**, shown only when running installed. UV raised its absence on PC on 21 Oct and confirmed: **leave as is.**
 - **Drag-and-drop was asked for and a picker was built instead** for swapping a player on the bracket — a TD at the desk is on a phone, and dragging across a sideways-scrolling bracket mis-taps. UV accepted this. The database function serves either, so a drag can be added later.
 - **The notification pip is a dot, not a count.** A number would mean reading the whole list on every page load, when "something is waiting" is the entire message.

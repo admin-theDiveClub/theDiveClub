@@ -382,10 +382,11 @@ extraScripts:
 
 		<h2>Row table</h2>
 		<p class="muted">Each row opens something; hover for the glow. The data columns sit under the heading on a phone and become columns on a PC.</p>
-		<div class="row-table" style="--row-cols: minmax(0, 1fr) 9rem 6.5rem 6.5rem">
-			<div class="row-table-head" aria-hidden="true"><span>Name</span><span></span><span>Starts</span><span>Players</span></div>
+		<div class="row-table has-strip has-pic" style="--row-cols: 2.75rem minmax(0, 1fr) 9rem 6.5rem 6.5rem">
+			<div class="row-table-head" aria-hidden="true"><span></span><span>Name</span><span></span><span>Starts</span><span>Players</span></div>
 			<a href="#sb-components" class="row-table-row">
 				<span class="row-table-strip" aria-hidden="true"></span>
+				<div class="row-table-pic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="currentColor"/></svg></div>
 				<div class="row-table-main"><h3>A Row With A Strip</h3><div class="row-table-meta">Details under the heading</div></div>
 				<div class="row-table-badges"><span class="badge live">Captain</span><span class="badge">Team 0</span></div>
 				<div class="row-table-stats">
@@ -395,6 +396,7 @@ extraScripts:
 			</a>
 			<a href="#sb-components" class="row-table-row">
 				<span class="row-table-strip" aria-hidden="true" style="--strip-color: var(--color-warning)"></span>
+				<div class="row-table-pic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="currentColor"/></svg></div>
 				<div class="row-table-main"><h3>Another Row</h3><div class="row-table-meta">A strip can take any colour</div></div>
 				<div class="row-table-badges"><span class="badge needs-you">Needs you</span></div>
 				<div class="row-table-stats">

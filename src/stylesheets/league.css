@@ -148,10 +148,11 @@
 
 /* ── Your leagues on /leagues/ ──
  *
- * A .row-table (forms.css). Only its PC column tracks are this page's:
- * the name, the badges, starts, ends, ranking, teams.
+ * A .row-table (forms.css) with a strip and a picture. Only its PC column
+ * tracks are this page's: the picture, the name, the badges, starts, ends,
+ * ranking, teams.
  */
-.row-table.league-rows { --row-cols: minmax(0, 1fr) 9rem 6.5rem 6.5rem 4.5rem 6.5rem; }
+.row-table.league-rows { --row-cols: 2.75rem minmax(0, 1fr) 9rem 6.5rem 6.5rem 4.5rem 6.5rem; }
 
 /* A season's status colour, on the row's strip and the search tile's edge.
  * The keys are TDCMatchDef.LEAGUE_STATUS; a new status needs a line here. */
@@ -162,13 +163,14 @@
 
 /* ── Search for a League ──
  *
- * The search bar and its filters centred over the full width of the page;
- * the results one row of tiles that scrolls sideways, snapping to a tile.
+ * The search bar and its filters as wide as Your Leagues above (UV, 24 Oct);
+ * the results one row of tiles that scrolls sideways. The first tile starts
+ * in the middle and the rest wait to its right: scrolling right brings them
+ * in, filling the left as it goes. Each tile snaps to the middle.
  */
-.league-search {
-	max-width: 36rem;
-	margin: 0 auto var(--space-4);
-}
+.league-search { margin-bottom: var(--space-4); }
+.league-search > .field label,
+.league-search input[type="search"],
 .league-search .hint { text-align: center; }
 
 .league-filters {
@@ -179,14 +181,17 @@
 .league-filters .field { margin-bottom: var(--space-3); }
 
 .league-tiles {
+	--tile-w: 12.5rem;
 	display: grid;
 	grid-auto-flow: column;
-	grid-auto-columns: 12.5rem;
+	grid-auto-columns: var(--tile-w);
 	gap: var(--space-3);
 	overflow-x: auto;
 	scroll-snap-type: x mandatory;
-	/* Room for the glow, which overflow would otherwise clip. */
-	padding: var(--space-3) var(--space-1) var(--space-4);
+	/* Above and below: room for the glow, which overflow would otherwise clip.
+	   Either side: half the row less half a tile, so the first and the last
+	   tile can each sit in the middle. */
+	padding: var(--space-3) max(var(--space-1), calc(50% - var(--tile-w) / 2)) var(--space-4);
 	margin-bottom: var(--space-4);
 }
 /* Nothing found: a sentence, not a column of tiles. */
@@ -196,7 +201,7 @@
  * leagues have their own), the name and details under it, and the status
  * along the top edge. */
 .league-tile {
-	scroll-snap-align: start;
+	scroll-snap-align: center;
 	display: flex;
 	flex-direction: column;
 	align-items: center;

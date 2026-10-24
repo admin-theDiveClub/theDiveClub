@@ -62,7 +62,7 @@
 	function header() {
 		const h = el('div', 'row-table-head');
 		h.setAttribute('aria-hidden', 'true');
-		h.append(el('span', null, 'League'), el('span'), ...COLUMNS.map((c) => el('span', null, c)));
+		h.append(el('span'), el('span', null, 'League'), el('span'), ...COLUMNS.map((c) => el('span', null, c)));
 		return h;
 	}
 
@@ -78,8 +78,8 @@
 	const disciplineSaid = (k) => said(TDCMatchDef.DISCIPLINE, k, 'discipline');
 	const statusSaid = (k) => said(TDCMatchDef.LEAGUE_STATUS, k, 'status');
 
-	// One row per league season: the league's name as a heading, its status
-	// and format under it, every badge in a column of its own, then the dates
+	// One row per league season: the league's picture, its name as a heading,
+	// its status and format under it, every badge in a column of its own, then the dates
 	// and counts. The strip down the left is the status's colour.
 	function row(l) {
 		const box = document.createElement('a');
@@ -100,6 +100,11 @@
 		const strip = el('span', 'row-table-strip');
 		strip.setAttribute('aria-hidden', 'true');
 
+		// The league's picture: the default icon until leagues have their own
+		// (to be set on the league's settings; docs/STATUS.md).
+		const pic = el('div', 'row-table-pic');
+		pic.append(leagueIcon());
+
 		// Ranking waits for standings (docs/design/leagues.md §6).
 		const stats = el('div', 'row-table-stats');
 		stats.append(
@@ -117,7 +122,7 @@
 		if (l.i_captain && l.my_status === 'active' && l.confirmed_at) tags.append(el('span', 'badge live', 'Captain'));
 		if (l.i_run_it) tags.append(el('span', 'badge live', 'You run this'));
 
-		box.append(strip, main, tags, stats);
+		box.append(strip, pic, main, tags, stats);
 		return box;
 	}
 

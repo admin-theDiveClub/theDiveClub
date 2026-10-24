@@ -15,6 +15,15 @@
 	font-size: 1.1rem;
 	margin: 2rem 0 0.75rem;
 }
+/* Every page's headings are centred, with the line straight under one: a
+   page's intro or details, a section's note (UV, 24 Oct). Smaller headings
+   (h3 and below) belong to rows, boxes and lists and stay where they are. */
+.tdc-card h1,
+.tdc-card h2,
+.tdc-card h1 + p,
+.tdc-card h2 + p.muted {
+	text-align: center;
+}
 
 /* Explanatory text needs room, or it reads as part of the field below it. */
 .tdc-card p {
@@ -67,6 +76,21 @@
 .tdc-card textarea:focus {
 	outline: none;
 	border-bottom-color: var(--color-primary);
+}
+
+/* The hover glow on every field you type into or choose from, on every page
+   (UV, 24 Oct), the match page's included. A field is a line, so the line
+   glows (--glow-line) rather than a box appearing round it. Not on
+   checkboxes, radios or anything disabled. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]):not(:disabled),
+select:not(:disabled),
+textarea:not(:disabled) {
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]):not(:disabled):hover,
+select:not(:disabled):hover,
+textarea:not(:disabled):hover {
+	box-shadow: var(--glow-line);
 }
 
 /* A select has no box to hang the native arrow on any more, so it gets its
@@ -502,6 +526,38 @@
 /* On a phone the table scrolls sideways rather than crushing its columns. */
 .table-scroll { overflow-x: auto; margin-bottom: var(--space-5); }
 
+/* ── Sideways scrolling: soft edges ──────────────────────────────────
+   Anything that scrolls sideways fades out at its left and right edges
+   (UV, 24 Oct), but only on a side where there is more to scroll to: at
+   rest the left edge is sharp, so a table's first column is never dimmed,
+   and at the far end the right is. Every .table-scroll has it; anything
+   else takes .scroll-x.
+
+   The fade is a mask on the scroller itself, driven by its own scroll
+   position (a scroll-driven animation), so no page needs a wrapper or a
+   script. A browser without scroll-driven animations (Firefox, older
+   Safari) shows plain edges. --fade-l and --fade-r are registered so the
+   animation can move them; the mask's black is opacity, not a colour. */
+@property --fade-l { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --fade-r { syntax: '<length>'; inherits: false; initial-value: 0px; }
+
+@supports (animation-timeline: scroll()) {
+	.table-scroll,
+	.scroll-x {
+		--fade: var(--space-6);
+		-webkit-mask-image: linear-gradient(to right, transparent, black var(--fade-l), black calc(100% - var(--fade-r)), transparent);
+		mask-image: linear-gradient(to right, transparent, black var(--fade-l), black calc(100% - var(--fade-r)), transparent);
+		animation: scroll-x-edges linear both;
+		animation-timeline: scroll(self inline);
+	}
+}
+@keyframes scroll-x-edges {
+	0%   { --fade-l: 0px;         --fade-r: var(--fade); }
+	8%   { --fade-l: var(--fade); }
+	92%  { --fade-r: var(--fade); }
+	100% { --fade-l: var(--fade); --fade-r: 0px; }
+}
+
 /* ── Row ─────────────────────────────────────────────────────────────
    A list item with a name on the left and actions on the right. The
    non-table way to show entrants, rounds or fixtures. */
@@ -523,9 +579,12 @@
    /leagues/ (24 Oct) and shared from here.
 
      .row-table                 the list; set --row-cols for the PC tracks
+         .has-strip             rows carry a strip: their text starts after it
+         .has-pic               rows carry a picture: one more track, first
        .row-table-head          the header row, shown on a PC only
        a.row-table-row          one row
-         .row-table-strip       optional: a status colour down the left
+         .row-table-strip       a status colour down the left (.has-strip)
+         .row-table-pic         a round picture (.has-pic)
          .row-table-main        h3 + .row-table-meta
          .row-table-badges      badges, stacked
          .row-table-stats       the data columns
@@ -533,20 +592,27 @@
 
    On a phone the data columns sit in a labelled strip under the heading.
    On a PC they become the row's own columns under the header row, every
-   row sharing --row-cols so the columns line up. Explicit grid tracks, not
-   a flex line, so the heading's 1fr cannot be squeezed away (docs/ui.md §3).
+   row sharing --row-cols so the columns line up. On a phone the strip takes
+   the row's whole width, picture column included, or dates wrap at 420px.
+   With .has-pic, --row-cols
+   starts with the picture's track and the header starts with an empty cell.
+   Explicit grid tracks, not a flex line, so the heading's 1fr cannot be
+   squeezed away (docs/ui.md §3).
 
    The row is padded on every side and pulled out by the same amount, so its
-   text stays in line with the headings around it while the glow has room.
+   text stays in line with the content around it while the glow has room.
    The line under it is drawn inset (::after), not as its border, so it stays
    straight under the glow's rounded corners and ends where the text ends.
    The strip sits in that pulled-out margin and takes the row's left
-   corners. */
+   corners; with .has-strip the row's text starts a gap after it (UV, 24 Oct:
+   "a small space before"), and the header row moves with it. */
 .row-table {
 	--row-cols: minmax(0, 1fr) auto;
 	--row-radius: var(--radius-md);
+	--row-pad-left: var(--space-3);
 	margin-bottom: var(--space-5);
 }
+.row-table.has-strip { --row-pad-left: calc(var(--space-2) + var(--space-3)); }
 .row-table-head { display: none; }
 
 .row-table-row {
@@ -556,19 +622,22 @@
 	align-items: center;
 	position: relative;
 	padding: var(--space-3);
+	padding-left: var(--row-pad-left);
 	margin: 0 calc(-1 * var(--space-3));
 	border-radius: var(--row-radius);
 	color: inherit;
 	text-decoration: none;
 	transition: box-shadow 0.15s;
 }
+.row-table.has-pic .row-table-row { grid-template-columns: auto minmax(0, 1fr) auto; }
+
 /* A thin gap between rows with the line in the middle of it (UV, 24 Oct), so
    each row, and its strip, reads as its own. */
 .row-table-row + .row-table-row { margin-top: var(--space-1); }
 .row-table-row::after {
 	content: '';
 	position: absolute;
-	left: var(--space-3);
+	left: var(--row-pad-left);
 	right: var(--space-3);
 	bottom: calc(var(--space-1) / -2);
 	border-bottom: 1px solid var(--border-color);
@@ -592,6 +661,20 @@
 	background: var(--strip-color, var(--color-primary));
 	border-radius: var(--row-radius) 0 0 var(--row-radius);
 }
+
+/* A round picture, or an icon in its place. */
+.row-table-pic {
+	width: 2.75rem;
+	height: 2.75rem;
+	border-radius: var(--radius-round);
+	overflow: hidden;
+	display: grid;
+	place-items: center;
+	background: var(--hover-wash);
+	color: var(--color-primary);
+}
+.row-table-pic svg { width: 58%; height: 58%; }
+.row-table-pic img { width: 100%; height: 100%; object-fit: cover; }
 
 .row-table-row h3 {
 	margin: 0 0 var(--space-1);
@@ -646,10 +729,13 @@
 		display: grid;
 		grid-template-columns: var(--row-cols);
 		gap: var(--space-3);
-		padding-bottom: var(--space-2);
+		/* In line with the rows' text, which starts --row-pad-left into a row
+		   pulled out by --space-3. */
+		padding: 0 0 var(--space-2) calc(var(--row-pad-left) - var(--space-3));
 		border-bottom: 1px solid var(--border-color);
 	}
-	.row-table-row { grid-template-columns: var(--row-cols); }
+	.row-table-row,
+	.row-table.has-pic .row-table-row { grid-template-columns: var(--row-cols); }
 	.row-table-badges { align-items: flex-start; }
 	.row-table-stats { display: contents; }
 	.row-table-label { display: none; }
