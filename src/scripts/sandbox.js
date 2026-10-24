@@ -85,6 +85,7 @@
 			{ name: '--ring-size-table',  label: 'Ring in a table', kind: 'size', unit: 'rem', min: 1,   max: 3,   step: 0.05, use: 'The same ring in a table row' },
 			{ name: '--switch-height',    label: 'Switch height',  kind: 'size', unit: 'rem', min: 1.25, max: 4,   step: 0.05, use: 'How tall a switch is; its knob is a ring of 0.8 of this' },
 			{ name: '--switch-width',     label: 'Switch width',   kind: 'size', unit: 'rem', min: 2.5,  max: 7,   step: 0.05, use: 'How wide a switch is; the knob travels this less the height' },
+			{ name: '--nav-ring-size',    label: 'Nav icons',        kind: 'size', unit: 'rem', min: 1.25, max: 3, step: 0.05, use: 'How big the ring icons on the nav bar are: menu, reload, the bell and the account (the picture takes the same size)' },
 			{ name: '--tri-height',       label: 'Three-way height', kind: 'size', unit: 'rem', min: 1,  max: 3,   step: 0.05, use: 'How tall a three-way switch is (left, nobody, right: the team card\'s L and W)' },
 			{ name: '--tri-width',        label: 'Three-way width',  kind: 'size', unit: 'rem', min: 3,  max: 8,   step: 0.05, use: 'How wide a three-way switch is; longer than a switch so the three stops read as three' },
 			{ name: '--ring-load',        label: 'Load (nothing to save)', kind: 'size', unit: 's', min: 0, max: 3, step: 0.1, use: 'How long the dots orbit when a box is only filling a form. A box that saves orbits exactly as long as its call, then draws from wherever the dots are' },

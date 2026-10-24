@@ -59,6 +59,10 @@ const TDCRing = (() => {
 		// Added 24 Oct for the league fixtures' buttons (Move, Take match off).
 		calendar: { label: 'Moved', strokes: ['M30 36L70 36L70 70L30 70L30 36', 'M30 47L70 47', 'M40 29L40 40', 'M60 29L60 40'] },
 		minus: { label: 'Taken off', strokes: ['M30 50L70 50'] },
+		// Added 24 Oct for the nav: the menu (three lines; it turns into the
+		// cross when open) and reload (a circle round to its arrowhead).
+		menu: { label: 'Menu', strokes: ['M32 35L68 35', 'M32 50L68 50', 'M32 65L68 65'] },
+		reload: { label: 'Reload', strokes: ['M66 56A17 17 0 1 1 62 38', 'M52 38L62 38L62 28'] },
 		// Added 24 Oct for the team card's lag: a spotted cue ball, the ball and its spot.
 		// The spots are foreshortened towards the ball's edge so it reads as a
 		// sphere: rounder and heavier near the middle, flatter and lighter out

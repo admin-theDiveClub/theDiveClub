@@ -1,5 +1,6 @@
 // Shared nav behavior: hamburger menu + login-aware profile menu.
-// Needs: supabaseClient.js, tdc.js (loaded by layout.html).
+// Every button on the bar is a ring icon (ring-status.js), drawn here.
+// Needs: supabaseClient.js, tdc.js, ring-status.js (loaded by layout.html).
 
 (function () {
 	const AREA = 'Nav';
@@ -33,17 +34,86 @@
 
 	let loggedIn = false;
 
-	// --- Hamburger menu open/close ---
-	menuToggle.addEventListener('click', () => {
-		const isOpen = menu.classList.toggle('open');
-		menuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+	// ─── Ring icons (UV, 24 Oct) ──────────────────────────────────────
+	// Every button on the bar is a ring icon (ring-status.js, UV's design):
+	// each draws itself in as the page opens, the menu turns into a cross and
+	// back, and a press that waits on something (the tray reading, sign-in,
+	// a reload) orbits until it is done. The bell and reload are drawn when
+	// they are first shown, since nothing measures a hidden icon reliably.
+	const lessMotion = matchMedia('(prefers-reduced-motion: reduce)');
+	const tokenSecs = (name, fallback) => {
+		const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+		const n = parseFloat(v);
+		return isNaN(n) ? fallback : (v.endsWith('ms') ? n / 1000 : n);
+	};
+	const ringOpts = (icon) => ({
+		draw: tokenSecs('--ring-draw', 0.4), fade: tokenSecs('--ring-fade', 0.1),
+		lead: TDCRing.leadOf(icon), spin: tokenSecs('--ring-spin', 1) || 1
 	});
+	const rings = {};
+
+	function makeRing(name, faceId, icons, labels) {
+		const face = document.getElementById(faceId);
+		if (!face || rings[name]) return rings[name] || null;
+		if (typeof TDCRing === 'undefined') {
+			TDC.error(AREA, 'ring-status.js is not loaded, so the nav has no icons.');
+			return null;
+		}
+		face.innerHTML = TDCRing.svg(6);
+		try {
+			const ring = new TDCRing.RingStatus(face, {
+				icons,
+				labels: Object.assign({ empty: ' ', loading: 'Working' }, labels),
+				initial: lessMotion.matches ? icons[0] : 'empty'
+			});
+			// Whatever was asked for last is drawn once the current drawing ends.
+			ring.want = icons[0];
+			ring.onDone = () => { if (ring.state !== ring.want) drawTo(ring, ring.want); };
+			rings[name] = ring;
+			drawTo(ring, icons[0]);
+			return ring;
+		} catch (err) {
+			TDC.error(AREA, 'the ' + name + ' icon could not be drawn.', err);
+			return null;
+		}
+	}
+
+	// A short orbit, then every dot leaves at once and draws the icon.
+	function drawTo(ring, icon) {
+		if (!ring) return;
+		ring.want = icon;
+		if (lessMotion.matches) { if (!ring.busy) ring.setState(icon); return; }
+		if (ring.busy) return;   // onDone draws the latest wish
+		ring.load(tokenSecs('--control-reveal', 0.35), ringOpts(icon));
+		ring.resolve(icon, { together: true });
+	}
+
+	// Orbit for as long as `until` takes, then draw.
+	function orbitUntil(ring, until) {
+		if (!ring || lessMotion.matches || ring.busy) return;
+		ring.load(tokenSecs('--ring-load', 1), ringOpts(ring.want));
+		Promise.resolve(until).finally(() => ring.resolve(ring.want, { now: true }));
+	}
+
+	makeRing('menu', 'nav-menu-ring', ['menu', 'cross'], { menu: 'Menu', cross: 'Close the menu' });
+	makeRing('user', 'nav-profile-icon', ['user'], { user: 'Account' });
+
+	// --- Hamburger menu open/close ---
+	// The three lines become a cross while it is open.
+	function setMenu(open) {
+		menu.classList.toggle('open', open);
+		menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+		drawTo(rings.menu, open ? 'cross' : 'menu');
+	}
+	menuToggle.addEventListener('click', () => setMenu(!menu.classList.contains('open')));
 
 	// --- Profile icon: menu when logged in, login page when not ---
 	profileBtn.addEventListener('click', () => {
 		if (loggedIn) {
 			profileDropdown.classList.toggle('open');
 		} else {
+			// Orbits until the sign-in page takes over.
+			orbitUntil(rings.user, new Promise(() => {}));
 			const back = encodeURIComponent(location.pathname + location.search);
 			window.location.href = '/accounts/?next=' + back;
 		}
@@ -61,9 +131,8 @@
 
 	// --- Close menu/dropdown when clicking outside ---
 	document.addEventListener('click', (e) => {
-		if (!menu.contains(e.target) && !menuToggle.contains(e.target)) {
-			menu.classList.remove('open');
-			menuToggle.setAttribute('aria-expanded', 'false');
+		if (!menu.contains(e.target) && !menuToggle.contains(e.target) && menu.classList.contains('open')) {
+			setMenu(false);
 		}
 		if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
 			profileDropdown.classList.remove('open');
@@ -144,7 +213,10 @@
 			console.error('[' + AREA + '] could not count notifications.', error);
 			return;
 		}
+		// Something new since the last look: the bell draws itself again.
+		const was = notifyPip.hidden;
 		notifyPip.hidden = !(data > 0);
+		if (was && !notifyPip.hidden) drawTo(rings.bell, 'bell');
 	}
 
 	function notifyWhen(iso) {
@@ -269,7 +341,7 @@
 	if (notifyBtn && notifyTray) {
 		notifyBtn.addEventListener('click', () => {
 			if (notifyTray.classList.contains('open')) closeNotifications();
-			else openNotifications();
+			else orbitUntil(rings.bell, openNotifications());   // orbits while the tray reads
 		});
 
 		notifyClearAll.addEventListener('click', async () => {
@@ -314,6 +386,7 @@
 
 		// Nothing to show a stranger, so the bell appears only now.
 		if (notifyWrap) notifyWrap.hidden = false;
+		makeRing('bell', 'nav-notify-ring', ['bell'], { bell: 'Notifications' });
 		refreshPip();
 
 		// Push anything waiting. The nav is on every page, so this is the
@@ -349,6 +422,40 @@
 		}
 		if (me && me.avatar_path) showNavAvatar(avatarUrlFor(me.avatar_path));
 	})();
+
+	// ─── Hiding on scroll (UV, 24 Oct) ────────────────────────────────
+	// Any scroll down slides the bar away, closing whatever was open on it.
+	// It comes back at the top of the page, or after one long scroll up
+	// (SHOW_AFTER_UP pixels without turning back down), so a small nudge up
+	// while reading does not bring it back. Tabbing into it brings it back.
+	const navBar = document.querySelector('.site-nav');
+	const SHOW_AFTER_UP = 200;
+	let lastY = Math.max(0, window.scrollY);
+	let upBy = 0;
+
+	function setNavHidden(hide) {
+		if (!navBar || navBar.classList.contains('is-hidden') === hide) return;
+		navBar.classList.toggle('is-hidden', hide);
+		if (hide) {
+			if (menu.classList.contains('open')) setMenu(false);
+			profileDropdown.classList.remove('open');
+			closeNotifications();
+		}
+	}
+
+	window.addEventListener('scroll', () => {
+		const y = Math.max(0, window.scrollY);   // a phone's bounce past the top reads negative
+		const dy = y - lastY;
+		lastY = y;
+		if (y <= 4) { upBy = 0; setNavHidden(false); return; }
+		if (dy > 0) { upBy = 0; setNavHidden(true); }
+		else if (dy < 0) {
+			upBy -= dy;
+			if (upBy >= SHOW_AFTER_UP) setNavHidden(false);
+		}
+	}, { passive: true });
+
+	if (navBar) navBar.addEventListener('focusin', () => setNavHidden(false));
 
 	// ─── Offline ──────────────────────────────────────────────────────
 	// The indicator is the nav's job on every page. What a page does about
@@ -393,9 +500,12 @@
 
 	if (reloadBtn && runningInstalled()) {
 		reloadBtn.hidden = false;
+		makeRing('reload', 'nav-reload-ring', ['reload'], { reload: 'Reload' });
 
 		reloadBtn.addEventListener('click', async () => {
 			reloadBtn.disabled = true;
+			// Orbits until the page goes.
+			orbitUntil(rings.reload, new Promise(() => {}));
 
 			// Ask the service worker to look for a new version first, so this
 			// also gets a stale install onto the current deploy rather than
