@@ -2,11 +2,19 @@
 layout: layout.html
 title: League Season
 description: "Confirm your place, see your team and the league."
+extraStyles:
+  - /stylesheets/league.css
 extraScripts:
+  - /scripts/match-settings.js
   - /scripts/league-season.js
 ---
 {% comment %}
 	The page for somebody who plays in a league, as opposed to running one.
+
+	At the top, the league itself (UV, 24 Oct): a banner with its picture,
+	name, status and everything about how it is played, then its numbers so
+	far. Then the player's own place, the teams (each player with their
+	picture and a link to their profile) and who runs it.
 
 	A league player has to confirm their own place before the league can begin;
 	that button lives here, and the notification they get when they are added
@@ -15,12 +23,22 @@ extraScripts:
 	captain, rename the team.
 
 	Everything is one call each, and after every write everything is read again.
-	Reached as /leagues/season/?s=<league season id>.
+	Reached as /leagues/season/?s=<league season id>, with &team=<team id> to
+	open one team and bring it into view (a team's name on the fixtures page).
 {% endcomment %}
 
 <div class="tdc-card wide">
-	<h1 id="l-name">League</h1>
-	<p class="muted" id="l-meta"></p>
+	<section class="jumbo" id="jumbo">
+		<div class="jumbo-pic" id="jumbo-pic"></div>
+		<div class="jumbo-main">
+			<span class="badge jumbo-status" id="jumbo-status" hidden></span>
+			<h1 id="l-name">League</h1>
+			<p class="jumbo-season" id="l-meta"></p>
+		</div>
+		<dl class="jumbo-facts" id="jumbo-facts"></dl>
+	</section>
+
+	<section class="league-stats" id="stats" aria-label="The league so far"></section>
 
 	<div class="panel" id="me-panel" hidden>
 		<h2>Your place</h2>
@@ -32,12 +50,6 @@ extraScripts:
 			<button type="button" class="btn btn-secondary btn-sm" id="me-withdraw" hidden>I am not playing</button>
 			<button type="button" class="btn btn-secondary btn-sm" id="me-away" hidden>I am away for a while</button>
 		</div>
-	</div>
-
-	<div class="panel" id="ready-panel" hidden>
-		<h2>Ready to begin?</h2>
-		<p id="ready-line"></p>
-		<p class="muted" id="ready-detail"></p>
 	</div>
 
 	{% comment %}
@@ -52,7 +64,7 @@ extraScripts:
 	</div>
 
 	<h2>Teams <span class="badge" id="team-count" hidden></span></h2>
-	<div id="team-list"></div>
+	<div class="team-boxes" id="team-list"></div>
 	<div class="empty" id="team-empty" hidden>No teams yet. Whoever runs the league makes them.</div>
 
 	<h2>Who runs it</h2>

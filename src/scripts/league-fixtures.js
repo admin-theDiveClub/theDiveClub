@@ -589,10 +589,9 @@
 	// next. A second row under it while it is being moved.
 	function teamCell(teamId, name, side) {
 		const td = node('td', 'fx-side fx-' + side);
-		// A team's own page is still to come (docs/STATUS.md); the link is
-		// there already, so the names do not change shape when it arrives.
+		// To the season page with this team open and in view (UV, 24 Oct).
 		const team = node('a', 'fx-team');
-		team.href = '/leagues/team/?t=' + encodeURIComponent(teamId) + '&s=' + encodeURIComponent(seasonId);
+		team.href = '/leagues/season/?s=' + encodeURIComponent(seasonId) + '&team=' + encodeURIComponent(teamId);
 		const pic = node('span', 'team-pic');
 		pic.append(teamIcon());
 		const names = node('span', 'fx-names');

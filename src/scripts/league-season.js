@@ -1,11 +1,17 @@
 // A league season, as a player sees it (/leagues/season/?s=<league season id>).
 //
-// Three jobs:
+// At the top, the league (UV, 24 Oct): a banner with its picture, name,
+// status and how it is played, read from the season info, the season's own
+// row and its rules; then its numbers so far, counted from the fixtures and
+// teams.
+//
+// Then three jobs:
 //   • Your place. Somebody who has been added to a league has to confirm that
 //     they are playing; nobody can do it for them and the league cannot begin
 //     until every active player has. This is where they do it, and where they
 //     can say they are not playing after all.
-//   • The league. Teams with their rosters, and who runs it.
+//   • The league. Teams with their rosters (each player's picture, name and
+//     a link to their profile, still to be built), and who runs it.
 //   • Your team, if you captain one. Claim a player who has confirmed and is on
 //     no team, release one, name another captain, rename the team.
 //
@@ -26,7 +32,8 @@
 		name: el('l-name'), meta: el('l-meta'),
 		mePanel: el('me-panel'), meLine: el('me-line'), meDetail: el('me-detail'),
 		meConfirm: el('me-confirm'), meWithdraw: el('me-withdraw'), meAway: el('me-away'),
-		readyPanel: el('ready-panel'), readyLine: el('ready-line'), readyDetail: el('ready-detail'),
+		jumbo: el('jumbo'), jumboPic: el('jumbo-pic'), jumboStatus: el('jumbo-status'), jumboFacts: el('jumbo-facts'),
+		stats: el('stats'),
 		poolPanel: el('pool-panel'), poolHint: el('pool-hint'), poolList: el('pool-list'),
 		teamCount: el('team-count'), teamList: el('team-list'), teamEmpty: el('team-empty'),
 		officialList: el('official-list'),
@@ -52,6 +59,13 @@
 	const openTeams = new Set();
 	let officials = [];
 	let pool = [];
+	let fixtures = [];
+	let seasonRow = null;       // status, reserves, entries: the season's own row
+	let readiness = null;       // only for the people running it and its captains
+	// A team named in the address (&team=, from the fixtures page) is opened
+	// and brought into view once, on the first draw.
+	let focusTeam = new URLSearchParams(location.search).get('team');
+	if (focusTeam) openTeams.add(focusTeam);
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -59,6 +73,61 @@
 		if (text !== undefined) n.textContent = text;
 		return n;
 	};
+
+	const D = TDCMatchDef;
+
+	// A player's picture, from the public player-avatars bucket, or their
+	// initials in a circle when they have none.
+	function avatar(path, name) {
+		const box = node('span', 'person-pic');
+		if (path) {
+			const { data } = supabaseClient.storage.from('player-avatars').getPublicUrl(path);
+			const img = document.createElement('img');
+			img.src = data.publicUrl;
+			img.alt = '';
+			img.loading = 'lazy';
+			box.append(img);
+		} else {
+			box.textContent = (name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+		}
+		return box;
+	}
+
+	// A person: picture, name and what they are, as one link to their profile
+	// (still to be built: /players/ says so). Glows like a row.
+	function personLink(playerId, name, path, sub) {
+		const a = node('a', 'person');
+		a.href = '/players/?p=' + encodeURIComponent(playerId);
+		const names = node('span', 'person-names');
+		names.append(node('span', 'person-name', name));
+		if (sub) names.append(node('span', 'person-sub', sub));
+		a.append(avatar(path, name), names);
+		return a;
+	}
+
+	// The league's picture until leagues have their own, as on the leagues
+	// list: a trophy. A team's: a shield, as on the fixtures page.
+	function svgIcon(d, filled) {
+		const NS = 'http://www.w3.org/2000/svg';
+		const svg = document.createElementNS(NS, 'svg');
+		svg.setAttribute('viewBox', '0 0 24 24');
+		svg.setAttribute('aria-hidden', 'true');
+		const path = document.createElementNS(NS, 'path');
+		path.setAttribute('d', d);
+		if (filled) path.setAttribute('fill', 'currentColor');
+		else {
+			path.setAttribute('fill', 'none');
+			path.setAttribute('stroke', 'currentColor');
+			path.setAttribute('stroke-width', '2');
+			path.setAttribute('stroke-linejoin', 'round');
+		}
+		svg.append(path);
+		return svg;
+	}
+	const TROPHY = 'M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z';
+	const SHIELD = 'M12 3l7 3v5c0 4.5-3 8-7 10c-4-2-7-5.5-7-10V6z';
+
+	const plural = (n, one, many) => (n === 1 ? '1 ' + one : (n || 0) + ' ' + (many || one + 's'));
 
 	function day(s) {
 		if (!s) return '';
@@ -91,12 +160,9 @@
 			return false;
 		}
 
-		els.name.textContent = info.league_name + ' — ' + info.name;
-		const bits = [];
-		if (info.starts_on) bits.push('From ' + day(info.starts_on));
-		if (info.ends_on) bits.push('to ' + day(info.ends_on));
-		if (info.venue_name) bits.push(info.venue_name);
-		els.meta.textContent = bits.join(' · ');
+		els.name.textContent = info.league_name;
+		els.meta.textContent = info.name;
+		els.jumboPic.replaceChildren(svgIcon(TROPHY, true));
 
 		els.manageLink.hidden = !info.i_run_it;
 		els.manageSep.hidden = !info.i_run_it;
@@ -116,16 +182,11 @@
 
 	// The next match this person's team is in, so a captain lands on the card
 	// rather than hunting through the fixture list for it.
-	async function loadMyNext() {
+	function loadMyNext() {
 		els.meCard.hidden = true;
 		if (!mine || !mine.my_team_id) return;
 
-		const { data, error } = await supabaseClient.rpc('tdc_league_fixtures', {
-			p_league_season_id: seasonId
-		});
-		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
-
-		const ours = (data || []).filter((f) =>
+		const ours = fixtures.filter((f) =>
 			f.match_id && (f.home_team_id === mine.my_team_id || f.away_team_id === mine.my_team_id));
 		if (!ours.length) return;
 
@@ -212,31 +273,133 @@
 	});
 
 	// ─── Readiness ───
-	// The function answers only the people running the league and its captains.
+	// The function answers only the people running the league and its
+	// captains; for them, how many have confirmed is one of the league's
+	// numbers (UV, 24 Oct: the banner replaces "Ready to begin?").
 	async function loadReadiness() {
 		const { data, error } = await supabaseClient.rpc('tdc_league_season_readiness', {
 			p_league_season_id: seasonId
 		});
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
-
-		const r = (data || [])[0];
-		els.readyPanel.hidden = !r;
-		if (!r) return true;
-
-		if (r.ready) {
-			els.readyLine.textContent = 'Yes. All ' + r.active_players + ' active '
-				+ (r.active_players === 1 ? 'player has' : 'players have') + ' confirmed.';
-		} else if (!r.active_players) {
-			els.readyLine.textContent = 'Not yet. Nobody active has been added.';
-		} else {
-			els.readyLine.textContent = 'Not yet. ' + r.confirmed + ' of ' + r.active_players
-				+ ' active players have confirmed.';
-		}
-		const detail = [];
-		if (r.waiting) detail.push('Waiting for ' + (r.waiting_names || []).join(', ') + '.');
-		if (r.unplaced) detail.push(r.unplaced === 1 ? '1 player is on no team.' : r.unplaced + ' players are on no team.');
-		els.readyDetail.textContent = detail.join(' ');
+		readiness = (data || [])[0] || null;
 		return true;
+	}
+
+	// ─── The season's own row, and its fixtures ───
+	// Status, reserves and how players get in are on the season, which anyone
+	// signed in may read; the rest of the banner is in the season info.
+	async function loadSeasonRow() {
+		const { data, error } = await supabaseClient
+			.from('tbl_league_seasons').select('status, max_reserves, entry_mode').eq('id', seasonId).maybeSingle();
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
+		seasonRow = data;
+		return true;
+	}
+
+	async function loadFixtures() {
+		const { data, error } = await supabaseClient.rpc('tdc_league_fixtures', {
+			p_league_season_id: seasonId
+		});
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
+		fixtures = data || [];
+		return true;
+	}
+
+	// ─── The banner ───
+	// Everything about how the league is played, neatly: label and value
+	// pairs under the name, wrapping into columns on a PC.
+	const ENTRY = {
+		ld_only: 'Added by whoever runs it',
+		interested: 'Put your name down',
+		self_confirm: 'Join straight away'
+	};
+
+	function renderBanner() {
+		if (!info) return;
+		const rules = info.rules || {};
+		const status = seasonRow && seasonRow.status;
+		els.jumbo.className = 'jumbo' + (status ? ' league-status-' + status : '');
+		els.jumboStatus.hidden = !status;
+		els.jumboStatus.textContent = status ? (D.LEAGUE_STATUS[status] || status) : '';
+
+		const facts = [];
+		facts.push(['Game', D.DISCIPLINE[rules.discipline] || rules.discipline || 'Not set']);
+		if (rules.team_size) {
+			const reserves = seasonRow && seasonRow.max_reserves;
+			facts.push(['Teams', rules.team_size + ' a side'
+				+ (reserves ? ', up to ' + plural(reserves, 'reserve') : '')]);
+			facts.push(['A night', rules.team_size + ' sessions, ' + rules.team_size * rules.team_size + ' frames']);
+		}
+		if (rules.win_condition_type && rules.win_condition_type !== 'free_play') {
+			facts.push(['Each match', (D.WIN_CONDITION[rules.win_condition_type] || rules.win_condition_type)
+				+ (rules.win_condition_target ? ' ' + rules.win_condition_target : '')]);
+		}
+		const when = [info.starts_on ? day(info.starts_on) : null, info.ends_on ? day(info.ends_on) : null].filter(Boolean);
+		facts.push(['Dates', when.length ? when.join(' to ') : 'Not set yet']);
+		const next = nextNight();
+		if (next) {
+			facts.push(['Next night', next.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })
+				+ ' · ' + next.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })]);
+		}
+		if (seasonRow && seasonRow.entry_mode) facts.push(['Entries', ENTRY[seasonRow.entry_mode] || seasonRow.entry_mode]);
+		if (rules.lineup_cutoff_hours) facts.push(['Lineups', plural(rules.lineup_cutoff_hours, 'hour') + ' before a match']);
+
+		els.jumboFacts.replaceChildren(...facts.map(([k, v]) => {
+			const row = node('div', 'jumbo-fact');
+			row.append(node('dt', null, k), node('dd', null, v));
+			return row;
+		}));
+
+		// The venue, linked to its page (still to be built: /venues/ says so).
+		const row = node('div', 'jumbo-fact');
+		row.append(node('dt', null, 'Venue'));
+		const dd = node('dd');
+		if (info.venue_id) {
+			const a = node('a', null, info.venue_name || 'The venue');
+			a.href = '/venues/?v=' + encodeURIComponent(info.venue_id);
+			dd.append(a);
+		} else {
+			dd.textContent = 'Not tied to a venue';
+		}
+		row.append(dd);
+		els.jumboFacts.append(row);
+	}
+
+	// The first night from now that has a fixture.
+	function nextNight() {
+		const now = Date.now();
+		const times = fixtures.map((f) => f.scheduled_at && new Date(f.scheduled_at)).filter((d) => d && d.getTime() >= now);
+		times.sort((a, b) => a - b);
+		return times[0] || null;
+	}
+
+	// ─── The league so far ───
+	// Counted from the fixtures and the teams, never stored.
+	function renderStats() {
+		const games = fixtures.filter((f) => !f.is_bye);
+		const played = games.filter((f) => f.match_status === 'complete').length;
+		const live = games.filter((f) => f.match_status === 'in_progress').length;
+		const frames = games.reduce((n, f) => n + (f.home_frames || 0) + (f.away_frames || 0), 0);
+		const nights = new Set(fixtures.filter((f) => f.scheduled_at).map((f) => new Date(f.scheduled_at).toDateString())).size;
+		const players = teams.reduce((n, t) => n + (t.active_players || 0), 0);
+
+		const tiles = [
+			['Teams', teams.length],
+			['Players', players],
+			['Matches scheduled', games.length],
+			['Matches played', played],
+			['Playing now', live],
+			['Frames played', frames],
+			['Nights', nights]
+		];
+		if (readiness && readiness.active_players) {
+			tiles.push(['Confirmed', readiness.confirmed + ' of ' + readiness.active_players]);
+		}
+		els.stats.replaceChildren(...tiles.map(([label, value]) => {
+			const tile = node('div', 'league-stat');
+			tile.append(node('span', 'league-stat-value', String(value)), node('span', 'league-stat-label', label));
+			return tile;
+		}));
 	}
 
 	// ─── Waiting for a team ───
@@ -329,13 +492,11 @@
 	function rosterRow(t, r) {
 		const row = node('div', 'list-row');
 		const main = node('div', 'list-row-main');
-		main.append(node('span', null, r.display_name));
 
-		const sub = [];
-		if (r.is_captain) sub.push('Captain');
+		const sub = [r.is_captain ? 'Captain' : 'Player'];
 		if (r.status !== 'active') sub.push(r.status === 'withdrawn' ? 'Withdrawn' : 'Away');
 		else if (!r.confirmed) sub.push('Has not confirmed');
-		if (sub.length) main.append(node('span', 'sub', sub.join(' · ')));
+		main.append(personLink(r.player_id, r.display_name, r.avatar_path, sub.join(' · ')));
 		row.append(main);
 
 		// Captain controls, on my own team only.
@@ -378,16 +539,26 @@
 
 	function teamCard(t) {
 		const box = document.createElement('details');
-		box.className = 'set-group';
+		box.className = 'team-box';
+		box.id = 'team-' + t.team_id;
 		box.dataset.team = t.team_id;
 		box.open = openTeams.has(t.team_id);
+		if (mine && mine.my_team_id === t.team_id) box.classList.add('is-mine');
 
 		const head = document.createElement('summary');
+		const pic = node('span', 'team-pic');
+		pic.append(svgIcon(SHIELD, false));
+		const names = node('span', 'team-box-names');
+		names.append(node('span', 'team-box-name', t.name));
 		// Active against the limit; away players are on the team but take no place.
 		const away = t.players - t.active_players;
-		head.textContent = t.name + ' · ' + t.active_players + ' of ' + t.team_limit + ' active'
-			+ (away > 0 ? ' · ' + away + ' away' : '')
-			+ (t.active_players > t.team_limit ? ' · over the limit' : '');
+		const line = [t.active_players + ' of ' + t.team_limit + ' active'];
+		if (away > 0) line.push(away + ' away');
+		if (t.active_players > t.team_limit) line.push('over the limit');
+		if ((t.captains || []).length) line.push('Captain ' + t.captains.join(', '));
+		names.append(node('span', 'team-box-sub', line.join(' · ')));
+		head.append(pic, names);
+		if (mine && mine.my_team_id === t.team_id) head.append(node('span', 'badge live', 'Your team'));
 		box.append(head);
 
 		const roster = rosters.get(t.team_id);
@@ -436,6 +607,13 @@
 		els.teamCount.textContent = String(teams.length);
 		els.teamEmpty.hidden = !!teams.length;
 		els.teamList.replaceChildren(...teams.map(teamCard));
+
+		// The team named in the address, once: into view, open.
+		if (focusTeam) {
+			const box = document.getElementById('team-' + focusTeam);
+			focusTeam = null;
+			if (box) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		}
 	}
 
 	els.teamList.addEventListener('click', (e) => {
@@ -479,7 +657,7 @@
 		els.officialList.replaceChildren(...officials.map((o) => {
 			const row = node('div', 'list-row');
 			const main = node('div', 'list-row-main');
-			main.append(node('span', null, o.display_name), node('span', 'sub', o.role_name));
+			main.append(personLink(o.player_id, o.display_name, o.avatar_path, o.role_name));
 			row.append(main);
 			return row;
 		}));
@@ -492,11 +670,15 @@
 	async function loadAll() {
 		const results = [];
 		results.push(await loadMine());
+		results.push(await loadSeasonRow());
+		results.push(await loadFixtures());
 		results.push(await loadTeams());
 		results.push(await loadPool());
 		results.push(await loadReadiness());
 		results.push(await loadOfficials());
-		await loadMyNext();
+		loadMyNext();
+		renderBanner();
+		renderStats();
 		return results.every(Boolean);
 	}
 

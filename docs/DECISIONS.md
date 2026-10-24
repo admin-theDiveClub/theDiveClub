@@ -718,3 +718,12 @@ These predate the log. They are recorded here because every one of them is a dec
 *Example:* six teams, 2 matches a round, 2 tables a match: round 1's six fixtures are on 1-2, 3-4, 5-6, 7-8, 9-10, 11-12. Alpha plays on 1-2 and later on 9-10.
 *Rejected:* reusing tables across passes while shuffling which team gets which (it still needs a venue's table count to be worth anything, and nothing records that).
 *Touches:* migration `20261024194237`, `032_league_fixture_tables.test.sql`
+
+## 2026-10-24 — The season page leads with the league; a team's name opens it
+
+*Decided by:* UV (the banner, the numbers, pictures and profile links, team names opening the season page); the layout, Claude
+*Replaces:* "Ready to begin?" on the season page, and team names linking to a separate team page (made earlier the same day, never built).
+*Why:* a player opening a league wants to see what it is, how it is going and who is in it; a team is best seen among the others, on the page that already lists them.
+*So:* the season page opens with a banner (the league's picture, name, season, status, and how it is played, the venue linked) and the league's numbers, counted from the fixtures and teams. A team's name anywhere on the fixtures page opens the season page with that team expanded and in view. Every player and official shows their picture and links to a player page; the venue links to a venue page; both pages say they are not built yet. How many have confirmed, which "Ready to begin?" said, is now one of the numbers, for the people who could see it before.
+*Rejected:* a separate team page for now (UV: on the list for another time).
+*Touches:* migration `20261024195612`, `league-season.js`, `leagues/season/index.html`, `league-fixtures.js`, `league.css`, `venues/index.html`, `players/index.html`

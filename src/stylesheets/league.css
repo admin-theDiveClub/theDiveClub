@@ -579,3 +579,162 @@
 	border-bottom: 1px solid var(--border-color);
 }
 .fx-add-to { text-align: center; }
+
+/* ── The season page: the banner, the numbers, the teams (UV, 24 Oct) ──
+ *
+ * The banner is the league at a glance: its picture in a large circle, the
+ * name big, the season under it and its status as a badge, the top edge the
+ * status colour (as a search tile's); then how it is played, as label and
+ * value pairs that run into columns on a PC. Then the numbers so far as
+ * tiles. Teams are boxes with their shield, name and counts in the header,
+ * each player a picture, a name and a role, linked to their profile.
+ */
+.jumbo {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	align-items: center;
+	gap: var(--space-4) var(--space-5);
+	padding: var(--space-5);
+	margin-bottom: var(--space-4);
+	border: 1px solid var(--border-color);
+	border-top: var(--space-1) solid var(--strip-color, var(--color-primary));
+	border-radius: var(--radius-lg);
+	background:
+		radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--strip-color, var(--color-primary)) 14%, transparent), transparent 60%),
+		var(--bg-surface);
+}
+.jumbo-pic {
+	width: 5rem;
+	height: 5rem;
+	border-radius: var(--radius-round);
+	display: grid;
+	place-items: center;
+	background: var(--hover-wash);
+	color: var(--color-primary);
+}
+.jumbo-pic svg { width: 58%; height: 58%; }
+.jumbo-main { min-width: 0; text-align: left; }
+.jumbo-main h1 { margin: var(--space-1) 0 0; text-align: left; overflow-wrap: break-word; }
+.tdc-card .jumbo-season { margin: var(--space-1) 0 0; color: var(--text-muted); text-align: left; }
+.jumbo-status { border-color: var(--strip-color, var(--color-primary)); color: var(--strip-color, var(--color-primary)); }
+
+.jumbo-facts {
+	grid-column: 1 / -1;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+	gap: var(--space-3) var(--space-5);
+	margin: 0;
+	padding-top: var(--space-4);
+	border-top: 1px solid var(--border-color);
+}
+.jumbo-fact { min-width: 0; }
+.jumbo-fact dt {
+	font-size: 0.66rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--color-primary);
+}
+.jumbo-fact dd { margin: var(--space-1) 0 0; overflow-wrap: break-word; }
+
+@media (max-width: 30rem) {
+	.jumbo { padding: var(--space-4); gap: var(--space-3) var(--space-4); }
+	.jumbo-pic { width: 3.5rem; height: 3.5rem; }
+}
+
+/* The numbers so far: tiles, as many to a row as fit. */
+.league-stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 6.25rem), 1fr));
+	gap: var(--space-2);
+	margin-bottom: var(--space-5);
+}
+.league-stat {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-1);
+	padding: var(--space-3) var(--space-2);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-md);
+	background: var(--bg-surface);
+	text-align: center;
+}
+.league-stat-value { font-size: 1.5rem; font-weight: 700; color: var(--color-primary); line-height: 1.1; }
+.league-stat-label { font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.04em; }
+
+/* A team: a box whose header is its shield, name and numbers. */
+.team-boxes { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-5); }
+.team-box {
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-md);
+	background: var(--bg-surface);
+	scroll-margin-top: var(--space-6);
+}
+.team-box.is-mine { border-color: color-mix(in srgb, var(--color-primary) 55%, var(--border-color)); }
+.team-box > summary {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	padding: var(--space-3);
+	cursor: pointer;
+	list-style: none;
+	border-radius: var(--radius-md);
+	transition: box-shadow 0.15s;
+}
+.team-box > summary::-webkit-details-marker { display: none; }
+.team-box > summary::after { content: '+'; margin-left: auto; padding-left: var(--space-2); color: var(--color-primary); font-weight: 700; }
+.team-box[open] > summary::after { content: '\2013'; }
+.team-box > summary:hover,
+.team-box > summary:focus-visible { box-shadow: var(--glow-primary); outline: none; }
+.team-box > summary .team-pic { width: 2.75rem; height: 2.75rem; }
+.team-box-names { display: flex; flex-direction: column; min-width: 0; }
+.team-box-name { font-size: 1.05rem; font-weight: 700; overflow-wrap: break-word; }
+.team-box-sub { font-size: 0.78rem; color: var(--text-muted); }
+.team-box > :not(summary) { margin-inline: var(--space-3); }
+.team-box > :last-child:not(summary) { margin-bottom: var(--space-3); }
+/* Opening a team fades its players in (UV, 24 Oct: fade what changes). */
+.team-box[open] > :not(summary) { animation: team-in var(--control-reveal) ease; }
+@keyframes team-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .team-box[open] > :not(summary) { animation: none; } }
+
+/* A player's row in a team: the captain's buttons drop under the name when
+ * the row is narrow, rather than squeezing the name to a letter a line (the
+ * .list-row-actions trap in docs/ui.md). */
+.team-box .list-row { flex-wrap: wrap; row-gap: var(--space-2); }
+.team-box .list-row-main { flex: 1 1 12rem; }
+.team-box .list-row-actions { flex-wrap: wrap; }
+
+/* A person: their picture (or initials), name and role, one link to their
+ * profile that glows like a row. */
+.person {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-3);
+	max-width: 100%;
+	padding: var(--space-1) var(--space-2) var(--space-1) var(--space-1);
+	border-radius: var(--radius-pill);
+	color: inherit;
+	text-decoration: none;
+	transition: box-shadow 0.15s;
+}
+.person:hover,
+.person:focus-visible { box-shadow: var(--glow-primary); outline: none; }
+.person-pic {
+	flex: 0 0 auto;
+	width: 2.25rem;
+	height: 2.25rem;
+	border-radius: var(--radius-round);
+	overflow: hidden;
+	display: grid;
+	place-items: center;
+	background: var(--hover-wash);
+	color: var(--color-primary);
+	font-size: 0.8rem;
+	font-weight: 700;
+}
+.person-pic img { width: 100%; height: 100%; object-fit: cover; }
+.person-names { display: flex; flex-direction: column; min-width: 0; }
+.person-name { font-weight: 600; overflow-wrap: break-word; }
+.person-sub { font-size: 0.78rem; color: var(--text-muted); }

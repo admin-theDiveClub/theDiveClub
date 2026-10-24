@@ -6,7 +6,7 @@ Updated at every milestone, in the same breath as giving UV a commit subject. Ne
 
 Last updated: **24 Oct 2026** (a match's own referee, picked from the players)
 
-**Production is current through `20261024191110`** (fixture tables, matches per team per round; checked against production's migration list, 24 Oct). **Waiting to push: `20261024194237`** (table numbers run on through a night). Nothing on the page depends on it: until it is pushed, Generate numbers tables per pass as before.
+**Production is current through `20261024191110`** (fixture tables, matches per team per round; checked against production's migration list, 24 Oct). **Waiting to push: `20261024194237`** (table numbers run on through a night) **and `20261024195612`** (a player's picture on the roster and the officials). **Push both before deploying**: the season page reads `avatar_path` from `tdc_team_roster` and `tdc_league_officials`, and without it every face shows initials (nothing breaks).
 
 ---
 
@@ -16,6 +16,7 @@ Nothing here can be done by Claude.
 
 | | What | Why it matters |
 |---|---|---|
+| 000000 | **Push `20261024195612` with `20261024194237`, deploy, then open a season page** | Test_WedSim_8BMTL's season page: the banner (trophy, name, Running, game, teams, a night, each match, dates, next night, entries, lineups, venue), the numbers under it, the teams as boxes with their shield, your own team marked and open, every player with their picture or initials linking to the not-built player page, and Who runs it the same. On the fixtures page, click a team's name: the season page opens with that team open and in view. Set a profile picture first so one face is a photo |
 | 00000 | **Push `20261024194237`, deploy, then try the fixtures page** (`20261024191110` is pushed, confirmed 24 Oct) | On UI Fixes (run the dummy-player script first, make two or three teams): Generate with Matches per team per round 2 and Tables per match 2. Round 1 should hold two passes, every team twice, tables 1-2, 3-4, 5-6, 7-8 (no team on the same table twice). Choose a night: it fades in. Change a table number with the arrows and reload: it stays. Move one fixture, then Move all for a night; Start all; Remove one; add one (it takes the next free tables). Filter All fixtures. Click a team name: the not-built-yet page, and Back returns. Claude checks the rows |
 | 0000 | **Push `20261024162559`, deploy, then try the referee** | Start a social match on `/matches/new/` against a second account, open Officials and approval, search for a third account as Referee, Start. On the match page the panel shows them. **As the referee:** you can score, the settings are greyed out, and the match is in your `/matches/` list as "A v B" with a Referee tag. Record frame 1. **As a player:** change frame 1 and you're refused ("last set by the referee"); remove the referee in the panel, and frame 1 can be changed again. Claude checks the rows |
 | 000 | **Deploy (migration pushed, confirmed 24 Oct), then try `/leagues/`** | Test_WedSim_8BMTL starts as **Running** (it has fixtures) and New League Test as **Taking entries**. On `/leagues/`: your rows show status, discipline and team size under the name, a coloured strip, and Starts / Ends / Ranking / Teams (4 teams, 20 players) as columns on the PC. In the search: the filters (Singles says there are none yet), the tiles scrolling sideways. As Owner@TDC, Settings → Status → On break → Save: the strip turns amber. Then glance at any other page on the PC: everything is 10/12 wide now |
@@ -118,7 +119,9 @@ In the order it probably makes sense.
 Agreed in principle, nothing written.
 
 | What | Notes |
-| **A team's profile page** | UV, 24 Oct: "save to the list for another time". Team names (with their shield) on the fixtures page already link to `/leagues/team/?t=<team>&s=<season>`, which for now says team pages are not built and goes back to the fixtures. To show the team, its players and its fixtures; a team picture (like the league picture above) would go with it |
+| **A team's profile page** | UV, 24 Oct: "save to the list for another time". For now a team's name on the fixtures page opens the **season page with that team expanded** (UV changed this the same day; the not-built team page was removed). A team picture (like the league picture above) would go with it |
+| **A venue's profile page** | UV, 24 Oct: "still to be built". The season page's banner links its venue to `/venues/?v=<venue id>`, which for now says venue pages are not built |
+| **A player's profile page** | UV, 24 Oct: "still to be made". Every player and official on the season page links to `/players/?p=<player id>`, which for now says player pages are not built. Your own account stays `/accounts/profile/` |
 |---|---|
 | **Close a tournament to specific players** | UV, 21 Oct: restricted to a named set, e.g. everyone in a given league. Probably a fourth `entry_mode` value plus an eligibility table, not a separate flag. Interacts with the poster: a restricted tournament may still want a public poster that says "members only" |
 | **A live public scoreboard** | Explicitly *not* what the poster is. Needs an `anon` read of live data and therefore the per-function audit the poster design deliberately avoids. Decide on its own merits, do not grow the poster into it |
