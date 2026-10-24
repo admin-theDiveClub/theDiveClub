@@ -95,12 +95,15 @@
    A number in a pill, a chevron above and below (UV, 24 Oct). A chevron
    at its limit is hidden by the script and the pill shrinks with it.
    --sw, --sn and --chevron let a control built from steppers (the date)
-   size them without new rules. */
+   size them without new rules. A number too long for the pill widens it:
+   the script sets --chars to the longest the number can be (its max, or
+   what is in it), at about 0.62 of the number's size per digit. */
 .tdc-stepper {
 	display: inline-grid;
 	justify-items: center;
 	row-gap: var(--space-1);
-	width: var(--sw, var(--stepper-width));
+	width: max(var(--sw, var(--stepper-width)),
+		calc(var(--chars, 1) * var(--sn, var(--stepper-number)) * 0.62 + var(--space-4)));
 	padding: var(--space-3) 0;
 }
 .tdc-stepper > .tdc-chevron {
@@ -116,7 +119,10 @@
 	width: 100%;
 	overflow: hidden;
 }
-.tdc-stepper input,
+/* The number's rules carry three classes' weight, so a page stylesheet's
+   own number-field rule (match.css: .set-row input[type="number"], loaded
+   after this file) cannot reach inside the pill. */
+.tdc-stepper .tdc-stepper-window > input[type="number"],
 .tdc-stepper-ghost {
 	color: var(--color-primary);
 	font-family: inherit;
@@ -132,7 +138,7 @@
 }
 
 /* The number: no line of its own, no native spinners. */
-.tdc-stepper input {
+.tdc-stepper .tdc-stepper-window > input[type="number"] {
 	display: block;
 	width: 100%;
 	padding: 0;
@@ -147,7 +153,13 @@
 	-webkit-appearance: none;
 	margin: 0;
 }
-.tdc-stepper input::placeholder { color: var(--text-muted); font-weight: 400; }
+/* A placeholder is a word ("No limit", "Never"), not a number: small
+   enough to fit the pill. */
+.tdc-stepper input::placeholder {
+	color: var(--text-muted);
+	font-size: 0.7rem;
+	font-weight: 400;
+}
 .tdc-stepper input:focus { outline: none; }
 .tdc-stepper input::selection {
 	background: var(--color-primary);

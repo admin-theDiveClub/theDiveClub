@@ -348,12 +348,16 @@
 		const box = node('div', 'bracket-entry');
 
 		const home = node('input');
+		// Native, not the site's stepper: a tall pill would break the
+		// one-line "name 5 – 3 name" score. The bracket's own design is due.
 		home.type = 'number'; home.min = 0; home.inputMode = 'numeric';
+		home.dataset.control = 'none';
 		home.value = f.home_frames ?? 0;
 		home.setAttribute('aria-label', 'Frames for ' + (f.home_name || 'home'));
 
 		const away = node('input');
 		away.type = 'number'; away.min = 0; away.inputMode = 'numeric';
+		away.dataset.control = 'none';
 		away.value = f.away_frames ?? 0;
 		away.setAttribute('aria-label', 'Frames for ' + (f.away_name || 'away'));
 
@@ -442,6 +446,7 @@
 			box.append(node('div', 'hint', 'Reading the entrants…'));
 		} else {
 			const pick = document.createElement('select');
+			pick.dataset.control = 'none';   // every entrant: far too many for a pill
 			pick.setAttribute('aria-label', 'Who goes in this slot');
 			// Empty is a real choice: somebody withdrew and there is no
 			// stand-in, which is different from not having decided yet.

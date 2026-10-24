@@ -311,6 +311,7 @@
 
 			const actions = node('div', 'list-row-actions');
 			const pick = document.createElement('select');
+			pick.dataset.control = 'none';   // a list of players: a pill would scroll on beside the position
 			pick.dataset.action = 'slot';
 			pick.dataset.slot = slot.lineup_slot;
 			pick.setAttribute('aria-label', 'Who plays position ' + slot.lineup_slot);
@@ -504,6 +505,7 @@
 		if (!choices.length) return null;
 
 		const pick = document.createElement('select');
+		pick.dataset.control = 'none';   // a list of players, inside a frame row
 		pick.dataset.action = 'reserve';
 		pick.dataset.frame = f.frame_id;
 		pick.setAttribute('aria-label', (current ? 'Reserve for ' : 'Player for ') + teamName(side) + ' in frame ' + f.frame_no);

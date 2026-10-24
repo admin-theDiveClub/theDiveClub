@@ -12,8 +12,10 @@
 //     <input type="number" data-control="stepper" min="0" max="10">
 //   data-controls="<kind> <kind>" on a container: every element inside it
 //     that the kind takes (its "auto" selector) becomes one, including those
-//     a script renders later. This is how a whole page, or later the whole
-//     site, switches over. data-control="none" keeps one element native.
+//     a script renders later. layout.html puts all three kinds on <body>, so
+//     the whole site uses them (UV, 24 Oct). data-control="none" keeps one
+//     element native: the long lists of people and teams, and the bracket's
+//     score boxes. Nothing inside a table is taken: the cells are too narrow.
 //
 // Each kind is one define() below. Elements already on the page are enhanced
 // once every script has run, and anything added later (forms generated from
@@ -35,8 +37,7 @@
 //            chosen one in a green pill of its own that slides to the next.
 //            Click an option to choose it, or use the arrows at either end.
 //            The real select keeps the keyboard: Tab reaches it and the arrow
-//            keys change it. Not taken automatically inside a table, where the
-//            cells are too narrow.
+//            keys change it.
 
 const TDCControls = (() => {
 	const AREA = 'Controls';
@@ -50,14 +51,16 @@ const TDCControls = (() => {
 		if (started) scan(document);
 	}
 
-	// The kind el should become, or null.
+	// The kind el should become, or null. Every data-controls container round
+	// it counts, nearest first, so one naming a single kind does not switch off
+	// the others named further out (the whole site's, on <body>).
 	function kindFor(el) {
 		if (el.dataset.control) return el.dataset.control === 'none' ? null : el.dataset.control;
-		const scope = el.closest('[data-controls]');
-		if (!scope) return null;
-		for (const name of scope.dataset.controls.split(/\s+/)) {
-			const kind = kinds[name];
-			if (kind && kind.auto && el.matches(kind.auto)) return name;
+		for (let scope = el.closest('[data-controls]'); scope; scope = scope.parentElement && scope.parentElement.closest('[data-controls]')) {
+			for (const name of scope.dataset.controls.split(/\s+/)) {
+				const kind = kinds[name];
+				if (kind && kind.auto && el.matches(kind.auto)) return name;
+			}
 		}
 		return null;
 	}
@@ -174,12 +177,14 @@ const TDCControls = (() => {
 		const max = () => input.max === '' ? Infinity : Number(input.max);
 		const whole = () => input.step !== 'any' && Number.isInteger(Number(input.step || 1));
 
-		// A chevron is shown only while there is somewhere to go.
+		// A chevron is shown only while there is somewhere to go. The pill
+		// is as wide as the longest number it can hold (--chars).
 		function sync() {
 			const v = input.valueAsNumber;
 			up.hidden = !isNaN(v) && v >= max();
 			down.hidden = !isNaN(v) && v <= min();
 			pill.classList.toggle('is-disabled', input.disabled);
+			pill.style.setProperty('--chars', Math.max(1, input.value.length, input.max.length, input.min.length));
 			roll();
 		}
 
@@ -291,7 +296,7 @@ const TDCControls = (() => {
 		new MutationObserver(sync).observe(input, { attributes: true, attributeFilter: ['min', 'max', 'disabled'] });
 
 		sync();
-	}, null);
+	}, 'input[type="number"]:not(table input)');
 
 	// ─── Date ───
 	const pad = (n, width) => String(n).padStart(width, '0');
@@ -424,7 +429,7 @@ const TDCControls = (() => {
 
 		onPropSet(real, ['value'], show);
 		show();
-	}, null);
+	}, 'input[type="date"]:not(table input)');
 
 	// ─── Select ───
 	// Where each select's green pill was the moment an option was chosen, by

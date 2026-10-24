@@ -94,14 +94,15 @@
 /* The hover glow on every field you type into or choose from, on every page
    (UV, 24 Oct), the match page's included. A field is a line, so the line
    glows (--glow-line) rather than a box appearing round it. Not on
-   checkboxes, radios or anything disabled, nor a custom control
-   (data-control), which draws its own in controls.css. */
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]):not([data-control]):not(:disabled),
+   checkboxes, radios or anything disabled, nor a field that has become a
+   custom control (data-control-ready), which draws its own in controls.css.
+   One kept native with data-control="none" still glows. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]):not([data-control-ready="yes"]):not(:disabled),
 select:not(:disabled),
 textarea:not(:disabled) {
 	transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]):not([data-control]):not(:disabled):hover,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]):not([data-control-ready="yes"]):not(:disabled):hover,
 select:not(:disabled):hover,
 textarea:not(:disabled):hover {
 	box-shadow: var(--glow-line);

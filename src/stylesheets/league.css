@@ -173,10 +173,12 @@
 .league-search input[type="search"],
 .league-search .hint { text-align: center; }
 
+/* Each filter is a select pill (24 Oct), which needs room to show its
+   options: one a row on a phone, side by side only where each gets 18rem. */
 .league-filters {
 	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: var(--space-3);
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+	gap: 0 var(--space-3);
 }
 .league-filters .field { margin-bottom: var(--space-3); }
 
