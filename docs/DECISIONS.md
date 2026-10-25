@@ -765,3 +765,11 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's call, to confirm:* on a phone a playing match's score sits above its buttons, because a score either side of three buttons is 434px wide against a 380px card. A PC, and a finished fixture anywhere, keep UV's layout.
 *Not changed yet:* the match list's "vs Opponent" (asked) and the database's rotation refusal, which says "H1 v A1" (it lives in `private.tdc_check_match_rules`).
 *Touches:* `league-fixtures.js`, `league.css`, `league-card.js`, `leagues/card/index.html`, `tournament-bracket.js`, `tournament-poster.js`, `match-settings.js`, migration `20261025075828`, test `031_match_referee`
+
+## 2026-10-25 — Tables available when generating a schedule
+
+*Decided by:* UV (all three choices asked and answered)
+*So:* Make the schedule has **Tables available** beside Tables per match. Tables are numbered on through a night as before but stop at the last one available: **the fixture that reaches it gets what is left** (3 available, 2 a match: {1,2}, {3}, then none), and the night's later fixtures get none, for the director to give by hand. **Blank means no limit.** **It is for that Generate only and is not saved**, so Add a fixture still numbers on past it.
+*Rejected:* whole matches only (a match on one table of two is still playable); remembering it per season (no schema change wanted for it now).
+*Also:* the page's groups are now Planner (open), All fixtures, Make the schedule (folded), Add a fixture (its own group).
+*Touches:* migration `20261025082733`, `league-fixtures.js`, `leagues/fixtures/index.html`, test `036_league_tables_available`

@@ -34,7 +34,7 @@
 		generatePanel: el('generate-panel'), generateState: el('generate-state'),
 		timesPlayed: el('times-played'), timesHint: el('times-hint'),
 		firstRound: el('first-round'), firstHour: el('first-hour'), firstMinute: el('first-minute'),
-		daysBetween: el('days-between'), perRound: el('per-round'), tablesPer: el('tables-per'),
+		daysBetween: el('days-between'), perRound: el('per-round'), tablesPer: el('tables-per'), tablesAvailable: el('tables-available'),
 		generateBtn: el('generate-btn'), clearBtn: el('clear-btn'),
 		cal: el('cal'), undated: el('undated'),
 		dayView: el('day-view'), dayActions: el('day-actions'), dayMove: el('day-move'),
@@ -1034,6 +1034,14 @@
 			return;
 		}
 
+		// Blank is no limit (UV, 25 Oct); for this Generate only.
+		const availRaw = els.tablesAvailable.value.trim();
+		const available = availRaw === '' ? null : parseInt(availRaw, 10);
+		if (available !== null && (isNaN(available) || available < 1 || available > 99)) {
+			TDC.status(els.status, 'Tables available has to be a number from 1 to 99, or blank for no limit.', 'error');
+			return;
+		}
+
 		// Replacing throws away a schedule people may already have read, and
 		// if matches are attached it throws away the shape they sit in.
 		const replace = !!fixtures.length;
@@ -1055,7 +1063,8 @@
 			p_replace: replace,
 			p_detach_matches: replace,
 			p_matches_per_round: perRound,
-			p_tables_per_match: tablesPer
+			p_tables_per_match: tablesPer,
+			p_tables_available: available
 		}), (made) => made + (made === 1 ? ' fixture made.' : ' fixtures made.'), { single: 'generate' });
 	});
 

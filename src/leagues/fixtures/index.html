@@ -35,85 +35,13 @@ extraScripts:
 	<p class="muted" id="l-meta"></p>
 
 	{% comment %}
-		The director's panel. Hidden for everybody else, who are here to read
-		the schedule rather than make it.
-	{% endcomment %}
-	<div class="panel" id="generate-panel" hidden>
-		<h2>Make the schedule</h2>
-		<p class="muted" id="generate-state"></p>
-
-		{% comment %}
-			Rounds is how many times each pair meets (p_times_played), which
-			tdc_generate_league_fixtures takes from 1 to 4 (UV, 24 Oct: a number,
-			not a menu). Days between rounds and matches per team per round sit
-			beside it (20261024191110: more than one pass of the round robin to
-			a night).
-		{% endcomment %}
-		<div class="field-row" data-row="rounds">
-			<div class="field">
-				<label for="times-played">Rounds</label>
-				<input type="number" id="times-played" inputmode="numeric" min="1" max="4" value="2">
-				<div class="hint" id="times-hint"></div>
-			</div>
-
-			<div class="field">
-				<label for="days-between">Days between rounds</label>
-				<input type="number" id="days-between" inputmode="numeric" min="0" max="365" value="7">
-				<div class="hint">7 for a weekly league. Ignored if there is no first round date.</div>
-			</div>
-
-			<div class="field">
-				<label for="per-round">Matches per team per round</label>
-				<input type="number" id="per-round" inputmode="numeric" min="1" max="6" value="1">
-				<div class="hint">2: every team plays twice on the night.</div>
-			</div>
-		</div>
-
-		{% comment %}
-			The date as the other pages do it (the date control), the time as
-			two steppers beside it: there is no date-and-time control yet.
-		{% endcomment %}
-		<div class="field-row" data-row="first-round">
-			<div class="field">
-				<label for="first-round">First round</label>
-				<input type="date" id="first-round">
-				<div class="hint">Leave blank to make the schedule without dates and set them yourself.</div>
-			</div>
-
-			<div class="field">
-				<label for="first-hour">Time</label>
-				<span class="time-pair">
-					<input type="number" id="first-hour" inputmode="numeric" min="0" max="23" value="19" aria-label="Hour">
-					<span class="time-sep">:</span>
-					<input type="number" id="first-minute" inputmode="numeric" min="0" max="59" step="5" value="30" aria-label="Minute">
-				</span>
-				<div class="hint">24-hour clock.</div>
-			</div>
-		</div>
-
-		<div class="field">
-			<label for="tables-per">Tables per match</label>
-			<input type="number" id="tables-per" inputmode="numeric" min="0" max="20" value="1">
-			<div class="hint">Numbered for you, and changed under each fixture. 0 for none.</div>
-		</div>
-
-		<div class="btn-row">
-			<button type="button" class="btn btn-primary btn-sm" id="generate-btn">Generate</button>
-			<button type="button" class="btn btn-danger btn-sm" id="clear-btn" hidden>Clear the schedule</button>
-		</div>
-	</div>
-
-	{% comment %}
 		The planner (UV, 24 Oct). The months side by side, every night the
 		league is played marked in green; choosing one shows that night's
 		fixtures under it, in a table so the names and the buttons line up.
 		Rounds with no date are offered under the calendar, with a new round,
 		so a schedule made without dates can still be planned. The chosen
-		night's own buttons act on every fixture in it.
-
-		Adding a fixture is here, under the chosen night, and adds to that
-		night's round and date: the night is the thing the director is
-		looking at when they notice a game is missing.
+		night's own buttons act on every fixture in it. Open from the start
+		(UV, 25 Oct): it is what the page is for.
 	{% endcomment %}
 	<details class="set-group" id="planner" open>
 		<summary>Planner</summary>
@@ -128,23 +56,6 @@ extraScripts:
 			<table class="fx-table" id="day-table"></table>
 			<div class="empty" id="day-empty" hidden></div>
 		</div>
-
-		<details class="set-group" id="add-panel" hidden>
-			<summary>Add a fixture</summary>
-			<p class="muted fx-add-to" id="add-to"></p>
-			<div class="field-row" data-row="add-teams">
-				<div class="field">
-					<label for="add-home">Home</label>
-					<select id="add-home"></select>
-				</div>
-				<div class="field">
-					<label for="add-away">Away</label>
-					<select id="add-away"></select>
-					<div class="hint">Bye for a team sitting the round out.</div>
-				</div>
-			</div>
-			<button type="button" class="btn btn-primary" id="add-btn">Add it</button>
-		</details>
 	</details>
 
 	{% comment %}
@@ -190,6 +101,109 @@ extraScripts:
 			<div class="empty" id="fixtures-empty" hidden>No fixtures yet.</div>
 			<div class="empty" id="all-none" hidden>No fixtures match these filters.</div>
 		</div>
+	</details>
+
+	{% comment %}
+		Making the schedule: the director's, hidden for everybody else, who are
+		here to read it. Folded away from the start, under the fixtures (UV, 25
+		Oct): a season's schedule is made once, and read every week.
+
+		Rounds is how many times each pair meets (p_times_played), which
+		tdc_generate_league_fixtures takes from 1 to 4 (UV, 24 Oct: a number,
+		not a menu). Days between rounds and matches per team per round sit
+		beside it (20261024191110: more than one pass of the round robin to a
+		night).
+	{% endcomment %}
+	<details class="set-group" id="generate-panel" hidden>
+		<summary>Make the schedule</summary>
+		<p class="muted" id="generate-state"></p>
+
+		<div class="field-row" data-row="rounds">
+			<div class="field">
+				<label for="times-played">Rounds</label>
+				<input type="number" id="times-played" inputmode="numeric" min="1" max="4" value="2">
+				<div class="hint" id="times-hint"></div>
+			</div>
+
+			<div class="field">
+				<label for="days-between">Days between rounds</label>
+				<input type="number" id="days-between" inputmode="numeric" min="0" max="365" value="7">
+				<div class="hint">7 for a weekly league. Ignored if there is no first round date.</div>
+			</div>
+
+			<div class="field">
+				<label for="per-round">Matches per team per round</label>
+				<input type="number" id="per-round" inputmode="numeric" min="1" max="6" value="1">
+				<div class="hint">2: every team plays twice on the night.</div>
+			</div>
+		</div>
+
+		{% comment %}
+			The date as the other pages do it (the date control), the time as
+			two steppers beside it: there is no date-and-time control yet.
+		{% endcomment %}
+		<div class="field-row" data-row="first-round">
+			<div class="field">
+				<label for="first-round">First round</label>
+				<input type="date" id="first-round">
+				<div class="hint">Leave blank to make the schedule without dates and set them yourself.</div>
+			</div>
+
+			<div class="field">
+				<label for="first-hour">Time</label>
+				<span class="time-pair">
+					<input type="number" id="first-hour" inputmode="numeric" min="0" max="23" value="19" aria-label="Hour">
+					<span class="time-sep">:</span>
+					<input type="number" id="first-minute" inputmode="numeric" min="0" max="59" step="5" value="30" aria-label="Minute">
+				</span>
+				<div class="hint">24-hour clock.</div>
+			</div>
+		</div>
+
+		{% comment %}
+			Tables available (UV, 25 Oct): the numbering stops at the last one;
+			the fixture that reaches it gets what is left and the night's later
+			fixtures none. Blank for no limit. For this Generate only, not saved.
+		{% endcomment %}
+		<div class="field-row" data-row="tables">
+			<div class="field">
+				<label for="tables-available">Tables available</label>
+				<input type="number" id="tables-available" inputmode="numeric" min="1" max="99" placeholder="No limit">
+				<div class="hint">A night's fixtures stop at the last one; the rest get none. Blank for no limit.</div>
+			</div>
+
+			<div class="field">
+				<label for="tables-per">Tables per match</label>
+				<input type="number" id="tables-per" inputmode="numeric" min="0" max="20" value="1">
+				<div class="hint">Numbered for you, and changed under each fixture. 0 for none.</div>
+			</div>
+		</div>
+
+		<div class="btn-row">
+			<button type="button" class="btn btn-primary btn-sm" id="generate-btn">Generate</button>
+			<button type="button" class="btn btn-danger btn-sm" id="clear-btn" hidden>Clear the schedule</button>
+		</div>
+	</details>
+
+	{% comment %}
+		Adding a fixture, its own group under the rest (UV, 25 Oct). It adds to
+		the night chosen in the planner, its round and date, and says which.
+	{% endcomment %}
+	<details class="set-group" id="add-panel" hidden>
+		<summary>Add a fixture</summary>
+		<p class="muted fx-add-to" id="add-to"></p>
+		<div class="field-row" data-row="add-teams">
+			<div class="field">
+				<label for="add-home">Home</label>
+				<select id="add-home"></select>
+			</div>
+			<div class="field">
+				<label for="add-away">Away</label>
+				<select id="add-away"></select>
+				<div class="hint">Bye for a team sitting the round out.</div>
+			</div>
+		</div>
+		<button type="button" class="btn btn-primary" id="add-btn">Add it</button>
 	</details>
 
 	<div class="status" id="page-status"></div>

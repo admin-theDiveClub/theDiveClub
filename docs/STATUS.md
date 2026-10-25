@@ -6,7 +6,7 @@ Updated at every milestone, in the same breath as giving UV a commit subject. Ne
 
 Last updated: **25 Oct 2026** (a signed night is locked; scores and live updates on the fixtures page)
 
-**Production is current through `20261025072952`** (the signed TEAM B : TEAM C night relinked; UV saw its score, 25 Oct). **Waiting to push: `20261025075828`** (the match list names a refereed match "A : B", not "A v B"). Nothing on the site depends on it; the old text just stays until it is pushed.
+**Production is current through `20261025072952`** (the signed TEAM B : TEAM C night relinked; UV saw its score, 25 Oct). **Waiting to push: `20261025075828`** (the match list names a refereed match "A : B", not "A v B"; nothing depends on it) **and `20261025082733`** (Tables available on Generate). **Push `20261025082733` before deploying**: the fixtures page sends `p_tables_available`, and until it is pushed Generate fails with "function not found".
 
 ---
 
@@ -16,6 +16,7 @@ Nothing here can be done by Claude.
 
 | | What | Why it matters |
 |---|---|---|
+| 000000000 | **Push `20261025082733`, deploy, then try Tables available** | On UI Fixes → Fixtures: the page opens on the Planner, then All fixtures, then **Make the schedule (folded)**, then **Add a fixture**. Open Make the schedule: **Tables available** sits left of Tables per match. With 4 teams, Matches per team per round 2, Tables per match 2, Tables available 3, Generate (the signed night refuses a replace, so on a league with no signed match): night 1 reads Tables 1 · 2, Table 3, None, None. Blank it and generate again: 1 · 2, 3 · 4, 5 · 6, 7 · 8. Claude checks the rows |
 | 00000000 | **Try the live scores, and the refusals** (the relink and the locked card are confirmed by UV, 25 Oct) | On UI Fixes, TEAM B : TEAM C is now a box that opens its card. Try Generate (replace) or Clear: refused, "One match has been signed by both captains…". **Live:** start a match on another fixture, open the fixtures page on a second phone (any signed-in account), record a frame on the card: the score on the second phone changes within a second or so, no reload. Claude checks the rows afterwards |
 | 0000000 | **Push `20261024202149` (with the two before it), deploy, then give a league a picture** | As Owner@TDC, Test_WedSim_8BMTL → Settings → League picture → Choose a picture (a phone photo is fine). It saves at once. The season page's banner, the leagues list and the league search show it in place of the trophy. Change it, then Remove it: the trophy comes back. Claude checks the bucket holds one file, then none |
 | 000000 | **Push `20261024195612` with `20261024194237`, deploy, then open a season page** | Test_WedSim_8BMTL's season page: the banner (trophy, name, Running, game, teams, a night, each match, dates, next night, entries, lineups, venue), the numbers under it, the teams as boxes with their shield, your own team marked and open, every player with their picture or initials linking to the not-built player page, and Who runs it the same. On the fixtures page, click a team's name: the season page opens with that team open and in view. Set a profile picture first so one face is a photo |
