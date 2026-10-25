@@ -183,8 +183,8 @@
 			league_season_id: (byId.get(data.home_team_id) || {}).league_season_id
 		});
 
-		els.title.textContent = match.home_name + ' v ' + match.away_name;
-		document.title = match.home_name + ' v ' + match.away_name + ' · The Dive Club';
+		els.title.textContent = match.home_name + ' : ' + match.away_name;
+		document.title = match.home_name + ' : ' + match.away_name + ' · The Dive Club';
 		for (const [pic, name, side] of [
 			[els.homePic, els.homeName, 'home'], [els.awayPic, els.awayName, 'away'],
 			[els.sumHomePic, els.sumHomeName, 'home'], [els.sumAwayPic, els.sumAwayName, 'away']]) {

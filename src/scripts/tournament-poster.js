@@ -323,7 +323,7 @@
 				const home = f.home || 'TBD';
 				const away = f.away || 'TBD';
 				if (f.home_frames === null || f.home_frames === undefined) {
-					lines.push(`  ${where2}: ${home} v ${away}`);
+					lines.push(`  ${where2}: ${home} : ${away}`);
 				} else {
 					lines.push(`  ${where2}: ${home} ${f.home_frames} — ${f.away_frames} ${away}`
 						+ (f.winner && !f.published ? ' (not confirmed)' : ''));

@@ -659,14 +659,17 @@
 		el('move-' + id + '-date').value, el('move-' + id + '-hour').value, el('move-' + id + '-minute').value), 'Played on');
 
 	// ─── A fixture ───
-	// One table row (UV, 24 Oct): its state as a strip, home, its buttons,
-	// away. Under it the tables it is played on, and a short line before the
-	// next. A second row under it while it is being moved.
-	function teamCell(teamId, name, side) {
+	// One table row (UV, 24 Oct): its state as a strip, home, its buttons
+	// (with the score either side once there is one), away, all centred. Under
+	// it the tables it is played on, the two in one outline, and a gap before
+	// the next. A second row under it while it is being moved. A finished
+	// fixture has no buttons: its whole box opens the card (25 Oct).
+	function teamCell(teamId, name, side, linked) {
 		const td = node('td', 'fx-side fx-' + side);
-		// To the season page with this team open and in view (UV, 24 Oct).
-		const team = node('a', 'fx-team');
-		team.href = '/leagues/season/?s=' + encodeURIComponent(seasonId) + '&team=' + encodeURIComponent(teamId);
+		// To the season page with this team open and in view (UV, 24 Oct). Not
+		// on a finished fixture, whose whole box opens the card (25 Oct).
+		const team = node(linked ? 'a' : 'span', 'fx-team');
+		if (linked) team.href = '/leagues/season/?s=' + encodeURIComponent(seasonId) + '&team=' + encodeURIComponent(teamId);
 		const pic = node('span', 'team-pic');
 		pic.append(teamIcon());
 		const names = node('span', 'fx-names');
@@ -682,6 +685,10 @@
 	// (ring-status.js): play, calendar, cross, arrow, minus (UV, 24 Oct).
 	function actions(f) {
 		const items = [];
+		// Signed by both captains, a night is locked: the card is all that is
+		// left (UV, 25 Oct), and the whole fixture is its link, so no buttons.
+		// Moving it is for the LD's approvals page.
+		if (signed(f)) return items;
 		// The card is for whoever is playing, not only for the director: a
 		// captain sets their lineup on it. It opens for anybody signed in and
 		// decides for itself what they may do once they are there.
@@ -689,9 +696,7 @@
 			const mine = myTeamId && (f.home_team_id === myTeamId || f.away_team_id === myTeamId);
 			items.push(['open', 'arrow', mine ? 'Open my card' : 'Open the card', '']);
 		}
-		// Signed by both captains, a night is locked: the card is all that is
-		// left (UV, 25 Oct). Moving it is for the LD's approvals page.
-		if (!iRunIt || signed(f)) return items;
+		if (!iRunIt) return items;
 		if (!f.is_bye && !f.match_id) items.push(['start', 'play', 'Start the match', '']);
 		if (f.match_id) items.push(['detach', 'minus', 'Take the match off', '']);
 		const open = moving && moving.endsWith(':' + f.fixture_id);
@@ -761,12 +766,24 @@
 		});
 	}
 
-	const fixtureName = (f) => f.is_bye ? f.home_name + '’s bye' : f.home_name + ' v ' + f.away_name;
+	const fixtureName = (f) => f.is_bye ? f.home_name + '’s bye' : f.home_name + ' : ' + f.away_name;
 
 	function fixtureRows(f, where, dayTime) {
 		const key = where + ':' + f.fixture_id;
-		const tr = node('tr', 'fx-row');
-		if (myTeamId && (f.home_team_id === myTeamId || f.away_team_id === myTeamId)) tr.classList.add('fx-mine');
+		const tr = node('tr', 'fx-row' + (f.is_bye ? ' fx-row-bye' : ''));
+		const mine = myTeamId && (f.home_team_id === myTeamId || f.away_team_id === myTeamId);
+		if (mine) tr.classList.add('fx-mine');
+		// A finished fixture opens its card from anywhere in its box (UV, 25
+		// Oct): both its rows carry the link, and the main row is what a
+		// keyboard reaches.
+		const done = signed(f);
+		const linkUp = (row) => { row.classList.add('fx-link'); row.dataset.card = f.match_id; };
+		if (done) {
+			linkUp(tr);
+			tr.tabIndex = 0;
+			tr.setAttribute('role', 'link');
+			tr.setAttribute('aria-label', 'Open the card: ' + fixtureName(f) + ', ' + (f.home_frames || 0) + ' : ' + (f.away_frames || 0));
+		}
 
 		// The strip runs the fixture's whole height: its row and the tables
 		// row under it (UV, 24 Oct).
@@ -794,7 +811,14 @@
 			}
 			line.append(box);
 		} else {
-			line.append(node('span', 'fx-v', 'v'));
+			line.append(node('span', 'fx-v', ':'));
+		}
+		if (scored && items.length) {
+			// A phone has no room for a score either side of the buttons while
+			// a match is played; there the score closes up round a colon and the
+			// buttons go under it (league.css). Hidden otherwise.
+			line.classList.add('fx-mid-busy');
+			line.append(node('span', 'fx-v fx-v-busy', ':'));
 		}
 		if (scored) line.append(node('span', 'fx-score fx-score-away', String(f.away_frames || 0)));
 		mid.append(line);
@@ -804,13 +828,19 @@
 			mid.append(node('span', 'fx-mid-sub', time24(new Date(f.scheduled_at))));
 		}
 
-		const away = f.is_bye ? node('td', 'fx-side fx-away') : teamCell(f.away_team_id, f.away_name, 'away');
+		const away = f.is_bye ? node('td', 'fx-side fx-away') : teamCell(f.away_team_id, f.away_name, 'away', !done);
 		if (f.is_bye) away.append(node('span', 'fx-bye', 'Bye'));
 
-		tr.append(strip, teamCell(f.home_team_id, f.home_name, 'home'), mid, away);
+		tr.append(strip, teamCell(f.home_team_id, f.home_name, 'home', !done), mid, away);
 
 		const out = [tr];
-		if (!f.is_bye) out.push(tablesRow(f, where));
+		if (!f.is_bye) {
+			// Your team's highlight covers the tables row too, as the strip does.
+			const tables = tablesRow(f, where);
+			if (mine) tables.classList.add('fx-mine');
+			if (done) linkUp(tables);
+			out.push(tables);
+		}
 		if (moving === key) out.push(moveRow(f, where));
 		out.push(separator());
 		return out;
@@ -877,7 +907,6 @@
 		const tr = node('tr', 'fx-sep');
 		const td = node('td');
 		td.colSpan = 4;
-		td.append(node('div', 'fx-sep-line'));
 		tr.append(td);
 		return tr;
 	}
@@ -1100,8 +1129,20 @@
 			return;
 		}
 		if (night) { actNight(night.dataset.night, night); return; }
-		if (action) act(action);
+		if (action) { act(action); return; }
+		const card = e.target.closest('.fx-table tr[data-card]');
+		if (card) openCard(card.dataset.card);
 	});
+
+	// A finished fixture's box is its card's link: Enter on the focused row
+	// opens it, as on a link.
+	document.addEventListener('keydown', (e) => {
+		if (e.key !== 'Enter') return;
+		const card = e.target.closest && e.target.closest('.fx-table tr[data-card]');
+		if (card) openCard(card.dataset.card);
+	});
+
+	const openCard = (matchId) => { location.href = '/leagues/card/?m=' + encodeURIComponent(matchId); };
 
 	// The chosen night's own buttons, on every fixture in it.
 	function actNight(what, button) {
@@ -1174,7 +1215,7 @@
 
 		switch (button.dataset.action) {
 			case 'open':
-				location.href = '/leagues/card/?m=' + encodeURIComponent(f.match_id);
+				openCard(f.match_id);
 				return;
 			case 'start':
 				working(button);

@@ -423,11 +423,56 @@
 	width: auto;
 	max-width: 100%;
 	margin: 0 auto var(--space-4);
-	border-collapse: collapse;
+	border-collapse: separate;
+	border-spacing: 0;
 }
-.fx-table td { padding: var(--space-2) 0; vertical-align: middle; }
-.fx-table td.fx-mid { text-align: center; padding-inline: var(--space-3); }
-.fx-table tr.fx-mine td:not(.fx-state) { background: var(--hover-wash); }
+/* Everything in a fixture sits in the middle of its cell (UV, 25 Oct). */
+.fx-table td { padding: var(--space-2) 0; vertical-align: middle; text-align: center; }
+.fx-table td.fx-mid { text-align: center; padding-inline: var(--space-3); white-space: nowrap; }
+/* Home and away share what the middle leaves, equally, so neither side is
+ * squeezed and the middle sits in the middle. */
+.fx-table td.fx-side { width: 50%; }
+/* Your own team's fixture: its row and its tables row (UV, 25 Oct). */
+.fx-table tr.fx-mine td { background: var(--hover-wash); }
+
+/* Each fixture in a faint outline, as a panel is, so one reads apart from
+ * the next (UV, 25 Oct). A table cannot outline a group of rows, so the
+ * cells draw it: the strip the left side (it spans both rows), the main row
+ * the top, its away cell the top right, the tables row the right and
+ * bottom. A bye has no tables row, so its main row closes the box. */
+.fx-table tr { --fx-line: var(--border-color); }
+.fx-table tr.fx-row > td { border-top: 1px solid var(--fx-line); }
+.fx-table tr.fx-row > td.fx-state {
+	border-left: 1px solid var(--fx-line);
+	border-bottom: 1px solid var(--fx-line);
+	border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+.fx-table tr.fx-row > td:last-child {
+	border-right: 1px solid var(--fx-line);
+	border-top-right-radius: var(--radius-md);
+}
+.fx-table tr.fx-tables > td {
+	padding-right: var(--space-2);
+	border-right: 1px solid var(--fx-line);
+	border-bottom: 1px solid var(--fx-line);
+	border-bottom-right-radius: var(--radius-md);
+}
+.fx-table tr.fx-row-bye > td { border-bottom: 1px solid var(--fx-line); }
+.fx-table tr.fx-row-bye > td:last-child { border-bottom-right-radius: var(--radius-md); }
+
+/* A finished fixture is its card's link (UV, 25 Oct): pointing at either
+ * of its rows, or focusing it, lights the whole box in the brand colour,
+ * the outline as a link's glow and the inside washed. */
+.fx-table tr.fx-link { cursor: pointer; }
+.fx-table tr.fx-link:focus-visible { outline: none; }
+.fx-table tr.fx-link:is(:hover, :focus-visible),
+.fx-table tr.fx-link:is(:hover, :focus-visible) + tr.fx-link,
+.fx-table tr.fx-link:has(+ tr.fx-link:hover) {
+	--fx-line: color-mix(in srgb, var(--color-primary) 55%, transparent);
+}
+.fx-table tr.fx-link:is(:hover, :focus-visible) > td,
+.fx-table tr.fx-link:is(:hover, :focus-visible) + tr.fx-link > td,
+.fx-table tr.fx-link:has(+ tr.fx-link:hover) > td { background: var(--hover-wash); }
 
 /* A fixture's state: a strip down the left of the fixture, the full height
  * of its row and its tables row (the cell spans both), as the leagues list
@@ -437,23 +482,28 @@
 	position: relative;
 	width: var(--space-1);
 	min-width: var(--space-1);
-	padding: 0 var(--space-2) 0 0;
+	padding: 0 var(--space-2);
 }
 .fx-table td.fx-state::before {
 	content: '';
 	position: absolute;
-	top: var(--space-1);
-	bottom: var(--space-1);
-	left: 0;
+	top: var(--space-2);
+	bottom: var(--space-2);
+	left: var(--space-2);
 	width: var(--space-1);
 	border-radius: var(--radius-pill);
 	background: var(--strip-color, transparent);
+	box-shadow: var(--strip-glow, none);
 }
+/* Playing is the warning amber and finished the site's green, both lit
+ * (UV, 25 Oct): a finished night was grey, which read as not started. */
 .fx-state-none        { --strip-color: var(--border-color); }
 .fx-state-scheduled   { --strip-color: var(--color-primary); }
-.fx-state-in_progress { --strip-color: var(--color-success); }
-.fx-state-complete    { --strip-color: var(--text-muted); }
+.fx-state-in_progress { --strip-color: var(--color-warning); }
+.fx-state-complete    { --strip-color: var(--color-primary); }
 .fx-state-abandoned   { --strip-color: var(--color-error); }
+.fx-state-in_progress,
+.fx-state-complete    { --strip-glow: 0 0 10px color-mix(in srgb, var(--strip-color) 60%, transparent); }
 
 /* A team: its picture, then its name and how many play for it, a link to
  * its page (still to come) that glows like a row. The home side faces the
@@ -461,21 +511,24 @@
 .fx-team {
 	display: flex;
 	align-items: center;
+	justify-content: center;
 	gap: var(--space-2);
 	min-width: 0;
 	padding: var(--space-1);
 	border-radius: var(--radius-md);
 	color: inherit;
+	text-align: center;
 	text-decoration: none;
 	transition: box-shadow 0.15s;
 }
-.fx-team:hover,
-.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
-.fx-home .fx-team { flex-direction: row-reverse; text-align: right; }
-.fx-names { display: flex; flex-direction: column; min-width: 0; }
+/* A finished fixture's teams are not links (the box is), so only a link glows. */
+a.fx-team:hover,
+a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
+.fx-home .fx-team { flex-direction: row-reverse; }
+.fx-names { display: flex; flex-direction: column; align-items: center; min-width: 0; }
 .fx-name { font-weight: 600; line-height: 1.25; overflow-wrap: break-word; }
-.fx-sub { font-size: 0.75rem; color: var(--text-muted); }
-.fx-bye { display: block; padding-left: var(--space-2); color: var(--text-muted); font-style: italic; }
+.fx-sub { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; }
+.fx-bye { display: block; color: var(--text-muted); font-style: italic; }
 .team-pic {
 	flex: 0 0 auto;
 	width: 2rem;
@@ -523,15 +576,31 @@
 /* The middle line: home score, the buttons, away score. Each score sits
  * against its own team's badge (UV, 25 Oct). */
 .fx-mid-line { display: flex; align-items: center; justify-content: center; gap: var(--space-2); }
+/* Between two scores the colon is their size. */
+.fx-score + .fx-v,
+.fx-v-busy { font-size: 2rem; line-height: 1; }
+.fx-v-busy { display: none; }
+
+/* A score and buttons together are wider than a phone (434px with a
+ * director's three buttons, against a 380px card at 420px; measured 25
+ * Oct). There the score closes up round its colon and the buttons take the
+ * line under it. A finished fixture has no buttons, so it is never here. */
+@media (max-width: 34rem) {
+	.fx-mid-busy { flex-wrap: wrap; row-gap: var(--space-2); }
+	.fx-mid-busy .fx-score-home { order: 1; }
+	.fx-mid-busy .fx-v-busy     { order: 2; display: inline; }
+	.fx-mid-busy .fx-score-away { order: 3; }
+	.fx-mid-busy .fx-actions    { order: 4; flex-basis: 100%; }
+}
+/* The score as tall as a team's picture (2rem, .team-pic; UV, 25 Oct). */
 .fx-score {
-	min-width: 1.5em;
-	font-size: 1.15rem;
+	min-width: 1.2em;
+	font-size: 2rem;
 	font-weight: 700;
 	font-variant-numeric: tabular-nums;
 	line-height: 1;
+	text-align: center;
 }
-.fx-score-home { text-align: right; }
-.fx-score-away { text-align: left; }
 .fx-mid-sub { display: block; margin-top: var(--space-1); font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
 
 /* The tables a fixture is played on, in a small row under it: steppers on
@@ -570,9 +639,9 @@
 }
 .tdc-card .fx-tables-line button.fx-table-btn:hover { box-shadow: var(--glow-primary); color: var(--color-primary); }
 
-/* A short line between one fixture and the next (UV, 24 Oct). */
+/* The gap between one fixture and the next. Its line went when each fixture
+ * got its outline (UV, 25 Oct). */
 .fx-table tr.fx-sep td { padding: var(--space-1) 0; }
-.fx-sep-line { width: 30%; margin: 0 auto; border-top: 1px solid var(--border-color); }
 
 /* Moving a fixture: the date and time under its row. */
 .fx-table tr.fx-edit td { padding: var(--space-3) 0; }

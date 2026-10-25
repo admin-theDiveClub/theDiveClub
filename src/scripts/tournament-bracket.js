@@ -368,7 +368,7 @@
 
 		const line = node('div', 'bracket-entry-score');
 		line.append(node('span', 'bracket-entry-name', f.home_name || '—'), home,
-			node('span', 'bracket-entry-v', 'v'),
+			node('span', 'bracket-entry-v', ':'),
 			away, node('span', 'bracket-entry-name', f.away_name || '—'));
 
 		const save = node('button', 'btn btn-primary btn-sm', 'Save');

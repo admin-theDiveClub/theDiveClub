@@ -64,7 +64,7 @@
 		a.href = '/match/?id=' + encodeURIComponent(m.id);
 
 		const top = el('div', 'match-top');
-		// For a refereed match the function sends both names ("Alice v Bob").
+		// For a refereed match the function sends both names ("Alice : Bob").
 		top.append(el('span', 'match-opponent', m.refereeing ? m.opponent : 'vs ' + m.opponent), scoreline(m));
 
 		const meta = el('div', 'match-meta');

@@ -757,3 +757,11 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by:* UV
 *So:* each side's score sits between its team and the buttons, once any frame has a result or the match is finished. Anybody on the page, player or director, follows the night live: every match on the schedule not yet finished is watched (a change to its row in `tbl_matches`, which every frame write makes), and a finished one is read once and never watched.
 *Touches:* `league-fixtures.js`, `league.css`
+
+## 2026-10-25 — A finished fixture is one link to its card, and two sides are written with a colon
+
+*Decided by:* UV
+*So:* on the fixtures page a fixture both captains have signed has no buttons and its teams are not links: anywhere in its box opens the card, and the middle reads "13 : 12". Unfinished fixtures keep their buttons and team links. Everything in a fixture is centred in its cell, the score is as tall as a team's picture (2rem), and the short line between fixtures went (the outline parts them; the gap stays). **Site-wide, two sides are written "A : B", never "A v B" or "vs"**: the fixtures, the card's banner and title, the bracket's score entry, the poster's share text, the rotation warning, and `tdc_my_matches` for a refereed match (migration `20261025075828`).
+*Claude's call, to confirm:* on a phone a playing match's score sits above its buttons, because a score either side of three buttons is 434px wide against a 380px card. A PC, and a finished fixture anywhere, keep UV's layout.
+*Not changed yet:* the match list's "vs Opponent" (asked) and the database's rotation refusal, which says "H1 v A1" (it lives in `private.tdc_check_match_rules`).
+*Touches:* `league-fixtures.js`, `league.css`, `league-card.js`, `leagues/card/index.html`, `tournament-bracket.js`, `tournament-poster.js`, `match-settings.js`, migration `20261025075828`, test `031_match_referee`

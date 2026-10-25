@@ -91,7 +91,7 @@ select is(public.tdc_may_edit_match(:'social'), false, 'social: a stranger still
 
 select tests.sign_in(:'rae');
 select is((select refereeing from public.tdc_my_matches() where id = :'social'), true, 'list: the referee sees the match, flagged');
-select is((select opponent from public.tdc_my_matches() where id = :'social'), 'Ref Alice v Ref Bob', 'list: named as both players');
+select is((select opponent from public.tdc_my_matches() where id = :'social'), 'Ref Alice : Ref Bob', 'list: named as both players, with a colon (20261025075828)');
 select is((select my_frames || '-' || their_frames from public.tdc_my_matches() where id = :'social'), '1-1', 'list: the score home first');
 
 select tests.sign_in(:'alice');

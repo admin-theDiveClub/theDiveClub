@@ -673,7 +673,7 @@ const TDCMatchDef = (() => {
 			const warn = document.createElement('div');
 			warn.className = 'hint warn';
 			warn.textContent = 'This table has players meeting twice: ' + repeats.map((p) =>
-				`H${p.home} v A${p.away} in sessions ${p.sessions.join(' and ')}`).join('; ') +
+				`H${p.home} : A${p.away} in sessions ${p.sessions.join(' and ')}`).join('; ') +
 				'. That is allowed, but usually everybody meets everybody once.';
 			row.append(warn);
 		}
