@@ -743,3 +743,17 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* `tbl_leagues.picture_path` and a public `league-pictures` bucket, built as `player-avatars` is: prepared in the browser (square, 512 px, re-encoded, EXIF gone), a new random name each time, the old file deleted. Whoever may manage the league uploads and sets it, through `tdc_set_league_picture`. Every season of a league shows the same picture: on the season page's banner, the leagues list and the league search. Saved the moment it is chosen, not with the settings page's Save.
 *Rejected:* a picture per season (a league's badge does not change each year; a season could get its own later without undoing this).
 *Touches:* migration `20261024202149`, `league-settings.js`, `leagues/settings/index.html`, `league-season.js`, `leagues.js`, `tdc.js`, `profile.js`, `league.css`
+
+## 2026-10-25 — A night both captains have signed is locked on the fixtures page
+
+*Decided by:* UV
+*Why:* on 24 Oct UV signed TEAM B v TEAM C for both sides, then pressed "Take the match off" on the finished fixture as LD. Nothing was deleted, but the fixture had no match, and Start made a new one that asked for the lineups again. UV: "Once a match is submitted, it should be locked. Even if the LD had to move it, we shouldn't be asking for the lineup again." The point of the app is that a director does not need to touch a night; sensitive controls belong on the **LD approvals page** (not built), not the fixtures page.
+*So:* once both captains have signed (match status complete), the fixture shows only the button that opens the card: no Take off, no Move, no table steppers, and the night's Move all leaves it where it is. The database refuses to take a signed match off its fixture (`tdc_detach_league_match`), and refuses to clear or replace a schedule that holds one (`tdc_clear_league_fixtures`, which generating again goes through). Moving a signed match's date is still allowed in the database, for the approvals page to use.
+*Rejected:* keeping Take off with a stronger warning (the warning was there, and said truthfully that nothing would be lost; the trouble was what the schedule did next).
+*Touches:* migration `20261025072000`, `league-fixtures.js`, test `035_league_signed_match_locked`
+
+## 2026-10-25 — The fixtures page shows scores and follows live matches
+
+*Decided by:* UV
+*So:* each side's score sits between its team and the buttons, once any frame has a result or the match is finished. Anybody on the page, player or director, follows the night live: every match on the schedule not yet finished is watched (a change to its row in `tbl_matches`, which every frame write makes), and a finished one is read once and never watched.
+*Touches:* `league-fixtures.js`, `league.css`

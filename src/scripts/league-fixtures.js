@@ -167,6 +167,11 @@
 	};
 	const stateOf = (f) => f.is_bye ? 'bye' : (f.match_id ? f.match_status : 'none');
 
+	// A match is complete only once both captains have signed it, and from
+	// then on its fixture cannot be moved, re-tabled or have its match taken
+	// off (the database refuses the last; 20261025072000).
+	const signed = (f) => !!f.match_id && f.match_status === 'complete';
+
 	const plural = (n, one) => (n === 1 ? '1 ' + one : (n || 0) + ' ' + one + 's');
 
 	// Every team's picture until teams can have their own: a shield, in the
@@ -299,8 +304,82 @@
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		fixtures = data || [];
 		renderFixtures();
+		watchLive();
 		return true;
 	}
+
+	// ─── Live ───
+	// Anybody on the page follows the night as it is played (UV, 25 Oct). A
+	// match not yet finished is watched; every frame written bumps its
+	// card_version, so its row in tbl_matches changing is the one signal
+	// needed, and the fixtures are read again. A finished match is read with
+	// the rest and never watched. As on the bracket, coming back to the page
+	// or back online re-reads too, so an event missed while the phone was
+	// locked costs nothing.
+	let liveChannel = null;
+	let liveKey = '';
+	let liveSet = new Set();
+	let liveTimer = null;
+
+	const liveMatchIds = () => fixtures
+		.filter((f) => f.match_id && (f.match_status === 'scheduled' || f.match_status === 'in_progress'))
+		.map((f) => f.match_id);
+
+	// payload is null when this is a catch-up rather than a pushed event.
+	function onLive(payload) {
+		if (payload && payload.new && !liveSet.has(payload.new.id)) return;
+		clearTimeout(liveTimer);
+		liveTimer = setTimeout(function again() {
+			// Not under the director's hands: a write going out, a move open or
+			// a table number about to save. Try again shortly.
+			if (writeQueue.pending || moving || movingNight || tableSaves.size) {
+				liveTimer = setTimeout(again, 2000);
+				return;
+			}
+			loadFixtures();
+		}, 400);
+	}
+
+	function watchLive() {
+		const ids = liveMatchIds();
+		const key = ids.slice().sort().join(',');
+		if (key === liveKey) return;
+
+		stopLive();
+		liveKey = key;
+		liveSet = new Set(ids);
+		if (!ids.length) return;
+
+		// A server-side filter keeps the socket quiet, but a long one may pass
+		// its length limit; a big night drops it and sorts on arrival instead.
+		const filter = ids.length <= 20 ? { filter: 'id=in.(' + ids.join(',') + ')' } : {};
+		liveChannel = supabaseClient
+			.channel('fixtures:' + seasonId)
+			.on('postgres_changes', Object.assign({ event: 'UPDATE', schema: 'public', table: 'tbl_matches' }, filter), onLive)
+			.subscribe((status) => {
+				if (status === 'SUBSCRIBED') return;
+				// Not fatal: the page works, it just stops following the night
+				// until it is shown again. Said rather than left to go stale.
+				if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+					console.error('[' + AREA + '] live scores are not running (' + status + ').');
+				}
+			});
+	}
+
+	function stopLive() {
+		clearTimeout(liveTimer);
+		if (!liveChannel) return;
+		supabaseClient.removeChannel(liveChannel);
+		liveChannel = null;
+		liveKey = '';
+	}
+
+	// Always, not only while something is watched: a match started elsewhere
+	// is only found by reading again.
+	document.addEventListener('visibilitychange', () => {
+		if (document.visibilityState === 'visible' && seasonId) onLive(null);
+	});
+	window.addEventListener('online', () => { if (seasonId) onLive(null); });
 
 	// Every night something is played, YYYY-MM-DD → its fixtures in the
 	// server's order.
@@ -610,7 +689,9 @@
 			const mine = myTeamId && (f.home_team_id === myTeamId || f.away_team_id === myTeamId);
 			items.push(['open', 'arrow', mine ? 'Open my card' : 'Open the card', '']);
 		}
-		if (!iRunIt) return items;
+		// Signed by both captains, a night is locked: the card is all that is
+		// left (UV, 25 Oct). Moving it is for the LD's approvals page.
+		if (!iRunIt || signed(f)) return items;
 		if (!f.is_bye && !f.match_id) items.push(['start', 'play', 'Start the match', '']);
 		if (f.match_id) items.push(['detach', 'minus', 'Take the match off', '']);
 		const open = moving && moving.endsWith(':' + f.fixture_id);
@@ -747,7 +828,7 @@
 		const line = node('div', 'fx-tables-line');
 		line.append(node('span', 'fx-tables-label', nums.length === 1 ? 'Table' : 'Tables'));
 
-		if (!iRunIt) {
+		if (!iRunIt || signed(f)) {
 			line.append(node('span', 'fx-tables-read', nums.length ? nums.join(' · ') : 'Not set'));
 			td.append(line);
 			tr.append(td);
@@ -1063,6 +1144,9 @@
 				const value = readDateTime('night');
 				if (value === undefined) return;
 				if (!value) { TDC.status(els.status, 'Choose the date the night moves to.', ''); return; }
+				// A signed match stays where it was played.
+				const todo = rows.filter((f) => !signed(f));
+				if (!todo.length) { movingNight = false; renderDay(map); TDC.status(els.status, 'Every match on this night has been signed, so it stays where it is.', ''); return; }
 				// Every fixture keeps its place in the night: one an hour later
 				// than the rest is still an hour later on the new night.
 				const base = rows.find((f) => f.scheduled_at);
@@ -1071,7 +1155,7 @@
 				movingNight = false;
 				selected = { day: dayKey(value) };
 				centreCal = true;
-				for (const f of rows) {
+				for (const f of todo) {
 					const at = f.scheduled_at && from !== null
 						? new Date(to + (new Date(f.scheduled_at).getTime() - from)).toISOString()
 						: value;
@@ -1188,9 +1272,10 @@
 	// A failed write's re-read puts the screen back to what the server holds,
 	// and the message goes up after so the re-read cannot wipe it. Generate,
 	// clear and start pass { single }, so a double tap does them once.
-	const { write } = TDC.writer({
+	const writeQueue = TDC.writer({
 		area: AREA, status: els.status, reload: loadAll, after: () => TDC.flushPushes()
 	});
+	const { write } = writeQueue;
 
 	// ─── Start ───
 	(async () => {
