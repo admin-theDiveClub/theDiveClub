@@ -697,7 +697,13 @@
 			strip.append(node('span', 'visually-hidden', STATE[state] || state));
 		}
 
+		// The middle: each side's score beside its team, the buttons between
+		// them (UV, 25 Oct). A score shows once any frame has a result, or the
+		// match is finished, whether or not the night is.
 		const mid = node('td', 'fx-mid');
+		const line = node('div', 'fx-mid-line');
+		const scored = f.match_id && (f.home_frames || f.away_frames || f.match_status === 'complete');
+		if (scored) line.append(node('span', 'fx-score fx-score-home', String(f.home_frames || 0)));
 		const items = actions(f);
 		if (items.length) {
 			const box = node('div', 'fx-actions');
@@ -705,18 +711,17 @@
 				box.append(iconButton(icon, label + ': ' + fixtureName(f), tone,
 					{ action, fixture: f.fixture_id, where }, key + ':' + action));
 			}
-			mid.append(box);
+			line.append(box);
 		} else {
-			mid.append(node('span', 'fx-v', 'v'));
+			line.append(node('span', 'fx-v', 'v'));
 		}
+		if (scored) line.append(node('span', 'fx-score fx-score-away', String(f.away_frames || 0)));
+		mid.append(line);
 
-		// Under the buttons: the score, and the time when it is not the night's.
-		const notes = [];
-		if (f.match_id && (f.home_frames || f.away_frames)) notes.push(f.home_frames + '–' + f.away_frames);
+		// Under the buttons: the time when it is not the night's.
 		if (f.scheduled_at && dayTime !== undefined && time24(new Date(f.scheduled_at)) !== dayTime) {
-			notes.push(time24(new Date(f.scheduled_at)));
+			mid.append(node('span', 'fx-mid-sub', time24(new Date(f.scheduled_at))));
 		}
-		if (notes.length) mid.append(node('span', 'fx-mid-sub', notes.join(' · ')));
 
 		const away = f.is_bye ? node('td', 'fx-side fx-away') : teamCell(f.away_team_id, f.away_name, 'away');
 		if (f.is_bye) away.append(node('span', 'fx-bye', 'Bye'));

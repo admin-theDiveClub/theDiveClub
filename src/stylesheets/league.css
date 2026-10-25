@@ -519,6 +519,19 @@
 	white-space: nowrap;
 }
 .fx-v { color: var(--text-muted); }
+
+/* The middle line: home score, the buttons, away score. Each score sits
+ * against its own team's badge (UV, 25 Oct). */
+.fx-mid-line { display: flex; align-items: center; justify-content: center; gap: var(--space-2); }
+.fx-score {
+	min-width: 1.5em;
+	font-size: 1.15rem;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+	line-height: 1;
+}
+.fx-score-home { text-align: right; }
+.fx-score-away { text-align: left; }
 .fx-mid-sub { display: block; margin-top: var(--space-1); font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
 
 /* The tables a fixture is played on, in a small row under it: steppers on
