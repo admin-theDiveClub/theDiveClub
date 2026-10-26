@@ -1,0 +1,52 @@
+/* The dots (scripts/dots.js): the layer they fly on, and what a target looks
+   like while the dots serve it. Every size and time is a token in
+   variables.css (--dots-*), set from /sandbox/dots/.
+
+   A target is marked data-dots="busy" while its call is out, and
+   "revealing" for as long as it takes to come back in. */
+
+/* ── The layer ───────────────────────────────────────────────────────
+   Over the whole screen and the nav (the nav's buttons are targets too),
+   never catching a tap. The dots are sized and placed by the script. */
+.tdc-dots {
+	position: fixed;
+	inset: 0;
+	z-index: 1000;
+	overflow: hidden;
+	pointer-events: none;
+}
+.tdc-dots canvas {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+}
+.tdc-dot {
+	position: absolute;
+	left: 0;
+	top: 0;
+	border-radius: var(--radius-round);
+	opacity: 0;
+	will-change: transform, opacity;
+}
+
+/* ── A ring icon ─────────────────────────────────────────────────────
+   Its ring hides and its icon dims while it waits; both come back in
+   --dots-reveal, which the script reads to know when the ring is fully in. */
+[data-dots="busy"] .tdc-ring .ring { opacity: 0; transition: opacity var(--dots-dim) ease; }
+[data-dots="busy"] .tdc-ring .mark { opacity: var(--dots-busy-dim); transition: opacity var(--dots-dim) ease, stroke-dashoffset 0.35s ease; }
+[data-dots="revealing"] .tdc-ring .ring { transition: opacity var(--dots-reveal) ease; }
+[data-dots="revealing"] .tdc-ring .mark { transition: opacity var(--dots-reveal) ease, stroke-dashoffset 0.35s ease; }
+
+/* ── Anything else ───────────────────────────────────────────────────
+   Its outline hides and the whole of it dims. !important because a
+   button's border can be (.btn-secondary). Step 2 gives each kind of
+   element its own (an outline traced, an underline, a number). */
+[data-dots="busy"]:not(:has(.tdc-ring)) {
+	opacity: var(--dots-busy-dim);
+	border-color: transparent !important;
+	transition: opacity var(--dots-dim) ease, border-color var(--dots-dim) ease;
+}
+[data-dots="revealing"]:not(:has(.tdc-ring)) {
+	transition: opacity var(--dots-reveal) ease, border-color var(--dots-reveal) ease;
+}

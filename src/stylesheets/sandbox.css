@@ -390,3 +390,76 @@
 .sb-s5 { width: var(--space-5); }
 .sb-s6 { width: var(--space-6); }
 .sb-s7 { width: var(--space-7); }
+
+/* ── The dots' sandbox (/sandbox/dots/) ──────────────────────────────
+   Real components for scripts/dots.js to serve. The tiles and the counter
+   are buttons, so they undo .tdc-card button's pill. */
+.dots-tiles {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--space-3);
+	margin-bottom: var(--space-4);
+}
+.tdc-card button.dots-tile {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-2);
+	height: 6.5rem;
+	margin: 0;
+	padding: var(--space-2);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-md);
+	background: transparent;
+	color: var(--text-muted);
+	font-weight: 400;
+	letter-spacing: 0;
+	text-transform: none;
+}
+.dots-tile .dots-face { width: 2.6rem; height: 2.6rem; }
+/* The ring engine's live text, for a screen reader only. */
+.dots-sandbox .sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
+.dots-tone-warning { --ring-accent: var(--color-warning); }
+.dots-tone-owner { --ring-accent: var(--color-owner); }
+.dots-tone-cream { --ring-accent: var(--text-primary); }
+.dots-label { transition: opacity var(--dots-reveal) ease; }
+[data-dots="busy"] .dots-label { opacity: var(--dots-busy-dim); transition: opacity var(--dots-dim) ease; }
+.tdc-card button.dots-icon {
+	width: 2.1rem;
+	height: 2.1rem;
+	margin: 0;
+	padding: 0;
+	border: none;
+	border-radius: var(--radius-round);
+	background: transparent;
+}
+.dots-icon .dots-face { width: 100%; height: 100%; }
+.dots-count-box {
+	text-align: center;
+	margin: var(--space-4) 0;
+}
+.tdc-card button.dots-count {
+	width: auto;
+	margin: 0;
+	padding: var(--space-2) var(--space-6);
+	border: none;
+	background: transparent;
+	color: var(--color-primary);
+	font-family: var(--font-display);
+	font-size: 4rem;
+	line-height: 1;
+}
+.dots-stat {
+	min-height: 1.4em;
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	color: var(--text-muted);
+}

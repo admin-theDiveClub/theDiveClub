@@ -4,7 +4,7 @@
 
 Updated at every milestone, in the same breath as giving UV a commit subject. Never batched to the end of a session.
 
-Last updated: **25 Oct 2026** (a signed night is locked; scores and live updates on the fixtures page)
+Last updated: **26 Oct 2026** (the dots, step 1: the engine on `/sandbox/dots/`)
 
 **Production is current through `20261025072952`** (the signed TEAM B : TEAM C night relinked; UV saw its score, 25 Oct). **Waiting to push: `20261025075828`** (the match list names a refereed match "A : B", not "A v B"; nothing depends on it) **and `20261025082733`** (Tables available on Generate). **Push `20261025082733` before deploying**: the fixtures page sends `p_tables_available`, and until it is pushed Generate fails with "function not found".
 
@@ -16,6 +16,7 @@ Nothing here can be done by Claude.
 
 | | What | Why it matters |
 |---|---|---|
+| 0000000000 | **Review the dots, step 1, on `/sandbox/dots/`** (pause 1 of 3, spec §16) | Locally: `npx eleventy --serve`, then `/sandbox/dots/` (also linked from `/sandbox/`). Tap a ring tile, the 7, the calendar in the list row and the two buttons; set Network delay high (8 s or more) to watch the orbit. Built: travel, the one waiting move (cruise), the ring race, the fade, and interruption (tap a second thing mid-orbit). **Not built yet, so do not expect it:** tracing, the other 31 moves, reduced motion. **Say how it feels against the prototype**, and look at "Book table 4": its fake ring is about 187px across and the dots streak round it (open question 4, the cap). Nothing to push or deploy |
 | 000000000 | **Push `20261025082733`, deploy, then try Tables available** | On UI Fixes → Fixtures: the page opens on the Planner, then All fixtures, then **Make the schedule (folded)**, then **Add a fixture**. Open Make the schedule: **Tables available** sits left of Tables per match. With 4 teams, Matches per team per round 2, Tables per match 2, Tables available 3, Generate (the signed night refuses a replace, so on a league with no signed match): night 1 reads Tables 1 · 2, Table 3, None, None. Blank it and generate again: 1 · 2, 3 · 4, 5 · 6, 7 · 8. Claude checks the rows |
 | 00000000 | **Try the live scores, and the refusals** (the relink and the locked card are confirmed by UV, 25 Oct) | On UI Fixes, TEAM B : TEAM C is now a box that opens its card. Try Generate (replace) or Clear: refused, "One match has been signed by both captains…". **Live:** start a match on another fixture, open the fixtures page on a second phone (any signed-in account), record a frame on the card: the score on the second phone changes within a second or so, no reload. Claude checks the rows afterwards |
 | 0000000 | **Push `20261024202149` (with the two before it), deploy, then give a league a picture** | As Owner@TDC, Test_WedSim_8BMTL → Settings → League picture → Choose a picture (a phone photo is fine). It saves at once. The season page's banner, the leagues list and the league search show it in place of the trophy. Change it, then Remove it: the trophy comes back. Claude checks the bucket holds one file, then none |
@@ -86,6 +87,7 @@ Lower-priority audit items are in `docs/BACKLOG.md` §7.
 
 | Area | Chat | State |
 |---|---|---|
+| The dots | Dots | **Step 1 of 7 built (26 Oct)**: the engine, on `/sandbox/dots/` only. Spec `docs/design/dots-motion-spec.md`, system `docs/systems/dots.md`, UV's four answers in `docs/DECISIONS.md` (26 Oct). Next: step 2, tracing, after UV's review. The main sandbox's token list does not have the `--dots-*` tokens yet; they join it with step 3 |
 | Leagues | Leagues | **All six steps built and pushed.** A league night is playable end to end: fixtures → start the match → both captains lock a lineup → frames appear → results on the grid → both sign. Structure, pages, fixtures, ruleset v2, lineups, submission, entry. See `docs/systems/leagues.md`. **The LD settings page and the team limit are pushed; the session rework (the order is per position, reserves under three rules, empty seats open until signing) is built and waiting to push (24 Oct).** **One body of work remains: LD-configurable standings** (`docs/design/leagues.md` §6, token-array equations) |
 
 ---

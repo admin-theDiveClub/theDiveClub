@@ -773,3 +773,15 @@ These predate the log. They are recorded here because every one of them is a dec
 *Rejected:* whole matches only (a match on one table of two is still playable); remembering it per season (no schema change wanted for it now).
 *Also:* the page's groups are now Planner (open), All fixtures, Make the schedule (folded), Add a fixture (its own group).
 *Touches:* migration `20261025082733`, `league-fixtures.js`, `leagues/fixtures/index.html`, test `036_league_tables_available`
+
+## 2026-10-26 — The dots: one travelling set replaces every element's own dots
+
+*Decided by:* UV (asked before building, from the open questions in `docs/design/dots-motion-spec.md` §15)
+*So:* four dots for the whole page, serving whatever is waiting on the network (`scripts/dots.js`, `docs/systems/dots.md`). **They replace the per-element dots of `scripts/ring-status.js`** on every checkbox, switch, three-way switch, nav button and fixture icon (step 7 of the build). Three consequences, following the spec: when several saves are out at once, the dots go to the latest tap and the others come back without them; an icon's lines fade in as a whole while the dots trace over them, rather than being drawn on behind a dot; and a control revealed with no network call (a folded section opening) gets no dots, which changes the 24 Oct entry in `docs/ui.md` about switches orbiting as they appear.
+*Rejected:* keeping the ring engine for inputs, since several can be saving at once and one set of dots cannot be in five places (Claude's recommendation; UV chose one system); leaving rings alone, which could put two sets of dots on screen together.
+*Also decided the same day:*
+- **Colour:** the dots take the colour of the line they are on, blending between: the ring's colour while orbiting and racing, the icon's while tracing it. Not a palette of their own; the spec's placeholder colours are not used.
+- **Numbers:** dots trace hand-drawn single-line digits laid over the number, and those lines crossfade into the real text in the site font. Rejected: the font's outline (twice the path, busier) and showing numbers as stroked digits for good (changes how scores look everywhere).
+- **A tap during page load takes the dots at once.** Sections that finish loading meanwhile just appear; any still loading afterwards get the dots next.
+- **Icons:** the dots trace the site's own icons, the strokes in `ring-status.js`, not Tabler (the spec assumed Tabler; the site has never used it).
+*Touches:* `scripts/dots.js`, `stylesheets/dots.css`, `/sandbox/dots/`, later `scripts/ring-status.js`, `scripts/tdc-controls.js`, `scripts/nav.js` and the league pages

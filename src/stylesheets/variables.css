@@ -93,6 +93,14 @@
   --ring-spin: 2;                 /* how fast the dots go round, times the demo's speed */
   --ring-draw: 0.4s;              /* drawing an icon, stroke by stroke */
   --ring-fade: 0.1s;              /* the dots fading once drawn */
+  /* The dots (dots.css, scripts/dots.js): the loading and feedback motion */
+  --dots-ring-margin: 6px;        /* a fake ring's gap round an element's box */
+  --dots-ring-cap: none;          /* a fake ring's largest radius (e.g. 48px), or none */
+  --dots-fake-stroke: 1.5px;      /* the dots' size on a fake ring round an element with no border */
+  --dots-fade: 1;                 /* how fast the ring race ends and the dots fade, times the prototype's */
+  --dots-busy-dim: 0.1;           /* how faint a target is while it waits */
+  --dots-dim: 0.2s;               /* a target dimming as it goes busy */
+  --dots-reveal: 0.25s;           /* a target coming back once its call is done */
   /* The native calendar icon on a date-and-time field (global.css) */
   --icon-calendar: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E");
 
