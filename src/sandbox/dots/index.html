@@ -4,15 +4,14 @@ title: Dots Sandbox
 description: "A scratch page for the dots, the site's loading and feedback motion. Not part of the product."
 extraStyles:
   - /stylesheets/sandbox.css
-  - /stylesheets/dots.css
 extraScripts:
-  - /scripts/dots.js
   - /scripts/sandbox-dots.js
 ---
 {% comment %}
 	The dots' sandbox (docs/design/dots-motion-spec.md §13): real site
 	components that pretend to call the network, so the motion can be studied
-	at any speed. Nothing here touches the database.
+	at any speed. Nothing here touches the database. dots.js and dots.css are
+	on every page since step 7 (layout.html).
 
 	Steps 1 to 6 of the spec's build order: travel, tracing, the ring race,
 	the fade, the controls, the 18 solo and 16 group moves, the page-load

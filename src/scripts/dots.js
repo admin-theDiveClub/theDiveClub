@@ -5,7 +5,7 @@
 // how it should feel is docs/design/dots-prototype.html, and the moves are
 // ported from it.
 //
-//   TDCDots.serve(el, promise, { reveal, trace, status, timeout })
+//   TDCDots.serve(el, promise, { reveal, trace, status, timeout, follow, leaves })
 //     el       the target. A ring icon (anything holding a .tdc-ring) uses its
 //              real ring; anything else gets a fake ring from its shorter side
 //     promise  the call; when it settles, the target is revealed
@@ -20,6 +20,13 @@
 //              ("TDC (Error): …"); without one the dots show it on their own
 //              line at the foot of the screen
 //     timeout  how long the call may go unanswered (ms, HANG if not given)
+//     follow   for a page that redraws while the call is out (step 7): called
+//              when the target has left the page, it returns the element now
+//              standing in its place (a fixture's button drawn again), and
+//              the dots carry on there. Null if there is none
+//     leaves   true when the call itself may take the target off the page (a
+//              fixture removed): it is let go without a failure, and the
+//              dots finish where it was
 //   Returns the promise. A target already busy is not served twice: the dots
 //   wait for both calls. Serving a new target (a tap) takes the dots there at
 //   once; the old one restores itself, without them, when its own call is back.
@@ -65,9 +72,10 @@
 // leaves the page is cleaned at once; and if the dots themselves throw, they
 // hide and every target is put right (recover).
 //
-// Built so far (spec §16, steps 1 to 6): travel, the waiting moves (18 solo,
-// 16 group: SOLO and GROUP), tracing, the ring race, the fade, the page-load
-// queue, reduced motion and the failures.
+// Built (spec §16, steps 1 to 7): travel, the waiting moves (18 solo, 16
+// group: SOLO and GROUP), tracing, the ring race, the fade, the page-load
+// queue, reduced motion and the failures; and on the site, the controls'
+// saves (tdc-controls.js, TDC.writer), the nav and the fixtures page.
 //
 // Needs: tdc.js (TDC.error). Its look is stylesheets/dots.css; its sizes and
 // times are tokens in variables.css (--dots-*).
@@ -96,9 +104,10 @@ const TDCDots = (() => {
 	// across, eased in and out, in SWOOP_MS plus SWOOP_PER_PX for each px of
 	// the gap, lifting at most SWOOP on the way (the sphere's scale: 0.15 is
 	// 1.17 times its size). A pen moving more than JUMP px in a frame has
-	// jumped.
+	// jumped, and so has one passing from one line to the next where they are
+	// more than JUMP_MIN px apart.
 	const TRACE_MS = { icon: 1300, tab: 1500, number: 1500 }, TRACE_PER_DIGIT = 500;
-	const DIVE = 150, SWOOP = 0.15, SWOOP_MS = 90, SWOOP_PER_PX = 4, SWOOP_MAX = 380, JUMP = 6;
+	const DIVE = 150, SWOOP = 0.15, SWOOP_MS = 90, SWOOP_PER_PX = 4, SWOOP_MAX = 380, JUMP = 6, JUMP_MIN = 0.75;
 	// How long the dots race on the ring once it is fully back and they are
 	// all on it, before they fade (ms, at --dots-fade 1): as in step 1, where
 	// the race ran 0.75 s from the reveal and the ring took 0.25 s of it.
@@ -981,11 +990,15 @@ const TDCDots = (() => {
 		const face = el.matches('.tdc-ring') ? el : el.querySelector('.tdc-ring');
 		return face && face.querySelector('circle.ring');
 	}
-	// A target that has left the page keeps where it was last seen. A ring
-	// icon the page has drawn again (a new SVG in the same target) is
-	// measured by its new ring.
+	// A target that has left the page keeps where it was last seen, and so
+	// does one with no size (hidden by the page's redraw: a box measures
+	// 0 by 0 at the top left, and the dots would fly there). A ring icon the
+	// page has drawn again (a new SVG in the same target) is measured by its
+	// new ring.
 	function measure(t) {
 		if (!t.el.isConnected) return;
+		if (t.mf === frameNo && t.cx !== undefined) return;   // once a frame
+		t.mf = frameNo;
 		if (t.circle && !t.circle.isConnected) {
 			const c = ringCircle(t.el);
 			if (!c) return;
@@ -993,17 +1006,50 @@ const TDCDots = (() => {
 		}
 		if (t.circle) {
 			const svg = t.circle.ownerSVGElement, box = svg.getBoundingClientRect();
+			if (!box.width && !box.height) return;
 			const k = box.width / (svg.viewBox.baseVal.width || 100);
-			t.cx = box.left + t.circle.cx.baseVal.value * k;
-			t.cy = box.top + t.circle.cy.baseVal.value * k;
-			t.r = t.circle.r.baseVal.value * k;
+			settle(t, box.left + t.circle.cx.baseVal.value * k, box.top + t.circle.cy.baseVal.value * k, t.circle.r.baseVal.value * k);
 			t.sw = (parseFloat(getComputedStyle(t.circle).strokeWidth) || 5) * k;
 		} else {
 			const q = t.el.getBoundingClientRect();
-			t.cx = q.left + q.width / 2;
-			t.cy = q.top + q.height / 2;
-			t.r = Math.min(q.width, q.height) / 2 + T.margin;
+			if (!q.width && !q.height) return;
+			settle(t, q.left + q.width / 2, q.top + q.height / 2, Math.min(q.width, q.height) / 2 + T.margin);
 		}
+	}
+	// Where the dots put a target's ring (step 7). It follows the page
+	// exactly as it scrolls, and as the target moves smoothly (a switch's
+	// knob sliding); but a target that jumps on the page (a section growing
+	// as its content arrives, moving its middle 185px in a frame, or the
+	// button the dots follow to after a redraw standing elsewhere) would
+	// snap the dots with it. So a jump, a change in its speed of more than
+	// SHIFT px in one frame both on the screen and on the page, is eased out
+	// over SHIFT_MS: the ring starts where it was and glides to where it now
+	// is. Both, because a scroll jumps an element on the screen but not on
+	// the page, and the nav's buttons (fixed to the screen) the other way.
+	const SHIFT = 3, SHIFT_MS = 350;
+	let frameNo = 0;
+	function settle(t, cx, cy, r) {
+		const now = performance.now(), px = cx + scrollX, py = cy + scrollY;
+		if (t.px !== undefined) {
+			const vx = px - t.px, vy = py - t.py, vr = r - t.pr, sx = cx - t.sx, sy = cy - t.sy;
+			const onPage = Math.hypot(vx - t.vx, vy - t.vy), onScreen = Math.hypot(sx - t.svx, sy - t.svy);
+			if ((onPage > SHIFT && onScreen > SHIFT) || Math.abs(vr - t.vr) > SHIFT) {
+				const g = shiftOf(t, now);
+				t.shift = { x: -sx + g.x, y: -sy + g.y, r: -vr + g.r, t0: now };
+				t.vx = t.vy = t.vr = t.svx = t.svy = 0;
+			} else { t.vx = vx; t.vy = vy; t.vr = vr; t.svx = sx; t.svy = sy; }
+		} else { t.vx = t.vy = t.vr = t.svx = t.svy = 0; }
+		t.px = px; t.py = py; t.pr = r; t.sx = cx; t.sy = cy;
+		const g = shiftOf(t, now);
+		t.cx = cx + g.x; t.cy = cy + g.y; t.r = Math.max(1, r + g.r);
+	}
+	function shiftOf(t, now) {
+		const s = t.shift;
+		if (!s) return { x: 0, y: 0, r: 0 };
+		const u = (now - s.t0) / SHIFT_MS;
+		if (u >= 1) { t.shift = null; return { x: 0, y: 0, r: 0 }; }
+		const e = 1 - ease(u);
+		return { x: s.x * e, y: s.y * e, r: s.r * e };
 	}
 	// The colour of the line the dots will be on (UV, 26 Oct): the ring's, or a
 	// fake ring's outline, its fill, else its text. Read before the busy state
@@ -1021,13 +1067,27 @@ const TDCDots = (() => {
 		t.colour = lineColour(t);
 		if (!t.circle) t.sw = parseFloat(getComputedStyle(el).borderTopWidth) || T.fakeStroke;
 		measure(t);
+		if (t.cx === undefined) throw new Error('it has no size on the page (hidden?)');
+		ringMark(t);
 		return t;
 	}
+	// A ring icon's own look while it is served (its ring hidden, its icon
+	// dimmed) is for the target that is the ring icon, never for a section
+	// that happens to hold some (a planner full of fixture buttons, loading
+	// with the page): dots.css keys it on data-dots-ring.
+	function ringMark(t) {
+		if (t.circle) t.el.dataset.dotsRing = '';
+		else delete t.el.dataset.dotsRing;
+	}
 	// How long the target takes to come back: its own transition (spec §3,
-	// stage 7), read from the element that fades.
+	// stage 7), read from the element that fades. Off the page there is
+	// none (a computed style there is empty, which read as NaN and the dots
+	// never faded).
 	function revealMs(t) {
-		const cs = getComputedStyle(t.circle || t.el);
-		const ms = (s) => s.split(',').map((v) => parseFloat(v) * (v.includes('ms') ? 1 : 1000));
+		const node = t.circle && t.circle.isConnected ? t.circle : t.el;
+		if (!node.isConnected) return 0;
+		const cs = getComputedStyle(node);
+		const ms = (s) => s.split(',').map((v) => parseFloat(v) * (v.includes('ms') ? 1 : 1000) || 0);
 		const dur = ms(cs.transitionDuration), del = ms(cs.transitionDelay);
 		return Math.max(0, ...dur.map((d, i) => d + (del[i] || 0)));
 	}
@@ -1054,6 +1114,7 @@ const TDCDots = (() => {
 		delete el.dataset.dots;
 		delete el.dataset.dotsTrace;
 		delete el.dataset.dotsCalm;
+		delete el.dataset.dotsRing;
 		el.style.removeProperty('--dots-lines');
 	}
 	// The target comes back. data-dots="revealing" carries its transition
@@ -1070,6 +1131,8 @@ const TDCDots = (() => {
 		if (mine) records.delete(el);
 		if (!t.hung) reveal(t);
 		if (t.gone || (!mine && records.has(el))) { if (t.lines) t.lines.remove(); return 0; }
+		// Taken off the page by its own call (leaves): nothing to bring back.
+		if (!el.isConnected) { if (t.lines) t.lines.remove(); clearLook(el); return 0; }
 		const from = calmFrom(t);
 		delete el.dataset.dotsCalm;
 		el.dataset.dots = 'revealing';
@@ -1094,7 +1157,51 @@ const TDCDots = (() => {
 		if (t.settled) t.restored = true;   // mid-trace: its result is already in
 	}
 	function sweep() {
-		for (const t of records.values()) if (!t.el.isConnected) gone(t);
+		for (const t of [...records.values()]) if (!present(t)) gone(t);
+	}
+	// Whether a target is still on the page (step 7). Pages read everything
+	// again after a save (CLAUDE.md idea 6) and many draw it all afresh,
+	// so the element the dots are on can be replaced while its call is out.
+	// The page's follow() names the element now in its place, and the dots
+	// carry on there; leaves says its own call may take it away (a fixture
+	// removed), and it is let go quietly, the dots finishing where it was.
+	// Once its result is shown it is not followed: leaving then is no
+	// failure (step 6).
+	function present(t) {
+		if (t.el.isConnected || t.left) return true;
+		if (t.restored) return false;
+		if (t.opts.follow) {
+			let n = null;
+			try { n = t.opts.follow(); }
+			catch (err) { console.error(`[${AREA}] ${nameOf(t.el)}: the page could not say what took its place.`, err); }
+			if (n && n !== t.el && n.isConnected && !records.has(n)) { moveTo(t, n); return true; }
+		}
+		if (t.opts.leaves) { t.left = true; return true; }
+		return false;
+	}
+	// The record moves to the element now standing for its target, with the
+	// look the dots had put on the old one. An icon the page draws in on the
+	// new element is shown as it stands, under the dots.
+	function moveTo(t, n) {
+		const old = t.el, look = { dots: old.dataset.dots, trace: old.dataset.dotsTrace, calm: 'dotsCalm' in old.dataset };
+		const lines = old.style.getPropertyValue('--dots-lines');
+		if (records.get(old) === t) records.delete(old);
+		clearLook(old);
+		t.el = n;
+		records.set(n, t);
+		t.circle = ringCircle(n);
+		if (!t.opts.trace && !t.lines) t.kind = t.circle ? 'icon' : 'none';
+		if (!t.circle) t.sw = parseFloat(getComputedStyle(n).borderTopWidth) || T.fakeStroke;
+		ringMark(t);
+		if (look.dots) n.dataset.dots = look.dots;
+		if (look.trace) n.dataset.dotsTrace = look.trace;
+		if (look.calm) n.dataset.dotsCalm = '';
+		if (lines) n.style.setProperty('--dots-lines', lines);
+		for (const m of n.querySelectorAll('.tdc-ring .mark')) for (const a of m.getAnimations()) a.finish();
+		// Measured afresh: if the new element stands elsewhere, the ring
+		// glides there from the old one's place (settle).
+		t.mf = -1;
+		measure(t);
 	}
 
 	// ─── Lines to trace ───
@@ -1137,7 +1244,13 @@ const TDCDots = (() => {
 			let lo = 0, hi = c.length - 1;
 			while (hi - lo > 1) { const m = (lo + hi) >> 1; if (c[m] <= d) lo = m; else hi = m; }
 			const a = g.pts[lo], b = g.pts[hi], f = c[hi] > c[lo] ? (d - c[lo]) / (c[hi] - c[lo]) : 0;
-			return { x: mix(a[0], b[0], f), y: mix(a[1], b[1], f), sw: mix(a[2], b[2], f) };
+			return { x: mix(a[0], b[0], f), y: mix(a[1], b[1], f), sw: mix(a[2], b[2], f), j };
+		}
+		// How far apart the lines are where line i ends and line j begins (in
+		// the lines' own units): the gap a pen jumps going from one to the other.
+		gap(i, j) {
+			const a = this.segs[i].pts[this.segs[i].pts.length - 1], b = this.segs[j].pts[0];
+			return Math.hypot(b[0] - a[0], b[1] - a[1]);
 		}
 		// The lines fading in as a whole while the dots trace (0 to 1).
 		show(f) {
@@ -1306,15 +1419,21 @@ const TDCDots = (() => {
 		if (t.kind === 'icon') {
 			if (!t.circle) { fail(t, `${nameOf(el)} was to have its icon traced, but it has no ring icon.`, el); return null; }
 			const svg = t.circle.ownerSVGElement, marks = [...svg.querySelectorAll('.mark.on')];
+			// A ring showing nothing (a ring unticked, a three-way switch in the
+			// middle) is a state of its own, with nothing to trace: the dots race.
+			const face = t.circle.closest('.tdc-ring');
+			if (!marks.length && face && face.dataset.state === 'empty') return null;
 			if (!marks.length) { fail(t, `${nameOf(el)}: its icon has no lines to trace.`, el); return null; }
+			// Placed by the ring as it is now, which a page's redraw may have
+			// moved to a new element (follow).
 			return new Lines(t, marks.map((m) => pointsOf(m, parseFloat(getComputedStyle(m).strokeWidth) || 10, 3)), rgbOf(getComputedStyle(marks[0]).stroke), () => {
-				const box = svg.getBoundingClientRect();
-				return { ox: box.left, oy: box.top, k: box.width / (svg.viewBox.baseVal.width || 100) };
+				const now = t.circle.ownerSVGElement || svg, box = now.getBoundingClientRect();
+				return { ox: box.left, oy: box.top, k: box.width / (now.viewBox.baseVal.width || 100) };
 			}, null);
 		}
 		const cs = getComputedStyle(el);
 		const place = () => {
-			const q = el.getBoundingClientRect();
+			const q = t.el.getBoundingClientRect();
 			return { ox: q.left, oy: q.top, k: 1 };
 		};
 		if (t.kind === 'number') {
@@ -1670,8 +1789,13 @@ const TDCDots = (() => {
 			L.where();
 			return this.pens.map((p, i) => {
 				const q = L.at(p.off + p.span * sm(cl((now - this.t0) / p.dur)));
-				// The pen jumped: swoop from where the dot is.
-				if (p.q && Math.hypot(q.x - p.q.x, q.y - p.q.y) * L.k > JUMP) {
+				// The pen jumped: swoop from where the dot is. It has jumped when
+				// it passed from one line to another across a gap (or round from
+				// the end to the start), however small the icon: measured by
+				// distance alone (JUMP), a tick in a table's 28px ring wrapped
+				// 4.9px in one frame without a swoop (step 7).
+				const crossed = p.q && q.j !== p.q.j && L.gap(p.q.j, q.j) * L.k > JUMP_MIN;
+				if (p.q && (crossed || Math.hypot(q.x - p.q.x, q.y - p.q.y) * L.k > JUMP)) {
 					const gap = Math.hypot(q.x - p.x, q.y - p.y) * L.k;
 					p.hop = { x: p.x, y: p.y, sw: p.sw, t0: now, dur: Math.min(SWOOP_MAX, SWOOP_MS + gap * SWOOP_PER_PX) };
 				}
@@ -1782,7 +1906,7 @@ const TDCDots = (() => {
 		const finish = () => {
 			if (--t.pending) return;
 			t.settled = true;
-			if (!t.el.isConnected) gone(t);
+			if (!present(t)) gone(t);
 			if (t !== cur) restore(t);   // abandoned: it comes back without the dots
 			else wake();
 		};
@@ -1911,13 +2035,14 @@ const TDCDots = (() => {
 	function tick(now) {
 		const dt = Math.min(50, now - last) / 16.67;
 		last = now;
+		frameNo++;
 		const time = now / 1000;
 
 		// The target left the page before its result was shown (mid-flight,
 		// waiting or mid-trace): said so (gone), and the dots fade where they
 		// are. Once its result is shown, leaving is no failure (a page
 		// redrawing after a save): they race and fade where it was.
-		if (cur && !cur.el.isConnected && (!cur.restored || cur.gone)) {
+		if (cur && !present(cur) && (!cur.restored || cur.gone)) {
 			gone(cur);
 			cur = null; tr = null;
 			phase = 'fade'; fading = true; aT = 0;
@@ -1954,7 +2079,7 @@ const TDCDots = (() => {
 			// Back before the dots reached it: it is already on the page. A
 			// call that failed or hung has nothing to trace: it comes back
 			// plainly as they race.
-			const lines = cur.restored || cur.failed || cur.hung ? null : startTrace(cur);
+			const lines = cur.restored || cur.failed || cur.hung || cur.left ? null : startTrace(cur);
 			S.quiet(now);
 			if (lines) {
 				// Diving in: the trace starts now and each dot slides into it.

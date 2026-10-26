@@ -36,20 +36,12 @@
 
 	// ─── Ring icons (UV, 24 Oct) ──────────────────────────────────────
 	// Every button on the bar is a ring icon (ring-status.js, UV's design):
-	// each draws itself in as the page opens, the menu turns into a cross and
-	// back, and a press that waits on something (the tray reading, sign-in,
-	// a reload) orbits until it is done. The bell and reload are drawn when
-	// they are first shown, since nothing measures a hidden icon reliably.
-	const lessMotion = matchMedia('(prefers-reduced-motion: reduce)');
-	const tokenSecs = (name, fallback) => {
-		const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-		const n = parseFloat(v);
-		return isNaN(n) ? fallback : (v.endsWith('ms') ? n / 1000 : n);
-	};
-	const ringOpts = (icon) => ({
-		draw: tokenSecs('--ring-draw', 0.4), fade: tokenSecs('--ring-fade', 0.1),
-		lead: TDCRing.leadOf(icon), spin: tokenSecs('--ring-spin', 1) || 1
-	});
+	// each draws itself in as the page opens, and the menu turns into a cross
+	// and back, with no dots: nothing is waited for. A press that waits on
+	// something (the tray reading, sign-in, a reload) is served by the site's
+	// one set of dots (scripts/dots.js, 26 Oct) until it is done; they trace
+	// its icon as they finish. The bell and reload are drawn when they are
+	// first shown, since nothing measures a hidden icon reliably.
 	const rings = {};
 
 	function makeRing(name, faceId, icons, labels) {
@@ -59,16 +51,13 @@
 			TDC.error(AREA, 'ring-status.js is not loaded, so the nav has no icons.');
 			return null;
 		}
-		face.innerHTML = TDCRing.svg(6);
+		face.innerHTML = TDCRing.svg();
 		try {
 			const ring = new TDCRing.RingStatus(face, {
 				icons,
 				labels: Object.assign({ empty: ' ', loading: 'Working' }, labels),
-				initial: lessMotion.matches ? icons[0] : 'empty'
+				initial: 'empty'
 			});
-			// Whatever was asked for last is drawn once the current drawing ends.
-			ring.want = icons[0];
-			ring.onDone = () => { if (ring.state !== ring.want) drawTo(ring, ring.want); };
 			rings[name] = ring;
 			drawTo(ring, icons[0]);
 			return ring;
@@ -78,22 +67,31 @@
 		}
 	}
 
-	// A short orbit, then every dot leaves at once and draws the icon.
+	// The icon drawn in, stroke by stroke (at once with less motion).
 	function drawTo(ring, icon) {
-		if (!ring) return;
-		ring.want = icon;
-		if (lessMotion.matches) { if (!ring.busy) ring.setState(icon); return; }
-		if (ring.busy) return;   // onDone draws the latest wish
-		ring.load(tokenSecs('--control-reveal', 0.35), ringOpts(icon));
-		ring.resolve(icon, { together: true });
+		if (ring) ring.drawTo(icon);
 	}
 
-	// Orbit for as long as `until` takes, then draw.
-	function orbitUntil(ring, until) {
-		if (!ring || lessMotion.matches || ring.busy) return;
-		ring.load(tokenSecs('--ring-load', 1), ringOpts(ring.want));
-		Promise.resolve(until).finally(() => ring.resolve(ring.want, { now: true }));
+	// The dots serve the button for as long as `until` takes.
+	function serveUntil(button, ring, until, opts) {
+		if (!ring) return;
+		if (typeof TDCDots === 'undefined') {
+			TDC.error(AREA, 'dots.js is not loaded, so the nav cannot show that it is working.');
+			return;
+		}
+		if (button.dataset.dots === 'busy') return;
+		ring.say('loading');
+		TDCDots.serve(button, Promise.resolve(until).finally(() => ring.say(ring.state)), opts);
 	}
+
+	// Leaving the page (sign-in, a reload): the dots stay until it has gone
+	// (UV, 26 Oct), as long as a page might take to arrive (LEAVE_MS) before
+	// it counts as hung. Back on it from the browser's history (the page
+	// kept whole), the call is over: the dots trace the icon and leave.
+	const LEAVE_MS = 60000;
+	const pageGoes = () => new Promise((done) => {
+		window.addEventListener('pageshow', (e) => { if (e.persisted) done(); });
+	});
 
 	makeRing('menu', 'nav-menu-ring', ['menu', 'cross'], { menu: 'Menu', cross: 'Close the menu' });
 	makeRing('user', 'nav-profile-icon', ['user'], { user: 'Account' });
@@ -112,8 +110,8 @@
 		if (loggedIn) {
 			profileDropdown.classList.toggle('open');
 		} else {
-			// Orbits until the sign-in page takes over.
-			orbitUntil(rings.user, new Promise(() => {}));
+			// The dots stay until the sign-in page takes over.
+			serveUntil(profileBtn, rings.user, pageGoes(), { timeout: LEAVE_MS });
 			const back = encodeURIComponent(location.pathname + location.search);
 			window.location.href = '/accounts/?next=' + back;
 		}
@@ -341,7 +339,7 @@
 	if (notifyBtn && notifyTray) {
 		notifyBtn.addEventListener('click', () => {
 			if (notifyTray.classList.contains('open')) closeNotifications();
-			else orbitUntil(rings.bell, openNotifications());   // orbits while the tray reads
+			else serveUntil(notifyBtn, rings.bell, openNotifications());   // the dots while the tray reads
 		});
 
 		notifyClearAll.addEventListener('click', async () => {
@@ -508,8 +506,8 @@
 
 		reloadBtn.addEventListener('click', async () => {
 			reloadBtn.disabled = true;
-			// Orbits until the page goes.
-			orbitUntil(rings.reload, new Promise(() => {}));
+			// The dots stay until the page goes.
+			serveUntil(reloadBtn, rings.reload, pageGoes(), { timeout: LEAVE_MS });
 
 			// Ask the service worker to look for a new version first, so this
 			// also gets a stale install onto the current deploy rather than

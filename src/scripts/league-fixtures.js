@@ -36,7 +36,7 @@
 		firstRound: el('first-round'), firstHour: el('first-hour'), firstMinute: el('first-minute'),
 		daysBetween: el('days-between'), perRound: el('per-round'), tablesPer: el('tables-per'), tablesAvailable: el('tables-available'),
 		generateBtn: el('generate-btn'), clearBtn: el('clear-btn'),
-		cal: el('cal'), undated: el('undated'),
+		planner: el('planner'), cal: el('cal'), undated: el('undated'),
 		dayView: el('day-view'), dayActions: el('day-actions'), dayMove: el('day-move'),
 		dayTitle: el('day-title'), dayTable: el('day-table'), dayEmpty: el('day-empty'),
 		addPanel: el('add-panel'), addTo: el('add-to'),
@@ -708,9 +708,8 @@
 	// ─── Icon buttons ───
 	// A round button with a ring icon: the icon draws itself in the first time
 	// the button appears, and a redraw of the page leaves one already showing
-	// as it is (only what is new moves). Pressing it sets its dots orbiting
-	// until the page is read again. The ring is made once the button is on the
-	// page (wakeIcons), since the engine measures the icon's strokes there.
+	// as it is (only what is new moves). The ring is made once the button is
+	// on the page (wakeIcons).
 	const iconsSeen = new Set();
 	function iconButton(icon, label, tone, data, key) {
 		const b = node('button', 'fx-icon' + (tone ? ' fx-icon-' + tone : ''));
@@ -719,16 +718,10 @@
 		b.setAttribute('aria-label', label);
 		Object.assign(b.dataset, data, { icon, iconKey: key });
 		const face = node('span', 'tdc-ring');
-		face.innerHTML = TDCRing.svg(6);
+		face.innerHTML = TDCRing.svg();
 		b.append(face);
 		return b;
 	}
-
-	const tokenSecs = (name, fallback) => {
-		const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-		const n = parseFloat(v);
-		return isNaN(n) ? fallback : (v.endsWith('ms') ? n / 1000 : n);
-	};
 
 	function wakeIcons(root) {
 		for (const b of root.querySelectorAll('.fx-icon:not([data-awake])')) {
@@ -741,29 +734,34 @@
 				b.tdcRing = new TDCRing.RingStatus(face, {
 					icons: [icon],
 					labels: { [icon]: b.getAttribute('aria-label'), empty: b.getAttribute('aria-label'), loading: 'Working' },
-					initial: seen || lessMotion.matches ? icon : 'empty'
+					initial: seen ? icon : 'empty'
 				});
 			} catch (err) {
 				TDC.error(AREA, 'an icon could not be drawn: ' + icon, err);
 				continue;
 			}
-			if (seen || lessMotion.matches) continue;
-			b.tdcRing.load(tokenSecs('--control-reveal', 0.35), {
-				draw: tokenSecs('--ring-draw', 0.4), fade: tokenSecs('--ring-fade', 0.1),
-				lead: TDCRing.leadOf(icon), spin: tokenSecs('--ring-spin', 1) || 1
-			});
-			b.tdcRing.resolve(icon, { together: true });
+			if (!seen) b.tdcRing.drawTo(icon);
 		}
 	}
 
-	// A pressed button orbits while its write is out; the read afterwards
-	// redraws the page and puts a settled button in its place.
-	function working(b) {
-		if (!b.tdcRing || b.tdcRing.busy || lessMotion.matches) return;
-		b.tdcRing.load(tokenSecs('--ring-load', 1), {
-			draw: tokenSecs('--ring-draw', 0.4), fade: tokenSecs('--ring-fade', 0.1),
-			lead: TDCRing.leadOf(b.dataset.icon), spin: tokenSecs('--ring-spin', 1) || 1
-		});
+	// A pressed button that saves is served by the site's one set of dots
+	// (scripts/dots.js, TDC.writer's dots) until the save and the re-read are
+	// back. The re-read draws the page again and throws the button away, so
+	// the dots follow to the button now standing in its place (UV, 26 Oct):
+	// the same one if it is still there, else that fixture's first (Start
+	// becomes the card's arrow, Take off gives back Start), and trace its
+	// icon there. With none left (the fixture removed, or the night emptied)
+	// they finish where it was.
+	function dotsFor(b) {
+		const scope = b.dataset.night
+			? '.fx-icon[data-night]'
+			: `.fx-icon[data-fixture="${CSS.escape(b.dataset.fixture)}"][data-where="${CSS.escape(b.dataset.where)}"]`;
+		const same = b.dataset.night ? `[data-night="${CSS.escape(b.dataset.night)}"]` : `[data-action="${CSS.escape(b.dataset.action)}"]`;
+		return {
+			dots: b,
+			follow: () => document.querySelector(scope + same) || (b.dataset.night ? null : document.querySelector(scope)),
+			leaves: true
+		};
 	}
 
 	const fixtureName = (f) => f.is_bye ? f.home_name + '’s bye' : f.home_name + ' : ' + f.away_name;
@@ -1162,10 +1160,9 @@
 				const todo = rows.filter((f) => !f.is_bye && !f.match_id);
 				if (!todo.length) return;
 				if (!confirm(`Start ${plural(todo.length, 'match')} on this night?`)) return;
-				working(button);
 				for (const f of todo) {
 					write('Starting', () => supabaseClient.rpc('tdc_create_league_match', { p_fixture_id: f.fixture_id }),
-						() => 'Matches created. Open a card to set its lineups.', { single: 'start-' + f.fixture_id });
+						() => 'Matches created. Open a card to set its lineups.', Object.assign({ single: 'start-' + f.fixture_id }, dotsFor(button)));
 				}
 				return;
 			}
@@ -1175,9 +1172,8 @@
 				if (!todo.length) return;
 				const note = kept ? `\n\n${plural(kept, 'fixture')} with a match ${kept === 1 ? 'stays' : 'stay'}: take the match off first.` : '';
 				if (!confirm(`Remove ${plural(todo.length, 'fixture')} from the schedule?` + note)) return;
-				working(button);
 				for (const f of todo) {
-					write('Removing', () => supabaseClient.rpc('tdc_remove_league_fixture', { p_fixture_id: f.fixture_id }));
+					write('Removing', () => supabaseClient.rpc('tdc_remove_league_fixture', { p_fixture_id: f.fixture_id }), null, dotsFor(button));
 				}
 				return;
 			}
@@ -1227,20 +1223,17 @@
 				openCard(f.match_id);
 				return;
 			case 'start':
-				working(button);
 				// Said plainly: the lineups come next, on the card.
 				write('Starting', () => supabaseClient.rpc('tdc_create_league_match', { p_fixture_id: id }),
-					() => 'Match created. Open the card to set the lineups.', { single: 'start-' + id });
+					() => 'Match created. Open the card to set the lineups.', Object.assign({ single: 'start-' + id }, dotsFor(button)));
 				return;
 			case 'detach':
 				if (!confirm('Take the match off this fixture?\n\nThe match and any frames on it are kept — it just stops being part of the schedule.')) return;
-				working(button);
-				write('Taking it off', () => supabaseClient.rpc('tdc_detach_league_match', { p_fixture_id: id }));
+				write('Taking it off', () => supabaseClient.rpc('tdc_detach_league_match', { p_fixture_id: id }), null, dotsFor(button));
 				return;
 			case 'remove':
 				if (!confirm(`Remove ${fixtureName(f)} from the schedule?`)) return;
-				working(button);
-				write('Removing', () => supabaseClient.rpc('tdc_remove_league_fixture', { p_fixture_id: id }));
+				write('Removing', () => supabaseClient.rpc('tdc_remove_league_fixture', { p_fixture_id: id }), null, dotsFor(button));
 				return;
 			case 'move': {
 				const key = where + ':' + id;
@@ -1338,8 +1331,17 @@
 		}
 
 
-		if (!await loadInfo()) return;
-		showTimesHint();
-		await loadAll();
+		// The page assembling itself (the dots' page-load queue, UV 26 Oct):
+		// the heading while the season is read, then the planner while the
+		// fixtures are. Each dims after a moment and comes in when it is
+		// back, the dots going to whichever is still loading. A failure is
+		// the page's own to report, on its status line, as it always was.
+		const info = loadInfo();
+		const all = info.then((ok) => ok && (showTimesHint(), loadAll()));
+		if (typeof TDCDots !== 'undefined') {
+			TDCDots.track(els.name, info, { status: els.status });
+			TDCDots.track(els.planner, all, { status: els.status });
+		}
+		await all;
 	})();
 })();

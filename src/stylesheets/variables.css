@@ -89,10 +89,7 @@
   --nav-ring-size: 2.4rem;        /* the ring icons on the nav bar: menu, reload, bell, account */
   --tri-height: 2.4rem;           /* a three-way switch: left, nobody, right (the team card's L and W) */
   --tri-width: 6rem;
-  --ring-load: 1s;                /* the orbit when nothing is saved; a save orbits exactly as long as its call */
-  --ring-spin: 2;                 /* how fast the dots go round, times the demo's speed */
   --ring-draw: 0.4s;              /* drawing an icon, stroke by stroke */
-  --ring-fade: 0.1s;              /* the dots fading once drawn */
   /* The dots (dots.css, scripts/dots.js): the loading and feedback motion */
   --dots-ring-margin: 6px;        /* a fake ring's gap beyond an element's shorter side */
   --dots-fake-stroke: 1.5px;      /* the dots' size on a fake ring round an element with no border */

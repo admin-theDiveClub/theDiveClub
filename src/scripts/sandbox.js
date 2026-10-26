@@ -89,10 +89,7 @@
 			{ name: '--nav-ring-size',    label: 'Nav icons',        kind: 'size', unit: 'rem', min: 1.25, max: 3, step: 0.05, use: 'How big the ring icons on the nav bar are: menu, reload, the bell and the account (the picture takes the same size)' },
 			{ name: '--tri-height',       label: 'Three-way height', kind: 'size', unit: 'rem', min: 1,  max: 3,   step: 0.05, use: 'How tall a three-way switch is (left, nobody, right: the team card\'s L and W)' },
 			{ name: '--tri-width',        label: 'Three-way width',  kind: 'size', unit: 'rem', min: 3,  max: 8,   step: 0.05, use: 'How wide a three-way switch is; longer than a switch so the three stops read as three' },
-			{ name: '--ring-load',        label: 'Load (nothing to save)', kind: 'size', unit: 's', min: 0, max: 3, step: 0.1, use: 'How long the dots orbit when a box is only filling a form. A box that saves orbits exactly as long as its call, then draws from wherever the dots are' },
-			{ name: '--ring-spin',        label: 'Spin',           kind: 'size', unit: '',    min: 0.5,  max: 4,   step: 0.25, use: 'How fast the dots go round while loading, times the speed of UV\'s demo' },
 			{ name: '--ring-draw',        label: 'Draw',           kind: 'size', unit: 's',   min: 0.2,  max: 2,   step: 0.1,  use: 'How long an icon takes to draw, stroke by stroke: the ring\'s tick and cross, and the chevrons, calendar and cross of the other controls' },
-			{ name: '--ring-fade',        label: 'Fade',           kind: 'size', unit: 's',   min: 0.1,  max: 1.5, step: 0.1,  use: 'How long the dots take to fade once the icon is drawn' }
 		]],
 		['Dots', [
 			{ name: '--dots-ring-margin', label: 'Ring margin',    kind: 'size', unit: 'px', min: 0,    max: 24,   step: 1,     use: 'A fake ring\'s gap beyond an element\'s shorter side (anything without a ring of its own: buttons, numbers, tabs). Watch it on /sandbox/dots/' },

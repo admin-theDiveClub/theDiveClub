@@ -1405,7 +1405,9 @@
 		b.textContent = 'Match';
 		b.setAttribute('aria-label', 'Match settings');
 		b.addEventListener('click', openPanel);
-		nav.insertBefore(b, profile);
+		// Into the profile's own parent (.nav-right since 24 Oct), not the
+		// bar: insertBefore needs a reference node that is a direct child.
+		profile.parentNode.insertBefore(b, profile);
 	}
 
 	// ─────────────────────────────────────────────────────────────────

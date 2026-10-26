@@ -45,22 +45,24 @@
 
 /* ── A ring icon ─────────────────────────────────────────────────────
    Its ring hides and its icon dims while it waits; both come back in
-   --dots-reveal, which the script reads to know when the ring is fully in. */
-[data-dots="busy"] .tdc-ring .ring { opacity: 0; transition: opacity var(--dots-dim) ease; }
-[data-dots="busy"] .tdc-ring .mark { opacity: var(--dots-busy-dim); transition: opacity var(--dots-dim) ease, stroke-dashoffset 0.35s ease; }
-[data-dots="revealing"] .tdc-ring .ring { transition: opacity var(--dots-reveal) ease; }
-[data-dots="revealing"] .tdc-ring .mark { transition: opacity var(--dots-reveal) ease, stroke-dashoffset 0.35s ease; }
+   --dots-reveal, which the script reads to know when the ring is fully in.
+   data-dots-ring is set by the script on a target that is a ring icon (a
+   button, a switch, a ring), so a section that only holds some (a planner
+   of fixture buttons loading with the page) dims as a whole instead. */
+[data-dots="busy"][data-dots-ring] .tdc-ring .ring { opacity: 0; transition: opacity var(--dots-dim) ease; }
+[data-dots="busy"][data-dots-ring] .tdc-ring .mark { opacity: var(--dots-busy-dim); transition: opacity var(--dots-dim) ease, stroke-dashoffset 0.35s ease; }
+[data-dots="revealing"][data-dots-ring] .tdc-ring .ring { transition: opacity var(--dots-reveal) ease; }
+[data-dots="revealing"][data-dots-ring] .tdc-ring .mark { transition: opacity var(--dots-reveal) ease, stroke-dashoffset 0.35s ease; }
 
 /* ── Anything else ───────────────────────────────────────────────────
    Its outline hides and the whole of it dims. !important because a
-   button's border can be (.btn-secondary). Step 2 gives each kind of
-   element its own (an outline traced, an underline, a number). */
-[data-dots="busy"]:not(:has(.tdc-ring)) {
+   button's border can be (.btn-secondary). */
+[data-dots="busy"]:not([data-dots-ring]) {
 	opacity: var(--dots-busy-dim);
 	border-color: transparent !important;
 	transition: opacity var(--dots-dim) ease, border-color var(--dots-dim) ease;
 }
-[data-dots="revealing"]:not(:has(.tdc-ring)) {
+[data-dots="revealing"]:not([data-dots-ring]) {
 	transition: opacity var(--dots-reveal) ease, border-color var(--dots-reveal) ease;
 }
 
@@ -70,8 +72,8 @@
    UV 26 Oct) fade in as a whole (--dots-lines, 0 to 1, set by the script),
    and the icon's ring stays hidden until the reveal. A tab stays faint and
    unfilled while its pill is traced, then fills. */
-[data-dots="tracing"] .tdc-ring .ring { opacity: 0; }
-[data-dots="tracing"] .tdc-ring .mark { opacity: var(--dots-lines, 0); transition: none; }
+[data-dots="tracing"][data-dots-ring] .tdc-ring .ring { opacity: 0; }
+[data-dots="tracing"][data-dots-ring] .tdc-ring .mark { opacity: var(--dots-lines, 0); transition: none; }
 [data-dots="tracing"][data-dots-trace="number"] {
 	opacity: var(--dots-lines, 0);
 	transition: none;
@@ -94,10 +96,10 @@
    jumps; when the call is back the target fades in (revealing) from
    wherever the pulse has got to. Something loading with the page only dims
    (UV, 26 Oct). */
-[data-dots="busy"][data-dots-calm] .tdc-ring .ring {
+[data-dots="busy"][data-dots-calm][data-dots-ring] .tdc-ring .ring {
 	animation: dots-pulse-ring var(--dots-pulse) ease-in-out var(--dots-dim) infinite;
 }
-[data-dots="busy"][data-dots-calm]:not(:has(.tdc-ring)) {
+[data-dots="busy"][data-dots-calm]:not([data-dots-ring]) {
 	animation: dots-pulse var(--dots-pulse) ease-in-out var(--dots-dim) infinite;
 }
 @keyframes dots-pulse {

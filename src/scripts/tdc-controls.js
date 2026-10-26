@@ -524,37 +524,77 @@ const TDCControls = (() => {
 
 	// ─── Ring and switch (checkboxes) ───
 	// UV's ring status design (ring-status.js) on every checkbox (24 Oct). The
-	// switch is for a setting: tick on, cross off, its knob sliding in step
-	// with the drawing. The ring is for a tick against a person or a thing
-	// (paid, here tonight, picked): a tick or empty. Every checkbox is a switch
+	// switch is for a setting: tick on, cross off, its knob a ring that slides
+	// to its side. The ring is for a tick against a person or a thing (paid,
+	// here tonight, picked): a tick or empty. Every checkbox is a switch
 	// unless it is made with data-control="ring".
 	//
 	// The checkbox stays the real one, invisible but focusable: Space and its
 	// label still toggle it, and pages read .checked and hear change as
-	// before. When it changes the dots orbit for as long as the site's own
-	// call takes (TDCNet, supabaseClient.js): a box that saves as it changes
-	// draws its answer once the network is quiet, after the page's re-read,
-	// so what is drawn is what the database kept. A box in a form, with
-	// nothing to wait for, orbits for --ring-load (1 s). Draw and fade are
-	// fixed tokens too (--ring-draw, --ring-fade).
+	// before. When a change makes the page save (TDC.writer, or any call the
+	// site counts, TDCNet), the site's one set of dots serves the control
+	// (scripts/dots.js, the dots' step 7, 26 Oct): they come to its ring and
+	// stay for as long as the save and the page's re-read take, then the knob
+	// slides and the new icon fades in as they trace it, so what is shown is
+	// what the database kept. Several saves out at once: the dots go to the
+	// latest, and the others come back without them. A change that saves
+	// nothing (a box in a form) shows at once: the knob slides and the icon
+	// draws in, no dots.
+	//
+	// A click is never ignored (UV, 24 Oct): it toggles the box and the page
+	// saves it, queued behind the others (TDC.writer); served again while the
+	// dots are on it, they wait for every call, and show what the box holds
+	// at the end.
 	//
 	// Pages draw themselves again after every write, which makes a new
-	// checkbox. The live control is handed on to it by the box's id, or by its
-	// data-action with the row's data-entrant / data-player, so the animation
-	// carries on through the rebuild.
+	// checkbox. While the dots are on a control (it carries data-dots) the
+	// control itself is handed on to the new checkbox, by the box's id or its
+	// data-action with the row's data-entrant / data-player, so the element
+	// the dots serve stays on the page through the rebuild.
 	const liveChecks = new Map();
-	const LIVE_FOR = 20000;   // ms: a save not answered by then is drawn as it stands
 	const checkKey = (box) => box.id ? '#' + box.id
 		: ['action', 'entrant', 'player', 'box', 'frame'].map((k) => box.dataset[k] || '').join('|');
-	// How many times the demo's orbit speed the dots go round (--ring-spin).
-	const spinOf = (el) => {
-		const n = parseFloat(getComputedStyle(el).getPropertyValue('--ring-spin'));
-		return n > 0 ? n : 1;
-	};
-	const secs = (el, token, fallback) => {
-		const ms = timeMs(el, token);
-		return lessMotion.matches ? fallback : ms / 1000;
-	};
+	const served = (wrap) => !!wrap.dataset.dots;
+
+	// Where the page's saves stood as a change began, so that once the page
+	// has had its turn it is known whether the change saved.
+	const saveMark = () => ({
+		writes: TDC.writes || 0,
+		net: typeof TDCNet !== 'undefined' ? TDCNet.started : 0
+	});
+	// After a change, once the page's own handler has run: the dots serve the
+	// control with the save it made, and show() puts what the box holds on
+	// the page when that is back (drawn: no dots, so the icon draws itself).
+	function serveChange(c, live, mark, show) {
+		const w = TDC.writeSince ? TDC.writeSince(mark.writes) : null;
+		let call = null, status = null;
+		if (w) { call = w.saved; status = w.status; }
+		else if (typeof TDCNet !== 'undefined' && TDCNet.started > mark.net) call = TDCNet.quiet();
+		if (!call || typeof TDCDots === 'undefined') { show(true); return; }
+		c.ring.say('loading');
+		live.set(c.key, c);
+		TDCDots.serve(c.wrap, call, { reveal: () => show(false), status });
+		// Forgotten once the dots have left it.
+		const forget = () => {
+			if (served(c.wrap)) { setTimeout(forget, 500); return; }
+			if (live.get(c.key) === c) live.delete(c.key);
+		};
+		Promise.resolve(call).catch(() => {}).then(() => setTimeout(forget, 500));
+	}
+
+	// The knob gliding to p (0 to 1), eased, in --control-reveal; at once
+	// when the device asks for less motion.
+	function glide(c, to) {
+		cancelAnimationFrame(c.glideFrame);
+		const from = c.knobAt, ms = timeMs(c.wrap, '--control-reveal'), t0 = performance.now();
+		if (!ms || Math.abs(to - from) < 0.001) { c.place(to); return; }
+		const step = (now) => {
+			const u = Math.min(1, (now - t0) / ms), e = u * u * (3 - 2 * u);
+			c.place(from + (to - from) * e);
+			if (u < 1) c.glideFrame = requestAnimationFrame(step);
+		};
+		c.glideFrame = requestAnimationFrame(step);
+	}
 
 	function checkControl(box, kind) {
 		if (box.type !== 'checkbox') {
@@ -563,7 +603,7 @@ const TDCControls = (() => {
 		}
 		const key = checkKey(box);
 		const was = liveChecks.get(key);
-		const c = was && was.kind === kind && was.ring.busy ? was : makeCheck(kind, box);
+		const c = was && was.kind === kind && served(was.wrap) ? was : makeCheck(kind, box);
 		box.replaceWith(c.wrap);
 		c.bind(box, key);
 		besideLabel(c.wrap);
@@ -573,13 +613,13 @@ const TDCControls = (() => {
 		const isSwitch = kind === 'switch';
 		const ON = 'tick';
 		const OFF = isSwitch ? 'cross' : 'empty';
-		const c = { kind, box: null, key: null };
+		const c = { kind, box: null, key: null, knobAt: 0 };
 		const state = () => c.box.checked ? ON : OFF;
 
 		const wrap = c.wrap = node('span', isSwitch ? 'tdc-switch' : 'tdc-check');
 		wrap.tdcCheck = c;
 		const face = node('span', 'tdc-ring');
-		face.innerHTML = TDCRing.svg(5);
+		face.innerHTML = TDCRing.svg();
 		if (isSwitch) {
 			const knob = node('span', 'tdc-switch-knob');
 			knob.append(face);
@@ -589,92 +629,36 @@ const TDCControls = (() => {
 		}
 
 		// The knob and the track follow --p, 0 off to 1 on (status.css).
-		let knobAt = 0, fromAt = 0, moving = false;
-		const place = (p) => { knobAt = p; wrap.style.setProperty('--p', p.toFixed(3)); };
+		c.place = (p) => { c.knobAt = p; wrap.style.setProperty('--p', p.toFixed(3)); };
 
 		c.ring = new TDCRing.RingStatus(face, {
 			icons: isSwitch ? [ON, OFF] : [ON],
 			labels: isSwitch ? { tick: 'On', cross: 'Off', loading: 'Saving' } : { tick: 'Ticked', empty: 'Not ticked', loading: 'Saving' },
-			initial: first.checked ? ON : OFF,
-			onProgress: isSwitch ? (p, target) => {
-				if (!moving) { moving = true; fromAt = knobAt; }
-				place(fromAt + ((target === ON ? 1 : 0) - fromAt) * p);
-			} : null
+			initial: first.checked ? ON : OFF
 		});
-		if (isSwitch) place(first.checked ? 1 : 0);
+		if (isSwitch) c.place(first.checked ? 1 : 0);
 
-		// Changed again while it was drawing: draw that too, the same way.
-		c.ring.onDone = () => {
-			moving = false;
-			liveChecks.delete(c.key);
-			if (c.ring.state !== state() && start()) finishWhen(saves);
+		// What the box holds, on the page: the knob to its side, the icon
+		// shown (drawn in, when the dots are not there to trace it).
+		const show = (drawn) => {
+			if (drawn) c.ring.drawTo(state()); else c.ring.setState(state());
+			if (isSwitch) glide(c, c.box.checked ? 1 : 0);
 		};
 
-		// The orbit starts at once, aimed at the new state, and is registered
-		// as live before the page's own handler runs: a page that rebuilds its
-		// form inside that handler (the ruleset on /leagues/new/) hands this
-		// control straight to the new checkbox. Whether to wait for the
-		// network is decided once the handler has had its turn: if it asked
-		// the database anything, the dots go round for exactly as long as the
-		// call (and the page's re-read) takes, and the moment the network is
-		// quiet they leave from wherever they are and draw (resolve, now; no
-		// minimum, UV 24 Oct); if not, the drawing waits for --ring-load (1 s),
-		// as in the demo.
-		//
-		// A click is never ignored, drawing or not (UV, 24 Oct). It toggles
-		// the box and the page saves it (queued behind the others, TDC.writer);
-		// an orbit still running simply draws whatever the box holds by then,
-		// and one already drawing draws again once it has finished.
-		let mark = 0;
-		let saves = false;   // whether this box saves as it changes, learnt from its first change
-		const watching = typeof TDCNet !== 'undefined';
-		function start() {
-			if (c.ring.busy) return false;
-			c.ring.load(secs(wrap, '--ring-load', 1), {
-				draw: secs(wrap, '--ring-draw', 0.4),
-				fade: secs(wrap, '--ring-fade', 0.1),
-				lead: TDCRing.leadOf(state()),
-				spin: spinOf(wrap)
-			});
-			liveChecks.set(c.key, c);
-			return true;
-		}
-		// Every dot leaves at once and the knob glides in one movement: at the
-		// load time for a box in a form, the moment the network is quiet for
-		// one that saves. Dots leaving one by one, as the demo times them,
-		// started the knob with the first and jerked it as the others left
-		// (UV saw it, 24 Oct).
-		function finishWhen(online) {
-			if (!online) { c.ring.resolve(state(), { together: true }); return; }
-			const late = new Promise((r) => setTimeout(r, LIVE_FOR));
-			Promise.race([TDCNet.quiet(), late]).then(() => c.ring.resolve(state(), { now: true }));
-		}
-
+		let mark = null;
 		wrap.addEventListener('change', (e) => {
-			if (e.target === c.box && watching) mark = TDCNet.started;
+			if (e.target === c.box) mark = saveMark();
 		}, true);
 		wrap.addEventListener('change', (e) => {
 			if (e.target !== c.box) return;
-			const fresh = start();
-			setTimeout(() => {
-				if (watching && TDCNet.started > mark) saves = true;
-				if (fresh) finishWhen(saves);
-			}, 0);
+			const m = mark;
+			setTimeout(() => serveChange(c, liveChecks, m, show), 0);
 		});
 
-		// Newly shown on the page (a setting that brings it into view): its icon
-		// draws in as the demo's does, orbiting while its field fades in and
-		// drawing as it lands.
-		c.appear = () => {
-			if (c.ring.busy) return;
-			c.ring.load(secs(wrap, '--control-reveal', 0.35), {
-				draw: secs(wrap, '--ring-draw', 0.4),
-				fade: secs(wrap, '--ring-fade', 0.1),
-				lead: TDCRing.leadOf(state()),
-				spin: spinOf(wrap)
-			});
-			c.ring.resolve(state(), { together: true });
-		};
+		// Newly shown on the page (a setting that brings it into view, a
+		// folding section opening): its icon draws in. No call, so no dots
+		// (UV, 26 Oct).
+		c.appear = () => { if (!served(wrap)) c.ring.drawIn(); };
 
 		// Clicking the drawing clicks the checkbox, which toggles it and tells
 		// the page.
@@ -691,11 +675,12 @@ const TDCControls = (() => {
 			if (isSwitch) box.setAttribute('role', 'switch');
 			wrap.append(box);
 			wrap.classList.toggle('is-disabled', box.disabled);
-			// Set from a script (a page filling its form): show it, no animation.
+			// Set from a script (a page filling its form): show it, no
+			// animation. Not while a save is out: the dots show the answer.
 			onPropSet(box, ['checked'], () => {
-				if (c.ring.busy || c.box !== box) return;
+				if (wrap.dataset.dots === 'busy' || c.box !== box) return;
 				c.ring.setState(state());
-				if (isSwitch) place(box.checked ? 1 : 0);
+				if (isSwitch) c.place(box.checked ? 1 : 0);
 			});
 			new MutationObserver(() => wrap.classList.toggle('is-disabled', box.disabled))
 				.observe(box, { attributes: true, attributeFilter: ['disabled'] });
@@ -715,11 +700,12 @@ const TDCControls = (() => {
 	// when it is already there; clicking the middle chooses the middle.
 	//
 	// The select stays the real one, invisible but focusable, so the arrow
-	// keys still move it and pages hear change as before. The knob slides in
-	// step with the ring's drawing, the dots orbit for as long as the save
-	// takes, and the live control is handed on through the page's redraw by
-	// the select's id or its data-action and data-frame, as the switch's is.
-	// Opt in with data-control="tri"; nothing becomes one automatically.
+	// keys still move it and pages hear change as before. Saves are served by
+	// the dots exactly as a switch's are: the knob slides once the save and
+	// the re-read are back, and the control is handed on through the page's
+	// redraw by the select's id or its data-action and data-frame while the
+	// dots are on it. Opt in with data-control="tri"; nothing becomes one
+	// automatically.
 	const liveTris = new Map();
 	const triKey = (sel) => sel.id ? '#' + sel.id
 		: ['action', 'frame', 'player'].map((k) => sel.dataset[k] || '').join('|');
@@ -731,18 +717,19 @@ const TDCControls = (() => {
 		}
 		const key = triKey(sel);
 		const was = liveTris.get(key);
-		const c = was && was.ring.busy ? was : makeTri(sel);
+		const c = was && served(was.wrap) ? was : makeTri(sel);
 		sel.replaceWith(c.wrap);
 		c.bind(sel, key);
 	}
 
 	function makeTri(first) {
-		const c = { sel: null, key: null, own: false };
+		const c = { sel: null, key: null, own: false, knobAt: 0.5 };
 		// data-icon names the ring's icon at either end (a tick unless it says),
 		// data-tone its colour (the brand colour unless it says, e.g. warning).
 		const ICON = first.dataset.icon && TDCRing.ICONS[first.dataset.icon] ? first.dataset.icon : 'tick';
 		const at = () => (c.sel.selectedIndex < 0 ? 1 : c.sel.selectedIndex) / 2;   // 0 left, 0.5 middle, 1 right
 		const state = () => at() === 0.5 ? 'empty' : ICON;
+		const chosen = () => c.sel.options[c.sel.selectedIndex] ? c.sel.options[c.sel.selectedIndex].text : 'Chosen';
 
 		const wrap = c.wrap = node('span', 'tdc-tri');
 		wrap.tdcTri = c;
@@ -750,16 +737,15 @@ const TDCControls = (() => {
 		const stops = node('span', 'tdc-tri-stops');
 		stops.append(node('i'), node('i'), node('i'));
 		const face = node('span', 'tdc-ring');
-		face.innerHTML = TDCRing.svg(5);
+		face.innerHTML = TDCRing.svg();
 		const knob = node('span', 'tdc-tri-knob');
 		knob.append(face);
 		wrap.append(node('span', 'tdc-tri-track'), stops, knob);
 
 		// --p runs 0 (left) to 1 (right); --lit is how far from the middle,
 		// which lights the track as the knob reaches an end (status.css).
-		let knobAt = 0.5, fromAt = 0.5, moving = false;
-		const place = (p) => {
-			knobAt = p;
+		c.place = (p) => {
+			c.knobAt = p;
 			wrap.style.setProperty('--p', p.toFixed(3));
 			wrap.style.setProperty('--lit', (Math.abs(p - 0.5) * 2).toFixed(3));
 			// The stop the knob rests on is hidden, so the middle reads blank.
@@ -770,59 +756,27 @@ const TDCControls = (() => {
 		c.ring = new TDCRing.RingStatus(face, {
 			icons: [ICON],
 			labels: { [ICON]: first.options[first.selectedIndex] ? first.options[first.selectedIndex].text : 'Chosen', empty: 'Nobody', loading: 'Saving' },
-			initial: startAt === 0.5 ? 'empty' : ICON,
-			// Towards wherever the select is now, so a second click mid-way
-			// turns the knob round rather than finishing the first trip.
-			onProgress: (p) => {
-				if (!moving) { moving = true; fromAt = knobAt; }
-				place(fromAt + (at() - fromAt) * p);
-			}
+			initial: startAt === 0.5 ? 'empty' : ICON
 		});
-		place(startAt);
+		c.place(startAt);
 
-		// Moved again while it was drawing: draw that too.
-		c.ring.onDone = () => {
-			moving = false;
-			liveTris.delete(c.key);
-			c.ring.labels[ICON] = c.sel.options[c.sel.selectedIndex] ? c.sel.options[c.sel.selectedIndex].text : 'Chosen';
-			if ((c.ring.state !== state() || Math.abs(knobAt - at()) > 0.001) && start()) finishWhen(saves);
+		const show = (drawn) => {
+			c.ring.labels[ICON] = chosen();
+			if (drawn) c.ring.drawTo(state()); else c.ring.setState(state());
+			glide(c, at());
 		};
 
-		// The same timing as the switch: orbit at once, then draw the moment
-		// the network is quiet if the page saved, or after --ring-load if not.
-		let mark = 0;
-		let saves = false;
-		const watching = typeof TDCNet !== 'undefined';
-		function start() {
-			if (c.ring.busy) return false;
-			c.ring.load(secs(wrap, '--ring-load', 1), {
-				draw: secs(wrap, '--ring-draw', 0.4),
-				fade: secs(wrap, '--ring-fade', 0.1),
-				lead: TDCRing.leadOf(ICON),
-				spin: spinOf(wrap)
-			});
-			liveTris.set(c.key, c);
-			return true;
-		}
-		function finishWhen(online) {
-			if (!online) { c.ring.resolve(state(), { together: true }); return; }
-			const late = new Promise((r) => setTimeout(r, LIVE_FOR));
-			Promise.race([TDCNet.quiet(), late]).then(() => c.ring.resolve(state(), { now: true }));
-		}
-
+		let mark = null;
 		wrap.addEventListener('change', (e) => {
-			if (e.target === c.sel && watching) mark = TDCNet.started;
+			if (e.target === c.sel) mark = saveMark();
 		}, true);
 		wrap.addEventListener('change', (e) => {
 			if (e.target !== c.sel) return;
-			const fresh = start();
-			setTimeout(() => {
-				if (watching && TDCNet.started > mark) saves = true;
-				if (fresh) finishWhen(saves);
-			}, 0);
+			const m = mark;
+			setTimeout(() => serveChange(c, liveTris, m, show), 0);
 		});
 
-		// Which third was clicked decides it. Never ignored, drawing or not.
+		// Which third was clicked decides it. Never ignored, served or not.
 		wrap.addEventListener('click', (e) => {
 			if (c.sel.disabled) return;
 			const r = wrap.getBoundingClientRect();
@@ -843,11 +797,12 @@ const TDCControls = (() => {
 			sel.classList.add('tdc-tri-native');
 			wrap.append(sel);
 			wrap.classList.toggle('is-disabled', sel.disabled);
-			// Set from a script: show it, no animation.
+			// Set from a script: show it, no animation. Not while a save is
+			// out: the dots show the answer.
 			onPropSet(sel, ['value', 'selectedIndex'], () => {
-				if (c.own || c.ring.busy || c.sel !== sel) return;
+				if (c.own || wrap.dataset.dots === 'busy' || c.sel !== sel) return;
 				c.ring.setState(state());
-				place(at());
+				c.place(at());
 			});
 			new MutationObserver(() => wrap.classList.toggle('is-disabled', sel.disabled))
 				.observe(sel, { attributes: true, attributeFilter: ['disabled'] });

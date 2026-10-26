@@ -244,7 +244,7 @@ Include at least: icons with rings in several colours, a tab bar, a switch, a pr
 | 2 | Numbers: single-line digits like the prototype (dots follow a centre line), or dots running around the outline of the site font's digits? |
 | 3 | During page load, does a user tap take the dots away immediately, or does the load sequence finish first? |
 | 4 | Fake rings on wide elements: plain diagonal + margin, or capped radius? (Decide in the sandbox.) |
-| 5 | Which real site buttons/elements get dots in the first release? |
+| 5 | Which real site buttons/elements get dots in the first release? *(Answered by UV, 26 Oct: every saving checkbox, switch and three-way switch, the nav's bell, account and reload, the fixtures page's buttons and its page load. `docs/systems/dots.md` §7.)* |
 
 ---
 

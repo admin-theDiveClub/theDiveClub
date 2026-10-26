@@ -144,6 +144,20 @@ const TDC = (() => {
 	// the second press simply is the first. The key says what counts as the
 	// same press ('generate', or 'start-' + a fixture's id); true means the
 	// action's own words.
+	//
+	// The dots (scripts/dots.js, 26 Oct): { dots: el } gives this save to the
+	// site's one set of dots, which go to el and stay until the burst has
+	// saved and been read again, so what they trace is what the database
+	// kept. A save that failed is not traced; the page's own message says
+	// why, on its status line, which the dots also use for their own
+	// failures. follow and leaves go to TDCDots.serve as they are: the
+	// element standing for el once the page has been drawn again, and
+	// whether the save may take el away. A custom control (tdc-controls.js)
+	// gives itself to the dots by asking writeSince() after a change.
+	let writes = 0;          // saves asked for on this page, every writer
+	let lastWrite = null;    // the latest: { saved, status }
+	function writeSince(n) { return writes > n ? lastWrite : null; }
+
 	function writer({ area, status: statusEl, reload, after }) {
 		let pending = 0;
 		let errors = [];
@@ -173,7 +187,7 @@ const TDC = (() => {
 			if (opts && opts.single) {
 				const key = opts.single === true ? what : opts.single;
 				if (singles.has(key)) return singles.get(key);
-				const first = write(what, fn, done);
+				const first = write(what, fn, done, Object.assign({}, opts, { single: null }));
 				singles.set(key, first);
 				first.finally(() => singles.delete(key));
 				return first;
@@ -197,7 +211,17 @@ const TDC = (() => {
 				batch = null;
 				queued(() => finish(b));
 			});
-			return b.promise.then((ok) => ok && !failed);
+			const result = b.promise.then((ok) => ok && !failed);
+			// For the dots: rejects when this save, or the re-read after it,
+			// did not work. Handled here as well, so nobody waiting is no error.
+			const saved = result.then((ok) => { if (!ok) throw new Error(what + ': not saved.'); });
+			saved.catch(() => {});
+			writes++;
+			lastWrite = { saved, status: statusEl };
+			if (opts && opts.dots && typeof TDCDots !== 'undefined') {
+				TDCDots.serve(opts.dots, saved, { status: statusEl, follow: opts.follow, leaves: opts.leaves });
+			}
+			return result;
 		}
 
 		return { write, get pending() { return pending; } };
@@ -250,5 +274,6 @@ const TDC = (() => {
 		return supabaseClient.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 	}
 
-	return { error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer, preparePicture, pictureUrl };
+	return { error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer,
+		get writes() { return writes; }, writeSince, preparePicture, pictureUrl };
 })();

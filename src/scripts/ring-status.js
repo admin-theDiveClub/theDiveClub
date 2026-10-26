@@ -1,36 +1,36 @@
-// The ring status engine (UV's design, ported 24 Oct from ring-status-demo.html;
-// do not redesign it). A ring of cream with four dots that orbit while
-// something loads, then peel off on curved paths and draw an icon stroke by
-// stroke. tdc-controls.js builds the site's checkboxes from it: the ring (a
-// tick or empty) and the switch (tick on, cross off, its knob sliding in step).
+// The ring icons (UV's ring status design, ported 24 Oct from
+// ring-status-demo.html; do not redesign the look). A ring of cream holding
+// an icon in the brand colour. tdc-controls.js builds the site's checkboxes
+// from it (the ring: a tick or empty; the switch: tick on, cross off), and the
+// nav and the fixtures page their buttons.
 //
-//   new TDCRing.RingStatus(el, { initial, icons, labels, onProgress })
+// Since 26 Oct (the dots, step 7) a ring has no dots of its own: the one
+// travelling set (scripts/dots.js) serves whatever is waiting on the network,
+// a ring included, and traces its new icon as the icon fades in. What is left
+// here is the icon itself.
+//
+//   new TDCRing.RingStatus(el, { initial, icons, labels })
 //     el       an element holding the SVG from TDCRing.svg()
 //     icons    the icon names this control uses; only their paths are built
 //     labels   what the hidden live text says for each state
-//   .load(seconds, { draw, fade, lead })  start the orbit; the lead dot leaves
-//     the ring at `seconds`, and the dots keep orbiting until .resolve()
-//   .resolve(iconName | 'empty', { together, now })  pick the end state, any
-//     time after load. together: every dot leaves at once, from wherever it
-//     is, at the load time; now: the same, straight away
-//   .setState(state)  jump straight to a state, no animation
-//   TDCRing.leadOf(icon)  the lead angle for load() when the end is known
+//   .setState(state)  show a state (an icon name, or 'empty') at once; the
+//     stylesheet's own transition draws the strokes on and off
+//   .drawTo(state)  the same, the new icon drawn in stroke by stroke, in
+//     order, in --ring-draw: for an icon that changes with no call (the menu
+//     turning into a cross) or appears (a page opening, a field shown)
+//   .drawIn()  draw the icon showing in again, stroke by stroke
+//   .say(state)  the live text alone ('loading' while a call is out)
 //
 // Adding an icon: an entry in ICONS, a 100x100 box inside the ring (r = 40),
-// at most 4 strokes, each drawn start to finish, outlines not fills, no stroke
-// starting at the exact centre. Exits and dots are worked out from the starts.
-// An icon may give widths: one stroke width per stroke, in the 100 box, where
-// the default (10, status.css) is too heavy (the cue ball's spots). A stroke
-// may hold several subpaths (spots); its dot runs through them in turn.
+// at most 4 strokes, each drawn start to finish, outlines not fills. The dots
+// trace the strokes in their own order. An icon may give widths: one stroke
+// width per stroke, in the 100 box, where the default (10, status.css) is too
+// heavy (the cue ball's spots). A stroke may hold several subpaths (spots).
 //
 // Needs: nothing. Loaded on every page by layout.html, before tdc-controls.js.
 
 const TDCRing = (() => {
-	const C = 50, R = 40, D2R = Math.PI / 180;
-	const LEAD = 55;   // ring degrees before a stroke start where its dot leaves
 	const NS = 'http://www.w3.org/2000/svg';
-	const nrm = (a) => ((a % 360) + 360) % 360;
-	const angOf = (x, y) => nrm(Math.atan2(x - C, C - y) / D2R);
 
 	// ─── Icons: up to 4 strokes each, drawn start to end ───
 	const ICONS = {
@@ -75,325 +75,81 @@ const TDCRing = (() => {
 			'M40.8 30.9A2.1 0.4 -31.4 1 1 37.2 33.1A2.1 0.4 -31.4 1 1 40.8 30.9M45 71.7A2 0.3 -172.2 1 1 49 72.3A2 0.3 -172.2 1 1 45 71.7'] }
 	};
 	const NAMES = Object.keys(ICONS);
-	const STR = {};   // key -> stroke geometry
-	let geoReady = false;
 
-	// The markup a control hands to RingStatus. dotR: the dots' radius in the
-	// 100 box (3 on a big ring, 5 on a small one, as in the demo's switch).
-	function svg(dotR) {
-		const r = dotR || 5;
+	// The markup a control hands to RingStatus: the ring, and a group for the
+	// icon's strokes.
+	function svg() {
 		return `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">`
-			+ `<circle class="ring" cx="50" cy="50" r="40"/><g class="arms"></g>`
-			+ `<g class="dots" fill="currentColor" stroke="none" style="display:none">`
-			+ `<circle r="${r}"/><circle r="${r}"/><circle r="${r}"/><circle r="${r}"/></g></svg>`;
+			+ `<circle class="ring" cx="50" cy="50" r="40"/><g class="arms"></g></svg>`;
 	}
 
-	// Sample every stroke once (arc-length table, start tangent, ring exit angle).
-	function buildGeometry(host) {
-		if (geoReady) return;
-		const N = 96;
-		for (const name of NAMES) {
-			const ic = ICONS[name];
-			ic.list = ic.strokes.map((d, i) => {
-				const p = document.createElementNS(NS, 'path');
-				p.setAttribute('d', d);
-				host.appendChild(p);
-				const len = p.getTotalLength();
-				const X = new Float64Array(N + 1), Y = new Float64Array(N + 1);
-				for (let j = 0; j <= N; j++) { const q = p.getPointAtLength(len * j / N); X[j] = q.x; Y[j] = q.y; }
-				host.removeChild(p);
-				let tx = X[2] - X[0], ty = Y[2] - Y[0];
-				const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
-				const S = [X[0], Y[0]];
-				const near = Math.hypot(S[0] - C, S[1] - C) < 6;
-				const st = { key: name + i, icon: name, index: i, d, len, N, X, Y, S, tx, ty,
-					exit: nrm((near ? angOf(C + S[0] - X[3], C + S[1] - Y[3]) : angOf(S[0], S[1])) - LEAD) };
-				STR[st.key] = st;
-				return st;
-			});
-			// dot -> stroke assignments: dot 0 always takes stroke 0, strokes shared evenly
-			const n = ic.list.length, cap = Math.ceil(4 / n), out = [];
-			for (let a = 0; a < n; a++) for (let b = 0; b < n; b++) for (let c = 0; c < n; c++) {
-				const as = [0, a, b, c], cnt = new Array(n).fill(0);
-				as.forEach((x) => cnt[x]++);
-				if (cnt.every((x) => x >= 1 && x <= cap)) out.push(as);
-			}
-			ic.assign = out;
-		}
-		geoReady = true;
-	}
-	const leadOf = (t) => (ICONS[t] && ICONS[t].list) ? ICONS[t].list[0].exit : 260;
-
-	// ─── Spin profile scaled to load time L; lead dot reaches `lead` exactly at T = L ───
-	// spin multiplies the speed (1, the default, is the demo). The site sends
-	// every dot off together from wherever it is (resolve together / now), so
-	// the lead dot no longer has to arrive at L, and the speed can be its own
-	// setting (--ring-spin, UV 24 Oct). The dots keep their quarter-turn
-	// spacing and their gentle start.
-	function makeProfile(L, lead, spin = 1) {
-		L = Math.max(0.05, L);
-		const TA = 0.3 * L;
-		let laps = Math.max(0, Math.round((360 * L * 0.85 - lead) / 360));
-		if (lead + 360 * laps < 30) laps++;
-		const total = lead + 360 * laps;
-		const V = spin * total / (L - TA / 2);
-		const GAP = 90 / V;
-		const th = (t) => {
-			if (t <= 0) return 0;
-			if (t >= TA) return V * TA * 0.5 + V * (t - TA);
-			const u = t / TA;
-			return V * TA * (u * u * u - u * u * u * u * 0.5);
-		};
-		const invTh = (a) => {
-			if (a <= 0) return 0;
-			const edge = V * TA * 0.5;
-			if (a >= edge) return TA + (a - edge) / V;
-			let lo = 0, hi = 1;
-			for (let i = 0; i < 30; i++) {
-				const m = (lo + hi) / 2;
-				if (V * TA * (m * m * m - m * m * m * m * 0.5) < a) lo = m; else hi = m;
-			}
-			return hi * TA;
-		};
-		const peelTime = (k, ex, tp) => {
-			const a0 = th(tp - k * GAP);
-			let d = nrm(ex - nrm(a0));
-			if (d > 359.999) d = 0;
-			return invTh(a0 + d) + k * GAP;
-		};
-		return { L, TA, V, GAP, th, invTh, peelTime };
-	}
-
-	// Curved exit from the ring (tangent departure) into the stroke start (along stroke direction)
-	function buildPath(st, ex, dur) {
-		const r = ex * D2R;
-		const px = C + R * Math.sin(r), py = C - R * Math.cos(r);
-		const tx = Math.cos(r), ty = Math.sin(r);
-		const [sx, sy] = st.S;
-		const dist = Math.hypot(sx - px, sy - py);
-		const x1 = px + tx * 0.45 * dist, y1 = py + ty * 0.45 * dist;
-		const x2 = sx - st.tx * 0.35 * dist, y2 = sy - st.ty * 0.35 * dist;
-		const N = 40, X = new Float64Array(N + 1), Y = new Float64Array(N + 1), L = new Float64Array(N + 1);
-		X[0] = px; Y[0] = py;
-		for (let i = 1; i <= N; i++) {
-			const t = i / N, m = 1 - t;
-			X[i] = m * m * m * px + 3 * m * m * t * x1 + 3 * m * t * t * x2 + t * t * t * sx;
-			Y[i] = m * m * m * py + 3 * m * m * t * y1 + 3 * m * t * t * y2 + t * t * t * sy;
-			L[i] = L[i - 1] + Math.hypot(X[i] - X[i - 1], Y[i] - Y[i - 1]);
-		}
-		const Lc = L[N];
-		return { X, Y, L, N, Lc, Ll: st.len, total: Lc + st.len, stroke: st, T: dur };
-	}
-	const out = [0, 0];
-	function posAt(p, sd) {
-		if (sd <= p.Lc) {
-			let i = 1;
-			while (i < p.N && p.L[i] < sd) i++;
-			const a = p.L[i - 1], b = p.L[i], f = b > a ? (sd - a) / (b - a) : 0;
-			out[0] = p.X[i - 1] + (p.X[i] - p.X[i - 1]) * f;
-			out[1] = p.Y[i - 1] + (p.Y[i] - p.Y[i - 1]) * f;
-		} else {
-			const s = p.stroke, g = Math.min(1, (sd - p.Lc) / p.Ll) * s.N;
-			const i = Math.min(s.N - 1, Math.floor(g)), f = g - i;
-			out[0] = s.X[i] + (s.X[i + 1] - s.X[i]) * f;
-			out[1] = s.Y[i] + (s.Y[i + 1] - s.Y[i]) * f;
-		}
-		return out;
+	const lessMotion = matchMedia('(prefers-reduced-motion: reduce)');
+	// --ring-draw in ms, 0 when the device asks for less motion.
+	function drawMs(el) {
+		if (lessMotion.matches) return 0;
+		const v = getComputedStyle(el).getPropertyValue('--ring-draw').trim(), n = parseFloat(v);
+		return isNaN(n) ? 400 : (v.endsWith('ms') ? n : n * 1000);
 	}
 
 	class RingStatus {
 		constructor(btn, opts = {}) {
 			this.btn = btn;
-			this.onProgress = opts.onProgress;
 			this.labels = opts.labels || {};
 			const svgEl = btn.querySelector('svg');
-			buildGeometry(svgEl);
-			this.dotsG = svgEl.querySelector('.dots');
-			this.dots = [...this.dotsG.children];
-			this.els = {};
 			const armsG = svgEl.querySelector('.arms');
 			const used = opts.icons || NAMES;
-			for (const k in STR) {
-				if (!used.includes(STR[k].icon)) continue;
-				const p = document.createElementNS(NS, 'path');
-				p.setAttribute('d', STR[k].d);
-				p.setAttribute('pathLength', '100');
-				p.setAttribute('class', 'mark');
-				const widths = ICONS[STR[k].icon].widths;
-				if (widths) p.style.strokeWidth = widths[STR[k].index];
-				armsG.appendChild(p);
-				this.els[k] = p;
+			this.marks = {};   // icon -> its strokes, in order
+			for (const name of used) {
+				const ic = ICONS[name];
+				if (!ic) throw new Error('there is no ring icon called "' + name + '".');
+				this.marks[name] = ic.strokes.map((d, i) => {
+					const p = document.createElementNS(NS, 'path');
+					p.setAttribute('d', d);
+					p.setAttribute('pathLength', '100');
+					p.setAttribute('class', 'mark');
+					if (ic.widths) p.style.strokeWidth = ic.widths[i];
+					armsG.appendChild(p);
+					return p;
+				});
 			}
-			this.keys = Object.keys(this.els);
 			this.live = document.createElement('span');
 			this.live.className = 'sr';
 			this.live.setAttribute('role', 'status');
 			btn.after(this.live);
-			this.reduce = matchMedia('(prefers-reduced-motion: reduce)');
-			this.rev = {}; this.prev = {};
-			this.raf = 0; this.running = false;
-			this.frame = this.frame.bind(this);
 			this.setState(opts.initial || 'empty');
 		}
-		get busy() { return this.running; }
-		setState(s) {
-			this.state = s; this.btn.dataset.state = s;
+		say(s) {
 			this.live.textContent = this.labels[s]
 				|| (s === 'empty' ? 'Idle' : s === 'loading' ? 'Loading' : ICONS[s].label);
-			for (const k of this.keys) this.els[k].classList.toggle('on', STR[k].icon === s);
 		}
-		// seconds: load time. opts: draw, fade (seconds); lead: ring angle of the first exit (see leadOf);
-		// spin: how many times the demo's orbit speed (1 by default)
-		load(seconds = 1, opts = {}) {
-			if (this.running) return;
-			this.pr = makeProfile(seconds, opts.lead ?? 260, opts.spin ?? 1);
-			this.draw = opts.draw ?? 0.8;
-			this.fade = opts.fade ?? 0.5;
-			this.tf = this.fade * 0.4;
-			this.running = true; this.target = null; this.planned = false;
-			this.T = 0; this.last = 0; this.tp = 0;
-			for (const k of this.keys) { this.rev[k] = 0; this.prev[k] = 0; }
-			this.setState('loading');
-			if (this.reduce.matches) return;
-			this.dotsG.style.display = '';
-			this.raf = requestAnimationFrame(this.frame);
+		setState(s) {
+			this.state = s; this.btn.dataset.state = s;
+			this.say(s);
+			for (const name in this.marks) for (const p of this.marks[name]) p.classList.toggle('on', name === s);
 		}
-		// The demo's way (the default): each dot leaves when it comes round to
-		// its own exit point, the lead dot exactly at the load time.
-		// opts.together: at the load time every dot leaves at once, from
-		// wherever it is, on its curve (the exit can leave the ring at any
-		// point, UV 24 Oct), so whatever rides on the progress (a switch's
-		// knob) moves in one glide rather than starting with the first dot and
-		// lurching as the others follow. opts.now: the same, the moment this is
-		// called; a save's answer uses it.
-		resolve(target, opts = {}) {
-			if (!this.running || this.target) return;
-			this.target = target;
-			this.now = !!opts.now;
-			this.together = !!(opts.now || opts.together);
-			if (this.reduce.matches) this.finish();
+		drawTo(s) {
+			if (s === this.state) return;
+			this.setState(s);
+			this.drawIn();
 		}
-		plan() {
-			const pr = this.pr;
-			this.planned = true;
-			const tp = this.now ? this.T : Math.max(this.T, pr.L);
-			this.tp = tp;
-			if (this.target === 'empty') return;
-			const ic = ICONS[this.target];
-
-			// Together: every dot leaves from wherever it is at tp, at once;
-			// each goes to the stroke nearest it (dot 0 still takes stroke 0).
-			if (this.together) {
-				const at = (k) => {
-					const a = nrm(pr.th(tp - k * pr.GAP));
-					return [a, C + R * Math.sin(a * D2R), C - R * Math.cos(a * D2R)];
-				};
-				const dots = [0, 1, 2, 3].map(at);
-				let best = null, bs = 0;
-				for (const as of ic.assign) {
-					let s = 0;
-					for (let k = 0; k < 4; k++) {
-						const S = ic.list[as[k]].S;
-						s += Math.hypot(S[0] - dots[k][1], S[1] - dots[k][2]);
-					}
-					if (!best || s < bs) { best = as; bs = s; }
-				}
-				this.peel = []; this.paths = [];
-				for (let k = 0; k < 4; k++) {
-					this.peel.push(tp);
-					this.paths.push(buildPath(ic.list[best[k]], dots[k][0], this.draw));
-				}
-				return;
-			}
-
-			const wait = (k, ex) => pr.peelTime(k, ex, tp) - tp;
-			let best = null, bm = 0, bs = 0;
-			for (const as of ic.assign) {
-				let m = 0, s = 0;
-				for (let k = 0; k < 4; k++) { const w = wait(k, ic.list[as[k]].exit); if (w > m) m = w; s += w; }
-				if (!best || m < bm - 1e-6 || (Math.abs(m - bm) < 1e-6 && s < bs)) { best = as; bm = m; bs = s; }
-			}
-			this.peel = []; this.paths = [];
-			for (let k = 0; k < 4; k++) {
-				const st = ic.list[best[k]];
-				this.peel.push(tp + wait(k, st.exit));
-				this.paths.push(buildPath(st, st.exit, this.draw));
-			}
-		}
-		frame(ts) {
-			const dt = this.last ? Math.min((ts - this.last) / 1000, 0.05) : 0;
-			this.last = ts; this.T += dt;
-			const T = this.T, pr = this.pr;
-			if (this.target && !this.planned) this.plan();
-			let done = this.planned;
-			let opSum = 0;
-			let travelled = 0;   // how far the dots are along their paths, curve and stroke, summed
-			const rev = this.rev;
-			for (const k of this.keys) rev[k] = 0;
-			for (let k = 0; k < 4; k++) {
-				let x, y, op = 1;
-				if (this.planned && this.target === 'empty') {
-					const a = pr.th(T - k * pr.GAP) * D2R;
-					x = C + R * Math.sin(a); y = C - R * Math.cos(a);
-					// Together, the dots fade as one; otherwise one after another.
-					const lag = this.together ? 0 : k * pr.GAP;
-					op = Math.max(0, 1 - Math.max(0, (T - this.tp - lag) / this.fade));
-					if (op > 0) done = false;
-				} else if (!this.planned || T < this.peel[k]) {
-					const a = pr.th(T - k * pr.GAP) * D2R;
-					x = C + R * Math.sin(a); y = C - R * Math.cos(a);
-					done = false;
-				} else {
-					const p = this.paths[k];
-					const u = Math.min(1, (T - this.peel[k]) / p.T);
-					const sd = p.total * (1 - (1 - u) * (1 - u));
-					travelled += sd / p.total;
-					const q = posAt(p, sd);
-					x = q[0]; y = q[1];
-					if (u < 1) done = false;
-					const tf = Math.max(0, T - this.peel[k] - p.T);
-					op = Math.max(0, 1 - tf / this.tf);
-					if (tf < this.tf) done = false;
-					const rv = Math.min(1, Math.max(0, (sd - p.Lc) / p.Ll));
-					const key = p.stroke.key;
-					if (key in rev && rv > rev[key]) rev[key] = rv;
-				}
-				opSum += op;
-				const d = this.dots[k];
-				d.setAttribute('cx', x.toFixed(2));
-				d.setAttribute('cy', y.toFixed(2));
-				d.setAttribute('opacity', op.toFixed(2));
-			}
-			for (const k of this.keys) {
-				if (rev[k] !== this.prev[k]) {
-					const el = this.els[k];
-					el.style.transition = 'none';
-					el.style.strokeDashoffset = 100 * (1 - rev[k]);
-					this.prev[k] = rev[k];
-				}
-			}
-			// Progress follows the dots along their whole paths, the curve off
-			// the ring as well as the stroke, so whatever rides on it (a
-			// switch's knob) sets off the moment the load is done and moves at
-			// the dots' pace. Measured by strokes drawn, it stood still while
-			// the dots flew to the strokes and then lurched (UV saw it, 24 Oct).
-			if (this.planned && this.onProgress) {
-				const p = this.target === 'empty' ? 1 - opSum / 4 : travelled / 4;
-				this.onProgress(p, this.target);
-			}
-			if (done) this.finish();
-			else this.raf = requestAnimationFrame(this.frame);
-		}
-		finish() {
-			cancelAnimationFrame(this.raf);
-			for (const k of this.keys) { this.els[k].style.transition = ''; this.els[k].style.strokeDashoffset = ''; }
-			this.dotsG.style.display = 'none';
-			this.running = false; this.planned = false;
-			if (this.onProgress) this.onProgress(1, this.target);
-			this.setState(this.target);
-			if (this.onDone) this.onDone(this.target);
+		// Each stroke takes its own slice of the draw time, in order (as the
+		// controls' chevrons do). The stylesheet's transition is held off
+		// meanwhile: a transition outranks an animation and would draw every
+		// stroke at once.
+		drawIn() {
+			const strokes = this.marks[this.state];
+			if (!strokes) return;
+			const ms = drawMs(this.btn), slice = ms / strokes.length;
+			strokes.forEach((p, i) => {
+				for (const a of p.getAnimations()) a.cancel();
+				if (!ms) return;
+				p.style.transition = 'none';
+				const a = p.animate([{ strokeDashoffset: 100 }, { strokeDashoffset: 0 }],
+					{ duration: slice, delay: i * slice, easing: 'ease-out', fill: 'backwards' });
+				a.finished.then(() => { p.style.transition = ''; }, () => { p.style.transition = ''; });
+			});
 		}
 	}
 
-	return { RingStatus, ICONS, leadOf, svg };
+	return { RingStatus, ICONS, svg };
 })();
