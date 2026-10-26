@@ -524,9 +524,10 @@ const TDCControls = (() => {
 
 	// ─── Ring and switch (checkboxes) ───
 	// UV's ring status design (ring-status.js) on every checkbox (24 Oct). The
-	// switch is for a setting: tick on, cross off, its knob a ring that slides
-	// to its side. The ring is for a tick against a person or a thing (paid,
-	// here tonight, picked): a tick or empty. Every checkbox is a switch
+	// switch is for a setting: an empty ring off, a tick on (UV, 26 Oct; a
+	// cross off before), its knob a ring that slides to its side. The ring is
+	// for a tick against a person or a thing (paid, here tonight, picked): a
+	// tick or empty. Every checkbox is a switch
 	// unless it is made with data-control="ring".
 	//
 	// The checkbox stays the real one, invisible but focusable: Space and its
@@ -611,8 +612,9 @@ const TDCControls = (() => {
 
 	function makeCheck(kind, first) {
 		const isSwitch = kind === 'switch';
+		// Off is an empty ring for both (UV, 26 Oct: a switch was a cross off).
 		const ON = 'tick';
-		const OFF = isSwitch ? 'cross' : 'empty';
+		const OFF = 'empty';
 		const c = { kind, box: null, key: null, knobAt: 0 };
 		const state = () => c.box.checked ? ON : OFF;
 
@@ -632,8 +634,8 @@ const TDCControls = (() => {
 		c.place = (p) => { c.knobAt = p; wrap.style.setProperty('--p', p.toFixed(3)); };
 
 		c.ring = new TDCRing.RingStatus(face, {
-			icons: isSwitch ? [ON, OFF] : [ON],
-			labels: isSwitch ? { tick: 'On', cross: 'Off', loading: 'Saving' } : { tick: 'Ticked', empty: 'Not ticked', loading: 'Saving' },
+			icons: [ON],
+			labels: isSwitch ? { tick: 'On', empty: 'Off', loading: 'Saving' } : { tick: 'Ticked', empty: 'Not ticked', loading: 'Saving' },
 			initial: first.checked ? ON : OFF
 		});
 		if (isSwitch) c.place(first.checked ? 1 : 0);

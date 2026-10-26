@@ -851,3 +851,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Also, because the real pages showed them:* a target that jumps on the page (the planner growing as the fixtures arrive, 185px in a frame; a followed button standing elsewhere) has its ring glide from where it was over 350 ms, where the committed engine snapped 770–1040px in a frame; a dot swoops wherever its pen passes from one line to another across a gap, not only where the pen moves more than 6px in a frame, which on a table's small ring let it leap the tick's gap in one frame; and the ring icon's busy look is keyed on `data-dots-ring`, so a section full of ring icons dims as a section.
 *Rejected:* tracing the whole fixture row instead of the button, or no trace at all on the fixtures' buttons (UV chose following); no dots for Account and Reload. *Not yet:* `track()` on other pages (each loads its data its own way; one page first).
 *Touches:* `layout.html`, `scripts/dots.js`, `stylesheets/dots.css`, `scripts/ring-status.js`, `stylesheets/status.css`, `scripts/tdc.js`, `scripts/tdc-controls.js`, `scripts/nav.js`, `scripts/league-fixtures.js`, `variables.css` (`--ring-load`, `--ring-spin`, `--ring-fade` removed), `scripts/sandbox.js`, `sandbox/index.html`, `sandbox/dots/index.html`, `docs/systems/dots.md` §7
+
+## 2026-10-26 — A switch is an empty ring off; every cross is red
+
+*Decided by:* UV
+*So:* a switch shows **an empty ring when off** and a tick when on, like a ring; its track and knob still say it is a switch. **Every cross on the site is red** (`--color-error`), its ring staying cream: the menu's close, the fixtures' Close the move and Remove. The cross keeps its place in `ring-status.js`; a mark carries its icon's name as a class (`mark-cross`), which `status.css` colours.
+*Replaces:* "tick on, cross off, never an empty ring" (24 Oct, the ring status entry above).
+*Touches:* `scripts/tdc-controls.js`, `scripts/ring-status.js`, `stylesheets/status.css`, `scripts/sandbox-dots.js`, `sandbox/index.html`, `docs/ui.md`

@@ -1,7 +1,7 @@
 // The ring icons (UV's ring status design, ported 24 Oct from
 // ring-status-demo.html; do not redesign the look). A ring of cream holding
 // an icon in the brand colour. tdc-controls.js builds the site's checkboxes
-// from it (the ring: a tick or empty; the switch: tick on, cross off), and the
+// from it (the ring: a tick or empty; the switch: tick on, empty off), and the
 // nav and the fixtures page their buttons.
 //
 // Since 26 Oct (the dots, step 7) a ring has no dots of its own: the one
@@ -106,7 +106,7 @@ const TDCRing = (() => {
 					const p = document.createElementNS(NS, 'path');
 					p.setAttribute('d', d);
 					p.setAttribute('pathLength', '100');
-					p.setAttribute('class', 'mark');
+					p.setAttribute('class', 'mark mark-' + name);   // mark-cross: red (status.css)
 					if (ic.widths) p.style.strokeWidth = ic.widths[i];
 					armsG.appendChild(p);
 					return p;

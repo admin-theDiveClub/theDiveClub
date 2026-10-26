@@ -44,10 +44,11 @@
 	}
 
 	// The switch, served as a ring (UV, 26 Oct): its knob is the site's own
-	// ring, tick on and cross off. When the call is back the knob slides to
-	// its new side while the dots trace the new icon in it.
+	// ring, a tick on and empty off. When the call is back the knob slides to
+	// its new side while the dots trace the tick in it (off: nothing to trace,
+	// they race).
 	const sw = $('dots-switch');
-	const swRing = ringOn(sw.querySelector('.tdc-ring'), ['tick', 'cross'], 'cross');
+	const swRing = ringOn(sw.querySelector('.tdc-ring'), ['tick'], 'empty');
 	sw.style.setProperty('--p', '0');
 	function slide(to) {
 		const from = parseFloat(sw.style.getPropertyValue('--p')) || 0, t0 = performance.now(), ms = 350;
@@ -61,7 +62,7 @@
 	reveals.set(sw, () => {
 		const on = sw.getAttribute('aria-checked') !== 'true';
 		sw.setAttribute('aria-checked', String(on));
-		if (swRing) swRing.setState(on ? 'tick' : 'cross');
+		if (swRing) swRing.setState(on ? 'tick' : 'empty');
 		slide(on ? 1 : 0);
 	});
 

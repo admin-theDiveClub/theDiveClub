@@ -3,7 +3,8 @@
    layout.html, after controls.css. Every size and time is a token in
    variables.css, set from /sandbox/.
 
-   The ring is the cream control line; the icon is the brand colour; its
+   The ring is the cream control line; the icon is the brand colour (a
+   cross is red); its
    middle stays transparent. The checkbox itself sits invisibly over the
    drawing, so the keyboard and its label still work. While a save is out
    the site's one set of dots serves the control (scripts/dots.js,
@@ -36,6 +37,8 @@
 	transition: stroke-dashoffset 0.35s ease;
 }
 .tdc-ring .mark.on { stroke-dashoffset: 0; }
+/* Every cross is red, site-wide (UV, 26 Oct); its ring stays cream. */
+.tdc-ring .mark.mark-cross { stroke: var(--color-error); }
 
 /* The live text a screen reader hears ("Saving", "On", "Ticked"). */
 .tdc-check .sr,
@@ -87,8 +90,8 @@ table .tdc-check { --rs: var(--ring-size-table); }
 }
 
 /* ── Switch: a setting ───────────────────────────────────────────────
-   Tick on, cross off, never an empty ring. The knob is a ring; it slides
-   in step with the drawing, and the track lights with it. --p runs from 0
+   An empty ring off, a tick on (UV, 26 Oct; it was a cross off). The knob
+   is a ring; it slides to its side, and the track lights with it. --p runs from 0
    (off) to 1 (on), set by the script; the knob travels the switch's width
    less its height. */
 .tdc-switch {
