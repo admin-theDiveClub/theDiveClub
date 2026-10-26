@@ -785,3 +785,25 @@ These predate the log. They are recorded here because every one of them is a dec
 - **A tap during page load takes the dots at once.** Sections that finish loading meanwhile just appear; any still loading afterwards get the dots next.
 - **Icons:** the dots trace the site's own icons, the strokes in `ring-status.js`, not Tabler (the spec assumed Tabler; the site has never used it).
 *Touches:* `scripts/dots.js`, `stylesheets/dots.css`, `/sandbox/dots/`, later `scripts/ring-status.js`, `scripts/tdc-controls.js`, `scripts/nav.js` and the league pages
+
+## 2026-10-26 — The dots: a fake ring comes from the shorter side, and the dots meet the line
+
+*Decided by:* UV, after the first sandbox review
+*So:* **a fake ring's radius is half the element's shorter side plus the margin** (a wide button's height, a tall number stepper's width), not the spec's half-diagonal. This settles the spec's open question 4 (plain diagonal or a 48px cap); the cap token went. **Travelling, the dots ease off one ring and onto the next**: near the destination their formation opens out to its ring and settles onto the page, each dot meeting the line at its own place, and cruise eases up from the speed they arrived at. Leaving works the same in reverse.
+*Why:* the half-diagonal gave a full-width button a ring about 374px across, far wider than the page, where cruise smeared the dots into streaks. And the first build kept the travelling formation 6px across to the end, so all four reached the middle together and came out to the ring over the top: "all the dots seem to be moving to one point before they animate rather than organically meeting the line" (UV).
+*Rejected:* the cap (still a big circle on any wide element, and one number for every size).
+*Touches:* `scripts/dots.js`, `variables.css` (`--dots-ring-cap` removed), `docs/systems/dots.md`
+
+## 2026-10-26 — The dots: animations are states that run on their own, and the dots show them
+
+*Decided by:* UV ("Almost like the animation is running and the dots just show it visually")
+*So:* every animation of the dots (cruise, race, from step 2 the trace) is a state that keeps running and says where each dot would be; the dots draw the current one. **A change between states is a crossfade of positions, eased in and out, while both run** (`--dots-blend`, 0.6 s), so the dots never jerk into place before the next animation. **Travel is the same thing:** the destination's cruise starts the moment a target is served, and the dots go straight to it, lifting on the way, and arrive in it where it has got to, already moving. No spring, so no overshoot. Two states on the same ring (cruise into race) share their dots instead, the race easing its speed up, because sliding between two dots circling at different speeds cuts across the ring.
+*Supersedes:* the travel in the entry above ("the dots meet the line": a springy formation that opened out near the ring), which still overshot and started the cruise separately on arrival. The fake ring from the shorter side stands.
+*Touches:* `scripts/dots.js`, `variables.css` (`--dots-blend`), `docs/systems/dots.md`
+
+## 2026-10-26 — The dots travel by moving their sphere, not each dot
+
+*Decided by:* UV ("they are exploding far from each other as they move into the new sphere")
+*So:* travelling, the dots keep cruising on their sphere and the sphere moves: its centre glides straight to the new ring, and its radius lifts to 1.5 times the new ring's, holds, and settles onto it. Each dot trails the sphere by at most 60 ms. "Lift" means the sphere growing, not the dots.
+*Supersedes:* the travel in the entry above ("animations are states"), where each dot slid from its place in the old animation to its own place in the new one. Far out from the new ring the four dots swung round towards their own places and fanned out across a circle hundreds of px wide. The rest of that entry stands: an animation keeps running and the dots show it, and the cruise eases into the race.
+*Touches:* `scripts/dots.js`, `docs/systems/dots.md`

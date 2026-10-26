@@ -29,13 +29,33 @@ Four dots, **one set for the whole page**, that show that something is happening
 
 **The target is measured every frame**, so scrolling or a layout change never strands the dots:
 - **A real ring** is any target holding a `.tdc-ring`: its `circle.ring`'s centre, radius and stroke width, scaled from the SVG's 100 box to the screen.
-- **A fake ring** is anything else: centred on its box, radius half the box's diagonal plus `--dots-ring-margin`, at most `--dots-ring-cap`. Its stroke is the element's border, or `--dots-fake-stroke` if it has none.
+- **A fake ring** is anything else: centred on its box, its radius **half the box's shorter side** plus `--dots-ring-margin` (UV, 26 Oct): a wide button's height, a tall stepper's width. So a 46px-high full-width button gets a ring 59px across in its middle, and the dots cross its face as they go round. Its stroke is the element's border, or `--dots-fake-stroke` if it has none. (The spec's half-diagonal gave that button a ring about 374px across, far wider than the page.)
 
 **Colour (UV, 26 Oct): the dots take the colour of the line they are on.** On a real ring that is the ring's stroke (cream today); on a fake ring the element's border colour, else its background, else its text. It is read once, at the serve, **before** the busy state makes the border transparent. The dots blend to it as they travel. From step 2, they take the traced icon's colour while tracing and blend back to the ring's for the race.
 
-**The sphere (spec §4).** Each dot is a unit vector; screen position is the ring centre plus radius × (x, y), and z is height above the page. Size is `stroke × 2^(1.5 × height)`; brightness rises with height. A dot arriving inside the ring joins the sphere over the top, and locks on over a moment rather than snapping. Motion on the sphere is a spring towards a target point, renormalised to the surface each frame, its velocity kept tangent.
+**The sphere (spec §4).** Each dot is a unit vector; screen position is the ring centre plus radius × (x, y), and z is height above the page. Size is `stroke × 2^(1.5 × height)`; brightness rises with height. Motion on the sphere is a spring towards a target point, renormalised to the surface each frame, its velocity kept tangent.
 
-**Stages built:** travel (each dot follows the cluster with its own lag, lifts as it goes, stretches along its path when fast), **cruise** (the one waiting move so far: clockwise with a gentle bob), the ring race (clockwise at stroke size, speeding up to about two laps a second, a slight bob) and the fade (while still racing, once the target's own reveal transition has run and at least 0.75 s ÷ `--dots-fade` has passed).
+**The animation runs, the dots show it (UV, 26 Oct).** The dots' motion lives on a sphere and never stops. Everything in `dots.js` is one class, `Ring`: the dots' own motion (four unit vectors that cruise or race on a unit sphere, `orbit` or `race`) and a **frame** that puts that sphere on the screen (centre, radius, size of the line). On a ring the frame is the ring's. A new `Ring` takes over the dots from the one they were on, so their motion carries on unbroken; hidden, they start a quarter-turn apart.
+
+**Travel: the dots keep cruising and the sphere moves (UV, 26 Oct).** Serving a target makes its `Ring` at once, with a trip from where the dots' sphere was. Through the trip:
+
+| | What it does |
+|---|---|
+| Centre | Glides straight from the old sphere's centre to the new ring's, eased in and out. No spring, so no overshoot |
+| Radius | Lifts from the old sphere's radius to **1.5 times the new ring's** (`LIFT`) over the first 30% of the trip, holds, and settles onto the ring over the last 40% (`RISE`, `FALL`), each eased in and out |
+| Line size | Changes to the new ring's stroke as the dots settle (the last 40%) |
+| Each dot | Follows the gliding sphere up to 60 ms behind (`LAG`), so they move as particles, never further apart than the sphere is wide |
+| The motion | The cruise never stops, so they arrive already moving in it: no arrival step, no lock-on |
+
+Hidden, they appear at a point (where they were last, if on screen, else the middle) and the sphere opens out from it as it goes. A trip takes 450 to 1200 ms, longer the further it is. Tapping something mid-trip starts a new trip from wherever the sphere has got to. The constants are at the top of `dots.js`.
+
+Measured 26 Oct (the widest gap between any two dots): appearing and flying to the tick (a 33px ring, 50px lifted), 0 → 49px, held, settling to 33px; tick to bell, 33 → 51px → 33px; bell to the wide button (a 59px ring, 88px lifted), 33 → 93px → 58px. The few px over come from the lag. The group's centre comes straight in (160px → 2px for the tick).
+
+*Superseded the same day, each after UV watched it:* (1) a 6px formation on a springy centre, which reached the middle of the ring together and came out to the line over the top ("all the dots seem to be moving to one point"); (2) the formation opening out near the ring, which still overshot; (3) each dot sliding on its own path from the old animation to its own place in the new ring's, eased and lifted. In (3) the four dots fanned out across a circle hundreds of px wide in mid-flight, because each swung round towards its own place while still far out ("exploding far from each other"), and the "lift" was worked as the dots' own size, not the sphere's. Glow and stretch were looked at then too and kept in proportion to the dot (`STRETCH` 1.35 times its length at most, `GLOW_REACH`), but they were not the cause. There is no glow while travelling.
+
+**Two animations on one sphere ease into each other.** The race takes over the cruise's own dots where they are and eases its speed (up to three times the cruise's, about two laps a second, slower on a big ring), bob and glow up from the cruise's over `--dots-blend`. From step 2 the trace is a different shape, so the change from waiting to tracing will need its own smooth hand-over over `--dots-blend`.
+
+**Stages built:** travel (above; dots stretch along their path when fast), **cruise** (the one waiting move so far: clockwise with a gentle bob), the ring race, and the fade (while still racing, once the target's own reveal transition has run and at least the longest of 0.75 s ÷ `--dots-fade` and `--dots-blend` has passed).
 
 **Busy and revealing (`dots.css`).** A ring icon's ring hides and its icon dims to `--dots-busy-dim`, in `--dots-dim`; both come back in `--dots-reveal`, which the script reads from the computed transition to know when the ring is fully in. Anything else has its border made transparent and the whole of it dimmed. Step 2 gives each kind of element its own (an outline, an underline, a number).
 
@@ -45,10 +65,10 @@ Four dots, **one set for the whole page**, that show that something is happening
 
 | Step (spec §16) | State |
 |---|---|
-| 1. Engine: sphere, springs, loop, stroke and colour reading, travel, cruise, race, fade | **Built 26 Oct.** UV to review on `/sandbox/dots/` |
+| 1. Engine: sphere, springs, loop, stroke and colour reading, travel, cruise, race, fade | **Built and approved by UV, 26 Oct** |
 | 2. Tracing and the element types | Next |
 | 3. The sandbox's full controls | The page exists with a delay slider and status line only |
-| 4. The move registry, 18 solo and 14 group moves | `domeStep()` holds cruise alone, to be replaced by the registry |
+| 4. The move registry, 18 solo and 14 group moves | `Ring`'s orbit holds cruise alone, to be replaced by the registry |
 | 5. The page-load queue and `track()` | |
 | 6. Reduced motion, error handling | Reduced motion is not handled yet |
 | 7. Replace `ring-status.js`'s dots; wire into real elements | |
@@ -57,10 +77,10 @@ Four dots, **one set for the whole page**, that show that something is happening
 
 | Token | Default | What |
 |---|---|---|
-| `--dots-ring-margin` | 6px | A fake ring's gap round an element's box |
-| `--dots-ring-cap` | none | A fake ring's largest radius. Open question 4: a full-width button's ring is about 187px across a phone, and at that size cruise smears the dots into streaks. To be settled in the sandbox (step 3) |
+| `--dots-ring-margin` | 6px | A fake ring's gap beyond the element's shorter side. 0 makes the ring exactly the button's height |
 | `--dots-fake-stroke` | 1.5px | The dots' size on a fake ring with no border |
 | `--dots-fade` | 1 | How fast the race ends and the dots fade, times the prototype's |
+| `--dots-blend` | 0.6s | The dots moving from one animation to the next: the race easing up from the cruise, and from step 2 waiting into tracing |
 | `--dots-busy-dim` | 0.1 | How faint a waiting target is |
 | `--dots-dim` | 0.2s | A target dimming as it goes busy |
 | `--dots-reveal` | 0.25s | A target coming back (spec: icon and ring in about 0.25 s) |
