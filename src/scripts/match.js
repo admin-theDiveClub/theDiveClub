@@ -88,12 +88,14 @@
 	const el = (id) => document.getElementById(id);
 	const els = {
 		halfHome: el('half-home'), halfAway: el('half-away'),
-		midFrame: el('mid-frame'), midTarget: el('mid-target'),
+		midFrame: el('mid-frame'), midTarget: el('mid-target'), stageBreak: el('stage-break'),
 		overlay: el('overlay'), overlayQ: el('overlay-q'), overlayRow: el('overlay-row'), overlayHint: el('overlay-hint'),
 		stageStatus: el('stage-status'),
 		timeBody: el('time-body'),
-		undoBtn: el('undo-btn'),
+		undoRow: el('undo-row'), undoSlide: el('undo-slide'),
 		tallTable: el('history-tall'), wideTable: el('history-wide'), historyLegend: el('history-legend'),
+		wideBox: el('history-wide-box'), tlLine: el('tl-line'), tlToggle: el('tl-toggle'), tlWidths: el('tl-widths'),
+		statsPanel: el('stats-panel'), playerStats: el('player-stats'), matchStats: el('match-stats'),
 		scrim: el('panel-scrim'),
 		panel: el('settings-panel'), panelClose: el('panel-close'),
 		contextLine: el('context-line'), badgeRow: el('badge-row'), panelNote: el('panel-note'),
@@ -173,6 +175,25 @@
 		timerReset(frameTimer, false);
 		timerReset(rackTimer, true);
 		return times;
+	}
+
+	// The rack and match clocks are counted from the frames (UV, 26 Oct), so
+	// every phone shows the same and a reload keeps them: the match from the
+	// first frame's rack starting, the rack from the last frame's end. Before
+	// a frame is finished there is nothing to count from, and they run from
+	// the page opening. A frame under way on this phone keeps its own clock.
+	function syncClocks() {
+		const frames = MATCH.frames;
+		if (!frames.length) return;
+		const now = Date.now();
+		const first = frames[0].rack_started_at || frames[0].started_at;
+		if (first && timerRunning(matchTimer)) { matchTimer.accum = now - first; matchTimer.since = now; }
+		const last = frames[frames.length - 1];
+		if (frameStartedAt === null && last.ended_at && last.ended_at <= now) {
+			rackStartedAt = last.ended_at;
+			rackTimer.accum = now - last.ended_at;
+			rackTimer.since = now;
+		}
 	}
 
 	const clock = {
@@ -374,7 +395,7 @@
 	// Everything that changes the card. The timing controls are not here: a
 	// clock is this screen's own business and changes nothing anyone else sees.
 	const WRITE_ACTS = new Set([
-		'breakside', 'outcome', 'result', 'more', 'walkover', 'abandon',
+		'breakside', 'result', 'more', 'walkover', 'abandon',
 		'changetable', 'settable', 'pick', 'pickplayer',
 		'editside', 'editbreak', 'editcell', 'setcell'
 	]);
@@ -442,9 +463,11 @@
 	}
 
 	// ─────────────────────────────────────────────────────────────────
-	// The stage
+	// The stage (docs/design/match-score-input.md)
 	//
-	// Each half is three bands: a header (who), the score, and the buttons.
+	// A line with the frame in play, the two players' cards side by side (home
+	// on the left), and the break event across both. Each card is three bands:
+	// a header (who), the score, and a footer with the buttons.
 	// ─────────────────────────────────────────────────────────────────
 
 	function resultsFor(side, breakSide) {
@@ -467,47 +490,68 @@
 	function resultDisabled(ev) {
 		// Nothing to wait for: the frame is over when somebody says who won it.
 		if (!MATCH.rules.track_breaks) return false;
-		if (!draft.break_side || !draft.break_outcome) return true;
+		if (!draft.break_side) return true;
+		// A plain win does not wait for the break event (UV, 26 Oct): nobody
+		// tapped Dry, the frame was played, and the break is then recorded as
+		// not known. Such a frame has no rack time; its whole length is frame
+		// time, as for a walkover. The special wins are about the break, so
+		// they wait for it.
+		if (ev === 'win') return false;
+		if (!draft.break_outcome) return true;
 		if ((ev === 'break_and_finish' || ev === 'golden_break') && draft.break_outcome !== 'in') return true;
 		return false;
 	}
 
-	// Band 1: who is playing. A team shows its name and the lineup; a singles
-	// side shows the player's display name and their full name underneath.
+	// The yellow cue ball on the breaker's picture: the team card's lag icon
+	// (ring-status.js), drawn still and without its ring.
+	function breakBadge() {
+		const NS = 'http://www.w3.org/2000/svg';
+		const s = document.createElementNS(NS, 'svg');
+		s.setAttribute('viewBox', '15 15 70 70');
+		s.setAttribute('class', 'break-badge');
+		s.setAttribute('aria-hidden', 'true');
+		const ic = TDCRing.ICONS.cue;
+		ic.strokes.forEach((d, i) => {
+			const p = document.createElementNS(NS, 'path');
+			p.setAttribute('d', d);
+			p.style.strokeWidth = ic.widths[i];
+			s.append(p);
+		});
+		return s;
+	}
+
+	// Band 1: who is playing, the picture and the name. A team (which this
+	// page does not load yet) shows its lineup as a button under the name.
 	function renderHalfHeader(side) {
-		const head = div('half-head');
+		const head = div('pc-head');
 		const lineup = draft[side + '_players'];
 		const isTeam = MATCH[side].players.length > 1;
 
 		const title = isTeam ? MATCH[side].name : (lineup.length ? player(lineup[0]).display_name : MATCH[side].name);
-		const sub = isTeam
-			? (lineup.length ? names(lineup) : 'Choose players')
-			: (lineup.length ? player(lineup[0]).full_name : '');
 
-		head.append(avatar(isTeam ? MATCH[side].crest_url : (lineup.length ? player(lineup[0]).avatar_url : null), title));
+		const pic = div('pc-pic');
+		pic.append(avatar(isTeam ? MATCH[side].crest_url : (lineup.length ? player(lineup[0]).avatar_url : null), title));
+		if (draft.break_side === side) pic.append(breakBadge());
+		head.append(pic);
 
-		const text = div('half-head-text');
-		const row = div('half-title-row');
-		row.append(heading('h3', title, 'half-name'));
+		const name = heading('h3', title, 'pc-name');
 		if (draft.break_side === side) {
-			const flag = document.createElement('span');
-			flag.className = 'break-flag';
-			flag.textContent = 'Breaking';
-			row.append(flag);
+			const sr = document.createElement('span');
+			sr.className = 'sr';
+			sr.textContent = ', breaking';
+			name.append(sr);
 		}
-		text.append(row);
+		head.append(name);
 
-		const subEl = document.createElement(isTeam ? 'button' : 'div');
-		subEl.className = 'half-sub';
-		subEl.textContent = sub;
 		if (isTeam) {
+			const subEl = document.createElement('button');
 			subEl.type = 'button';
+			subEl.className = 'pc-sub';
+			subEl.textContent = lineup.length ? names(lineup) : 'Choose players';
 			subEl.dataset.act = 'pick';
 			subEl.dataset.side = side;
+			head.append(subEl);
 		}
-		text.append(subEl);
-
-		head.append(text);
 		return head;
 	}
 
@@ -517,44 +561,85 @@
 		host.classList.toggle('breaking', draft.break_side === side);
 		host.classList.toggle('leading', framesWon(side) > framesWon(otherSide(side)));
 
-		host.append(renderHalfHeader(side));
+		// The whole card, footer aside, is the button for a plain win (UV,
+		// 26 Oct): the header and the score both say "this player won it".
+		// The score is the real <button>, for the keyboard and for a screen
+		// reader; the header carries the same action for a thumb.
+		const name = MATCH[side].name;
+		const winnable = !matchOver() && canEdit && !resultDisabled('win');
+		host.classList.toggle('winnable', winnable);
 
-		// Band 2: the score.
-		const mid = div('half-mid');
-		mid.append(div('half-score', framesWon(side)));
+		const head = renderHalfHeader(side);
+		if (winnable) Object.assign(head.dataset, { act: 'result', side, value: 'win' });
+		host.append(head);
+
+		// Band 2: the score. The stylesheet sizes it by how many digits it has,
+		// so 10 and over still fit the card's width.
+		const won = framesWon(side);
+		const mid = document.createElement('button');
+		mid.type = 'button';
+		mid.className = 'pc-mid';
+		mid.disabled = !winnable;
+		mid.setAttribute('aria-label', `${name}: ${won}. Tap to give ${name} this frame`);
+		Object.assign(mid.dataset, { act: 'result', side, value: 'win' });
+		mid.style.setProperty('--digits', String(won).length);
+		mid.append(div('pc-score', won));
 		host.append(mid);
 
-		// Band 3: the buttons.
-		const foot = div('half-foot');
+		// Band 3: the special wins as rings, and ⋯ for the rest (won by
+		// default, abandon, the table). The plain win is the card itself.
+		const foot = div('pc-foot');
 
 		if (matchOver()) {
-			foot.append(div('half-group-label', matchWinner() === side ? 'Match won' : ''));
+			foot.append(div('pc-foot-label', matchWinner() === side ? 'Match won' : ''));
 			host.append(foot);
 			return;
 		}
 
-		if (draft.break_side === side) {
-			const g = div('half-group');
-			g.append(div('half-group-label', 'On the break'));
-			const row = div('half-row');
-			for (const [value, label] of Object.entries(BREAK_OUTCOME)) {
-				row.append(mbtn(label, draft.break_outcome === value ? 'on' : '', { act: 'outcome', value }));
-			}
-			g.append(row);
-			foot.append(g);
-		}
-
-		const rg = div('half-group');
-		rg.append(div('half-group-label', 'Frame won by'));
-		const rrow = div('half-row');
 		for (const ev of resultsFor(side, draft.break_side)) {
-			rrow.append(mbtn(RESULT_EVENT[ev], 'result', { act: 'result', side, value: ev }, resultDisabled(ev)));
+			if (ev === 'win') continue;
+			const b = mbtn(RESULT_SHORT[ev] || RESULT_EVENT[ev], 'pc-ring', { act: 'result', side, value: ev }, resultDisabled(ev));
+			b.setAttribute('aria-label', `${RESULT_EVENT[ev]} for ${name}`);
+			b.title = RESULT_EVENT[ev];
+			foot.append(b);
 		}
-		rrow.append(mbtn('⋯', 'more', { act: 'more', side }));
-		rg.append(rrow);
-		foot.append(rg);
+		const more = mbtn('⋯', 'pc-ring more', { act: 'more', side });
+		more.setAttribute('aria-label', `More for ${name}`);
+		foot.append(more);
 
 		host.append(foot);
+	}
+
+	// The break event, across both cards: what happened on the breaker's
+	// break, as the site's dropdown pill in the lag colour. Shown only while
+	// somebody is breaking. It starts with nothing chosen; choosing one
+	// starts the frame and ends racking.
+	function renderBreakRow() {
+		const row = els.stageBreak;
+		row.replaceChildren();
+		if (!MATCH.rules.track_breaks || !draft.break_side || matchOver()) return;
+
+		const sel = document.createElement('select');
+		sel.id = 'break-event';
+		sel.dataset.control = 'select';
+		sel.dataset.tone = 'warning';
+		sel.setAttribute('aria-label', `${MATCH[draft.break_side].name}'s break`);
+		for (const [value, label] of Object.entries(BREAK_OUTCOME)) sel.append(new Option(label, value));
+		sel.selectedIndex = draft.break_outcome ? Object.keys(BREAK_OUTCOME).indexOf(draft.break_outcome) : -1;
+		sel.disabled = !canEdit;
+		row.append(sel);
+	}
+
+	function setOutcome(value) {
+		if (!canEdit) return;
+		if (!value || draft.break_outcome === value) return;
+		draft.break_outcome = value;
+		// Entering a break event is what starts the frame and ends racking.
+		beginFrame();
+		TDC.status(els.stageStatus, '', '');
+		renderStage();
+		renderTimePanel();
+		renderHistory();
 	}
 
 	function renderStage() {
@@ -572,8 +657,9 @@
 			else els.overlay.hidden = true;
 		}
 
-		renderHalf('away');
 		renderHalf('home');
+		renderHalf('away');
+		renderBreakRow();
 	}
 
 	// ─────────────────────────────────────────────────────────────────
@@ -670,6 +756,7 @@
 		set('frame', frameStartedAt === null ? '—' : mmss(timerSeconds(frameTimer)),
 			frameStartedAt !== null && timerRunning(frameTimer) ? 'live' : '');
 		set('match', mmss(timerSeconds(matchTimer)), timerRunning(matchTimer) ? 'live' : '');
+		if (liveMatchClock) liveMatchClock.textContent = dur(matchSoFar());
 
 		if (MATCH.rules.shot_clock_enabled) {
 			const onClock = clock.side && (clock.running || clock.expired);
@@ -725,113 +812,478 @@
 		return c;
 	}
 
-	// Portrait: a row per frame, the frame number down the middle, each side's
-	// result either side of it.
+	// What the tables show, counted from each frame. Seconds a frame was
+	// played (stoppages taken out) and its rack took; null where the frame
+	// does not have the times.
+	const frameSecs = (f) => (f.started_at && f.ended_at
+		? Math.max(0, (f.ended_at - f.started_at) / 1000 - (f.paused_seconds || 0)) : null);
+	const rackSecs = (f) => (f.rack_started_at && f.started_at
+		? Math.max(0, (f.started_at - f.rack_started_at) / 1000) : null);
+	const sum = (list) => list.reduce((t, v) => t + v, 0);
+	const avgOf = (list) => (list.length ? sum(list) / list.length : null);
+	const timesOf = (frames, fn) => frames.map(fn).filter((v) => v !== null);
+
+	// A length of time as m:ss, or h:mm:ss from the hour.
+	function dur(s) {
+		if (s === null || s === undefined) return '–';
+		s = Math.max(0, Math.round(s));
+		const h = Math.floor(s / 3600);
+		const m = Math.floor((s % 3600) / 60);
+		const ss = String(s % 60).padStart(2, '0');
+		return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
+	}
+	const timeLine = (cls, s) => div(cls, dur(s));
+
+	// The frame being played, unless the match is over: its number, who is
+	// breaking and what they did, and its rack time once racking is done.
+	function inPlay() {
+		if (matchOver()) return null;
+		return {
+			no: MATCH.frames.length + 1,
+			break_side: draft.break_side,
+			break_outcome: draft.break_outcome,
+			rack: frameStartedAt !== null ? (frameStartedAt - rackStartedAt) / 1000 : null
+		};
+	}
+
+	// A side's Break cell: the event in yellow, or a yellow dot when we know
+	// they broke but nothing was recorded.
+	function breakMark(f, side) {
+		if (f.break_side !== side) return null;
+		return f.break_outcome ? div('hb-event', BREAK_OUTCOME[f.break_outcome]) : div('hb-dot');
+	}
+
+	// A side's Frame cell: a green dot for a win, ringed yellow for a golden
+	// break and green for a break & finish. A reverse B&F is a plain dot (UV,
+	// 26 Oct). An abandoned frame is a dash on both sides.
+	function winMark(f, side) {
+		if (f.status === 'abandoned') return div('hw-none', '–');
+		if (f.status !== 'complete' || f.winner_side !== side) return null;
+		const ring = f.result_event === 'golden_break' ? ' ring-gb'
+			: (f.result_event === 'break_and_finish' ? ' ring-bf' : '');
+		const d = div('hw-dot' + ring);
+		d.title = RESULT_EVENT[f.result_event] || '';
+		return d;
+	}
+
+	const tr = (cls) => {
+		const r = document.createElement('tr');
+		if (cls) r.className = cls;
+		return r;
+	};
+	const spanning = (tag, text, cls, cols, rows) => {
+		const c = cell(tag, text, cls);
+		if (cols) c.colSpan = cols;
+		if (rows) c.rowSpan = rows;
+		return c;
+	};
+
+	// Portrait: a row per frame. Each player's name over their Break and
+	// Frame columns, the frame number down the middle, home on the left (UV,
+	// 26 Oct). Rack time in yellow under the break, frame time in green under
+	// the win. The break columns go when breaks are not recorded.
 	function renderTallTable() {
 		const t = els.tallTable;
 		t.replaceChildren();
-		if (!MATCH.frames.length) return;
+		const play = inPlay();
+		if (!MATCH.frames.length && !play) return;
+		const breaks = MATCH.rules.track_breaks;
+		const span = breaks ? 2 : 1;
 
-		const head = document.createElement('tr');
-		head.append(cell('th', MATCH.home.name), cell('th', 'Frame', 'col-mid'), cell('th', MATCH.away.name));
-		t.append(head);
+		const thead = document.createElement('thead');
+		const names = tr();
+		names.append(spanning('th', MATCH.home.name, 'hn', span), cell('th', '#', 'col-no'),
+			spanning('th', MATCH.away.name, 'hn', span));
+		const heads = tr('sub-head');
+		if (breaks) heads.append(cell('th', 'Break'));
+		heads.append(cell('th', 'Frame'), cell('th', '', 'col-no'), cell('th', 'Frame'));
+		if (breaks) heads.append(cell('th', 'Break'));
+		thead.append(names, heads);
+		t.append(thead);
 
-		for (const f of MATCH.frames) {
-			const tr = document.createElement('tr');
-
-			for (const side of ['home', null, 'away']) {
-				if (side === null) {
-					// Middle: the frame number, and who broke it.
-					const mid = cell('td', undefined, 'col-mid edit', { act: 'editbreak', no: f.no });
-					mid.append(div('frame-no', f.no));
-					mid.append(div('frame-break',
-						f.break_side ? `${SIDE_TAG[f.break_side]} broke${f.break_outcome ? ': ' + BREAK_OUTCOME[f.break_outcome] : ''}` : 'no break'));
-					tr.append(mid);
-					continue;
-				}
-
-				const won = f.status === 'complete' && f.winner_side === side;
-				const c = cell('td', undefined, 'edit side-cell' + (won ? ' won' : ''),
-					{ act: 'editside', no: f.no, side });
-				c.append(div('side-val', f.status === 'abandoned' ? '–' : (won ? '1' : '0')));
-				const short = won ? RESULT_SHORT[f.result_event] : '';
-				if (short) c.append(div('side-sub', short));
-				tr.append(c);
+		const breakCell = (f, side, editable) => {
+			const c = cell('td', undefined, 'hb' + (editable ? ' edit' : ''), editable ? { act: 'editbreak', no: f.no } : undefined);
+			const m = breakMark(f, side);
+			const rack = editable ? rackSecs(f) : f.rack;
+			if (m) {
+				c.append(m);
+				if (rack !== null && rack !== undefined) c.append(timeLine('t-rack', rack));
 			}
-			t.append(tr);
-		}
+			return c;
+		};
+		const frameCell = (f, side) => {
+			const c = cell('td', undefined, 'hw edit', { act: 'editside', no: f.no, side });
+			const m = winMark(f, side);
+			if (m) {
+				c.append(m);
+				if (f.winner_side === side && frameSecs(f) !== null) c.append(timeLine('t-frame', frameSecs(f)));
+			}
+			return c;
+		};
 
-		const foot = document.createElement('tr');
-		foot.append(
-			cell('td', framesWon('home'), 'col-total'),
-			cell('td', 'Totals', 'col-mid col-total'),
-			cell('td', framesWon('away'), 'col-total')
-		);
-		t.append(foot);
+		const body = document.createElement('tbody');
+		for (const f of MATCH.frames) {
+			const row = tr();
+			if (breaks) row.append(breakCell(f, 'home', true));
+			row.append(frameCell(f, 'home'), cell('td', f.no, 'col-no'), frameCell(f, 'away'));
+			if (breaks) row.append(breakCell(f, 'away', true));
+			body.append(row);
+		}
+		// The frame in play, lightly shaded: who is breaking, and their rack
+		// time once racking is done.
+		if (play) {
+			const row = tr('in-play');
+			if (breaks) row.append(breakCell(play, 'home', false));
+			row.append(cell('td', '', 'hw'), cell('td', play.no, 'col-no'), cell('td', '', 'hw'));
+			if (breaks) row.append(breakCell(play, 'away', false));
+			body.append(row);
+		}
+		t.append(body);
+
+		// Totals: frames won, large and green, with the time of the frames
+		// won under them; breaks taken in yellow, with their rack time.
+		const tfoot = document.createElement('tfoot');
+		const row = tr('totals');
+		const totBreak = (side) => {
+			const c = cell('td', undefined, 'hb');
+			const mine = MATCH.frames.filter((f) => f.break_side === side);
+			c.append(div('tot-breaks', mine.length));
+			const racks = timesOf(mine, rackSecs);
+			if (racks.length) c.append(timeLine('t-rack', sum(racks)));
+			return c;
+		};
+		const totWon = (side) => {
+			const c = cell('td', undefined, 'hw');
+			c.append(div('tot-won', framesWon(side)));
+			const played = timesOf(completed().filter((f) => f.winner_side === side), frameSecs);
+			if (played.length) c.append(timeLine('t-frame', sum(played)));
+			return c;
+		};
+		if (breaks) row.append(totBreak('home'));
+		row.append(totWon('home'), cell('td', '', 'col-no'), totWon('away'));
+		if (breaks) row.append(totBreak('away'));
+		tfoot.append(row);
+		t.append(tfoot);
 	}
 
-	// Landscape: frames across, what was recorded down.
+	// Landscape: frames across (headed 1, 2, 3 …), Total last. Each player's
+	// Break and Frame rows either side of a time row, the name down the side
+	// over its two rows. With the timeline on (design §9, an experiment) the
+	// time row marks each rack with a yellow tick at the frame's left edge and
+	// a grey line runs through every win (drawTimeline()).
 	function renderWideTable() {
 		const t = els.wideTable;
 		t.replaceChildren();
-		if (!MATCH.frames.length) return;
+		const play = inPlay();
 		const frames = MATCH.frames;
+		if (!frames.length && !play) return;
+		const breaks = MATCH.rules.track_breaks;
+		const tl = timelineOn();
 
-		const head = document.createElement('tr');
-		head.append(cell('th', `Lag: ${SIDE_TAG[MATCH.first_break_side]}`, 'row-head'));
+		// "By time" (the timeline's test variant): a frame's column is as wide
+		// as its rack and play took, with a floor so a quick frame still reads.
+		const lens = frames.map((f) => (rackSecs(f) || 0) + (frameSecs(f) || 0));
+		const known = lens.filter(Boolean);
+		const byTime = tl && widthsByTime() && known.length > 0;
+		const mean = byTime ? avgOf(known) : 0;
+		const cols = document.createElement('colgroup');
+		const col = (w) => {
+			const c = document.createElement('col');
+			if (w) c.style.width = w;
+			return c;
+		};
+		cols.append(col(), col());
+		for (const len of lens) cols.append(col(byTime ? Math.max(44, Math.round((len || mean) / mean * 72)) + 'px' : null));
+		if (play) cols.append(col());
+		cols.append(col());
+		t.append(cols);
+		t.classList.toggle('timeline', tl);
+		t.classList.toggle('by-time', byTime);
+
+		const head = tr('row-head');
+		head.append(spanning('th', '', 'row-name', 2));
 		for (const f of frames) head.append(cell('th', f.no));
+		if (play) head.append(cell('th', play.no, 'in-play'));
 		head.append(cell('th', 'Total', 'col-total'));
-		t.append(head);
 
-		const breakRow = document.createElement('tr');
-		breakRow.append(cell('th', 'Break', 'row-head'));
-		for (const f of frames) {
-			breakRow.append(cell('td', f.break_side ? SIDE_TAG[f.break_side] : '—',
-				'edit' + (f.break_side_manual ? ' manual' : ''),
-				{ act: 'editcell', field: 'break_side', no: f.no }));
-		}
-		const bh = frames.filter((f) => f.break_side === 'home').length;
-		const ba = frames.filter((f) => f.break_side === 'away').length;
-		breakRow.append(cell('td', `A ${bh} · B ${ba}`, 'col-total'));
-		t.append(breakRow);
-
-		const evRow = document.createElement('tr');
-		evRow.append(cell('th', 'Break event', 'row-head'));
-		for (const f of frames) {
-			evRow.append(cell('td', f.break_outcome ? BREAK_OUTCOME[f.break_outcome] : '—', 'edit',
-				{ act: 'editcell', field: 'break_outcome', no: f.no }));
-		}
-		const counts = {};
-		for (const f of frames) if (f.break_outcome) counts[f.break_outcome] = (counts[f.break_outcome] || 0) + 1;
-		evRow.append(cell('td',
-			Object.entries(counts).map(([k, n]) => `${BREAK_OUTCOME[k]} ${n}`).join(' · ') || '—', 'col-total'));
-		t.append(evRow);
-
-		const winRow = document.createElement('tr');
-		winRow.append(cell('th', 'Frame winner', 'row-head'));
-		for (const f of frames) {
-			let text = '—';
-			if (f.status === 'abandoned') text = 'ab.';
-			else if (f.winner_side) {
-				const short = RESULT_SHORT[f.result_event] || '';
-				text = SIDE_TAG[f.winner_side] + (short ? ` (${short})` : '');
+		const sideRows = (side, order) => {
+			const rows = [];
+			for (const kind of order) {
+				if (kind === 'break' && !breaks) continue;
+				const row = tr('row-' + kind);
+				row.append(cell('th', kind === 'break' ? 'Break' : 'Frame', 'row-label'));
+				for (const f of frames) {
+					if (kind === 'break') {
+						const c = cell('td', undefined, 'hb edit', { act: 'editcell', field: 'break_outcome', no: f.no });
+						const m = breakMark(f, side);
+						if (m) c.append(m);
+						row.append(c);
+					} else {
+						const c = cell('td', undefined, 'hw edit', { act: 'editside', no: f.no, side });
+						const m = winMark(f, side);
+						if (m) { m.dataset.no = f.no; c.append(m); }
+						row.append(c);
+					}
+				}
+				if (play) {
+					const c = cell('td', undefined, (kind === 'break' ? 'hb' : 'hw') + ' in-play');
+					const m = kind === 'break' ? breakMark(play, side) : null;
+					if (m) c.append(m);
+					row.append(c);
+				}
+				const tot = cell('td', undefined, 'col-total');
+				tot.append(kind === 'break'
+					? div('tot-breaks', frames.filter((f) => f.break_side === side).length)
+					: div('tot-won', framesWon(side)));
+				row.append(tot);
+				rows.push(row);
 			}
-			winRow.append(cell('td', text, 'edit won-' + (f.winner_side || 'none'),
-				{ act: 'editcell', field: 'result', no: f.no }));
+			rows[0].prepend(spanning('th', MATCH[side].name, 'row-name', 0, rows.length));
+			return rows;
+		};
+
+		// Rack in yellow over frame in green; with the timeline on, the rack at
+		// the frame's left edge over its tick and the frame time in the middle.
+		const timeRow = tr('row-time');
+		timeRow.append(spanning('th', tl ? '' : 'Time', 'row-name', 2));
+		for (const f of frames) {
+			const c = cell('td', undefined, 'ht');
+			if (rackSecs(f) !== null) c.append(timeLine('t-rack', rackSecs(f)));
+			if (frameSecs(f) !== null) c.append(timeLine('t-frame', frameSecs(f)));
+			timeRow.append(c);
 		}
-		winRow.append(cell('td', `${framesWon('home')} — ${framesWon('away')}`, 'col-total'));
-		t.append(winRow);
+		if (play) {
+			const c = cell('td', undefined, 'ht in-play');
+			if (play.rack !== null) c.append(timeLine('t-rack', play.rack));
+			timeRow.append(c);
+		}
+		const total = cell('td', undefined, 'ht col-total');
+		const racks = timesOf(frames, rackSecs);
+		const played = timesOf(frames, frameSecs);
+		if (racks.length) total.append(timeLine('t-rack', sum(racks)));
+		if (played.length) total.append(timeLine('t-frame', sum(played)));
+		timeRow.append(total);
+
+		t.append(head, ...sideRows('home', ['break', 'frame']), timeRow, ...sideRows('away', ['frame', 'break']));
+	}
+
+	// ─── The timeline (design §9) ───
+	// An experiment: UV decides whether it stays. Landscape only. Whether it
+	// is drawn, and its column widths, are this viewer's choice, remembered
+	// in this browser when it can be.
+	const TL_KEY = 'tdc.match.timeline';
+	let tlPrefs = (() => {
+		try { return JSON.parse(localStorage.getItem(TL_KEY)) || {}; } catch { return {}; }
+	})();
+	const timelineOn = () => tlPrefs.timeline !== false;
+	const widthsByTime = () => tlPrefs.widths === true;
+	function setTimelinePref(key, value) {
+		tlPrefs = Object.assign({}, tlPrefs, { [key]: value });
+		try { localStorage.setItem(TL_KEY, JSON.stringify(tlPrefs)); } catch { /* kept for this visit only */ }
+	}
+
+	// One smooth grey line behind the table: from the base line at the first
+	// rack tick, through every win dot above and below the time row (an
+	// abandoned frame's point is on the base line), and a dashed tail to the
+	// frame in play. A Catmull-Rom spline through the points, as Béziers.
+	function drawTimeline() {
+		const svg = els.tlLine;
+		svg.replaceChildren();
+		const t = els.wideTable;
+		const timeRow = t.querySelector('tr.row-time');
+		if (!timelineOn() || !timeRow || !els.wideBox.offsetWidth) return;
+
+		const box = els.wideBox.getBoundingClientRect();
+		const rowBox = timeRow.getBoundingClientRect();
+		const base = rowBox.top + rowBox.height / 2 - box.top;
+		const cells = [...timeRow.querySelectorAll('td.ht:not(.col-total)')];
+		if (!cells.length) return;
+		const centre = (r) => r.left + r.width / 2 - box.left;
+
+		const pts = [[cells[0].getBoundingClientRect().left - box.left, base]];
+		MATCH.frames.forEach((f, i) => {
+			const dot = t.querySelector(`.hw-dot[data-no="${f.no}"]`);
+			const r = (dot || cells[i]).getBoundingClientRect();
+			pts.push([centre(r), dot ? r.top + r.height / 2 - box.top : base]);
+		});
+		const tail = cells.length > MATCH.frames.length;
+		if (tail) pts.push([centre(cells[MATCH.frames.length].getBoundingClientRect()), base]);
+		if (pts.length < 2) return;
+
+		const P = (i) => pts[Math.max(0, Math.min(pts.length - 1, i))];
+		const xy = (p) => p[0].toFixed(1) + ' ' + p[1].toFixed(1);
+		const seg = (i) => {
+			const [p0, p1, p2, p3] = [P(i - 1), P(i), P(i + 1), P(i + 2)];
+			const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+			const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+			return ` C${xy(c1)} ${xy(c2)} ${xy(p2)}`;
+		};
+		const NS = 'http://www.w3.org/2000/svg';
+		const path = (d, cls) => {
+			const p = document.createElementNS(NS, 'path');
+			p.setAttribute('d', d);
+			p.setAttribute('class', cls);
+			svg.append(p);
+		};
+		svg.setAttribute('width', t.offsetWidth);
+		svg.setAttribute('height', t.offsetHeight);
+		svg.setAttribute('viewBox', `0 0 ${t.offsetWidth} ${t.offsetHeight}`);
+
+		const solid = tail ? pts.length - 2 : pts.length - 1;
+		let d = 'M' + xy(pts[0]);
+		for (let i = 0; i < solid; i++) d += seg(i);
+		if (solid > 0) path(d, 'tl-solid');
+		if (tail) path('M' + xy(pts[solid]) + seg(solid), 'tl-tail');
 	}
 
 	function renderHistory() {
 		// The cells are about to be replaced, so an anchor into them is stale.
 		if (cellMenuOpen) closeCellMenu();
-		els.undoBtn.hidden = MATCH.frames.length === 0 || !canEdit;
+		const n = MATCH.frames.length;
+		els.undoRow.hidden = n === 0 || !canEdit;
+		els.undoSlide.dataset.label = n ? `Slide to undo frame ${n}` : 'Slide to undo the last frame';
 		renderTallTable();
 		renderWideTable();
-		els.historyLegend.textContent = MATCH.frames.length
-			? `A = ${MATCH.home.name} · B = ${MATCH.away.name}. Tap any cell to correct it; the score follows.`
+		els.tlToggle.textContent = timelineOn() ? 'Timeline on' : 'Timeline off';
+		els.tlWidths.textContent = widthsByTime() ? 'Widths by time' : 'Widths even';
+		els.tlWidths.hidden = !timelineOn();
+		els.historyLegend.textContent = n
+			? 'Tap any cell to correct it; the score follows.'
 			: 'No frames played yet.';
+		drawTimeline();
+		renderStats();
+	}
+
+	// ─────────────────────────────────────────────────────────────────
+	// Stats (design §7 and §8). Every number is counted from the frames on
+	// each render; nothing here is stored.
+	// ─────────────────────────────────────────────────────────────────
+
+	let liveMatchClock = null;   // the "match time so far" cell, kept going by paintTimes()
+
+	// From the first frame's rack to now, or to the last frame's end once the
+	// match is over. The match clock is counted from the frames too
+	// (syncClocks()), so before the first frame it is the page's own.
+	function matchSoFar() {
+		const frames = MATCH.frames;
+		const first = frames.length ? (frames[0].rack_started_at || frames[0].started_at) : null;
+		const last = frames.length ? frames[frames.length - 1] : null;
+		if (matchOver() && first && last.ended_at) return (last.ended_at - first) / 1000;
+		return timerSeconds(matchTimer);
+	}
+
+	function renderStats() {
+		liveMatchClock = null;
+		els.statsPanel.hidden = !MATCH.frames.length;
+		if (!MATCH.frames.length) return;
+		const r = MATCH.rules;
+		const done = completed();
+		const won = (side, test) => done.filter((f) => f.winner_side === side && test(f)).length;
+		const by = (ev) => (f) => f.result_event === ev;
+		const broke = (side) => MATCH.frames.filter((f) => f.break_side === side);
+
+		// Each player's: home · what · away.
+		const p = els.playerStats;
+		p.replaceChildren();
+		const ph = document.createElement('thead');
+		const phr = tr();
+		phr.append(cell('th', MATCH.home.name, 'ps-side'), cell('th', ''), cell('th', MATCH.away.name, 'ps-side'));
+		ph.append(phr);
+		p.append(ph);
+		const group = (title, cls, rows) => {
+			const body = document.createElement('tbody');
+			if (cls) body.className = cls;
+			const g = tr('st-group');
+			g.append(spanning('th', title, '', 3));
+			body.append(g);
+			for (const [label, fn, rowCls] of rows) {
+				const row = tr(rowCls);
+				row.append(cell('td', String(fn('home')), 'st-v'), cell('th', label, 'st-k'), cell('td', String(fn('away')), 'st-v'));
+				body.append(row);
+			}
+			p.append(body);
+		};
+
+		const frameRows = [['Frames won', (s) => framesWon(s), 'st-won']];
+		if (r.track_breaks && r.break_finish_enabled) frameRows.push(['Break & finish', (s) => won(s, by('break_and_finish'))]);
+		if (r.track_breaks && r.golden_break_enabled) frameRows.push(['Golden break', (s) => won(s, by('golden_break'))]);
+		if (r.track_breaks && r.reverse_break_finish_enabled) frameRows.push(['Reverse B&F', (s) => won(s, by('reverse_break_and_finish'))]);
+		frameRows.push(['Won by default', (s) => won(s, by('default'))]);
+		if (r.track_breaks) {
+			frameRows.push(['Won on own break', (s) => won(s, (f) => f.break_side === s)]);
+			frameRows.push(['Won on the other\'s break', (s) => won(s, (f) => f.break_side === otherSide(s))]);
+		}
+		frameRows.push(['Average frame won', (s) => dur(avgOf(timesOf(done.filter((f) => f.winner_side === s), frameSecs)))]);
+		group('Frames', '', frameRows);
+
+		if (r.track_breaks) {
+			const breakRows = [['Breaks taken', (s) => broke(s).length]];
+			for (const [k, label] of Object.entries(BREAK_OUTCOME)) {
+				breakRows.push([label, (s) => broke(s).filter((f) => f.break_outcome === k).length]);
+			}
+			breakRows.push(['Not recorded', (s) => broke(s).filter((f) => !f.break_outcome).length]);
+			group('Breaks', 'st-yellow', breakRows);
+
+			// The breaker racks their own frame (UV, 26 Oct), so a rack is the
+			// breaker's.
+			const racks = (s) => timesOf(broke(s), rackSecs);
+			group('Racking', 'st-yellow', [
+				['Racks', (s) => racks(s).length],
+				['Rack time', (s) => (racks(s).length ? dur(sum(racks(s))) : '–')],
+				['Average rack', (s) => dur(avgOf(racks(s)))]
+			]);
+		}
+
+		// The match's: what · value.
+		const m = els.matchStats;
+		m.replaceChildren();
+		const mgroup = (title, rows) => {
+			const body = document.createElement('tbody');
+			const g = tr('st-group');
+			g.append(spanning('th', title, '', 2));
+			body.append(g);
+			for (const [label, value, rowCls] of rows) {
+				const row = tr(rowCls);
+				const v = cell('td', value, 'st-v');
+				row.append(cell('th', label, 'st-k'), v);
+				if (rowCls === 'live') liveMatchClock = v;
+				body.append(row);
+			}
+			m.append(body);
+		};
+
+		const play = inPlay();
+		const wc = WIN_CONDITION[r.win_condition_type] || 'TDC (Error)';
+		mgroup('Result', [
+			['Score', `${framesWon('home')} – ${framesWon('away')}`],
+			r.win_condition_type === 'free_play' ? ['Format', wc] : [wc, String(r.win_condition_target)],
+			['Frames played', String(MATCH.frames.length) + (play ? `, frame ${play.no} in play` : '')]
+		]);
+
+		const timed = MATCH.frames.filter((f) => frameSecs(f) !== null);
+		const racks = timesOf(MATCH.frames, rackSecs);
+		const timeRows = [[matchOver() ? 'Match time' : 'Match time so far', dur(matchSoFar()), 'live']];
+		if (timed.length) {
+			const longest = timed.reduce((a, f) => (frameSecs(f) > frameSecs(a) ? f : a));
+			const shortest = timed.reduce((a, f) => (frameSecs(f) < frameSecs(a) ? f : a));
+			timeRows.push(['Playing time', dur(sum(timed.map(frameSecs)))]);
+			if (racks.length) timeRows.push(['Racking time', dur(sum(racks))]);
+			timeRows.push(['Average frame', dur(avgOf(timed.map(frameSecs)))]);
+			if (racks.length) timeRows.push(['Average rack', dur(avgOf(racks))]);
+			timeRows.push(['Longest frame', `${dur(frameSecs(longest))} (frame ${longest.no})`]);
+			timeRows.push(['Shortest frame', `${dur(frameSecs(shortest))} (frame ${shortest.no})`]);
+		}
+		mgroup('Time', timeRows);
+
+		if (r.track_breaks) {
+			const pct = (a, b) => (b ? `${a} of ${b} (${Math.round(a / b * 100)}%)` : '–');
+			const decided = done.filter((f) => f.break_side && f.winner_side);
+			const recorded = MATCH.frames.filter((f) => f.break_outcome);
+			mgroup('Breaks', [
+				['Breaker won the frame', pct(decided.filter((f) => f.winner_side === f.break_side).length, decided.length)],
+				['A ball in off the break', pct(recorded.filter((f) => f.break_outcome === 'in').length, recorded.length)]
+			]);
+		}
 	}
 
 	const frameByNo = (no) => MATCH.frames.find((x) => x.no === Number(no));
@@ -1508,17 +1960,6 @@
 				closeOverlay();
 				renderAll();
 				if (liveMatchId) persistSettings();
-				return;
-			}
-			case 'outcome': {
-				const clearing = draft.break_outcome === b.dataset.value;
-				draft.break_outcome = clearing ? null : b.dataset.value;
-				// Entering a break event is what starts the frame and ends racking.
-				// Clearing it does not un-start a frame that has begun.
-				if (!clearing) beginFrame();
-				TDC.status(els.stageStatus, '', '');
-				renderStage();
-				renderTimePanel();
 				return;
 			}
 			case 'result':
@@ -2609,6 +3050,7 @@
 		PLAYERS = loaded.players;
 		MATCH = loaded.match;
 		recomputeBreaks();
+		syncClocks();
 		draft = newDraft();
 		lastKnownOver = matchOver();
 		renderAll();
@@ -2859,7 +3301,16 @@
 		document.addEventListener('click', onClick);
 		els.panel.addEventListener('change', onSettingChange);
 		els.when.addEventListener('change', persistWhen);
-		els.undoBtn.addEventListener('click', undo);
+		// The slide reaching its end is the undo; the control puts itself back.
+		els.undoSlide.addEventListener('change', () => {
+			if (Number(els.undoSlide.value) <= Number(els.undoSlide.min)) undo();
+		});
+		els.stageBreak.addEventListener('change', (e) => {
+			if (e.target.id === 'break-event') setOutcome(e.target.value);
+		});
+		els.tlToggle.addEventListener('click', () => { setTimelinePref('timeline', !timelineOn()); renderHistory(); });
+		els.tlWidths.addEventListener('click', () => { setTimelinePref('widths', !widthsByTime()); renderHistory(); });
+		new ResizeObserver(() => drawTimeline()).observe(els.wideBox);
 		els.panelClose.addEventListener('click', closePanel);
 		els.scrim.addEventListener('click', closePanel);
 		document.addEventListener('keydown', (e) => {
@@ -2878,6 +3329,7 @@
 
 		addNavButton();
 		recomputeBreaks();
+		syncClocks();
 		draft = newDraft();
 		renderAll();
 		setInterval(tick, 250);

@@ -368,3 +368,82 @@
 	opacity: 0;
 	pointer-events: none;
 }
+
+/* data-tone="warning": the match page's break event, in the lag colour. */
+.tdc-select[data-tone="warning"] { border-color: var(--color-warning); }
+.tdc-select[data-tone="warning"] .tdc-select-thumb { background: var(--color-warning); }
+.tdc-select[data-tone="warning"]:hover,
+.tdc-select[data-tone="warning"]:focus-within {
+	border-color: var(--color-warning);
+	box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-warning) 55%, transparent),
+		0 0 16px color-mix(in srgb, var(--color-warning) 30%, transparent);
+}
+
+/* ── Slide ────────────────────────────────────────────────────────────
+   Slide to confirm (the match page's undo). A pill outlined like the
+   other controls, a cream knob holding an undo arrow at the max end, and
+   the words in the middle. The knob's place is --at, set by the script:
+   1 at the max end (right), 0 at the min end (left). The words fade as it
+   travels. The real range lies invisibly over the pill for the keyboard. */
+.tdc-slide {
+	--at: 1;
+	position: relative;
+	display: flex;
+	align-items: center;
+	box-sizing: border-box;
+	width: 100%;
+	height: var(--slide-height);
+	padding: var(--space-1);
+	border: var(--control-border) solid var(--control-line);
+	border-radius: var(--radius-pill);
+	container-type: inline-size;
+	touch-action: pan-y;
+	user-select: none;
+	-webkit-user-select: none;
+}
+.tdc-slide:focus-within { border-color: var(--color-primary); box-shadow: var(--glow-primary); }
+.tdc-slide.is-disabled { opacity: 0.4; pointer-events: none; }
+
+.tdc-slide-label {
+	flex: 1 1 auto;
+	padding-inline: var(--slide-knob);
+	text-align: center;
+	font-size: var(--slide-text);
+	font-weight: 600;
+	color: var(--text-primary);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	opacity: var(--at);
+}
+/* Which way to slide, before the words. */
+.tdc-slide-label::before { content: '‹‹ '; color: var(--text-muted); }
+
+.tdc-slide-knob {
+	position: absolute;
+	left: var(--space-1);
+	top: 50%;
+	display: grid;
+	place-items: center;
+	width: var(--slide-knob);
+	height: var(--slide-knob);
+	border-radius: var(--radius-round);
+	background: var(--control-line);
+	color: var(--bg-base);
+	cursor: grab;
+	touch-action: none;
+	transform: translate(calc(var(--at) * (100cqw - var(--slide-knob))), -50%);
+	transition: transform var(--control-motion) cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+.tdc-slide.is-dragging .tdc-slide-knob { transition: none; cursor: grabbing; }
+.tdc-slide-knob svg { width: 75%; height: 75%; stroke-width: 9; }
+
+.tdc-slide > input[type="range"] {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	opacity: 0;
+	pointer-events: none;
+}

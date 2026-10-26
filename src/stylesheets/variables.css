@@ -81,6 +81,9 @@
   --select-text: 0.85rem;         /* an option in a select pill */
   --control-motion: 0.22s;        /* a rolling number, a sliding pill */
   --control-reveal: 0.35s;        /* a field fading in or out as its space opens or closes */
+  --slide-height: 3.25rem;        /* a slide to confirm (the match page's undo) */
+  --slide-knob: 2.6rem;           /* its cream knob */
+  --slide-text: 0.9rem;           /* the words in it */
   /* The ring and the switch (status.css), and every icon drawing itself */
   --ring-size: 2.25rem;           /* a ring: a tick against a person or a thing */
   --ring-size-table: 1.75rem;     /* the same in a table row */
@@ -101,6 +104,14 @@
   --dots-reveal: 0.25s;           /* a target coming back once its call is done */
   --dots-pulse: 2s;               /* reduced motion: one breath of a tapped target while it waits */
   --dots-pulse-peak: 0.5;         /* reduced motion: how bright it gets at the top of each breath */
+  /* The match page's score cards (match.css; docs/design/match-score-input.md) */
+  --score-band: #2b2b2b;          /* a card's solid header and footer */
+  --score-depth-alpha: 0.55;      /* the bands' shadow on the score, and the score's dark inner edge */
+  --score-drop-alpha: 0.45;       /* the soft shadow under a whole card */
+  --score-stretch: 1.4;           /* how much taller than its natural shape a score digit is drawn */
+  --match-glow-size: 1000px;      /* the green glow behind the match page: how far it reaches */
+  --match-glow-rise: 760px;       /* how far above the top of the screen its centre is */
+  --timeline-line: #6b6b6b;       /* the grey line through the wins on the frame history's timeline */
   /* The native calendar icon on a date-and-time field (global.css) */
   --icon-calendar: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E");
 
@@ -157,6 +168,9 @@
   --scrim-alpha: 0.47;
   --pic-shadow-alpha: 0.2;
   --surface-blur: 8px;
+  --score-band: #e6d8bd;
+  --score-depth-alpha: 0.15;
+  --score-drop-alpha: 0.2;
 
   /* Logo. Set from the artwork section of /sandbox/. */
   --logo-primary: #594f4f;

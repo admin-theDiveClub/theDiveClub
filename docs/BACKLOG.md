@@ -60,10 +60,10 @@ Built from the project doc `claude/stats-todo.md` on 23 Oct 2026, with everythin
 
 | | What |
 |---|---|
-| 1 | Rotate the top half 180° in portrait so the opponent reads it across the table? |
+| 1 | ~~Rotate the top half 180° in portrait so the opponent reads it across the table?~~ **Retired 26 Oct:** the new score input puts the two players side by side in portrait too, so there is no top half (`docs/design/match-score-input.md`) |
 | 2 | Should the signed-in player always be the bottom half? |
 | 3 | One tap ends a frame and the match. Should sanctioned matches need a confirm or long-press? |
-| 4 | Clearing a break event doesn't un-start the frame, so a mis-tap sets a frame start that only Undo clears |
+| 4 | A break event mis-tapped starts the frame, and changing it does not undo that (since 26 Oct the pill changes the event but cannot clear it), so the frame's start stays where the mis-tap put it |
 | 5 | Changing the race target mid-match can make a match over, but does not auto-submit |
 | 6 | "Table not set" and every match showing as social — deliberate placeholders until those layers exist |
 

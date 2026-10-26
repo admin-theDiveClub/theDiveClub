@@ -6,53 +6,257 @@
 
 .match-page { width: 100%; }
 
+/* The green glow behind the page: a circle whose centre is far above the
+   screen, so only its faded edge shows at the top. A fixed layer rather than
+   background-attachment: fixed, which iPhones ignore, so it stays put while
+   the page scrolls. The nav is see-through enough to show it. */
+.match-page::before {
+	content: '';
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	background: radial-gradient(circle var(--match-glow-size) at 50% calc(-1 * var(--match-glow-rise)),
+		var(--color-primary), var(--bg-base));
+}
+
 /* ── The stage ───────────────────────────────────────────────────── */
 /* body already carries padding-top: var(--nav-total) for the fixed nav (nav.css), so the
    stage takes exactly what is left of the viewport. dvh keeps it right while
-   mobile browser chrome slides in and out. */
+   mobile browser chrome slides in and out.
+
+   Portrait: the frame line across the top, the two cards side by side, the
+   break event across the bottom. Landscape: the frame line becomes a narrow
+   column between the cards. Home is on the left in both (UV, 26 Oct). */
 .stage {
 	display: grid;
-	grid-template-rows: 1fr auto 1fr;
+	grid-template:
+		"line line" auto
+		"home away" 1fr
+		"brk  brk"  auto
+		/ 1fr 1fr;
+	gap: var(--space-2);
+	padding: var(--space-2) var(--space-3) var(--space-3);
 	height: calc(100dvh - var(--nav-total) - env(safe-area-inset-bottom, 0px));
 	position: relative;
 	overflow: hidden;
 }
 /* No min-height: the stage is exactly one screen, never more. On a very short
-   viewport a half scrolls inside itself rather than pushing the stage past the
-   fold, so the halves always stay side by side (or stacked) as designed. */
+   viewport a card's score shrinks rather than pushing the stage past the fold. */
 
 @media (orientation: landscape) {
 	.stage {
-		grid-template-rows: none;
-		grid-template-columns: 1fr auto 1fr;
+		grid-template:
+			"home line away" 1fr
+			"brk  brk  brk"  auto
+			/ 1fr auto 1fr;
 	}
 }
 
-/* ── A side's half: header, score, buttons ───────────────────────── */
-.half {
-	display: grid;
-	grid-template-rows: auto 1fr auto;
-	gap: 0.4rem;
-	padding: 0.6rem 0.75rem;
-	min-height: 0;
-	min-width: 0;
-	overflow-y: auto;
-	-webkit-overflow-scrolling: touch;
-	text-align: center;
+/* ── The frame line ──────────────────────────────────────────────── */
+.stage-line {
+	grid-area: line;
+	display: flex;
+	align-items: baseline;
+	justify-content: center;
+	gap: var(--space-2);
+	font-size: 0.8rem;
+	color: var(--text-muted);
+	white-space: nowrap;
 }
-.half.breaking {
-	background: color-mix(in srgb, var(--color-primary) 7%, transparent);
+.mid-frame {
+	font-family: var(--font-display);
+	font-size: 1.15rem;
+	color: var(--text-primary);
+}
+.mid-target::before { content: '·'; margin-right: var(--space-2); }
+
+@media (orientation: landscape) {
+	.stage-line {
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-1);
+		text-align: center;
+		white-space: normal;
+		width: 4.5rem;
+	}
+	.mid-target::before { content: none; }
 }
 
-/* Band 1: who is at the table. */
-.half-head {
+/* ── A player's card: header, score, footer ──────────────────────── */
+/* Solid bands top and bottom, a see-through middle holding the score. The
+   bands cast a shadow onto the middle, the middle is dark round its inner
+   edge, and the whole card sits on a soft shadow. */
+.pcard {
+	display: grid;
+	grid-template-rows: auto 1fr auto;
+	min-height: 0;
+	min-width: 0;
+	border: var(--control-border) solid transparent;
+	border-radius: var(--radius-lg);
+	overflow: hidden;
+	text-align: center;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, var(--score-drop-alpha));
+}
+.pcard[data-side="home"] { grid-area: home; }
+.pcard[data-side="away"] { grid-area: away; }
+
+/* The breaker's card: the lag colour, as on the team card. */
+.pcard.breaking {
+	border-color: var(--color-warning);
+	box-shadow: 0 8px 24px rgba(0, 0, 0, var(--score-drop-alpha)),
+		0 0 16px color-mix(in srgb, var(--color-warning) 40%, transparent);
+}
+
+/* Band 1: the picture above the name. */
+.pc-head,
+.pc-foot {
+	position: relative;
+	z-index: 1;
+	background: var(--score-band);
+}
+.pc-head {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--space-1);
+	padding: var(--space-2) var(--space-2) var(--space-2);
+	min-width: 0;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, var(--score-depth-alpha));
+}
+.pc-pic { position: relative; }
+.pc-name {
+	margin: 0;
+	font-family: var(--font-display);
+	font-size: 1.3rem;
+	line-height: 1.1;
+	overflow-wrap: anywhere;
+}
+.pc-name .sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+}
+/* The breaker's picture wears a small yellow cue ball. */
+.break-badge {
+	position: absolute;
+	right: calc(-1 * var(--space-2));
+	bottom: 0;
+	width: 45%;
+	height: 45%;
+	border-radius: var(--radius-round);
+	background: var(--score-band);
+	fill: none;
+	stroke: var(--color-warning);
+	stroke-linecap: round;
+}
+
+/* In a team match the lineup is a button: tap it to change who is at the
+   table. The page refuses team matches today; kept for when it does not. */
+.pc-sub {
+	background: none;
+	border: none;
+	padding: 0;
+	cursor: pointer;
+	font: inherit;
+	font-size: 0.78rem;
+	color: var(--text-muted);
+	text-decoration: underline dotted;
+	text-underline-offset: 3px;
+	overflow-wrap: anywhere;
+}
+
+/* Band 2: the score, which is what you read from across the table. One
+   digit fills the card's width less a small margin, drawn taller than its
+   natural shape; it shrinks to fit the height when the card is short (a
+   phone on its side). Two digits share the width. 0.65 and 1.1 are a
+   Rushford Clean digit's width and height for its size (measured 26 Oct). */
+.pc-mid {
+	container-type: size;
+	display: grid;
+	place-items: center;
+	min-height: 0;
+	overflow: hidden;
+	box-shadow: inset 0 0 24px rgba(0, 0, 0, var(--score-depth-alpha));
+}
+.pc-score {
+	font-family: var(--font-display);
+	font-variant-numeric: tabular-nums;
+	line-height: 1;
+	text-box: trim-both cap alphabetic;
+	font-size: min(
+		(100cqw - 2 * var(--space-3)) / (0.65 * var(--digits, 1)),
+		(100cqh - 2 * var(--space-3)) / (1.1 * var(--score-stretch)));
+	transform: scaleY(var(--score-stretch));
+}
+.pcard.leading .pc-score { color: var(--color-primary); }
+
+/* Band 3: the buttons. */
+.pc-foot {
+	display: flex;
+	justify-content: center;
+	gap: var(--space-1);
+	padding: var(--space-2);
+	box-shadow: 0 -4px 10px rgba(0, 0, 0, var(--score-depth-alpha));
+}
+/* The special wins as rings, cream like the site's ring icons: B&F, golden
+   break and ⋯ on the breaker's card, reverse B&F and ⋯ on the other. Greyed
+   while they wait for the break event. */
+.mbtn.pc-ring {
+	flex: 0 0 auto;
+	display: grid;
+	place-items: center;
+	width: var(--ring-size);
+	min-width: 0;
+	height: var(--ring-size);
+	min-height: 0;
+	padding: 0;
+	border: var(--control-border) solid var(--control-line);
+	border-radius: var(--radius-round);
+	background: none;
+	font-size: 0.62rem;
+	font-weight: 700;
+	letter-spacing: -0.02em;
+	line-height: 1;
+	color: var(--text-primary);
+}
+.mbtn.pc-ring:not(:disabled):hover { box-shadow: var(--glow-primary); border-color: var(--color-primary); }
+.mbtn.pc-ring.more { min-width: 0; font-size: 1rem; font-weight: 400; color: var(--text-primary); }
+.pc-foot-label {
+	font-size: 0.7rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--color-primary);
+	min-height: 2.75rem;
 	display: flex;
 	align-items: center;
-	justify-content: center;
-	gap: 0.6rem;
-	text-align: left;
-	min-width: 0;
 }
+
+/* ── The break event, across both cards ──────────────────────────── */
+.stage-break {
+	grid-area: brk;
+	display: flex;
+	gap: var(--space-2);
+}
+.stage-break:empty { display: none; }
+
+@media (orientation: landscape) {
+	/* Picture at the card's inner edge, the name centred in the row. */
+	.pc-head {
+		display: grid;
+		grid-template-columns: 2.5rem 1fr 2.5rem;
+		align-items: center;
+		padding: var(--space-1) var(--space-2);
+	}
+	.pc-name { grid-column: 2; grid-row: 1; }
+	.pcard[data-side="home"] .pc-pic { grid-column: 3; grid-row: 1; }
+	.pcard[data-side="away"] .pc-pic { grid-column: 1; grid-row: 1; }
+	.pc-sub { grid-column: 1 / -1; }
+}
+
 .avatar {
 	flex: 0 0 auto;
 	width: 2.5rem;
@@ -71,92 +275,9 @@
 	font-weight: 600;
 	letter-spacing: 0.03em;
 }
-.half.breaking .avatar { border-color: var(--color-primary); }
+.pcard .avatar { width: 2.75rem; height: 2.75rem; }
 
-.half-head-text { min-width: 0; }
-.half-title-row {
-	display: flex;
-	align-items: baseline;
-	gap: 0.45rem;
-	flex-wrap: wrap;
-}
-.half-name {
-	font-size: 1.15rem;
-	margin: 0;
-	overflow-wrap: anywhere;
-}
-.half-sub {
-	display: block;
-	font-size: 0.78rem;
-	color: var(--text-muted);
-	overflow-wrap: anywhere;
-	margin-top: 0.1rem;
-}
-/* In a team match the lineup is a button: tap it to change who is at the table. */
-button.half-sub {
-	background: none;
-	border: none;
-	padding: 0;
-	cursor: pointer;
-	font: inherit;
-	color: var(--text-muted);
-	text-align: left;
-	text-decoration: underline dotted;
-	text-underline-offset: 3px;
-}
-.break-flag {
-	font-size: 0.6rem;
-	text-transform: uppercase;
-	letter-spacing: 0.08em;
-	color: var(--color-primary);
-	border: 1px solid var(--color-primary);
-	border-radius: 999px;
-	padding: 0.1rem 0.4rem;
-	white-space: nowrap;
-}
-
-/* Band 2: the score, which is what you read from across the table. */
-.half-mid {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	min-height: 0;
-}
-.half-score {
-	font-size: clamp(2.5rem, 12vmin, 5rem);
-	font-weight: 700;
-	line-height: 0.95;
-	font-variant-numeric: tabular-nums;
-}
-.half.leading .half-score { color: var(--color-primary); }
-
-/* Band 3: the buttons. */
-.half-foot {
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-	align-items: center;
-}
-
-/* ── Buttons inside a half ───────────────────────────────────────── */
-.half-group {
-	width: 100%;
-	max-width: 22rem;
-}
-.half-group-label {
-	font-size: 0.65rem;
-	text-transform: uppercase;
-	letter-spacing: 0.08em;
-	color: var(--text-muted);
-	margin-bottom: 0.3rem;
-}
-.half-row {
-	display: flex;
-	flex-wrap: wrap;
-	justify-content: center;
-	gap: 0.35rem;
-}
-
+/* ── The page's buttons ──────────────────────────────────────────── */
 .mbtn {
 	flex: 1 1 auto;
 	min-width: 4.2rem;
@@ -192,36 +313,35 @@ button.half-sub {
 	color: var(--text-muted);
 }
 
-/* ── Divider between the halves ──────────────────────────────────── */
-.stage-mid {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 0.75rem;
-	padding: 0.3rem 0.75rem;
-	border-top: 1px solid var(--border-color);
-	border-bottom: 1px solid var(--border-color);
-	background: var(--bg-surface);
-	font-size: 0.7rem;
-	text-transform: uppercase;
-	letter-spacing: 0.08em;
-	color: var(--text-muted);
-	white-space: nowrap;
+/* The card is the win button: the score is a real button with its look
+   taken off, and a press lights the card for an instant. */
+button.pc-mid {
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	border: none;
+	border-radius: 0;
+	background: none;
+	color: inherit;
+	font: inherit;
+	cursor: default;
+	-webkit-tap-highlight-color: transparent;
 }
-@media (orientation: landscape) {
-	.stage-mid {
-		flex-direction: column;
-		border-top: none;
-		border-bottom: none;
-		border-left: 1px solid var(--border-color);
-		border-right: 1px solid var(--border-color);
-		padding: 0.75rem 0.3rem;
-		writing-mode: vertical-rl;
-	}
-}
-.mid-frame { font-weight: 700; color: var(--text-primary); }
+.pcard.winnable .pc-head,
+.pcard.winnable button.pc-mid { cursor: pointer; }
+.pcard.winnable button.pc-mid:active { background: color-mix(in srgb, var(--color-primary) 10%, transparent); }
+.pcard.winnable:hover { box-shadow: 0 8px 24px rgba(0, 0, 0, var(--score-drop-alpha)), var(--glow-primary); }
+.pcard.winnable.breaking:hover { box-shadow: 0 8px 24px rgba(0, 0, 0, var(--score-drop-alpha)),
+	0 0 16px color-mix(in srgb, var(--color-warning) 40%, transparent), var(--glow-primary); }
+button.pc-mid:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -4px; }
 
-/* ── Overlay: asked before the halves mean anything ──────────────── */
+/* The break event pill fills the row; each option takes an equal share. */
+.stage-break .tdc-select { display: flex; width: 100%; }
+.stage-break .tdc-select-option { flex: 1 1 0; }
+/* All four always fit, so the arrows would only take room. */
+.stage-break .tdc-select > .tdc-chevron { display: none; }
+
+/* ── Overlay: asked before the cards mean anything ───────────────── */
 .stage-overlay {
 	position: absolute;
 	inset: 0;
@@ -380,23 +500,16 @@ button.half-sub {
 	font-size: 0.8rem;
 }
 
-/* ── Frame history ───────────────────────────────────────────────── */
-.viz-placeholder {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	height: 7rem;
-	margin-bottom: 1rem;
-	border: 1px dashed var(--border-color);
-	border-radius: 6px;
-	color: var(--text-muted);
-	font-size: 0.8rem;
-}
+/* ── Slide to undo, first below the stage ────────────────────────── */
+.undo-row { margin-bottom: var(--space-6); }
+.undo-row[hidden] { display: none; }
 
+/* ── Frame history ───────────────────────────────────────────────── */
 /* Portrait gets the tall table, landscape the wide one. Both are rendered from
    the same frames; only one is shown. */
 .history-tall { display: table; width: 100%; }
 .history-scroll { display: none; }
+.tl-toggles { display: none; gap: var(--space-3); }
 @media (orientation: landscape) {
 	.history-tall { display: none; }
 	.history-scroll {
@@ -404,64 +517,197 @@ button.half-sub {
 		overflow-x: auto;
 		-webkit-overflow-scrolling: touch;
 	}
+	.tl-toggles { display: flex; }
 }
 
 .history-tall,
 .history-wide {
 	border-collapse: collapse;
 	font-size: 0.8rem;
+	font-variant-numeric: tabular-nums;
 }
 .history-tall th, .history-tall td,
 .history-wide th, .history-wide td {
-	border: 1px solid var(--border-color);
-	padding: 0.4rem 0.5rem;
+	padding: var(--space-1) var(--space-2);
+	border-bottom: 1px solid var(--border-color);
 	text-align: center;
+	vertical-align: middle;
 	font-weight: normal;
 }
 .history-tall th, .history-wide th { color: var(--text-muted); }
 
-/* Tall: a row per frame, the frame number down the middle. */
-.history-tall th { overflow-wrap: anywhere; }
-.history-tall .col-mid { width: 38%; }
-.history-tall .side-val {
-	font-size: 1.1rem;
-	font-variant-numeric: tabular-nums;
-}
-.history-tall td.won .side-val { color: var(--color-primary); font-weight: 700; }
-.history-tall .side-sub,
-.history-tall .frame-break {
-	font-size: 0.68rem;
-	color: var(--text-muted);
-	margin-top: 0.1rem;
-}
-.history-tall .frame-no {
-	font-weight: 600;
-	font-variant-numeric: tabular-nums;
-}
-
-/* Wide: frames across, what was recorded down. */
-.history-wide { white-space: nowrap; }
-.history-wide .row-head {
-	text-align: left;
-	position: sticky;
-	left: 0;
-	background: var(--bg-base);
-	z-index: 1;
-}
-.history-wide td.won-home { color: var(--color-primary); font-weight: 600; }
-.history-wide td.won-away { color: var(--color-owner);   font-weight: 600; }
-/* A breaker set by hand, which the break rule no longer touches. */
-.history-wide td.manual { text-decoration: underline dotted; }
-
-.col-total {
+/* A player's name heads their columns (portrait) or rows (landscape). */
+.history-tall .hn,
+.history-wide .row-name {
+	font-family: var(--font-display);
+	font-size: 1.05rem;
 	color: var(--text-primary);
-	background: var(--bg-surface);
-	font-weight: 600;
 }
+.history-tall .sub-head th,
+.history-wide .row-label {
+	font-size: 0.65rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+}
+.history-tall .col-no { width: 2.5rem; color: var(--text-muted); }
+.history-tall tfoot td { border-bottom: none; border-top: 1px solid var(--text-muted); }
+
+/* The marks. A break: the event in yellow, or a yellow dot when only who
+   broke is known. A win: a green dot, ringed yellow for a golden break and
+   green for a break & finish. */
+.hb-dot {
+	width: 0.45rem;
+	height: 0.45rem;
+	margin: 0 auto;
+	border-radius: var(--radius-round);
+	background: var(--color-warning);
+}
+.hb-event { color: var(--color-warning); font-size: 0.75rem; font-weight: 600; }
+.hw-dot {
+	position: relative;
+	z-index: 1;
+	width: 0.75rem;
+	height: 0.75rem;
+	margin: 0 auto;
+	border-radius: var(--radius-round);
+	background: var(--color-primary);
+	box-shadow: 0 0 6px color-mix(in srgb, var(--color-primary) 50%, transparent);
+}
+.hw-dot.ring-gb { box-shadow: 0 0 0 2px var(--bg-base), 0 0 0 3.5px var(--color-warning); }
+.hw-dot.ring-bf { box-shadow: 0 0 0 2px var(--bg-base), 0 0 0 3.5px var(--color-primary); }
+.hw-none { color: var(--text-muted); }
+
+/* Rack time in yellow, frame time in green. */
+.t-rack, .t-frame { font-size: 0.7rem; line-height: 1.3; margin-top: 2px; }
+.t-rack { color: var(--color-warning); }
+.t-frame { color: var(--color-primary); }
+
+/* The frame in play, lightly shaded. */
+.history-tall .in-play td,
+.history-wide .in-play { background: color-mix(in srgb, var(--color-warning) 8%, transparent); }
+
+/* Totals: frames won large and glowing, breaks in yellow at body size. */
+.tot-won {
+	font-family: var(--font-display);
+	font-size: 1.5rem;
+	line-height: 1.1;
+	color: var(--color-primary);
+	text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 60%, transparent);
+}
+.tot-breaks { color: var(--color-warning); font-size: 0.85rem; }
+
+/* Wide: frames across. The name and row label stay put while the frames
+   scroll under them. */
+.history-wide-box { position: relative; width: max-content; min-width: 100%; }
+.history-wide { position: relative; white-space: nowrap; }
+.history-wide .row-name,
+.history-wide .row-label {
+	position: sticky;
+	z-index: 2;
+	box-sizing: border-box;
+	background: var(--bg-base);
+}
+.history-wide .row-name {
+	left: 0;
+	width: 5rem;
+	min-width: 5rem;
+	max-width: 5rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	text-align: left;
+}
+.history-wide .row-label { left: 5rem; width: 3.25rem; min-width: 3.25rem; }
+.history-wide .row-time .row-name,
+.history-wide .row-head .row-name { max-width: none; }
+.history-wide .row-time td { border-bottom-color: var(--border-color); }
+.history-wide .col-total { border-left: 1px solid var(--text-muted); }
+
+/* The timeline (design §9, an experiment): a yellow tick at each frame's
+   left edge marks its rack, the rack time over it; the frame time in the
+   middle; one grey line through every win, behind everything. */
+.tl-line {
+	position: absolute;
+	left: 0;
+	top: 0;
+	pointer-events: none;
+	overflow: visible;
+}
+.tl-line path { fill: none; stroke: var(--timeline-line); stroke-width: 2; stroke-linecap: round; }
+.tl-line .tl-tail { stroke-dasharray: 4 5; }
+.history-wide.timeline .ht { position: relative; padding-top: 1.1rem; }
+.history-wide.timeline .ht:not(.col-total)::before {
+	content: '';
+	position: absolute;
+	left: -1px;
+	bottom: 15%;
+	width: 2px;
+	height: 45%;
+	border-radius: 1px;
+	background: var(--color-warning);
+}
+.history-wide.timeline .ht:not(.col-total) .t-rack {
+	position: absolute;
+	left: 0;
+	top: 2px;
+	margin: 0;
+	transform: translateX(-50%);
+	font-size: 0.62rem;
+}
+/* The first frame's rack time would sit under the names: it starts at its tick. */
+.history-wide.timeline .row-time > .ht:nth-child(2) .t-rack { transform: none; }
+.history-wide.timeline .ht .t-frame { margin: 0; }
 
 /* Every cell is a correction waiting to happen. */
 td.edit { cursor: pointer; }
 td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transparent); }
+
+/* ── Stats ───────────────────────────────────────────────────────── */
+/* Each player's (home · what · away) and the match's (what · value):
+   stacked in portrait, side by side in landscape. */
+.stats-grid { display: grid; gap: var(--space-5); }
+@media (orientation: landscape) {
+	.stats-grid { grid-template-columns: 1fr 1fr; align-items: start; }
+}
+.stats-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.85rem;
+	font-variant-numeric: tabular-nums;
+}
+.stats-table th,
+.stats-table td {
+	padding: var(--space-1) var(--space-2);
+	border-bottom: 1px solid var(--border-color);
+	font-weight: normal;
+}
+.stats-table .st-k { color: var(--text-muted); }
+.player-stats .st-k { text-align: center; }
+.player-stats .st-v { width: 28%; text-align: center; }
+.match-stats .st-k { text-align: left; }
+.match-stats .st-v { text-align: right; }
+.player-stats .ps-side {
+	font-family: var(--font-display);
+	font-size: 1.05rem;
+	color: var(--text-primary);
+	text-align: center;
+}
+.stats-table .st-group th {
+	padding-top: var(--space-4);
+	text-align: left;
+	font-size: 0.7rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--text-primary);
+}
+.player-stats .st-group th { text-align: center; }
+.player-stats .st-won .st-v {
+	font-family: var(--font-display);
+	font-size: 1.6rem;
+	line-height: 1.1;
+	color: var(--color-primary);
+	text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 60%, transparent);
+}
+.player-stats .st-yellow .st-v { color: var(--color-warning); }
 
 /* ── Settings panel ──────────────────────────────────────────────── */
 /* Starts below the fixed nav, so the nav stays reachable with the panel open. */
@@ -645,13 +891,14 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
 
 /* ── Short landscape (phone on its side): tighten everything ─────── */
 @media (orientation: landscape) and (max-height: 460px) {
-	.half { gap: 0.25rem; padding: 0.4rem 0.5rem; }
-	.half-score { font-size: clamp(2rem, 18vh, 3.25rem); }
-	.half-sub { display: none; }
-	.avatar { width: 2rem; height: 2rem; }
-	.half-name { font-size: 1rem; }
-	.half-group-label { margin-bottom: 0.2rem; }
+	.stage { gap: var(--space-1) var(--space-2); padding: var(--space-1) var(--space-3) var(--space-2); }
+	.pc-sub { display: none; }
+	.pcard .avatar { width: 2rem; height: 2rem; }
+	.pc-head { grid-template-columns: 2rem 1fr 2rem; }
+	.pc-name { font-size: 1.1rem; }
+	.pc-foot { padding: var(--space-1); }
 	.mbtn { min-height: 2.4rem; font-size: 0.78rem; min-width: 3.6rem; }
+	.pc-foot .mbtn { min-width: 0; }
 }
 
 /* Read-only: a watcher sees the match but cannot change it. Dimmed rather

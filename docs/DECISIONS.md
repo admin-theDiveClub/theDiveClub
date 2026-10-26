@@ -858,3 +858,18 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* a switch shows **an empty ring when off** and a tick when on, like a ring; its track and knob still say it is a switch. **Every cross on the site is red** (`--color-error`), its ring staying cream: the menu's close, the fixtures' Close the move and Remove. The cross keeps its place in `ring-status.js`; a mark carries its icon's name as a class (`mark-cross`), which `status.css` colours.
 *Replaces:* "tick on, cross off, never an empty ring" (24 Oct, the ring status entry above).
 *Touches:* `scripts/tdc-controls.js`, `scripts/ring-status.js`, `stylesheets/status.css`, `scripts/sandbox-dots.js`, `sandbox/index.html`, `docs/ui.md`
+
+## 2026-10-26 — The 1v1 score input: side by side, home on the left, a win without a break event
+
+*Decided by:* UV (design in claude.ai, answers in Claude Code; `docs/design/match-score-input.md` §10)
+*So:* on `/match/` the two players' cards sit **side by side in portrait as well as landscape**, **home on the left everywhere** (the cards, the history, the stats). With breaks tracked, **a plain win may be recorded before the break event is set** (the break then counts as not recorded); the special wins wait for the event. **Rack time belongs to the breaker**, who racks their own frame: counted from `break_side`, nothing stored. The live rack and match clocks are **counted from the frames**, so every phone shows the same and a reload keeps them. A reverse B&F has no mark of its own in the history.
+*Rejected:* top and bottom halves in portrait, with the top turned 180° (BACKLOG §6 #1, retired); a per-frame "who racked" column; each phone keeping its own clocks.
+*Open:* where the timing controls go (pause, shot clock, extensions, match clock): later.
+*Touches:* `match/index.html`, `scripts/match.js`, `stylesheets/match.css`, `variables.css`, `scripts/sandbox.js`, `docs/systems/matches.md`
+
+## 2026-10-26 — Slide to confirm is a range input; the score input's timeline is an experiment
+
+*Decided by:* Claude, building UV's design (`docs/design/match-score-input.md` §5, §9); UV to review
+*So:* the slide to undo is a new custom control (`slide` in `tdc-controls.js`) built round an **`<input type="range">`**, so the keyboard and screen readers have a real control and a page listens for an ordinary change to the minimum, as for any form element. The knob's place is a CSS variable, so only the drag is measured. The break event is the existing select pill with a **`data-tone="warning"`**, rather than a new control. The **timeline is on by default with switches beside it** (on/off, widths even or by time), remembered per browser, so UV can compare before deciding whether it stays.
+*Rejected:* a button that fires a custom event (no keyboard story); separate break-event buttons kept beside the pill.
+*Touches:* `scripts/tdc-controls.js`, `stylesheets/controls.css`, `scripts/ring-status.js` (`undo` icon), `variables.css`, `scripts/sandbox.js`, `sandbox/index.html`, `scripts/match.js`, `stylesheets/match.css`, `match/index.html`

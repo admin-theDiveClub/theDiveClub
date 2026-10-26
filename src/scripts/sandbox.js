@@ -78,7 +78,10 @@
 			{ name: '--date-number',      label: 'Date numbers',   kind: 'size', unit: 'rem', min: 0.8,  max: 2,   step: 0.05, use: 'How big the numbers in a date are' },
 			{ name: '--select-text',      label: 'Select options', kind: 'size', unit: 'rem', min: 0.6,  max: 1.2, step: 0.05, use: 'How big an option in a select pill is' },
 			{ name: '--control-motion',   label: 'Motion',         kind: 'size', unit: 's',   min: 0,    max: 0.8, step: 0.02, use: 'How long a number takes to roll and the green pill to slide. 0 for none' },
-			{ name: '--control-reveal',   label: 'Reveal',         kind: 'size', unit: 's',   min: 0,    max: 1,   step: 0.05, use: 'How long a field takes to fade in or out, its space opening or closing, when a setting shows or hides it. 0 for none' }
+			{ name: '--control-reveal',   label: 'Reveal',         kind: 'size', unit: 's',   min: 0,    max: 1,   step: 0.05, use: 'How long a field takes to fade in or out, its space opening or closing, when a setting shows or hides it. 0 for none' },
+			{ name: '--slide-height',     label: 'Slide height',   kind: 'size', unit: 'rem', min: 2,    max: 5,   step: 0.05, use: 'How tall a slide to confirm is (the match page\'s slide to undo)' },
+			{ name: '--slide-knob',       label: 'Slide knob',     kind: 'size', unit: 'rem', min: 1.5,  max: 4.5, step: 0.05, use: 'How big the cream knob of a slide is' },
+			{ name: '--slide-text',       label: 'Slide words',    kind: 'size', unit: 'rem', min: 0.6,  max: 1.4, step: 0.05, use: 'How big the words in a slide are' }
 		]],
 		['Ring and switch', [
 			{ name: '--ring-size',        label: 'Ring',           kind: 'size', unit: 'rem', min: 1.25, max: 4,   step: 0.05, use: 'How big a ring is: a tick against a person or a thing (paid, here tonight)' },
@@ -90,6 +93,15 @@
 			{ name: '--tri-height',       label: 'Three-way height', kind: 'size', unit: 'rem', min: 1,  max: 3,   step: 0.05, use: 'How tall a three-way switch is (left, nobody, right: the team card\'s L and W)' },
 			{ name: '--tri-width',        label: 'Three-way width',  kind: 'size', unit: 'rem', min: 3,  max: 8,   step: 0.05, use: 'How wide a three-way switch is; longer than a switch so the three stops read as three' },
 			{ name: '--ring-draw',        label: 'Draw',           kind: 'size', unit: 's',   min: 0.2,  max: 2,   step: 0.1,  use: 'How long an icon takes to draw, stroke by stroke: the ring\'s tick and cross, and the chevrons, calendar and cross of the other controls' },
+		]],
+		['Match score cards', [
+			{ name: '--score-band',       label: 'Card bands',     kind: 'colour', use: 'The solid header and footer of a player\'s card on the match page' },
+			{ name: '--score-depth-alpha', label: 'Card depth',    kind: 'alpha',  use: 'How dark the bands\' shadow on the score is, and the score\'s dark inner edge' },
+			{ name: '--score-drop-alpha', label: 'Card shadow',    kind: 'alpha',  use: 'How dark the soft shadow under a whole card is' },
+			{ name: '--score-stretch',    label: 'Score stretch',  kind: 'size', unit: '',   min: 1,   max: 2,    step: 0.05, use: 'How much taller than its natural shape a score digit is drawn (1 for none)' },
+			{ name: '--match-glow-size',  label: 'Glow reach',     kind: 'size', unit: 'px', min: 300, max: 2000, step: 10,   use: 'How far the green glow behind the match page reaches from its centre' },
+			{ name: '--match-glow-rise',  label: 'Glow height',    kind: 'size', unit: 'px', min: 0,   max: 1600, step: 10,   use: 'How far above the top of the screen the glow\'s centre is; the closer to the reach, the less of it shows' },
+			{ name: '--timeline-line',    label: 'Timeline line',  kind: 'colour', use: 'The grey line through every win on the frame history\'s timeline (landscape)' }
 		]],
 		['Dots', [
 			{ name: '--dots-ring-margin', label: 'Ring margin',    kind: 'size', unit: 'px', min: 0,    max: 24,   step: 1,     use: 'A fake ring\'s gap beyond an element\'s shorter side (anything without a ring of its own: buttons, numbers, tabs). Watch it on /sandbox/dots/' },

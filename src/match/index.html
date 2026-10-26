@@ -21,9 +21,10 @@ extraScripts:
 	different pages — they are the same page reading different settings.
 
 	Layout: the stage fills the screen below the nav and is the whole scoring
-	surface. Each side owns half of it: top/bottom in portrait, left/right in
-	landscape. Timing and frame history are panels below the stage; settings
-	are in the Match panel from the nav bar.
+	surface. The two players' cards sit side by side in both orientations,
+	home on the left (UV, 26 Oct; docs/design/match-score-input.md). Timing
+	and frame history are panels below the stage; settings are in the Match
+	panel from the nav bar.
 {% endcomment %}
 
 {% comment %}
@@ -60,19 +61,21 @@ extraScripts:
 
 	<section class="stage" id="stage">
 
-		<!-- Away side: top in portrait, left in landscape -->
-		<div class="half" id="half-away" data-side="away"></div>
-
-		<!-- Thin divider carrying the frame number and the win condition -->
-		<div class="stage-mid">
+		<!-- The frame in play and what the match is played to: a line across
+		     the top in portrait, a narrow column between the cards in landscape -->
+		<div class="stage-line">
 			<div class="mid-frame" id="mid-frame"></div>
 			<div class="mid-target" id="mid-target"></div>
 		</div>
 
-		<!-- Home side: bottom in portrait, right in landscape -->
-		<div class="half" id="half-home" data-side="home"></div>
+		<!-- The players' cards, home on the left in both orientations -->
+		<div class="pcard" id="half-home" data-side="home"></div>
+		<div class="pcard" id="half-away" data-side="away"></div>
 
-		<!-- Covers the halves when something has to be answered first -->
+		<!-- The break event, across both cards. It belongs to the breaker -->
+		<div class="stage-break" id="stage-break"></div>
+
+		<!-- Covers the cards when something has to be answered first -->
 		<div class="stage-overlay" id="overlay" hidden>
 			<div class="overlay-card">
 				<p class="overlay-q" id="overlay-q"></p>
@@ -90,20 +93,12 @@ extraScripts:
 		     with it yet. Hidden unless there is something to say. -->
 		<div class="match-notice" id="match-notice" hidden></div>
 
-		<!-- Where the scorecard stands: finished, waiting on the other player,
-		     agreed, published, or disputed. -->
-		<section class="panel-block" id="card-panel" aria-label="Scorecard" hidden>
-			<h2>Scorecard</h2>
-			<div id="card-body"></div>
-		</section>
-
-		<!-- Timing. Most of it only appears when a setting turns it on: an
-		     ordinary match just keeps frame and rack times, which the page
-		     records by itself. -->
-		<section class="panel-block" id="time-panel" aria-label="Timing">
-			<h2>Timing</h2>
-			<div id="time-body"></div>
-		</section>
+		<!-- Slide to undo the last frame: the first thing below the stage, so
+		     it is what a scroll down finds. A slide, not a tap, so a stray
+		     thumb cannot take a frame away. -->
+		<div class="undo-row" id="undo-row" hidden>
+			<input type="range" id="undo-slide" min="0" max="100" data-control="slide" data-label="Slide to undo the last frame">
+		</div>
 
 		<!-- The little menu that drops out of a history cell. It lives here
 		     rather than over the stage, because the stage is off the top of
@@ -120,21 +115,50 @@ extraScripts:
 		<section class="panel-block" id="history-panel" aria-label="Frame history">
 			<h2>
 				Frame history
-				<button type="button" class="link-toggle" id="undo-btn" hidden>Undo last</button>
+				{% comment %}The timeline is an experiment (design §9), landscape only: these say which way it is drawn, for this viewer.{% endcomment %}
+				<span class="tl-toggles" id="tl-toggles">
+					<button type="button" class="link-toggle" id="tl-toggle"></button>
+					<button type="button" class="link-toggle" id="tl-widths"></button>
+				</span>
 			</h2>
-
-			<div class="viz-placeholder" id="viz-placeholder">
-				<span>Visualisation goes here</span>
-			</div>
 
 			{% comment %}Two tables from the same frames, swapped by CSS on orientation.{% endcomment %}
 			<table class="history-tall" id="history-tall"></table>
 
 			<div class="history-scroll">
-				<table class="history-wide" id="history-wide"></table>
+				<div class="history-wide-box" id="history-wide-box">
+					<svg class="tl-line" id="tl-line" aria-hidden="true"></svg>
+					<table class="history-wide" id="history-wide"></table>
+				</div>
 			</div>
 
 			<p class="muted" id="history-legend"></p>
+		</section>
+
+		<!-- Counted from the frames, never stored: each player's, then the
+		     match's. Stacked in portrait, side by side in landscape. -->
+		<section class="panel-block" id="stats-panel" aria-label="Stats" hidden>
+			<h2>Stats</h2>
+			<div class="stats-grid">
+				<table class="stats-table player-stats" id="player-stats"></table>
+				<table class="stats-table match-stats" id="match-stats"></table>
+			</div>
+		</section>
+
+		<!-- Timing. Most of it only appears when a setting turns it on: an
+		     ordinary match just keeps frame and rack times, which the page
+		     records by itself. Where it belongs in the new layout is still to
+		     be decided (UV, 26 Oct). -->
+		<section class="panel-block" id="time-panel" aria-label="Timing">
+			<h2>Timing</h2>
+			<div id="time-body"></div>
+		</section>
+
+		<!-- Where the scorecard stands: finished, waiting on the other player,
+		     agreed, published, or disputed. At the very end (UV, 26 Oct). -->
+		<section class="panel-block" id="card-panel" aria-label="Scorecard" hidden>
+			<h2>Scorecard</h2>
+			<div id="card-body"></div>
 		</section>
 
 	</div>

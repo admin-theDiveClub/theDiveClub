@@ -47,6 +47,15 @@
 //            middle for the middle. data-icon picks the ring's icon (a tick
 //            by default) and data-tone its colour (warning). The team card's
 //            lag (a cue ball, warning) and win.
+//   select   data-tone="warning" colours its pill and outline in the warning
+//            colour (the match page's break event).
+//   slide    <input type="range">, data-control="slide" only. A pill with a
+//            cream knob at the max end holding an undo arrow, and the words
+//            from data-label. Drag the knob all the way to the min end and the
+//            input changes to min (input and change fire, as for any range);
+//            let go early and it springs back. The page acts on a change to
+//            min; the control then returns to max by itself, quietly. The
+//            keyboard keeps the real range. The match page's slide to undo.
 
 const TDCControls = (() => {
 	const AREA = 'Controls';
@@ -836,6 +845,7 @@ const TDCControls = (() => {
 		// over and change width to the next one (UV, 24 Oct).
 		const thumb = node('span', 'tdc-select-thumb');
 		thumb.setAttribute('aria-hidden', 'true');
+		if (select.dataset.tone) box.dataset.tone = select.dataset.tone;
 		select.replaceWith(box);
 		box.append(prev, track, next, select);
 		markField(box, 'field-centred');
@@ -955,6 +965,93 @@ const TDCControls = (() => {
 			});
 		}).observe(track);
 	}, 'select:not([multiple]):not(table select)');
+
+	// ─── Slide ───
+	// Slide to confirm: the match page's undo (docs/design/match-score-input.md
+	// §5). A deliberate drag rather than a tap, so a stray thumb cannot take a
+	// frame away. The real range stays inside for the keyboard; the knob's
+	// place is --at (1 at max, 0 at min), which the stylesheet turns into a
+	// position, so nothing is measured but the drag itself.
+	define('slide', (input) => {
+		if (input.type !== 'range') {
+			TDC.error(AREA, 'a slide control must be an <input type="range">.', input);
+			return;
+		}
+		const min = () => Number(input.min || 0);
+		const max = () => Number(input.max || 100);
+		input.value = max();
+
+		const box = node('span', 'tdc-slide');
+		const label = node('span', 'tdc-slide-label');
+		label.setAttribute('aria-hidden', 'true');
+		const knob = node('span', 'tdc-slide-knob');
+		knob.setAttribute('aria-hidden', 'true');
+		knob.innerHTML = '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">'
+			+ TDCRing.ICONS.undo.strokes.map((d) => `<path d="${d}"/>`).join('') + '</svg>';
+		input.replaceWith(box);
+		box.append(label, knob, input);
+
+		const setAt = (at) => box.style.setProperty('--at', Math.max(0, Math.min(1, at)));
+		const atOf = () => (Number(input.value) - min()) / ((max() - min()) || 1);
+		function sync() {
+			const text = input.dataset.label || input.getAttribute('aria-label') || '';
+			label.textContent = text;
+			// Said as it reads; set only when it differs, or the observer below
+			// would hear its own change for ever.
+			if (input.dataset.label && input.getAttribute('aria-label') !== text) input.setAttribute('aria-label', text);
+			box.classList.toggle('is-disabled', input.disabled);
+			setAt(atOf());
+		}
+		// Back to the max end, quietly: it has done its job, or was let go early.
+		function home() {
+			input.value = max();
+			setAt(1);
+		}
+
+		let drag = null;   // { id, x, at, travel } while a finger is on the knob
+		knob.addEventListener('pointerdown', (e) => {
+			if (input.disabled || e.button !== 0) return;
+			e.preventDefault();
+			knob.setPointerCapture(e.pointerId);
+			const pad = parseFloat(getComputedStyle(box).paddingLeft) || 0;
+			drag = { id: e.pointerId, x: e.clientX, at: atOf(), travel: Math.max(1, box.clientWidth - knob.offsetWidth - 2 * pad) };
+			box.classList.add('is-dragging');
+		});
+		knob.addEventListener('pointermove', (e) => {
+			if (!drag || e.pointerId !== drag.id) return;
+			setAt(drag.at + (e.clientX - drag.x) / drag.travel);
+		});
+		function release(e) {
+			if (!drag || e.pointerId !== drag.id) return;
+			const at = drag.at + (e.clientX - drag.x) / drag.travel;
+			drag = null;
+			box.classList.remove('is-dragging');
+			// A few pixels short of the end still counts: a thumb rarely lands
+			// on the last one.
+			if (e.type === 'pointerup' && at <= 0.04) {
+				setAt(0);
+				input.value = min();
+				announce(input);
+				setTimeout(home, timeMs(box, '--control-motion') + 250);
+			} else {
+				home();
+			}
+		}
+		knob.addEventListener('pointerup', release);
+		knob.addEventListener('pointercancel', release);
+
+		// The keyboard moves the real range in steps; reaching min is the same
+		// act as a drag to the end. Leaving it part way puts it back.
+		input.addEventListener('input', () => { if (!drag) setAt(atOf()); });
+		input.addEventListener('change', () => {
+			if (drag) return;
+			if (Number(input.value) <= min()) setTimeout(home, timeMs(box, '--control-motion') + 250);
+		});
+		input.addEventListener('blur', () => { if (Number(input.value) > min()) home(); });
+
+		new MutationObserver(sync).observe(input, { attributes: true, attributeFilter: ['data-label', 'aria-label', 'disabled'] });
+		sync();
+	}, null);
 
 	// ─── Fields come and go smoothly ───
 	// A page that rebuilds its form after a change (the ruleset on the new

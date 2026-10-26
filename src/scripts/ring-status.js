@@ -63,6 +63,9 @@ const TDCRing = (() => {
 		// cross when open) and reload (a circle round to its arrowhead).
 		menu: { label: 'Menu', strokes: ['M32 35L68 35', 'M32 50L68 50', 'M32 65L68 65'] },
 		reload: { label: 'Reload', strokes: ['M66 56A17 17 0 1 1 62 38', 'M52 38L62 38L62 28'] },
+		// Added 26 Oct for the match page's slide to undo: an arrow pointing
+		// left along the top, its tail curling down and back underneath.
+		undo: { label: 'Undo', strokes: ['M36 40L60 40A13 13 0 0 1 60 66L44 66', 'M47 29L36 40L47 51'] },
 		// Added 24 Oct for the team card's lag: a spotted cue ball, the ball and its spot.
 		// The spots are foreshortened towards the ball's edge so it reads as a
 		// sphere: rounder and heavier near the middle, flatter and lighter out
