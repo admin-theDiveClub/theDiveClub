@@ -102,7 +102,9 @@
 			{ name: '--dots-blend',       label: 'Hand-over',      kind: 'size', unit: 's',  min: 0.1,  max: 1.5,  step: 0.05,  use: 'How long the dots take to slide from one animation into the next: waiting into tracing, tracing into the ring race' },
 			{ name: '--dots-busy-dim',    label: 'Busy dim',       kind: 'size', unit: '',   min: 0,    max: 0.6,  step: 0.05,  use: 'How faint a target is while it waits for its call' },
 			{ name: '--dots-dim',         label: 'Dim time',       kind: 'size', unit: 's',  min: 0,    max: 1,    step: 0.05,  use: 'How long a target takes to go faint when it is tapped' },
-			{ name: '--dots-reveal',      label: 'Reveal time',    kind: 'size', unit: 's',  min: 0,    max: 1,    step: 0.05,  use: 'How long a target takes to come back once the dots have traced it (spec: about 0.25 s)' }
+			{ name: '--dots-reveal',      label: 'Reveal time',    kind: 'size', unit: 's',  min: 0,    max: 1,    step: 0.05,  use: 'How long a target takes to come back once the dots have traced it (spec: about 0.25 s)' },
+			{ name: '--dots-pulse',       label: 'Calm pulse',     kind: 'size', unit: 's',  min: 0.8,  max: 4,    step: 0.1,   use: 'Reduced motion: how long one breath of a tapped target takes while it waits (no dots fly then)' },
+			{ name: '--dots-pulse-peak',  label: 'Pulse peak',     kind: 'size', unit: '',   min: 0.2,  max: 1,    step: 0.05,  use: 'Reduced motion: how bright the waiting target (or a ring icon\'s ring) gets at the top of each breath' }
 		]],
 		['States', [
 			{ name: '--color-success',    label: 'Success',        kind: 'colour', use: 'Success messages, Paid badge, staff tile glow' },

@@ -84,3 +84,54 @@
 [data-dots="revealing"][data-dots-trace="tab"] {
 	transition: opacity var(--dots-reveal) ease, background-color var(--dots-reveal) ease, color var(--dots-reveal) ease;
 }
+
+/* ── Reduced motion (spec §14) ──────────────────────────────────────
+   No dots. A tapped target breathes while its call is out
+   (data-dots-calm, set by the script when the device asks for less motion
+   or the page's root says data-motion="reduce"): a ring icon's ring, else
+   the whole element. Opacity only, nothing moves. The pulse waits for the
+   dimming (--dots-dim) and starts from where it left the target, so nothing
+   jumps; when the call is back the target fades in (revealing) from
+   wherever the pulse has got to. Something loading with the page only dims
+   (UV, 26 Oct). */
+[data-dots="busy"][data-dots-calm] .tdc-ring .ring {
+	animation: dots-pulse-ring var(--dots-pulse) ease-in-out var(--dots-dim) infinite;
+}
+[data-dots="busy"][data-dots-calm]:not(:has(.tdc-ring)) {
+	animation: dots-pulse var(--dots-pulse) ease-in-out var(--dots-dim) infinite;
+}
+@keyframes dots-pulse {
+	0%, 100% { opacity: var(--dots-busy-dim); }
+	50% { opacity: var(--dots-pulse-peak); }
+}
+@keyframes dots-pulse-ring {
+	0%, 100% { opacity: 0; }
+	50% { opacity: var(--dots-pulse-peak); }
+}
+
+/* ── A failure ───────────────────────────────────────────────────────
+   "TDC (Error): …" when the page gave the dots no status line of its own:
+   at the foot of the screen, over everything, for a few seconds. The line
+   inside is the site's own .status.error (set by TDC.error). */
+.tdc-dots-error {
+	position: fixed;
+	left: var(--space-4);
+	right: var(--space-4);
+	bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+	z-index: 1001;
+	display: flex;
+	justify-content: center;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity var(--dots-reveal) ease;
+}
+.tdc-dots-error[data-shown] { opacity: 1; }
+.tdc-dots-error .status {
+	margin: 0;
+	max-width: 36rem;
+	padding: var(--space-2) var(--space-3);
+	background: var(--bg-base);
+	border: 1px solid var(--color-error);
+	border-radius: var(--radius-md);
+	overflow-wrap: anywhere;
+}

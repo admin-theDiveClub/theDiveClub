@@ -5,7 +5,7 @@
 // how it should feel is docs/design/dots-prototype.html, and the moves are
 // ported from it.
 //
-//   TDCDots.serve(el, promise, { reveal, trace })
+//   TDCDots.serve(el, promise, { reveal, trace, status, timeout })
 //     el       the target. A ring icon (anything holding a .tdc-ring) uses its
 //              real ring; anything else gets a fake ring from its shorter side
 //     promise  the call; when it settles, the target is revealed
@@ -16,6 +16,10 @@
 //              default when there is one), 'number' (its digits), 'tab' (its
 //              pill's outline), or 'none' (the default otherwise: a button's
 //              fake ring is enough, UV 26 Oct)
+//     status   the page's status line, where a failure of the dots is shown
+//              ("TDC (Error): …"); without one the dots show it on their own
+//              line at the foot of the screen
+//     timeout  how long the call may go unanswered (ms, HANG if not given)
 //   Returns the promise. A target already busy is not served twice: the dots
 //   wait for both calls. Serving a new target (a tap) takes the dots there at
 //   once; the old one restores itself, without them, when its own call is back.
@@ -29,7 +33,8 @@
 //     in as the dots fly on (UV, 26 Oct), taps included. A tap takes the dots
 //     at once, and whatever is still loading afterwards gets them next.
 //   TDCDots.state  what the dots are doing (the phase, each dot's solo move
-//     or the group move, the target, how many are loading), for the sandbox
+//     or the group move, the target, how many are loading, whether motion
+//     is reduced), for the sandbox
 //   TDCDots.moves, TDCDots.groups, TDCDots.force(name | null)  the solo and
 //     group moves, and one to play on repeat (the sandbox's picker)
 //
@@ -46,9 +51,23 @@
 // above the page: higher is bigger and brighter. Size on the ring line is the
 // stroke width of the line the dots are on, and so is their colour.
 //
-// Built so far (spec §16, steps 1 to 5): travel, the waiting moves (18 solo,
-// 16 group: SOLO and GROUP), tracing, the ring race, the fade and the
-// page-load queue. Still to come: reduced motion (6).
+// Reduced motion (spec §14, step 6): when the device asks for less motion
+// (or the page's root says data-motion="reduce"; "full" overrides the
+// device), nothing orbits or flies. A tapped target breathes while its call
+// is out (dots.css) and fades in plainly when it is back; something loading
+// with the page dims and fades in, without the pulse (UV, 26 Oct).
+//
+// Failures (spec §14, step 6) are never silent: each goes to the console with
+// [Dots] and onto the page as "TDC (Error): …" (fail), and the target still
+// ends as it should, its result shown and no data-dots left on it. A call
+// with no answer after HANG is shown as it was and the dots move on; a call
+// that fails is not traced (the page reports its own error); a target that
+// leaves the page is cleaned at once; and if the dots themselves throw, they
+// hide and every target is put right (recover).
+//
+// Built so far (spec §16, steps 1 to 6): travel, the waiting moves (18 solo,
+// 16 group: SOLO and GROUP), tracing, the ring race, the fade, the page-load
+// queue, reduced motion and the failures.
 //
 // Needs: tdc.js (TDC.error). Its look is stylesheets/dots.css; its sizes and
 // times are tokens in variables.css (--dots-*).
@@ -88,6 +107,9 @@ const TDCDots = (() => {
 	// loading before it dims and the dots come for it (ms), so an instant load
 	// shows nothing.
 	const GRACE = 150;
+	// Failures: how long a call may go unanswered before it counts as hung
+	// (ms, UV 26 Oct: 20 s), and how long the dots' own error line shows.
+	const HANG = 20000, ERROR_MS = 6000;
 	// The single-line digits that guide a number's dots (UV, 26 Oct), from
 	// the prototype: a 10 by 16 box, absolute commands only. Never drawn: each
 	// is fitted over its digit in the site's font and pulled onto the middle
@@ -857,10 +879,59 @@ const TDCDots = (() => {
 			fakeStroke: num('--dots-fake-stroke', 1.5),
 			fade: num('--dots-fade', 1) || 1,
 			draw: num('--dots-draw', 1) || 1,
-			blend: Math.max(1, ms('--dots-blend', 600))
+			blend: Math.max(1, ms('--dots-blend', 600)),
+			dim: ms('--dots-dim', 200)
 		};
 	}
 	let T = null;
+
+	// ─── Reduced motion (spec §14) ───
+	// The device's setting, unless the page's root says otherwise
+	// (data-motion="reduce" or "full": the sandbox's switch). Followed live
+	// (motionChanged, below the loop).
+	const lessMotion = matchMedia('(prefers-reduced-motion: reduce)');
+	function reduced() {
+		const m = document.documentElement.dataset.motion;
+		return m === 'reduce' ? true : m === 'full' ? false : lessMotion.matches;
+	}
+	let calm = reduced();
+
+	// ─── Failures (spec §14) ───
+	// Never silent: to the console with [Dots] and onto the page as
+	// "TDC (Error): …", on the target's own status line if the page gave one
+	// (opts.status), else on the dots' own line at the foot of the screen,
+	// shown for ERROR_MS. That line is outside the layer, which screen
+	// readers skip.
+	let errBox = null, errLine = null, errTimer = 0;
+	// A target as a person would name it, for the messages.
+	function nameOf(el) {
+		if (!el || !el.getAttribute) return 'something';
+		// Its pieces of text joined with spaces, so "Team 3" and "Wed" do not
+		// run together (innerText would, but in the page's capitals too).
+		let s = el.getAttribute('aria-label');
+		if (!s) {
+			const parts = [], walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+			for (let n = walk.nextNode(); n; n = walk.nextNode()) if (n.data.trim()) parts.push(n.data.trim());
+			s = parts.join(' ').replace(/\s+/g, ' ');
+		}
+		return s ? (s.length > 40 ? s.slice(0, 40) + '…' : s) : el.tagName.toLowerCase();
+	}
+	function fail(t, message, detail) {
+		const where = t && t.opts && t.opts.status;
+		if (where) { TDC.error(AREA, message, detail, where); return; }
+		if (!errBox) {
+			errBox = document.createElement('div');
+			errBox.className = 'tdc-dots-error';
+			errLine = document.createElement('div');
+			errLine.setAttribute('role', 'status');
+			errBox.append(errLine);
+			document.body.append(errBox);
+		}
+		TDC.error(AREA, message, detail, errLine);
+		errBox.dataset.shown = '';
+		clearTimeout(errTimer);
+		errTimer = setTimeout(() => { delete errBox.dataset.shown; }, ERROR_MS);
+	}
 
 	// ─── Colour ───
 	// A computed colour is rgb() or, from color-mix(), color(srgb r g b) in 0..1.
@@ -910,9 +981,16 @@ const TDCDots = (() => {
 		const face = el.matches('.tdc-ring') ? el : el.querySelector('.tdc-ring');
 		return face && face.querySelector('circle.ring');
 	}
-	// A target that has left the page keeps where it was last seen.
+	// A target that has left the page keeps where it was last seen. A ring
+	// icon the page has drawn again (a new SVG in the same target) is
+	// measured by its new ring.
 	function measure(t) {
 		if (!t.el.isConnected) return;
+		if (t.circle && !t.circle.isConnected) {
+			const c = ringCircle(t.el);
+			if (!c) return;
+			t.circle = c;
+		}
 		if (t.circle) {
 			const svg = t.circle.ownerSVGElement, box = svg.getBoundingClientRect();
 			const k = box.width / (svg.viewBox.baseVal.width || 100);
@@ -938,7 +1016,7 @@ const TDCDots = (() => {
 		return rgbOf(cs.color);
 	}
 	function makeRecord(el, opts) {
-		const t = { el, opts, pending: 0, settled: false, revealed: false, lines: null, circle: ringCircle(el) };
+		const t = { el, opts, at: performance.now(), pending: 0, settled: false, revealed: false, lines: null, circle: ringCircle(el) };
 		t.kind = opts.trace || (t.circle ? 'icon' : 'none');
 		t.colour = lineColour(t);
 		if (!t.circle) t.sw = parseFloat(getComputedStyle(el).borderTopWidth) || T.fakeStroke;
@@ -958,27 +1036,65 @@ const TDCDots = (() => {
 		if (t.revealed) return;
 		t.revealed = true;
 		try { if (t.opts.reveal) t.opts.reveal(); }
-		catch (err) { TDC.error(AREA, 'a target could not show its result.', err); }
+		catch (err) { fail(t, `${nameOf(t.el)} could not show its result.`, err); }
+	}
+	// Reduced motion: the breathing stops without a jump. Taking the pulse
+	// off snaps the part that breathed (its ring, else the element) to where
+	// it is going, because a transition does not start from an animation's
+	// value (0.49 to 1 in one frame, measured in Chrome). So its opacity is
+	// read first (calmFrom) and eased from there (calmTo).
+	const calmNode = (t) => (t.circle && t.circle.isConnected ? t.circle : t.el);
+	const calmFrom = (t) => ('dotsCalm' in t.el.dataset ? getComputedStyle(calmNode(t)).opacity : null);
+	function calmTo(t, from, ms) {
+		// One keyframe at the start: it eases on to wherever the CSS has it.
+		if (from !== null && ms > 0) calmNode(t).animate([{ opacity: from, offset: 0 }], { duration: ms, easing: 'ease' });
+	}
+	// Everything the dots put on an element, taken off at once.
+	function clearLook(el) {
+		delete el.dataset.dots;
+		delete el.dataset.dotsTrace;
+		delete el.dataset.dotsCalm;
+		el.style.removeProperty('--dots-lines');
 	}
 	// The target comes back. data-dots="revealing" carries its transition
 	// back in (dots.css) and is taken off once that has run; lines drawn for
-	// its trace fade out in the same time, so they crossfade into it.
+	// its trace fade out in the same time, so they crossfade into it. A call
+	// that hung shows nothing new: the target comes back as it was, and its
+	// result shows if it is back after all. One that left the page has been
+	// cleaned already (gone) and only reveals; so does one the page has
+	// served again since, whose new record owns its look.
 	function restore(t) {
 		if (t.restored) return 0;
 		t.restored = true;
-		records.delete(t.el);
-		reveal(t);
-		const el = t.el;
+		const el = t.el, mine = records.get(el) === t;
+		if (mine) records.delete(el);
+		if (!t.hung) reveal(t);
+		if (t.gone || (!mine && records.has(el))) { if (t.lines) t.lines.remove(); return 0; }
+		const from = calmFrom(t);
+		delete el.dataset.dotsCalm;
 		el.dataset.dots = 'revealing';
 		const ms = revealMs(t);
+		calmTo(t, from, ms);
 		if (t.lines) t.lines.fadeOut(ms);
-		setTimeout(() => {
-			if (el.dataset.dots !== 'revealing') return;
-			delete el.dataset.dots;
-			delete el.dataset.dotsTrace;
-			el.style.removeProperty('--dots-lines');
-		}, ms + 50);
+		setTimeout(() => { if (el.dataset.dots === 'revealing') clearLook(el); }, ms + 50);
 		return ms;
+	}
+	// A target that left the page before its result was shown (spec §14):
+	// said so, and its look taken off at once, so the element is right if the
+	// page puts it back. Its call still reveals when it is back (restore). One
+	// whose result is already shown (racing, fading) has not failed: a page
+	// redrawing after a save replaces its elements all the time.
+	function gone(t) {
+		if (t.gone || t.restored) return;
+		t.gone = true;
+		fail(t, `${nameOf(t.el)} left the page while ${t.load ? 'it was still loading' : 'the dots were serving it'}.`, t.el);
+		if (records.get(t.el) === t) records.delete(t.el);
+		if (t.lines) t.lines.remove();
+		clearLook(t.el);
+		if (t.settled) t.restored = true;   // mid-trace: its result is already in
+	}
+	function sweep() {
+		for (const t of records.values()) if (!t.el.isConnected) gone(t);
 	}
 
 	// ─── Lines to trace ───
@@ -1188,9 +1304,9 @@ const TDCDots = (() => {
 	function linesFor(t) {
 		const el = t.el;
 		if (t.kind === 'icon') {
-			if (!t.circle) return null;
+			if (!t.circle) { fail(t, `${nameOf(el)} was to have its icon traced, but it has no ring icon.`, el); return null; }
 			const svg = t.circle.ownerSVGElement, marks = [...svg.querySelectorAll('.mark.on')];
-			if (!marks.length) return null;
+			if (!marks.length) { fail(t, `${nameOf(el)}: its icon has no lines to trace.`, el); return null; }
 			return new Lines(t, marks.map((m) => pointsOf(m, parseFloat(getComputedStyle(m).strokeWidth) || 10, 3)), rgbOf(getComputedStyle(marks[0]).stroke), () => {
 				const box = svg.getBoundingClientRect();
 				return { ox: box.left, oy: box.top, k: box.width / (svg.viewBox.baseVal.width || 100) };
@@ -1203,7 +1319,8 @@ const TDCDots = (() => {
 		};
 		if (t.kind === 'number') {
 			const polys = digitLines(el);
-			return polys.length ? new Lines(t, polys, rgbOf(cs.color), place, null) : null;
+			if (!polys.length) { fail(t, `${nameOf(el)} was to have its number traced, but it shows no digits.`, el); return null; }
+			return new Lines(t, polys, rgbOf(cs.color), place, null);
 		}
 		if (t.kind === 'tab') {
 			// The tab bar's outline width, in the colour the chosen tab fills with.
@@ -1212,9 +1329,11 @@ const TDCDots = (() => {
 			const colour = rgbOf(seen(cs.backgroundColor) ? cs.backgroundColor : cs.color);
 			const g = document.createElementNS(NS, 'g');
 			linesLayer.append(g);
-			return new Lines(t, [pointsOf(drawn(g, pillPath(el, sw), sw, colour), sw, 3)], colour, place, g);
+			// Half drawn when it fails, it would stay on the layer for good.
+			try { return new Lines(t, [pointsOf(drawn(g, pillPath(el, sw), sw, colour), sw, 3)], colour, place, g); }
+			catch (err) { g.remove(); throw err; }
 		}
-		if (t.kind !== 'none') TDC.error(AREA, `there is no trace called "${t.kind}".`, el);
+		if (t.kind !== 'none') fail(t, `there is no trace called "${t.kind}" (${nameOf(el)}).`, el);
 		return null;
 	}
 	// The call is back: the result goes onto the page, hidden
@@ -1224,8 +1343,14 @@ const TDCDots = (() => {
 		reveal(t);
 		let lines = null;
 		try { lines = linesFor(t); }
-		catch (err) { TDC.error(AREA, 'the lines to trace could not be read.', err); }
-		if (lines && !(lines.L > 0)) { lines.remove(); lines = null; }
+		catch (err) { fail(t, `${nameOf(t.el)}: its lines could not be read, so they are not traced.`, err); }
+		// Read but empty, or not numbers (a path with no length, a font the
+		// browser could not measure).
+		if (lines && !(lines.L > 0)) {
+			fail(t, `${nameOf(t.el)}: its lines could not be read (they have no length), so they are not traced.`, t.el);
+			lines.remove();
+			lines = null;
+		}
 		if (!lines) return null;
 		t.lines = lines;
 		lines.show(0);
@@ -1611,8 +1736,12 @@ const TDCDots = (() => {
 	const serve = (el, promise, opts = {}) => enlist(el, promise, opts, false);
 	const track = (el, promise, opts = {}) => enlist(el, promise, opts, true);
 	function enlist(el, promise, opts, load) {
+		// Whatever goes wrong here, the result still goes onto the page when
+		// the call is back.
+		const plain = () => Promise.resolve(promise).then(() => reveal({ el, opts, revealed: false }), () => {});
 		if (!el || !el.isConnected) {
-			TDC.error(AREA, `asked to ${load ? 'track' : 'serve'} an element that is not on the page.`, el);
+			fail({ opts }, `asked to ${load ? 'track' : 'serve'} ${el ? nameOf(el) : 'nothing'}, which is not on the page.`, el);
+			plain();
 			return promise;
 		}
 		build();
@@ -1621,36 +1750,67 @@ const TDCDots = (() => {
 		// Served again while it is still being traced: that trace ends now.
 		if (t && t.settled) { restore(t); t = null; }
 		if (!t) {
-			t = makeRecord(el, opts);
+			try { t = makeRecord(el, opts); }
+			catch (err) {
+				fail({ opts }, `${nameOf(el)} could not be measured, so the dots cannot serve it.`, err);
+				plain();
+				return promise;
+			}
 			records.set(el, t);
 			if (t.kind === 'number') {
 				try { readyDigits(el); }
-				catch (err) { TDC.error(AREA, 'the number\'s font could not be measured.', err); }
+				catch (err) { fail(t, `${nameOf(el)}: the number's font could not be measured.`, err); }
 			}
 			if (load) {
 				// Not marked busy yet: an instant load must show nothing.
 				t.load = true;
-				t.at = performance.now();
 				setTimeout(check, GRACE);
-			} else {
-				el.dataset.dots = 'busy';
-				goTo(t);
-			}
+			} else busyTap(t);
 		} else if (!load && t.load) {
 			// Tapped while it is loading: it is a tap now, and takes the dots.
 			t.load = false;
-			el.dataset.dots = 'busy';
-			if (t !== cur) goTo(t);
+			busyTap(t);
 		}
+		// Each call settles once: answered, failed, or hung after its limit
+		// (HANG, or opts.timeout). A hung call that is answered after all
+		// shows its result then, plainly. A failed one is not traced: no
+		// result was saved, and the page reports its own error (UV, 26 Oct),
+		// so the dots only log it.
 		t.pending++;
-		const done = () => {
+		const limit = opts.timeout > 0 ? opts.timeout : HANG;
+		let over = false;
+		const finish = () => {
 			if (--t.pending) return;
 			t.settled = true;
+			if (!t.el.isConnected) gone(t);
 			if (t !== cur) restore(t);   // abandoned: it comes back without the dots
 			else wake();
 		};
-		Promise.resolve(promise).then(done, done);
+		const timer = setTimeout(() => {
+			if (over) return;
+			over = true;
+			t.hung = true;
+			fail(t, `${nameOf(el)}: its call had no answer for ${Math.round(limit / 1000)} s, so it is shown as it was.`, promise);
+			finish();
+		}, limit);
+		Promise.resolve(promise).then(() => {
+			if (over) { reveal(t); return; }   // hung, and back after all
+			over = true; clearTimeout(timer); finish();
+		}, (err) => {
+			if (over) return;
+			over = true; clearTimeout(timer);
+			t.failed = true;
+			console.error(`[${AREA}] ${nameOf(el)}: its call failed, so its result is not traced.`, err);
+			finish();
+		});
 		return promise;
+	}
+	// A tap: busy at once, and the dots go to it; with reduced motion it
+	// breathes instead (dots.css).
+	function busyTap(t) {
+		t.el.dataset.dots = 'busy';
+		if (calm) t.el.dataset.dotsCalm = '';
+		else if (t !== cur) goTo(t);
 	}
 
 	// ─── The page-load queue (spec §12) ───
@@ -1659,22 +1819,24 @@ const TDCDots = (() => {
 	// that has been loading for GRACE ms: so the dots are never fetched for an
 	// instant load, nor pulled off a trace or a race by one.
 	const late = (t, now) => now - t.at >= GRACE - 1;
+	// With reduced motion there is none: the dots never go anywhere. One
+	// whose serving broke the dots (recover) is not gone to again.
 	function nextPending(now, grace) {
+		if (calm) return null;
+		sweep();
 		let best = null;
 		for (const t of records.values()) {
-			if (!t.load || t.settled || t === cur || (grace && !late(t, now))) continue;
-			if (!t.el.isConnected) {
-				TDC.error(AREA, 'something loading left the page before it was back.', t.el);
-				records.delete(t.el);
-				continue;
-			}
+			if (!t.load || t.settled || t.broken || t === cur || (grace && !late(t, now))) continue;
 			if (!best || best.el.compareDocumentPosition(t.el) & Node.DOCUMENT_POSITION_PRECEDING) best = t;
 		}
 		return best;
 	}
 	// GRACE ms after something is tracked: everything still loading by then
-	// dims, and hidden dots come for the first of them. Shown, the loop decides.
+	// dims, and hidden dots come for the first of them. Shown, the loop
+	// decides. With reduced motion they only dim, with no pulse: the pulse is
+	// for taps (UV, 26 Oct).
 	function check() {
+		sweep();
 		const now = performance.now();
 		for (const t of records.values()) {
 			if (t.load && !t.settled && late(t, now)) t.el.dataset.dots = 'busy';
@@ -1737,19 +1899,30 @@ const TDCDots = (() => {
 	}
 	document.addEventListener('visibilitychange', () => { last = performance.now(); });
 
+	// A throw anywhere in a frame stops the dots and puts the page right
+	// (recover), rather than leaving the loop dead and every target dimmed.
 	function loop(now) {
+		let more = false;
+		try { more = tick(now); }
+		catch (err) { recover(err); return; }
+		if (more) requestAnimationFrame(loop);
+		else running = false;
+	}
+	function tick(now) {
 		const dt = Math.min(50, now - last) / 16.67;
 		last = now;
 		const time = now / 1000;
 
-		// The target left the page mid-flight: say so, and fade where we are.
-		if (cur && !cur.el.isConnected) {
-			TDC.error(AREA, 'the element the dots were serving left the page.', cur.el);
-			records.delete(cur.el);
-			if (cur.lines) cur.lines.remove();
+		// The target left the page before its result was shown (mid-flight,
+		// waiting or mid-trace): said so (gone), and the dots fade where they
+		// are. Once its result is shown, leaving is no failure (a page
+		// redrawing after a save): they race and fade where it was.
+		if (cur && !cur.el.isConnected && (!cur.restored || cur.gone)) {
+			gone(cur);
 			cur = null; tr = null;
 			phase = 'fade'; fading = true; aT = 0;
 		}
+		sweep();
 
 		const W = innerWidth, H = innerHeight, dpr = devicePixelRatio || 1;
 		if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) {
@@ -1778,8 +1951,10 @@ const TDCDots = (() => {
 
 		if (phase === 'travel' && S instanceof Ring && !S.travelling) phase = 'orbit';
 		if (phase === 'orbit' && cur.settled) {
-			// Back before the dots reached it: it is already on the page.
-			const lines = cur.restored ? null : startTrace(cur);
+			// Back before the dots reached it: it is already on the page. A
+			// call that failed or hung has nothing to trace: it comes back
+			// plainly as they race.
+			const lines = cur.restored || cur.failed || cur.hung ? null : startTrace(cur);
 			S.quiet(now);
 			if (lines) {
 				// Diving in: the trace starts now and each dot slides into it.
@@ -1819,16 +1994,70 @@ const TDCDots = (() => {
 		if (phase === 'fade' && alpha < 0.03) {
 			phase = 'hidden'; cur = null; S = null; tr = null; alpha = 0;
 			D.forEach((d) => { d.e.style.opacity = 0; d.hist.length = 0; });
-			running = false;
-			return;
+			return false;
 		}
 
 		const P = S.step(now, dt, time);
 		stepAt = now;
 		if (S instanceof Blend && S.done) S = S.to;
 		D.forEach((d, i) => draw(d, P[i], dt, now));
-		requestAnimationFrame(loop);
+		return true;
 	}
+
+	// Something in the dots themselves threw (spec §14). Said so; the dots
+	// hide, and every target is put right: one whose call is back shows its
+	// result now, the rest come back as their calls do. The one being served
+	// is not gone to again (it may throw again); the next tap starts afresh.
+	function recover(err) {
+		const t = cur;
+		running = false;
+		cur = null; tr = null; S = null; phase = 'hidden'; alpha = 0; aT = 0; fading = false; revealAt = 0;
+		try {
+			fail(t, `the dots stopped${t ? ' while serving ' + nameOf(t.el) : ''}, so ${t ? 'it is' : 'the page is'} shown without them.`, err);
+			if (t) t.broken = true;
+			D.forEach((d) => { d.e.style.opacity = 0; d.hist.length = 0; d.prx = d.pry = null; });
+			ctx.setTransform(1, 0, 0, 1, 0, 0);
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			for (const l of [...fadingLines]) l.remove();
+			linesLayer.replaceChildren();
+			for (const r of [...records.values()]) if (r.settled) restore(r);
+		} catch (err2) {
+			console.error(`[${AREA}] the dots could not put the page right after stopping.`, err2);
+		}
+	}
+
+	// Reduced motion switched on or off while the page is open (the device's
+	// setting, or the sandbox's switch). On: the dots fade where they are (a
+	// trace in hand comes in at once) and every tap still out breathes. Off:
+	// the breathing stops and the dots come for the latest tap still out,
+	// else whatever is still loading.
+	function motionChanged() {
+		const now = reduced();
+		if (now === calm) return;
+		calm = now;
+		for (const t of records.values()) {
+			if (t.load || t.settled) continue;
+			if (calm) { t.el.dataset.dotsCalm = ''; continue; }
+			const from = calmFrom(t);
+			delete t.el.dataset.dotsCalm;
+			calmTo(t, from, T ? T.dim : 200);
+		}
+		if (calm) {
+			if (phase !== 'hidden' && phase !== 'fade') {
+				if (cur && cur.settled) restore(cur);
+				cur = null; tr = null;
+				phase = 'fade'; fading = true; aT = 0;
+			}
+			return;
+		}
+		if (phase !== 'hidden' && phase !== 'fade') return;
+		let next = null;
+		for (const t of records.values()) if (!t.load && !t.settled && !t.broken && (!next || t.at > next.at)) next = t;
+		next = next || nextPending(performance.now(), true);
+		if (next) { T = tokens(); goTo(next); }
+	}
+	lessMotion.addEventListener('change', motionChanged);
+	new MutationObserver(motionChanged).observe(document.documentElement, { attributes: true, attributeFilter: ['data-motion'] });
 
 	// One dot onto the screen at its pose: size and brightness from height,
 	// stretched along its path when fast, squashed when told, and its trail
@@ -1893,7 +2122,7 @@ const TDCDots = (() => {
 		groups: Object.keys(GROUP),
 		// The waiting move (solo or group) to play on repeat, or null for random.
 		force(name) {
-			if (name !== null && !SOLO[name] && !GROUP[name]) { TDC.error(AREA, `there is no move called "${name}".`); return; }
+			if (name !== null && !SOLO[name] && !GROUP[name]) { fail(null, `there is no move called "${name}".`); return; }
 			forced = name;
 			forcedV++;
 		},
@@ -1902,7 +2131,7 @@ const TDCDots = (() => {
 			let loading = 0;
 			for (const t of records.values()) if (t.load && !t.settled) loading++;
 			return {
-				phase, busy: records.size, forced, loading,
+				phase, busy: records.size, forced, loading, reduced: calm,
 				target: cur && phase !== 'fade' ? cur.el : null,
 				group: waiting && r.G ? r.G.name : null, groupAt: waiting && r.G ? r.G.t0 : null,
 				moves: waiting && !r.G ? r.v.map((v) => v.m.name) : []

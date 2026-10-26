@@ -1,6 +1,6 @@
 # The dots — loading and feedback motion
 
-> Built from `docs/design/dots-motion-spec.md` (the architecture and requirements) and `docs/design/dots-prototype.html` (how it should feel). Started 26 Oct 2026. **In progress: steps 1 to 5 of the spec's seven (§16) are built.** This file says what exists and why it is shaped that way; the spec says what is still to come.
+> Built from `docs/design/dots-motion-spec.md` (the architecture and requirements) and `docs/design/dots-prototype.html` (how it should feel). Started 26 Oct 2026. **In progress: steps 1 to 6 of the spec's seven (§16) are built.** This file says what exists and why it is shaped that way; the spec says what is still to come.
 
 ## 1. What it is
 
@@ -19,7 +19,7 @@ Four dots, **one set for the whole page**, that show that something is happening
 
 ## 3. How it works
 
-**The API.** `TDCDots.serve(el, promise, { reveal, trace })` marks `el` busy (`data-dots="busy"`), takes the dots to it and returns the promise. When the promise settles, either way, `reveal()` puts the result on the page at once (a new number, a switch flipped), hidden while the dots trace it (`data-dots="tracing"`, `data-dots-trace` the kind); then `data-dots="revealing"` while its transition brings it in, then the attributes go. A target already busy is not served twice; the dots wait for both calls. Served again while it is still being traced, that trace ends at once and a new serve begins. `serve()` is a **tap**; `TDCDots.track(el, promise, { reveal, trace })` is the same for something **loading with the page** (step 5, below).
+**The API.** `TDCDots.serve(el, promise, { reveal, trace, status, timeout })` (`status` and `timeout` since step 6, under Failures below) marks `el` busy (`data-dots="busy"`), takes the dots to it and returns the promise. When the promise settles, either way, `reveal()` puts the result on the page at once (a new number, a switch flipped), hidden while the dots trace it (`data-dots="tracing"`, `data-dots-trace` the kind); then `data-dots="revealing"` while its transition brings it in, then the attributes go. A target already busy is not served twice; the dots wait for both calls. Served again while it is still being traced, that trace ends at once and a new serve begins. `serve()` is a **tap**; `TDCDots.track(el, promise, { reveal, trace })` is the same for something **loading with the page** (step 5, below).
 
 **The page-load queue (step 5, spec §12).** `track()` makes the same record as `serve()`, marked as loading, and puts it in the queue rather than taking the dots. Decided by UV, 26 Oct:
 
@@ -139,7 +139,33 @@ Measured 26 Oct at 420px (headless Chrome, 7 ms frames), every move forced in tu
 
 **Busy, tracing and revealing (`dots.css`).** Busy: a ring icon's ring hides and its icon dims to `--dots-busy-dim`, in `--dots-dim`; anything else has its border made transparent and the whole of it dimmed. Tracing: a ring icon's ring stays hidden and its marks fade in as a whole (`--dots-lines`, set by the script, with their own draw-on transition off); a number fades in as a whole the same way; a tab stays faint and unfilled. Revealing: everything comes back in `--dots-reveal`, which the script reads from the computed transition to know when the ring is fully in.
 
-**Failures.** A target that leaves the page while served is reported with `TDC.error('Dots', …)` and the dots fade where they are. A `reveal` that throws is reported and the target still comes back. The rest of the spec's error handling is step 6.
+**Failures (step 6, spec §14).** Never silent: each goes to the console with `[Dots]` and onto the page as "TDC (Error): …" through `fail()`, and the target still ends as it should, its result shown and no `data-dots` attribute left on it. **Where it shows (UV, 26 Oct):** on the page's own status line if `serve()` / `track()` were given one (`opts.status`), else on the dots' own line, `div.tdc-dots-error`, fixed at the foot of the screen above everything for 6 s (`ERROR_MS`). That line sits outside the layer, which is `aria-hidden`. Messages name the target (its `aria-label`, else its text).
+
+| Failure | What happens |
+|---|---|
+| An icon's lines missing (no `.mark.on`, or `trace: 'icon'` on something with no ring icon), a number with no digits | Reported by name ("Lag: its icon has no lines to trace"). No trace: the target comes back as the dots race. Before step 6 this was silent |
+| Lines that cannot be read (a broken path, a font that cannot be measured, lines of no length) | Reported; no trace. A tab's outline half drawn when it failed is taken off the layer (before, it stayed for good) |
+| The target leaves the page **before its result is shown** (mid-flight, waiting, mid-trace) | `gone()`: reported, and everything the dots put on it (`data-dots`, `data-dots-trace`, `data-dots-calm`, `--dots-lines`) taken off at once, so the element is right if the page puts the same node back (before, one removed mid-trace kept `data-dots="tracing"` and stayed invisible). The dots fade where they are. Its `reveal` still runs when its call is back. Checked every frame (`sweep()`), in the grace check, and when its call settles, so it is reported promptly whether or not the dots are on it |
+| The target leaves **after its result is shown** (racing, fading) | **Not a failure:** a page redrawing after a save (CLAUDE.md idea 6) replaces its elements all the time. The dots race and fade where it was. Before step 6 this was reported as an error |
+| A ring icon drawn again while served (a new SVG in the same target) | Measured by its new ring. Before, the old ring's `ownerSVGElement` was null and the frame threw |
+| A `reveal` that throws | Reported; the target still comes back |
+| A call that **never settles** | After `HANG` (20 s, UV) or `opts.timeout`: reported ("its call had no answer for 20 s, so it is shown as it was"), the target comes back **as it was** (no `reveal`, no trace), and the dots move on to whatever is still loading, else race and fade. If the call is answered later, its `reveal` runs then, plainly. Before, the dots orbited it forever and held the queue |
+| A call that **fails** (rejects) | **Not traced** (UV): nothing was saved. Its `reveal` still runs, so the page can put back what the database holds, and the page reports its own error; the dots only log it to the console. Before, a failed call was traced like a success |
+| The dots themselves throw (in a frame) | `recover()`: reported; the dots hide, the canvas and any drawn lines are cleared, and every target whose call is back is restored now (the rest as theirs come back). The target being served is marked `broken` and not gone to again; the next tap starts afresh. Before, the loop died with `running` still true: every busy target stayed dimmed for good and no later tap animated |
+| `serve()` / `track()` on something not on the page, or that cannot be measured | Reported; its `reveal` still runs when the call is back |
+
+**Reduced motion (step 6, spec §14).** `reduced()`: the device's `prefers-reduced-motion`, unless the page's root says `data-motion="reduce"` or `"full"` (the sandbox's switch, so it can be tried without changing the device). Followed live: a `matchMedia` listener and a `MutationObserver` on the root (`motionChanged()`).
+
+| | What happens |
+|---|---|
+| A tap | No dots. The target is busy as usual and also `data-dots-calm`: a **calm pulse** (`dots.css`), opacity only, nothing moving. A ring icon's **ring** breathes (0 → `--dots-pulse-peak` → 0) while its icon stays dim; anything else breathes **as a whole** (`--dots-busy-dim` → peak). One breath is `--dots-pulse` (2 s). The pulse waits `--dots-dim` so the dimming finishes first, and starts from where it left the target |
+| The call is back | No trace, no race: the result goes on and the target **fades in** (`--dots-reveal`) from wherever the pulse had it |
+| Page load (`track()`) | **No pulse (UV, 26 Oct):** everything still loading after `GRACE` dims, and fades in as it comes back. The dots never come |
+| Switched on while the dots are out | They fade where they are (a trace in hand comes in at once) and every tap still out starts breathing |
+| Switched off | The breathing stops (eased) and the dots come for the latest tap still out, else whatever is still loading |
+| Failures | As above, reported the same way. With no dots, a target that leaves and comes back before its call is back has not failed |
+
+**Ending the pulse without a jump.** Taking the pulse off snaps the opacity to wherever the CSS sends it, because a CSS transition does not start from a CSS animation's current value (measured in Chrome: the ring and the button went from 0.49 to 1 in one frame). So the script reads the opacity the pulse has (`calmFrom`), takes the pulse off, and runs a Web Animation from that value to wherever the CSS has it (`calmTo`, one keyframe at `offset: 0`; a single keyframe with no offset is taken as the **end**, which first ran it from 1 down to the pulse's value).
 
 ## 4. Built so far, and what is next
 
@@ -150,7 +176,7 @@ Measured 26 Oct at 420px (headless Chrome, 7 ms frames), every move forced in tu
 | 3. The sandbox's full controls | **Built 26 Oct; UV to review.** Simulate page load waits for step 5's queue |
 | 4. The move registry, 18 solo and 16 group moves (pool and merge added, moons redone) | **Built 26 Oct; UV to review in the sandbox** (pause 3 of 3) |
 | 5. The page-load queue and `track()` | **Built 26 Oct; UV to review in the sandbox** (Simulate page load) |
-| 6. Reduced motion, error handling | Reduced motion is not handled yet |
+| 6. Reduced motion, error handling | **Built 26 Oct; UV to review in the sandbox** (Motion, Failures) |
 | 7. Replace `ring-status.js`'s dots; wire into real elements | |
 
 ## 5. Tokens
@@ -165,6 +191,8 @@ Measured 26 Oct at 420px (headless Chrome, 7 ms frames), every move forced in tu
 | `--dots-busy-dim` | 0.1 | How faint a waiting target is |
 | `--dots-dim` | 0.2s | A target dimming as it goes busy |
 | `--dots-reveal` | 0.25s | A target coming back (spec: icon and ring in about 0.25 s) |
+| `--dots-pulse` | 2s | Reduced motion: one breath of a tapped target while it waits |
+| `--dots-pulse-peak` | 0.5 | Reduced motion: how bright the target (or a ring icon's ring) gets at the top of each breath |
 
 ## 6. Testing it
 
@@ -176,8 +204,14 @@ Positions are best checked from the page itself: each `.tdc-dot`'s `getBoundingC
 
 **Since step 5, measure jumps as a change of speed**, not a move: a dot travelling fast honestly moves 10–19px a frame, so the largest move cannot tell a trip from a jump. Take each dot's move per frame divided by that frame's own time (headless Chrome drops frames, and a dropped frame doubles a move), and report the largest change from one frame to the next. Smooth travel and the waiting moves measure 1–3px; a jump shows as a spike, or two in a row (a dot stopping for one frame). Burst's explosion is the exception on purpose (13.5px on the counter's big ring).
 
+**Sample after the frame is drawn (found 26 Oct, step 6).** A recorder reading the dots in its own `requestAnimationFrame` may run before the engine's in that frame, and then pairs the last frame's positions with this frame's time. With even frames that cancels out; after a long frame followed by a short one it shows a false spike of 13–70px, on the committed engine as much as the new. Read positions in a task queued from the rAF (`setTimeout(…, 0)`, skipped if the next frame came first), and leave out frames over three 60 fps frames long.
+
 **To compare with the committed engine**, serve `git show HEAD:src/scripts/dots.js` to the page in place of the new one (the DevTools protocol's `Fetch.requestPaused`, answered with the old file), and run the same script on both.
 
 Measured 26 Oct at 420px (step 5): 25 page loads at a 3 s delay, random moves, every frame 16.8 ms: the largest change of speed 1.4–3 px in 22 of them; burst's explosion (13.5) in one; and two not reproduced since: 20px as the race began on a row the dots had landed on (which move was running was not recorded), and 6.3px in the final trace of the cue ball. Forced, neither came back: the race over each of the 16 group moves and over polar, over, spiral and stars, and five traces of the cue ball, all 1–4px on both engines. Eight sharp turns (tabs → Save settings, 250–740 ms in) 1.5–1.7px, against 26–50 on the step 4 engine. All instant: the dots never shown. The race taking over each of the 16 group moves mid-move: 1.3–2.2px. Nothing left marked after any run.
 
-**The sandbox (`/sandbox/dots/`, step 3).** The stage: a tab bar (the league pages' bar), four ring icons in four colours, the counter, a list row with a ring icon button, a switch served as a ring, a primary and a secondary button. The controls: network delay, draw speed, fade speed, hand-over and ring margin (each sets its token on that page until a reload; the values to keep are set and saved on the main sandbox, whose token list now has a **Dots** group), the waiting move with Random (solo moves and group moves, in two lists), and the status line (the phase, then each dot's solo move or the group).
+Measured 26 Oct at 420px (step 6), change of speed: a tap on the tick traced, raced and faded 0.7 (1.1 on the committed engine); tick → tab mid-flight → Save settings 1.6 (1.4); reduced motion switched on mid-orbit 0.65, off mid-pulse 1.0; the bell removed mid-flight 1.1; a call hung with something else loading 1.2–2.3, against 1.1–2.3 for the same call answered; a reveal that throws 0.8. Eighteen page loads (random moves): 0.9–5.8 on the new engine, 0.5–9.8 on the committed one. Reduced motion, per frame: the pulse and the fade-in never step more than the dimming going in (0.07–0.08 of opacity a frame); no dot shown; at page load nothing pulses. Every Failures button, in both modes: reported, and nothing left marked.
+
+*Seen on both engines, not from step 6, for UV to decide on:* (1) **appearing and opening out on a big ring** (the counter's 90px): from their last place the sphere opens from nothing to 1.5 times the ring in the first 30% of a 450 ms trip, so its first frames change speed by 12–41 (13–16 on the committed engine). (2) **The race on a row the dots landed on** (step 5's unreproduced 20px): 5.8–14.7 once in about ten loads, on the "Team 0 : Team 3" row, on even frames.
+
+**The sandbox (`/sandbox/dots/`, step 3).** The stage: a tab bar (the league pages' bar), four ring icons in four colours, the counter, a list row with a ring icon button, a switch served as a ring, a primary and a secondary button. The controls: network delay, draw speed, fade speed, hand-over and ring margin (each sets its token on that page until a reload; the values to keep are set and saved on the main sandbox, whose token list now has a **Dots** group), the waiting move with Random (solo moves and group moves, in two lists), and the status line (the phase, then each dot's solo move or the group). **Motion** (step 6): As the device says / Reduced / Full, which sets `data-motion` on the page's root. **Failures** (step 6): one button for each failure in the table above, each run on a stage element at the network delay (Never settles takes the real 20 s); "Report on this section's line" passes the section's status line as `opts.status`, else the dots' own line shows. When it is all over, the log lists anything still marked by the dots, or "All clear".

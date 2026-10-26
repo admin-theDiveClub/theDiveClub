@@ -14,9 +14,9 @@ extraScripts:
 	components that pretend to call the network, so the motion can be studied
 	at any speed. Nothing here touches the database.
 
-	Steps 1 to 5 of the spec's build order: travel, tracing, the ring race,
-	the fade, the controls, the 18 solo and 16 group moves, and the page-load
-	queue (Simulate page load).
+	Steps 1 to 6 of the spec's build order: travel, tracing, the ring race,
+	the fade, the controls, the 18 solo and 16 group moves, the page-load
+	queue (Simulate page load), reduced motion (Motion) and the failures.
 {% endcomment %}
 
 <div class="tdc-card sandbox dots-sandbox">
@@ -78,7 +78,35 @@ extraScripts:
 			</div>
 			<p class="muted">Pick one to play it on repeat: a solo move for all four dots, or a group move back to back. Random: each dot its own solo moves, and a group every 2 to 5 seconds.</p>
 		</div>
+		<div class="field">
+			<label for="dots-motion">Motion</label>
+			<select id="dots-motion" data-control="none">
+				<option value="">As the device says</option>
+				<option value="reduce">Reduced</option>
+				<option value="full">Full</option>
+			</select>
+			<p class="muted" id="dots-motion-note"></p>
+		</div>
 		<p class="dots-stat" id="dots-stat" role="status"></p>
+	</section>
+
+	<section class="sb-section">
+		<h2>Failures</h2>
+		<p class="muted">Each button makes one thing go wrong on the stage. The failure should show as "TDC (Error)" (on the dots' own line at the foot of the screen, or on this section's line when ticked below) and in the console with [Dots]; the target should still end right. When it is all over, the check below lists anything still marked by the dots.</p>
+		<div class="dots-fails">
+			<button type="button" class="btn btn-secondary" data-fail="missing">Icon lines missing</button>
+			<button type="button" class="btn btn-secondary" data-fail="unreadable">Icon lines unreadable</button>
+			<button type="button" class="btn btn-secondary" data-fail="flight">Removed mid-flight</button>
+			<button type="button" class="btn btn-secondary" data-fail="trace">Removed mid-trace</button>
+			<button type="button" class="btn btn-secondary" data-fail="throws">Reveal throws</button>
+			<button type="button" class="btn btn-secondary" data-fail="hang">Never settles (20 s)</button>
+			<button type="button" class="btn btn-secondary" data-fail="reject">Call fails</button>
+			<button type="button" class="btn btn-secondary" data-fail="leaves">Leaves while loading</button>
+			<button type="button" class="btn btn-secondary" data-fail="engine">The dots throw</button>
+		</div>
+		<label class="dots-check"><input type="checkbox" id="dots-own-line" data-control="none"> Report on this section's line</label>
+		<div class="status" id="dots-fail-status" role="status"></div>
+		<ol class="dots-log" id="dots-fail-log"></ol>
 	</section>
 
 	<section class="sb-section">
