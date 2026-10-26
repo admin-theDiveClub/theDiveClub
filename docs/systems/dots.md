@@ -1,6 +1,6 @@
 # The dots — loading and feedback motion
 
-> Built from `docs/design/dots-motion-spec.md` (the architecture and requirements) and `docs/design/dots-prototype.html` (how it should feel). Started 26 Oct 2026. **In progress: steps 1 to 3 of the spec's seven (§16) are built.** This file says what exists and why it is shaped that way; the spec says what is still to come.
+> Built from `docs/design/dots-motion-spec.md` (the architecture and requirements) and `docs/design/dots-prototype.html` (how it should feel). Started 26 Oct 2026. **In progress: steps 1 to 4 of the spec's seven (§16) are built.** This file says what exists and why it is shaped that way; the spec says what is still to come.
 
 ## 1. What it is
 
@@ -87,7 +87,25 @@ Measured 26 Oct at 420px: the Accept tick (a 33px ring) — spread between dots 
 
 *Tried and changed the same day, both measured before UV saw them:* (1) the prototype's way of following the pen (each frame 38% of the way to it): where the "2" ends and the "0" begins a dot leapt 12.9px in one frame, starting at full speed, and lagged its pen on every curve; replaced by sitting on the pen and swooping only at a jump. Its lift (0.25) and wobble (0.08) made a dot 1.4 times the line; now 0.15 and 0.05. (2) Leaving mid-trace, the trip first started from the dots themselves, carrying the digits' 5.8px line into the lift: a dot reached 9.75px in flight. It now leaves from the sphere underneath.
 
-**Stages built:** travel (above; dots stretch along their path when fast), **cruise** (the one waiting move so far: clockwise with a gentle bob), tracing, the ring race, and the fade (while still racing).
+**The waiting moves (step 4, 26 Oct).** The spec's 18 solo and 14 group moves (§8), ported from the prototype's `domeStep` and `groupStep`, run inside `Ring` while it waits. Each is one entry in `SOLO` or `GROUP` in `dots.js`: its weight, its length, and `step()`, a function of the move's progress that says where the dot aims on the sphere and what it changes (squash, a squash of its own at its own angle, glow, trail, visibility, size, blur, the spring). A group may also have `start()` (random axes, the ball's four spots, the floor's tilt) and `draw()` (the black hole's disk, the shadows' floor, on the layer's canvas). Adding a move is one entry.
+
+| | How it works |
+|---|---|
+| Solo moves | Each dot runs its own, one after another, picked by weight. Only one **big** move at a time; the other dots calm to 70% speed and a smaller bob while it runs, easing into and out of it (spec §7) |
+| Into a solo move | Its first aim is turned to where the last move was aiming and turned back over `CARRY` (300 ms), so a dot never lurches as a move begins. A move ends where the dot actually is (it lags its aim), and hop, dive, over and under land with a squash (`LAND`, 220 ms) |
+| Group moves | Every 2.2 to 4.7 s after the last (the first 1.4 to 2.9 s after the dots begin). A group fades in over `--dots-blend`, runs its time, then fades out over `--dots-blend` **held at its end**, so a burst back to the ring is not cut short. Each dot cruises on from where it is |
+| Mixing | A move's wishes and the next's are mixed by weight, the aim **turning along the sphere** (slerp). A straight line between two aims put back on the sphere swept through the middle in a frame or two when they were far apart (3–4px in one frame, measured, on ball, binary, juggle, polar, steamroll) |
+| Travelling | The moves carry on in flight, solo and group (UV, 26 Oct) |
+| The call is back | A trace starting fades a group out at once and starts no other (UV: never wait for a group to finish). The race takes over the moves as they are and they fade out as it eases up over `--dots-blend`, a group's extras with them |
+| Forced (the picker) | A solo move for all four dots on repeat, or a group back to back; a move cut short by the picker ends without its landing |
+| Clockwise | Every move with a free direction measured clockwise (the dots' mean turn per move, from the page); over, under and juggle cross the middle by nature |
+| Sizes | The prototype's amplitudes, as UV asked to see them: a splat's pancake to about twice its width, a flatten's smear 2.2 times long, the moons 1.7 times, a shadow up to about 3.8 times (faint and blurred). Speed stretch stays capped at 1.35 times and glow in proportion to the dot |
+
+*Changed from the prototype, each because it jumped when measured:* steamroll's ball goes a little over a lap, so the dot it began behind is flattened twice, and on the second pass the prototype sprang from flat to round in one frame (2.4px); a dot now forgets the ball once it is well behind. The black hole's streak snapped round as the dots vanished, still faintly seen (a 56% size change in one frame); it now holds while they are gone and eases round as they burst out. Wobble's and jitter's squash and wave's squash at the bottom switched on at full strength; they now grow in. Shadows' squash on a bounce switched with the floor's strength; it now eases. The black hole's disk was 180 strokes a frame, each with its own canvas blur, which doubled the frame time (14 ms against 7 in headless Chrome); it is now drawn in runs of three segments, with the blur only on the front half. **Splat's impact is left as it was**: the dot squishes to its pancake in one frame (it doubles in size), which is the move.
+
+Measured 26 Oct at 420px (headless Chrome, 7 ms frames), every move forced in turn on the Accept tick (a 33px ring) and on the wide button: the dots stay on the sphere (out to 1.00–1.03 of the ring's radius; a shadow on its floor and a dot in the black hole inside it); the largest move of a dot in one frame 0.5–1.6px for the solo moves (jitter's dash 2.7), 0.9–2.8px for the groups (burst's explosion and collide's bounce 4px, on purpose); size changes of at most 15% a frame except splat's impact; no frame over 7.7 ms. The call coming back mid-black-hole (the dots gone), mid-shadows on the button, mid-comet, and a second target tapped mid-ball: no move over 4.6px in a frame through the trace, race and fade, the largest at the start of a trip.
+
+**Stages built:** travel (above; dots stretch along their path when fast), the waiting moves, tracing, the ring race, and the fade (while still racing).
 
 **Busy, tracing and revealing (`dots.css`).** Busy: a ring icon's ring hides and its icon dims to `--dots-busy-dim`, in `--dots-dim`; anything else has its border made transparent and the whole of it dimmed. Tracing: a ring icon's ring stays hidden and its marks fade in as a whole (`--dots-lines`, set by the script, with their own draw-on transition off); a number fades in as a whole the same way; a tab stays faint and unfilled. Revealing: everything comes back in `--dots-reveal`, which the script reads from the computed transition to know when the ring is fully in.
 
@@ -99,8 +117,8 @@ Measured 26 Oct at 420px: the Accept tick (a 33px ring) — spread between dots 
 |---|---|
 | 1. Engine: sphere, springs, loop, stroke and colour reading, travel, cruise, race, fade | **Built and approved by UV, 26 Oct** |
 | 2. Tracing and the element types | **Built 26 Oct; UV to review in the sandbox** |
-| 3. The sandbox's full controls | **Built 26 Oct; UV to review.** Simulate page load waits for step 5's queue; the move picker lists cruise alone until step 4 |
-| 4. The move registry, 18 solo and 14 group moves | `Ring`'s orbit holds cruise alone, to be replaced by the registry. `TDCDots.force()` already takes the picker's choice |
+| 3. The sandbox's full controls | **Built 26 Oct; UV to review.** Simulate page load waits for step 5's queue |
+| 4. The move registry, 18 solo and 14 group moves | **Built 26 Oct; UV to review in the sandbox** (pause 3 of 3) |
 | 5. The page-load queue and `track()` | |
 | 6. Reduced motion, error handling | Reduced motion is not handled yet |
 | 7. Replace `ring-status.js`'s dots; wire into real elements | |
@@ -124,6 +142,6 @@ Headless Chrome is useful here, with two traps found on 26 Oct:
 - **A screenshot can show a stale frame.** Headless Chrome kept presenting an old picture of the moving dots (they looked 40px off the ring while the page reported them on it). Change the DOM just before each capture (any attribute) to force a fresh paint.
 - **A clipped capture bigger than the screen re-lays out the page**, which moves the fixed layer. Scroll the target into view and capture the screen instead.
 
-Positions are best checked from the page itself: each `.tdc-dot`'s `getBoundingClientRect()` against the target's, and its true size (stretch included) from its computed transform: `Math.hypot(m.a, m.b) × 8` along it and `Math.hypot(m.c, m.d) × 8` across. Record every frame with `requestAnimationFrame` and report the spread between the dots, the biggest dot against the line it is on, and the largest move of any dot from one frame to the next.
+Positions are best checked from the page itself: each `.tdc-dot`'s `getBoundingClientRect()` against the target's, and its true size (stretch included) from its computed transform. **Since step 4, use the matrix's singular values**, not the length of its columns: a dot can be squashed at one angle and stretched at another, and the column lengths then change as its direction of travel turns while its shape does not (it read as a 2.4px snap that was not there). With `T = a² + b² + c² + d²` and `D = ad − bc`, the two sizes are `8 × √((T ± √(T² − 4D²)) / 2)`. To test a hand-over at a chosen moment, serve with a promise resolved by hand (`TDCDots.serve(el, new Promise((r) => { done = r; }))`). Record every frame with `requestAnimationFrame` and report the spread between the dots, the biggest dot against the line it is on, and the largest move of any dot from one frame to the next.
 
-**The sandbox (`/sandbox/dots/`, step 3).** The stage: a tab bar (the league pages' bar), four ring icons in four colours, the counter, a list row with a ring icon button, a switch served as a ring, a primary and a secondary button. The controls: network delay, draw speed, fade speed, hand-over and ring margin (each sets its token on that page until a reload; the values to keep are set and saved on the main sandbox, whose token list now has a **Dots** group), the waiting move with Random, and the status line.
+**The sandbox (`/sandbox/dots/`, step 3).** The stage: a tab bar (the league pages' bar), four ring icons in four colours, the counter, a list row with a ring icon button, a switch served as a ring, a primary and a secondary button. The controls: network delay, draw speed, fade speed, hand-over and ring margin (each sets its token on that page until a reload; the values to keep are set and saved on the main sandbox, whose token list now has a **Dots** group), the waiting move with Random (solo moves and group moves, in two lists), and the status line (the phase, then each dot's solo move or the group).

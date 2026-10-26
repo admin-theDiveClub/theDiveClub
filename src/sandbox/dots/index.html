@@ -14,9 +14,9 @@ extraScripts:
 	components that pretend to call the network, so the motion can be studied
 	at any speed. Nothing here touches the database.
 
-	Steps 1 to 3 of the spec's build order: travel, cruise, tracing, the ring
-	race, the fade, and the controls. The move picker lists cruise alone until
-	step 4; Simulate page load comes with step 5's queue.
+	Steps 1 to 4 of the spec's build order: travel, tracing, the ring race,
+	the fade, the controls, and the 18 solo and 14 group moves. Simulate page
+	load comes with step 5's queue.
 {% endcomment %}
 
 <div class="tdc-card sandbox dots-sandbox">
@@ -76,7 +76,7 @@ extraScripts:
 				<select id="dots-move" data-control="none"></select>
 				<label class="dots-check"><input type="checkbox" id="dots-random" checked data-control="none"> Random</label>
 			</div>
-			<p class="muted">Cruise is the only move until step 4 brings the other 31.</p>
+			<p class="muted">Pick one to play it on repeat: a solo move for all four dots, or a group move back to back. Random: each dot its own solo moves, and a group every 2 to 5 seconds.</p>
 		</div>
 		<p class="dots-stat" id="dots-stat" role="status"></p>
 	</section>

@@ -101,18 +101,19 @@
 		box.append(field);
 	}
 
-	// The waiting move: one on repeat, or Random. Cruise alone until step 4.
+	// The waiting move: one on repeat (a solo move for all four dots, or a
+	// group move back to back), or Random.
 	const move = $('dots-move'), random = $('dots-random');
-	move.innerHTML = TDCDots.moves.map((m) => `<option value="${m}">${m}</option>`).join('');
+	const options = (list) => list.map((m) => `<option value="${m}">${m}</option>`).join('');
+	move.innerHTML = `<optgroup label="Solo">${options(TDCDots.moves)}</optgroup><optgroup label="Group">${options(TDCDots.groups)}</optgroup>`;
 	const force = () => TDCDots.force(random.checked ? null : move.value);
 	move.addEventListener('change', () => { random.checked = false; force(); });
 	random.addEventListener('change', force);
 
 	setInterval(() => {
 		const s = TDCDots.state;
-		stat.textContent = s.phase === 'hidden' ? 'Hidden'
-			: s.phase === 'orbit' ? (s.forced ? 'Forced: ' : 'Solo: ') + s.moves.join(' · ')
-			: s.phase === 'trace' ? 'Tracing'
-			: s.phase[0].toUpperCase() + s.phase.slice(1);
+		const moves = s.group ? 'Group: ' + s.group : s.moves.length ? 'Solo: ' + s.moves.join(' · ') : '';
+		const phase = s.phase === 'hidden' ? 'Hidden' : s.phase === 'trace' ? 'Tracing' : s.phase[0].toUpperCase() + s.phase.slice(1);
+		stat.textContent = (s.phase === 'orbit' && moves ? '' : phase) + (moves ? (s.phase === 'orbit' ? '' : ' · ') + moves : '') + (s.forced ? ' (forced)' : '');
 	}, 120);
 })();

@@ -19,9 +19,10 @@
 //   Returns the promise. A target already busy is not served twice: the dots
 //   wait for both calls. Serving a new target takes the dots there at once;
 //   the old one restores itself, without them, when its own call is back.
-//   TDCDots.state  what the dots are doing, for the sandbox's status line
-//   TDCDots.moves, TDCDots.force(name | null)  the waiting moves, and one to
-//     play on repeat (the sandbox's picker). Cruise alone until step 4
+//   TDCDots.state  what the dots are doing (the phase, each dot's solo move
+//     or the group move), for the sandbox's status line
+//   TDCDots.moves, TDCDots.groups, TDCDots.force(name | null)  the solo and
+//     group moves, and one to play on repeat (the sandbox's picker)
 //
 // The animation runs; the dots show it (UV, 26 Oct). The dots' motion lives
 // on a sphere and never stops: travelling, they keep cruising and the sphere
@@ -36,9 +37,9 @@
 // above the page: higher is bigger and brighter. Size on the ring line is the
 // stroke width of the line the dots are on, and so is their colour.
 //
-// Built so far (spec §16, steps 1 and 2): travel, the cruise move, tracing,
-// the ring race and the fade. Still to come: the other moves (4), the
-// page-load queue (5), reduced motion (6).
+// Built so far (spec §16, steps 1 to 4): travel, the waiting moves (18 solo,
+// 14 group: SOLO and GROUP), tracing, the ring race and the fade. Still to
+// come: the page-load queue (5), reduced motion (6).
 //
 // Needs: tdc.js (TDC.error). Its look is stylesheets/dots.css; its sizes and
 // times are tokens in variables.css (--dots-*).
@@ -98,7 +99,10 @@ const TDCDots = (() => {
 		return b;
 	};
 	const DIG_BOX = Object.fromEntries(Object.keys(DIG).map((k) => [k, boxOf(DIG[k])]));
-	const MOVES = ['cruise'];
+	// The moves (step 4). CARRY: how long a new solo move takes to ease its
+	// aim in from where the last one was aiming (ms), so nothing jumps between
+	// moves. LAND: the squash after a hop, dive, over or under lands (ms).
+	const CARRY = 300, LAND = 220;
 
 	// ─── Maths ───
 	const sm = (x) => x * x * (3 - 2 * x);
@@ -109,6 +113,464 @@ const TDCDots = (() => {
 	const sph = (th, ph) => [Math.cos(ph) * Math.cos(th), Math.cos(ph) * Math.sin(th), Math.sin(ph)];
 	const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 	const nrm = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return v.map((x) => x / l); };
+	const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+	// v turned about the unit axis k by a (clockwise on the screen when k
+	// points at the viewer: x is right, y down, z out of the page).
+	function rotV(v, k, a) {
+		const c = Math.cos(a), s = Math.sin(a), kv = cross(k, v), kd = dot3(k, v) * (1 - c);
+		return [0, 1, 2].map((j) => v[j] * c + kv[j] * s + k[j] * kd);
+	}
+	const jig = (tau, k = 4.5, f = 16) => Math.exp(-k * tau) * Math.cos(f * tau);   // a jelly wobble, from 1 to rest (tau in s)
+	const eob = (x) => 1 + 2.7 * Math.pow(x - 1, 3) + 1.7 * Math.pow(x - 1, 2);    // out past 1 and back
+	const randAxis = () => nrm([Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1]);
+	// A plane through the centre, tilted towards the viewer by nz: its normal
+	// and two directions in it.
+	function tiltedPlane(nzMin, nzMax) {
+		const nz = nzMin + Math.random() * (nzMax - nzMin), a = Math.random() * 2 * PI, s = Math.sqrt(1 - nz * nz);
+		const n = [s * Math.cos(a), s * Math.sin(a), nz], u = nrm(cross(n, [0, 0, 1]));
+		return { n, u, v: cross(n, u) };
+	}
+	// One entry of a table of moves, by weight.
+	function pick(table) {
+		const all = Object.entries(table);
+		let r = Math.random() * all.reduce((a, [, m]) => a + m.weight, 0);
+		for (const [name, m] of all) if ((r -= m.weight) < 0) return name;
+		return all[0][0];
+	}
+
+	// ─── The waiting moves (spec §8) ───
+	// Ported from the prototype (BEH, DUR, domeStep; GROUPS, startGroup,
+	// groupStep, drawDisk, drawFloor). Each is one entry: its weight in random
+	// mode, its length (ms: a base and a random extra), and step(), a function
+	// of the move's progress p (0 to 1) that says where the dot aims on the
+	// unit sphere, either as { th, ph } (longitude, clockwise; latitude, up is
+	// towards the viewer) or as a point { aim }, plus whatever it changes:
+	//   sq     squash (negative) or stretch along its path
+	//   sx sy  a squash or stretch of its own, at the angle srot (null: along
+	//          its path); 1 is round
+	//   glow, trail, vm (how visible, 1 is fully), szm (size, times), blur
+	//   k damp the spring's pull and damping (0.34 and 0.6 if not given)
+	// Ring mixes whatever a move gives with the rest (Ring.step), so every
+	// move begins and ends without a jump.
+	//
+	// Solo moves: each dot runs its own, one after another. `big` moves are
+	// staged one at a time (spec §7); `land` ones squash as they land.
+	// step(v, m, c): v the dot (v.th its longitude, which most moves carry
+	// on), m the move (th0, ph0, V0: where the dot was when it began; sg a
+	// random sign; inc, sr random angles), c the moment (p, i the dot, t the
+	// time in s, step the frame's share of a second, w the dot's own speed,
+	// bob the cruise's bob).
+	function hopping(s) {
+		return (v, m, c) => {
+			const p = c.p;
+			v.th += c.w * 0.5 * c.step;
+			let ph, sq = 0, glow = 0;
+			if (p < 0.2) { const q = p / 0.2; ph = -0.15 * s * sm(q); sq = -0.45 * Math.sin(PI * q); }
+			else if (p < 0.78) {
+				const q = (p - 0.2) / 0.58;
+				ph = s * (-0.15 + 0.15 * q + 1.05 * Math.sin(PI * q));
+				sq = q < 0.25 ? 0.55 * Math.sin(PI * q / 0.25) : 0;
+				if (s > 0) glow = 0.35 * Math.sin(PI * q);
+			} else { const q = (p - 0.78) / 0.22; ph = -0.1 * s * Math.sin(PI * q); sq = -0.55 * Math.sin(PI * q); }
+			return { th: v.th, ph, sq, glow };
+		};
+	}
+	function shooting(span, lift, gl) {
+		return (v, m, c) => {
+			const p = c.p;
+			let o, sq = 0, glow = gl;
+			if (p < 0.22) { const q = p / 0.22; o = -0.35 * sm(q); sq = -0.45 * Math.sin(PI * q); glow *= 0.3; }
+			else if (p < 0.85) o = -0.35 + span * sm((p - 0.22) / 0.63);
+			else { const q = (p - 0.85) / 0.15; o = span - 0.35 + 0.2 * Math.sin(PI * q); glow *= 1 - q; }
+			v.th = m.th0 + o;
+			return { th: v.th, ph: m.ph0 * (1 - p) + lift * Math.sin(PI * p) * m.sg, sq, glow };
+		};
+	}
+	// Over (up 1) or under (-1) the sphere, through the middle, to the far side.
+	function crossing(up, gl) {
+		return (v, m, c) => {
+			const p = c.p, u = [Math.cos(m.th0), Math.sin(m.th0), 0];
+			const ps = p < 0.12 ? -0.12 * Math.sin(PI * p / 0.12) : PI * sm((p - 0.12) / 0.88);
+			return {
+				aim: [u[0] * Math.cos(ps), u[1] * Math.cos(ps), up * Math.sin(ps)],
+				sq: p < 0.12 ? -0.4 * Math.sin(PI * p / 0.12) : 0, glow: gl * Math.sin(PI * p)
+			};
+		};
+	}
+	const SOLO = {
+		cruise: { weight: 3, dur: [900, 800], step: (v, m, c) => { v.th += c.w * c.step; return { th: v.th, ph: c.bob }; } },
+		splat: {
+			weight: 1.2, dur: [1500, 300], big: true,
+			step(v, m, c) {
+				const p = c.p, o = { ph: 0 };
+				v.th += c.w * 0.25 * c.step;
+				o.th = v.th;
+				if (p < 0.26) { o.ph = 0.95 * Math.sin(PI / 2 * sm(p / 0.26)); o.sx = o.sy = 1 - 0.12 * Math.sin(PI * p / 0.26); }
+				else if (p < 0.46) { const q = (p - 0.26) / 0.2; o.ph = 0.95 * (1 - q * q); }
+				else {
+					// The impact: half the time an even pancake, half an oval.
+					const e = jig((p - 0.46) * m.bd / 1000, 4, 15);
+					if (m.sg > 0) { o.sx = o.sy = 1 + 0.95 * e; o.srot = 0; }
+					else { o.sx = 1 + 1.2 * e; o.sy = 1 - 0.5 * e; o.srot = m.sr; }
+					o.glow = p < 0.52 ? 0.8 * (1 - (p - 0.46) / 0.06) : 0;
+				}
+				return o;
+			}
+		},
+		flatten: {
+			weight: 1.2, dur: [1600, 300], big: true, k: 0.5, damp: 0.5,
+			step(v, m, c) {
+				const p = c.p, rr = v.th + PI / 2;
+				v.th += c.w * 0.12 * c.step;
+				let ax = 1, pp = 1, push = 0;
+				if (p < 0.18) { const q = p / 0.18; ax = 1 + 0.15 * Math.sin(PI * q); pp = 1 - 0.1 * Math.sin(PI * q); }
+				else if (p < 0.36) { const q = sm((p - 0.18) / 0.18); ax = 1 - 0.65 * q; pp = 1 + 1.2 * q; push = 0.1 * q; }
+				else if (p < 0.48) { ax = 0.35; pp = 2.2; push = 0.1; }
+				else { const e = jig((p - 0.48) * m.bd / 1000, 3.5, 13); ax = 1 - 0.65 * e; pp = 1 + 1.2 * e; push = 0.1 * Math.max(0, e); }
+				return { th: v.th + push, ph: 0, sx: ax, sy: pp, srot: rr };
+			}
+		},
+		hop: { weight: 1.1, dur: [800, 150], big: true, land: true, step: hopping(1) },
+		dive: { weight: 0.9, dur: [800, 150], big: true, land: true, step: hopping(-1) },
+		shoot: { weight: 0.8, dur: [950, 200], big: true, step: shooting(5.6, 0.3, 0.55) },
+		comet: { weight: 0.9, dur: [1100, 200], big: true, trail: true, step: shooting(6.6, 0.5, 0.95) },
+		over: { weight: 0.9, dur: [1000, 250], big: true, land: true, step: crossing(1, 0.35) },
+		under: { weight: 0.7, dur: [1000, 250], big: true, land: true, step: crossing(-1, 0.2) },
+		tilt: {
+			weight: 0.8, dur: [2000, 400], big: true, trail: true,
+			step(v, m, c) {
+				const h = [-Math.sin(m.th0), Math.cos(m.th0)], A = nrm([h[0] * Math.sin(m.inc), h[1] * Math.sin(m.inc), Math.cos(m.inc)]);
+				return { aim: rotV(m.V0, A, 4 * PI * sm(c.p)), glow: 0.4 };
+			}
+		},
+		spiral: {
+			weight: 0.8, dur: [1800, 400], big: true, trail: true,
+			step(v, m, c) { v.th += c.w * 1.2 * c.step; return { th: v.th, ph: m.sg * 1.3 * Math.sin(PI * sm(c.p)), glow: 0.5 * Math.sin(PI * c.p) }; }
+		},
+		settle: {
+			weight: 0.8, dur: [1100, 300],
+			step(v, m, c) {
+				const s = Math.sin(PI * c.p);
+				v.th += c.w * (1 - s) * c.step;
+				return { th: v.th, ph: 0.05 * Math.sin(c.t * 3), sq: 0.22 * s * Math.sin(c.t * 16), glow: 0.3 * s * (0.5 + 0.5 * Math.sin(c.t * 16)) };
+			}
+		},
+		weave: {
+			weight: 1, dur: [1600, 400],
+			step(v, m, c) { v.th += c.w * c.step; return { th: v.th, ph: 0.6 * Math.sin(3 * (v.th - m.th0)) * Math.sin(PI * c.p) }; }
+		},
+		reverse: {
+			weight: 0.5, dur: [1100, 200],
+			step(v, m, c) { const s = Math.sin(PI * c.p); v.th += c.w * (1 - 1.6 * s * s) * c.step; return { th: v.th, ph: 0.15 * Math.sin(c.t * 1.6 + c.i) }; }
+		},
+		// The prototype's tipsy squash (and jitter's below) began at full
+		// strength; here it grows in with the move, so it does not jump.
+		wobble: {
+			weight: 0.8, dur: [1500, 500],
+			step(v, m, c) {
+				const s = Math.sin(PI * c.p);
+				v.th += c.w * 0.8 * c.step;
+				return { th: v.th, ph: 0.35 * Math.sin(c.t * 5.3 + c.i) * Math.sin(c.t * 2.1 + c.i * 3) * s, sq: 0.12 * Math.sin(c.t * 9) * s };
+			}
+		},
+		zigzag: {
+			weight: 0.8, dur: [1300, 300],
+			step(v, m, c) {
+				v.th += c.w * 1.1 * c.step;
+				const x = c.p * 6, tri = 2 * Math.abs(2 * (x - Math.floor(x + 0.5))) - 1;
+				return { th: v.th, ph: 0.42 * tri * Math.sin(PI * c.p) };
+			}
+		},
+		drop: {
+			weight: 0.9, dur: [1300, 200], big: true,
+			step(v, m, c) {
+				const p = c.p;
+				v.th += c.w * (p < 0.6 ? 0.3 : 1) * c.step;
+				let ph, sq = 0, glow = 0;
+				if (p < 0.6) { ph = 0.95 * sm(p / 0.6); sq = 0.15 * Math.sin(PI * p / 0.6); }
+				else if (p < 0.74) { const q = (p - 0.6) / 0.14; ph = 0.95 * (1 - q * q); }
+				else { const q = (p - 0.74) / 0.26; ph = 0.12 * Math.sin(PI * q) * (1 - q); sq = -0.6 * Math.sin(PI * Math.min(1, q * 2.5)); glow = 1 - q; }
+				return { th: v.th, ph, sq, glow };
+			}
+		},
+		jitter: {
+			weight: 0.7, dur: [1100, 200], big: true,
+			step(v, m, c) {
+				const p = c.p;
+				if (p < 0.45) {
+					return { th: v.th + 0.05 * Math.sin(c.t * 61 + c.i), ph: 0.05 * Math.sin(c.t * 53), sq: 0.18 * Math.sin(c.t * 43) * sm(cl(p / 0.1)), glow: 0.6 * (p / 0.45) };
+				}
+				const q = (p - 0.45) / 0.55;
+				v.th += c.w * (1 + 3 * Math.sin(PI * q)) * c.step;
+				return { th: v.th, ph: 0, glow: 0.6 * (1 - q) };
+			}
+		}
+	};
+
+	// Group moves: all four dots at once, every 2 to 5 s. start(G, ring) sets
+	// the group up (G.th0 is the first dot's longitude, G.d[i] each dot's own
+	// state); step(c, G) is as a solo's, with c.i the dot, c.g its state and
+	// c.ring the sphere; draw() puts its extras on the canvas.
+	// The four corners of a tetrahedron at a random turn, each given to the
+	// dot nearest it.
+	function tetraFor(ring) {
+		const s = 1 / Math.sqrt(3), ax = randAxis(), a0 = Math.random() * 6;
+		const P = [[s, s, s], [s, -s, -s], [-s, s, -s], [-s, -s, s]].map((v) => rotV(v, ax, a0));
+		const used = [];
+		return ring.v.map((v) => {
+			let best = -1, bd = -9;
+			P.forEach((q, j) => { if (used.includes(j)) return; const s2 = dot3(q, v.V); if (s2 > bd) { bd = s2; best = j; } });
+			used.push(best);
+			return P[best];
+		});
+	}
+	// The black hole's disk: a small glowing core and three rings at the
+	// group's tilt, their back halves dim and behind the core, a shimmer
+	// running round. Each ring is drawn in runs of RUN segments, each run one
+	// stroke at its middle's shimmer: the prototype's one stroke per segment,
+	// each with its own blur, doubled the frame time.
+	function drawDisk(g, G, f, p, a, col, time) {
+		const I = sm(cl(p / 0.12)) * (1 - sm(cl((p - 0.78) / 0.1)));
+		if (I < 0.01) return;
+		const B = G.bh, rd = f.r * 0.78 * I + 1.5, N = 60, RUN = 3, rings = [[rd, 1.1, 0.8], [rd * 0.8, 0.8, 0.55], [rd * 1.12, 0.5, 0.32]];
+		g.save(); g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = col; g.shadowColor = col;
+		const at = (rr, an) => [0, 1, 2].map((j) => rr * (B.u[j] * Math.cos(an) + B.v[j] * Math.sin(an)));
+		const half = (front) => {
+			g.shadowBlur = front ? 6 * I : 0;
+			for (const [rr, lw, al] of rings) {
+				g.lineWidth = lw;
+				for (let k = 0; k < N; k += RUN) {
+					const mid = (k + RUN / 2) / N * 2 * PI;
+					if ((at(rr, mid)[2] >= 0) !== front) continue;
+					g.globalAlpha = a * I * al * (0.6 + 0.4 * Math.sin(4 * mid - time * 6)) * (front ? 1 : 0.4);
+					g.beginPath();
+					for (let s = 0; s <= RUN; s++) {
+						const P = at(rr, (k + s) / N * 2 * PI);
+						if (s) g.lineTo(f.cx + P[0], f.cy + P[1]); else g.moveTo(f.cx + P[0], f.cy + P[1]);
+					}
+					g.stroke();
+				}
+			}
+		};
+		half(false);
+		g.globalAlpha = a * I * 0.9; g.lineWidth = 1; g.shadowBlur = 8 * I;
+		g.beginPath(); g.arc(f.cx, f.cy, 2.4 * I + 0.4, 0, 2 * PI); g.stroke();
+		half(true);
+		g.restore();
+	}
+	// The shadows' floor: a faint dotted ellipse through the centre.
+	function drawFloor(g, G, f, p, a, col) {
+		const I = sm(cl(p * 5)) * sm(cl((1 - p) * 5));
+		if (I < 0.01) return;
+		const S = G.sh, rr = f.r * 1.15, N = 64;
+		g.save(); g.strokeStyle = col; g.lineWidth = 0.75; g.setLineDash([1.5, 3]); g.globalAlpha = a * 0.28 * I;
+		g.beginPath();
+		for (let k = 0; k <= N; k++) {
+			const an = k / N * 2 * PI, x = rr * (S.u[0] * Math.cos(an) + S.v[0] * Math.sin(an)), y = rr * (S.u[1] * Math.cos(an) + S.v[1] * Math.sin(an));
+			if (k) g.lineTo(f.cx + x, f.cy + y); else g.moveTo(f.cx + x, f.cy + y);
+		}
+		g.stroke(); g.restore();
+	}
+	const GROUP = {
+		shadows: {
+			weight: 1.2, dur: 4600,
+			start(G) {
+				const P = tiltedPlane(0.5, 0.8), la = Math.random() * 2 * PI;
+				P.Lt = [0, 1, 2].map((j) => P.u[j] * Math.cos(la) + P.v[j] * Math.sin(la));
+				G.sh = P;
+			},
+			// Two dots bounce above the floor; the other two are their shadows,
+			// cast flat onto it along the light (off the sphere: free).
+			step(c, G) {
+				const p = c.p, i = c.i, env = sm(cl(p * 5)) * sm(cl((1 - p) * 5)), S = G.sh;
+				if (i < 2) {
+					const b = Math.abs(Math.sin(2.5 * PI * p + i * 0.9)), hgt = 0.15 + 0.85 * b, base = sph(G.th0 + i * PI + 2 * PI * p, 0);
+					return {
+						aim: nrm(base.map((x, j) => x + S.n[j] * hgt * 1.4 * env)),
+						sq: b < 0.14 ? -0.55 * (1 - b / 0.14) * sm(cl((env - 0.4) / 0.2)) : 0, glow: 0.25 * env, k: 0.45, damp: 0.55
+					};
+				}
+				const O = c.ring.v[i - 2].V, h = Math.max(0, dot3(nrm(O), S.n));
+				const P = O.map((x, j) => x - h * S.n[j] + h * 0.75 * S.Lt[j]), Pn = nrm(P);
+				return {
+					aim: P.map((x, j) => x * env + Pn[j] * (1 - env)), free: 1, k: 0.45, damp: 0.5,
+					vm: 1 - env * (0.55 + 0.25 * h), szm: 1 + env * (0.8 + 2 * h), blur: env * (0.3 + 1.6 * h),
+					sx: 1 + env * 0.5 * h, sy: 1 - env * (1 - S.n[2]) * 0.9, srot: Math.atan2(S.n[1], S.n[0]) + PI / 2, h: -0.2 * env, hw: 1
+				};
+			},
+			draw: drawFloor
+		},
+		stars: {
+			weight: 1.1, dur: 4600,
+			start(G, ring) {
+				const P = tetraFor(ring).map((v) => sph(Math.atan2(v[1], v[0]), Math.max(-0.5, Math.min(0.7, Math.asin(v[2])))));
+				G.ball = { P, axis: nrm([0.15, 0.1, 1]), speed: 0.45 };
+			},
+			step(c, G) {
+				const env = sm(cl(c.p * 4)) * sm(cl((1 - c.p) * 4)), tw = Math.pow(0.5 + 0.5 * Math.sin(c.t * c.g.tw.w + c.g.tw.ph), 4);
+				return { aim: G.ball.P[c.i], k: 0.1, damp: 0.8, vm: 1 - env + env * (0.25 + 0.75 * tw), szm: 1 + env * (-0.2 + 0.7 * tw), glow: env * 0.95 * tw };
+			}
+		},
+		blackhole: {
+			weight: 1.1, dur: 3600,
+			start(G) { G.bh = tiltedPlane(0.22, 0.47); },
+			step(c, G) {
+				const p = c.p, i = c.i, g = c.g;
+				if (p < 0.8) {
+					const q = cl((p - 0.1 - i * 0.06) / 0.58), ph = -1.48 * Math.pow(q, 1.5), om = (2.5 + 12 * q * q) / Math.max(0.15, Math.cos(ph));
+					g.bhL += Math.min(om, 26) * c.dt * 0.0167;
+					return { aim: sph(g.bhL, ph), vm: 1 - 0.95 * Math.pow(q, 2.4), glow: 0.55 * q, k: 0.6, damp: 0.45, sx: 1 + 1.4 * q, sy: 1 - 0.4 * q, srot: null, trail: q > 0.15 };
+				}
+				// Swallowed, then bursting out. The streak holds while they are
+				// gone and eases back to round as they come out (the prototype's
+				// snapped round while they could still be seen).
+				if (p < 0.87) return { aim: sph(g.bhL, -1.5), vm: 0, k: 0.8, damp: 0.4, sx: 2.4, sy: 0.6, srot: null };
+				const q = (p - 0.87) / 0.13, st = 1 - sm(cl(q * 3));
+				return { aim: sph(G.th0 + i * PI / 2 + 0.6 * q, -1.5 * (1 - eob(q))), vm: cl(q * 2.5), glow: 1 - q, k: 0.6, damp: 0.5, trail: true, sx: 1 + 1.4 * st, sy: 1 - 0.4 * st, srot: null };
+			},
+			draw: drawDisk
+		},
+		moons: {
+			weight: 1.1, dur: 4200,
+			step(c, G) {
+				const p = c.p, i = c.i, env = sm(cl(p * 4)) * sm(cl((1 - p) * 4));
+				if (i < 2) return { aim: sph(G.th0 + i * PI + 2.4 * PI * p, 0.15 * Math.sin(2 * PI * p + i)), szm: 1 + 0.7 * env, glow: 0.3 * env, k: 0.45, damp: 0.55 };
+				const k = i - 2, plon = G.th0 + k * PI + 2.4 * PI * p, pph = 0.15 * Math.sin(2 * PI * p + k), be = 7 * PI * p + k * PI, r = 0.55 * env;
+				return { aim: sph(plon + r * Math.cos(be), pph + r * 0.85 * Math.sin(be)), szm: 1 - 0.4 * env, trail: env > 0.5, k: 0.45, damp: 0.55 };
+			}
+		},
+		steamroll: {
+			weight: 1, dur: 2800,
+			// An unseen ball rolls round and flattens each dot in turn. Once it
+			// has passed, the dot jiggles back from as flat as it was (the
+			// prototype went round again first, which jumped). The ball goes a
+			// little over a lap, so the dot it began behind is passed twice:
+			// with the ball well before it again, it waits for the next pass
+			// (the prototype's sprang from flat to round in one frame there).
+			step(c, G) {
+				const g = c.g, lon = G.th0 + PI / 4 + c.i * PI / 2, Bp = G.th0 - 0.5 + (2 * PI + 0.9) * c.p;
+				const dd = Math.atan2(Math.sin(Bp - lon), Math.cos(Bp - lon));
+				let ax = 1, pp = 1, push = 0;
+				if (dd < -0.38) g.passT = null;
+				if (Math.abs(dd) < 0.38 && dd > -0.05 && !g.passT) g.passT = c.now;
+				if (g.passT && dd > -0.05) {
+					const tau = (c.now - g.passT) / 1000 - 0.15, e = tau < 0 ? 1 : jig(tau, 3.8, 14);
+					ax = 1 - 0.65 * e; pp = 1 + 1.25 * e; push = 0.12 * Math.max(0, e);
+				} else if (Math.abs(dd) < 0.38) {
+					const f = Math.pow(Math.cos(dd / 0.38 * PI / 2), 2);
+					ax = 1 - 0.65 * f; pp = 1 + 1.25 * f; push = 0.12 * f;
+				} else if (dd < -0.38 && dd > -0.75) {
+					const q = (dd + 0.75) / 0.37;
+					ax = 1 + 0.15 * Math.sin(PI * q); pp = 1 - 0.1 * Math.sin(PI * q);
+				}
+				return { aim: sph(lon + push, 0), sx: ax, sy: pp, srot: lon + PI / 2, k: 0.5, damp: 0.5 };
+			}
+		},
+		ball: {
+			weight: 1, dur: 3600,
+			// One random axis, tipped towards the viewer so the spin is clockwise.
+			start(G, ring) {
+				let ax = randAxis();
+				if (ax[2] < 0.15) ax = nrm([ax[0], ax[1], Math.abs(ax[2]) + 0.15]);
+				G.ball = { P: tetraFor(ring), axis: ax, speed: 2.5 + Math.random() * 6.5 };
+			},
+			step: (c, G) => ({ aim: G.ball.P[c.i], k: 0.55, damp: 0.5 })
+		},
+		conga: {
+			weight: 1, dur: 2000,
+			step(c, G) {
+				const p = c.p, i = c.i, L = G.th0 + 4 * PI * sm(p);
+				return { aim: sph(L - i * 0.32 * sm(cl(p * 4)), 0.18 * Math.sin(3 * L - i * 0.9)), trail: true, k: 0.4, glow: (i === 0 ? 0.7 : 0.2) * Math.sin(PI * p) };
+			}
+		},
+		atom: {
+			weight: 1, dur: 2400,
+			step(c, G) {
+				const i = c.i, inc = 1.05, a = G.th0 + i * PI / 4;
+				const A = [Math.sin(inc) * Math.cos(a), Math.sin(inc) * Math.sin(a), Math.cos(inc)], e1 = nrm(cross(A, [0, 0, 1])), e2 = cross(A, e1), ps = i * PI / 2 + 5 * PI * sm(c.p);
+				return { aim: [0, 1, 2].map((j) => e1[j] * Math.cos(ps) + e2[j] * Math.sin(ps)), trail: true, glow: 0.7 * Math.sin(PI * c.p) };
+			}
+		},
+		burst: {
+			weight: 1, dur: 1800,
+			step(c, G) {
+				const p = c.p, i = c.i, off = [PI / 2, PI, 3 * PI / 2, 2 * PI][i];
+				if (p < 0.35) return { aim: sph(G.th0 + (i - 1.5) * 0.1 * (1 - p / 0.35), 0), k: 0.45 };
+				if (p < 0.55) { const q = (p - 0.35) / 0.2; return { aim: sph(G.th0 + (i - 1.5) * 0.03, 0), sq: -0.55 * Math.sin(PI * q), glow: 0.9 * q, k: 0.45 }; }
+				const q = (p - 0.55) / 0.45;
+				return { aim: sph(G.th0 + (i - 1.5) * 0.03 + off * eob(q), 0.75 * Math.sin(PI * q) * (i % 2 ? 1 : -1)), trail: q < 0.7, glow: 0.9 * (1 - q), k: 0.45 };
+			}
+		},
+		juggle: {
+			weight: 1, dur: 2100,
+			step(c, G) {
+				const b = G.th0 + c.i * PI / 2, q = cl((c.p - 0.12 - c.i * 0.17) / 0.4);
+				if (!(q > 0 && q < 1)) return { aim: sph(q >= 1 ? b + PI : b, 0) };
+				const ps = q < 0.1 ? -0.1 * Math.sin(PI * q / 0.1) : PI * sm((q - 0.1) / 0.9);
+				let sq = 0;
+				if (q < 0.1) sq = -0.4 * Math.sin(PI * q / 0.1);
+				if (q > 0.88) sq = -0.5 * Math.sin(PI * (q - 0.88) / 0.12);
+				return { aim: [Math.cos(b) * Math.cos(ps), Math.sin(b) * Math.cos(ps), Math.sin(ps)], sq, glow: 0.4 * Math.sin(PI * q) };
+			}
+		},
+		wave: {
+			weight: 1, dur: 2000,
+			// The squash at the bottom of each wave eases in (the prototype's
+			// switched on at full strength).
+			step(c, G) {
+				const p = c.p, i = c.i, s = Math.sin(2 * PI * p * 2.5 - i * PI / 2), h = Math.pow(Math.max(0, s), 2) * Math.sin(PI * p);
+				return { aim: sph(G.th0 + i * PI / 2 + 1.5 * PI * p, 0.95 * h), sq: -0.35 * sm(cl((-s - 0.7) / 0.25)), glow: 0.45 * h };
+			}
+		},
+		binary: {
+			weight: 1, dur: 2200,
+			step(c, G) {
+				const p = c.p, s = c.i % 2 ? 1 : -1, ctr = G.th0 + (c.i >> 1) * PI + 2 * PI * sm(p), be = 6 * PI * p, amp = 0.38 * Math.sin(PI * Math.min(1, p * 1.6));
+				return { aim: sph(ctr + s * amp * Math.cos(be), s * amp * Math.sin(be)), trail: true, glow: 0.45 * Math.sin(PI * p) };
+			}
+		},
+		collide: {
+			weight: 0.9, dur: 1700,
+			step(c, G) {
+				const p = c.p, m = G.th0 + (c.i >> 1) * PI;
+				let x, sq = 0, glow = 0, trail = false;
+				if (p < 0.25) x = PI / 3;
+				else if (p < 0.5) { const q = (p - 0.25) / 0.25; x = 0.04 + (PI / 3 - 0.04) * (1 - q * q * q); trail = true; glow = 0.3 * q; }
+				else if (p < 0.6) { x = 0.04; sq = -0.65 * Math.sin(PI * (p - 0.5) / 0.1); glow = 1; }
+				else { const q = (p - 0.6) / 0.4; x = 0.04 + (PI / 3) * eob(q); glow = 1 - q; }
+				return { aim: sph(m + (c.i % 2 ? x : -x), 0), sq, glow, trail, k: 0.5, damp: 0.5 };
+			}
+		},
+		polar: {
+			weight: 0.9, dur: 2200,
+			step: (c, G) => ({ aim: sph(G.th0 + c.i * PI / 2 + 5 * PI * sm(c.p), 1.3 * Math.sin(PI * sm(c.p))), trail: true, glow: 0.85 * Math.sin(PI * c.p) })
+		}
+	};
+	// What a move changes when it says nothing: round, fully seen, no glow.
+	const RESTING = { sq: 0, glow: 0, trail: 0, k: 0.34, damp: 0.6, vm: 1, szm: 1, blur: 0, sx: 1, sy: 1, srot: 0, h: 0, hw: 0, free: 0 };
+	const MIXED = ['sq', 'glow', 'trail', 'k', 'damp', 'vm', 'szm', 'blur', 'sx', 'sy', 'hw', 'free'];
+	const round = (o) => Math.abs(o.sx - 1) < 1e-3 && Math.abs(o.sy - 1) < 1e-3;
+	// From one aim to another along the sphere, e of the way: the direction
+	// turns at an even rate and the distance from the centre (below 1 for a
+	// shadow) moves evenly. A straight line put back on the sphere swept
+	// through the middle in a frame or two when the aims were far apart.
+	function slerp(a, b, e) {
+		const la = Math.hypot(a[0], a[1], a[2]) || 1, lb = Math.hypot(b[0], b[1], b[2]) || 1;
+		const ua = a.map((x) => x / la), ub = b.map((x) => x / lb), ax = cross(ua, ub), s = Math.hypot(ax[0], ax[1], ax[2]);
+		const u = s < 1e-4 ? nrm(ua.map((x, j) => mix(x, ub[j], e))) : rotV(ua, ax.map((x) => x / s), Math.atan2(s, dot3(ua, ub)) * e);
+		return u.map((x) => x * mix(la, lb, e));
+	}
+	// Two moves' wishes, e of the way from a to b.
+	function mixMove(a, b, e) {
+		if (e <= 0) return a;
+		if (e >= 1) return b;
+		const o = {};
+		for (const key of MIXED) o[key] = mix(+a[key], +b[key], e);
+		o.aim = slerp(a.aim, b.aim, e);
+		o.srot = round(a) ? b.srot : round(b) ? a.srot : (e < 0.5 ? a.srot : b.srot);
+		o.h = b.hw ? b.h : a.h;
+		return o;
+	}
 
 	// ─── Tokens ───
 	// Read on every serve, so the sandbox's sliders take effect at once.
@@ -506,24 +968,45 @@ const TDCDots = (() => {
 	// step(now, dt, time) returns one pose per dot: where it is (x, y), its
 	// height above the page (h, on the sphere's scale), its size on the line
 	// (gs), its colour (c), glow, squash (sq, negative to squash), lit (on a
-	// line it is tracing: full brightness, no stretch) and whether it trails.
-	const pose = (x, y, h, gs, c) => ({ x, y, h, gs, c, glow: 0, sq: 0, lit: 0, trail: false });
+	// line it is tracing: full brightness, no stretch) and whether it trails;
+	// and from a move, a squash of its own (sx, sy at srot; null is along its
+	// path), how visible it is (vm), its size (szm, times) and blur.
+	const pose = (x, y, h, gs, c) => ({ x, y, h, gs, c, glow: 0, sq: 0, lit: 0, trail: false, sx: 1, sy: 1, srot: 0, vm: 1, szm: 1, blur: 0 });
 	const mixPose = (a, b, e) => ({
 		x: mix(a.x, b.x, e), y: mix(a.y, b.y, e), h: mix(a.h, b.h, e), gs: mix(a.gs, b.gs, e),
 		c: mixC(a.c, b.c, e), glow: mix(a.glow, b.glow, e), sq: mix(a.sq, b.sq, e), lit: mix(a.lit, b.lit, e),
-		trail: e < 0.5 ? a.trail : b.trail
+		trail: e < 0.5 ? a.trail : b.trail,
+		sx: mix(a.sx, b.sx, e), sy: mix(a.sy, b.sy, e), srot: round(a) ? b.srot : round(b) ? a.srot : (e < 0.5 ? a.srot : b.srot),
+		vm: mix(a.vm, b.vm, e), szm: mix(a.szm, b.szm, e), blur: mix(a.blur, b.blur, e)
 	});
 
 	// A spring on the sphere: pulled towards P, then put back on the surface,
-	// its velocity kept tangent. Overshoot and follow-through come free.
-	function springTo(v, P, dt, k, damp) {
+	// its velocity kept tangent. Overshoot and follow-through come free. A
+	// shadow is free of the sphere (free 1): pulled to P and left there.
+	function springTo(v, P, dt, k, damp, free = 0) {
 		for (let j = 0; j < 3; j++) { v.Vv[j] += (P[j] - v.V[j]) * k * dt; v.Vv[j] *= Math.pow(damp, dt); }
 		const nv = v.V.map((x, j) => x + v.Vv[j] * dt), l = Math.hypot(nv[0], nv[1], nv[2]) || 1;
-		const l2 = l + (1 - l) * Math.min(1, 0.15 * dt);
+		const l2 = l + (1 - l) * Math.min(1, 0.15 * dt) * (1 - free);
 		v.V = nv.map((x) => x / l * l2);
-		const u = nrm(v.V), rd = dot3(v.Vv, u);
+		const u = nrm(v.V), rd = dot3(v.Vv, u) * (1 - free);
 		v.Vv = v.Vv.map((x, j) => x - rd * u[j]);
 	}
+
+	// A dot's own state on a sphere: where it is (V, a unit vector) and how it
+	// moves (Vv), its longitude and latitude (th, ph), its own speed (w), and
+	// its solo move (m).
+	function newDot(th, now) {
+		const v = { V: sph(th, 0), Vv: [0, 0, 0], th, ph: 0, w: 4.6 + Math.random() * 1.2, cf: 0, sqAt: -1e9, vmS: 1, szS: 1, blS: 0, T: null };
+		v.m = moveOf('cruise', v, now, 300 + Math.random() * 700);
+		v.m.carry = { ang: 0 };
+		return v;
+	}
+	function moveOf(name, v, now, bd) {
+		const s = Math.random() < 0.5 ? 1 : -1;
+		return { name, b0: now, bd, th0: v.th, ph0: v.ph, V0: nrm(v.V), sg: s, inc: 0.6 + Math.random() * 0.7, sr: Math.random() * PI, carry: null, done: false };
+	}
+	// When the first group comes, from the moment the dots begin to wait.
+	const firstGroup = (now) => (GROUP[forced] ? now + 500 : SOLO[forced] ? Infinity : now + 1400 + Math.random() * 1500);
 
 	// The sphere a target's dots live on: mode 'orbit' (waiting) or 'race'
 	// (the call is back). It holds the dots' own motion (four unit vectors that
@@ -545,15 +1028,32 @@ const TDCDots = (() => {
 	// behind, so they move as particles and can never be further apart than
 	// the sphere is wide. (Sending each dot on its own path to its own place on
 	// the new ring, the first way, spread them far apart in mid-flight.)
+	//
+	// Waiting, the dots perform the moves (step 4): each its own solo moves,
+	// and every 2 to 5 s a group move over all four, travelling included (UV,
+	// 26 Oct). Nothing jumps between them: a new solo move eases its aim in
+	// from where the last was aiming (CARRY), and a group fades in over
+	// --dots-blend and out again after its time, held at its end. The race
+	// takes over the moves as they are and they fade out as it eases up, a
+	// group's extras with them; a trace starting fades a group out at once,
+	// never waiting for it to finish (UV).
 	class Ring {
 		constructor(t, mode, now, from, opts = {}) {
 			this.t = t; this.mode = mode; this.r0 = now; this.easeMs = opts.easeMs || 1;
 			if (from) {
-				this.v = from.v.map((v) => ({ V: v.V.slice(), Vv: v.Vv.slice(), th: v.th, w: v.w }));
+				// Copied, not shared: the sphere left behind may still be running.
+				this.v = from.v.map((v) => structuredClone(v));
+				this.G = from.G ? structuredClone(from.G) : null;
+				this.nextGroup = from.nextGroup; this.fv = from.fv;
 			} else {
 				const a0 = Math.random() * 2 * PI;
-				this.v = D.map((d, k) => ({ V: sph(a0 + k * PI / 2, 0), Vv: [0, 0, 0], th: a0 + k * PI / 2, w: 4.6 + Math.random() * 1.2 }));
+				this.v = D.map((d, k) => newDot(a0 + k * PI / 2, now));
+				this.G = null; this.nextGroup = Infinity; this.fv = forcedV;
 			}
+			if (mode === 'race') {
+				this.nextGroup = Infinity;
+				for (const v of this.v) v.rth = Math.atan2(v.V[1], v.V[0]);
+			} else if (!this.G && !(this.nextGroup < Infinity)) this.nextGroup = firstGroup(now);
 			this.trip = opts.trip ? Object.assign({}, opts.trip.from, { t0: now, dur: opts.trip.dur, lag: D.map(() => Math.random() * LAG) }) : null;
 			this.f = this.frameAt(this.trip ? 0 : 1);
 		}
@@ -571,29 +1071,32 @@ const TDCDots = (() => {
 				c: mixC(p.c, t.colour, e)
 			};
 		}
-		step(now, dt, time) {
+		// vis: how much of this sphere is being shown (a Blend's share of it, 0
+		// under a trace), for a group's extras on the canvas.
+		step(now, dt, time, vis = 1) {
 			const t = this.t, p = this.trip;
 			measure(t);
 			const uOf = (lag) => (p ? cl((now - p.t0 - lag) / p.dur) : 1);
 			this.f = this.frameAt(uOf(0));
+			const eR = this.mode === 'race' ? ease(cl((now - this.r0) / this.easeMs)) : 0;
+			if (eR < 1) this.schedule(now, dt); else this.G = null;
+			const G = this.G, gw = G ? this.groupWeight(now) * (1 - eR) : 0, gp = G ? cl((now - G.t0) / G.dur) : 0;
 			let arrived = true;
 			const P = this.v.map((v, i) => {
-				let glow = 0;
-				const cruiseBob = 0.25 * Math.sin(time * 1.6 + i * 2.1);
-				if (this.mode === 'orbit') {
-					// Cruise, the one waiting move so far: clockwise round the ring
-					// with a gentle bob. The registry (step 4) replaces this.
-					v.th += v.w * dt * 0.0167;
-					springTo(v, sph(v.th, cruiseBob), dt, 0.34, 0.6);
-				} else {
+				let o = eR < 1 ? this.solo(v, i, now, dt, time) : RESTING;
+				if (gw > 0) o = mixMove(o, Object.assign({}, RESTING, GROUP[G.name].step({ i, p: gp, now, dt, t: time, ring: this, g: G.d[i] }, G)), gw);
+				if (this.mode === 'race') {
 					// The race: clockwise at ground size, about two laps a second
 					// (three times the cruise, slower on a big ring), with a quicker,
-					// slighter bob for depth; eased up from the cruise.
-					const e = ease(cl((now - this.r0) / this.easeMs));
-					v.th += mix(v.w, v.w * 3 * (19 / Math.max(19, t.r)), e) * dt * 0.0167;
-					springTo(v, sph(v.th, mix(cruiseBob, 0.22 * Math.sin(time * 4.2 + i * 1.7), e)), dt, mix(0.34, 0.5, e), mix(0.6, 0.5, e));
-					glow = 0.25 * e;
+					// slighter bob for depth; eased up from the moves.
+					v.rth += mix(v.w, v.w * 3 * (19 / Math.max(19, t.r)), eR) * dt * 0.0167;
+					o = mixMove(o, Object.assign({}, RESTING, { aim: sph(v.rth, 0.22 * Math.sin(time * 4.2 + i * 1.7)), glow: 0.25, k: 0.5, damp: 0.5 }), eR);
 				}
+				springTo(v, o.free > 0 ? o.aim : nrm(o.aim), dt, o.k, o.damp, o.free);
+				v.T = nrm(o.aim);
+				v.vmS += (o.vm - v.vmS) * Math.min(1, 0.3 * dt);
+				v.szS += (o.szm - v.szS) * Math.min(1, 0.2 * dt);
+				v.blS += (o.blur - v.blS) * Math.min(1, 0.2 * dt);
 				const u = uOf(p ? p.lag[i] : 0), f = this.frameAt(u);
 				if (u < 1) arrived = false;
 				// Racing, a dot runs on the ring line itself: its bob shows only
@@ -601,13 +1104,118 @@ const TDCDots = (() => {
 				// dots up to 2% inside the ring, so the race looked a little
 				// smaller than the ring it was on (UV, 26 Oct).
 				let k = 1;
-				if (this.mode === 'race') k = mix(1, 1 / (Math.hypot(v.V[0], v.V[1]) || 1), ease(cl((now - this.r0) / this.easeMs)));
-				const q = pose(f.cx + f.r * v.V[0] * k, f.cy + f.r * v.V[1] * k, v.V[2], f.gs, f.c);
-				q.glow = glow;
+				if (this.mode === 'race') k = mix(1, 1 / (Math.hypot(v.V[0], v.V[1]) || 1), eR);
+				const q = pose(f.cx + f.r * v.V[0] * k, f.cy + f.r * v.V[1] * k, mix(v.V[2], o.h, o.hw), f.gs, f.c);
+				Object.assign(q, { glow: o.glow, sq: o.sq, trail: o.trail > 0.5, sx: o.sx, sy: o.sy, srot: o.srot, vm: v.vmS, szm: v.szS, blur: v.blS });
 				return q;
 			});
 			if (p && arrived) this.trip = null;
+			const draw = G && GROUP[G.name].draw, a = alpha * vis * gw;
+			if (draw && a > 0.005) draw(ctx, G, this.f, gp, a, css(this.f.c), time);
 			return P;
+		}
+
+		// A dot's solo move this frame: what it wishes (see SOLO). A move that
+		// has run its time ends and the next is picked.
+		solo(v, i, now, dt, time) {
+			let m = v.m, p = (now - m.b0) / m.bd;
+			// Cut short (the picker changed), a move ends without its landing.
+			if (p >= 1 || m.done) { this.endSolo(v, now, m.done); this.pickSolo(v, now); m = v.m; p = 0; }
+			const def = SOLO[m.name];
+			// Staging (spec §7): while another dot does a big move, this one
+			// calms to 70% speed and a smaller bob, easing into and out of it.
+			const calm = !forced && this.v.some((o) => o !== v && SOLO[o.m.name].big) ? 1 : 0;
+			v.cf += (calm - v.cf) * Math.min(1, 0.05 * dt);
+			const c = { i, p, now, t: time, step: dt * 0.0167, w: v.w * (1 - 0.3 * v.cf), bob: mix(0.25, 0.1, v.cf) * Math.sin(time * 1.6 + i * 2.1) };
+			const o = Object.assign({}, RESTING, { k: def.k || 0.34, damp: def.damp || 0.6, trail: def.trail ? 1 : 0 }, def.step(v, m, c));
+			if (!o.aim) o.aim = sph(o.th, o.ph);
+			// The move's first aim is turned to where the last one was aiming,
+			// and turned back over CARRY, so the dot never lurches as a move begins.
+			if (!m.carry) {
+				const a = nrm(o.aim), b = v.T, ax = b ? cross(a, b) : [0, 0, 0], s = Math.hypot(ax[0], ax[1], ax[2]);
+				m.carry = s > 1e-4 ? { axis: ax.map((x) => x / s), ang: Math.atan2(s, dot3(a, b)) } : { ang: 0 };
+			}
+			if (m.carry.ang) {
+				const e = ease(cl((now - m.b0) / CARRY));
+				if (e < 1) o.aim = rotV(nrm(o.aim), m.carry.axis, m.carry.ang * (1 - e));
+			}
+			if (now - v.sqAt < LAND) o.sq -= 0.5 * Math.sin(PI * (now - v.sqAt) / LAND);
+			return o;
+		}
+		// The next solo move: forced, or by weight, but never a second big one
+		// while another dot is doing one (spec §7). Winding down into the race,
+		// only cruise.
+		pickSolo(v, now) {
+			let name;
+			if (this.mode === 'race') name = 'cruise';
+			else if (SOLO[forced]) name = forced;
+			else {
+				name = pick(SOLO);
+				if (SOLO[name].big && this.v.some((o) => o !== v && SOLO[o.m.name].big)) name = Math.random() < 0.5 ? 'cruise' : 'weave';
+			}
+			const [b, j] = SOLO[name].dur;
+			v.m = moveOf(name, v, now, b + Math.random() * j);
+		}
+		// A move ends where the dot actually is, and may land with a squash.
+		endSolo(v, now, quietly) {
+			if (!quietly && SOLO[v.m.name].land) v.sqAt = now;
+			const l = Math.hypot(v.V[0], v.V[1], v.V[2]) || 1;
+			v.th = Math.atan2(v.V[1], v.V[0]);
+			v.ph = Math.asin(Math.max(-1, Math.min(1, v.V[2] / l)));
+		}
+
+		// Groups: started when one is due, faded out after their time, then the
+		// next is due 2.2 to 4.7 s later (the prototype's). Forced, a group
+		// plays back to back; a forced solo stops them.
+		schedule(now, dt) {
+			if (this.fv !== forcedV) this.applyForce(now);
+			const G = this.G;
+			if (G) {
+				if (G.ball) {
+					const a = G.ball.speed * sm(cl((now - G.t0) / 300)) * dt * 0.0167;
+					if (a > 0) G.ball.P = G.ball.P.map((P) => rotV(P, G.ball.axis, a));
+				}
+				if (!G.out && now - G.t0 > G.dur) this.groupOut(now);
+				else if (G.out && now - G.out > T.blend) this.endGroup(now);
+			} else if (this.mode === 'orbit' && !this.hushed && now > this.nextGroup) this.startGroup(now);
+		}
+		startGroup(now) {
+			const name = GROUP[forced] ? forced : pick(GROUP), v0 = this.v[0].V;
+			this.G = {
+				name, t0: now, dur: GROUP[name].dur, out: 0, th0: Math.atan2(v0[1], v0[0]),
+				d: this.v.map((v) => ({ passT: null, bhL: Math.atan2(v.V[1], v.V[0]), tw: { w: 1.6 + Math.random() * 2.6, ph: Math.random() * 6.3 } }))
+			};
+			if (GROUP[name].start) GROUP[name].start(this.G, this);
+		}
+		// The group fades out, and each dot cruises on from where it is.
+		groupOut(now) {
+			this.G.out = now;
+			for (const v of this.v) {
+				this.endSolo(v, now, true);
+				v.m = moveOf('cruise', v, now, SOLO[forced] ? 1 : 500 + Math.random() * 700);
+			}
+		}
+		endGroup(now) {
+			this.G = null;
+			this.nextGroup = GROUP[forced] ? now : SOLO[forced] ? Infinity : now + 2200 + Math.random() * 2500;
+		}
+		groupWeight(now) {
+			const G = this.G;
+			return ease(cl((now - G.t0) / T.blend)) * (G.out ? 1 - ease(cl((now - G.out) / T.blend)) : 1);
+		}
+		applyForce(now) {
+			this.fv = forcedV;
+			if (this.mode !== 'orbit') return;
+			if (this.G && !this.G.out && forced !== this.G.name) this.groupOut(now);
+			if (GROUP[forced]) { if (!this.G || this.G.out) this.nextGroup = now; }
+			else if (SOLO[forced]) { this.nextGroup = Infinity; for (const v of this.v) v.m.done = true; }
+			else this.nextGroup = now + 1500;
+		}
+		// The call is back and a trace begins: a group fades out at once and no
+		// other starts (UV, 26 Oct: never wait for one to finish).
+		quiet(now) {
+			if (this.G && !this.G.out) this.groupOut(now);
+			this.hushed = true;
 		}
 	}
 
@@ -638,8 +1246,8 @@ const TDCDots = (() => {
 			this.dur = Math.max(...this.pens.map((p) => p.dur));
 		}
 		endOf(i) { return this.t0 + this.pens[i].dur; }
-		step(now, dt, time) {
-			this.underP = this.under.step(now, dt, time);
+		step(now, dt, time, vis = 1, underVis = 0) {
+			this.underP = this.under.step(now, dt, time, underVis);
 			const L = this.lines;
 			L.where();
 			return this.pens.map((p, i) => {
@@ -676,13 +1284,15 @@ const TDCDots = (() => {
 		constructor(from, to, starts, durs) {
 			this.from = from; this.to = to; this.starts = starts; this.durs = durs; this.done = false;
 		}
-		step(now, dt, time) {
-			const B = this.to.step(now, dt, time);
-			const A = this.to.under === this.from ? this.to.underP : this.from.step(now, dt, time);
+		step(now, dt, time, vis = 1) {
+			const E = this.starts.map((s, i) => ease(cl((now - s) / this.durs[i]))), e4 = E.reduce((a, e) => a + e, 0) / 4;
+			const shared = this.to.under === this.from;
+			const B = shared ? this.to.step(now, dt, time, vis * e4, vis * (1 - e4)) : this.to.step(now, dt, time, vis * e4);
+			const A = shared ? this.to.underP : this.from.step(now, dt, time, vis * (1 - e4));
 			if (this.from instanceof Blend && this.from.done) this.from = this.from.to;
 			let done = true;
 			const P = B.map((b, i) => {
-				const e = ease(cl((now - this.starts[i]) / this.durs[i]));
+				const e = E[i];
 				if (e < 1) done = false;
 				return mixPose(A[i], b, e);
 			});
@@ -699,7 +1309,7 @@ const TDCDots = (() => {
 	let cur = null;         // the target the dots are serving
 	let tr = null;          // the trace, while tracing
 	let alpha = 0, aT = 0, fading = false, revealAt = 0, revealHold = 0, fadeAt = 0;
-	let forced = null;
+	let forced = null, forcedV = 0;   // the move on repeat (null: random), and a count of changes to it
 	let running = false, last = 0;
 
 	function serve(el, promise, opts = {}) {
@@ -806,6 +1416,7 @@ const TDCDots = (() => {
 		if (phase === 'travel' && S instanceof Ring && !S.travelling) phase = 'orbit';
 		if (phase === 'orbit' && cur.settled) {
 			const lines = startTrace(cur);
+			S.quiet(now);
 			if (lines) {
 				// Diving in: the trace starts now and each dot slides into it.
 				const ms = TRACE_MS[cur.kind] + (cur.kind === 'number' ? TRACE_PER_DIGIT * lines.segs.length : 0);
@@ -861,7 +1472,7 @@ const TDCDots = (() => {
 		d.x = p.x; d.y = p.y; d.h = p.h; d.gs = p.gs; d.c = p.c;
 		const cR = p.c.map(Math.round), colS = `rgb(${cR.join(',')})`;
 		d.glow += (p.glow - d.glow) * Math.min(1, 0.18 * dt);
-		const size = d.gs * Math.pow(2, 1.5 * d.h), sc = size / BASE;
+		const size = d.gs * Math.pow(2, 1.5 * d.h) * p.szm, sc = size / BASE;
 		const mvx = d.prx === null ? 0 : d.x - d.prx, mvy = d.pry === null ? 0 : d.y - d.pry;
 		d.prx = d.x; d.pry = d.y;
 		d.sp += (Math.hypot(mvx, mvy) / dt - d.sp) * Math.min(1, 0.3 * dt);
@@ -870,7 +1481,7 @@ const TDCDots = (() => {
 		k = Math.max(-0.6, Math.min(1.6, k));
 		const qx = 1 + k, qy = k >= 0 ? 1 / Math.sqrt(1 + k) : 1 - k * 0.9;
 		const op = 0.35 + 0.65 * cl((d.h + 1) / 2) + 0.4 * p.lit;
-		const oa = alpha * Math.min(1, op + d.glow * 0.3);
+		const oa = alpha * p.vm * Math.min(1, op + d.glow * 0.3);
 
 		if (p.trail) d.hist.push({ x: d.x, y: d.y, s: size });
 		const keep = p.trail ? 16 : 0;
@@ -893,22 +1504,31 @@ const TDCDots = (() => {
 		s.boxShadow = d.glow > 0.005
 			? `0 0 ${(BASE * GLOW_REACH * d.glow).toFixed(2)}px rgba(${cR.join(',')},${(0.6 * d.glow).toFixed(3)})`
 			: 'none';
-		s.transform = `translate(${d.x}px,${d.y}px) rotate(${d.rot}rad) scale(${sc * qx},${sc * qy})`;
+		// A move's own squash at its own angle, over the stretch along the path
+		// (the two are one when the dot is round).
+		const sr = p.srot === null ? d.rot : p.srot;
+		s.filter = p.blur > 0.05 ? `blur(${(p.blur / Math.max(0.15, sc)).toFixed(2)}px)` : 'none';
+		s.transform = `translate(${d.x}px,${d.y}px) rotate(${sr}rad) scale(${sc * p.sx},${sc * p.sy}) rotate(${d.rot - sr}rad) scale(${qx},${qy})`;
 		s.opacity = oa;
 	}
 
 	return {
 		serve,
-		moves: MOVES.slice(),
-		// The waiting move to play on repeat, or null for random. Cruise is the
-		// only one until step 4 brings the registry.
+		moves: Object.keys(SOLO),
+		groups: Object.keys(GROUP),
+		// The waiting move (solo or group) to play on repeat, or null for random.
 		force(name) {
-			if (name !== null && !MOVES.includes(name)) { TDC.error(AREA, `there is no move called "${name}".`); return; }
+			if (name !== null && !SOLO[name] && !GROUP[name]) { TDC.error(AREA, `there is no move called "${name}".`); return; }
 			forced = name;
+			forcedV++;
 		},
 		get state() {
-			const m = forced || 'cruise';
-			return { phase, moves: phase === 'orbit' ? [m, m, m, m] : [], busy: records.size, forced };
+			const r = S && motionOf(S), waiting = r && (phase === 'orbit' || phase === 'travel');
+			return {
+				phase, busy: records.size, forced,
+				group: waiting && r.G ? r.G.name : null,
+				moves: waiting && !r.G ? r.v.map((v) => v.m.name) : []
+			};
 		}
 	};
 })();
