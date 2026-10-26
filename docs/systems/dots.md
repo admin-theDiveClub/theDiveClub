@@ -1,6 +1,6 @@
 # The dots — loading and feedback motion
 
-> Built from `docs/design/dots-motion-spec.md` (the architecture and requirements) and `docs/design/dots-prototype.html` (how it should feel). Started 26 Oct 2026. **In progress: steps 1 to 4 of the spec's seven (§16) are built.** This file says what exists and why it is shaped that way; the spec says what is still to come.
+> Built from `docs/design/dots-motion-spec.md` (the architecture and requirements) and `docs/design/dots-prototype.html` (how it should feel). Started 26 Oct 2026. **In progress: steps 1 to 5 of the spec's seven (§16) are built.** This file says what exists and why it is shaped that way; the spec says what is still to come.
 
 ## 1. What it is
 
@@ -19,7 +19,24 @@ Four dots, **one set for the whole page**, that show that something is happening
 
 ## 3. How it works
 
-**The API.** `TDCDots.serve(el, promise, { reveal, trace })` marks `el` busy (`data-dots="busy"`), takes the dots to it and returns the promise. When the promise settles, either way, `reveal()` puts the result on the page at once (a new number, a switch flipped), hidden while the dots trace it (`data-dots="tracing"`, `data-dots-trace` the kind); then `data-dots="revealing"` while its transition brings it in, then the attributes go. A target already busy is not served twice; the dots wait for both calls. Served again while it is still being traced, that trace ends at once and a new serve begins. Step 5 adds `track()` and the page-load queue on top of this.
+**The API.** `TDCDots.serve(el, promise, { reveal, trace })` marks `el` busy (`data-dots="busy"`), takes the dots to it and returns the promise. When the promise settles, either way, `reveal()` puts the result on the page at once (a new number, a switch flipped), hidden while the dots trace it (`data-dots="tracing"`, `data-dots-trace` the kind); then `data-dots="revealing"` while its transition brings it in, then the attributes go. A target already busy is not served twice; the dots wait for both calls. Served again while it is still being traced, that trace ends at once and a new serve begins. `serve()` is a **tap**; `TDCDots.track(el, promise, { reveal, trace })` is the same for something **loading with the page** (step 5, below).
+
+**The page-load queue (step 5, spec §12).** `track()` makes the same record as `serve()`, marked as loading, and puts it in the queue rather than taking the dots. Decided by UV, 26 Oct:
+
+| When | What happens |
+|---|---|
+| Tracked | Nothing for `GRACE` (150 ms), so an instant load shows nothing at all. Then **everything still loading dims** (the busy look), and hidden dots go to the first still loading **in the page's order** (`compareDocumentPosition`), **wherever it is**, off the screen included |
+| Back while the dots are elsewhere | It simply appears (the reveal transition) |
+| Back while the dots are flying to it | It simply appears and they **turn mid-flight** for the next one still loading. If nothing else is loading they land on it anyway and race and fade there |
+| Back while the dots wait on it | If anything else is loading, it is **not traced**: it comes in as the dots fly on. Only the **last** is traced, raced and faded. This holds for a tap too: a tap whose call is back while something is still loading is not traced |
+| A tap | Takes the dots at once, as always. Whatever is still loading afterwards gets them next. Something loading that is tapped becomes a tap |
+| Something new loading while the dots trace, race or fade | Once it has been loading for `GRACE`, it takes them, as a tap would |
+
+A tap abandoned by a later tap is not put back in the queue (the 26 Oct decision: it comes back without the dots). On the sandbox, **Simulate page load** puts all twelve things on the stage into loading for random times (about a quarter under 0.15 s), and logs for each what the dots did.
+
+**Turning mid-trip (step 5).** Page loading makes the dots turn in flight often, so two things changed in travel:
+- **The speed carries on.** A trip that starts mid-trip starts at the old trip's speed (centre and radius), which dies away over the first third as the new trip eases in (Hermite's `u(1−u)²` added to the glide). Before, the new trip started from rest: the dots stopped dead and set off again, a change of speed of 26–50px in one frame (measured on the step 4 engine, tabs → button, turning 250–740 ms in).
+- **A new trip starts from the frame the dots were last placed in** (`stepAt`), not the clock, or its first frame came out at no progress and the dots stood still for a frame (19.6px).
 
 `trace` says what the dots trace (spec §10), and defaults from the target:
 
@@ -55,7 +72,7 @@ A tab's outline is drawn on the layer's SVG (`svg.tdc-dots-lines`) and placed ov
 | Centre | Glides straight from the old sphere's centre to the new ring's, eased in and out. No spring, so no overshoot |
 | Radius | Lifts from the old sphere's radius to **1.5 times the new ring's** (`LIFT`) over the first 30% of the trip, holds, and settles onto the ring over the last 40% (`RISE`, `FALL`), each eased in and out |
 | Line size | Changes to the new ring's stroke as the dots settle (the last 40%) |
-| Each dot | Follows the gliding sphere up to 60 ms behind (`LAG`), so they move as particles, never further apart than the sphere is wide |
+| Each dot | Follows the gliding sphere's centre and radius a little behind, so they move as particles: a smoothing with its own time constant, up to 60 ms (`LAG`), **the dot's for good**. Until step 5 it was a delay of up to 60 ms picked anew each trip; at a turn the delay left a dot where the sphere had been (20.6px in a frame), and a new, shorter lag let a dot that had trailed 17px catch up in one frame |
 | The motion | The cruise never stops, so they arrive already moving in it: no arrival step, no lock-on |
 
 Hidden, they appear at a point (where they were last, if on screen, else the middle) and the sphere opens out from it as it goes. A trip takes 450 to 1200 ms, longer the further it is. Tapping something mid-trip starts a new trip from wherever the sphere has got to. The constants are at the top of `dots.js`.
@@ -132,7 +149,7 @@ Measured 26 Oct at 420px (headless Chrome, 7 ms frames), every move forced in tu
 | 2. Tracing and the element types | **Built 26 Oct; UV to review in the sandbox** |
 | 3. The sandbox's full controls | **Built 26 Oct; UV to review.** Simulate page load waits for step 5's queue |
 | 4. The move registry, 18 solo and 16 group moves (pool and merge added, moons redone) | **Built 26 Oct; UV to review in the sandbox** (pause 3 of 3) |
-| 5. The page-load queue and `track()` | |
+| 5. The page-load queue and `track()` | **Built 26 Oct; UV to review in the sandbox** (Simulate page load) |
 | 6. Reduced motion, error handling | Reduced motion is not handled yet |
 | 7. Replace `ring-status.js`'s dots; wire into real elements | |
 
@@ -156,5 +173,11 @@ Headless Chrome is useful here, with two traps found on 26 Oct:
 - **A clipped capture bigger than the screen re-lays out the page**, which moves the fixed layer. Scroll the target into view and capture the screen instead.
 
 Positions are best checked from the page itself: each `.tdc-dot`'s `getBoundingClientRect()` against the target's, and its true size (stretch included) from its computed transform. **Since step 4, use the matrix's singular values**, not the length of its columns: a dot can be squashed at one angle and stretched at another, and the column lengths then change as its direction of travel turns while its shape does not (it read as a 2.4px snap that was not there). With `T = a² + b² + c² + d²` and `D = ad − bc`, the two sizes are `8 × √((T ± √(T² − 4D²)) / 2)`. To test a hand-over at a chosen moment, serve with a promise resolved by hand (`TDCDots.serve(el, new Promise((r) => { done = r; }))`). Record every frame with `requestAnimationFrame` and report the spread between the dots, the biggest dot against the line it is on, and the largest move of any dot from one frame to the next.
+
+**Since step 5, measure jumps as a change of speed**, not a move: a dot travelling fast honestly moves 10–19px a frame, so the largest move cannot tell a trip from a jump. Take each dot's move per frame divided by that frame's own time (headless Chrome drops frames, and a dropped frame doubles a move), and report the largest change from one frame to the next. Smooth travel and the waiting moves measure 1–3px; a jump shows as a spike, or two in a row (a dot stopping for one frame). Burst's explosion is the exception on purpose (13.5px on the counter's big ring).
+
+**To compare with the committed engine**, serve `git show HEAD:src/scripts/dots.js` to the page in place of the new one (the DevTools protocol's `Fetch.requestPaused`, answered with the old file), and run the same script on both.
+
+Measured 26 Oct at 420px (step 5): 25 page loads at a 3 s delay, random moves, every frame 16.8 ms: the largest change of speed 1.4–3 px in 22 of them; burst's explosion (13.5) in one; and two not reproduced since: 20px as the race began on a row the dots had landed on (which move was running was not recorded), and 6.3px in the final trace of the cue ball. Forced, neither came back: the race over each of the 16 group moves and over polar, over, spiral and stars, and five traces of the cue ball, all 1–4px on both engines. Eight sharp turns (tabs → Save settings, 250–740 ms in) 1.5–1.7px, against 26–50 on the step 4 engine. All instant: the dots never shown. The race taking over each of the 16 group moves mid-move: 1.3–2.2px. Nothing left marked after any run.
 
 **The sandbox (`/sandbox/dots/`, step 3).** The stage: a tab bar (the league pages' bar), four ring icons in four colours, the counter, a list row with a ring icon button, a switch served as a ring, a primary and a secondary button. The controls: network delay, draw speed, fade speed, hand-over and ring margin (each sets its token on that page until a reload; the values to keep are set and saved on the main sandbox, whose token list now has a **Dots** group), the waiting move with Random (solo moves and group moves, in two lists), and the status line (the phase, then each dot's solo move or the group).

@@ -500,3 +500,13 @@
 	font-size: 0.8rem;
 	color: var(--text-muted);
 }
+/* Simulate page load's log: each thing on the stage, its load time and what
+   the dots did with it, in the page's order. */
+.dots-log {
+	margin: var(--space-3) 0 0;
+	padding-left: 1.5em;
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	color: var(--text-muted);
+	overflow-wrap: anywhere;
+}

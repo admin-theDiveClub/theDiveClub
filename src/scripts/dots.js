@@ -17,10 +17,19 @@
 //              pill's outline), or 'none' (the default otherwise: a button's
 //              fake ring is enough, UV 26 Oct)
 //   Returns the promise. A target already busy is not served twice: the dots
-//   wait for both calls. Serving a new target takes the dots there at once;
-//   the old one restores itself, without them, when its own call is back.
+//   wait for both calls. Serving a new target (a tap) takes the dots there at
+//   once; the old one restores itself, without them, when its own call is back.
+//   TDCDots.track(el, promise, { reveal, trace })
+//     the same, for something loading with the page (spec §12). It joins the
+//     queue rather than taking the dots: nothing shows for GRACE ms, so an
+//     instant load shows nothing; then every element still loading dims and
+//     the dots go to the first in the page's order, wherever it is. One that
+//     is back before the dots reach it simply appears, and they turn for the
+//     next. Only the last is traced and gets the race and fade; the others come
+//     in as the dots fly on (UV, 26 Oct), taps included. A tap takes the dots
+//     at once, and whatever is still loading afterwards gets them next.
 //   TDCDots.state  what the dots are doing (the phase, each dot's solo move
-//     or the group move), for the sandbox's status line
+//     or the group move, the target, how many are loading), for the sandbox
 //   TDCDots.moves, TDCDots.groups, TDCDots.force(name | null)  the solo and
 //     group moves, and one to play on repeat (the sandbox's picker)
 //
@@ -37,9 +46,9 @@
 // above the page: higher is bigger and brighter. Size on the ring line is the
 // stroke width of the line the dots are on, and so is their colour.
 //
-// Built so far (spec §16, steps 1 to 4): travel, the waiting moves (18 solo,
-// 14 group: SOLO and GROUP), tracing, the ring race and the fade. Still to
-// come: the page-load queue (5), reduced motion (6).
+// Built so far (spec §16, steps 1 to 5): travel, the waiting moves (18 solo,
+// 16 group: SOLO and GROUP), tracing, the ring race, the fade and the
+// page-load queue. Still to come: reduced motion (6).
 //
 // Needs: tdc.js (TDC.error). Its look is stylesheets/dots.css; its sizes and
 // times are tokens in variables.css (--dots-*).
@@ -75,6 +84,10 @@ const TDCDots = (() => {
 	// all on it, before they fade (ms, at --dots-fade 1): as in step 1, where
 	// the race ran 0.75 s from the reveal and the ring took 0.25 s of it.
 	const RACE_HOLD = 500;
+	// The page-load queue (spec §12): how long something tracked must still be
+	// loading before it dims and the dots come for it (ms), so an instant load
+	// shows nothing.
+	const GRACE = 150;
 	// The single-line digits that guide a number's dots (UV, 26 Oct), from
 	// the prototype: a 10 by 16 box, absolute commands only. Never drawn: each
 	// is fitted over its digit in the site's font and pulled onto the middle
@@ -951,6 +964,8 @@ const TDCDots = (() => {
 	// back in (dots.css) and is taken off once that has run; lines drawn for
 	// its trace fade out in the same time, so they crossfade into it.
 	function restore(t) {
+		if (t.restored) return 0;
+		t.restored = true;
 		records.delete(t.el);
 		reveal(t);
 		const el = t.el;
@@ -1252,7 +1267,7 @@ const TDCDots = (() => {
 	// moves (Vv), its longitude and latitude (th, ph), its own speed (w), and
 	// its solo move (m).
 	function newDot(th, now) {
-		const v = { V: sph(th, 0), Vv: [0, 0, 0], th, ph: 0, w: 4.6 + Math.random() * 1.2, cf: 0, sqAt: -1e9, vmS: 1, szS: 1, blS: 0, T: null };
+		const v = { V: sph(th, 0), Vv: [0, 0, 0], th, ph: 0, w: 4.6 + Math.random() * 1.2, lag: Math.random() * LAG, cf: 0, sqAt: -1e9, vmS: 1, szS: 1, blS: 0, T: null };
 		v.m = moveOf('cruise', v, now, 300 + Math.random() * 700);
 		v.m.carry = { ang: 0 };
 		return v;
@@ -1310,8 +1325,11 @@ const TDCDots = (() => {
 				this.nextGroup = Infinity;
 				for (const v of this.v) v.rth = Math.atan2(v.V[1], v.V[0]);
 			} else if (!this.G && !(this.nextGroup < Infinity)) this.nextGroup = firstGroup(now);
-			this.trip = opts.trip ? Object.assign({}, opts.trip.from, { t0: now, dur: opts.trip.dur, lag: D.map(() => Math.random() * LAG) }) : null;
+			this.trip = opts.trip ? Object.assign({ vx: 0, vy: 0, vr: 0 }, opts.trip.from, { t0: now, dur: opts.trip.dur }) : null;
 			this.f = this.frameAt(this.trip ? 0 : 1);
+			// How fast the frame is moving (px a ms), so a trip that turns for
+			// another target leaves at the speed this one had.
+			this.vel = this.trip ? { vx: this.trip.vx, vy: this.trip.vy, vr: this.trip.vr } : { vx: 0, vy: 0, vr: 0 };
 		}
 		get travelling() { return !!this.trip; }
 		// The sphere's frame at a point in the trip (u from 0 to 1; 1, or no trip,
@@ -1320,9 +1338,13 @@ const TDCDots = (() => {
 			const t = this.t, p = this.trip;
 			if (!p || u >= 1) return { cx: t.cx, cy: t.cy, r: t.r, gs: t.sw, c: t.colour };
 			const e = ease(u), rise = ease(cl(u / RISE)), fall = ease(cl((1 - u) / FALL));
+			// Leaving mid-trip, the speed it had carries on and dies away
+			// (Hermite's u(1-u)²: that speed at the start, nothing at the end),
+			// so a turn for another target curves rather than stopping dead.
+			const h = u * (1 - u) * (1 - u) * p.dur;
 			return {
-				cx: mix(p.cx, t.cx, e), cy: mix(p.cy, t.cy, e),
-				r: mix(t.r, mix(p.r, LIFT * t.r, rise), fall),
+				cx: mix(p.cx, t.cx, e) + p.vx * h, cy: mix(p.cy, t.cy, e) + p.vy * h,
+				r: Math.max(0, mix(t.r, mix(p.r, LIFT * t.r, rise), fall) + p.vr * h),
 				gs: mix(p.gs, t.sw, ease(cl((u - (1 - FALL)) / FALL))),
 				c: mixC(p.c, t.colour, e)
 			};
@@ -1332,8 +1354,10 @@ const TDCDots = (() => {
 		step(now, dt, time, vis = 1) {
 			const t = this.t, p = this.trip;
 			measure(t);
-			const uOf = (lag) => (p ? cl((now - p.t0 - lag) / p.dur) : 1);
-			this.f = this.frameAt(uOf(0));
+			const u0 = p ? cl((now - p.t0) / p.dur) : 1, f0 = this.f;
+			this.f = this.frameAt(u0);
+			const ms = Math.max(1, dt * 16.67), fc = [this.f.cx, this.f.cy, this.f.r];
+			this.vel = { vx: (fc[0] - f0.cx) / ms, vy: (fc[1] - f0.cy) / ms, vr: (fc[2] - f0.r) / ms };
 			const eR = this.mode === 'race' ? ease(cl((now - this.r0) / this.easeMs)) : 0;
 			if (eR < 1) this.schedule(now, dt); else this.G = null;
 			const G = this.G, gw = G ? this.groupWeight(now) * (1 - eR) : 0, gp = G ? cl((now - G.t0) / G.dur) : 0;
@@ -1363,15 +1387,21 @@ const TDCDots = (() => {
 				v.vmS += (o.vm - v.vmS) * Math.min(1, 0.3 * dt);
 				v.szS += (o.szm - v.szS) * Math.min(1, 0.2 * dt);
 				v.blS += (o.blur - v.blS) * Math.min(1, 0.2 * dt);
-				const u = uOf(p ? p.lag[i] : 0), f = this.frameAt(u);
-				if (u < 1) arrived = false;
+				// Each dot follows the frame's centre and radius a little behind
+				// (its own lag, up to LAG ms, a smoothing rather than a delay, so
+				// a trip that turns never jumps a dot to where the frame is now).
+				// The lag is the dot's for good: a new one each trip let a dot
+				// that had trailed by 17px catch up in one frame at a turn.
+				const f = this.f, a = p && v.lag > 0 ? 1 - Math.exp(-ms / v.lag) : 1;
+				v.fc = v.fc ? v.fc.map((x, j) => mix(x, fc[j], a)) : fc.slice();
+				if (p && (u0 < 1 || Math.hypot(v.fc[0] - fc[0], v.fc[1] - fc[1], v.fc[2] - fc[2]) > 0.05)) arrived = false;
 				// Racing, a dot runs on the ring line itself: its bob shows only
 				// in its size and brightness. On the sphere, height drew the
 				// dots up to 2% inside the ring, so the race looked a little
 				// smaller than the ring it was on (UV, 26 Oct).
 				let k = 1;
 				if (this.mode === 'race') k = mix(1, 1 / (Math.hypot(v.V[0], v.V[1]) || 1), eR);
-				const q = pose(f.cx + f.r * v.V[0] * k, f.cy + f.r * v.V[1] * k, mix(v.V[2], o.h, o.hw), f.gs, f.c);
+				const q = pose(v.fc[0] + v.fc[2] * v.V[0] * k, v.fc[1] + v.fc[2] * v.V[1] * k, mix(v.V[2], o.h, o.hw), f.gs, f.c);
 				Object.assign(q, { glow: o.glow, sq: o.sq, trail: o.trail > 0.5 ? o.tl : 0, cut, sx: o.sx, sy: o.sy, srot: o.srot, vm: v.vmS, szm: v.szS, blur: v.blS });
 				return q;
 			});
@@ -1574,10 +1604,15 @@ const TDCDots = (() => {
 	let alpha = 0, aT = 0, fading = false, revealAt = 0, revealHold = 0, fadeAt = 0;
 	let forced = null, forcedV = 0;   // the move on repeat (null: random), and a count of changes to it
 	let running = false, last = 0;
+	let stepAt = 0;         // the frame the dots were last placed in
 
-	function serve(el, promise, opts = {}) {
+	// A tap takes the dots at once; something loading with the page joins the
+	// queue (track). Both are a record in `records` until they come back.
+	const serve = (el, promise, opts = {}) => enlist(el, promise, opts, false);
+	const track = (el, promise, opts = {}) => enlist(el, promise, opts, true);
+	function enlist(el, promise, opts, load) {
 		if (!el || !el.isConnected) {
-			TDC.error(AREA, 'asked to serve an element that is not on the page.', el);
+			TDC.error(AREA, `asked to ${load ? 'track' : 'serve'} an element that is not on the page.`, el);
 			return promise;
 		}
 		build();
@@ -1588,12 +1623,24 @@ const TDCDots = (() => {
 		if (!t) {
 			t = makeRecord(el, opts);
 			records.set(el, t);
-			el.dataset.dots = 'busy';
 			if (t.kind === 'number') {
 				try { readyDigits(el); }
 				catch (err) { TDC.error(AREA, 'the number\'s font could not be measured.', err); }
 			}
-			goTo(t);
+			if (load) {
+				// Not marked busy yet: an instant load must show nothing.
+				t.load = true;
+				t.at = performance.now();
+				setTimeout(check, GRACE);
+			} else {
+				el.dataset.dots = 'busy';
+				goTo(t);
+			}
+		} else if (!load && t.load) {
+			// Tapped while it is loading: it is a tap now, and takes the dots.
+			t.load = false;
+			el.dataset.dots = 'busy';
+			if (t !== cur) goTo(t);
 		}
 		t.pending++;
 		const done = () => {
@@ -1606,6 +1653,38 @@ const TDCDots = (() => {
 		return promise;
 	}
 
+	// ─── The page-load queue (spec §12) ───
+	// The next thing loading for the dots to go to: the first in the page's
+	// order, wherever it is on the page (UV, 26 Oct). With `grace`, only one
+	// that has been loading for GRACE ms: so the dots are never fetched for an
+	// instant load, nor pulled off a trace or a race by one.
+	const late = (t, now) => now - t.at >= GRACE - 1;
+	function nextPending(now, grace) {
+		let best = null;
+		for (const t of records.values()) {
+			if (!t.load || t.settled || t === cur || (grace && !late(t, now))) continue;
+			if (!t.el.isConnected) {
+				TDC.error(AREA, 'something loading left the page before it was back.', t.el);
+				records.delete(t.el);
+				continue;
+			}
+			if (!best || best.el.compareDocumentPosition(t.el) & Node.DOCUMENT_POSITION_PRECEDING) best = t;
+		}
+		return best;
+	}
+	// GRACE ms after something is tracked: everything still loading by then
+	// dims, and hidden dots come for the first of them. Shown, the loop decides.
+	function check() {
+		const now = performance.now();
+		for (const t of records.values()) {
+			if (t.load && !t.settled && late(t, now)) t.el.dataset.dots = 'busy';
+		}
+		if (phase === 'hidden') {
+			const next = nextPending(now, true);
+			if (next) goTo(next);
+		}
+	}
+
 	// Travel: a sphere for the new target takes over the dots, and its frame
 	// glides there from where their sphere was (Ring). Hidden, they appear from
 	// a point, where they last were if that is on screen, else the middle, and
@@ -1613,7 +1692,12 @@ const TDCDots = (() => {
 	// starts from the sphere that ran on underneath and the dots slide off
 	// what they were showing onto it over --dots-blend.
 	function goTo(t) {
-		const now = performance.now();
+		// Shown, a new trip starts from the frame the dots were last placed in,
+		// so its first frame carries on at the old trip's speed. Started from
+		// the clock instead, that frame came out at no progress at all and a
+		// dot turning mid-trip stood still for one frame (19.6px, measured).
+		const now = running && S ? stepAt : performance.now();
+		t.el.dataset.dots = 'busy';   // something loading may not have dimmed yet
 		// Left mid-trace: that target comes back as it is, without the dots.
 		if (cur && cur !== t && cur.settled && records.get(cur.el) === cur) restore(cur);
 		let from, left = null;
@@ -1628,7 +1712,8 @@ const TDCDots = (() => {
 			// Mid-trace or mid-hand-over, the sphere has run on underneath: the
 			// trip leaves from it (its ring's size and colour, not the traced
 			// line's, which flew the digits' heavy line off into the lift).
-			from = motionOf(S).f;
+			// Mid-trip, it leaves at the speed it had.
+			from = Object.assign({}, motionOf(S).f, motionOf(S).vel);
 			if (!(S instanceof Ring)) left = S;
 		}
 		cur = t; tr = null;
@@ -1676,9 +1761,25 @@ const TDCDots = (() => {
 		alpha += (aT - alpha) * Math.min(1, (fading ? 0.045 * T.fade : 0.1) * dt);
 		for (const l of fadingLines) l.where();
 
+		// The page-load queue. Only the last is traced and raced (UV, 26 Oct):
+		// a target whose call is back while something else is loading comes in
+		// as the dots fly on to it (goTo restores it), arrived or not. Loading
+		// and back before the dots reach it, with nothing else loading, it
+		// simply appears and they land anyway, then race. Something that has
+		// been loading for GRACE takes them off a trace, a race or a fade.
+		if (cur && cur.settled && (phase === 'travel' || phase === 'orbit')) {
+			const next = nextPending(now, false);
+			if (next) goTo(next);
+			else if (cur.load && phase === 'travel') restore(cur);
+		} else if (phase === 'trace' || phase === 'race' || phase === 'fade') {
+			const next = nextPending(now, true);
+			if (next) goTo(next);
+		}
+
 		if (phase === 'travel' && S instanceof Ring && !S.travelling) phase = 'orbit';
 		if (phase === 'orbit' && cur.settled) {
-			const lines = startTrace(cur);
+			// Back before the dots reached it: it is already on the page.
+			const lines = cur.restored ? null : startTrace(cur);
 			S.quiet(now);
 			if (lines) {
 				// Diving in: the trace starts now and each dot slides into it.
@@ -1690,7 +1791,7 @@ const TDCDots = (() => {
 				// Nothing to trace: the target comes straight back, and the
 				// cruise eases into the race.
 				revealAt = now;
-				fadeAt = now + Math.max(restore(cur), 750 / T.fade, T.blend);
+				fadeAt = now + Math.max(restore(cur), 750 / T.fade, T.blend);   // 0 if it is already back
 				S = new Ring(cur, 'race', now, S, { easeMs: T.blend });
 				phase = 'race';
 			}
@@ -1723,6 +1824,7 @@ const TDCDots = (() => {
 		}
 
 		const P = S.step(now, dt, time);
+		stepAt = now;
 		if (S instanceof Blend && S.done) S = S.to;
 		D.forEach((d, i) => draw(d, P[i], dt, now));
 		requestAnimationFrame(loop);
@@ -1786,6 +1888,7 @@ const TDCDots = (() => {
 
 	return {
 		serve,
+		track,
 		moves: Object.keys(SOLO),
 		groups: Object.keys(GROUP),
 		// The waiting move (solo or group) to play on repeat, or null for random.
@@ -1796,8 +1899,11 @@ const TDCDots = (() => {
 		},
 		get state() {
 			const r = S && motionOf(S), waiting = r && (phase === 'orbit' || phase === 'travel');
+			let loading = 0;
+			for (const t of records.values()) if (t.load && !t.settled) loading++;
 			return {
-				phase, busy: records.size, forced,
+				phase, busy: records.size, forced, loading,
+				target: cur && phase !== 'fade' ? cur.el : null,
 				group: waiting && r.G ? r.G.name : null, groupAt: waiting && r.G ? r.G.t0 : null,
 				moves: waiting && !r.G ? r.v.map((v) => v.m.name) : []
 			};

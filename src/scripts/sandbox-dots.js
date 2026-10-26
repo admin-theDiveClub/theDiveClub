@@ -32,7 +32,8 @@
 
 	// The counter: the dots trace its new number in the site's font as it fades in.
 	const count = $('dots-count');
-	reveals.set(count, () => { count.textContent = +count.textContent + 1; });
+	let countN = +count.textContent;
+	reveals.set(count, () => { count.textContent = ++countN; });
 	traces.set(count, 'number');
 
 	// The tabs: the chosen one's pill is traced, then fills.
@@ -114,6 +115,64 @@
 		const s = TDCDots.state;
 		const moves = s.group ? 'Group: ' + s.group : s.moves.length ? 'Solo: ' + s.moves.join(' · ') : '';
 		const phase = s.phase === 'hidden' ? 'Hidden' : s.phase === 'trace' ? 'Tracing' : s.phase[0].toUpperCase() + s.phase.slice(1);
-		stat.textContent = (s.phase === 'orbit' && moves ? '' : phase) + (moves ? (s.phase === 'orbit' ? '' : ' · ') + moves : '') + (s.forced ? ' (forced)' : '');
+		stat.textContent = (s.phase === 'orbit' && moves ? '' : phase) + (moves ? (s.phase === 'orbit' ? '' : ' · ') + moves : '') + (s.forced ? ' (forced)' : '')
+			+ (s.loading ? ` · ${s.loading} loading` : '');
 	}, 120);
+
+	// ─── Simulate page load (spec §13) ───
+	// Everything on the stage goes back to loading, each for its own time:
+	// about a quarter within 0.15 s (they should show nothing), the rest up to
+	// the network delay. Each is tracked, not served, so the queue decides
+	// where the dots go. The log says, for each, what the dots did, watched
+	// every frame from TDCDots.state.
+	const loadBtn = $('dots-load'), instant = $('dots-instant'), log = $('dots-log');
+	const LOADING = [
+		{ el: document.querySelector('.dots-tabs'), name: 'Tabs' },
+		...[...document.querySelectorAll('.dots-tiles [data-icon]')].map((el) => ({ el, name: el.getAttribute('aria-label') })),
+		{ el: count, name: 'Counter', trace: 'number', before: () => { count.textContent = '–'; }, reveal: () => { count.textContent = countN; } },
+		...[...document.querySelectorAll('.dots-sandbox .list-row')].flatMap((row, k) => [
+			{ el: row.querySelector('.list-row-main'), name: `Row ${k + 1}` },
+			{ el: row.querySelector('.list-row-actions > *'), name: k ? 'Switch' : 'Move' }
+		]),
+		...[...document.querySelectorAll('.dots-target')].map((el) => ({ el, name: el.textContent }))
+	];
+	let watch = null;
+	function outcome(w) {
+		if (w.traced) return 'traced, then the race and fade: the last';
+		if (w.raced) return 'back before the dots landed; they landed and raced: the last';
+		if (w.waited) return 'the dots waited on it, and it came in as they flew on';
+		if (w.went) return 'the dots set off for it; it was back first and they turned';
+		return w.ms < 150 ? 'instant: nothing shown' : 'came in while the dots were elsewhere';
+	}
+	function showLog() {
+		log.innerHTML = '';
+		for (const w of watch.all) {
+			const li = document.createElement('li');
+			li.textContent = `${w.name} · ${(w.ms / 1000).toFixed(2)} s · ${w.back ? outcome(w) : 'loading'}`;
+			log.append(li);
+		}
+	}
+	function follow() {
+		const s = TDCDots.state, w = watch.byEl.get(s.target);
+		if (w) {
+			w.went = true;
+			if (s.phase === 'orbit') w.waited = true;
+			if (s.phase === 'trace') w.traced = true;
+			if (s.phase === 'race' && !w.traced) w.raced = true;
+		}
+		if (watch.all.every((x) => x.back) && s.phase === 'hidden') { showLog(); loadBtn.disabled = false; return; }
+		requestAnimationFrame(follow);
+	}
+	loadBtn.addEventListener('click', () => {
+		loadBtn.disabled = true;
+		const all = LOADING.map((x) => ({ ...x, ms: instant.checked || Math.random() < 0.25 ? 20 + Math.random() * 110 : 150 + Math.random() * (+delay.value * 1000 - 150) }));
+		watch = { all, byEl: new Map(all.map((w) => [w.el, w])) };
+		for (const w of all) {
+			if (w.before) w.before();
+			const call = new Promise((resolve) => setTimeout(resolve, w.ms)).then(() => { w.back = true; showLog(); });
+			TDCDots.track(w.el, call, { reveal: w.reveal, trace: w.trace });
+		}
+		showLog();
+		requestAnimationFrame(follow);
+	});
 })();

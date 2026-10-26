@@ -14,9 +14,9 @@ extraScripts:
 	components that pretend to call the network, so the motion can be studied
 	at any speed. Nothing here touches the database.
 
-	Steps 1 to 4 of the spec's build order: travel, tracing, the ring race,
-	the fade, the controls, and the 18 solo and 14 group moves. Simulate page
-	load comes with step 5's queue.
+	Steps 1 to 5 of the spec's build order: travel, tracing, the ring race,
+	the fade, the controls, the 18 solo and 16 group moves, and the page-load
+	queue (Simulate page load).
 {% endcomment %}
 
 <div class="tdc-card sandbox dots-sandbox">
@@ -79,5 +79,15 @@ extraScripts:
 			<p class="muted">Pick one to play it on repeat: a solo move for all four dots, or a group move back to back. Random: each dot its own solo moves, and a group every 2 to 5 seconds.</p>
 		</div>
 		<p class="dots-stat" id="dots-stat" role="status"></p>
+	</section>
+
+	<section class="sb-section">
+		<h2>Page load</h2>
+		<p class="muted">Puts all twelve things on the stage back into loading, each for its own random time up to the network delay; about a quarter come back within 0.15 s and should show nothing. The dots go to the first one still loading, in the page's order, and fly on to the next as each comes in. Only the last is traced, raced and faded. Tap anything already back to see a tap take the dots.</p>
+		<div class="dots-move-row">
+			<button type="button" class="btn btn-primary" id="dots-load">Simulate page load</button>
+			<label class="dots-check"><input type="checkbox" id="dots-instant" data-control="none"> All instant</label>
+		</div>
+		<ol class="dots-log" id="dots-log"></ol>
 	</section>
 </div>
