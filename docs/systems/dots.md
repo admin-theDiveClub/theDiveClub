@@ -87,7 +87,7 @@ Measured 26 Oct at 420px: the Accept tick (a 33px ring) — spread between dots 
 
 *Tried and changed the same day, both measured before UV saw them:* (1) the prototype's way of following the pen (each frame 38% of the way to it): where the "2" ends and the "0" begins a dot leapt 12.9px in one frame, starting at full speed, and lagged its pen on every curve; replaced by sitting on the pen and swooping only at a jump. Its lift (0.25) and wobble (0.08) made a dot 1.4 times the line; now 0.15 and 0.05. (2) Leaving mid-trace, the trip first started from the dots themselves, carrying the digits' 5.8px line into the lift: a dot reached 9.75px in flight. It now leaves from the sphere underneath.
 
-**The waiting moves (step 4, 26 Oct).** The spec's 18 solo and 14 group moves (§8), ported from the prototype's `domeStep` and `groupStep`, run inside `Ring` while it waits. Each is one entry in `SOLO` or `GROUP` in `dots.js`: its weight, its length, and `step()`, a function of the move's progress that says where the dot aims on the sphere and what it changes (squash, a squash of its own at its own angle, glow, trail, visibility, size, blur, the spring). A group may also have `start()` (random axes, the ball's four spots, the floor's tilt) and `draw()` (the black hole's disk, the shadows' floor, on the layer's canvas). Adding a move is one entry.
+**The waiting moves (step 4, 26 Oct).** The spec's 18 solo and 16 group moves (§8; pool and merge added by UV the same day), ported from the prototype's `domeStep` and `groupStep`, run inside `Ring` while it waits. Each is one entry in `SOLO` or `GROUP` in `dots.js`: its weight, its length, and `step()`, a function of the move's progress that says where the dot aims on the sphere and what it changes (squash, a squash of its own at its own angle, glow, trail, visibility, size, blur, the spring). A group may also have `start()` (random axes, the ball's four spots, the floor's tilt) and `draw()` (the black hole's disk, the shadows' floor, on the layer's canvas). Adding a move is one entry.
 
 | | How it works |
 |---|---|
@@ -100,6 +100,19 @@ Measured 26 Oct at 420px: the Accept tick (a 33px ring) — spread between dots 
 | Forced (the picker) | A solo move for all four dots on repeat, or a group back to back; a move cut short by the picker ends without its landing |
 | Clockwise | Every move with a free direction measured clockwise (the dots' mean turn per move, from the page); over, under and juggle cross the middle by nature |
 | Sizes | The prototype's amplitudes, as UV asked to see them: a splat's pancake to about twice its width, a flatten's smear 2.2 times long, the moons 1.7 times, a shadow up to about 3.8 times (faint and blurred). Speed stretch stays capped at 1.35 times and glow in proportion to the dot |
+
+**Three group moves added after the spec (UV, 26 Oct): pool, merge, and a new moons** (described in the spec's §8 table). What they needed from the engine:
+
+| | Why |
+|---|---|
+| `frame(G, ring, now, dt)`, once a frame before the dots, and `G.ended` | Pool's physics runs once a frame (in 4 ms steps, so a fast ball cannot pass through another), and pool ends when the balls stop, not on a timer. The ball's and the stars' spin moved onto the same hook |
+| `snap` (how far a dot is pinned to its aim) | Pool's balls follow the physics exactly once they are in place: until then each dot glides on an eased path from where it was when pool began (pinning a dot whose spring had not arrived pulled it 7.6px in one frame). Merge's pairs move to their next spot at once while unseen. The pin is the same at any frame rate |
+| `cut` | A dot moved at once has its trail cleared and its speed zeroed, so nothing is drawn across the gap |
+| Trails by time, per move (`tl`, ms) | The moons' trails are 2.6 s long (most of the ring), pool's 1 s, a Hawking escape's 0.7 s; the rest keep 270 ms (the prototype's 16 frames at 60 fps). A trail takes a point every 12 ms, draws in behind the dot when it shortens rather than snapping off, and is drawn in runs of three points (a 2.6 s trail is about 70 strokes, not 200) |
+
+*Pool:* a table at a tilt of 32–57°, radius 0.78 of the ring; set out by 0.9 s, the pull back to 1.25 s, then the shot, evenly faster to an impact speed of 2.8–3.8 table radii a second, cut 8–35° by aiming at the ghost ball. Elastic between equal balls; the cushion keeps 75% of the speed into it and 92% along it; drag 0.3 of the speed a second plus 0.13 rolling; at rest below 0.015, the cushion fades over 0.5 s and the group ends. Measured: a game lasts about 7 s (6.8–7.1 s over ten). Sizes and constants are `POOL` in `dots.js`. *Merge:* five pops 0.9 s apart, each 1.3 s, pairs alternating (so a pair is unseen 0.5 s between its pops), each spot at least about 70° from the last three; a Hawking pop is placed near the ring so the escape is seen; at least one per run. Times are `MERGE`. *Moons:* the moon's orbit plane tips its normal towards the viewer (clockwise) but well off it, so the moon passes in front and behind.
+
+Measured 26 Oct at 420px, on the counter (a 90px ring) and the tick (33px): no frame over 7 ms, the dots' own script at most 0.9 ms a frame and 49 canvas strokes; the largest move of a seen dot in one frame pool 2.7px (0.96 on the tick), merge 1.9 (0.7), moons 3.2 (1.2); size changes at most 13% a frame.
 
 *Changed from the prototype, each because it jumped when measured:* steamroll's ball goes a little over a lap, so the dot it began behind is flattened twice, and on the second pass the prototype sprang from flat to round in one frame (2.4px); a dot now forgets the ball once it is well behind. The black hole's streak snapped round as the dots vanished, still faintly seen (a 56% size change in one frame); it now holds while they are gone and eases round as they burst out. Wobble's and jitter's squash and wave's squash at the bottom switched on at full strength; they now grow in. Shadows' squash on a bounce switched with the floor's strength; it now eases. The black hole's disk was 180 strokes a frame, each with its own canvas blur, which doubled the frame time (14 ms against 7 in headless Chrome); it is now drawn in runs of three segments, with the blur only on the front half. **Splat's impact is left as it was**: the dot squishes to its pancake in one frame (it doubles in size), which is the move.
 
@@ -118,7 +131,7 @@ Measured 26 Oct at 420px (headless Chrome, 7 ms frames), every move forced in tu
 | 1. Engine: sphere, springs, loop, stroke and colour reading, travel, cruise, race, fade | **Built and approved by UV, 26 Oct** |
 | 2. Tracing and the element types | **Built 26 Oct; UV to review in the sandbox** |
 | 3. The sandbox's full controls | **Built 26 Oct; UV to review.** Simulate page load waits for step 5's queue |
-| 4. The move registry, 18 solo and 14 group moves | **Built 26 Oct; UV to review in the sandbox** (pause 3 of 3) |
+| 4. The move registry, 18 solo and 16 group moves (pool and merge added, moons redone) | **Built 26 Oct; UV to review in the sandbox** (pause 3 of 3) |
 | 5. The page-load queue and `track()` | |
 | 6. Reduced motion, error handling | Reduced motion is not handled yet |
 | 7. Replace `ring-status.js`'s dots; wire into real elements | |

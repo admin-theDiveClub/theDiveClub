@@ -102,7 +102,10 @@ const TDCDots = (() => {
 	// The moves (step 4). CARRY: how long a new solo move takes to ease its
 	// aim in from where the last one was aiming (ms), so nothing jumps between
 	// moves. LAND: the squash after a hop, dive, over or under lands (ms).
-	const CARRY = 300, LAND = 220;
+	// TRAIL_MS: a trail's length (ms) unless a move asks for longer (the
+	// prototype's 16 frames at 60 fps); TRAIL_EVERY: how often a trail takes a
+	// point (ms).
+	const CARRY = 300, LAND = 220, TRAIL_MS = 270, TRAIL_EVERY = 12;
 
 	// ─── Maths ───
 	const sm = (x) => x * x * (3 - 2 * x);
@@ -309,8 +312,17 @@ const TDCDots = (() => {
 
 	// Group moves: all four dots at once, every 2 to 5 s. start(G, ring) sets
 	// the group up (G.th0 is the first dot's longitude, G.d[i] each dot's own
-	// state); step(c, G) is as a solo's, with c.i the dot, c.g its state and
-	// c.ring the sphere; draw() puts its extras on the canvas.
+	// state); frame(G, ring, now, dt) runs once a frame before the dots (a
+	// spin, pool's physics); step(c, G) is as a solo's, with c.i the dot, c.g
+	// its state, c.ring the sphere and c.now the time (a move that outlasts
+	// its length, like merge's ending, reads its own time from it); draw()
+	// puts its extras on the canvas. A group ends after its length, or sooner
+	// when it sets G.ended (pool, when the balls stop).
+	// The ball's and the stars' spots turning on their axis.
+	function spin(G, ring, now, dt) {
+		const a = G.ball.speed * sm(cl((now - G.t0) / 300)) * dt * 0.0167;
+		if (a > 0) G.ball.P = G.ball.P.map((P) => rotV(P, G.ball.axis, a));
+	}
 	// The four corners of a tetrahedron at a random turn, each given to the
 	// dot nearest it.
 	function tetraFor(ring) {
@@ -371,6 +383,221 @@ const TDCDots = (() => {
 		}
 		g.stroke(); g.restore();
 	}
+	// ─── Pool (UV, 26 Oct) ───
+	// A table (a plane through the centre at a random tilt, its edge the
+	// cushion, drawn as a faint dotted ellipse) inside the ring. Dots 0 and 1
+	// are the cue ball and the object ball, resting just above it; 2 and 3
+	// are their shadows on it, cast along a random light. The cue ball pulls
+	// back, then accelerates evenly into the object ball, usually with a cut;
+	// they collide elastically with a flash, bank off the cushion losing
+	// energy, and slow to a stop under drag (proportional to speed, plus a
+	// constant rolling friction). Then the group ends and the dots go back
+	// onto the sphere. Positions are in the table's own units (its radius is
+	// POOL.r of the ring's); the physics runs in POOL.sub steps.
+	const POOL = { r: 0.78, ball: 0.07, lift: 0.06, set: 0.9, pull: 0.35, back: 0.07, drag: 0.3, roll: 0.13, bank: 0.75, slide: 0.92, rest: 0.015, hold: 500, max: 12, sub: 0.004 };
+	function poolStart(G) {
+		const tb = tiltedPlane(0.55, 0.85), la = Math.random() * 2 * PI, lim = POOL.r - POOL.ball - 0.04;
+		tb.L = [Math.cos(la), Math.sin(la)];
+		// The object ball somewhere near the middle, the cue ball well away.
+		let ob, cb;
+		do {
+			const a = Math.random() * 2 * PI, d = Math.random() * 0.4;
+			ob = [d * Math.cos(a), d * Math.sin(a)];
+			const b = Math.random() * 2 * PI, e = 0.45 + Math.random() * 0.3;
+			cb = [ob[0] + e * Math.cos(b), ob[1] + e * Math.sin(b)];
+		} while (Math.hypot(cb[0], cb[1]) > lim);
+		// The cut: the line of centres at impact turned 8 to 35 degrees from
+		// straight, so the cue ball aims at the ghost ball beside the object.
+		const toward = Math.atan2(ob[1] - cb[1], ob[0] - cb[0]), cut = (Math.random() < 0.5 ? -1 : 1) * (0.14 + Math.random() * 0.47);
+		const ghost = [ob[0] - 2 * POOL.ball * Math.cos(toward + cut), ob[1] - 2 * POOL.ball * Math.sin(toward + cut)];
+		const dir = [ghost[0] - cb[0], ghost[1] - cb[1]], l = Math.hypot(dir[0], dir[1]);
+		// Its speed at impact, from evenly faster over the run from the pulled-back spot.
+		const v0 = 2.8 + Math.random();
+		G.pool = {
+			tb, dir: [dir[0] / l, dir[1] / l], start: cb, acc: v0 * v0 / (2 * (l + POOL.back)), hit: false, restAt: 0, flash: -1e9,
+			b: [{ p: cb.slice(), v: [0, 0] }, { p: ob.slice(), v: [0, 0] }]
+		};
+	}
+	function poolFrame(G, ring, now, dt) {
+		const P = G.pool, e = (now - G.t0) / 1000, cue = P.b[0];
+		if (P.restAt) { if (now - P.restAt > POOL.hold) G.ended = true; return; }
+		// Set up, then the pull back (anticipation), eased out and held.
+		if (e < POOL.set + POOL.pull) {
+			const q = sm(cl((e - POOL.set) / POOL.pull)) * POOL.back;
+			cue.p = [P.start[0] - P.dir[0] * q, P.start[1] - P.dir[1] * q];
+			return;
+		}
+		const lim = POOL.r - POOL.ball;
+		let left = dt / 60;
+		while (left > 0) {
+			const h = Math.min(POOL.sub, left);
+			left -= h;
+			if (!P.hit) {
+				// The shot: evenly faster along the aim until the balls touch.
+				cue.v = cue.v.map((x, j) => x + P.dir[j] * P.acc * h);
+			} else {
+				for (const b of P.b) {
+					const s = Math.hypot(b.v[0], b.v[1]);
+					if (!s) continue;
+					const ns = Math.max(0, s - (POOL.drag * s + POOL.roll) * h);
+					b.v = b.v.map((x) => x * ns / s);
+				}
+			}
+			for (const b of P.b) b.p = b.p.map((x, j) => x + b.v[j] * h);
+			// The balls meet: equal masses, so they swap the speed along the line
+			// between them.
+			const [a, b] = P.b, d = [b.p[0] - a.p[0], b.p[1] - a.p[1]], dl = Math.hypot(d[0], d[1]);
+			if (dl < 2 * POOL.ball && dl > 0) {
+				const n = [d[0] / dl, d[1] / dl], rel = (a.v[0] - b.v[0]) * n[0] + (a.v[1] - b.v[1]) * n[1];
+				if (rel > 0) {
+					a.v = a.v.map((x, j) => x - rel * n[j]); b.v = b.v.map((x, j) => x + rel * n[j]);
+					if (!P.hit) { P.hit = true; P.flash = now; }
+				}
+				const push = (2 * POOL.ball - dl) / 2;
+				a.p = a.p.map((x, j) => x - n[j] * push); b.p = b.p.map((x, j) => x + n[j] * push);
+			}
+			// The cushion: the round edge, losing some of the speed into it.
+			for (const o of P.b) {
+				const r = Math.hypot(o.p[0], o.p[1]);
+				if (r <= lim) continue;
+				const n = [o.p[0] / r, o.p[1] / r], vn = o.v[0] * n[0] + o.v[1] * n[1];
+				if (vn > 0) {
+					const t = [o.v[0] - vn * n[0], o.v[1] - vn * n[1]];
+					o.v = [t[0] * POOL.slide - vn * POOL.bank * n[0], t[1] * POOL.slide - vn * POOL.bank * n[1]];
+				}
+				o.p = [n[0] * lim, n[1] * lim];
+			}
+		}
+		const still = P.b.every((o) => Math.hypot(o.v[0], o.v[1]) < POOL.rest);
+		if ((P.hit && still) || e > POOL.max) { for (const o of P.b) o.v = [0, 0]; P.restAt = now; }
+	}
+	// A point on the table (its own units) on the unit sphere's scale, `up`
+	// above it.
+	const onTable = (tb, x, y, up) => [0, 1, 2].map((j) => POOL.r * (x * tb.u[j] + y * tb.v[j]) + up * tb.n[j]);
+	// Each dot glides on an eased path from where it was when the group began
+	// to its place, and is then held to the physics exactly. (Pinning a dot
+	// whose spring had not yet arrived pulled it 7.6px in one frame.)
+	function poolPlace(c, G, P3) {
+		const e = (c.now - G.t0) / 1000, from = c.g.V0, u = ease(cl(e / POOL.set));
+		return { aim: u < 1 ? from.map((x, j) => mix(x, P3[j], u)) : P3, free: 1, snap: sm(cl((e - POOL.set + 0.1) / 0.1)), k: 0.6, damp: 0.4 };
+	}
+	function poolStep(c, G) {
+		const P = G.pool, tb = P.tb, e = (c.now - G.t0) / 1000, k = c.i % 2, o = P.b[k];
+		const speed = Math.hypot(o.v[0], o.v[1]);
+		if (c.i < 2) {
+			const flash = 0.8 * Math.exp(-(c.now - P.flash) / 150);
+			const r = Object.assign(poolPlace(c, G, onTable(tb, o.p[0], o.p[1], POOL.lift)), { glow: flash, trail: speed > 0.05, tl: 1000 });
+			// The pull back: a slight stretch along the shot.
+			if (k === 0 && e > POOL.set && !P.hit) {
+				const s = Math.sin(PI * cl((e - POOL.set) / POOL.pull)) * 0.12, dir = onTable(tb, P.dir[0], P.dir[1], 0);
+				Object.assign(r, { sx: 1 + s, sy: 1 - s * 0.6, srot: Math.atan2(dir[1], dir[0]) });
+			}
+			return r;
+		}
+		// The shadow: on the table, off along the light, flattened to its tilt.
+		const off = POOL.lift * 1.6 / POOL.r;
+		return Object.assign(poolPlace(c, G, onTable(tb, o.p[0] + tb.L[0] * off, o.p[1] + tb.L[1] * off, 0)), {
+			vm: 0.4, blur: 0.6, szm: 1.15, sx: 1.2, sy: 1.2 * tb.n[2], srot: Math.atan2(tb.n[1], tb.n[0]) + PI / 2
+		});
+	}
+	// The cushion: a faint dotted ellipse, in as the balls are set and out
+	// as they come to rest.
+	function poolDraw(g, G, f, p, a, col, time) {
+		const P = G.pool, now = time * 1000, tb = P.tb;
+		const I = sm(cl((now - G.t0) / 500)) * (P.restAt ? 1 - sm(cl((now - P.restAt) / POOL.hold)) : 1);
+		if (I < 0.01) return;
+		g.save(); g.strokeStyle = col; g.lineWidth = 0.75; g.setLineDash([1.5, 3]); g.globalAlpha = a * 0.3 * I;
+		g.beginPath();
+		for (let k = 0; k <= 64; k++) {
+			const an = k / 64 * 2 * PI, q = onTable(tb, Math.cos(an), Math.sin(an), 0);
+			if (k) g.lineTo(f.cx + f.r * q[0], f.cy + f.r * q[1]); else g.moveTo(f.cx + f.r * q[0], f.cy + f.r * q[1]);
+		}
+		g.stroke(); g.restore();
+	}
+
+	// ─── Merge (UV, 26 Oct) ───
+	// Virtual particle pairs. The pairs take turns: a pair pops into being as
+	// one glowing dot somewhere on the sphere (with a squash), splits, runs a
+	// small loop and recombines with a flash (annihilation), and pops out.
+	// About a third are Hawking pops: a faint core glows at the centre, one
+	// partner falls in towards it (stretching, dimming) and the other escapes
+	// out past the ring with a glowing trail, and both vanish where they are.
+	// Between pops a pair is unseen, and moves to its next spot at once. Each
+	// spot is well away from the last few. At the end all four pop back in,
+	// evenly round the ring, already cruising. Times in s from the start.
+	const MERGE = { first: 0.7, gap: 0.9, len: 1.3, last: 6.0, back: 6.1, end: 7.0, loop: 0.25, apart: 1.2 };
+	function mergeStart(G) {
+		const pops = [], recent = [];
+		for (let k = 0; MERGE.first + k * MERGE.gap + MERGE.len <= MERGE.last + 1e-6; k++) {
+			const hawk = Math.random() < 1 / 3;
+			let C, n = 0;
+			// A Hawking pair starts near the ring, so the one escaping is seen to.
+			do { C = sph(Math.random() * 2 * PI, hawk ? (Math.random() - 0.5) * 0.8 : -0.35 + Math.random() * 1.2); }
+			while (++n < 50 && recent.some((r) => dot3(r, C) > Math.cos(MERGE.apart)));
+			recent.push(C);
+			if (recent.length > 3) recent.shift();
+			const t1 = nrm(cross(C, randAxis()));
+			pops.push({ t: MERGE.first + k * MERGE.gap, pair: k % 2, C, hawk, e1: t1, e2: cross(C, t1), side: Math.random() < 0.5 ? 1 : -1 });
+		}
+		// About a third, and at least one.
+		if (!pops.some((q) => q.hawk)) pops[1 + Math.floor(Math.random() * (pops.length - 1))].hawk = true;
+		G.pops = pops;
+	}
+	// A dot's pop now: the latest of its pair's that has begun.
+	function popOf(G, i, e) {
+		let found = null;
+		for (const q of G.pops) if (q.pair === i >> 1 && e >= q.t) found = q;
+		return found;
+	}
+	function mergeStep(c, G) {
+		const e = (c.now - G.t0) / 1000, i = c.i, V = c.ring.v[i].V;
+		// The end: all four pop in evenly round the ring and cruise on.
+		if (e >= MERGE.back) {
+			const s = e - MERGE.back, aim = sph(G.th0 + i * PI / 2 + 5 * Math.max(0, s - 0.05), 0);
+			if (s < 0.05) return { aim, snap: 1, vm: 0 };
+			const q = cl((s - 0.05) / 0.15);
+			return { aim, szm: 0.4 + 0.6 * eob(q), sq: -0.5 * Math.sin(PI * q), glow: 0.6 * (1 - q) };
+		}
+		const pop = popOf(G, i, e);
+		// Unseen, where it is: fading out at the start, between pops.
+		if (!pop || e - pop.t > MERGE.len) return { aim: V.slice(), free: Math.hypot(V[0], V[1], V[2]) < 0.98 ? 1 : 0, vm: 0 };
+		const s = e - pop.t, sg = i % 2 ? 1 : -1;
+		// Moved to the spot at once, unseen.
+		if (s < 0.05) return { aim: pop.C, snap: 1, vm: 0 };
+		// Popping in as one dot.
+		if (s < 0.25) { const q = cl((s - 0.05) / 0.15); return { aim: pop.C, szm: 0.4 + 0.6 * eob(q), sq: -0.5 * Math.sin(PI * q), glow: 0.8 }; }
+		const q = cl((s - 0.25) / 0.8);
+		if (pop.hawk) {
+			// Hawking: one falls in to the core, the other escapes past the ring.
+			// Both vanish where they are.
+			const gone = s > 1.05 ? 0 : 1;
+			if (sg < 0) {
+				const f = 0.92 * q * q;
+				return { aim: pop.C.map((x) => x * (1 - f)), free: 1, vm: gone * (1 - 0.85 * q), sx: 1 + 1.6 * q, sy: 1 - 0.4 * q, srot: null, glow: 0.3, k: 0.5, damp: 0.5 };
+			}
+			const l = Math.hypot(pop.C[0], pop.C[1]) || 1, f = 0.9 * q * q;
+			return { aim: [pop.C[0] * (1 + f / l), pop.C[1] * (1 + f / l), pop.C[2] * (1 - q)], free: 1, vm: gone, glow: 0.6, trail: true, tl: 700, k: 0.5, damp: 0.5 };
+		}
+		// A small loop each, point for point opposite, back to where they began.
+		if (s < 1.05) {
+			const u = sm(q), x = sg * pop.side * MERGE.loop * Math.sin(2 * PI * u), y = sg * MERGE.loop * (1 - Math.cos(2 * PI * u));
+			return { aim: nrm(pop.C.map((w, j) => w + x * pop.e1[j] + y * pop.e2[j])), glow: 0.35 + 0.3 * u, k: 0.5, damp: 0.5 };
+		}
+		// Annihilation: a flash and a squash, then gone.
+		const fl = cl((s - 1.05) / 0.1);
+		return { aim: pop.C, glow: 1, sq: -0.6 * Math.sin(PI * fl), vm: s > 1.15 ? 0 : 1, szm: s > 1.15 ? 0.5 : 1 };
+	}
+	// The Hawking core: a faint glow at the centre while a pair is torn apart.
+	function mergeDraw(g, G, f, p, a, col, time) {
+		const e = (time * 1000 - G.t0) / 1000;
+		let I = 0;
+		for (const q of G.pops) if (q.hawk) I = Math.max(I, Math.sin(PI * cl((e - q.t - 0.1) / 1.0)));
+		if (I < 0.01) return;
+		g.save(); g.fillStyle = col; g.shadowColor = col; g.shadowBlur = 10 * I; g.globalAlpha = a * 0.5 * I;
+		g.beginPath(); g.arc(f.cx, f.cy, 1.2 + 1.3 * I, 0, 2 * PI); g.fill();
+		g.restore();
+	}
+
 	const GROUP = {
 		shadows: {
 			weight: 1.2, dur: 4600,
@@ -406,6 +633,7 @@ const TDCDots = (() => {
 				const P = tetraFor(ring).map((v) => sph(Math.atan2(v[1], v[0]), Math.max(-0.5, Math.min(0.7, Math.asin(v[2])))));
 				G.ball = { P, axis: nrm([0.15, 0.1, 1]), speed: 0.45 };
 			},
+			frame: spin,
 			step(c, G) {
 				const env = sm(cl(c.p * 4)) * sm(cl((1 - c.p) * 4)), tw = Math.pow(0.5 + 0.5 * Math.sin(c.t * c.g.tw.w + c.g.tw.ph), 4);
 				return { aim: G.ball.P[c.i], k: 0.1, damp: 0.8, vm: 1 - env + env * (0.25 + 0.75 * tw), szm: 1 + env * (-0.2 + 0.7 * tw), glow: env * 0.95 * tw };
@@ -430,13 +658,31 @@ const TDCDots = (() => {
 			},
 			draw: drawDisk
 		},
+		// Two hosts, enlarged, orbit the ring on the sphere; each has a small
+		// moon (about half its size) on a tight orbit round it at a tilt of its
+		// own, passing in front (bigger) and behind (smaller), off the sphere
+		// (UV, 26 Oct). The moons' trails are long enough to draw most of the
+		// ring as their hosts go round.
 		moons: {
-			weight: 1.1, dur: 4200,
+			weight: 1.1, dur: 5200,
+			start(G) {
+				// Each moon's orbit: its plane's normal tipped towards the viewer
+				// (so it turns clockwise) but well off it, so it passes in front of
+				// its host and behind.
+				G.orb = [0, 1].map(() => {
+					const a = Math.random() * 2 * PI, n = nrm([Math.cos(a), Math.sin(a), 0.15 + Math.random() * 0.5]), e1 = nrm(cross(n, [0, 0, 1]));
+					return { e1, e2: cross(n, e1), be: Math.random() * 2 * PI };
+				});
+			},
 			step(c, G) {
-				const p = c.p, i = c.i, env = sm(cl(p * 4)) * sm(cl((1 - p) * 4));
-				if (i < 2) return { aim: sph(G.th0 + i * PI + 2.4 * PI * p, 0.15 * Math.sin(2 * PI * p + i)), szm: 1 + 0.7 * env, glow: 0.3 * env, k: 0.45, damp: 0.55 };
-				const k = i - 2, plon = G.th0 + k * PI + 2.4 * PI * p, pph = 0.15 * Math.sin(2 * PI * p + k), be = 7 * PI * p + k * PI, r = 0.55 * env;
-				return { aim: sph(plon + r * Math.cos(be), pph + r * 0.85 * Math.sin(be)), szm: 1 - 0.4 * env, trail: env > 0.5, k: 0.45, damp: 0.55 };
+				const p = c.p, k = c.i % 2, env = sm(cl(p * 4)) * sm(cl((1 - p) * 4));
+				const host = sph(G.th0 + k * PI + 2.4 * PI * p, 0.15 * Math.sin(2 * PI * p + k));
+				if (c.i < 2) return { aim: host, szm: 1 + 0.7 * env, glow: 0.3 * env, k: 0.45, damp: 0.55 };
+				const O = G.orb[k], be = O.be + 8 * PI * p, r = 0.3 * env;
+				return {
+					aim: host.map((x, j) => x + r * (Math.cos(be) * O.e1[j] + Math.sin(be) * O.e2[j])), free: 1,
+					szm: 1 - 0.15 * env, trail: env > 0.3, tl: 2600, k: 0.6, damp: 0.45
+				};
 			}
 		},
 		steamroll: {
@@ -474,6 +720,7 @@ const TDCDots = (() => {
 				if (ax[2] < 0.15) ax = nrm([ax[0], ax[1], Math.abs(ax[2]) + 0.15]);
 				G.ball = { P: tetraFor(ring), axis: ax, speed: 2.5 + Math.random() * 6.5 };
 			},
+			frame: spin,
 			step: (c, G) => ({ aim: G.ball.P[c.i], k: 0.55, damp: 0.5 })
 		},
 		conga: {
@@ -544,11 +791,19 @@ const TDCDots = (() => {
 		polar: {
 			weight: 0.9, dur: 2200,
 			step: (c, G) => ({ aim: sph(G.th0 + c.i * PI / 2 + 5 * PI * sm(c.p), 1.3 * Math.sin(PI * sm(c.p))), trail: true, glow: 0.85 * Math.sin(PI * c.p) })
+		},
+		pool: {
+			weight: 1, dur: 13000, start: poolStart, frame: poolFrame, step: poolStep, draw: poolDraw
+		},
+		merge: {
+			weight: 1, dur: MERGE.end * 1000, start: mergeStart, step: mergeStep, draw: mergeDraw
 		}
 	};
 	// What a move changes when it says nothing: round, fully seen, no glow.
-	const RESTING = { sq: 0, glow: 0, trail: 0, k: 0.34, damp: 0.6, vm: 1, szm: 1, blur: 0, sx: 1, sy: 1, srot: 0, h: 0, hw: 0, free: 0 };
-	const MIXED = ['sq', 'glow', 'trail', 'k', 'damp', 'vm', 'szm', 'blur', 'sx', 'sy', 'hw', 'free'];
+	// tl: how long its trail is (ms). snap: how far the dot is pinned to its
+	// aim (1: exactly there, which moves it at once when it is far away).
+	const RESTING = { sq: 0, glow: 0, trail: 0, tl: TRAIL_MS, snap: 0, k: 0.34, damp: 0.6, vm: 1, szm: 1, blur: 0, sx: 1, sy: 1, srot: 0, h: 0, hw: 0, free: 0 };
+	const MIXED = ['sq', 'glow', 'trail', 'tl', 'snap', 'k', 'damp', 'vm', 'szm', 'blur', 'sx', 'sy', 'hw', 'free'];
 	const round = (o) => Math.abs(o.sx - 1) < 1e-3 && Math.abs(o.sy - 1) < 1e-3;
 	// From one aim to another along the sphere, e of the way: the direction
 	// turns at an even rate and the distance from the centre (below 1 for a
@@ -968,14 +1223,15 @@ const TDCDots = (() => {
 	// step(now, dt, time) returns one pose per dot: where it is (x, y), its
 	// height above the page (h, on the sphere's scale), its size on the line
 	// (gs), its colour (c), glow, squash (sq, negative to squash), lit (on a
-	// line it is tracing: full brightness, no stretch) and whether it trails;
+	// line it is tracing: full brightness, no stretch), its trail's length (ms,
+	// 0 for none) and cut (it has just been moved at once: no trail across);
 	// and from a move, a squash of its own (sx, sy at srot; null is along its
 	// path), how visible it is (vm), its size (szm, times) and blur.
-	const pose = (x, y, h, gs, c) => ({ x, y, h, gs, c, glow: 0, sq: 0, lit: 0, trail: false, sx: 1, sy: 1, srot: 0, vm: 1, szm: 1, blur: 0 });
+	const pose = (x, y, h, gs, c) => ({ x, y, h, gs, c, glow: 0, sq: 0, lit: 0, trail: 0, cut: false, sx: 1, sy: 1, srot: 0, vm: 1, szm: 1, blur: 0 });
 	const mixPose = (a, b, e) => ({
 		x: mix(a.x, b.x, e), y: mix(a.y, b.y, e), h: mix(a.h, b.h, e), gs: mix(a.gs, b.gs, e),
 		c: mixC(a.c, b.c, e), glow: mix(a.glow, b.glow, e), sq: mix(a.sq, b.sq, e), lit: mix(a.lit, b.lit, e),
-		trail: e < 0.5 ? a.trail : b.trail,
+		trail: e < 0.5 ? a.trail : b.trail, cut: a.cut || b.cut,
 		sx: mix(a.sx, b.sx, e), sy: mix(a.sy, b.sy, e), srot: round(a) ? b.srot : round(b) ? a.srot : (e < 0.5 ? a.srot : b.srot),
 		vm: mix(a.vm, b.vm, e), szm: mix(a.szm, b.szm, e), blur: mix(a.blur, b.blur, e)
 	});
@@ -1092,7 +1348,17 @@ const TDCDots = (() => {
 					v.rth += mix(v.w, v.w * 3 * (19 / Math.max(19, t.r)), eR) * dt * 0.0167;
 					o = mixMove(o, Object.assign({}, RESTING, { aim: sph(v.rth, 0.22 * Math.sin(time * 4.2 + i * 1.7)), glow: 0.25, k: 0.5, damp: 0.5 }), eR);
 				}
-				springTo(v, o.free > 0 ? o.aim : nrm(o.aim), dt, o.k, o.damp, o.free);
+				const aim = o.free > 0 ? o.aim : nrm(o.aim);
+				springTo(v, aim, dt, o.k, o.damp, o.free);
+				// Pinned (a pool ball following its physics, a merge pair
+				// appearing): put on its aim. Moved far at once, its trail is cut.
+				let cut = false;
+				if (o.snap > 0) {
+					const s = o.snap > 0.999 ? 1 : 1 - Math.pow(1 - o.snap, dt);   // the same at any frame rate
+					cut = s === 1 && Math.hypot(v.V[0] - aim[0], v.V[1] - aim[1], v.V[2] - aim[2]) > 0.2;
+					v.V = v.V.map((x, j) => mix(x, aim[j], s));
+					v.Vv = v.Vv.map((x) => x * (1 - s));
+				}
 				v.T = nrm(o.aim);
 				v.vmS += (o.vm - v.vmS) * Math.min(1, 0.3 * dt);
 				v.szS += (o.szm - v.szS) * Math.min(1, 0.2 * dt);
@@ -1106,7 +1372,7 @@ const TDCDots = (() => {
 				let k = 1;
 				if (this.mode === 'race') k = mix(1, 1 / (Math.hypot(v.V[0], v.V[1]) || 1), eR);
 				const q = pose(f.cx + f.r * v.V[0] * k, f.cy + f.r * v.V[1] * k, mix(v.V[2], o.h, o.hw), f.gs, f.c);
-				Object.assign(q, { glow: o.glow, sq: o.sq, trail: o.trail > 0.5, sx: o.sx, sy: o.sy, srot: o.srot, vm: v.vmS, szm: v.szS, blur: v.blS });
+				Object.assign(q, { glow: o.glow, sq: o.sq, trail: o.trail > 0.5 ? o.tl : 0, cut, sx: o.sx, sy: o.sy, srot: o.srot, vm: v.vmS, szm: v.szS, blur: v.blS });
 				return q;
 			});
 			if (p && arrived) this.trip = null;
@@ -1171,11 +1437,8 @@ const TDCDots = (() => {
 			if (this.fv !== forcedV) this.applyForce(now);
 			const G = this.G;
 			if (G) {
-				if (G.ball) {
-					const a = G.ball.speed * sm(cl((now - G.t0) / 300)) * dt * 0.0167;
-					if (a > 0) G.ball.P = G.ball.P.map((P) => rotV(P, G.ball.axis, a));
-				}
-				if (!G.out && now - G.t0 > G.dur) this.groupOut(now);
+				if (GROUP[G.name].frame) GROUP[G.name].frame(G, this, now, dt);
+				if (!G.out && (now - G.t0 > G.dur || G.ended)) this.groupOut(now);
 				else if (G.out && now - G.out > T.blend) this.endGroup(now);
 			} else if (this.mode === 'orbit' && !this.hushed && now > this.nextGroup) this.startGroup(now);
 		}
@@ -1183,7 +1446,7 @@ const TDCDots = (() => {
 			const name = GROUP[forced] ? forced : pick(GROUP), v0 = this.v[0].V;
 			this.G = {
 				name, t0: now, dur: GROUP[name].dur, out: 0, th0: Math.atan2(v0[1], v0[0]),
-				d: this.v.map((v) => ({ passT: null, bhL: Math.atan2(v.V[1], v.V[0]), tw: { w: 1.6 + Math.random() * 2.6, ph: Math.random() * 6.3 } }))
+				d: this.v.map((v) => ({ V0: v.V.slice(), passT: null, bhL: Math.atan2(v.V[1], v.V[0]), tw: { w: 1.6 + Math.random() * 2.6, ph: Math.random() * 6.3 } }))
 			};
 			if (GROUP[name].start) GROUP[name].start(this.G, this);
 		}
@@ -1461,14 +1724,16 @@ const TDCDots = (() => {
 
 		const P = S.step(now, dt, time);
 		if (S instanceof Blend && S.done) S = S.to;
-		D.forEach((d, i) => draw(d, P[i], dt));
+		D.forEach((d, i) => draw(d, P[i], dt, now));
 		requestAnimationFrame(loop);
 	}
 
 	// One dot onto the screen at its pose: size and brightness from height,
 	// stretched along its path when fast, squashed when told, and its trail
 	// on the canvas.
-	function draw(d, p, dt) {
+	function draw(d, p, dt, now) {
+		// Moved at once (it was unseen): no speed, no trail across the gap.
+		if (p.cut) { d.hist.length = 0; d.prx = d.pry = null; d.sp = 0; }
 		d.x = p.x; d.y = p.y; d.h = p.h; d.gs = p.gs; d.c = p.c;
 		const cR = p.c.map(Math.round), colS = `rgb(${cR.join(',')})`;
 		d.glow += (p.glow - d.glow) * Math.min(1, 0.18 * dt);
@@ -1483,16 +1748,23 @@ const TDCDots = (() => {
 		const op = 0.35 + 0.65 * cl((d.h + 1) / 2) + 0.4 * p.lit;
 		const oa = alpha * p.vm * Math.min(1, op + d.glow * 0.3);
 
-		if (p.trail) d.hist.push({ x: d.x, y: d.y, s: size });
-		const keep = p.trail ? 16 : 0;
-		if (d.hist.length > keep) d.hist.splice(0, p.trail ? d.hist.length - keep : Math.max(1, Math.ceil(d.hist.length / 6)));
-		if (d.hist.length > 1) {
-			ctx.lineCap = 'round'; ctx.strokeStyle = colS; ctx.shadowColor = colS; ctx.shadowBlur = 8 * d.glow;
-			for (let h = 1; h < d.hist.length; h++) {
-				const fr = h / d.hist.length, a0 = d.hist[h - 1], a1 = d.hist[h];
+		// The trail: the dot's last d.tl ms, a point every TRAIL_EVERY ms. It
+		// lengthens at once when a move asks for more and draws in behind the
+		// dot (twice as fast) when it asks for less, so it never snaps off.
+		const H = d.hist;
+		d.tl = p.trail >= (d.tl || 0) ? p.trail : Math.max(p.trail, d.tl - dt * 16.67 * 2);
+		if (d.tl > 0 && (!H.length || now - H[H.length - 1].t >= TRAIL_EVERY)) H.push({ x: d.x, y: d.y, s: size, t: now });
+		while (H.length && now - H[0].t > d.tl) H.shift();
+		if (H.length > 1) {
+			// In runs of three points, each one stroke at its newest's fade.
+			ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = colS; ctx.shadowColor = colS; ctx.shadowBlur = 8 * d.glow;
+			for (let h = 1; h < H.length; h += 3) {
+				const end = Math.min(H.length - 1, h + 2), fr = cl(1 - (now - H[end].t) / Math.max(1, d.tl));
 				ctx.globalAlpha = oa * fr * 0.55;
-				ctx.lineWidth = Math.max(0.4, a1.s * fr * 0.9);
-				ctx.beginPath(); ctx.moveTo(a0.x, a0.y); ctx.lineTo(a1.x, a1.y); ctx.stroke();
+				ctx.lineWidth = Math.max(0.4, H[end].s * fr * 0.9);
+				ctx.beginPath(); ctx.moveTo(H[h - 1].x, H[h - 1].y);
+				for (let k = h; k <= end; k++) ctx.lineTo(H[k].x, H[k].y);
+				ctx.stroke();
 			}
 			ctx.globalAlpha = 1; ctx.shadowBlur = 0;
 		}
@@ -1526,7 +1798,7 @@ const TDCDots = (() => {
 			const r = S && motionOf(S), waiting = r && (phase === 'orbit' || phase === 'travel');
 			return {
 				phase, busy: records.size, forced,
-				group: waiting && r.G ? r.G.name : null,
+				group: waiting && r.G ? r.G.name : null, groupAt: waiting && r.G ? r.G.t0 : null,
 				moves: waiting && !r.G ? r.v.map((v) => v.m.name) : []
 			};
 		}
