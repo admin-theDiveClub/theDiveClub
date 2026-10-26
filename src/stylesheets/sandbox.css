@@ -431,7 +431,44 @@
 .dots-tone-owner { --ring-accent: var(--color-owner); }
 .dots-tone-cream { --ring-accent: var(--text-primary); }
 .dots-label { transition: opacity var(--dots-reveal) ease; }
-[data-dots="busy"] .dots-label { opacity: var(--dots-busy-dim); transition: opacity var(--dots-dim) ease; }
+[data-dots="busy"] .dots-label,
+[data-dots="tracing"] .dots-label { opacity: var(--dots-busy-dim); transition: opacity var(--dots-dim) ease; }
+/* The tab bar is the league pages' bar, its items buttons here. */
+.tdc-card button.league-nav-item {
+	width: auto;
+	margin: 0;
+	padding: var(--space-2) var(--space-3);
+	border: none;
+	background: transparent;
+	color: var(--text-primary);
+	font-size: var(--select-text);
+	font-weight: 600;
+	letter-spacing: 0;
+	text-transform: none;
+}
+.tdc-card button.league-nav-item[aria-current="page"] { background: var(--color-primary); color: var(--color-on-primary); }
+/* The switch is the site's, a button here with no checkbox in it. */
+.tdc-card button.dots-switch {
+	width: var(--switch-width);
+	height: var(--switch-height);
+	margin: 0;
+	padding: 0;
+	border: none;
+	border-radius: var(--radius-pill);
+	background: transparent;
+}
+.dots-move-row {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+}
+.dots-move-row select { flex: 1 1 auto; min-width: 0; }
+.dots-check {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	white-space: nowrap;
+}
 .tdc-card button.dots-icon {
 	width: 2.1rem;
 	height: 2.1rem;

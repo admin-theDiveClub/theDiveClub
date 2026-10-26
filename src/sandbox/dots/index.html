@@ -14,16 +14,25 @@ extraScripts:
 	components that pretend to call the network, so the motion can be studied
 	at any speed. Nothing here touches the database.
 
-	Step 1 of the spec's build order: travel, cruise, the ring race and the
-	fade. The rest of §13's controls come with step 3.
+	Steps 1 to 3 of the spec's build order: travel, cruise, tracing, the ring
+	race, the fade, and the controls. The move picker lists cruise alone until
+	step 4; Simulate page load comes with step 5's queue.
 {% endcomment %}
 
 <div class="tdc-card sandbox dots-sandbox">
 	<h1>Dots</h1>
-	<p class="muted">Tap anything below. It pretends to call the network for the delay set at the bottom, and the dots serve it until the call is back. Not linked from the nav.</p>
+	<p class="muted">Tap anything below. It pretends to call the network for the delay set under Controls, and the dots serve it until the call is back, then trace its result. Not linked from the nav.</p>
 
 	<section class="sb-section">
 		<h2>Stage</h2>
+
+		<nav class="league-nav dots-tabs" aria-label="Tabs">
+			<div class="league-nav-track">
+				<button type="button" class="league-nav-item" aria-current="page">Season</button>
+				<button type="button" class="league-nav-item">Fixtures</button>
+				<button type="button" class="league-nav-item">Run it</button>
+			</div>
+		</nav>
 
 		<div class="dots-tiles">
 			<button type="button" class="dots-tile" data-icon="tick" aria-label="Accept"><span class="dots-face"></span><span class="dots-label">Accept</span></button>
@@ -38,8 +47,15 @@ extraScripts:
 		</div>
 
 		<div class="list-row">
-			<div class="list-row-main">Team 0 v Team 3<span class="sub">Wed 19:30 · Tables 1 · 2</span></div>
+			<div class="list-row-main">Team 0 : Team 3<span class="sub">Wed 19:30 · Tables 1 · 2</span></div>
 			<div class="list-row-actions"><button type="button" class="dots-icon" data-icon="calendar" aria-label="Move"><span class="dots-face"></span></button></div>
+		</div>
+
+		<div class="list-row">
+			<div class="list-row-main">Match reminders<span class="sub">An hour before each match</span></div>
+			<div class="list-row-actions">
+				<button type="button" class="tdc-switch dots-switch" id="dots-switch" role="switch" aria-checked="false" aria-label="Match reminders"><span class="tdc-switch-track"></span><span class="tdc-switch-knob"><span class="tdc-ring"></span></span></button>
+			</div>
 		</div>
 
 		<button type="button" class="btn btn-primary dots-target">Book table 4</button>
@@ -48,9 +64,19 @@ extraScripts:
 
 	<section class="sb-section">
 		<h2>Controls</h2>
+		<p class="muted">Each slider sets its token on this page only, until a reload. To keep a value, set it on <a href="/sandbox/">the main sandbox</a> (Dots) and save it into variables.css.</p>
 		<div class="field">
 			<label for="dots-delay">Network delay: <output id="dots-delay-out">3.0s</output></label>
 			<input type="range" id="dots-delay" min="0.3" max="15" step="0.1" value="3" data-control="none">
+		</div>
+		<div class="dots-sliders" id="dots-sliders"></div>
+		<div class="field">
+			<label for="dots-move">Waiting move</label>
+			<div class="dots-move-row">
+				<select id="dots-move" data-control="none"></select>
+				<label class="dots-check"><input type="checkbox" id="dots-random" checked data-control="none"> Random</label>
+			</div>
+			<p class="muted">Cruise is the only move until step 4 brings the other 31.</p>
 		</div>
 		<p class="dots-stat" id="dots-stat" role="status"></p>
 	</section>

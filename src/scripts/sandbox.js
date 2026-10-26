@@ -94,6 +94,16 @@
 			{ name: '--ring-draw',        label: 'Draw',           kind: 'size', unit: 's',   min: 0.2,  max: 2,   step: 0.1,  use: 'How long an icon takes to draw, stroke by stroke: the ring\'s tick and cross, and the chevrons, calendar and cross of the other controls' },
 			{ name: '--ring-fade',        label: 'Fade',           kind: 'size', unit: 's',   min: 0.1,  max: 1.5, step: 0.1,  use: 'How long the dots take to fade once the icon is drawn' }
 		]],
+		['Dots', [
+			{ name: '--dots-ring-margin', label: 'Ring margin',    kind: 'size', unit: 'px', min: 0,    max: 24,   step: 1,     use: 'A fake ring\'s gap beyond an element\'s shorter side (anything without a ring of its own: buttons, numbers, tabs). Watch it on /sandbox/dots/' },
+			{ name: '--dots-fake-stroke', label: 'Fake ring line', kind: 'size', unit: 'px', min: 0.5,  max: 4,    step: 0.25,  use: 'How big the dots are on a fake ring round an element with no border' },
+			{ name: '--dots-draw',        label: 'Draw speed',     kind: 'size', unit: '',   min: 0.25, max: 3,    step: 0.05,  use: 'How fast the dots trace a result (an icon, a number, a tab), times the prototype\'s' },
+			{ name: '--dots-fade',        label: 'Fade speed',     kind: 'size', unit: '',   min: 0.25, max: 3,    step: 0.05,  use: 'How fast the ring race ends and the dots fade, times the prototype\'s' },
+			{ name: '--dots-blend',       label: 'Hand-over',      kind: 'size', unit: 's',  min: 0.1,  max: 1.5,  step: 0.05,  use: 'How long the dots take to slide from one animation into the next: waiting into tracing, tracing into the ring race' },
+			{ name: '--dots-busy-dim',    label: 'Busy dim',       kind: 'size', unit: '',   min: 0,    max: 0.6,  step: 0.05,  use: 'How faint a target is while it waits for its call' },
+			{ name: '--dots-dim',         label: 'Dim time',       kind: 'size', unit: 's',  min: 0,    max: 1,    step: 0.05,  use: 'How long a target takes to go faint when it is tapped' },
+			{ name: '--dots-reveal',      label: 'Reveal time',    kind: 'size', unit: 's',  min: 0,    max: 1,    step: 0.05,  use: 'How long a target takes to come back once the dots have traced it (spec: about 0.25 s)' }
+		]],
 		['States', [
 			{ name: '--color-success',    label: 'Success',        kind: 'colour', use: 'Success messages, Paid badge, staff tile glow' },
 			{ name: '--color-warning',    label: 'Warning',        kind: 'colour', use: 'Warning badge, offline indicator' },

@@ -2,7 +2,8 @@
    like while the dots serve it. Every size and time is a token in
    variables.css (--dots-*), set from /sandbox/dots/.
 
-   A target is marked data-dots="busy" while its call is out, and
+   A target is marked data-dots="busy" while its call is out, "tracing"
+   while the dots trace its result (data-dots-trace says what kind), and
    "revealing" for as long as it takes to come back in. */
 
 /* ── The layer ───────────────────────────────────────────────────────
@@ -20,6 +21,18 @@
 	inset: 0;
 	width: 100%;
 	height: 100%;
+}
+/* The lines a number's or a tab's dots trace, drawn here by the script and
+   faded in as a whole, then crossfaded into the real thing. */
+.tdc-dots-lines {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+	fill: none;
+	stroke-linecap: round;
+	stroke-linejoin: round;
 }
 .tdc-dot {
 	position: absolute;
@@ -49,4 +62,25 @@
 }
 [data-dots="revealing"]:not(:has(.tdc-ring)) {
 	transition: opacity var(--dots-reveal) ease, border-color var(--dots-reveal) ease;
+}
+
+/* ── Tracing ─────────────────────────────────────────────────────────
+   The call is back and its result is on the page while the dots trace it.
+   A ring icon's marks and a number (in its own font: nothing else is drawn,
+   UV 26 Oct) fade in as a whole (--dots-lines, 0 to 1, set by the script),
+   and the icon's ring stays hidden until the reveal. A tab stays faint and
+   unfilled while its pill is traced, then fills. */
+[data-dots="tracing"] .tdc-ring .ring { opacity: 0; }
+[data-dots="tracing"] .tdc-ring .mark { opacity: var(--dots-lines, 0); transition: none; }
+[data-dots="tracing"][data-dots-trace="number"] {
+	opacity: var(--dots-lines, 0);
+	transition: none;
+}
+[data-dots="tracing"][data-dots-trace="tab"] {
+	opacity: var(--dots-busy-dim);
+	background: transparent !important;
+	color: var(--text-primary) !important;
+}
+[data-dots="revealing"][data-dots-trace="tab"] {
+	transition: opacity var(--dots-reveal) ease, background-color var(--dots-reveal) ease, color var(--dots-reveal) ease;
 }
