@@ -13,7 +13,8 @@
 //   tdc_match_card     — every frame with its two players, its session and
 //                        the two positions it seats
 //   tdc_card_state     — the two signatures and whether each still matches
-//   tdc_card_changes_since_signing — what moved since you signed
+//   tbl_match_events   — the first signature on the card, and from it
+//   tdc_frame_history  — every change since, by anybody (UV, 28 Oct)
 // Read once, for the banner and the signatures: the league season's info, its
 // reserves, the fixture's round and tables, and the two rosters (names,
 // captains and pictures).
@@ -30,9 +31,10 @@
 // The layout is UV's (24 Oct): a banner with both teams and the card's state;
 // each session as rows of home player, an L and a W three-way switch (who won
 // the lag, who won the frame: home, nobody, away), away player, with the
-// session's totals; a tap on a player's name opens the reserve picker; a table of
-// every player's frames by session; the result in a banner; the signatures as
-// a form waiting to be signed.
+// session's totals; a tap on a player's name opens the reserve picker; every
+// player's frames, head to head (a table per team, UV 28 Oct) or by session;
+// the result in a banner; the signatures as a form waiting to be signed. On a
+// PC the sessions sit two to a row.
 //
 // Writes: tdc_set_match_squad, tdc_set_lineup_slot, tdc_lock_lineup,
 // tdc_swap_frame_player, tdc_record_frame, tdc_submit_card, tdc_answer_card.
@@ -54,7 +56,8 @@
 		lockBtn: el('lock-btn'),
 		otherSide: el('other-side'), otherHead: el('other-head'), otherDetail: el('other-detail'),
 		grid: el('grid'), sessions: el('session-list'), gridHint: el('grid-hint'),
-		playerTable: el('player-table'), playerNote: el('player-note'),
+		playerTable: el('player-table'),
+		playerViews: el('player-views'), h2hView: el('h2h-view'), h2hTables: el('h2h-tables'), sessionView: el('session-view'),
 		summary: el('summary'), sumDetail: el('sum-detail'),
 		sumHomePic: el('sum-home-pic'), sumHomeName: el('sum-home-name'), sumHomeScore: el('sum-home-score'),
 		sumAwayPic: el('sum-away-pic'), sumAwayName: el('sum-away-name'), sumAwayScore: el('sum-away-score'),
@@ -87,8 +90,16 @@
 	let pictures = new Map();  // player id -> avatar path, from the two rosters
 	let card = [];
 	let cardState = null;
-	let changes = [];
+	let changes = [];          // every change since the first signature
+	let edited = new Map();    // frame no -> { lag, win }: which switch changed since then
 	let working = null;        // the side being set up: mine, or the director's choice
+
+	// How every player's frames are shown: 'h2h' (the default, UV 28 Oct) or
+	// 'session'. Remembered on this device only; without storage it is the
+	// default each visit.
+	const VIEW_KEY = 'tdc.card.playerView';
+	let playerView = 'h2h';
+	try { if (localStorage.getItem(VIEW_KEY) === 'session') playerView = 'session'; } catch { /* the default */ }
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -261,13 +272,31 @@
 			if (lockedNow[working] && !lockedNow[other]) working = other;
 		}
 
+		// Every change made after either captain first signed (UV, 28 Oct),
+		// for everybody to see: listed under the signatures and marked on the
+		// frames in blue. A signature is an append-only event, so the first
+		// one is still there after a side signs again. An edit is stamped with
+		// the version it changed, hence one below the signed version.
 		changes = [];
-		if (working) {
-			const { data, error } = await supabaseClient.rpc('tdc_card_changes_since_signing', {
-				p_match_id: matchId, p_side: working
+		edited = new Map();
+		const first = await supabaseClient.from('tbl_match_events')
+			.select('card_version')
+			.eq('match_id', matchId).eq('kind', 'submitted')
+			.order('card_version', { ascending: true }).limit(1);
+		if (first.error) { TDC.showSupabaseError(AREA, first.error, els.status); return false; }
+		const signed = (first.data || [])[0];
+		if (signed) {
+			const { data, error } = await supabaseClient.rpc('tdc_frame_history', {
+				p_match_id: matchId, p_since_version: signed.card_version - 1
 			});
 			if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
-			changes = data || [];
+			changes = (data || []).filter((c) => c.changed);
+			for (const c of changes) {
+				const e = edited.get(c.frame_no) || { lag: false, win: false };
+				if (/\bbreak_side /.test(c.changed)) e.lag = true;
+				if (/\b(winner_side|result_event|status) /.test(c.changed)) e.win = true;
+				edited.set(c.frame_no, e);
+			}
 		}
 
 		render();
@@ -621,6 +650,12 @@
 			['lag', 'L', f.break_side, 'won the lag'],
 			['win', 'W', f.winner_side, 'won the frame']]) {
 			const line = node('span', 'cs-tog cs-tog-' + action);
+			// Changed since a captain signed: the knob's ring turns blue, its
+			// icon keeps its colour (UV, 28 Oct).
+			if ((edited.get(f.frame_no) || {})[action]) {
+				line.classList.add('is-edited');
+				line.title = 'Changed after the card was signed';
+			}
 			const pick = document.createElement('select');
 			pick.dataset.control = 'tri';
 			// The lag in the warning colour with a spotted cue ball (UV, 24 Oct),
@@ -700,27 +735,135 @@
 
 	// ─── Every player's frames ───
 	// One column per position on each side, headed by the player in it
-	// tonight, a row per session: 1 for a frame won, 0 for one lost, a dash
-	// for one not played yet. Totals at the foot. A frame played by a reserve
-	// is marked, since the column is the position's.
+	// tonight, a row per session, each cell the frame that position played in
+	// that session, marked as in the head-to-head tables. Wins counted at the
+	// foot.
+	//
+	// Both views are drawn on every render and the toggle only shows one, so
+	// switching needs no redraw.
 	function renderPlayers(both) {
 		if (!both || !card.length) return;
 		const positions = teamSize() || Math.max(0, ...card.map((f) => Math.max(posOf(f, 'home') || 0, posOf(f, 'away') || 0)));
-		const sessions = [...new Set(card.map((f) => f.session || 1))];
 		const range = Array.from({ length: positions }, (_, i) => i + 1);
-		let reserves = false;
+		renderBySession(positions, range);
+		renderHeadToHead(range);
+		showView();
+	}
 
-		const headCell = (side, pos) => {
-			const th = node('th', 'cp-player');
-			const slot = lineup.find((l) => l.side === side && l.lineup_slot === pos) || {};
-			if (slot.player_id) {
-				th.append(avatar(slot.player_id, slot.display_name), node('span', 'cp-name', slot.display_name));
-			} else {
-				th.append(node('span', 'cp-name', 'Empty'));
+	function showView() {
+		els.h2hView.hidden = playerView !== 'h2h';
+		els.sessionView.hidden = playerView !== 'session';
+		for (const b of els.playerViews.querySelectorAll('.cp-view')) {
+			b.setAttribute('aria-pressed', String(b.dataset.view === playerView));
+		}
+	}
+
+	// The player in a position tonight, as a column heading: picture, name
+	// and position, one above the other.
+	function positionHead(side, pos) {
+		const th = node('th', 'cp-player');
+		const slot = lineup.find((l) => l.side === side && l.lineup_slot === pos) || {};
+		if (slot.player_id) {
+			th.append(avatar(slot.player_id, slot.display_name), node('span', 'cp-name', slot.display_name));
+		} else {
+			th.append(node('span', 'cp-name', 'Empty'));
+		}
+		th.append(node('span', 'cp-pos', (side === 'home' ? 'H' : 'A') + pos));
+		return th;
+	}
+
+	// One frame, marked for one side (UV, 28 Oct): a green dot if they won it,
+	// a yellow ring if they won the lag (round the dot, or on its own when
+	// they won the lag and lost the frame), a dash while it is not played.
+	// Both tables use it.
+	function frameMark(f, side) {
+		const done = f.status === 'complete';
+		const win = done && f.winner_side === side;
+		const lag = f.break_side === side;
+		const mark = node('span', 'h2h-mark' + (win ? ' is-won' : '') + (lag ? ' is-lag' : '') + (done ? '' : ' is-open'));
+		const who = (side === 'home' ? f.home_player : f.away_player) || 'Empty seat';
+		const words = 'Frame ' + f.frame_no + ': ' + who + ' '
+			+ (win ? (f.result_event === 'default' ? 'won (walkover)' : 'won') : done ? 'lost' : 'not played yet')
+			+ (lag ? ', won the lag' : '');
+		mark.setAttribute('role', 'img');
+		mark.setAttribute('aria-label', words);
+		mark.title = words;
+		return mark;
+	}
+	const wonBy = (f, side) => f.status === 'complete' && f.winner_side === side;
+
+	// A table cell holding a frame changed since a captain signed gets the
+	// edited blue as its border (UV, 28 Oct).
+	function markEdited(td, frames) {
+		if (!frames.some((f) => edited.has(f.frame_no))) return;
+		td.classList.add('is-edited');
+		td.title = (td.title ? td.title + '. ' : '') + 'Changed after the card was signed';
+	}
+
+	// ─── Head to head (UV, 28 Oct) ───
+	// A table per team. Its players run down the side and are the table's
+	// reference: across the top are the other team's players, and each cell is
+	// the frame where those two meet, marked for the player down the side. A
+	// pairing that does not meet tonight is shaded. A custom rotation may have
+	// two meet twice: both frames are in the cell.
+	function renderHeadToHead(range) {
+		const at = when(match.scheduled_at) || 'No date';
+
+		const tables = ['home', 'away'].map((side) => {
+			const other = side === 'home' ? 'away' : 'home';
+			const block = node('section', 'h2h-team');
+			block.append(node('h3', 'h2h-title', teamName(side)));
+
+			const table = node('table', 'tdc-table card-players h2h-table');
+			const thead = node('thead');
+			const head = node('tr');
+			head.append(node('th', 'cp-label h2h-when', at));
+			for (const p of range) head.append(positionHead(other, p));
+			head.append(node('th', 'cp-sep h2h-won', 'Won'));
+			thead.append(head);
+
+			const tbody = node('tbody');
+			for (const r of range) {
+				const tr = node('tr');
+				const slot = lineup.find((l) => l.side === side && l.lineup_slot === r) || {};
+				const rowHead = node('th', 'h2h-row');
+				rowHead.scope = 'row';
+				rowHead.append(slot.player_id ? person(slot.player_id, slot.display_name, 'card-person-sm') : node('span', 'cs-empty', 'Empty'),
+					node('span', 'cp-pos', (side === 'home' ? 'H' : 'A') + r));
+				tr.append(rowHead);
+
+				let won = 0;
+				for (const c of range) {
+					const td = node('td', 'h2h-cell');
+					const frames = card.filter((f) => posOf(f, side) === r && posOf(f, other) === c);
+					if (!frames.length) {
+						td.classList.add('is-none');
+						td.title = 'They do not meet tonight';
+					}
+					for (const f of frames) {
+						if (wonBy(f, side)) won++;
+						td.append(frameMark(f, side));
+					}
+					markEdited(td, frames);
+					tr.append(td);
+				}
+				tr.append(node('td', 'cp-sep cp-score h2h-won', String(won)));
+				tbody.append(tr);
 			}
-			th.append(node('span', 'cp-pos', (side === 'home' ? 'H' : 'A') + pos));
-			return th;
-		};
+
+			table.append(thead, tbody);
+			const scroll = node('div', 'table-scroll');
+			scroll.append(table);
+			block.append(scroll);
+			return block;
+		});
+
+		els.h2hTables.replaceChildren(...tables);
+	}
+
+	// ─── By session ───
+	function renderBySession(positions, range) {
+		const sessions = [...new Set(card.map((f) => f.session || 1))];
 
 		const thead = node('thead');
 		const top = node('tr', 'cp-teams');
@@ -730,9 +873,9 @@
 		top.append(homeTh, node('th', 'cp-sep'), awayTh);
 		const names = node('tr');
 		names.append(node('th', 'cp-label', 'Sessions'));
-		for (const p of range) names.append(headCell('home', p));
+		for (const p of range) names.append(positionHead('home', p));
 		names.append(node('th', 'cp-sep', 'Score'));
-		for (const p of range) names.append(headCell('away', p));
+		for (const p of range) names.append(positionHead('away', p));
 		thead.append(top, names);
 
 		// The column between the teams is the score: the session's, and the
@@ -754,22 +897,13 @@
 				if (side === 'away') tr.append(scoreCell(card.filter((x) => (x.session || 1) === s)));
 				for (const p of range) {
 					const f = card.find((x) => (x.session || 1) === s && posOf(x, side) === p);
-					const td = node('td', 'num cp-cell');
-					if (!f || f.status !== 'complete') {
-						td.textContent = '–';
-						td.classList.add('is-open');
+					const td = node('td', 'cp-cell');
+					if (f) {
+						if (wonBy(f, side)) totals[side][p - 1]++;
+						td.append(frameMark(f, side));
+						markEdited(td, [f]);
 					} else {
-						const won = f.winner_side === side ? 1 : 0;
-						totals[side][p - 1] += won;
-						td.textContent = String(won);
-						if (won) td.classList.add('is-won');
-					}
-					const id = f && (side === 'home' ? f.home_player_id : f.away_player_id);
-					const regular = (lineup.find((l) => l.side === side && l.lineup_slot === p) || {}).player_id;
-					if (id && regular && id !== regular) {
-						td.append(node('sup', 'cp-reserve', '*'));
-						td.title = 'Played by ' + (side === 'home' ? f.home_player : f.away_player) + ', a reserve';
-						reserves = true;
+						td.classList.add('is-none');
 					}
 					tr.append(td);
 				}
@@ -787,8 +921,6 @@
 		tfoot.append(foot);
 
 		els.playerTable.replaceChildren(thead, tbody, tfoot);
-		els.playerNote.hidden = !reserves;
-		els.playerNote.textContent = '* A reserve played this frame for that position.';
 	}
 
 	// ─── The result ───
@@ -1008,6 +1140,19 @@
 			send('Clearing', { status: 'pending', winner_side: null, result_event: null });
 		} else {
 			send('Saving', { break_side: side });
+		}
+	});
+
+	// The view toggle. Nothing is saved to the database, so the dots stay
+	// the 0.2 s every control gets (docs/systems/dots.md §8).
+	els.playerViews.addEventListener('click', (e) => {
+		const b = e.target.closest('.cp-view');
+		if (!b || b.dataset.view === playerView) return;
+		playerView = b.dataset.view;
+		try { localStorage.setItem(VIEW_KEY, playerView); } catch { /* kept for this visit only */ }
+		showView();
+		if (typeof TDCDots !== 'undefined') {
+			TDCDots.serve(b, new Promise((r) => setTimeout(r, 200)), { status: els.status });
 		}
 	});
 

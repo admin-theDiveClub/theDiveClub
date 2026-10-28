@@ -186,11 +186,11 @@ Measured 26 Oct at 420px (headless Chrome, 7 ms frames), every move forced in tu
 
 | Token | Default | What |
 |---|---|---|
-| `--dots-ring-margin` | 6px | A fake ring's gap beyond the element's shorter side. 0 makes the ring exactly the button's height |
+| `--dots-ring-margin` | 16px (UV, 28 Oct; was 6px) | A fake ring's gap beyond the element's shorter side. 0 makes the ring exactly the button's height |
 | `--dots-fake-stroke` | 1.5px | The dots' size on a fake ring with no border |
-| `--dots-fade` | 1 | How fast the race ends and the dots fade, times the prototype's |
-| `--dots-draw` | 1 | How fast the dots trace, times the prototype's (the hand-overs stay `--dots-blend`) |
-| `--dots-blend` | 0.6s | The dots moving from one animation to the next: the race easing up from the cruise, waiting into tracing, tracing into the race, a trace into a trip |
+| `--dots-fade` | 0.5 (UV, 28 Oct; was 1) | How fast the race ends and the dots fade, times the prototype's |
+| `--dots-draw` | 2 (UV, 28 Oct; was 1) | How fast the dots trace, times the prototype's (the hand-overs stay `--dots-blend`) |
+| `--dots-blend` | 0.1s (UV, 28 Oct; was 0.6s: the hand-overs are now quick swings, measured 1.3–6.7 change of speed in the sandbox's traces against 0.4–2.1) | The dots moving from one animation to the next: the race easing up from the cruise, waiting into tracing, tracing into the race, a trace into a trip |
 | `--dots-busy-dim` | 0.1 | How faint a waiting target is |
 | `--dots-dim` | 0.2s | A target dimming as it goes busy |
 | `--dots-reveal` | 0.25s | A target coming back (spec: icon and ring in about 0.25 s) |
@@ -307,3 +307,12 @@ UV, after trying step 7: steppers, pills, the match page's score, break event an
 | The break event's cue ball | As tall as the green pill allows, at its left, with its ring |
 
 Measured at 420px: every switch and stepper on `/leagues/new/` and `/tournaments/new/` (forms that rebuild on each change) and the match settings panel's stepper served and finished with no error and nothing left marked; a button 0.52 opacity while waiting.
+
+**Nothing fades in before it is ready (UV, 28 Oct):** "only when an element is ready for interaction do we fade in"; until then the dots stand in for it.
+
+| | |
+|---|---|
+| A folding group opening (`fold()` in `tdc-controls.js`) | It grows with its contents hidden and the dots on the group itself (`fake: true`: a fake ring from its shorter side, so it widens as the group opens, even though the group holds ring icons; `data-dots-hold` so the group is not dimmed). It is ready once it has opened, 0.2 s have passed, and anything the opening set loading (a call `TDCNet` saw start within 60 ms) is back; the dots then show the contents as they arrive, and they fade in, icons drawing in. Shown anyway 2.5 s after it is ready if the dots never got there. A second tap mid-way closes it and nothing is left hidden |
+| Something loading with the page (`track()`) | **Hidden** (`data-dots-load`: opacity 0), not dimmed, until it is back; it fades in as the dots move on, or under their race when it is the last |
+
+The engine gained `opts.fake` and `data-dots-load`. Measured at 420px: a group on `/leagues/new/` stayed at 0 while it grew (48 → 462px) and the dots travelled to it, faded in as they arrived (about 1 s), worst change of speed 2.6; three quick taps left it closed and whole. The fixtures page: the heading hidden until its read was back (about 1.1 s), the planner until the fixtures were (about 3 s).

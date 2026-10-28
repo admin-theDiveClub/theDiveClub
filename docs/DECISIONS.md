@@ -882,3 +882,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Then (UV, same day):* every button too; a filled button or green pill keeps some colour while it waits (`--dots-busy-fill`); icons traced faster still (0.35 s); the dots on a digit thinner than its stroke; the break event's cue ball as tall as the pill, at its left, with its ring.
 *Rejected for now:* fewer dots for an icon with fewer strokes (UV's consideration).
 *Touches:* `scripts/tdc-controls.js`, `scripts/dots.js`, `stylesheets/dots.css`, `stylesheets/controls.css`, `scripts/match.js`, `docs/systems/dots.md` §8
+
+## 2026-10-28 — Nothing fades in until it is ready; the dots stand in for it
+
+*Decided by:* UV ("only when an element is ready for interaction do we fade in")
+*So:* a folding group opens with its contents hidden and the dots on the group (a ring from its shorter side); the contents fade in once it has opened and anything its opening set loading is back, as the dots reach it. Something loading with the page is hidden, not dimmed, until it is loaded.
+*Replaces:* contents fading in as a group grows (24 Oct), and page-load targets dimmed while they load (26 Oct, step 5).
+*Touches:* `scripts/tdc-controls.js` (`fold()`), `scripts/dots.js` (`fake`, `data-dots-load`), `stylesheets/dots.css`, `docs/ui.md`, `docs/systems/dots.md` §8

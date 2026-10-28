@@ -397,6 +397,19 @@ button.pc-mid:focus-visible { outline: 2px solid var(--color-primary); outline-o
 	margin: 0 auto;
 	padding: 1.25rem 1rem 3rem;
 }
+/* Sideways and on a PC the panels take the screen's width (UV, 28 Oct: the
+   stats, side by side in 640px, were squashed): the whole width on a phone
+   turned sideways, ten of twelve columns on a PC as every other page. The
+   slide to undo keeps its old width; a bar across a PC screen is no easier
+   to slide. */
+@media (orientation: landscape) {
+	.below { max-width: none; }
+	.undo-row { max-width: 640px; margin-inline: auto; }
+}
+@media (min-width: 992px) {
+	.below { max-width: none; width: calc(100% * 10 / 12); }
+	.undo-row { max-width: 640px; margin-inline: auto; }
+}
 /* Where the data came from, and what the page can't do with it yet. */
 .match-notice {
 	border: 1px solid var(--border-color);

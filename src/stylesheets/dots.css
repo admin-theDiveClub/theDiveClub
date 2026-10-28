@@ -66,6 +66,12 @@
 	transition: opacity var(--dots-reveal) ease, border-color var(--dots-reveal) ease;
 }
 
+/* Something loading with the page (track) is not shown at all until it is
+   loaded and ready to use (UV, 28 Oct): the dots stand in for it, and it
+   fades in when it is back. */
+[data-dots="busy"][data-dots-load] { opacity: 0 !important; transition: opacity var(--dots-dim) ease; }
+[data-dots="revealing"][data-dots-load] { transition: opacity var(--dots-reveal) ease; }
+
 /* A button, or a dropdown pill's green pill, keeps some of its colour
    while it waits and while the dots trace it (UV, 28 Oct: at --dots-busy-dim
    its words, the colour of the page behind, all but vanished), and the

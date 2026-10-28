@@ -1118,6 +1118,8 @@ const TDCControls = (() => {
 		input.value = max();
 
 		const box = node('span', 'tdc-slide');
+		// data-tone="error": the match page's undo, all in red (UV, 28 Oct).
+		if (input.dataset.tone) box.dataset.tone = input.dataset.tone;
 		const label = node('span', 'tdc-slide-label');
 		label.setAttribute('aria-hidden', 'true');
 		const knob = node('span', 'tdc-slide-knob');
@@ -1314,6 +1316,14 @@ const TDCControls = (() => {
 		});
 	}
 
+	// Opening, the contents are not shown until they are ready to use (UV,
+	// 28 Oct): the group grows with its contents hidden and the site's dots
+	// on it (a fake ring from its shorter side, so it widens as the group
+	// opens), and only once it has opened, DOTS_MIN has passed and anything
+	// the opening set loading (a page's toggle listener reading the
+	// database) is back do the contents fade in, their icons drawing in.
+	const READY_LOOK = 60;   // ms after opening to see whether it set a call going
+	const SHOW_ANYWAY = 2500;   // ms after it is ready: shown even if the dots never came
 	function fold(box) {
 		const ms = timeMs(box, '--control-reveal');
 		const opening = !box.open || box.classList.contains('is-closing');
@@ -1324,9 +1334,11 @@ const TDCControls = (() => {
 		const faded = inside.map((c) => box.open ? getComputedStyle(c).opacity : 0);
 		for (const a of box.tdcFold || []) a.cancel();
 		box.tdcFold = null;
+		const turn = box.tdcTurn = {};   // this fold; a later tap makes another
 		box.classList.toggle('is-closing', !opening);
 		if (!ms) { box.open = opening; box.classList.remove('is-closing'); return; }
 
+		const net = typeof TDCNet !== 'undefined' ? TDCNet.started : 0;
 		box.open = true;
 		const cs = getComputedStyle(box);
 		const shut = summary.getBoundingClientRect().bottom - box.getBoundingClientRect().top
@@ -1336,23 +1348,53 @@ const TDCControls = (() => {
 		const ease = { duration: ms, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' };
 		box.style.overflow = 'hidden';
 		const size = box.animate([{ height: from + 'px' }, { height: to + 'px' }], ease);
-		box.tdcFold = [size, ...inside.map((c, i) =>
-			c.animate([{ opacity: faded[i] }, { opacity: opening ? 1 : 0 }], Object.assign({ fill: 'forwards' }, ease)))];
+		// Opening, the contents go (or stay) out of sight while it grows;
+		// closing, they fade out as it shrinks.
+		const hide = inside.map((c, i) =>
+			c.animate([{ opacity: faded[i] }, { opacity: 0 }], Object.assign({ fill: 'forwards' }, ease, opening ? { duration: Math.min(ms, 120) } : {})));
+		box.tdcFold = [size, ...hide];
+
 		if (opening) {
-			for (const i of box.querySelectorAll('[data-icon-key]')) redraw(i);
-			for (const w of box.querySelectorAll('.tdc-switch, .tdc-check')) if (w.tdcCheck) w.tdcCheck.appear();
-			// The dots on its heading while it opens (UV, 28 Oct), at least
-			// DOTS_MIN; a second tap mid-way lets them go with it.
+			// Ready: open, DOTS_MIN gone, and whatever the opening set loading back.
+			const least = new Promise((r) => setTimeout(r, DOTS_MIN));
+			const loaded = new Promise((r) => setTimeout(r, READY_LOOK)).then(() =>
+				typeof TDCNet !== 'undefined' && TDCNet.started > net ? TDCNet.quiet() : null);
+			const ready = Promise.all([size.finished.catch(() => {}), least, loaded]);
+			let done = false;
+			const show = () => {
+				if (done || box.tdcTurn !== turn) return;   // shown already, or closed again meanwhile
+				done = true;
+				delete box.dataset.dotsHold;
+				for (const a of hide) a.cancel();
+				const shown = inside.map((c) => c.animate([{ opacity: 0 }, { opacity: 1 }], Object.assign({ fill: 'backwards' }, ease)));
+				box.tdcFold = shown;
+				Promise.all(shown.map((a) => a.finished)).then(() => { if (box.tdcTurn === turn) box.tdcFold = null; }, () => {});
+				for (const i of box.querySelectorAll('[data-icon-key]')) redraw(i);
+				for (const w of box.querySelectorAll('.tdc-switch, .tdc-check')) if (w.tdcCheck) w.tdcCheck.appear();
+			};
+			// The dots show the contents when they have reached the group and it
+			// is ready, as for any target. Without them, as soon as it is ready;
+			// and if they never get to it (a call that hung is shown "as it
+			// was", with no reveal), a moment later all the same.
 			if (dotsOn()) {
-				const least = new Promise((r) => setTimeout(r, DOTS_MIN));
-				TDCDots.serve(summary, Promise.all([size.finished.catch(() => {}), least]), { trace: 'none' });
+				box.dataset.dotsHold = '';   // the group itself is not dimmed; its contents are hidden
+				TDCDots.serve(box, ready, { trace: 'none', fake: true, reveal: show });
+				ready.then(() => setTimeout(show, SHOW_ANYWAY));
+			} else {
+				ready.then(show);
 			}
+		} else {
+			delete box.dataset.dotsHold;
 		}
 		size.finished.then(() => {
 			box.style.overflow = '';
-			for (const a of box.tdcFold || []) a.cancel();
-			box.tdcFold = null;
-			if (!opening) { box.classList.remove('is-closing'); box.open = false; }
+			size.cancel();
+			if (!opening) {
+				for (const a of hide) a.cancel();
+				box.tdcFold = null;
+				box.classList.remove('is-closing');
+				box.open = false;
+			}
 		}, () => {});   // cancelled: a later tap has taken over
 	}
 

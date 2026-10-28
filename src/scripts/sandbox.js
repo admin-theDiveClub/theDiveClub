@@ -120,7 +120,8 @@
 			{ name: '--color-success',    label: 'Success',        kind: 'colour', use: 'Success messages, Paid badge, staff tile glow' },
 			{ name: '--color-warning',    label: 'Warning',        kind: 'colour', use: 'Warning badge, offline indicator' },
 			{ name: '--color-error',      label: 'Error',          kind: 'colour', use: 'Error messages, danger button' },
-			{ name: '--color-owner',      label: 'Owner',          kind: 'colour', use: 'Owner tile glow' }
+			{ name: '--color-owner',      label: 'Owner',          kind: 'colour', use: 'Owner tile glow' },
+			{ name: '--color-edited',     label: 'Edited',         kind: 'colour', use: 'Changed after a captain signed: the ring of a team card switch' }
 		]],
 		['Depth', [
 			{ name: '--shadow-alpha',     label: 'Shadow strength', kind: 'alpha', use: 'How dark the shadow under floating panels is (black at this opacity)' },
@@ -331,6 +332,7 @@
 		['Warning on page',    '--color-warning',    '--bg-base'],
 		['Error on page',      '--color-error',      '--bg-base'],
 		['Owner on page',      '--color-owner',      '--bg-base'],
+		['Edited on page',     '--color-edited',     '--bg-base'],
 		['Control line on page', '--control-line',   '--bg-base']
 	];
 	function rating(r) {

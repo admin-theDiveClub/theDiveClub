@@ -32,7 +32,8 @@ extraScripts:
 	     under it. Tapping a player's name on an unplayed frame opens the
 	     reserve picker, and a reserve wears a badge. A seat left empty waits for a reserve or a
 	     latecomer until a captain signs, then is a walkover.
-	  4. Every player's frames, session by session, as a table.
+	  4. Every player's frames: head to head (a table per team), or session
+	     by session.
 	  5. The result: the two teams and their scores, in a banner again.
 	  6. The signatures, laid out as a form waiting to be signed.
 
@@ -111,11 +112,31 @@ extraScripts:
 		<div id="session-list"></div>
 		<p class="muted card-hint" id="grid-hint" hidden></p>
 
+		{% comment %}
+			Two views of the same frames (UV, 28 Oct), Head to head the
+			default: a table per team, its players down the side and the
+			other team's across the top, a green dot where the player down
+			the side won and a yellow ring where they won the lag. By session
+			is the earlier table. The choice is remembered on this device.
+		{% endcomment %}
 		<h2>Every player's frames</h2>
-		<div class="table-scroll">
+		<div class="cp-views" id="player-views" role="group" aria-label="How to show every player's frames">
+			<button type="button" class="cp-view" data-view="h2h" aria-pressed="true">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/><circle class="cp-view-dot" cx="12" cy="12" r="1.6"/><circle cx="18" cy="6" r="1.9"/></svg>
+				<span>Head to head</span>
+			</button>
+			<button type="button" class="cp-view" data-view="session" aria-pressed="false">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14.5h18M9 9v11"/></svg>
+				<span>By session</span>
+			</button>
+		</div>
+		<div id="h2h-view">
+			<div class="h2h-tables" id="h2h-tables"></div>
+		</div>
+		<div class="table-scroll" id="session-view" hidden>
 			<table class="tdc-table card-players" id="player-table"></table>
 		</div>
-		<p class="muted card-hint" id="player-note" hidden></p>
+		<p class="muted card-hint h2h-key"><span class="h2h-mark is-won" aria-hidden="true"></span> won the frame <span class="h2h-mark is-lag" aria-hidden="true"></span> won the lag <span class="h2h-mark is-open" aria-hidden="true"></span> not played yet</p>
 	</div>
 
 	<section class="jumbo card-jumbo card-summary" id="summary" hidden aria-label="The result">
@@ -165,7 +186,7 @@ extraScripts:
 		<p class="sf-note" id="sf-dispute"></p>
 
 		<div id="changed-since" hidden>
-			<p class="muted"><strong>The card changed after you signed:</strong></p>
+			<p class="muted"><strong>Changed since the card was first signed:</strong></p>
 			<div id="changed-list"></div>
 		</div>
 

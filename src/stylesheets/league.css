@@ -1066,6 +1066,15 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 	text-shadow: 0 0 8px color-mix(in srgb, var(--color-warning) 75%, transparent);
 }
 
+/* Changed after a captain signed (UV, 28 Oct): the knob's ring in the
+ * edited blue with a glow, its icon (tick or cue ball) its own colour. The
+ * glow is the round knob's shadow, so the icon inside is untouched. */
+.cs-tog.is-edited .tdc-ring .ring { stroke: var(--color-edited); }
+.cs-tog.is-edited .tdc-tri-knob {
+	border-radius: var(--radius-round);
+	box-shadow: 0 0 10px color-mix(in srgb, var(--color-edited) 75%, transparent);
+}
+
 /* The totals, either side of the middle, under each team's end. */
 .cs-total { border-bottom: none; }
 .cs-tots {
@@ -1078,7 +1087,124 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 .cs-tot-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
 .cs-tot-value { font-size: 1.35rem; font-weight: 700; color: var(--color-primary); font-variant-numeric: tabular-nums; }
 
+/* On a PC the sessions sit two to a row (UV, 28 Oct): 1 and 2, then 3 and
+ * 4. A phone keeps one under another. */
+@media (min-width: 992px) {
+	#session-list {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0 var(--space-4);
+		align-items: start;
+	}
+}
+
 .tdc-card .card-hint { margin: 0 0 var(--space-4); font-size: 0.85rem; text-align: center; }
+
+/* The two views of every player's frames, a pill like the league's pages
+ * with an icon in each option (UV, 28 Oct). */
+.cp-views {
+	display: flex;
+	gap: 2px;
+	width: fit-content;
+	max-width: 100%;
+	margin: 0 auto var(--space-4);
+	padding: var(--space-1);
+	border: var(--control-border) solid var(--control-line);
+	border-radius: var(--radius-pill);
+}
+.tdc-card button.cp-view {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	width: auto;
+	margin: 0;
+	padding: var(--space-2) var(--space-3);
+	border: none;
+	border-radius: var(--radius-pill);
+	background: transparent;
+	color: var(--text-primary);
+	font-size: var(--select-text);
+	font-weight: 600;
+	letter-spacing: 0;
+	text-transform: none;
+	white-space: nowrap;
+	transition: background-color 0.15s ease;
+}
+.tdc-card button.cp-view:hover,
+.tdc-card button.cp-view:focus-visible { background: var(--hover-wash); outline: none; }
+.tdc-card button.cp-view[aria-pressed="true"] { background: var(--color-primary); color: var(--color-on-primary); }
+.cp-view svg {
+	width: 1.15rem;
+	height: 1.15rem;
+	flex: none;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.8;
+	stroke-linejoin: round;
+}
+.cp-view svg circle { fill: currentColor; stroke: none; }
+
+/* Head to head: a table per team, side by side when both fit, one under
+ * the other when they do not. */
+.h2h-tables {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr));
+	gap: var(--space-5);
+	align-items: start;
+}
+.tdc-card .h2h-title { margin: 0 0 var(--space-2); font-size: 0.95rem; color: var(--color-primary); text-align: center; }
+.card-players th.h2h-when { vertical-align: bottom; font-size: 0.7rem; white-space: normal; min-width: 4.5rem; color: var(--text-muted); text-transform: none; letter-spacing: normal; text-align: left; }
+.card-players.h2h-table th.cp-player { min-width: 3rem; padding-left: var(--space-1); padding-right: var(--space-1); white-space: normal; }
+.h2h-table .cp-name { font-size: 0.72rem; }
+.card-players th.h2h-row { min-width: 6rem; text-align: left; white-space: normal; text-transform: none; letter-spacing: normal; font-weight: 600; }
+.h2h-row .card-person-name { font-size: 0.8rem; }
+.h2h-row .cp-pos { margin-left: calc(1.4rem + var(--space-2)); }
+.card-players td.h2h-cell { vertical-align: middle; white-space: nowrap; padding-left: var(--space-1); padding-right: var(--space-1); }
+.card-players td.h2h-cell.is-none,
+.card-players td.cp-cell.is-none { background: var(--hover-wash); }
+/* A frame changed since a captain signed: the edited blue round the cell. */
+.card-players td.is-edited { box-shadow: inset 0 0 0 2px var(--color-edited); }
+.card-players .h2h-won { font-weight: 700; }
+
+/* A frame's mark: a green dot for a win, a yellow ring for the lag, round
+ * the dot or on its own; a dash while it is not played. A frame lost
+ * without the lag is the empty space. */
+.h2h-mark {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	border: 2px solid transparent;
+	border-radius: 50%;
+	vertical-align: middle;
+}
+.h2h-mark.is-won::before {
+	content: '';
+	width: 0.75rem;
+	height: 0.75rem;
+	border-radius: 50%;
+	background: var(--color-success);
+	box-shadow: 0 0 8px color-mix(in srgb, var(--color-success) 70%, transparent);
+}
+.h2h-mark.is-lag {
+	border-color: var(--color-warning);
+	box-shadow: 0 0 6px color-mix(in srgb, var(--color-warning) 55%, transparent);
+}
+.h2h-mark.is-open::before { content: '–'; color: var(--text-muted); line-height: 1; }
+/* On a phone a five-man table fits without scrolling: the row's names lose
+ * their pictures (the column headings keep theirs) and the marks shrink. */
+@media (max-width: 30rem) {
+	.card-players th.h2h-row { min-width: 4.5rem; }
+	.h2h-row .person-pic { display: none; }
+	.h2h-row .cp-pos { margin-left: 0; }
+	.card-players.h2h-table th.cp-player { min-width: 2.6rem; }
+	.h2h-table .cp-name { font-size: 0.64rem; overflow-wrap: normal; }
+	.h2h-table .h2h-mark { width: 1.3rem; height: 1.3rem; }
+	.h2h-table .h2h-mark.is-won::before { width: 0.65rem; height: 0.65rem; }
+}
+.h2h-key .h2h-mark { width: 1.1rem; height: 1.1rem; margin-left: var(--space-2); }
+.h2h-key .h2h-mark.is-won::before { width: 0.55rem; height: 0.55rem; }
 
 /* Every player's frames: a column per position each side, a gap between
  * the two teams, a row per session. */
@@ -1108,7 +1234,6 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 .card-players .cp-cell.is-won { color: var(--color-primary); font-weight: 700; }
 .card-players .cp-cell.is-open { color: var(--text-muted); }
 .card-players tfoot td { border-top: 1px solid var(--color-primary); border-bottom: none; font-weight: 700; }
-.cp-reserve { color: var(--color-warning); margin-left: 1px; }
 
 /* The signatures: a form waiting to be signed. A third of the page on a PC
  * (4:4:4), the full width on a phone, everything centred. */

@@ -27,6 +27,8 @@
 //     leaves   true when the call itself may take the target off the page (a
 //              fixture removed): it is let go without a failure, and the
 //              dots finish where it was
+//     fake     true: a fake ring from the target's shorter side, even if it
+//              holds ring icons (a folding group full of switches)
 //     ink      for trace 'number': a selector, inside the target, for the
 //              part holding the digits (a stepper's field, a score inside its
 //              button); only that part fades in under the dots
@@ -1069,7 +1071,7 @@ const TDCDots = (() => {
 		return rgbOf(cs.color);
 	}
 	function makeRecord(el, opts) {
-		const t = { el, opts, at: performance.now(), pending: 0, settled: false, revealed: false, lines: null, circle: ringCircle(el) };
+		const t = { el, opts, at: performance.now(), pending: 0, settled: false, revealed: false, lines: null, circle: opts.fake ? null : ringCircle(el) };
 		t.kind = opts.trace || (t.circle ? 'icon' : 'none');
 		t.colour = lineColour(t);
 		if (!t.circle) t.sw = parseFloat(getComputedStyle(el).borderTopWidth) || T.fakeStroke;
@@ -1124,6 +1126,7 @@ const TDCDots = (() => {
 		delete el.dataset.dotsCalm;
 		delete el.dataset.dotsRing;
 		delete el.dataset.dotsInk;
+		delete el.dataset.dotsLoad;
 		for (const i of el.querySelectorAll('[data-dots-inked]')) delete i.dataset.dotsInked;
 		el.style.removeProperty('--dots-lines');
 	}
@@ -1210,7 +1213,7 @@ const TDCDots = (() => {
 		clearLook(old);
 		t.el = n;
 		records.set(n, t);
-		t.circle = ringCircle(n);
+		t.circle = t.opts.fake ? null : ringCircle(n);
 		if (!t.opts.trace && !t.lines) t.kind = t.circle ? 'icon' : 'none';
 		if (!t.circle) t.sw = parseFloat(getComputedStyle(n).borderTopWidth) || T.fakeStroke;
 		ringMark(t);
@@ -1951,6 +1954,7 @@ const TDCDots = (() => {
 		} else if (!load && t.load) {
 			// Tapped while it is loading: it is a tap now, and takes the dots.
 			t.load = false;
+			delete t.el.dataset.dotsLoad;
 			busyTap(t);
 		}
 		// Each call settles once: answered, failed, or hung after its limit
@@ -2021,7 +2025,7 @@ const TDCDots = (() => {
 		sweep();
 		const now = performance.now();
 		for (const t of records.values()) {
-			if (t.load && !t.settled && late(t, now)) t.el.dataset.dots = 'busy';
+			if (t.load && !t.settled && late(t, now)) { t.el.dataset.dots = 'busy'; t.el.dataset.dotsLoad = ''; }
 		}
 		if (phase === 'hidden') {
 			const next = nextPending(now, true);
@@ -2042,6 +2046,7 @@ const TDCDots = (() => {
 		// dot turning mid-trip stood still for one frame (19.6px, measured).
 		const now = running && S ? stepAt : performance.now();
 		t.el.dataset.dots = 'busy';   // something loading may not have dimmed yet
+		if (t.load) t.el.dataset.dotsLoad = '';
 		// Left mid-trace: that target comes back as it is, without the dots.
 		if (cur && cur !== t && cur.settled && records.get(cur.el) === cur) restore(cur);
 		let from, left = null;

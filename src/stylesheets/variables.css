@@ -33,6 +33,9 @@
   /* Owner-only tools (staff hub glow) */
   --color-owner: #ff00ae;
 
+  /* Changed after signing: the team card's edited frames (UV, 28 Oct) */
+  --color-edited: #5fa5dd;
+
   /* ── Depth ───────────────────────────────────────────────────────
      Shadows and the dim behind a panel are black at low alpha, as in the
      artwork. Only the two strengths are set; everything else is built from
@@ -94,11 +97,11 @@
   --tri-width: 6rem;
   --ring-draw: 0.4s;              /* drawing an icon, stroke by stroke */
   /* The dots (dots.css, scripts/dots.js): the loading and feedback motion */
-  --dots-ring-margin: 6px;        /* a fake ring's gap beyond an element's shorter side */
+  --dots-ring-margin: 16px;       /* a fake ring's gap beyond an element's shorter side */
   --dots-fake-stroke: 1.5px;      /* the dots' size on a fake ring round an element with no border */
-  --dots-fade: 1;                 /* how fast the ring race ends and the dots fade, times the prototype's */
-  --dots-draw: 1;                 /* how fast the dots trace, times the prototype's */
-  --dots-blend: 0.6s;             /* the dots sliding from one animation to the next (waiting into tracing, tracing into the race) */
+  --dots-fade: 0.5;               /* how fast the ring race ends and the dots fade, times the prototype's */
+  --dots-draw: 2;                 /* how fast the dots trace, times the prototype's */
+  --dots-blend: 0.1s;             /* the dots sliding from one animation to the next (waiting into tracing, tracing into the race) */
   --dots-busy-dim: 0.1;           /* how faint a target is while it waits */
   --dots-busy-fill: 0.45;         /* how faint a filled button or green pill is while it waits and is traced */
   --dots-dim: 0.2s;               /* a target dimming as it goes busy */
@@ -163,6 +166,8 @@
   --color-error: #ff0000;
 
   --color-owner: #ff0088;
+
+  --color-edited: #5fa5dd;
 
   /* Shadows on a cream page read as dirt at the dark-theme alphas. */
   --shadow-alpha: 0;

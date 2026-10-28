@@ -455,6 +455,23 @@
 	transition: transform var(--control-motion) cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 .tdc-slide.is-dragging .tdc-slide-knob { transition: none; cursor: grabbing; }
+/* data-tone="error": the match page's undo (UV, 28 Oct). The bar, a ring
+   round the knob and the arrow in it all red; the knob's fill is the page,
+   so the ring reads as one. The ring is a border, not a shadow: the dots
+   take a plain element's colour from its border, else its fill, and the
+   fill here is the page (they were drawn in the background colour). */
+.tdc-slide[data-tone="error"] { border-color: var(--color-error); }
+.tdc-slide[data-tone="error"]:focus-within {
+	border-color: var(--color-error);
+	box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-error) 55%, transparent),
+		0 0 16px color-mix(in srgb, var(--color-error) 30%, transparent);
+}
+.tdc-slide[data-tone="error"] .tdc-slide-knob {
+	box-sizing: border-box;
+	border: var(--control-border) solid var(--color-error);
+	background: var(--bg-base);
+	color: var(--color-error);
+}
 .tdc-slide-knob svg { width: 75%; height: 75%; stroke-width: 9; }
 
 .tdc-slide > input[type="range"] {
