@@ -104,15 +104,14 @@
 			{ name: '--timeline-line',    label: 'Timeline line',  kind: 'colour', use: 'The grey line through every win on the frame history\'s timeline (landscape)' }
 		]],
 		['Dots', [
-			{ name: '--dots-ring-margin', label: 'Ring margin',    kind: 'size', unit: 'px', min: 0,    max: 24,   step: 1,     use: 'A fake ring\'s gap beyond an element\'s shorter side (anything without a ring of its own: buttons, numbers, tabs). Watch it on /sandbox/dots/' },
+			{ name: '--dots-ring-margin', label: 'Ring margin',    kind: 'size', unit: 'px', min: 0,    max: 24,   step: 1,     use: 'A fake ring\'s gap round a square element; anything else takes its shorter side as the ring, with no gap (UV, 28 Oct). Watch it on /sandbox/dots/' },
 			{ name: '--dots-fake-stroke', label: 'Fake ring line', kind: 'size', unit: 'px', min: 0.5,  max: 4,    step: 0.25,  use: 'How big the dots are on a fake ring round an element with no border' },
-			{ name: '--dots-draw',        label: 'Draw speed',     kind: 'size', unit: '',   min: 0.25, max: 3,    step: 0.05,  use: 'How fast the dots trace a result (an icon, a number, a tab), times the prototype\'s' },
-			{ name: '--dots-fade',        label: 'Fade speed',     kind: 'size', unit: '',   min: 0.25, max: 3,    step: 0.05,  use: 'How fast the ring race ends and the dots fade, times the prototype\'s' },
-			{ name: '--dots-blend',       label: 'Hand-over',      kind: 'size', unit: 's',  min: 0.1,  max: 1.5,  step: 0.05,  use: 'How long the dots take to slide from one animation into the next: waiting into tracing, tracing into the ring race' },
+			{ name: '--dots-draw',        label: 'Draw time',      kind: 'size', unit: 's',  min: 0.05, max: 2,    step: 0.01,  use: 'How long the dots take to trace a result (an icon, a tab; a number a third more for each digit after the first)' },
+			{ name: '--dots-blend',       label: 'Transition time', kind: 'size', unit: 's', min: 0.05, max: 1.5,  step: 0.05,  use: 'How long the dots take from one animation into the next: waiting into tracing, tracing into the ring race, and fading out once the ring is in' },
 			{ name: '--dots-busy-dim',    label: 'Busy dim',       kind: 'size', unit: '',   min: 0,    max: 0.6,  step: 0.05,  use: 'How faint a target is while it waits for its call' },
 			{ name: '--dots-busy-fill',   label: 'Busy fill',      kind: 'size', unit: '',   min: 0,    max: 1,    step: 0.05,  use: 'How faint a filled button or a dropdown\'s green pill is while it waits and while the dots trace it, so its words stay readable' },
 			{ name: '--dots-dim',         label: 'Dim time',       kind: 'size', unit: 's',  min: 0,    max: 1,    step: 0.05,  use: 'How long a target takes to go faint when it is tapped' },
-			{ name: '--dots-reveal',      label: 'Reveal time',    kind: 'size', unit: 's',  min: 0,    max: 1,    step: 0.05,  use: 'How long a target takes to come back once the dots have traced it (spec: about 0.25 s)' },
+			{ name: '--dots-reveal',      label: 'Fade time',      kind: 'size', unit: 's',  min: 0,    max: 1.5,  step: 0.05,  use: 'How long a target (a ring icon\'s ring) takes to fade in after the dots have traced it; the dots fade out only once it is in' },
 			{ name: '--dots-pulse',       label: 'Calm pulse',     kind: 'size', unit: 's',  min: 0.8,  max: 4,    step: 0.1,   use: 'Reduced motion: how long one breath of a tapped target takes while it waits (no dots fly then)' },
 			{ name: '--dots-pulse-peak',  label: 'Pulse peak',     kind: 'size', unit: '',   min: 0.2,  max: 1,    step: 0.05,  use: 'Reduced motion: how bright the waiting target (or a ring icon\'s ring) gets at the top of each breath' }
 		]],

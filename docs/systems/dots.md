@@ -59,7 +59,7 @@ A tab's outline is drawn on the layer's SVG (`svg.tdc-dots-lines`) and placed ov
 
 **The target is measured every frame**, so scrolling or a layout change never strands the dots:
 - **A real ring** is any target holding a `.tdc-ring`: its `circle.ring`'s centre, radius and stroke width, scaled from the SVG's 100 box to the screen.
-- **A fake ring** is anything else: centred on its box, its radius **half the box's shorter side** plus `--dots-ring-margin` (UV, 26 Oct): a wide button's height, a tall stepper's width. So a 46px-high full-width button gets a ring 59px across in its middle, and the dots cross its face as they go round. Its stroke is the element's border, or `--dots-fake-stroke` if it has none. (The spec's half-diagonal gave that button a ring about 374px across, far wider than the page.)
+- **A fake ring** is anything else: centred on its box, its radius **half the box's shorter side** (UV, 26 Oct): a wide button's height, a tall stepper's width. `--dots-ring-margin` is added only round a square, which has no shorter side (UV, 28 Oct; before, it was added to every fake ring). So a 47px-high full-width button gets a ring 47px across in its middle, and the dots cross its face as they go round. Its stroke is the element's border, or `--dots-fake-stroke` if it has none. (The spec's half-diagonal gave that button a ring about 374px across, far wider than the page.)
 
 **Colour (UV, 26 Oct): the dots take the colour of the line they are on.** On a real ring that is the ring's stroke (cream today); on a fake ring the element's border colour, else its background, else its text. It is read once, at the serve, **before** the busy state makes the border transparent. Colour is part of each dot's pose (below), so it blends wherever the dots do: over a trip with the sphere, into the traced lines' colour as they dive in, back to the ring's as they swing out to race.
 
@@ -186,14 +186,13 @@ Measured 26 Oct at 420px (headless Chrome, 7 ms frames), every move forced in tu
 
 | Token | Default | What |
 |---|---|---|
-| `--dots-ring-margin` | 16px (UV, 28 Oct; was 6px) | A fake ring's gap beyond the element's shorter side. 0 makes the ring exactly the button's height |
+| `--dots-ring-margin` | 16px | A fake ring's gap round a **square** element. Anything else takes its shorter side as the ring, with no gap (UV, 28 Oct: "always use the shorter dimension"); a 360 × 47 button's ring is 47px across |
 | `--dots-fake-stroke` | 1.5px | The dots' size on a fake ring with no border |
-| `--dots-fade` | 0.5 (UV, 28 Oct; was 1) | How fast the race ends and the dots fade, times the prototype's |
-| `--dots-draw` | 2 (UV, 28 Oct; was 1) | How fast the dots trace, times the prototype's (the hand-overs stay `--dots-blend`) |
-| `--dots-blend` | 0.1s (UV, 28 Oct; was 0.6s: the hand-overs are now quick swings, measured 1.3–6.7 change of speed in the sandbox's traces against 0.4–2.1) | The dots moving from one animation to the next: the race easing up from the cruise, waiting into tracing, tracing into the race, a trace into a trip |
+| `--dots-draw` | 0.12s | **Draw time** (UV, 28 Oct: a time, where it was a speed on the prototype's time per kind): how long the dots trace a result, any kind; a number a third more for each digit after its first. 0.12 s is UV's 3× on the 0.35 s icon |
+| `--dots-blend` | 0.5s | **Transition time** (UV, 28 Oct): waiting into tracing, tracing into the race, the cruise into the race, a trace into a trip, and the dots fading out (evenly, from wherever they are) |
 | `--dots-busy-dim` | 0.1 | How faint a waiting target is |
 | `--dots-dim` | 0.2s | A target dimming as it goes busy |
-| `--dots-reveal` | 0.25s | A target coming back (spec: icon and ring in about 0.25 s) |
+| `--dots-reveal` | 0.25s | **Fade time** (UV, 28 Oct): how long the target (a ring icon's ring) takes to fade in after the trace. The dots fade out only once it is fully in and every dot is racing; there is no longer a race of its own before they do (`RACE_HOLD` and `--dots-fade` went) |
 | `--dots-pulse` | 2s | Reduced motion: one breath of a tapped target while it waits |
 | `--dots-pulse-peak` | 0.5 | Reduced motion: how bright the target (or a ring icon's ring) gets at the top of each breath |
 

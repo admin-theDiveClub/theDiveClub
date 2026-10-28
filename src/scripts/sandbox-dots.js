@@ -79,10 +79,10 @@
 	// Each slider shows the token's value from variables.css and sets it on
 	// this page; the engine reads the tokens afresh on every tap.
 	const SLIDERS = [
-		{ name: '--dots-draw',          label: 'Draw speed',   unit: '',   min: 0.25, max: 3,   step: 0.05, show: (v) => v.toFixed(2) + '×' },
-		{ name: '--dots-fade',          label: 'Fade speed',   unit: '',   min: 0.25, max: 3,   step: 0.05, show: (v) => v.toFixed(2) + '×' },
-		{ name: '--dots-blend',         label: 'Hand-over',    unit: 's',  min: 0.1,  max: 1.5, step: 0.05, show: (v) => v.toFixed(2) + 's' },
-		{ name: '--dots-ring-margin',   label: 'Ring margin',  unit: 'px', min: 0,    max: 24,  step: 1,    show: (v) => v + 'px' }
+		{ name: '--dots-blend',         label: 'Transition time', unit: 's', min: 0.05, max: 1.5, step: 0.05, show: (v) => v.toFixed(2) + 's' },
+		{ name: '--dots-draw',          label: 'Draw time',    unit: 's',  min: 0.05, max: 2,   step: 0.01, show: (v) => v.toFixed(2) + 's' },
+		{ name: '--dots-reveal',        label: 'Fade time',    unit: 's',  min: 0,    max: 1.5, step: 0.05, show: (v) => v.toFixed(2) + 's' },
+		{ name: '--dots-ring-margin',   label: 'Ring margin (square elements)', unit: 'px', min: 0, max: 24, step: 1, show: (v) => v + 'px' }
 	];
 	const box = $('dots-sliders');
 	for (const s of SLIDERS) {

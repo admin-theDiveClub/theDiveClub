@@ -104,8 +104,10 @@ const TDCDots = (() => {
 	// times its size. Both in proportion to the dot: the prototype's (2.5 times,
 	// and a fixed 3 to 12px of glow) were made for bigger dots.
 	const STRETCH = 0.35, GLOW_REACH = 1.5;
-	// Tracing (spec §9): how long each kind takes at draw speed 1 (ms, the
-	// prototype's), after the dots' slide in (--dots-blend). DIVE: the most a
+	// Tracing (spec §9): it takes the draw time (--dots-draw, UV 28 Oct: one
+	// time in seconds for every kind, where it was a speed on the prototype's
+	// times per kind), a number a third more for each digit after its first,
+	// after the dots' slide in (--dots-blend). DIVE: the most a
 	// dot waits before it starts sliding in (ms), so they do not go as one.
 	// Where the lines jump (from one stroke or digit to the next) a dot swoops
 	// across, eased in and out, in SWOOP_MS plus SWOOP_PER_PX for each px of
@@ -113,14 +115,7 @@ const TDCDots = (() => {
 	// 1.17 times its size). A pen moving more than JUMP px in a frame has
 	// jumped, and so has one passing from one line to the next where they are
 	// more than JUMP_MIN px apart.
-	// An icon nearly four times the prototype's speed (UV, 28 Oct, twice: the
-	// ring came in too late). The hand-over in (--dots-blend) comes on top.
-	const TRACE_MS = { icon: 350, tab: 1500, number: 1500 }, TRACE_PER_DIGIT = 500;
 	const DIVE = 150, SWOOP = 0.15, SWOOP_MS = 90, SWOOP_PER_PX = 4, SWOOP_MAX = 380, JUMP = 6, JUMP_MIN = 0.75;
-	// How long the dots race on the ring once it is fully back and they are
-	// all on it, before they fade (ms, at --dots-fade 1): as in step 1, where
-	// the race ran 0.75 s from the reveal and the ring took 0.25 s of it.
-	const RACE_HOLD = 500;
 	// The page-load queue (spec §12): how long something tracked must still be
 	// loading before it dims and the dots come for it (ms), so an instant load
 	// shows nothing.
@@ -895,8 +890,7 @@ const TDCDots = (() => {
 		return {
 			margin: num('--dots-ring-margin', 6),
 			fakeStroke: num('--dots-fake-stroke', 1.5),
-			fade: num('--dots-fade', 1) || 1,
-			draw: num('--dots-draw', 1) || 1,
+			draw: Math.max(1, ms('--dots-draw', 120)),
 			blend: Math.max(1, ms('--dots-blend', 600)),
 			dim: ms('--dots-dim', 200)
 		};
@@ -1022,7 +1016,10 @@ const TDCDots = (() => {
 		} else {
 			const q = t.el.getBoundingClientRect();
 			if (!q.width && !q.height) return;
-			settle(t, q.left + q.width / 2, q.top + q.height / 2, Math.min(q.width, q.height) / 2 + T.margin);
+			// The shorter side is the ring (UV, 28 Oct); the margin is only for
+			// a square, which has no shorter side.
+			const square = Math.abs(q.width - q.height) < 1;
+			settle(t, q.left + q.width / 2, q.top + q.height / 2, Math.min(q.width, q.height) / 2 + (square ? T.margin : 0));
 		}
 	}
 	// Where the dots put a target's ring (step 7). It follows the page
@@ -1912,6 +1909,7 @@ const TDCDots = (() => {
 	let cur = null;         // the target the dots are serving
 	let tr = null;          // the trace, while tracing
 	let alpha = 0, aT = 0, fading = false, revealAt = 0, revealHold = 0, fadeAt = 0;
+	let fadeT0 = null, fadeA0 = 1;   // the dots' fade out: when it began, and from what
 	let forced = null, forcedV = 0;   // the move on repeat (null: random), and a count of changes to it
 	let running = false, last = 0;
 	let stepAt = 0;         // the frame the dots were last placed in
@@ -2119,7 +2117,15 @@ const TDCDots = (() => {
 		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 		ctx.clearRect(0, 0, W, H);
 
-		alpha += (aT - alpha) * Math.min(1, (fading ? 0.045 * T.fade : 0.1) * dt);
+		// Fading out, the dots go evenly over the transition time (--dots-blend,
+		// UV 28 Oct), from wherever they were; coming in, they ease up.
+		if (fading) {
+			if (fadeT0 === null) { fadeT0 = now; fadeA0 = alpha; }
+			alpha = fadeA0 * Math.max(0, 1 - (now - fadeT0) / T.blend);
+		} else {
+			fadeT0 = null;
+			alpha += (aT - alpha) * Math.min(1, 0.1 * dt);
+		}
 		for (const l of fadingLines) l.where();
 
 		// The page-load queue. Only the last is traced and raced (UV, 26 Oct):
@@ -2146,15 +2152,17 @@ const TDCDots = (() => {
 			S.quiet(now);
 			if (lines) {
 				// Diving in: the trace starts now and each dot slides into it.
-				const ms = TRACE_MS[cur.kind] + (cur.kind === 'number' ? TRACE_PER_DIGIT * lines.segs.length : 0);
-				tr = new Trace(cur, lines, S, now, T.blend + ms / T.draw);
+				const ms = T.draw * (cur.kind === 'number' ? 1 + (lines.segs.length - 1) / 3 : 1);
+				tr = new Trace(cur, lines, S, now, T.blend + ms);
 				S = new Blend(S, tr, D.map(() => now + Math.random() * DIVE), D.map(() => T.blend * (0.85 + Math.random() * 0.3)));
 				phase = 'trace';
 			} else {
 				// Nothing to trace: the target comes straight back, and the
 				// cruise eases into the race.
 				revealAt = now;
-				fadeAt = now + Math.max(restore(cur), 750 / T.fade, T.blend);   // 0 if it is already back
+				// The dots fade once it is fully back (its fade time), and not
+				// before the cruise has eased into the race.
+				fadeAt = now + Math.max(restore(cur), T.blend);   // restore: 0 if it is already back
 				S = new Ring(cur, 'race', now, S, { easeMs: T.blend });
 				phase = 'race';
 			}
@@ -2169,13 +2177,12 @@ const TDCDots = (() => {
 			}
 			// The moment tracing is complete, the real thing comes in.
 			if (!revealAt && now >= tr.t0 + tr.dur) { revealAt = now; revealHold = restore(cur); }
-			// The dots fade only once the target is fully back and every dot is
-			// racing on its ring (UV, 26 Oct), then after RACE_HOLD of race
-			// (÷ --dots-fade). Counted from the last dot onto the ring, the race
-			// at full size lasted 0.4 s before the dots faded.
+			// The dots fade only once the target (its ring) has fully faded in
+			// (its fade time, --dots-reveal) and every dot is racing on its ring
+			// (UV, 26 and 28 Oct), over the transition time.
 			if (revealAt && S instanceof Ring) {
 				phase = 'race';
-				fadeAt = Math.max(revealAt + revealHold, now) + RACE_HOLD / T.fade;
+				fadeAt = Math.max(revealAt + revealHold, now);
 			}
 		}
 		if (phase === 'race' && now > fadeAt) { phase = 'fade'; fading = true; aT = 0; }

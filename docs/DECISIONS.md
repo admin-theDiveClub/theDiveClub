@@ -889,3 +889,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* a folding group opens with its contents hidden and the dots on the group (a ring from its shorter side); the contents fade in once it has opened and anything its opening set loading is back, as the dots reach it. Something loading with the page is hidden, not dimmed, until it is loaded.
 *Replaces:* contents fading in as a group grows (24 Oct), and page-load targets dimmed while they load (26 Oct, step 5).
 *Touches:* `scripts/tdc-controls.js` (`fold()`), `scripts/dots.js` (`fake`, `data-dots-load`), `stylesheets/dots.css`, `docs/ui.md`, `docs/systems/dots.md` §8
+
+## 2026-10-28 — The dots' timings are three times in seconds; the ring margin is for squares only
+
+*Decided by:* UV
+*So:* the dots' settings are **Transition time** (`--dots-blend`, 0.5 s: waiting into tracing, tracing into the ring race, and the dots fading out), **Draw time** (`--dots-draw`, 0.12 s: the trace, any kind, a number a third more a digit) and **Fade time** (`--dots-reveal`, 0.25 s: the ring fading in after the trace). The dots fade out only once the ring is fully in, over the transition time; there is no race of its own before. A fake ring is the element's shorter side, with no margin; `--dots-ring-margin` (16 px) is added only round a square.
+*Replaces:* draw and fade as speeds times the prototype's (`--dots-draw` 1, `--dots-fade` 1, removed), the per-kind trace times and the 0.5 s race before the fade; the margin on every fake ring (26 Oct).
+*Touches:* `scripts/dots.js`, `variables.css`, `scripts/sandbox-dots.js`, `scripts/sandbox.js`, `docs/systems/dots.md` §3, §5
