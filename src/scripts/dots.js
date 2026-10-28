@@ -27,6 +27,11 @@
 //     leaves   true when the call itself may take the target off the page (a
 //              fixture removed): it is let go without a failure, and the
 //              dots finish where it was
+//     ink      for trace 'number': a selector, inside the target, for the
+//              part holding the digits (a stepper's field, a score inside its
+//              button); only that part fades in under the dots
+//   A target marked data-dots-hold (by the page, while a finger is still on
+//   it: a stepper held, the slide dragged) is not dimmed while it waits.
 //   Returns the promise. A target already busy is not served twice: the dots
 //   wait for both calls. Serving a new target (a tap) takes the dots there at
 //   once; the old one restores itself, without them, when its own call is back.
@@ -106,7 +111,9 @@ const TDCDots = (() => {
 	// 1.17 times its size). A pen moving more than JUMP px in a frame has
 	// jumped, and so has one passing from one line to the next where they are
 	// more than JUMP_MIN px apart.
-	const TRACE_MS = { icon: 1300, tab: 1500, number: 1500 }, TRACE_PER_DIGIT = 500;
+	// An icon nearly four times the prototype's speed (UV, 28 Oct, twice: the
+	// ring came in too late). The hand-over in (--dots-blend) comes on top.
+	const TRACE_MS = { icon: 350, tab: 1500, number: 1500 }, TRACE_PER_DIGIT = 500;
 	const DIVE = 150, SWOOP = 0.15, SWOOP_MS = 90, SWOOP_PER_PX = 4, SWOOP_MAX = 380, JUMP = 6, JUMP_MIN = 0.75;
 	// How long the dots race on the ring once it is fully back and they are
 	// all on it, before they fade (ms, at --dots-fade 1): as in step 1, where
@@ -1069,6 +1076,7 @@ const TDCDots = (() => {
 		measure(t);
 		if (t.cx === undefined) throw new Error('it has no size on the page (hidden?)');
 		ringMark(t);
+		inkMark(t);
 		return t;
 	}
 	// A ring icon's own look while it is served (its ring hidden, its icon
@@ -1084,7 +1092,7 @@ const TDCDots = (() => {
 	// none (a computed style there is empty, which read as NaN and the dots
 	// never faded).
 	function revealMs(t) {
-		const node = t.circle && t.circle.isConnected ? t.circle : t.el;
+		const node = t.circle && t.circle.isConnected ? t.circle : inkOf(t);
 		if (!node.isConnected) return 0;
 		const cs = getComputedStyle(node);
 		const ms = (s) => s.split(',').map((v) => parseFloat(v) * (v.includes('ms') ? 1 : 1000) || 0);
@@ -1115,7 +1123,20 @@ const TDCDots = (() => {
 		delete el.dataset.dotsTrace;
 		delete el.dataset.dotsCalm;
 		delete el.dataset.dotsRing;
+		delete el.dataset.dotsInk;
+		for (const i of el.querySelectorAll('[data-dots-inked]')) delete i.dataset.dotsInked;
 		el.style.removeProperty('--dots-lines');
+	}
+	// The part of a target that holds its digits (opts.ink, a selector inside
+	// it), else the target itself.
+	const inkOf = (t) => (t.opts.ink && t.el.querySelector(t.opts.ink)) || t.el;
+	// When the digits are a part of the target, only they dim while it waits
+	// and fade in under the dots (dots.css): a stepper's chevrons stay put.
+	function inkMark(t) {
+		const ink = inkOf(t);
+		if (ink === t.el) return;
+		t.el.dataset.dotsInk = '';
+		ink.dataset.dotsInked = '';
 	}
 	// The target comes back. data-dots="revealing" carries its transition
 	// back in (dots.css) and is taken off once that has run; lines drawn for
@@ -1193,6 +1214,7 @@ const TDCDots = (() => {
 		if (!t.opts.trace && !t.lines) t.kind = t.circle ? 'icon' : 'none';
 		if (!t.circle) t.sw = parseFloat(getComputedStyle(n).borderTopWidth) || T.fakeStroke;
 		ringMark(t);
+		inkMark(t);
 		if (look.dots) n.dataset.dots = look.dots;
 		if (look.trace) n.dataset.dotsTrace = look.trace;
 		if (look.calm) n.dataset.dotsCalm = '';
@@ -1335,6 +1357,10 @@ const TDCDots = (() => {
 	// canvas, and kept. (Measuring every digit's stroke at every point cost
 	// frames of up to 86 ms, for a precision nobody would see.)
 	const DIG_STEP = 1.5;   // px between points on a digit's line
+	// The dots on a digit: thinner than its stroke, and never huge (UV, 28
+	// Oct: on the match page's score, a font stroke of about 60px, the dots
+	// as thick as it spilled over the number with their glow and wobble).
+	const DIG_DOT = 0.6, DIG_DOT_MAX = 16;
 	const strokes = new Map();
 	let measureCtx = null;
 	// A font, as a canvas reads it, from the element's computed style.
@@ -1381,25 +1407,47 @@ const TDCDots = (() => {
 	function digitLines(el) {
 		const sw = readyDigits(el), half = sw / 2;
 		const font = fontOf(el), box = el.getBoundingClientRect();
-		const out = [], range = document.createRange();
+		const out = [];
+		// One digit, whose character box on the screen is r (left, top, height).
+		const digit = (ch, r) => {
+			measureCtx.font = font;
+			const m = measureCtx.measureText(ch);
+			const base = r.top + (r.height - m.fontBoundingBoxAscent - m.fontBoundingBoxDescent) / 2 + m.fontBoundingBoxAscent;
+			const x0 = r.left - m.actualBoundingBoxLeft, x1 = r.left + m.actualBoundingBoxRight;
+			const y0 = base - m.actualBoundingBoxAscent, y1 = base + m.actualBoundingBoxDescent;
+			// Fitted to the ink both ways, less half the stroke all round, so
+			// a condensed font's digits are traced as narrow as they are.
+			const g = DIG_BOX[ch];
+			const sx = Math.max(0, x1 - x0 - sw) / Math.max(1, g.x1 - g.x0), sy = Math.max(1, y1 - y0 - sw) / (g.y1 - g.y0);
+			const gx = x0 + half - box.left - g.x0 * sx, gy = y0 + half - box.top - g.y0 * sy;
+			out.push(digitPoints(DIG[ch], (x, y) => [gx + x * sx, gy + y * sy], Math.min(sw * DIG_DOT, DIG_DOT_MAX), DIG_STEP));
+		};
+		// A number field (a stepper's) has no text to measure on the page: its
+		// value is laid out here, by its alignment, padding and the font.
+		if (el.tagName === 'INPUT') {
+			const cs = getComputedStyle(el), text = el.value;
+			measureCtx.font = font;
+			const total = measureCtx.measureText(text).width, m0 = measureCtx.measureText('0');
+			const left = parseFloat(cs.paddingLeft) + parseFloat(cs.borderLeftWidth);
+			const right = parseFloat(cs.paddingRight) + parseFloat(cs.borderRightWidth);
+			const align = cs.textAlign;
+			const start = align === 'center' ? left + (box.width - left - right - total) / 2
+				: (align === 'right' || align === 'end') ? box.width - right - total : left;
+			const h = m0.fontBoundingBoxAscent + m0.fontBoundingBoxDescent, top = box.top + (box.height - h) / 2;
+			for (let i = 0; i < text.length; i++) {
+				if (!DIG[text[i]]) continue;
+				measureCtx.font = font;
+				digit(text[i], { left: box.left + start + measureCtx.measureText(text.slice(0, i)).width - el.scrollLeft, top, height: h });
+			}
+			return out;
+		}
+		const range = document.createRange();
 		const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
 		for (let n = walk.nextNode(); n; n = walk.nextNode()) {
 			for (let i = 0; i < n.data.length; i++) {
-				const ch = n.data[i];
-				if (!DIG[ch]) continue;
+				if (!DIG[n.data[i]]) continue;
 				range.setStart(n, i); range.setEnd(n, i + 1);
-				const r = range.getBoundingClientRect();
-				measureCtx.font = font;
-				const m = measureCtx.measureText(ch);
-				const base = r.top + (r.height - m.fontBoundingBoxAscent - m.fontBoundingBoxDescent) / 2 + m.fontBoundingBoxAscent;
-				const x0 = r.left - m.actualBoundingBoxLeft, x1 = r.left + m.actualBoundingBoxRight;
-				const y0 = base - m.actualBoundingBoxAscent, y1 = base + m.actualBoundingBoxDescent;
-				// Fitted to the ink both ways, less half the stroke all round, so
-				// a condensed font's digits are traced as narrow as they are.
-				const g = DIG_BOX[ch];
-				const sx = Math.max(0, x1 - x0 - sw) / Math.max(1, g.x1 - g.x0), sy = Math.max(1, y1 - y0 - sw) / (g.y1 - g.y0);
-				const gx = x0 + half - box.left - g.x0 * sx, gy = y0 + half - box.top - g.y0 * sy;
-				out.push(digitPoints(DIG[ch], (x, y) => [gx + x * sx, gy + y * sy], sw, DIG_STEP));
+				digit(n.data[i], range.getBoundingClientRect());
 			}
 		}
 		return out;
@@ -1437,13 +1485,22 @@ const TDCDots = (() => {
 			return { ox: q.left, oy: q.top, k: 1 };
 		};
 		if (t.kind === 'number') {
-			const polys = digitLines(el);
+			// The digits may be a part of the target (opts.ink): a stepper's
+			// field inside its pill, the match page's score inside its button.
+			const ink = inkOf(t);
+			const polys = digitLines(ink);
+			// An empty field ("No limit", a date not set) has nothing to trace.
+			if (!polys.length && ink.tagName === 'INPUT' && !/\d/.test(ink.value)) return null;
 			if (!polys.length) { fail(t, `${nameOf(el)} was to have its number traced, but it shows no digits.`, el); return null; }
-			return new Lines(t, polys, rgbOf(cs.color), place, null);
+			return new Lines(t, polys, rgbOf(getComputedStyle(ink).color), () => {
+				const q = inkOf(t).getBoundingClientRect();
+				return { ox: q.left, oy: q.top, k: 1 };
+			}, null);
 		}
 		if (t.kind === 'tab') {
-			// The tab bar's outline width, in the colour the chosen tab fills with.
-			const bar = el.parentElement && el.parentElement.closest('.league-nav');
+			// The tab bar's outline width (a pill's, for a dropdown pill's
+			// chosen option), in the colour the chosen tab fills with.
+			const bar = el.parentElement && el.parentElement.closest('.league-nav, .tdc-select');
 			const sw = parseFloat(getComputedStyle(bar || el).borderTopWidth) || T.fakeStroke;
 			const colour = rgbOf(seen(cs.backgroundColor) ? cs.backgroundColor : cs.color);
 			const g = document.createElementNS(NS, 'g');
@@ -1473,6 +1530,7 @@ const TDCDots = (() => {
 		if (!lines) return null;
 		t.lines = lines;
 		lines.show(0);
+		inkMark(t);
 		t.el.dataset.dotsTrace = t.kind;
 		t.el.dataset.dots = 'tracing';
 		return lines;
@@ -1882,7 +1940,7 @@ const TDCDots = (() => {
 			}
 			records.set(el, t);
 			if (t.kind === 'number') {
-				try { readyDigits(el); }
+				try { readyDigits(inkOf(t)); }
 				catch (err) { fail(t, `${nameOf(el)}: the number's font could not be measured.`, err); }
 			}
 			if (load) {

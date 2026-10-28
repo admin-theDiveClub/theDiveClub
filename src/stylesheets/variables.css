@@ -100,6 +100,7 @@
   --dots-draw: 1;                 /* how fast the dots trace, times the prototype's */
   --dots-blend: 0.6s;             /* the dots sliding from one animation to the next (waiting into tracing, tracing into the race) */
   --dots-busy-dim: 0.1;           /* how faint a target is while it waits */
+  --dots-busy-fill: 0.45;         /* how faint a filled button or green pill is while it waits and is traced */
   --dots-dim: 0.2s;               /* a target dimming as it goes busy */
   --dots-reveal: 0.25s;           /* a target coming back once its call is done */
   --dots-pulse: 2s;               /* reduced motion: one breath of a tapped target while it waits */

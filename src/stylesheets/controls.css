@@ -357,6 +357,25 @@
 .tdc-select .tdc-select-option.is-selected { color: var(--color-on-primary); }
 .tdc-select .tdc-select-option:disabled { opacity: 0.4; cursor: default; }
 
+/* data-icon: a ring icon in the chosen option (28 Oct: the break event's
+   cue ball), at its left, as tall as the green pill allows, ring and all,
+   in the option's own colour. The words move over to make room. */
+.tdc-select .tdc-select-option:has(> .tdc-select-icon) {
+	--select-icon: calc(1.2em + 2 * var(--space-2) - 0.3em);
+	padding-left: calc(var(--select-icon) + 0.15em + var(--space-2));
+}
+.tdc-select .tdc-select-icon.tdc-ring {
+	position: absolute;
+	left: 0.15em;
+	top: 50%;
+	width: var(--select-icon);
+	height: var(--select-icon);
+	transform: translateY(-50%);
+	color: currentColor;
+	--ring-accent: currentColor;
+}
+.tdc-select .tdc-select-icon .ring { stroke: currentColor; }
+
 .tdc-select > select {
 	position: absolute;
 	left: 0;

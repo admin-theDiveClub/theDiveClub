@@ -623,6 +623,7 @@
 		sel.id = 'break-event';
 		sel.dataset.control = 'select';
 		sel.dataset.tone = 'warning';
+		sel.dataset.icon = 'cue';   // the break's cue ball on the chosen one (UV, 28 Oct)
 		sel.setAttribute('aria-label', `${MATCH[draft.break_side].name}'s break`);
 		for (const [value, label] of Object.entries(BREAK_OUTCOME)) sel.append(new Option(label, value));
 		sel.selectedIndex = draft.break_outcome ? Object.keys(BREAK_OUTCOME).indexOf(draft.break_outcome) : -1;
@@ -1888,8 +1889,23 @@
 	function saveFrame(side, ev) {
 		const no = pushFrame({ result_event: ev, winner_side: side });
 		const done = `Frame ${no} to ${MATCH[side].name}.`;
-		if (liveMatchId) persistFrame(no, done);
-		else TDC.status(els.stageStatus, done, 'success');
+		if (liveMatchId) scoreDots(side, persistFrame(no, done));
+		else { TDC.status(els.stageStatus, done, 'success'); scoreDots(side, null); }
+	}
+
+	// The site's dots on a player's score (UV, 28 Oct): they come to the
+	// number as the frame is given and trace it once the save is back (at
+	// least 0.2 s, as for any control). The stage draws itself again at once,
+	// and again after the save, so the dots follow the score to each new one.
+	// A save that failed is not traced; the page says why.
+	function scoreDots(side, saved) {
+		if (typeof TDCDots === 'undefined') return;
+		const score = () => (side === 'home' ? els.halfHome : els.halfAway).querySelector('.pc-mid');
+		const el = score();
+		if (!el) return;
+		const least = new Promise((r) => setTimeout(r, 200));
+		const call = Promise.all([Promise.resolve(saved).then((r) => { if (r && r.error) throw r.error; }), least]);
+		TDCDots.serve(el, call, { trace: 'number', ink: '.pc-score', follow: score, status: els.stageStatus });
 	}
 
 	function walkover(side) {
@@ -3141,6 +3157,7 @@
 		// already in MATCH, so asking afterwards would always say "it was over").
 		const wasOver = burst.wasOver;
 		if (await savingFinished(error, okMessage)) await refreshCardAfterWrite(wasOver);
+		return { error };   // for the dots on the score (scoreDots)
 	}
 
 	// Settings and the lag winner go together, because both move the whole

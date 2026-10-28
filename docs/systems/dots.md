@@ -234,7 +234,7 @@ Measured 26 Oct at 420px (step 6), change of speed: a tap on the tick traced, ra
 | The fixtures page: Start, Take off and Remove on a fixture; Start all and Remove all on a night | The button | `write(…, { dots, follow, leaves })` through `TDC.writer` (`dotsFor()`) |
 | The fixtures page loading | The heading (while the season is read), then the planner (while the fixtures are) | `track(el, promise, { status })` |
 
-**Decided with it (UV, 26 Oct):** a control that changes with no call (a box in a form, a folded section opening, the menu turning into its cross) gets no dots: its icon draws in stroke by stroke (`drawTo`, in `--ring-draw`) and a knob slides at once. A tap whose call goes out gets them. When several saves are out at once the dots go to the latest; the others come back without them.
+**Decided with it (UV, 26 Oct; superseded for the controls on 28 Oct, §8, where every change gets the dots):** a control that changes with no call (a box in a form, a folded section opening, the menu turning into its cross) gets no dots: its icon draws in stroke by stroke (`drawTo`, in `--ring-draw`) and a knob slides at once. A tap whose call goes out gets them. When several saves are out at once the dots go to the latest; the others come back without them.
 
 **`TDC.writer` and the dots.** `write(what, fn, done, { dots: el, follow, leaves })` serves `el` with this save's answer: a promise that settles when the burst has saved **and the page has read itself again**, so what is traced is what the database kept, and that **rejects when this save failed**, so a failed save is not traced (the writer's own message says why, after the re-read). The writer's status line is the dots' `opts.status`. Every write is counted (`TDC.writes`) and the latest kept (`TDC.writeSince(n)`), which is how a custom control learns that its change saved.
 
@@ -272,3 +272,38 @@ Measured 26 Oct at 420px (step 6), change of speed: a tap on the tick traced, ra
 Also opened with the stand-in: every main page, all folded groups open, at 420px: no script errors, nothing marked by the dots left behind, nothing wider than the screen. **Not driven:** the team card's L and W (the three-way switch shares the switch's code, `serveChange()`), league manage, and anything against the real database.
 
 *Seen while measuring, not from step 7:* on `/sandbox/dots/`, with the page scrolled down to Simulate page load, the browser's scroll anchoring moves the stage 19px on the screen as things on it change size, and the dots flying to it jump with it; they are off the top of the screen at the time.
+
+## 8. Every control gets the dots (28 Oct)
+
+UV, after trying step 7: steppers, pills, the match page's score, break event and slide, and folding groups had no dots, and a form's switch only drew while a saving one got the dots. **Every control now gets them on every change, call or not** (replacing 26 Oct's "a control revealed with no network call gets no dots"). Done once, in `tdc-controls.js`, for every page.
+
+| | |
+|---|---|
+| **The rule** | After a change, once the page's handler has run, the dots serve the control with the save its change made (`TDC.writer`, else any call `TDCNet` counted) and **never less than `DOTS_MIN`, 0.2 s** (`saveSince()`, `serveAfter()`). With nothing saved they barely arrive before they trace: UV wants to see that |
+| Switch, ring, three-way switch | As in §7, now also with no call |
+| **Stepper** | The dots trace the number in the pill (`trace: 'number'`, `ink`: the field). **A chevron held**: they come at the press and stay until the finger lets go (`serveHeld()`), the number lit meanwhile (`data-dots-hold`) so it can be read as it counts, then trace the number it stopped on. Typed or stepped from the keyboard: once committed. An empty field (no limit) has nothing to trace: they race. A save made some time after the release (the fixtures' table numbers, 0.7 s) is not waited for |
+| Date | Its three parts are steppers. The calendar and the clear button give the dots to the whole date |
+| **Pill** (dropdown) | The dots trace the green pill's outline under the chosen option (`trace: 'tab'`, at the pill's border width), then it fills. `data-icon` names a ring icon shown in the chosen option, and then the dots trace the icon instead: **the match page's break event wears the cue ball** (UV). A page that draws the pill again after the choice is followed by the select's id |
+| **Slide** | The dots ride the knob while it is dragged and stay for whatever letting go set off (the undo), at least 0.2 s; let go early, they race and leave. No trace (the knob's arrow is not a ring icon) |
+| **Folding group** | The dots on its heading while it opens, at least 0.2 s. No trace |
+| **The match page's score** | `scoreDots()` in `match.js`: tapping a player's card (or a special win) serves their score with the frame's save, traces the new number (`ink: '.pc-score'`), and follows the score through each redraw. A refused save is not traced |
+
+**The engine gained:** `ink` (the digits a part of the target; only they dim while it waits and fade in under the dots, so a stepper's chevrons and the score's button stay put); digits read from a number field (laid out from its alignment, padding and font, since a field has no text on the page); `data-dots-hold` (a target under a finger is not dimmed); a pill's outline at its own border width. **Also, at UV's word:** an icon is traced twice as fast as before (`TRACE_MS.icon` 1.3 s → 0.65 s), so its ring comes in sooner.
+
+**Measured 28 Oct at 420px** (stand-in database, change of speed): a stepper tapped 1.4, held 1.3 s 2.3 (the number lit and counting while held, the dots waiting); a pill 2.5; a form switch 0.5–0.7; a folding group 0.5–0.7; the break event (the cue ball traced) 1.3; the match score (the new number traced after the save) 2.0; four quick Paid ticks, five runs, 0.6–3.7, saved in order, page = database. Not driven: the slide by a real drag, a date's calendar.
+
+*Considered, not built:* fewer dots tracing an icon with fewer strokes (UV, "a consideration"), the rest racing.
+
+**After UV's second look (28 Oct):**
+
+| | |
+|---|---|
+| "asked to serve Saving, which is not on the page" (league settings' switches) | A page that draws its form again **inside** its change handler threw the switch away before the dots came for it: a control was handed to the new form only while the dots were on it. It is now registered the moment it changes (`changing`), so the rebuild hands it over. Same for the three-way switch |
+| "7 left the page while the dots were serving it" (the match page's settings steppers) | Steppers and dates follow their field's id to the control the page draws in its place (`followField()`); with no id they are let go quietly (`leaves`). Pills likewise |
+| **Buttons** | Every button gets the dots when pressed (a document listener in `tdc-controls.js`): for the save it set off and at least 0.2 s, a ring icon traced, anything else raced round. Not a control's own parts, not the nav (it serves its own), not one the page already gave the dots, not one hidden by its own press (a panel's Close), and not when the page gave the dots to something else in its handler (the match page's special wins serve the score) |
+| Words vanishing on a pressed button or pill | A filled button, and a pill's green pill, dim only to `--dots-busy-fill` (0.45, on the main sandbox's Dots group) while waiting and while traced, and the pill keeps its fill while it is traced; the chosen option's words turn cream meanwhile |
+| Icons still slow | `TRACE_MS.icon` 0.35 s (from the prototype's 1.3 s). The hand-over in, `--dots-blend` (0.6 s), comes on top |
+| The score's dots too big | The dots on a digit are 0.6 of the font's stroke, and at most 16px (`DIG_DOT`, `DIG_DOT_MAX`): on the 255px score they measured 22px across with their wobble, inside its strokes |
+| The break event's cue ball | As tall as the green pill allows, at its left, with its ring |
+
+Measured at 420px: every switch and stepper on `/leagues/new/` and `/tournaments/new/` (forms that rebuild on each change) and the match settings panel's stepper served and finished with no error and nothing left marked; a button 0.52 opacity while waiting.

@@ -225,7 +225,71 @@ const TDCControls = (() => {
 		if (field && field.classList.contains('field')) field.classList.add(cls);
 	}
 
+	// ─── The dots on a control ───
+	// Every control gets the site's one set of dots when it is changed (UV,
+	// 28 Oct, replacing 26 Oct's "no call, no dots"): they come to it and
+	// stay for as long as the save its change made and the page's re-read
+	// take (TDC.writer, else any call TDCNet counted), and never less than
+	// DOTS_MIN, so a change that saves nothing still gets the show: the dots
+	// barely arrive before they trace it. scripts/dots.js, docs/systems/dots.md.
+	const DOTS_MIN = 200;   // ms
+	const dotsOn = () => typeof TDCDots !== 'undefined';
+	// Where the page's saves stood as a change began, so that once the page
+	// has had its turn it is known whether the change saved.
+	const saveMark = () => ({
+		writes: TDC.writes || 0,
+		net: typeof TDCNet !== 'undefined' ? TDCNet.started : 0
+	});
+	// What the dots wait for, asked once the page's handler has run: the save
+	// made since mark, and DOTS_MIN. A failed save rejects, so it is not traced.
+	function saveSince(mark) {
+		const w = TDC.writeSince ? TDC.writeSince(mark.writes) : null;
+		let call = null, status = null;
+		if (w) { call = w.saved; status = w.status; }
+		else if (typeof TDCNet !== 'undefined' && TDCNet.started > mark.net) call = TDCNet.quiet();
+		const least = new Promise((r) => setTimeout(r, DOTS_MIN));
+		return { call: call ? Promise.all([call, least]) : least, status };
+	}
+	// After a change: once the page has had its turn, the dots serve target
+	// (or, if the page has drawn it again, what opts.follow finds).
+	function serveAfter(target, mark, opts = {}) {
+		if (!dotsOn()) return;
+		setTimeout(() => {
+			const el = target.isConnected ? target : (opts.follow && opts.follow());
+			if (!el || !el.isConnected) return;
+			const s = saveSince(mark);
+			TDCDots.serve(el, s.call, Object.assign({ status: s.status }, opts));
+		}, 0);
+	}
+	// While a finger is on a control (a chevron held, the slide dragged): the
+	// dots come at once, the control stays lit (data-dots-hold), and they stay
+	// until it lets go and then for whatever that saved. Returns the release.
+	function serveHeld(target, mark, opts = {}) {
+		if (!dotsOn()) return () => {};
+		let letGo;
+		const held = new Promise((r) => { letGo = r; });
+		target.dataset.dotsHold = '';
+		const call = held.then(() => new Promise((r) => setTimeout(r, 0))).then(() => saveSince(mark).call);
+		TDCDots.serve(target, call, opts);
+		return () => { delete target.dataset.dotsHold; letGo(); };
+	}
+
+	// The dots' options for a control known by its field: a page that draws
+	// its form again after a change (the match page's settings, the ruleset
+	// pages) throws the control away, so the dots follow the field's id to
+	// the new one (wrap: the control round it); with no id they let it go
+	// quietly rather than call it a failure.
+	function followField(field, wrap, opts) {
+		const id = field.id;
+		return Object.assign({
+			follow: id ? () => { const f = document.getElementById(id); return f && f.closest(wrap); } : null,
+			leaves: true
+		}, opts);
+	}
+
 	// ─── Stepper ───
+	// The dots trace the number in the pill's field.
+	const STEPPER_TRACE = { trace: 'number', ink: '.tdc-stepper-window > input' };
 	const HOLD_DELAY = 400;   // ms before a held chevron starts repeating
 	const HOLD_EVERY = 80;    // ms between repeats
 
@@ -315,11 +379,20 @@ const TDCControls = (() => {
 		// only here once left the old one stepping, unseen, to its limit,
 		// where it told the new one its chevron had gone (24 Oct). And a
 		// stepper that is no longer on the page stops.
+		//
+		// The dots come at the press and stay on the pill until the finger
+		// lets go (UV, 28 Oct), the number lit meanwhile so it can be read as
+		// it counts; then they trace the number it stopped on.
 		let timer = null;
-		const stop = () => { clearTimeout(timer); timer = null; };
+		let held = null;   // the release of the dots, while a chevron is down
+		const stop = () => {
+			clearTimeout(timer); timer = null;
+			if (held) { const letGo = held; held = null; letGo(); }
+		};
 		for (const [b, dir] of [[up, 1], [down, -1]]) {
 			b.addEventListener('pointerdown', (e) => {
 				if (e.button !== 0) return;
+				if (!held && !input.disabled && !input.readOnly) held = serveHeld(pill, saveMark(), followField(input, '.tdc-stepper', STEPPER_TRACE));
 				step(dir);
 				const repeat = () => {
 					if (!b.tdcShown || !pill.isConnected) return stop();
@@ -380,6 +453,16 @@ const TDCControls = (() => {
 		input.addEventListener('input', sync);
 		input.addEventListener('change', sync);
 		onPropSet(input, ['value'], sync);
+
+		// A number typed, or stepped from the keyboard: the dots once it is
+		// committed. Held chevrons have them already (above).
+		let mark = null;
+		pill.addEventListener('change', (e) => { if (e.target === input && !held) mark = saveMark(); }, true);
+		pill.addEventListener('change', (e) => {
+			if (e.target !== input || held || !mark) return;
+			serveAfter(pill, mark, followField(input, '.tdc-stepper', STEPPER_TRACE));
+			mark = null;
+		});
 		new MutationObserver(sync).observe(input, { attributes: true, attributeFilter: ['min', 'max', 'disabled'] });
 
 		sync();
@@ -490,13 +573,27 @@ const TDCControls = (() => {
 
 		// The parts' own events stop here: the page hears only the real input,
 		// with a whole date or none.
+		let composing = false;
 		for (const type of ['input', 'change']) {
 			box.addEventListener(type, (e) => {
 				if (e.target === real) { show(); return; }   // the browser's calendar
 				e.stopPropagation();
-				if (type === 'change' && parts.includes(e.target)) compose(e.target);
+				if (type === 'change' && parts.includes(e.target)) {
+					composing = true;
+					try { compose(e.target); } finally { composing = false; }
+				}
 			});
 		}
+
+		// The dots: a part's stepper has them for a number changed there; the
+		// calendar and the clear button give them to the whole date.
+		let mark = null;
+		box.addEventListener('change', (e) => { if (e.target === real && !composing) mark = saveMark(); }, true);
+		box.addEventListener('change', (e) => {
+			if (e.target !== real || composing || !mark) return;
+			serveAfter(box, mark, followField(real, '.tdc-date', { trace: 'none' }));
+			mark = null;
+		});
 
 		// An empty date starts at today on the first chevron or arrow key,
 		// rather than at the year 1.
@@ -548,8 +645,7 @@ const TDCControls = (() => {
 	// slides and the new icon fades in as they trace it, so what is shown is
 	// what the database kept. Several saves out at once: the dots go to the
 	// latest, and the others come back without them. A change that saves
-	// nothing (a box in a form) shows at once: the knob slides and the icon
-	// draws in, no dots.
+	// nothing (a box in a form) gets them too, for DOTS_MIN (UV, 28 Oct).
 	//
 	// A click is never ignored (UV, 24 Oct): it toggles the box and the page
 	// saves it, queued behind the others (TDC.writer); served again while the
@@ -566,21 +662,18 @@ const TDCControls = (() => {
 		: ['action', 'entrant', 'player', 'box', 'frame'].map((k) => box.dataset[k] || '').join('|');
 	const served = (wrap) => !!wrap.dataset.dots;
 
-	// Where the page's saves stood as a change began, so that once the page
-	// has had its turn it is known whether the change saved.
-	const saveMark = () => ({
-		writes: TDC.writes || 0,
-		net: typeof TDCNet !== 'undefined' ? TDCNet.started : 0
-	});
 	// After a change, once the page's own handler has run: the dots serve the
-	// control with the save it made, and show() puts what the box holds on
-	// the page when that is back (drawn: no dots, so the icon draws itself).
+	// control with the save it made (saveSince: never less than DOTS_MIN),
+	// and show() puts what the box holds on the page when that is back
+	// (drawn: no dots, so the icon draws itself).
+	// The control was registered as live the moment it changed (changing),
+	// before the page's handler ran: a page that draws its form again inside
+	// that handler (league settings) hands it to the new checkbox, so it is
+	// still on the page here.
 	function serveChange(c, live, mark, show) {
-		const w = TDC.writeSince ? TDC.writeSince(mark.writes) : null;
-		let call = null, status = null;
-		if (w) { call = w.saved; status = w.status; }
-		else if (typeof TDCNet !== 'undefined' && TDCNet.started > mark.net) call = TDCNet.quiet();
-		if (!call || typeof TDCDots === 'undefined') { show(true); return; }
+		c.changing = false;
+		if (!dotsOn() || !c.wrap.isConnected) { show(true); if (live.get(c.key) === c && !served(c.wrap)) live.delete(c.key); return; }
+		const { call, status } = saveSince(mark);
 		c.ring.say('loading');
 		live.set(c.key, c);
 		TDCDots.serve(c.wrap, call, { reveal: () => show(false), status });
@@ -613,7 +706,7 @@ const TDCControls = (() => {
 		}
 		const key = checkKey(box);
 		const was = liveChecks.get(key);
-		const c = was && was.kind === kind && served(was.wrap) ? was : makeCheck(kind, box);
+		const c = was && was.kind === kind && (served(was.wrap) || was.changing) ? was : makeCheck(kind, box);
 		box.replaceWith(c.wrap);
 		c.bind(box, key);
 		besideLabel(c.wrap);
@@ -658,7 +751,10 @@ const TDCControls = (() => {
 
 		let mark = null;
 		wrap.addEventListener('change', (e) => {
-			if (e.target === c.box) mark = saveMark();
+			if (e.target !== c.box) return;
+			mark = saveMark();
+			c.changing = true;
+			liveChecks.set(c.key, c);
 		}, true);
 		wrap.addEventListener('change', (e) => {
 			if (e.target !== c.box) return;
@@ -728,7 +824,7 @@ const TDCControls = (() => {
 		}
 		const key = triKey(sel);
 		const was = liveTris.get(key);
-		const c = was && served(was.wrap) ? was : makeTri(sel);
+		const c = was && (served(was.wrap) || was.changing) ? was : makeTri(sel);
 		sel.replaceWith(c.wrap);
 		c.bind(sel, key);
 	}
@@ -779,7 +875,10 @@ const TDCControls = (() => {
 
 		let mark = null;
 		wrap.addEventListener('change', (e) => {
-			if (e.target === c.sel) mark = saveMark();
+			if (e.target !== c.sel) return;
+			mark = saveMark();
+			c.changing = true;
+			liveTris.set(c.key, c);
 		}, true);
 		wrap.addEventListener('change', (e) => {
 			if (e.target !== c.sel) return;
@@ -853,6 +952,21 @@ const TDCControls = (() => {
 		const enabled = () => [...select.options].map((o, i) => o.disabled ? -1 : i).filter((i) => i >= 0);
 		const chosenButton = () => track.querySelector('.tdc-select-option.is-selected');
 
+		// data-icon names a ring icon shown in the chosen option, before its
+		// words (UV, 28 Oct: the match page's break event wears the cue ball).
+		// Its ring is not drawn; the dots trace the icon when it is chosen.
+		let icon = null;
+		const iconName = select.dataset.icon;
+		if (iconName && TDCRing.ICONS[iconName]) {
+			icon = node('span', 'tdc-ring tdc-select-icon');
+			icon.setAttribute('aria-hidden', 'true');
+			icon.innerHTML = TDCRing.svg();
+			try { new TDCRing.RingStatus(icon, { icons: [iconName], initial: iconName }).live.remove(); }
+			catch (err) { TDC.error(AREA, 'the pill\'s icon could not be drawn: ' + iconName, err); icon = null; }
+		} else if (iconName) {
+			TDC.error(AREA, `a pill asks for an icon called "${iconName}", which there is not.`, select);
+		}
+
 		// Put the pill under b. Slides when the track is animated; jumps when
 		// it is not (the first drawing, a resize).
 		function placeThumb(b) {
@@ -893,6 +1007,8 @@ const TDCControls = (() => {
 				b.setAttribute('aria-pressed', String(on));
 				if (on) chosen = b;
 			}
+			// Before the pill is measured: the icon widens the option.
+			if (icon) { if (chosen) chosen.prepend(icon); else icon.remove(); }
 			const open = enabled();
 			drawIcon(prev, open.some((i) => i < at), (g) => prev.classList.toggle('is-end', g));
 			drawIcon(next, open.some((i) => i > at), (g) => next.classList.toggle('is-end', g));
@@ -929,6 +1045,26 @@ const TDCControls = (() => {
 		select.addEventListener('change', sync);
 		select.addEventListener('input', sync);
 		onPropSet(select, ['value', 'selectedIndex'], sync);
+
+		// The dots, on a choice made here (a click, an arrow, the keyboard):
+		// they trace the green pill's outline under the chosen option, then it
+		// fills; or the icon in it, when it has one. A page that draws the pill
+		// again after the choice (the match page's break event) gives a new
+		// one, found by the select's id.
+		const dotsTarget = (root) => root.querySelector(icon ? '.tdc-select-icon' : '.tdc-select-thumb');
+		const follow = () => {
+			const s = select.id && document.getElementById(select.id);
+			const b = s && s.closest('.tdc-select');
+			return b && dotsTarget(b);
+		};
+		let mark = null;
+		box.addEventListener('change', (e) => { if (e.target === select) mark = saveMark(); }, true);
+		box.addEventListener('change', (e) => {
+			if (e.target !== select || !mark) return;
+			const target = dotsTarget(box);
+			if (target) serveAfter(target, mark, icon ? { follow, leaves: true } : { trace: 'tab', follow, leaves: true });
+			mark = null;
+		});
 		new MutationObserver(build).observe(select, {
 			childList: true, subtree: true, characterData: true,
 			attributes: true, attributeFilter: ['disabled', 'label']
@@ -1008,10 +1144,17 @@ const TDCControls = (() => {
 			setAt(1);
 		}
 
+		// The dots ride the knob while it is dragged (UV, 28 Oct), and stay
+		// for whatever letting go set off (the match page's undo), at least
+		// DOTS_MIN; let go early, they race round it and leave.
+		let held = null;
+		const letGo = () => { if (held) { const r = held; held = null; r(); } };
+
 		let drag = null;   // { id, x, at, travel } while a finger is on the knob
 		knob.addEventListener('pointerdown', (e) => {
 			if (input.disabled || e.button !== 0) return;
 			e.preventDefault();
+			if (!held) held = serveHeld(knob, saveMark(), { trace: 'none' });
 			knob.setPointerCapture(e.pointerId);
 			const pad = parseFloat(getComputedStyle(box).paddingLeft) || 0;
 			drag = { id: e.pointerId, x: e.clientX, at: atOf(), travel: Math.max(1, box.clientWidth - knob.offsetWidth - 2 * pad) };
@@ -1036,6 +1179,7 @@ const TDCControls = (() => {
 			} else {
 				home();
 			}
+			letGo();
 		}
 		knob.addEventListener('pointerup', release);
 		knob.addEventListener('pointercancel', release);
@@ -1197,6 +1341,12 @@ const TDCControls = (() => {
 		if (opening) {
 			for (const i of box.querySelectorAll('[data-icon-key]')) redraw(i);
 			for (const w of box.querySelectorAll('.tdc-switch, .tdc-check')) if (w.tdcCheck) w.tdcCheck.appear();
+			// The dots on its heading while it opens (UV, 28 Oct), at least
+			// DOTS_MIN; a second tap mid-way lets them go with it.
+			if (dotsOn()) {
+				const least = new Promise((r) => setTimeout(r, DOTS_MIN));
+				TDCDots.serve(summary, Promise.all([size.finished.catch(() => {}), least]), { trace: 'none' });
+			}
 		}
 		size.finished.then(() => {
 			box.style.overflow = '';
@@ -1233,6 +1383,41 @@ const TDCControls = (() => {
 			if (!summary) return;
 			e.preventDefault();
 			fold(summary.parentElement);
+		});
+
+		// Buttons (UV, 28 Oct): every button on the site gets the dots when it
+		// is pressed, for the save it set off and at least DOTS_MIN, a ring
+		// icon's traced and anything else raced round (a fake ring). Done here
+		// once for every page. Left out: a control's own parts (they serve the
+		// control), the nav (nav.js serves its own), and anything the page
+		// has already given the dots (data-dots, e.g. the fixtures' buttons).
+		// A page that redraws after the press throws the button away: let go
+		// quietly (leaves).
+		let pressMark = null;
+		const BUTTON = 'button, a.btn, [role="button"]';
+		const NOT_BUTTON = '.tdc-stepper, .tdc-select, .tdc-date, .tdc-slide, .tdc-switch, .tdc-check, .tdc-tri, .site-nav, summary';
+		const pressed = (e) => {
+			const b = e.target.closest && e.target.closest(BUTTON);
+			return b && !b.closest(NOT_BUTTON) && !b.disabled && !b.matches('[aria-disabled="true"]') ? b : null;
+		};
+		// The page may give the dots to something else itself (the match page's
+		// special wins serve the score): then the button leaves them there.
+		const servedCount = () => (dotsOn() ? TDCDots.state.busy : 0);
+		document.addEventListener('click', (e) => {
+			if (pressed(e)) pressMark = Object.assign(saveMark(), { busy: servedCount() });
+		}, true);
+		document.addEventListener('click', (e) => {
+			const b = pressed(e);
+			if (!b || !pressMark) return;
+			const mark = pressMark;
+			pressMark = null;
+			setTimeout(() => {
+				// Hidden by its own press (a panel's Close): nowhere to go.
+				const q = b.isConnected && b.getBoundingClientRect();
+				if (b.dataset.dots || !q || (!q.width && !q.height) || servedCount() > mark.busy) return;
+				const s = saveSince(mark);
+				if (dotsOn()) TDCDots.serve(b, s.call, { status: s.status, leaves: true });
+			}, 0);
 		});
 
 		new MutationObserver((changes) => {

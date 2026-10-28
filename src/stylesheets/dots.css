@@ -57,13 +57,36 @@
 /* ── Anything else ───────────────────────────────────────────────────
    Its outline hides and the whole of it dims. !important because a
    button's border can be (.btn-secondary). */
-[data-dots="busy"]:not([data-dots-ring]) {
+[data-dots="busy"]:not([data-dots-ring]):not([data-dots-hold]):not([data-dots-ink]) {
 	opacity: var(--dots-busy-dim);
 	border-color: transparent !important;
 	transition: opacity var(--dots-dim) ease, border-color var(--dots-dim) ease;
 }
 [data-dots="revealing"]:not([data-dots-ring]) {
 	transition: opacity var(--dots-reveal) ease, border-color var(--dots-reveal) ease;
+}
+
+/* A button, or a dropdown pill's green pill, keeps some of its colour
+   while it waits and while the dots trace it (UV, 28 Oct: at --dots-busy-dim
+   its words, the colour of the page behind, all but vanished), and the
+   chosen option's words turn cream until the pill is full again. */
+.btn[data-dots="busy"]:not([data-dots-ring]):not([data-dots-hold]):not([data-dots-ink]),
+.tdc-select-thumb[data-dots="busy"]:not([data-dots-ring]):not([data-dots-hold]):not([data-dots-ink]),
+.tdc-select-thumb[data-dots="tracing"] {
+	opacity: var(--dots-busy-fill);
+}
+.tdc-select:has(.tdc-select-thumb[data-dots]) .tdc-select-option.is-selected { color: var(--text-primary); }
+
+/* ── Digits that are a part of the target (opts.ink) ────────────────
+   A stepper's number, a score in its button: only they dim while it
+   waits, and only they fade in under the dots, so the chevrons and the
+   button stay put. data-dots-hold (a finger still on it) keeps them lit. */
+[data-dots="busy"][data-dots-ink]:not([data-dots-hold]) [data-dots-inked] {
+	opacity: var(--dots-busy-dim);
+	transition: opacity var(--dots-dim) ease;
+}
+[data-dots="revealing"][data-dots-ink] [data-dots-inked] {
+	transition: opacity var(--dots-reveal) ease;
 }
 
 /* ── Tracing ─────────────────────────────────────────────────────────
@@ -74,11 +97,12 @@
    unfilled while its pill is traced, then fills. */
 [data-dots="tracing"][data-dots-ring] .tdc-ring .ring { opacity: 0; }
 [data-dots="tracing"][data-dots-ring] .tdc-ring .mark { opacity: var(--dots-lines, 0); transition: none; }
-[data-dots="tracing"][data-dots-trace="number"] {
+[data-dots="tracing"][data-dots-trace="number"]:not([data-dots-ink]),
+[data-dots="tracing"][data-dots-ink] [data-dots-inked] {
 	opacity: var(--dots-lines, 0);
 	transition: none;
 }
-[data-dots="tracing"][data-dots-trace="tab"] {
+[data-dots="tracing"][data-dots-trace="tab"]:not(.tdc-select-thumb) {
 	opacity: var(--dots-busy-dim);
 	background: transparent !important;
 	color: var(--text-primary) !important;
