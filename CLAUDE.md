@@ -124,4 +124,5 @@ Breaking any of these is how the project goes wrong.
 - **`_site/` can be badly stale.** It was 27 hours behind `src/` on 21 Oct and sent an investigation down the wrong road. Never edit it; never trust its age.
 - **The service worker caches aggressively.** When UV says a change has not appeared, suspect it (and a stale deploy) first.
 - **Render layouts rather than reason about them.** A headless browser against the real stylesheets caught several layout bugs that reading the CSS never would. Check at 420px wide first — the main context is a phone at the bar.
+- **Stop every server Claude starts, as soon as the check it was for is done** (UV, 29 Oct). `eleventy --serve`, a static server for a headless check, headless Chrome: each one left running kept UV's laptop fan high until it was killed. Start it in the background, note its PID, and kill it (and its child processes) before handing back. Before handing back, check that nothing Claude started is still running. Never kill a server UV started himself; ask if unsure.
 - There is a **stop-hook nagging about uncommitted changes**. Ignore it; committing is UV's.

@@ -31,10 +31,10 @@
 // The layout is UV's (24 Oct): a banner with both teams and the card's state;
 // each session as rows of home player, an L and a W three-way switch (who won
 // the lag, who won the frame: home, nobody, away), away player, with the
-// session's totals; a tap on a player's name opens the reserve picker; every
-// player's frames, head to head (a table per team, UV 28 Oct) or by session;
-// the result in a banner; the signatures as a form waiting to be signed. On a
-// PC the sessions sit two to a row.
+// session's totals; a tap on a player's name opens the reserve picker; then
+// one section in the banner's style (UV, 29 Oct) holding the result, every
+// player's frames, head to head (a table per team, UV 28 Oct) or by session,
+// and the signatures. On a PC the sessions sit two to a row.
 //
 // Writes: tdc_set_match_squad, tdc_set_lineup_slot, tdc_lock_lineup,
 // tdc_swap_frame_player, tdc_record_frame, tdc_submit_card, tdc_answer_card.
@@ -57,12 +57,12 @@
 		grid: el('grid'), sessions: el('session-list'), gridHint: el('grid-hint'),
 		playerTable: el('player-table'),
 		playerViews: el('player-views'), h2hView: el('h2h-view'), h2hTables: el('h2h-tables'), sessionView: el('session-view'),
-		summary: el('summary'), sumDetail: el('sum-detail'),
+		sumDetail: el('sum-detail'),
 		sumHomePic: el('sum-home-pic'), sumHomeName: el('sum-home-name'), sumHomeScore: el('sum-home-score'),
 		sumAwayPic: el('sum-away-pic'), sumAwayName: el('sum-away-name'), sumAwayScore: el('sum-away-score'),
 		signPanel: el('sign-panel'), sfLeague: el('sf-league'), sfDate: el('sf-date'),
-		sfHomeName: el('sf-home-name'), sfHomeScore: el('sf-home-score'), sfHomeSig: el('sf-home-sig'), sfHomeCap: el('sf-home-cap'),
-		sfAwayName: el('sf-away-name'), sfAwayScore: el('sf-away-score'), sfAwaySig: el('sf-away-sig'), sfAwayCap: el('sf-away-cap'),
+		sfHomeSig: el('sf-home-sig'), sfHomeCap: el('sf-home-cap'),
+		sfAwaySig: el('sf-away-sig'), sfAwayCap: el('sf-away-cap'),
 		sfDispute: el('sf-dispute'),
 		changedSince: el('changed-since'), changedCount: el('changed-count'), changedList: el('changed-list'),
 		signHome: el('sign-home'), signAway: el('sign-away'), disputeBtn: el('dispute-btn'),
@@ -79,8 +79,6 @@
 	// The scores that fade when a re-read changes them (TDC.liveFade).
 	els.sumHomeScore.dataset.live = 'sum|home';
 	els.sumAwayScore.dataset.live = 'sum|away';
-	els.sfHomeScore.dataset.live = 'sf|home';
-	els.sfAwayScore.dataset.live = 'sf|away';
 
 	// ─── State ───
 	let match = null;          // the row, plus the two team names
@@ -211,8 +209,6 @@
 			pic.replaceChildren(shield());
 			name.textContent = teamName(side);
 		}
-		els.sfHomeName.textContent = match.home_name;
-		els.sfAwayName.textContent = match.away_name;
 
 		// The league's pages, once the match has said which season it is in.
 		TDCLeagueNav.show(match.league_season_id);
@@ -356,8 +352,8 @@
 		renderSetup(locked, both, canSet);
 		renderOther(locked, both);
 		renderSessions(both);
-		renderPlayers(both);
 		renderSummary(both);
+		renderPlayers(both);
 		renderSignatures(both);
 	}
 
@@ -1008,16 +1004,18 @@
 	}
 
 	// ─── The result ───
+	// The head of the signatures section (UV, 29 Oct: one section in the
+	// banner's style, where the result was a banner of its own above it).
 	function renderSummary(both) {
-		els.summary.hidden = !both || !card.length;
-		if (els.summary.hidden) return;
+		els.signPanel.hidden = !both || !card.length;
+		if (els.signPanel.hidden) return;
 		const [key] = stateOf(both);
-		els.summary.className = 'jumbo card-jumbo card-summary card-state-' + key;
+		els.signPanel.className = 'jumbo card-jumbo card-summary sign-form card-state-' + key;
 
 		const home = score('home'), away = score('away');
 		els.sumHomeScore.textContent = home;
 		els.sumAwayScore.textContent = away;
-		els.summary.dataset.lead = home > away ? 'home' : away > home ? 'away' : '';
+		els.signPanel.dataset.lead =home > away ? 'home' : away > home ? 'away' : '';
 
 		const played = card.filter((f) => f.status === 'complete').length;
 		const walkovers = card.filter((f) => f.result_event === 'default').length;
@@ -1088,19 +1086,16 @@
 		: g.signed_as === 'captain' ? ' · captain' : '');
 
 	// ─── Signatures ───
-	// A form waiting to be signed: the league, the date, the teams and their
-	// scores side by side, a line for each captain's signature, whether
-	// anything is disputed, then the two buttons.
+	// Under the result and the frames, in the same section: the league and
+	// the date at its top, a line for each captain's signature under their
+	// team, whether anything is disputed, then the buttons.
 	function renderSignatures(both) {
-		els.signPanel.hidden = !both || !card.length;
-		if (els.signPanel.hidden) return;
+		if (els.signPanel.hidden) return;   // renderSummary decides
 
 		els.sfLeague.textContent = info ? info.league_name + (info.name ? ' · ' + info.name : '') : '';
 		els.sfDate.textContent = match.scheduled_at
 			? new Date(match.scheduled_at).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 			: 'No date set';
-		els.sfHomeScore.textContent = score('home');
-		els.sfAwayScore.textContent = score('away');
 
 		const sides = (cardState && cardState.sides) || {};
 		const sigLine = (side, line, cap) => {

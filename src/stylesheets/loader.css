@@ -41,7 +41,8 @@
 
 /* The ring the dots serve, in the middle of the screen. Never seen itself:
    its border is transparent, and only its width counts (the dots' size on
-   it); the dots take their colour from its text colour. */
+   it); the dots take their colour from its text colour: the site's green
+   (UV, 29 Oct). */
 .tdc-loader-ring {
 	position: absolute;
 	left: 50%;
@@ -52,7 +53,7 @@
 	box-sizing: border-box;
 	border: var(--loader-stroke) solid transparent;
 	border-radius: var(--radius-round);
-	color: var(--text-primary);
+	color: var(--color-primary);
 }
 /* It comes back over the screen's own fade, so the dots, which fade only
    once it is back, are gone as the screen is. */

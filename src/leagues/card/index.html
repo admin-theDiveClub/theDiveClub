@@ -32,10 +32,10 @@ extraScripts:
 	     under it. Tapping a player's name on an unplayed frame opens the
 	     reserve picker, and a reserve wears a badge. A seat left empty waits for a reserve or a
 	     latecomer until a captain signs, then is a walkover.
-	  4. Every player's frames: head to head (a table per team), or session
-	     by session.
-	  5. The result: the two teams and their scores, in a banner again.
-	  6. The signatures, laid out as a form waiting to be signed.
+	  4. The result and the signatures, one section in the banner's style
+	     (UV, 29 Oct): the two teams and the score, every player's frames
+	     (head to head, a table per team, or session by session), then the
+	     signature lines, the changelog and the buttons.
 
 	Reached as /leagues/card/?m=<match id>.
 {% endcomment %}
@@ -108,6 +108,35 @@ extraScripts:
 	<div id="grid" hidden>
 		<div id="session-list"></div>
 		<p class="muted card-hint" id="grid-hint" hidden></p>
+	</div>
+
+	{% comment %}
+		The result and the signatures, one section in the banner's style (UV,
+		29 Oct; the result banner and the signature form were two). The
+		league and the date; the two teams with their shields either side of
+		the score; the frames; each captain's signature line under their
+		team; whether anything is disputed; the changelog; the buttons. As
+		wide as it needs on a PC, the width of the page on a phone.
+	{% endcomment %}
+	<section class="jumbo card-jumbo card-summary sign-form" id="sign-panel" hidden aria-label="The result and the signatures">
+		<div class="sf-top">
+			<p class="sf-league" id="sf-league"></p>
+			<p class="sf-date" id="sf-date"></p>
+		</div>
+		<div class="cj-head">
+			<div class="cj-team">
+				<span class="team-pic cj-pic" id="sum-home-pic"></span>
+				<span class="cj-name" id="sum-home-name">Home</span>
+			</div>
+			<div class="cj-mid">
+				<span class="cj-score"><span id="sum-home-score">0</span><span class="cj-dash">–</span><span id="sum-away-score">0</span></span>
+			</div>
+			<div class="cj-team">
+				<span class="team-pic cj-pic" id="sum-away-pic"></span>
+				<span class="cj-name" id="sum-away-name">Away</span>
+			</div>
+		</div>
+		<p class="cj-detail" id="sum-detail"></p>
 
 		{% comment %}
 			Two views of the same frames (UV, 28 Oct), Head to head the
@@ -115,8 +144,9 @@ extraScripts:
 			other team's across the top, a green dot where the player down
 			the side won and a yellow ring where they won the lag. By session
 			is the earlier table. The choice is remembered on this device.
+			Inside the signatures since 29 Oct (UV), with no heading.
 		{% endcomment %}
-		<h2>Every player's frames</h2>
+		<div class="sf-frames">
 		<div class="cp-views" id="player-views" role="group" aria-label="How to show every player's frames">
 			<button type="button" class="cp-view" data-view="h2h" aria-pressed="true">
 				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/><circle class="cp-view-dot" cx="12" cy="12" r="1.6"/><circle cx="18" cy="6" r="1.9"/></svg>
@@ -134,47 +164,18 @@ extraScripts:
 			<table class="tdc-table card-players" id="player-table"></table>
 		</div>
 		<p class="muted card-hint h2h-key"><span class="h2h-mark is-won" aria-hidden="true"></span> won the frame <span class="h2h-mark is-lag" aria-hidden="true"></span> won the lag <span class="h2h-mark is-open" aria-hidden="true"></span> not played yet</p>
-	</div>
-
-	<section class="jumbo card-jumbo card-summary" id="summary" hidden aria-label="The result">
-		<div class="cj-head">
-			<div class="cj-team">
-				<span class="team-pic cj-pic" id="sum-home-pic"></span>
-				<span class="cj-name" id="sum-home-name">Home</span>
-			</div>
-			<div class="cj-mid">
-				<span class="cj-score"><span id="sum-home-score">0</span><span class="cj-dash">–</span><span id="sum-away-score">0</span></span>
-			</div>
-			<div class="cj-team">
-				<span class="team-pic cj-pic" id="sum-away-pic"></span>
-				<span class="cj-name" id="sum-away-name">Away</span>
-			</div>
 		</div>
-		<p class="cj-detail" id="sum-detail"></p>
-	</section>
 
-	{% comment %}
-		The signatures, as a form waiting to be signed (UV, 24 Oct): the
-		league, the date, the two teams side by side with their scores and a
-		line each for the captain's signature, whether anything is disputed,
-		then Sign and, under it, Raise a dispute. A third of the page on a PC,
-		centred; the full width on a phone.
-	{% endcomment %}
-	<section class="sign-form" id="sign-panel" hidden>
-		<h2>Signatures</h2>
-		<p class="sf-league" id="sf-league"></p>
-		<p class="sf-date" id="sf-date"></p>
-
+		{% comment %}
+			A line for each side's signature, under its team in the banner
+			above, with its captain beneath.
+		{% endcomment %}
 		<div class="sf-sides">
 			<div class="sf-side" id="sf-home">
-				<span class="sf-team" id="sf-home-name">Home</span>
-				<span class="sf-score" id="sf-home-score">0</span>
 				<span class="sf-line" id="sf-home-sig"></span>
 				<span class="sf-cap" id="sf-home-cap">Home captain</span>
 			</div>
 			<div class="sf-side" id="sf-away">
-				<span class="sf-team" id="sf-away-name">Away</span>
-				<span class="sf-score" id="sf-away-score">0</span>
 				<span class="sf-line" id="sf-away-sig"></span>
 				<span class="sf-cap" id="sf-away-cap">Away captain</span>
 			</div>
