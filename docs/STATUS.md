@@ -135,8 +135,8 @@ Worked one at a time: investigate, cause and plan, change; UV tests and commits 
 | 2 | League card | Sessions collapsible | |
 | 3 | League card | Toggle styling: the outer bar turns blue, instead of the blue ring on the chosen icon | |
 | 4 | League card | The tables' blue after the sessions becomes a blue inner glow on the cells. **Ask UV: highlighted cells only, or all cells?** | |
-| 5 | Signing | The changelog in the signature section folded by default | |
-| 6 | Signing | An edit after someone signs means re-signing before submission, enforced in the database. **Ask UV: does an edit void both teams' signatures or only the other team's?** | |
+| 5 | Signing | The changelog in the signature section folded by default | **Built 29 Oct, UV to look.** A folding group headed "Changed since first signed (n)"; stays as left through saves. Rendered at 420px on a stand-in |
+| 6 | Signing | An edit after someone signs means re-signing before submission, enforced in the database. **UV, 29 Oct: an edit voids both; undoing it (the card exactly as signed) brings both back** (`docs/DECISIONS.md`) | |
 | 7 | Signing | An LD (or owner) can sign for both teams, and the changelog and signatures say it was signed by the LD, not as a team player | |
 | 8 | Navigation | The league pages as one page: the top tabs switch in place, with the dots | |
 | 9 | Navigation | Notifications into the nav bar | |

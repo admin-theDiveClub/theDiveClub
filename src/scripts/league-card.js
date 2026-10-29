@@ -65,7 +65,7 @@
 		sfHomeName: el('sf-home-name'), sfHomeScore: el('sf-home-score'), sfHomeSig: el('sf-home-sig'), sfHomeCap: el('sf-home-cap'),
 		sfAwayName: el('sf-away-name'), sfAwayScore: el('sf-away-score'), sfAwaySig: el('sf-away-sig'), sfAwayCap: el('sf-away-cap'),
 		sfDispute: el('sf-dispute'),
-		changedSince: el('changed-since'), changedList: el('changed-list'),
+		changedSince: el('changed-since'), changedCount: el('changed-count'), changedList: el('changed-list'),
 		signBtn: el('sign-btn'), disputeBtn: el('dispute-btn'),
 		status: el('page-status')
 	};
@@ -1028,7 +1028,10 @@
 			? 'Disputed: ' + (cardState.note || 'no reason given') + '. The card is open again.'
 			: 'No disputes raised on this card.';
 
+		// Folded until opened (UV, 29 Oct), its count in the heading. Only the
+		// list is redrawn, so it stays open or closed as the reader left it.
 		els.changedSince.hidden = !changes.length;
+		els.changedCount.textContent = changes.length;
 		els.changedList.replaceChildren(...changes.map((c) => {
 			const row = node('div', 'list-row');
 			const main = node('div', 'list-row-main');

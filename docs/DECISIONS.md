@@ -896,3 +896,11 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* the dots' settings are **Transition time** (`--dots-blend`, 0.5 s: waiting into tracing, tracing into the ring race, and the dots fading out), **Draw time** (`--dots-draw`, 0.12 s: the trace, any kind, a number a third more a digit) and **Fade time** (`--dots-reveal`, 0.25 s: the ring fading in after the trace). The dots fade out only once the ring is fully in, over the transition time; there is no race of its own before. A fake ring is the element's shorter side, with no margin; `--dots-ring-margin` (16 px) is added only round a square.
 *Replaces:* draw and fade as speeds times the prototype's (`--dots-draw` 1, `--dots-fade` 1, removed), the per-kind trace times and the 0.5 s race before the fade; the margin on every fake ring (26 Oct).
 *Touches:* `scripts/dots.js`, `variables.css`, `scripts/sandbox-dots.js`, `scripts/sandbox.js`, `docs/systems/dots.md` §3, §5
+
+## 2026-10-29 — An edit after signing voids both signatures; undoing it brings them back
+
+*Decided by:* UV
+*So:* any change to a signed card voids **both** captains' signatures, not only the other side's, and the card cannot be submitted until both sign again. This is enforced in the database. **If the edit is undone**, so that the card is exactly what both sides signed, both signatures stand again: they signed that card, so nothing needs signing twice.
+*Example:* both captains sign at 13 : 12. The LD changes frame 7's winner, and both signatures go. The LD changes it back: 13 : 12 with every frame as signed, and both signatures are back, with nobody signing again.
+*Rejected:* voiding only the other team's signature (the side that made the edit would still be standing behind a card it had just changed).
+*Not built yet:* STATUS §3b item 6.
