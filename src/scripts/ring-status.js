@@ -77,6 +77,13 @@ const TDCRing = (() => {
 			'M31 37L38 37A6.5 6.5 0 0 1 38 50L31 50M38 50A6.5 6.5 0 0 1 38 63L31 63',
 			'M57 63L57 37L69 37',
 			'M57 50L66 50'] },
+		// A reverse break & finish (UV, 29 Oct): won by the side that lost
+		// the lag, a small r before the BF.
+		rbf: { label: 'Reverse break & finish', widths: [6, 6, 6, 6], strokes: [
+			'M25 47L25 63M25 53C27 48 31 46 34 47',
+			'M39 37L39 63',
+			'M39 37L45 37A6.5 6.5 0 0 1 45 50L39 50M45 50A6.5 6.5 0 0 1 45 63L39 63',
+			'M58 63L58 37L70 37M58 50L67 50'] },
 		gb: { label: 'Golden break', widths: [6, 6, 6], strokes: [
 			'M45 43.7A8 13 0 1 0 45 56.3L45 51L39 51',
 			'M56 37L56 63',

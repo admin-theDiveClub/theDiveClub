@@ -777,22 +777,30 @@
 
 	// ─── Break & finish and golden break (UV, 29 Oct) ───
 	// The special wins the league has on, in the order a repeat tap on W
-	// steps through them: tick, BF, GB, back to the tick. Reverse B&F is not
-	// offered here (not asked for).
-	const RESULT_ICON = { break_and_finish: 'bf', golden_break: 'gb' };
-	const RESULT_MARK = { break_and_finish: 'BF', golden_break: 'GB' };
+	// steps through them: tick, BF, GB, back to the tick when the winner won
+	// the lag; tick, rBF, back to the tick when they lost it (UV, 29 Oct).
+	const RESULT_ICON = { break_and_finish: 'bf', golden_break: 'gb', reverse_break_and_finish: 'rbf' };
+	const RESULT_MARK = { break_and_finish: 'BF', golden_break: 'GB', reverse_break_and_finish: 'rBF' };
 	function specials() {
 		const r = match.rules || {};
-		const bf = !!(r.track_breaks && r.break_finish_enabled);
-		return [bf && 'break_and_finish', bf && r.golden_break_enabled && 'golden_break'].filter(Boolean);
+		const breaks = !!r.track_breaks;
+		const bf = breaks && !!r.break_finish_enabled;
+		return [bf && 'break_and_finish', bf && r.golden_break_enabled && 'golden_break',
+			breaks && r.reverse_break_finish_enabled && 'reverse_break_and_finish'].filter(Boolean);
 	}
-	// Under the league's "needs the breaker" (on unless it says off) a
-	// special win must go to the side that broke, which on the card is L, or
-	// the database refuses it. So it is offered only then (UV: skipped).
+	// Which of them fit a frame won by side with the lag where it is. BF and
+	// GB go to the side that broke, which on the card is L, under the
+	// league's "needs the breaker" (on unless it says off), or the database
+	// refuses them (UV: skipped otherwise). rBF is won by the side that did
+	// not break, so it needs L on the other side. With L on nobody, only the
+	// tick, unless the league does not ask for the breaker (then BF and GB).
 	const breakerRule = () => !match.rules || match.rules.break_finish_requires_breaker !== false;
+	function fits(event, f, side) {
+		if (event === 'reverse_break_and_finish') return !!f.break_side && f.break_side !== side;
+		return !breakerRule() || f.break_side === side;
+	}
 	function cycleNext(f, side) {
-		const allowed = !breakerRule() || f.break_side === side;
-		const steps = ['win'].concat(allowed ? specials() : []);
+		const steps = ['win'].concat(specials().filter((e) => fits(e, f, side)));
 		const at = steps.indexOf(f.result_event);
 		return steps[(at < 0 ? 0 : at + 1) % steps.length];
 	}
@@ -1039,8 +1047,8 @@
 		const done = f.status === 'complete';
 		const win = done && f.winner_side === side;
 		const lag = f.break_side === side;
-		// A break & finish or a golden break: its letters in place of the dot
-		// (UV, 29 Oct).
+		// A break & finish, a golden break or a reverse break & finish: its
+		// letters in place of the dot (UV, 29 Oct).
 		const special = win && RESULT_MARK[f.result_event];
 		const mark = node('span', 'h2h-mark' + (win ? ' is-won' : '') + (special ? ' is-special' : '') + (lag ? ' is-lag' : '') + (done ? '' : ' is-open'), special || undefined);
 		const who = (side === 'home' ? f.home_player : f.away_player) || 'Empty seat';
@@ -1605,9 +1613,11 @@
 		} else if (action === 'win') {
 			// W back to the middle clears the result; the lag stays.
 			send('Clearing', { status: 'pending', winner_side: null, result_event: null });
-		} else if (breakerRule() && RESULT_ICON[f.result_event] && side !== f.winner_side) {
-			// The lag moved off a break & finish's winner: it is a plain win
-			// now, or the database refuses the move (the breaker rule).
+		} else if (f.status === 'complete' && RESULT_ICON[f.result_event]
+			&& !fits(f.result_event, Object.assign({}, f, { break_side: side }), f.winner_side)) {
+			// The lag moved so the special win no longer fits it (a B&F's
+			// winner lost the lag, an rB&F's winner won it): a plain win now,
+			// or the database refuses the move (the breaker rule).
 			send('Saving', { break_side: side, result_event: 'win' });
 		} else {
 			send('Saving', { break_side: side });
