@@ -61,10 +61,9 @@
 	function card(m) {
 		const a = document.createElement('a');
 		a.className = 'match-card' + (m.needs_me ? ' needs-you' : '');
-		// A team match (20261029140544, UV 29 Oct): a captain or the league
-		// director to the captain's card, a player to the player's page.
-		// The player's page is not built yet, so a player goes to the card too,
-		// where they see the night and enter nothing.
+		// A team match (20261029140544, UV 29 Oct): the team card, which a
+		// captain or the league director sees whole and a player sees as
+		// their own frames (the player's view, league-card.js).
 		a.href = m.team_match
 			? '/leagues/card/?m=' + encodeURIComponent(m.id)
 			: '/match/?id=' + encodeURIComponent(m.id);

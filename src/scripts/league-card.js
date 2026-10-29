@@ -55,6 +55,7 @@
 		lockBtn: el('lock-btn'),
 		otherSide: el('other-side'), otherHead: el('other-head'), otherDetail: el('other-detail'),
 		grid: el('grid'), sessions: el('session-list'), gridHint: el('grid-hint'),
+		mine: el('mine'), mineFrames: el('mine-frames'), mineH2h: el('mine-h2h'), mineSessions: el('mine-sessions'),
 		playerTable: el('player-table'),
 		playerViews: el('player-views'), h2hView: el('h2h-view'), h2hTables: el('h2h-tables'), sessionView: el('session-view'),
 		sumDetail: el('sum-detail'),
@@ -100,6 +101,7 @@
 	const foldedSessions = new Set();
 	const clOpen = new Map();           // changelog group (side|time) -> open, as the reader left it   // session headings a reader has closed, kept across redraws
 	let working = null;       // the side being set up: mine, or the director's choice
+	let myPlayerId = null;    // the reader's own player, for the player's view
 
 	// How every player's frames are shown: 'h2h' (the default, UV 28 Oct) or
 	// 'session'. Remembered on this device only; without storage it is the
@@ -351,7 +353,9 @@
 		renderSwitch(both);
 		renderSetup(locked, both, canSet);
 		renderOther(locked, both);
-		renderSessions(both);
+		// A player sees their own frames in place of every session.
+		if (asPlayer()) { els.grid.hidden = true; renderMine(both); }
+		else { els.mine.hidden = true; renderSessions(both); }
 		renderSummary(both);
 		renderPlayers(both);
 		renderSignatures(both);
@@ -724,7 +728,12 @@
 	// nobody in the middle, away at the right. L is who won the lag (the
 	// frame's break_side), W who won the frame. A viewer who may not enter the
 	// frame sees them as they stand, greyed.
-	function toggles(f, mayEnter) {
+	//
+	// left is the side at the left end: home on the captain's card; on a
+	// player's own rows their side, so their end is always the left (UV,
+	// 29 Oct). The select's values are sides either way.
+	function toggles(f, mayEnter, left = 'home') {
+		const right = left === 'home' ? 'away' : 'home';
 		const cell = node('div', 'cs-toggles');
 		for (const [action, letter, value, words] of [
 			['lag', 'L', f.break_side, 'won the lag'],
@@ -754,13 +763,13 @@
 			pick.dataset.action = action;
 			pick.dataset.frame = f.frame_no;
 			pick.append(
-				new Option(match.home_name + ' ' + words, 'home', false, value === 'home'),
+				new Option(teamName(left) + ' ' + words, left, false, value === left),
 				new Option('Nobody yet', '', false, !value),
-				new Option(match.away_name + ' ' + words, 'away', false, value === 'away'));
+				new Option(teamName(right) + ' ' + words, right, false, value === right));
 			pick.disabled = !mayEnter;
 			pick.setAttribute('aria-label', (action === 'lag' ? 'Lag' : 'Winner') + ', frame ' + f.frame_no);
-			line.append(node('span', 'cs-tog-key' + (value === 'home' ? ' is-on' : ''), letter), pick,
-				node('span', 'cs-tog-key' + (value === 'away' ? ' is-on' : ''), letter));
+			line.append(node('span', 'cs-tog-key' + (value === left ? ' is-on' : ''), letter), pick,
+				node('span', 'cs-tog-key' + (value === right ? ' is-on' : ''), letter));
 			cell.append(line);
 		}
 		return cell;
@@ -840,7 +849,147 @@
 	// own. The database enforces this — here it only decides what to draw.
 	function canRecord(f) {
 		if (lineupState.i_run_it || lineupState.my_side) return true;
-		return false;   // a player records their own frame on the match page
+		return isMine(f);   // a player their own frame (the player's view)
+	}
+
+	// ─── The player's view (UV, 29 Oct) ───
+	// Somebody who plays tonight (in a frame or in the order) and is neither
+	// a captain of either side nor the league director sees their own frames
+	// first, then their own tables, then the result and the signatures as
+	// everybody does, read-only. A captain and the director keep the whole
+	// card; somebody not in the night sees the card read-only, as before.
+	const isMine = (f) => !!myPlayerId && (f.home_player_id === myPlayerId || f.away_player_id === myPlayerId);
+	function asPlayer() {
+		if (!lineupState || !myPlayerId || lineupState.i_run_it || lineupState.my_side) return false;
+		return card.some(isMine) || lineup.some((l) => l.player_id === myPlayerId);
+	}
+	const sideOf = (f) => (f.home_player_id === myPlayerId ? 'home' : 'away');
+	const otherOf = (side) => (side === 'home' ? 'away' : 'home');
+
+	function renderMine(both) {
+		const frames = card.filter(isMine);
+		els.mine.hidden = !both || !frames.length;
+		if (els.mine.hidden) return;
+		const strict = !!(match.rules && match.rules.strict_frame_order);
+		const nextOpen = strict ? (card.find((f) => f.status === 'pending') || {}).frame_no : null;
+		const lockedCard = cardState && (cardState.state === 'agreed' || cardState.state === 'approved');
+
+		// One block, as a session is drawn: a row per frame, the player at
+		// the left with the session and frame under their name, their L and
+		// W (their end the left), the opponent at the right.
+		const block = node('details', 'cs-session set-group cs-mine');
+		block.open = !foldedSessions.has('mine');
+		block.addEventListener('toggle', () => {
+			if (block.open) foldedSessions.delete('mine'); else foldedSessions.add('mine');
+		});
+		const won = (mineSide) => frames.filter((f) => f.winner_side === (mineSide ? sideOf(f) : otherOf(sideOf(f)))).length;
+		const title = node('summary', 'cs-title', 'Your frames');
+		const sc = node('span', 'cs-title-score', won(true) + ' : ' + won(false));
+		sc.dataset.live = 'mine|score';
+		title.append(sc);
+		block.append(title);
+
+		const grid = node('div', 'cs-grid');
+		const mySide = sideOf(frames[0]);
+		const head = node('div', 'cs-row cs-head');
+		head.append(node('span', 'cs-team cs-home', teamName(mySide)), node('span', 'cs-team cs-away', teamName(otherOf(mySide))));
+		grid.append(head);
+		for (const f of frames) {
+			const me = sideOf(f), them = otherOf(me);
+			const mayEnter = f.result_event !== 'default' && !lockedCard && f.home_player_id && f.away_player_id
+				&& (!strict || f.frame_no === nextOpen);
+			const row = node('div', 'cs-row cs-frame');
+			row.append(mineCell(f, me, 'cs-home', 'Session ' + (f.session || 1) + ' · Frame ' + f.frame_no),
+				toggles(f, mayEnter, me),
+				mineCell(f, them, 'cs-away', (them === 'home' ? 'H' : 'A') + (posOf(f, them) || '')));
+			grid.append(row);
+		}
+		block.append(grid);
+		els.mineFrames.replaceChildren(block);
+		renderMineTables(frames, mySide);
+	}
+
+	// One seat on a player's row: the picture and name, a line under it.
+	function mineCell(f, side, cls, sub) {
+		const cell = node('div', 'cs-player ' + cls + (f.winner_side === side ? ' is-won' : ''));
+		const id = side === 'home' ? f.home_player_id : f.away_player_id;
+		const name = side === 'home' ? f.home_player : f.away_player;
+		const seat = node('span', 'cs-seat');
+		seat.append(id ? person(id, name) : node('span', 'cs-empty', 'Empty seat'));
+		cell.append(seat, node('span', 'cs-sub', sub + (f.result_event === 'default' && f.winner_side === side ? ' · Walkover' : '')));
+		return cell;
+	}
+
+	// The player's own tables, both shown (UV, 29 Oct): head to head, one
+	// row (them) against the other team's positions; and by session, a row
+	// per frame with who they met. Small, as only their frames are in them.
+	function renderMineTables(frames, mySide) {
+		const other = otherOf(mySide);
+		const positions = teamSize() || Math.max(0, ...card.map((f) => posOf(f, other) || 0));
+		const range = Array.from({ length: positions }, (_, i) => i + 1);
+		const me = frames.find(isMine);
+		const myName = me[mySide === 'home' ? 'home_player' : 'away_player'];
+
+		const h2h = node('table', 'tdc-table card-players h2h-table mine-table');
+		const thead = node('thead'), head = node('tr');
+		head.append(node('th', 'cp-label h2h-when', ''));
+		for (const p of range) head.append(positionHead(other, p));
+		head.append(node('th', 'cp-sep h2h-won', 'Won'));
+		thead.append(head);
+		const tr = node('tr');
+		const rowHead = node('th', 'h2h-row');
+		rowHead.scope = 'row';
+		rowHead.append(person(myPlayerId, myName, 'card-person-sm'));
+		tr.append(rowHead);
+		let won = 0;
+		for (const c of range) {
+			const td = node('td', 'h2h-cell');
+			const met = frames.filter((f) => posOf(f, other) === c);
+			if (!met.length) { td.classList.add('is-none'); td.title = 'You do not meet them tonight'; }
+			for (const f of met) { if (wonBy(f, mySide)) won++; td.append(frameMark(f, mySide)); }
+			markEdited(td, met);
+			tr.append(td);
+		}
+		tr.append(node('td', 'cp-sep cp-score h2h-won', String(won)));
+		const tbody = node('tbody');
+		tbody.append(tr);
+		h2h.append(thead, tbody);
+
+		const bySes = node('table', 'tdc-table card-players mine-table');
+		const shead = node('thead'), sh = node('tr');
+		sh.append(node('th', 'cp-label', 'Session'), node('th', 'cp-label', 'Against'), node('th', 'cp-label', 'Frame'));
+		shead.append(sh);
+		const sbody = node('tbody');
+		for (const f of frames) {
+			const row = node('tr');
+			const them = otherOf(sideOf(f));
+			const opp = node('td', 'mine-opp');
+			const oid = them === 'home' ? f.home_player_id : f.away_player_id;
+			const oname = them === 'home' ? f.home_player : f.away_player;
+			opp.append(oid ? person(oid, oname, 'card-person-sm') : node('span', 'cs-empty', 'Empty seat'));
+			const cell = node('td', 'cp-cell');
+			cell.append(frameMark(f, mySide));
+			markEdited(cell, [f]);
+			row.append(node('td', 'cp-label', String(f.session || 1)), opp, cell);
+			sbody.append(row);
+		}
+		const sfoot = node('tfoot'), fr = node('tr');
+		const lab = node('td', 'cp-label', 'Won');
+		lab.colSpan = 2;
+		fr.append(lab, node('td', 'num cp-cell', String(won)));
+		sfoot.append(fr);
+		bySes.append(shead, sbody, sfoot);
+
+		const wrap = (title, table) => {
+			const box = node('section', 'h2h-team');
+			box.append(node('h3', 'h2h-title', title));
+			const scroll = node('div', 'table-scroll');
+			scroll.append(table);
+			box.append(scroll);
+			return box;
+		};
+		els.mineH2h.replaceChildren(wrap('Head to head', h2h));
+		els.mineSessions.replaceChildren(wrap('By session', bySes));
 	}
 
 	// ─── Every player's frames ───
@@ -1382,8 +1531,9 @@
 		}), 'Lineup locked.');
 	});
 
-	// The reserve pickers and the L and W switches, all inside the sessions.
-	els.sessions.addEventListener('change', (e) => {
+	// The reserve pickers and the L and W switches, inside the sessions, and
+	// a player's own L and W in their frames.
+	const onFrameChange = (e) => {
 		const pick = e.target.closest('[data-action="reserve"]');
 		if (pick) {
 			if (!pick.value) return;
@@ -1402,9 +1552,10 @@
 		if (!f) { TDC.error(AREA, 'no frame ' + frameNo + ' on this card.', null, els.status); return; }
 
 		// The letter beside the chosen end lights at once, not after the re-read.
+		// The left end is home on the captain's rows, the player's own side on theirs.
 		const keys = tri.closest('.cs-tog').querySelectorAll('.cs-tog-key');
-		keys[0].classList.toggle('is-on', side === 'home');
-		keys[1].classList.toggle('is-on', side === 'away');
+		keys[0].classList.toggle('is-on', !!side && side === tri.options[0].value);
+		keys[1].classList.toggle('is-on', !!side && side === tri.options[2].value);
 
 		// tdc_record_frame writes the whole frame from what it is sent, so each
 		// toggle sends the frame as it stands with its own change laid over:
@@ -1461,7 +1612,9 @@
 		} else {
 			send('Saving', { break_side: side });
 		}
-	});
+	};
+	els.sessions.addEventListener('change', onFrameChange);
+	els.mineFrames.addEventListener('change', onFrameChange);
 
 	// The view toggle. Nothing is saved to the database, so the dots stay
 	// the 0.2 s every control gets (docs/systems/dots.md §8).
@@ -1555,6 +1708,11 @@
 
 		if (!await loadMatch()) return;
 		if (!await loadRosters()) return;
+		// Who the reader is, for the player's view. An account with no player
+		// (rare) simply never gets it, so no error is shown for one.
+		const me = await supabaseClient.from('tbl_players').select('id').eq('user_id', session.user.id).maybeSingle();
+		if (me.error) TDC.showSupabaseError(AREA, me.error, els.status);
+		else myPlayerId = me.data ? me.data.id : null;
 		await loadContext();
 
 		// The cutoff is evaluated when somebody opens the night, which is what

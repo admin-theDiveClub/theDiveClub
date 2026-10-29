@@ -1311,6 +1311,21 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 .sign-form .h2h-tables { display: flex; flex-wrap: wrap; justify-content: center; }
 .sign-form .h2h-team { flex: 0 1 auto; min-width: 0; }
 .sign-form .h2h-key { margin-bottom: 0; }
+
+/* The player's view (UV, 29 Oct): their frames as one session block, as
+ * wide as a session on a PC, then their two small tables side by side
+ * while they fit, centred. */
+#mine-frames .cs-mine { max-width: 40rem; margin-inline: auto; }
+.mine-tables {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: flex-start;
+	gap: var(--space-5);
+	margin-top: var(--space-5);
+}
+.mine-tables > div { min-width: 0; max-width: 100%; }
+.mine-table td.mine-opp { text-align: left; }
 .tdc-card .sf-league {
 	margin: 0;
 	font-size: 0.72rem;

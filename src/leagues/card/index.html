@@ -111,6 +111,22 @@ extraScripts:
 	</div>
 
 	{% comment %}
+		The player's view (UV, 29 Oct), in place of the sessions for
+		somebody who plays tonight and is neither captain nor league
+		director: their own frames, their name always at the left with the
+		session and frame under it, only their own L and W live; then their
+		own two tables, both shown. The result and signatures below are
+		everybody's, read-only for them.
+	{% endcomment %}
+	<div id="mine" hidden>
+		<div id="mine-frames"></div>
+		<div class="mine-tables">
+			<div id="mine-h2h"></div>
+			<div id="mine-sessions"></div>
+		</div>
+	</div>
+
+	{% comment %}
 		The result and the signatures, one section in the banner's style (UV,
 		29 Oct; the result banner and the signature form were two). The
 		league and the date; the two teams with their shields either side of
