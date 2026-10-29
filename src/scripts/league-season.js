@@ -617,7 +617,9 @@ TDCLeagueNav.panel('season', () => {
 				// the team until they are in (UV, 29 Oct: every section that
 				// loads shows the dots). The draw makes a new box: the dots
 				// follow it by its id.
-				if (!rosters.has(t.team_id) && !box.dataset.dots) {
+				// The dots sit at the right of the team's heading, in green.
+				const spot = (b) => b && TDC.groupDots(b.querySelector(':scope > summary'));
+				if (!rosters.has(t.team_id) && !spot(box).dataset.dots) {
 					const read = (async () => {
 						const { data, error } = await supabaseClient.rpc('tdc_team_roster', { p_team_id: t.team_id });
 						if (error) { TDC.showSupabaseError(AREA, error, els.status); throw error; }
@@ -625,7 +627,7 @@ TDCLeagueNav.panel('season', () => {
 						renderTeams();
 					})();
 					if (typeof TDCDots !== 'undefined') {
-						TDCDots.serve(box, read, { status: els.status, follow: () => document.getElementById('team-' + t.team_id) });
+						TDCDots.serve(spot(box), read, { status: els.status, trace: 'none', follow: () => spot(document.getElementById('team-' + t.team_id)) });
 					}
 					read.catch(() => {});
 				}

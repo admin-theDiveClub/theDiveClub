@@ -998,3 +998,9 @@ These predate the log. They are recorded here because every one of them is a dec
 *Replaces:* "taking a position empties its holder" from the entry above, the same day.
 *Consequence:* two players are swapped by switching one off, stepping the other onto the freed number, and switching the first back on (they get the free one).
 *Touches:* `league-card.js` (`choosePos`, `takenBesides`, `setHere`), `league.css`
+
+## 2026-10-29 — A folding group's dots sit on its + / –, at the right end of the heading
+
+*Decided by:* UV (the dots in the heading, green, at the right; then: move the + to the right end and let the dots take its place)
+*So:* every folding group's + / – is at the right end of its heading (the ruleset groups had it straight after the words). While a group loads, the + hides and the dots circle in its spot in the site's green (`TDC.groupDots`), then the – comes back. The contents still wait hidden and fade in once ready, as before. Before, the dots went round the whole group as it grew.
+*Touches:* `tdc.js` (`groupDots`), `tdc-controls.js` (`fold`), `league-season.js`, `forms.css`, `league.css`, `dots.css`, `variables.css` and the sandbox (`--group-dots-size`, `--group-dots-stroke`)

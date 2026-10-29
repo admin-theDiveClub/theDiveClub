@@ -423,8 +423,26 @@ textarea:not(:disabled):hover {
 	margin-bottom: 0.9rem;
 }
 .set-group > summary::-webkit-details-marker { display: none; }
-.set-group > summary::after { content: ' +'; color: var(--color-primary); }
-.set-group[open] > summary::after { content: ' –'; }
+/* The + / – at the right end of the heading (UV, 29 Oct; it followed the
+   words), in a spot as wide as the dots' ring: while the group loads the
+   dots take its place there (TDC.groupDots, dots.css). */
+.set-group > summary {
+	position: relative;
+	padding-right: calc(var(--group-dots-size) + var(--space-2));
+}
+.set-group > summary::after {
+	content: '+';
+	position: absolute;
+	right: 0;
+	top: 50%;
+	width: var(--group-dots-size);
+	transform: translateY(-50%);
+	text-align: center;
+	line-height: 1;
+	color: var(--color-primary);
+	transition: opacity var(--dots-dim) ease;
+}
+.set-group[open] > summary::after { content: '–'; }
 
 /* Settings that sit next to each other (TDCMatchDef.layout, UV 24 Oct):
    Win condition and Target frames, the three break & finish switches, the

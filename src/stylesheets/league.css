@@ -780,7 +780,11 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 	transition: box-shadow 0.15s;
 }
 .team-box > summary::-webkit-details-marker { display: none; }
-.team-box > summary::after { content: '+'; margin-left: auto; padding-left: var(--space-2); color: var(--color-primary); font-weight: 700; }
+.team-box > summary::after { content: '+'; margin-left: auto; padding-left: var(--space-2); color: var(--color-primary); font-weight: 700; transition: opacity var(--dots-dim) ease; }
+/* A team loading its players: the dots sit on the + / – (TDC.groupDots),
+   which is in the heading's padding at the right; it hides meanwhile. */
+.team-box > summary { position: relative; }
+.team-box > summary > .group-dots { right: calc(var(--space-3) - (var(--group-dots-size) - 0.6em) / 2); }
 .team-box[open] > summary::after { content: '\2013'; }
 .team-box > summary:hover,
 .team-box > summary:focus-visible { box-shadow: var(--glow-primary); outline: none; }

@@ -167,3 +167,25 @@
 	border-radius: var(--radius-md);
 	overflow-wrap: anywhere;
 }
+
+/* Where the dots sit while a folding group loads (TDC.groupDots, UV 29 Oct):
+   on the heading's + / – at its right end (forms.css), which hides while
+   they are there. The spot is never seen itself: its outline is
+   transparent, so only its width counts (the dots' size), and the dots take
+   its text colour, the site's green. Not quite square, or the ring margin
+   round a square would be added and the ring outgrow the heading. */
+summary:has(> .group-dots) { position: relative; }
+summary:has(> .group-dots[data-dots])::after { opacity: 0; }
+.group-dots {
+	position: absolute;
+	right: 0;
+	top: 50%;
+	width: var(--group-dots-size);
+	height: calc(var(--group-dots-size) - 2px);
+	transform: translateY(-50%);
+	box-sizing: border-box;
+	border: var(--group-dots-stroke) solid transparent;
+	border-radius: var(--radius-round);
+	color: var(--color-primary);
+	pointer-events: none;
+}

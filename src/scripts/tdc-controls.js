@@ -1388,7 +1388,6 @@ const TDCControls = (() => {
 			const show = () => {
 				if (done || box.tdcTurn !== turn) return;   // shown already, or closed again meanwhile
 				done = true;
-				delete box.dataset.dotsHold;
 				for (const a of hide) a.cancel();
 				const shown = inside.map((c) => c.animate([{ opacity: 0 }, { opacity: 1 }], Object.assign({ fill: 'backwards' }, ease)));
 				box.tdcFold = shown;
@@ -1400,15 +1399,14 @@ const TDCControls = (() => {
 			// is ready, as for any target. Without them, as soon as it is ready;
 			// and if they never get to it (a call that hung is shown "as it
 			// was", with no reveal), a moment later all the same.
+			// They sit in the group's heading, at the right, in the site's green
+			// (UV, 29 Oct; until then round the whole group as it grew).
 			if (dotsOn()) {
-				box.dataset.dotsHold = '';   // the group itself is not dimmed; its contents are hidden
-				TDCDots.serve(box, ready, { trace: 'none', fake: true, reveal: show });
+				TDCDots.serve(TDC.groupDots(summary), ready, { trace: 'none', reveal: show });
 				ready.then(() => setTimeout(show, SHOW_ANYWAY));
 			} else {
 				ready.then(show);
 			}
-		} else {
-			delete box.dataset.dotsHold;
 		}
 		size.finished.then(() => {
 			box.style.overflow = '';

@@ -172,6 +172,21 @@ const TDC = (() => {
 	// takes, and returns it. el is what was used: the button pressed, the
 	// control changed, the section loading. A failure still goes on
 	// statusEl, as the dots' own failures do.
+	// Where the dots sit while a folding group loads (UV, 29 Oct): in its
+	// heading, at the right, in the site's green, not round the whole group.
+	// A small invisible spot (.group-dots, dots.css), made once per heading.
+	function groupDots(summary) {
+		if (!summary) return null;
+		let spot = summary.querySelector(':scope > .group-dots');
+		if (!spot) {
+			spot = document.createElement('span');
+			spot.className = 'group-dots';
+			spot.setAttribute('aria-hidden', 'true');
+			summary.append(spot);
+		}
+		return spot;
+	}
+
 	function busy(el, work, statusEl) {
 		const p = Promise.resolve(work);
 		if (el && el.isConnected && typeof TDCDots !== 'undefined') {
@@ -350,5 +365,5 @@ const TDC = (() => {
 	}
 
 	return { error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer,
-		get writes() { return writes; }, writeSince, busy, preparePicture, pictureUrl, liveSnapshot, liveFade };
+		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, liveSnapshot, liveFade };
 })();

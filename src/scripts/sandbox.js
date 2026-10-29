@@ -118,6 +118,8 @@
 			{ name: '--loader-size',      label: 'Loader ring',    kind: 'size', unit: 'rem', min: 3,   max: 20,   step: 0.5,   use: 'The loading screen: how big the ring its dots go round in the middle of the screen is (the ring margin is added, as round any square)' },
 			{ name: '--loader-stroke',    label: 'Loader dots',    kind: 'size', unit: 'px', min: 1,    max: 12,   step: 0.5,   use: 'The loading screen: how big its dots are on that ring' },
 			{ name: '--loader-fade',      label: 'Loader fade',    kind: 'size', unit: 's',  min: 0,    max: 2,    step: 0.05,  use: 'The loading screen fading out once the page is ready; its dots race the ring and fade with it' },
+			{ name: '--group-dots-size',  label: 'Group dots ring', kind: 'size', unit: 'rem', min: 0.8, max: 3, step: 0.05, use: 'A folding group loading: how big the ring its dots go round is, at the right of its heading, in green' },
+			{ name: '--group-dots-stroke', label: 'Group dots',     kind: 'size', unit: 'px', min: 1,   max: 6,  step: 0.5,  use: 'A folding group loading: how big its dots are' },
 			{ name: '--loader-blur',      label: 'Loader blur',    kind: 'size', unit: 'px', min: 0,    max: 80,   step: 1,     use: 'The loading screen is see-through: how strongly it blurs the page under it while the page loads' }
 		]],
 		['States', [

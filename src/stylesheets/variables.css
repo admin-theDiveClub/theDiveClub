@@ -115,6 +115,8 @@
   --loader-stroke: 5px;           /* the loading screen: the dots' size on that ring */
   --loader-fade: 0.5s;            /* the loading screen fading out once the page is ready */
   --loader-blur: 24px;            /* the loading screen is see-through: how strongly it blurs the page under it (29 Oct) */
+  --group-dots-size: 1.6rem;      /* a folding group loading: the ring its dots go round, at the right of its heading (29 Oct) */
+  --group-dots-stroke: 2.5px;     /* and the dots' size on it */
   /* The match page's score cards (match.css; docs/design/match-score-input.md) */
   --score-band: #2b2b2b;          /* a card's solid header and footer */
   --score-depth-alpha: 0.55;      /* the bands' shadow on the score, and the score's dark inner edge */
