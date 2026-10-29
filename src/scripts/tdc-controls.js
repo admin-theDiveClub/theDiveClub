@@ -699,6 +699,27 @@ const TDCControls = (() => {
 		c.glideFrame = requestAnimationFrame(step);
 	}
 
+	// Moved by somebody else (UV, 29 Oct, item 13): a page drawn again with
+	// data it has re-read (the other captain's change on the team card) makes
+	// a new control for every box, placed at once. So the control last drawn
+	// for each key is kept, and a new one whose value differs from it starts
+	// where that one stood and glides over, its icon drawn in. One whose value
+	// did not change does not move; one this person changed is handed on
+	// (above) and shown by the dots.
+	const lastDrawn = new Map();   // key -> the control last drawn for it
+	function movedFrom(map, key, c) {
+		const prev = map.get(key);
+		map.set(key, c);
+		if (!prev || prev === c || prev.wrap.isConnected || prev.kind !== c.kind) return;
+		const to = c.knobAt, from = prev.knobAt;
+		if (Math.abs(to - from) < 0.001 && prev.ring.state === c.ring.state) return;
+		const icon = c.ring.state;
+		c.ring.setState(prev.ring.state);
+		c.place(from);
+		c.ring.drawTo(icon);
+		glide(c, to);
+	}
+
 	function checkControl(box, kind) {
 		if (box.type !== 'checkbox') {
 			TDC.error(AREA, `a ${kind} must be an <input type="checkbox">.`, box);
@@ -710,6 +731,7 @@ const TDCControls = (() => {
 		box.replaceWith(c.wrap);
 		c.bind(box, key);
 		besideLabel(c.wrap);
+		movedFrom(lastDrawn, 'check|' + key, c);
 	}
 
 	function makeCheck(kind, first) {
@@ -827,10 +849,11 @@ const TDCControls = (() => {
 		const c = was && (served(was.wrap) || was.changing) ? was : makeTri(sel);
 		sel.replaceWith(c.wrap);
 		c.bind(sel, key);
+		movedFrom(lastDrawn, 'tri|' + key, c);   // the other captain's change glides (above)
 	}
 
 	function makeTri(first) {
-		const c = { sel: null, key: null, own: false, knobAt: 0.5 };
+		const c = { kind: 'tri', sel: null, key: null, own: false, knobAt: 0.5 };
 		// data-icon names the ring's icon at either end (a tick unless it says),
 		// data-tone its colour (the brand colour unless it says, e.g. warning).
 		const ICON = first.dataset.icon && TDCRing.ICONS[first.dataset.icon] ? first.dataset.icon : 'tick';

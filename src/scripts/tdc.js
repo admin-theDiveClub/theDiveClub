@@ -282,8 +282,9 @@ const TDC = (() => {
 	// liveSnapshot(root), the text of every [data-live] element by its key,
 	// and after drawing liveFade(root, snap) fades each one whose text changed
 	// out with its old value and in with its new, in --live-fade. For elements
-	// holding text alone; the first draw (no snapshot) fades nothing. With
-	// reduced motion the new text simply shows.
+	// holding text alone; the first draw (no snapshot) fades nothing, nor does
+	// anything the dots are serving. With reduced motion the new text simply
+	// shows.
 	function liveSnapshot(root) {
 		const snap = new Map();
 		if (root) for (const el of root.querySelectorAll('[data-live]')) snap.set(el.dataset.live, el.textContent);
@@ -297,6 +298,9 @@ const TDC = (() => {
 			const was = snap.get(el.dataset.live);
 			const now = el.textContent;
 			if (was === undefined || was === now || el.children.length) continue;
+			// The dots are showing this one's change already (a tap's save,
+			// traced): a fade on top would fight them.
+			if (el.closest('[data-dots]')) continue;
 			el.textContent = was;
 			const out = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms / 2, easing: 'ease-in' });
 			const swap = () => {
@@ -311,4 +315,4 @@ const TDC = (() => {
 
 	return { error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer,
 		get writes() { return writes; }, writeSince, preparePicture, pictureUrl, liveSnapshot, liveFade };
-})();
+})();

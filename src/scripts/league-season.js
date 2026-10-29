@@ -392,6 +392,7 @@ TDCLeagueNav.panel('season', () => {
 
 	// ─── The league so far ───
 	// Counted from the fixtures and the teams, never stored.
+	let statsDrawn = false;
 	function renderStats() {
 		const games = fixtures.filter((f) => !f.is_bye);
 		// A re-opened night (signed, then changed; 29 Oct) was still played.
@@ -413,11 +414,18 @@ TDCLeagueNav.panel('season', () => {
 		if (readiness && readiness.active_players) {
 			tiles.push(['Confirmed', readiness.confirmed + ' of ' + readiness.active_players]);
 		}
+		// A number a re-read changed (the tab shown again, a save) fades out
+		// and in (TDC.liveFade, UV 29 Oct); the first draw fades nothing.
+		const snap = statsDrawn ? TDC.liveSnapshot(els.stats) : null;
 		els.stats.replaceChildren(...tiles.map(([label, value]) => {
 			const tile = node('div', 'league-stat');
-			tile.append(node('span', 'league-stat-value', String(value)), node('span', 'league-stat-label', label));
+			const shown = node('span', 'league-stat-value', String(value));
+			shown.dataset.live = 'stat|' + label;
+			tile.append(shown, node('span', 'league-stat-label', label));
 			return tile;
 		}));
+		TDC.liveFade(els.stats, snap);
+		statsDrawn = true;
 	}
 
 	// ─── Waiting for a team ───

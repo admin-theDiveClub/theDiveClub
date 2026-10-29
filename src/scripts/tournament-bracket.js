@@ -183,10 +183,15 @@
 		// and allow clicking directly on the name to change players". So the
 		// name itself is the control for a TD, and a plain span for everybody
 		// else — a read-only viewer must not be given a dead button.
+		// The name and the frames fade when a re-read changes them (render).
+		const slotKey = f.fixture_id + '|' + which;
 		if (readOnly) {
-			nameCell.append(node('span', 'bracket-name' + (pending ? ' pending' : ''), label));
+			const shown = node('span', 'bracket-name' + (pending ? ' pending' : ''), label);
+			shown.dataset.live = 'bn|' + slotKey;
+			nameCell.append(shown);
 		} else {
 			const nameBtn = node('button', 'bracket-name as-button' + (pending ? ' pending' : ''), label);
+			nameBtn.dataset.live = 'bn|' + slotKey;
 			nameBtn.type = 'button';
 			nameBtn.dataset.act = 'swap';
 			nameBtn.dataset.fixture = f.fixture_id;
@@ -206,7 +211,11 @@
 		}
 
 		// A score only means something once there is a match behind it.
-		if (f.match_id) scoreCell.append(node('span', 'bracket-frames', String(frames ?? 0)));
+		if (f.match_id) {
+			const shown = node('span', 'bracket-frames', String(frames ?? 0));
+			shown.dataset.live = 'bf|' + slotKey;
+			scoreCell.append(shown);
+		}
 
 		// Which slot this is, so an arrow has something to point at. The
 		// progression overlay anchors to these rather than to the fixture box,
@@ -651,9 +660,16 @@
 			columns.push(col);
 		}
 
+		// A score or a name a re-read changed (a frame scored elsewhere, a
+		// winner arriving in the next round) fades out and in (TDC.liveFade,
+		// UV 29 Oct); the first draw fades nothing.
+		const snap = bracketDrawn ? TDC.liveSnapshot(els.bracket) : null;
 		els.bracket.replaceChildren(...columns);
+		TDC.liveFade(els.bracket, snap);
+		bracketDrawn = true;
 		drawArrows();
 	}
+	let bracketDrawn = false;
 
 	// ─── Reading ───
 	async function loadTournament() {

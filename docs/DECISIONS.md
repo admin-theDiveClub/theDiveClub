@@ -967,3 +967,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Example:* on a league's Season tab, tap Fixtures for the first time. The screen is back within a frame, the dots in the middle; the season and fixtures are read and the planner drawn underneath; the screen fades with everything in place. Tap Season: no screen, the numbers re-read in place.
 *Rejected:* a screen over every re-read (it would hide the changed-text fades and flash on every live update); a screen over a team opened on the Season tab (it already waits with the dots until its players are in, and covering the page to open one team is heavy; UV may ask for it).
 *Touches:* `loader.js` (`raise`, `cycle`), `loader.css`, `league-nav.js`, `dots.js` (`underScreen`), `variables.css`, `sandbox.js`, `docs/systems/dots.md` §9
+
+## 2026-10-29 — The changed-text fade reaches the match page, the bracket and the season numbers; a moved switch glides
+
+*Decided by:* UV (item 13's remainder); where, Claude
+*So:* the match page fades what another phone changed (the score, "Frame n", both stats tables), only on that path (`refreshFromRemote`), because this phone's own tap is shown by the dots tracing its score. The bracket fades each slot's frame count and name, so a winner arriving in the next round is seen arriving. The Season tab fades its numbers. `TDC.liveFade` now leaves alone anything the dots are serving. And a redraw that makes a new switch whose value differs from the one it replaces starts it where the old one stood and glides it over (`movedFrom` in `tdc-controls.js`), for every switch, ring and three-way switch, not only the card's.
+*Rejected:* fading the match page after this phone's own saves (the dots already show that change, and the two would fight); fading the ticking clocks (they change every second); limiting the glide to the team card (the same redraw pattern is on every page, and an unchanged switch still never moves).
+*Touches:* `match.js`, `tournament-bracket.js`, `league-season.js`, `tdc.js`, `tdc-controls.js`, `docs/ui.md`

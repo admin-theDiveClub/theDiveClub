@@ -583,7 +583,9 @@
 		mid.setAttribute('aria-label', `${name}: ${won}. Tap to give ${name} this frame`);
 		Object.assign(mid.dataset, { act: 'result', side, value: 'win' });
 		mid.style.setProperty('--digits', String(won).length);
-		mid.append(div('pc-score', won));
+		const score = div('pc-score', won);
+		score.dataset.live = 'score|' + side;   // fades when another phone moves it (refreshFromRemote)
+		mid.append(score);
 		host.append(mid);
 
 		// Band 3: the special wins as rings, and ⋯ for the rest (won by
@@ -645,6 +647,7 @@
 
 	function renderStage() {
 		els.midFrame.textContent = matchOver() ? 'Final' : `Frame ${MATCH.frames.length + 1}`;
+		els.midFrame.dataset.live = 'frame';
 		// Free play has no number to show, and "Free play 5" would read as a
 		// target somebody is counting to.
 		const wc = WIN_CONDITION[MATCH.rules.win_condition_type] || 'TDC (Error)';
@@ -1199,7 +1202,10 @@
 			body.append(g);
 			for (const [label, fn, rowCls] of rows) {
 				const row = tr(rowCls);
-				row.append(cell('td', String(fn('home')), 'st-v'), cell('th', label, 'st-k'), cell('td', String(fn('away')), 'st-v'));
+				const home = cell('td', String(fn('home')), 'st-v'), away = cell('td', String(fn('away')), 'st-v');
+				home.dataset.live = 'ps|' + label + '|home';
+				away.dataset.live = 'ps|' + label + '|away';
+				row.append(home, cell('th', label, 'st-k'), away);
 				body.append(row);
 			}
 			p.append(body);
@@ -1247,7 +1253,9 @@
 				const row = tr(rowCls);
 				const v = cell('td', value, 'st-v');
 				row.append(cell('th', label, 'st-k'), v);
+				// The ticking match clock changes every second: not faded.
 				if (rowCls === 'live') liveMatchClock = v;
+				else v.dataset.live = 'ms|' + title + '|' + label;
 				body.append(row);
 			}
 			m.append(body);
@@ -3296,12 +3304,18 @@
 		}, 250);
 	}
 
+	// What another phone changed (the score, the frame, the stats) fades out
+	// and in (TDC.liveFade, UV 29 Oct). Only here: a tap of this phone's is
+	// shown by the dots tracing its score (scoreDots), and this never runs
+	// while one of its saves is out.
 	async function refreshFromRemote() {
 		if (isOffline()) { blockedOffline('Refreshing the match'); return; }
 		staleKnown = false;
 		hideNotice();
+		const snap = TDC.liveSnapshot(document);
 		await reloadFromServer();
 		await loadCardState();
+		TDC.liveFade(document, snap);
 	}
 
 	// Coming back to the page, or back onto the network, is the moment a missed
