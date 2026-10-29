@@ -856,10 +856,22 @@ const TDCControls = (() => {
 		const c = { kind: 'tri', sel: null, key: null, own: false, knobAt: 0.5 };
 		// data-icon names the ring's icon at either end (a tick unless it says),
 		// data-tone its colour (the brand colour unless it says, e.g. warning).
-		const ICON = first.dataset.icon && TDCRing.ICONS[first.dataset.icon] ? first.dataset.icon : 'tick';
+		// data-cycle (UV, 29 Oct: the team card's W) lists the other icons an
+		// end may wear, e.g. "bf gb". With it, tapping the end already chosen
+		// does not go back to the middle: it sends change again with the value
+		// unchanged, and the page decides what that means (the next result) and
+		// says which icon to wear in data-icon when it draws the select again.
+		// Read from the select each time, as the control outlives a redraw.
+		const known = (name) => name && TDCRing.ICONS[name];
+		const ICON0 = known(first.dataset.icon) ? first.dataset.icon : 'tick';
+		const CYCLE = (first.dataset.cycle || '').split(/\s+/).filter(known);
+		const icon = () => {
+			const name = c.sel && c.sel.dataset.icon;
+			return name === ICON0 || CYCLE.includes(name) ? name : ICON0;
+		};
 		const at = () => (c.sel.selectedIndex < 0 ? 1 : c.sel.selectedIndex) / 2;   // 0 left, 0.5 middle, 1 right
 		const MID = 'dot';   // the middle: a small grey dot, so it is traced like the ends
-		const state = () => at() === 0.5 ? MID : ICON;
+		const state = () => at() === 0.5 ? MID : icon();
 		const chosen = () => c.sel.options[c.sel.selectedIndex] ? c.sel.options[c.sel.selectedIndex].text : 'Chosen';
 
 		const wrap = c.wrap = node('span', 'tdc-tri');
@@ -884,15 +896,17 @@ const TDCControls = (() => {
 		};
 
 		const startAt = (first.selectedIndex < 0 ? 1 : first.selectedIndex) / 2;
+		c.sel = first;   // for icon(), until bind
 		c.ring = new TDCRing.RingStatus(face, {
-			icons: [ICON, MID],
-			labels: { [ICON]: first.options[first.selectedIndex] ? first.options[first.selectedIndex].text : 'Chosen', [MID]: 'Nobody', loading: 'Saving' },
-			initial: startAt === 0.5 ? MID : ICON
+			icons: [ICON0, ...CYCLE.filter((n) => n !== ICON0), MID],
+			labels: { [icon()]: first.options[first.selectedIndex] ? first.options[first.selectedIndex].text : 'Chosen', [MID]: 'Nobody', loading: 'Saving' },
+			initial: startAt === 0.5 ? MID : icon()
 		});
+		c.sel = null;
 		c.place(startAt);
 
 		const show = (drawn) => {
-			c.ring.labels[ICON] = chosen();
+			c.ring.labels[icon()] = chosen();
 			if (drawn) c.ring.drawTo(state()); else c.ring.setState(state());
 			glide(c, at());
 		};
@@ -916,6 +930,8 @@ const TDCControls = (() => {
 			const r = wrap.getBoundingClientRect();
 			const third = Math.max(0, Math.min(2, Math.floor(3 * (e.clientX - r.left) / r.width)));
 			const now = c.sel.selectedIndex < 0 ? 1 : c.sel.selectedIndex;
+			// The chosen end again, on a switch that cycles: the page's turn.
+			if (third === now && third !== 1 && CYCLE.length) { announce(c.sel); return; }
 			const next = third === 1 || third === now ? 1 : third;
 			if (next === now) return;
 			c.own = true;

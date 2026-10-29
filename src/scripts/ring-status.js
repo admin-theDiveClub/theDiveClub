@@ -69,6 +69,18 @@ const TDCRing = (() => {
 		// Added 29 Oct for the three-way switch's middle: a small dot (grey,
 		// status.css), so the middle has a line to trace like the two ends.
 		dot: { label: 'Neither', widths: [8], strokes: ['M50 46A4 4 0 1 1 50 54A4 4 0 1 1 50 46'] },
+		// Added 29 Oct for the team card's W (UV): a win that was a break &
+		// finish or a golden break, the letters in place of the tick. Thinner
+		// than the tick, so two letters fit in a small knob.
+		bf: { label: 'Break & finish', widths: [6, 6, 6, 6], strokes: [
+			'M31 37L31 63',
+			'M31 37L38 37A6.5 6.5 0 0 1 38 50L31 50M38 50A6.5 6.5 0 0 1 38 63L31 63',
+			'M57 63L57 37L69 37',
+			'M57 50L66 50'] },
+		gb: { label: 'Golden break', widths: [6, 6, 6], strokes: [
+			'M45 43.7A8 13 0 1 0 45 56.3L45 51L39 51',
+			'M56 37L56 63',
+			'M56 37L63 37A6.5 6.5 0 0 1 63 50L56 50M63 50A6.5 6.5 0 0 1 63 63L56 63'] },
 		// Added 24 Oct for the team card's lag: a spotted cue ball, the ball and its spot.
 		// The spots are foreshortened towards the ball's edge so it reads as a
 		// sphere: rounder and heavier near the middle, flatter and lighter out

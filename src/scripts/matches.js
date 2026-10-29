@@ -61,7 +61,13 @@
 	function card(m) {
 		const a = document.createElement('a');
 		a.className = 'match-card' + (m.needs_me ? ' needs-you' : '');
-		a.href = '/match/?id=' + encodeURIComponent(m.id);
+		// A team match (20261029140544, UV 29 Oct): a captain or the league
+		// director to the captain's card, a player to the player's page.
+		// The player's page is not built yet, so a player goes to the card too,
+		// where they see the night and enter nothing.
+		a.href = m.team_match
+			? '/leagues/card/?m=' + encodeURIComponent(m.id)
+			: '/match/?id=' + encodeURIComponent(m.id);
 
 		const top = el('div', 'match-top');
 		// For a refereed match the function sends both names ("Alice : Bob").

@@ -460,6 +460,26 @@
 .fx-table tr.fx-row-bye > td { border-bottom: 1px solid var(--fx-line); }
 .fx-table tr.fx-row-bye > td:last-child { border-bottom-right-radius: var(--radius-md); }
 
+/* A fixture your team plays in (UV, 29 Oct): the outline green, glowing
+ * outwards, so a player or captain sees at once which are theirs. The glow
+ * is drawn by the same edge cells as the outline, each pushing its shadow
+ * out of its own edge only (a negative spread), so none shows on the seams
+ * inside the box. */
+.fx-table tr.fx-mine {
+	--fx-line: color-mix(in srgb, var(--color-primary) 70%, transparent);
+	--fx-glow: color-mix(in srgb, var(--color-primary) 45%, transparent);
+	--fx-up: 0 -7px 9px -7px var(--fx-glow);
+	--fx-down: 0 7px 9px -7px var(--fx-glow);
+	--fx-left: -7px 0 9px -7px var(--fx-glow);
+	--fx-right: 7px 0 9px -7px var(--fx-glow);
+}
+.fx-table tr.fx-row.fx-mine > td { box-shadow: var(--fx-up); }
+.fx-table tr.fx-row.fx-mine > td.fx-state { box-shadow: var(--fx-up), var(--fx-left), var(--fx-down); }
+.fx-table tr.fx-row.fx-mine > td:last-child { box-shadow: var(--fx-up), var(--fx-right); }
+.fx-table tr.fx-tables.fx-mine > td { box-shadow: var(--fx-right), var(--fx-down); }
+.fx-table tr.fx-row-bye.fx-mine > td { box-shadow: var(--fx-up), var(--fx-down); }
+.fx-table tr.fx-row-bye.fx-mine > td:last-child { box-shadow: var(--fx-up), var(--fx-right), var(--fx-down); }
+
 /* A finished fixture is its card's link (UV, 25 Oct): pointing at either
  * of its rows, or focusing it, lights the whole box in the brand colour,
  * the outline as a link's glow and the inside washed. */
@@ -1217,6 +1237,18 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 	box-shadow: 0 0 6px color-mix(in srgb, var(--color-warning) 55%, transparent);
 }
 .h2h-mark.is-open::before { content: '–'; color: var(--text-muted); line-height: 1; }
+/* A break & finish or a golden break: BF or GB in the win's green, glowing
+ * as the dot does, in place of it (UV, 29 Oct); the lag's ring still round
+ * it. */
+.h2h-mark.is-special::before { content: none; }
+.h2h-mark.is-special {
+	font-size: 0.62rem;
+	font-weight: 800;
+	letter-spacing: 0.02em;
+	line-height: 1;
+	color: var(--color-success);
+	text-shadow: 0 0 6px color-mix(in srgb, var(--color-success) 70%, transparent);
+}
 /* On a phone a five-man table fits without scrolling: the row's names lose
  * their pictures (the column headings keep theirs) and the marks shrink. */
 @media (max-width: 30rem) {
