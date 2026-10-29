@@ -560,8 +560,11 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 	place-items: center;
 	background: var(--hover-wash);
 	color: var(--color-primary);
+	overflow: hidden;
 }
 .team-pic svg { width: 60%; height: 60%; }
+/* A team's own picture fills the circle (TDC.teamPic, 29 Oct). */
+.team-pic img { width: 100%; height: 100%; object-fit: cover; }
 
 /* A fixture's buttons, side by side in the middle column: Start, Move,
  * Remove (or the card and Take off once there is a match), each a ring

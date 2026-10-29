@@ -327,6 +327,32 @@ const TDC = (() => {
 		return supabaseClient.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 	}
 
+	// What goes inside a team's .team-pic: its own picture (team-pictures,
+	// tbl_teams.picture_path; 29 Oct), or the shield it had until it had one.
+	// Shared by the season, fixtures and card pages.
+	function teamPic(path) {
+		const url = pictureUrl('team-pictures', path);
+		if (url) {
+			const img = document.createElement('img');
+			img.src = url;
+			img.alt = '';
+			img.loading = 'lazy';
+			return img;
+		}
+		const NS = 'http://www.w3.org/2000/svg';
+		const svg = document.createElementNS(NS, 'svg');
+		svg.setAttribute('viewBox', '0 0 24 24');
+		svg.setAttribute('aria-hidden', 'true');
+		const shield = document.createElementNS(NS, 'path');
+		shield.setAttribute('d', 'M12 3l7 3v5c0 4.5-3 8-7 10c-4-2-7-5.5-7-10V6z');
+		shield.setAttribute('fill', 'none');
+		shield.setAttribute('stroke', 'currentColor');
+		shield.setAttribute('stroke-width', '2');
+		shield.setAttribute('stroke-linejoin', 'round');
+		svg.append(shield);
+		return svg;
+	}
+
 	// ─── Text that changed, faded (UV, 29 Oct) ───
 	// A page that draws itself again with data it has re-read (a live update,
 	// a tab shown again) shows what moved: before drawing it takes
@@ -365,5 +391,5 @@ const TDC = (() => {
 	}
 
 	return { error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer,
-		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, liveSnapshot, liveFade };
+		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, teamPic, liveSnapshot, liveFade };
 })();

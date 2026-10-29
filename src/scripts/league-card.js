@@ -130,24 +130,6 @@
 		});
 	}
 
-	// A team's shield, as on the fixtures and season pages, until teams have
-	// pictures of their own.
-	const SHIELD = 'M12 3l7 3v5c0 4.5-3 8-7 10c-4-2-7-5.5-7-10V6z';
-	function shield() {
-		const NS = 'http://www.w3.org/2000/svg';
-		const svg = document.createElementNS(NS, 'svg');
-		svg.setAttribute('viewBox', '0 0 24 24');
-		svg.setAttribute('aria-hidden', 'true');
-		const path = document.createElementNS(NS, 'path');
-		path.setAttribute('d', SHIELD);
-		path.setAttribute('fill', 'none');
-		path.setAttribute('stroke', 'currentColor');
-		path.setAttribute('stroke-width', '2');
-		path.setAttribute('stroke-linejoin', 'round');
-		svg.append(path);
-		return svg;
-	}
-
 	// A player's picture, or their initials in a circle when they have none.
 	function avatar(playerId, name) {
 		const box = node('span', 'person-pic');
@@ -191,7 +173,7 @@
 
 		const { data: teams, error: teamError } = await supabaseClient
 			.from('tbl_teams')
-			.select('id, name, league_season_id')
+			.select('id, name, league_season_id, picture_path')
 			.in('id', [data.home_team_id, data.away_team_id]);
 
 		if (teamError) { TDC.showSupabaseError(AREA, teamError, els.status); return false; }
@@ -208,7 +190,9 @@
 		for (const [pic, name, side] of [
 			[els.homePic, els.homeName, 'home'], [els.awayPic, els.awayName, 'away'],
 			[els.sumHomePic, els.sumHomeName, 'home'], [els.sumAwayPic, els.sumAwayName, 'away']]) {
-			pic.replaceChildren(shield());
+			// The team's own picture, or the shield (TDC.teamPic, 29 Oct).
+			const team = byId.get(side === 'home' ? data.home_team_id : data.away_team_id) || {};
+			pic.replaceChildren(TDC.teamPic(team.picture_path));
 			name.textContent = teamName(side);
 		}
 

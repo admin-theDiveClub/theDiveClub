@@ -20,9 +20,10 @@
 
 do $$
 declare
-	-- UI Fixes — Testing (24 Oct). Test_WedSim_8BMTL — 1st Half 1995 was
-	-- 87929f3a-104a-4227-9819-6aa10d56aabc.
-	v_season uuid := 'ffc79915-3fce-4041-bfc1-e30371a21452';
+	-- T_LeagueName — T_SeasonName (29 Oct, after every earlier league was
+	-- cleared). UI Fixes — Testing was ffc79915-3fce-4041-bfc1-e30371a21452,
+	-- Test_WedSim_8BMTL — 1st Half 1995 87929f3a-104a-4227-9819-6aa10d56aabc.
+	v_season uuid := '9377f980-bd2b-4482-bae2-1275bb3ba7f7';
 	-- false: add them here and leave them in every other league.
 	v_move   boolean := false;
 

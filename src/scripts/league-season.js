@@ -55,6 +55,7 @@ TDCLeagueNav.panel('season', () => {
 	let myPlayerId = null;      // tdc_my_leagues does not carry it; marking myself away needs it
 	let teams = [];
 	let rosters = new Map();    // team id -> roster rows, loaded when a team is opened
+	let teamPictures = new Map(); // team id -> picture_path, or null
 	const openTeams = new Set();
 	let officials = [];
 	let pool = [];
@@ -115,7 +116,7 @@ TDCLeagueNav.panel('season', () => {
 	}
 
 	// The league's picture until leagues have their own, as on the leagues
-	// list: a trophy. A team's: a shield, as on the fixtures page.
+	// list: a trophy. A team's is TDC.teamPic.
 	function svgIcon(d, filled) {
 		const NS = 'http://www.w3.org/2000/svg';
 		const svg = document.createElementNS(NS, 'svg');
@@ -134,7 +135,6 @@ TDCLeagueNav.panel('season', () => {
 		return svg;
 	}
 	const TROPHY = 'M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z';
-	const SHIELD = 'M12 3l7 3v5c0 4.5-3 8-7 10c-4-2-7-5.5-7-10V6z';
 
 	const plural = (n, one, many) => (n === 1 ? '1 ' + one : (n || 0) + ' ' + (many || one + 's'));
 
@@ -241,8 +241,7 @@ TDCLeagueNav.panel('season', () => {
 			els.meDetail.textContent = 'You are not on a team yet. A captain can claim you, or whoever runs the league can place you.';
 			els.meWithdraw.hidden = false;
 		} else {
-			els.meLine.textContent = 'You are playing for ' + mine.my_team_name
-				+ (mine.confirmed_at ? ', and you have confirmed.' : '. You have not confirmed yet.');
+			els.meLine.textContent = 'You are playing for ' + mine.my_team_name + '.';
 			els.meDetail.textContent = controlsTeam() ? 'You are a captain of this team.' : '';
 			els.meWithdraw.hidden = false;
 			els.meAway.textContent = 'I am away for a while';
@@ -496,6 +495,12 @@ TDCLeagueNav.panel('season', () => {
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		teams = data || [];
 
+		// Each team's own picture (29 Oct), straight from tbl_teams, which every
+		// signed-in user may read; the teams function does not carry it.
+		const pics = await supabaseClient.from('tbl_teams').select('id, picture_path').eq('league_season_id', seasonId);
+		if (pics.error) { TDC.showSupabaseError(AREA, pics.error, els.status); return false; }
+		teamPictures = new Map((pics.data || []).map((p) => [p.id, p.picture_path]));
+
 		// My own team is open from the start; it is the one they came for.
 		if (mine && mine.my_team_id) openTeams.add(mine.my_team_id);
 		// A team that has gone (deleted while this page was open) is not open.
@@ -519,9 +524,10 @@ TDCLeagueNav.panel('season', () => {
 		const row = node('div', 'list-row');
 		const main = node('div', 'list-row-main');
 
+		// No confirmation here (UV, 29 Oct): who has confirmed is the
+		// director's business, on the manage page.
 		const sub = [r.is_captain ? 'Captain' : 'Player'];
 		if (r.status !== 'active') sub.push(r.status === 'withdrawn' ? 'Withdrawn' : 'Away');
-		else if (!r.confirmed) sub.push('Has not confirmed');
 		main.append(personLink(r.player_id, r.display_name, r.avatar_path, sub.join(' · ')));
 		row.append(main);
 
@@ -573,16 +579,12 @@ TDCLeagueNav.panel('season', () => {
 
 		const head = document.createElement('summary');
 		const pic = node('span', 'team-pic');
-		pic.append(svgIcon(SHIELD, false));
+		pic.append(TDC.teamPic(teamPictures.get(t.team_id)));
 		const names = node('span', 'team-box-names');
 		names.append(node('span', 'team-box-name', t.name));
-		// Active against the limit; away players are on the team but take no place.
-		const away = t.players - t.active_players;
-		const line = [t.active_players + ' of ' + t.team_limit + ' active'];
-		if (away > 0) line.push(away + ' away');
-		if (t.active_players > t.team_limit) line.push('over the limit');
-		if ((t.captains || []).length) line.push('Captain ' + t.captains.join(', '));
-		names.append(node('span', 'team-box-sub', line.join(' · ')));
+		// The captain and nothing else (UV, 29 Oct). The count against the
+		// limit is on the manage page and in the claim list's hint.
+		if ((t.captains || []).length) names.append(node('span', 'team-box-sub', 'Captain: ' + t.captains.join(', ')));
 		head.append(pic, names);
 		if (mine && mine.my_team_id === t.team_id) head.append(node('span', 'badge live', 'Your team'));
 		box.append(head);
@@ -604,6 +606,26 @@ TDCLeagueNav.panel('season', () => {
 				save.dataset.action = 'rename';
 				field.append(label, input, save);
 				box.append(field);
+
+				// The team's picture (29 Oct), as the league's is on its
+				// settings: saved at once, shown in the heading above.
+				const picField = node('div', 'field');
+				picField.append(node('label', null, 'Team picture'));
+				const has = !!teamPictures.get(t.team_id);
+				const choose = node('button', 'btn btn-secondary btn-sm', has ? 'Change the picture' : 'Choose a picture');
+				choose.type = 'button';
+				choose.dataset.action = 'pic-choose';
+				const remove = node('button', 'btn btn-secondary btn-sm', 'Remove');
+				remove.type = 'button';
+				remove.dataset.action = 'pic-remove';
+				remove.hidden = !has;
+				const file = document.createElement('input');
+				file.type = 'file';
+				file.accept = 'image/*';
+				file.id = 'team-pic-file';
+				file.hidden = true;
+				picField.append(choose, remove, file);
+				box.append(picField);
 			}
 
 			if (!roster.length) box.append(node('p', 'muted', 'Nobody is on this team yet.'));
@@ -679,7 +701,64 @@ TDCLeagueNav.panel('season', () => {
 			const name = (input.value || '').trim();
 			if (name.length < 2) { TDC.status(els.status, 'A team needs a name.', ''); return; }
 			write('Saving', () => supabaseClient.rpc('tdc_update_team', { p_team_id: teamId, p_name: name }));
+		} else if (button.dataset.action === 'pic-choose') {
+			els.teamList.querySelector('#team-pic-file').click();
+		} else if (button.dataset.action === 'pic-remove') {
+			if (!confirm('Remove the team’s picture?\n\nIts pages show the shield again.')) return;
+			write('Team picture', async () => {
+				// Cleared on the team first: if the file delete fails, the picture
+				// is already gone from every page.
+				const { data: old, error } = await supabaseClient.rpc('tdc_set_team_picture', { p_team_id: teamId, p_path: null });
+				if (error) return { error };
+				if (old) {
+					const { error: delErr } = await supabaseClient.storage.from(TEAM_PICTURES).remove([old]);
+					if (delErr) console.error('[' + AREA + '] could not delete the picture file', delErr);
+				}
+				return {};
+			}, () => 'Picture removed.');
 		}
+	});
+
+	// ─── The team's picture ───
+	// As the league's is (league-settings.js): prepared in the browser (square,
+	// 512px, re-encoded, EXIF gone), uploaded under a new random name into the
+	// team's folder of team-pictures, then named on the team through
+	// tdc_set_team_picture, which hands back the old one to delete.
+	const TEAM_PICTURES = 'team-pictures';
+	els.teamList.addEventListener('change', (e) => {
+		const input = e.target.closest('#team-pic-file');
+		if (!input || !mine || !mine.my_team_id) return;
+		const file = input.files && input.files[0];
+		input.value = '';
+		if (!file) return;
+		const teamId = mine.my_team_id;
+		const chooser = () => els.teamList.querySelector('[data-action="pic-choose"]');
+
+		write('Team picture', async () => {
+			const blob = await TDC.preparePicture(file, 512, AREA, els.status);
+			if (!blob) return { error: { message: 'That picture could not be used. Try a JPEG or PNG.' } };
+
+			// A new name every time, so no cached copy of the old picture is
+			// served in its place.
+			const ext = blob.type === 'image/webp' ? 'webp' : 'jpg';
+			const path = `${teamId}/${crypto.randomUUID()}.${ext}`;
+			const { error: upErr } = await supabaseClient.storage
+				.from(TEAM_PICTURES).upload(path, blob, { contentType: blob.type, upsert: false });
+			if (upErr) return { error: upErr };
+
+			const { data: old, error } = await supabaseClient.rpc('tdc_set_team_picture', { p_team_id: teamId, p_path: path });
+			if (error) {
+				// Not named on the team, so the file just uploaded is an orphan.
+				await supabaseClient.storage.from(TEAM_PICTURES).remove([path]);
+				return { error };
+			}
+			if (old) {
+				const { error: delErr } = await supabaseClient.storage.from(TEAM_PICTURES).remove([old]);
+				// The new picture is already the team's; the old file only takes up room.
+				if (delErr) console.error('[' + AREA + '] could not delete the old picture', delErr);
+			}
+			return {};
+		}, () => 'Picture saved.', { dots: chooser(), follow: chooser });
 	});
 
 	// ─── Who runs it ───

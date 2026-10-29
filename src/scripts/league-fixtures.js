@@ -59,6 +59,7 @@ TDCLeagueNav.panel('fixtures', () => {
 	let fixtures = [];
 	let teams = [];
 	let teamById = new Map();
+	let teamPictures = new Map(); // team id -> picture_path, or null
 	let iRunIt = false;
 	let myTeamId = null;        // so a captain can find their own night
 	let selected = null;        // { day: 'YYYY-MM-DD' } or { round: n } (a round with no date)
@@ -178,23 +179,6 @@ TDCLeagueNav.panel('fixtures', () => {
 
 	const plural = (n, one) => (n === 1 ? '1 ' + one : (n || 0) + ' ' + one + 's');
 
-	// Every team's picture until teams can have their own: a shield, in the
-	// brand colour, as the leagues list does with its trophy.
-	function teamIcon() {
-		const NS = 'http://www.w3.org/2000/svg';
-		const svg = document.createElementNS(NS, 'svg');
-		svg.setAttribute('viewBox', '0 0 24 24');
-		svg.setAttribute('aria-hidden', 'true');
-		const path = document.createElementNS(NS, 'path');
-		path.setAttribute('d', 'M12 3l7 3v5c0 4.5-3 8-7 10c-4-2-7-5.5-7-10V6z');
-		path.setAttribute('fill', 'none');
-		path.setAttribute('stroke', 'currentColor');
-		path.setAttribute('stroke-width', '2');
-		path.setAttribute('stroke-linejoin', 'round');
-		svg.append(path);
-		return svg;
-	}
-
 	// ─── The season ───
 	async function loadInfo() {
 		const { data, error } = await supabaseClient.rpc('tdc_league_season_info', {
@@ -290,6 +274,12 @@ TDCLeagueNav.panel('fixtures', () => {
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		teams = data || [];
 		teamById = new Map(teams.map((t) => [t.team_id, t]));
+
+		// Each team's own picture (29 Oct), straight from tbl_teams, which every
+		// signed-in user may read; the teams function does not carry it.
+		const pics = await supabaseClient.from('tbl_teams').select('id, picture_path').eq('league_season_id', seasonId);
+		if (pics.error) { TDC.showSupabaseError(AREA, pics.error, els.status); return false; }
+		teamPictures = new Map((pics.data || []).map((t) => [t.id, t.picture_path]));
 
 		const named = teams.map((t) => [t.team_id, t.name]);
 		if (iRunIt) {
@@ -689,7 +679,7 @@ TDCLeagueNav.panel('fixtures', () => {
 		const team = node(linked ? 'a' : 'span', 'fx-team');
 		if (linked) team.href = '/leagues/season/?s=' + encodeURIComponent(seasonId) + '&team=' + encodeURIComponent(teamId);
 		const pic = node('span', 'team-pic');
-		pic.append(teamIcon());
+		pic.append(TDC.teamPic(teamPictures.get(teamId)));
 		const names = node('span', 'fx-names');
 		names.append(node('span', 'fx-name', name));
 		const t = teamById.get(teamId);

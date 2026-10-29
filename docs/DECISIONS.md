@@ -1020,3 +1020,15 @@ These predate the log. They are recorded here because every one of them is a dec
 *Example:* the light drifts to the right: the right edge darkens, the left clears; the top is always shaded, the bottom never.
 *Replaces:* "the shadow on the edges away from the light" in the entry above, the same day (there it was the rejected option).
 *Touches:* `page-light.js` (the sign of the offset), `global.css`, `variables.css`, the sandbox's text
+
+## 2026-10-29 — The season page does not show who has confirmed; a team heading shows only its captain
+
+*Decided by:* UV
+*So:* on the Season tab a player's line under their team is Captain or Player (and Away or Withdrawn), never "Has not confirmed". A team's heading is its name, then "Captain: Name", and nothing else: the "5 of 7 active · 1 away · over the limit" line is gone from there. Your own panel says "You are playing for Team 0." without "and you have confirmed". Who has confirmed and the team limit are still on the manage page, and the claim list still says when a captain's team is full. The "Confirmed n of m" number in the stats row stays (it is shown only to whoever runs the league and its captains).
+*Touches:* `league-season.js`
+
+## 2026-10-29 — A team has its own picture, set by its captain or whoever runs the league
+
+*Decided by:* UV (a captain uploads the team icon; it shows everywhere the shield was)
+*So:* a team's picture replaces the shield on the Season tab's team headings, the fixtures planner, and the team card's banner and result section. A team with none keeps the shield. Who may set it is `private.tdc_can_control_team`, the same rule as renaming the team: an active captain of that team, or whoever runs its league season. A player on the team, another team's captain and a stranger may not. Built as the league picture is (a public `team-pictures` bucket, `<team id>/<random>.webp`, cropped to 512px, EXIF stripped, a new name on every upload). Teams are per season, so a new season's team starts with the shield.
+*Touches:* migration `20261029154054_team_pictures`, `tdc.js` (`teamPic`), `league-season.js`, `league-fixtures.js`, `league-card.js`, `league.css`; test `040_team_pictures`
