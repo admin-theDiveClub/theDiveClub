@@ -4,7 +4,7 @@
 
 Updated at every milestone, in the same breath as giving UV a commit subject. Never batched to the end of a session.
 
-Last updated: **26 Oct 2026** (the 1v1 score input, step 1: the stage and the cards)
+Last updated: **29 Oct 2026** (UV's list, §3b; item 1, the card's lost switch changes)
 
 **Production is current through `20261025072952`** (the signed TEAM B : TEAM C night relinked; UV saw its score, 25 Oct). **Waiting to push: `20261025075828`** (the match list names a refereed match "A : B", not "A v B"; nothing depends on it) **and `20261025082733`** (Tables available on Generate). **Push `20261025082733` before deploying**: the fixtures page sends `p_tables_available`, and until it is pushed Generate fails with "function not found".
 
@@ -125,6 +125,29 @@ In the order it probably makes sense.
 
 ---
 
+## 3b. UV's list, 29 Oct
+
+Worked one at a time: investigate, cause and plan, change; UV tests and commits after each. **Order: 1, 5–7, 2–4, 8, 13, 10–12, 9, 14.**
+
+| # | Area | What | State |
+|---|---|---|---|
+| 1 | League card | **Bug (phone):** the L/W switch's middle glitches the dots: stuck on the previous icon, or gone and never back | **Built 29 Oct, UV to try.** Cause: a re-read landing mid-burst threw away choices still waiting to save, and the next tap on that frame sent the old value back (see `docs/systems/leagues.md`, the card) |
+| 2 | League card | Sessions collapsible | |
+| 3 | League card | Toggle styling: the outer bar turns blue, instead of the blue ring on the chosen icon | |
+| 4 | League card | The tables' blue after the sessions becomes a blue inner glow on the cells. **Ask UV: highlighted cells only, or all cells?** | |
+| 5 | Signing | The changelog in the signature section folded by default | |
+| 6 | Signing | An edit after someone signs means re-signing before submission, enforced in the database. **Ask UV: does an edit void both teams' signatures or only the other team's?** | |
+| 7 | Signing | An LD (or owner) can sign for both teams, and the changelog and signatures say it was signed by the LD, not as a team player | |
+| 8 | Navigation | The league pages as one page: the top tabs switch in place, with the dots | |
+| 9 | Navigation | Notifications into the nav bar | |
+| 10 | Loading | A loading screen on every page, gone only once its data is in | |
+| 11 | Loading | Loader A: the dots big in the middle, the site icon exactly where the nav's sits, so the fade reveals the real one | |
+| 12 | Loading | Loader B: the diver falling through the hole (the email gif). Build A first; B stays an option | |
+| 13 | Live data | Where a page reloads for new data, update in place (realtime or a re-read), changed text fading out and in | |
+| 14 | Visual test | An inner glow on the page background's edges, as if set into the screen. Experimental, easy to undo | |
+
+---
+
 ## 4. Wanted, not built
 
 Agreed in principle, nothing written.
@@ -181,6 +204,7 @@ Real, small, and none of them blocking.
 | **Deleting an account leaves an accountless league player** | `tbl_players.user_id` is `ON DELETE SET NULL`, so removing an auth user leaves the player row behind — still on any league's list, which is the one thing a league player may not be. The trigger that enforces it is insert-only on purpose (the walk-in merge needs that). Found 23 Oct while writing the dummy-player cleanup. Unlikely but real; the fix is either a cascade or a nightly check |
 | **The 23 version 1 ruleset keys are not type-checked** | `private.tdc_check_match_rules` checks that the keys are present and that the enumerated values are known, but never that `win_condition_target` is a number or `draws_allowed` a boolean. The two version 2 keys added 22 Oct are checked; the older ones are a job of their own. The design note calls this jsonb quietly becoming an unvalidated config format the heaviest standing risk in the system |
 | **Nothing tells the players the fixtures are out** | Generating notifies nobody on purpose (`docs/DECISIONS.md`): a fresh schedule is the director's working document and regenerating it is ordinary. Telling them should be a separate act, as sharing a tournament poster is. Not built |
+| **The card's L in the middle is "derive it" to the database** | Found 29 Oct (item 1). With a Breaks setting other than lag every frame or by schedule, the middle saves the rule's lag and the switch goes back to an end. Every league in production is lag every frame, so nothing is hit today. Fix when wanted: the card sends an explicit "nobody", or L is offered only under those two rules (`docs/systems/leagues.md`) |
 | The team card records a winner, not how they won | `/leagues/card/` enters winner-only. Break detail, break & finish and the rest are on `/match/`, which refuses a team match — so on a league night those are unreachable. Fine for a club night; a nationals night that tracks breaks would want them |
 | **A player marked away stays in a squad they were already in** | `tdc_set_team_player_active` changes their status and nothing else. A new squad cannot take them (`tdc_set_match_squad` asks for active), but if their captain had already ticked them for an upcoming match, they stay ticked and could still be put in its order. Small; the fix is to clear an away player from the squad and order of every match whose side has not locked. Found 23 Oct; the session rework (24 Oct) did not take it on |
 | **The card page shows its messages at the bottom** | A refusal (e.g. a reserve rule) appears in red under all 25 frames, so on a phone a captain who picked a reserve at the top may not see why nothing changed. Every page uses the one status line; a card this long is the first place it hurts. Found 24 Oct; the new layout (24 Oct) makes the page longer still, with the player table, result and signatures below the frames |

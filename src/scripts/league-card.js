@@ -92,7 +92,8 @@
 	let cardState = null;
 	let changes = [];          // every change since the first signature
 	let edited = new Map();    // frame no -> { lag, win }: which switch changed since then
-	let working = null;        // the side being set up: mine, or the director's choice
+	const unsaved = new Map(); // frame no -> { fields, saves, failed }: L and W chosen, not yet read back
+	let working = null;       // the side being set up: mine, or the director's choice
 
 	// How every player's frames are shown: 'h2h' (the default, UV 28 Oct) or
 	// 'session'. Remembered on this device only; without storage it is the
@@ -256,6 +257,17 @@
 			const { data, error } = await supabaseClient.rpc(fn, args);
 			if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 			keep(data);
+		}
+
+		// A re-read can land while L and W changes are still queued behind it
+		// (the queue reads the page again after each burst, and a tap during
+		// that read starts the next). It shows the frame from before them, so
+		// what is still waiting is laid over it: otherwise the switch jumps
+		// back, and the next tap on that frame sends the old value and undoes
+		// the change (UV, 29 Oct: the middle "stuck on the previous icon").
+		for (const f of card) {
+			const u = unsaved.get(f.frame_no);
+			if (u) Object.assign(f, u.fields);
 		}
 
 		// Which side this person is setting up. A captain has one; the
@@ -1112,11 +1124,16 @@
 		// tdc_record_frame writes the whole frame from what it is sent, so each
 		// toggle sends the frame as it stands with its own change laid over:
 		// recording the winner keeps the lag, and the lag keeps the winner.
-		// The change is also kept on the frame here until the re-read, so a
-		// lag and a win set in quick succession do not undo each other (the
-		// second used to send the lag as it was before the first).
+		// The change is also kept in unsaved until the re-read after its own
+		// save, and laid over every re-read before that (loadAll), so a lag
+		// and a win set in quick succession do not undo each other, even when
+		// a re-read from an earlier save lands between them.
 		const send = (what, change) => {
-			Object.assign(f, change, { status: change.status || (f.status === 'complete' ? 'complete' : 'pending') });
+			const u = unsaved.get(frameNo) || { fields: {}, saves: 0, failed: false };
+			Object.assign(u.fields, change, { status: change.status || (f.status === 'complete' ? 'complete' : 'pending') });
+			Object.assign(f, u.fields);
+			u.saves++;
+			unsaved.set(frameNo, u);
 			const p = {
 				status: f.status,
 				winner_side: f.winner_side,
@@ -1126,7 +1143,15 @@
 			for (const k of Object.keys(p)) if (p[k] === null || p[k] === undefined) delete p[k];
 			write(what + ' frame ' + frameNo, () => supabaseClient.rpc('tdc_record_frame', {
 				p_match_id: matchId, p_frame_no: frameNo, p_frame: p
-			}));
+			})).then((ok) => {
+				if (!ok) u.failed = true;
+				if (--u.saves || unsaved.get(frameNo) !== u) return;
+				unsaved.delete(frameNo);
+				// The re-read just drawn laid this frame's choices over what the
+				// database holds; one of them was not saved, so read it again
+				// without them. The writer has already said why.
+				if (u.failed) loadAll();
+			});
 		};
 
 		if (action === 'win' && side) {
