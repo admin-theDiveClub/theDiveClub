@@ -85,8 +85,9 @@
 		const box = document.createElement('a');
 		box.className = 'row-table-row league-status-' + l.status;
 		const needsYou = l.my_status === 'active' && !l.confirmed_at;
-		box.href = (l.i_run_it ? '/leagues/manage/?s=' : '/leagues/season/?s=')
-			+ encodeURIComponent(l.league_season_id);
+		box.href = '/leagues/season/?s='
+			+ encodeURIComponent(l.league_season_id)
+			+ (l.i_run_it ? '&tab=manage' : '');
 
 		const bits = [statusSaid(l.status), l.name];
 		if (l.season_name && l.season_name !== l.name) bits.push(l.season_name);

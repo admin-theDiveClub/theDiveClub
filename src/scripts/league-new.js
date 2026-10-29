@@ -240,7 +240,7 @@
 
 		// Straight to the season's page: a league with nobody in it is not
 		// finished being made.
-		location.href = '/leagues/manage/?s=' + encodeURIComponent(season.data);
+		location.href = '/leagues/season/?s=' + encodeURIComponent(season.data) + '&tab=manage';
 	});
 
 	(async () => {

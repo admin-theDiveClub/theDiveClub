@@ -922,4 +922,12 @@ These predate the log. They are recorded here because every one of them is a dec
 - **The opposition captain signing** a card nobody has changed since the first signature agrees, locks and completes it. This was already so (UV's note, confirmed).
 - **The changelog** (renamed from "Signatures and changes"): a group per signature, newest first, each holding the changes made after it. The top group is "still to be signed". Each change is rows of **Frame · Change · Was · Now**, with who (and "league director") and when on a line beneath. A status or a plain win that only follows the winner is left out; the lag is called Lag.
 *Rejected:* "Playing" for a re-opened night; a new match status (it would have unlocked the fixture and touched every page that reads status).
+
+## 2026-10-29 — A league's pages are one page; the pill's items are tabs
+
+*Decided by:* UV (one page, tabs switching in place with the dots); how, Claude
+*So:* Season, Fixtures, Run it and Settings are panels of `/leagues/season/`, chosen with `&tab=`, switched in place with no page load, and Back steps between tabs. **Each panel's script starts the first time its tab is opened**, so a player never starts Run it or Settings, and the page never reads four pages' data at once. A tab opened again shows what it had, without reading again. The old addresses forward to their tab, because the database's fixtures notification and people's bookmarks still use them. **New season stays a link**: it is a form for creating another season, not a view of this one. On the fixtures, a team's name opens the Season tab in place with that team open.
+*Rejected:* fetching each page and swapping it in (every script would run again, with its listeners twice); starting every panel at load (four pages' reads, and refusals shown to players from tabs they never opened); one shared heading for every tab (each panel keeps its own, as it was).
+*Not yet:* a tab opened again is not read again, so a change made in one tab (a team renamed in Run it) shows in another (Fixtures) after a reload. That is UV's item 13 (data updated in place).
+*Touches:* `league-nav.js`, `leagues/season/index.html`, `_includes/league/*`, the four league scripts, the three old pages (now forwarders), `league-new.js`, `leagues.js`, `forms.css`, `docs/ui.md`, `docs/systems/file-map.md`
 *Touches:* migration `20261029082020`, `league-card.js`, `league-fixtures.js`, `league-season.js`, `league.css`, `leagues/card/index.html`, test `037`

@@ -1,4 +1,5 @@
-// Run a league season (/leagues/manage/?s=<league season id>).
+// Run a league season: the Run it tab of its one page
+// (/leagues/season/?s=<league season id>&tab=manage; league-nav.js).
 //
 // Reads with one call each — tdc_league_season_entrants (the director's list:
 // names, status, confirmation, team, captain, paid), tdc_league_season_teams,
@@ -17,13 +18,13 @@
 //
 // Needs: tdc.js.
 
-(() => {
+TDCLeagueNav.panel('manage', () => {
 	const AREA = 'League';
 
 
 	const el = (id) => document.getElementById(id);
 	const els = {
-		name: el('l-name'), meta: el('l-meta'),
+		name: el('mg-name'), meta: el('mg-meta'),
 		readyPanel: el('ready-panel'), readyLine: el('ready-line'), readyDetail: el('ready-detail'),
 		search: el('player-search'), results: el('search-results'),
 		entryPanel: el('entry-panel'), entryMode: el('entry-mode'),
@@ -33,12 +34,12 @@
 		table: el('player-table'), rows: el('player-rows'),
 		count: el('player-count'), empty: el('player-empty'),
 		teamNew: el('team-new'), teamAdd: el('team-add'),
-		teamTable: el('team-table'), teamRows: el('team-rows'), teamEmpty: el('team-empty'),
+		teamTable: el('team-table'), teamRows: el('team-rows'), teamEmpty: el('mg-team-empty'),
 		teamOver: el('team-over'),
 		officialRole: el('official-role'), officialSearch: el('official-search'),
 		officialResults: el('official-results'),
 		officialTable: el('official-table'), officialRows: el('official-rows'),
-		status: el('page-status'),
+		status: el('mg-status'),
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -759,4 +760,4 @@
 
 		els.search.focus();
 	})();
-})();
+});

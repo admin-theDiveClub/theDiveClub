@@ -1,117 +1,28 @@
 ---
-layout: layout.html
 title: League Settings
-description: "Change a league's name, this season's name and dates, and the rules its matches are played under."
-extraStyles:
-  - /stylesheets/league.css
-extraScripts:
-  - /scripts/match-settings.js
-  - /scripts/league-nav.js
-  - /scripts/league-settings.js
+permalink: /leagues/settings/index.html
 ---
 {% comment %}
-	The league director's settings, at /leagues/settings/?s=<league season id>.
-
-	The rules belong to the league, not the season, so a change here applies to
-	every season of it. The controls are generated from TDCMatchDef, exactly as
-	on the new-league page, including the Team play group: team size and the
-	rotation table (version 3 of the ruleset, 23 Oct).
-
-	Saving calls tdc_update_league, which also re-freezes the new rules onto
-	every match in the league that has not started — no frames, no locked
-	lineup, no signature — and says how many matches kept their old rules
-	because they had. Frames are never rescored. docs/DECISIONS.md, 23 Oct.
+	League Settings is a tab of the league's one page since 29 Oct (UV). This
+	address is kept for links, bookmarks and notifications already sent, and
+	forwards to the tab with everything else in the address kept.
 {% endcomment %}
-
-<div class="tdc-card wide">
-	<nav class="league-nav" id="league-nav" data-page="settings" hidden></nav>
-
-	<h1 id="l-title">League Settings</h1>
-	<p class="muted" id="l-meta"></p>
-
-	<div class="field">
-		<label for="l-name">League name</label>
-		<input type="text" id="l-name" maxlength="120" autocomplete="off">
-		<div class="hint">Every season of the league shares this name.</div>
-	</div>
-
-	{% comment %}
-		The league's picture (migration 20261024202149), shown on its season
-		page, the leagues list and the league search. Saved the moment it is
-		chosen, not with the Save button below: a picture is a file, uploaded
-		and then named on the league, as a profile picture is.
-	{% endcomment %}
-	<div class="field league-pic-field">
-		<label for="pic-choose">League picture</label>
-		<div class="league-pic-row">
-			<div class="jumbo-pic" id="pic-preview"></div>
-			<div class="btn-row">
-				<button type="button" class="btn btn-secondary btn-sm" id="pic-choose">Choose a picture</button>
-				<button type="button" class="btn btn-danger btn-sm" id="pic-remove" hidden>Remove</button>
-			</div>
-		</div>
-		<input type="file" id="pic-file" accept="image/*" hidden>
-		<div class="hint">Every season of the league shares it. Cropped to a square from the middle, and saved as soon as you choose it.</div>
-		<div class="status" id="pic-status"></div>
-	</div>
-
-	{% comment %}
-		This season's own name and dates, as set on the new-league page. Saved
-		with tdc_update_league_season. The dates live on the season period,
-		which another league can share; a shared one is refused rather than
-		moved under that league.
-	{% endcomment %}
-	<div class="field">
-		<label for="s-name">Season name</label>
-		<input type="text" id="s-name" maxlength="120" autocomplete="off">
-		<div class="hint">This season only.</div>
-	</div>
-
-	{% comment %}
-		Set by the league director, nothing derives it (UV, 24 Oct). Players
-		see it on /leagues/ and can search by it. Filled from
-		TDCMatchDef.LEAGUE_STATUS.
-	{% endcomment %}
-	<div class="field">
-		<label for="s-status">Status</label>
-		<select id="s-status"></select>
-		<div class="hint">This season only. Shown on the leagues list and in the league search.</div>
-	</div>
-
-	<div class="field-pair">
-		<div class="field">
-			<label for="s-start">Starts</label>
-			<input type="date" id="s-start">
-			<div class="hint">Leave blank if you have not set a date.</div>
-		</div>
-		<div class="field">
-			<label for="s-end">Ends</label>
-			<input type="date" id="s-end">
-		</div>
-	</div>
-
-	{% comment %}
-		The season's reserves beside the league's team size (UV, 24 Oct): a
-		team holds the two added together. league-settings.js draws the team
-		size in front of the reserves once the rules are read.
-	{% endcomment %}
-	<div class="field-row" id="size-row" data-row="size">
-		<div class="field" id="reserves-field">
-			<label for="s-reserves">Reserves allowed</label>
-			<input type="number" id="s-reserves" inputmode="numeric" min="0" max="10">
-			<div class="hint">This season only. Players a team may have beyond the team size, so a team holds team size + reserves active players. Lowering it never takes anyone off a team: a team over the limit just cannot add anyone until it is under.</div>
-		</div>
-	</div>
-
-	<p class="muted" id="overrides-note" hidden></p>
-
-	<!-- The ruleset, built by league-settings.js from TDCMatchDef -->
-	<div id="settings-main"></div>
-	<div id="settings-rest"></div>
-
-	<p class="muted">Saving applies to every match in the league that has not started yet. A match with a locked lineup, a recorded frame or a signature keeps the rules it started with.</p>
-
-	<button type="button" class="btn-primary" id="save-btn" disabled>Save</button>
-	<div class="status" id="page-status"></div>
-
-</div>
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>League Settings — The Dive Club</title>
+	<script>
+		(() => {
+			const u = new URL('/leagues/season/', location.origin);
+			new URLSearchParams(location.search).forEach((v, k) => u.searchParams.set(k, v));
+			u.searchParams.set('tab', 'settings');
+			location.replace(u);
+		})();
+	</script>
+</head>
+<body>
+	<p><a href="/leagues/season/?tab=settings">League Settings has moved to the league's page.</a></p>
+</body>
+</html>

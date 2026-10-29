@@ -1,4 +1,5 @@
-// A league's settings (/leagues/settings/?s=<league season id>).
+// A league's settings: the Settings tab of its one page
+// (/leagues/season/?s=<league season id>&tab=settings; league-nav.js).
 //
 // The league's name and its ruleset — including the Team play group, where
 // team size and the rotation table live (version 3, 23 Oct). The rules belong
@@ -27,13 +28,13 @@
 //
 // Needs: tdc.js, match-settings.js.
 
-(() => {
+TDCLeagueNav.panel('settings', () => {
 	const AREA = 'League settings';
 	const D = TDCMatchDef;
 
 	const el = (id) => document.getElementById(id);
 	const els = {
-		title: el('l-title'), meta: el('l-meta'), name: el('l-name'),
+		title: el('l-title'), meta: el('st-meta'), name: el('st-name'),
 		picPreview: el('pic-preview'), picChoose: el('pic-choose'), picRemove: el('pic-remove'),
 		picFile: el('pic-file'), picStatus: el('pic-status'),
 		seasonName: el('s-name'), seasonStatus: el('s-status'),
@@ -41,7 +42,7 @@
 		sizeRow: el('size-row'), reservesField: el('reserves-field'),
 		overrides: el('overrides-note'),
 		main: el('settings-main'), rest: el('settings-rest'),
-		save: el('save-btn'), status: el('page-status')
+		save: el('save-btn'), status: el('st-status')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -467,4 +468,4 @@
 		if (!await load()) return;
 		els.save.disabled = false;
 	})();
-})();
+});

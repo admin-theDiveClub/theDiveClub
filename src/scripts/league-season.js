@@ -24,7 +24,7 @@
 //
 // Needs: tdc.js.
 
-(() => {
+TDCLeagueNav.panel('season', () => {
 	const AREA = 'League season';
 
 	const el = (id) => document.getElementById(id);
@@ -65,6 +65,16 @@
 	// and brought into view once, on the first draw.
 	let focusTeam = new URLSearchParams(location.search).get('team');
 	if (focusTeam) openTeams.add(focusTeam);
+	// The same from the Fixtures tab once this tab has started (29 Oct): the
+	// team is opened and brought into view in place. Not drawn yet, the
+	// address carries it to the first draw.
+	document.addEventListener('tdc:league-team', (e) => {
+		const box = e.detail && document.getElementById('team-' + e.detail);
+		if (!box) return;
+		focusTeam = null;
+		box.open = true;
+		box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	});
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -716,4 +726,4 @@
 		if (!await loadInfo()) return;
 		await loadAll();
 	})();
-})();
+});

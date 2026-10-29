@@ -934,8 +934,28 @@ textarea:not(:disabled):hover {
 	text-decoration: none;
 	transition: background-color 0.15s ease;
 }
+/* A tab on the league's one page is a button (29 Oct): none of the card's
+   button look (.tdc-card button stretches it and capitalises it), only the
+   item's own. */
+.tdc-card button.league-nav-item {
+	width: auto;
+	margin: 0;
+	padding: var(--space-2) var(--space-3);
+	border: 0;
+	background: none;
+	color: var(--text-primary);
+	font-family: inherit;
+	font-size: var(--select-text);
+	font-weight: 600;
+	letter-spacing: normal;
+	text-transform: none;
+	line-height: inherit;
+}
+.tdc-card button.league-nav-item[aria-current="page"] { background: var(--color-primary); color: var(--color-on-primary); }
 a.league-nav-item:hover,
-a.league-nav-item:focus-visible { background: var(--hover-wash); outline: none; }
+a.league-nav-item:focus-visible,
+button.league-nav-item:not([aria-current]):hover,
+button.league-nav-item:focus-visible { background: var(--hover-wash); outline: none; }
 .league-nav-item[aria-current="page"] { background: var(--color-primary); color: var(--color-on-primary); }
 
 /* ── A shadow under every picture circle (UV, 24 Oct) ────────────────

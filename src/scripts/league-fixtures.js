@@ -1,4 +1,5 @@
-// The fixtures of a league season (/leagues/fixtures/?s=<league season id>).
+// The fixtures of a league season: the Fixtures tab of its one page
+// (/leagues/season/?s=<league season id>&tab=fixtures; league-nav.js).
 //
 // Reads with tdc_league_fixtures, which gives every row in round order with
 // the team names, the match and its score already joined — asking per fixture
@@ -25,12 +26,12 @@
 //
 // Needs: tdc.js.
 
-(() => {
+TDCLeagueNav.panel('fixtures', () => {
 	const AREA = 'Fixtures';
 
 	const el = (id) => document.getElementById(id);
 	const els = {
-		name: el('l-name'), meta: el('l-meta'),
+		name: el('fx-name'), meta: el('fx-meta'),
 		generatePanel: el('generate-panel'), generateState: el('generate-state'),
 		timesPlayed: el('times-played'), timesHint: el('times-hint'),
 		firstRound: el('first-round'), firstHour: el('first-hour'), firstMinute: el('first-minute'),
@@ -43,7 +44,7 @@
 		addHome: el('add-home'), addAway: el('add-away'), addBtn: el('add-btn'),
 		fFrom: el('f-from'), fTo: el('f-to'), fTeam: el('f-team'), fStatus: el('f-status'), fByes: el('f-byes'),
 		allView: el('all-view'), allTable: el('all-table'), empty: el('fixtures-empty'), allNone: el('all-none'),
-		status: el('page-status')
+		status: el('fx-status')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -1122,6 +1123,17 @@
 	const redraw = () => { renderUndated(); renderDay(nights()); renderAll(); };
 
 	document.addEventListener('click', (e) => {
+		// A team's name opens the Season tab in place, that team open and in
+		// view (29 Oct: one page). A new tab or window still follows the link.
+		const teamLink = e.target.closest('a.fx-team');
+		if (teamLink && !e.metaKey && !e.ctrlKey && !e.shiftKey && document.querySelector('.league-panel[data-tab="season"]')) {
+			e.preventDefault();
+			history.pushState({ tab: 'season' }, '', teamLink.href);
+			TDCLeagueNav.open('season', { tab: document.querySelector('#league-nav [data-tab="season"]') });
+			document.dispatchEvent(new CustomEvent('tdc:league-team', { detail: new URL(teamLink.href).searchParams.get('team') }));
+			return;
+		}
+
 		const day = e.target.closest('[data-day]');
 		const round = e.target.closest('#undated [data-round]');
 		const night = e.target.closest('[data-night]');
@@ -1347,4 +1359,4 @@
 		}
 		await all;
 	})();
-})();
+});

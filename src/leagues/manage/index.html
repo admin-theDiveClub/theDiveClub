@@ -1,239 +1,28 @@
 ---
-layout: layout.html
 title: Run a League
-description: "Add players, make teams and see who has confirmed."
-extraStyles:
-  - /stylesheets/league.css
-extraScripts:
-  - /scripts/league-nav.js
-  - /scripts/league-manage.js
+permalink: /leagues/manage/index.html
 ---
 {% comment %}
-	The screen a league season is run from. Add players, make teams, put people
-	on them, see who has confirmed, appoint officials.
-
-	Everything on it is one call each: tdc_league_season_entrants,
-	tdc_league_season_teams, tdc_league_season_readiness and
-	tdc_league_officials to read, and tdc_add_league_entrant /
-	tdc_set_league_entrant / tdc_remove_league_entrant / tdc_create_team /
-	tdc_update_team / tdc_delete_team / tdc_add_league_role /
-	tdc_remove_league_role to change it. After every write everything is read
-	again rather than patched here, because the server owns the answer.
-
-	Only players with an account can be added: they have to confirm their own
-	place, which a walk-in cannot do. Reached as /leagues/manage/?s=<league season id>.
+	Run a League is a tab of the league's one page since 29 Oct (UV). This
+	address is kept for links, bookmarks and notifications already sent, and
+	forwards to the tab with everything else in the address kept.
 {% endcomment %}
-
-<div class="tdc-card wide">
-	<nav class="league-nav" id="league-nav" data-page="manage" hidden></nav>
-
-	<h1 id="l-name">League</h1>
-	<p class="muted" id="l-meta"></p>
-
-	<div class="panel" id="ready-panel" hidden>
-		<h2>Ready to begin?</h2>
-		<p id="ready-line"></p>
-		<p class="muted" id="ready-detail"></p>
-	</div>
-
-	{% comment %}
-		How people get in. The same three choices a tournament has, because it
-		is the same question and a director should not have to learn it twice.
-	{% endcomment %}
-	<div class="panel" id="entry-panel">
-		<h2>How players get in</h2>
-
-		<div class="field">
-			<label for="entry-mode">Entries</label>
-			<select id="entry-mode">
-				<option value="ld_only">I add everybody myself</option>
-				<option value="interested">Players can put their name down, and I confirm them</option>
-				<option value="self_confirm">Players can join straight away</option>
-			</select>
-			<div class="hint" id="entry-mode-hint"></div>
-		</div>
-
-		<div class="field">
-			<label for="is-listed">Show in the league search</label>
-			<input type="checkbox" id="is-listed">
-			<div class="hint">Off keeps it private. The link below still works either way, so you can share it with the people you want.</div>
-		</div>
-
-		<div class="field">
-			<label for="share-link">The link to share</label>
-			<input type="text" id="share-link" class="share-link" readonly>
-			<div class="hint">Anyone signed in can open this and put their name down.</div>
-		</div>
-	</div>
-
-	<div class="field" id="search-field">
-		<label for="player-search">Add a player</label>
-		<input type="search" id="player-search" autocomplete="off" placeholder="Search by name">
-		<div class="hint">Two letters or more. They are told they have been added, and have to confirm that they are playing. Walk-ins cannot be added: a league player needs an account.</div>
-	</div>
-
-	<div id="search-results"></div>
-
-	{% comment %}
-		Three lists and the arrows between them. Tick whoever you mean and move
-		the lot in one go — confirming fifteen people one at a time is fifteen
-		chances for half of it to land.
-
-		Suspended is its own list rather than a status buried in a menu,
-		because taking somebody's place away is a deliberate act and should
-		look like one.
-	{% endcomment %}
-	<h2>Players <span class="badge" id="player-count" hidden></span></h2>
-
-	{% comment %}
-		Down here with the lists it moves people between (UV, 24 Oct), not up
-		with how players get in.
-	{% endcomment %}
-	<div class="field">
-		<label for="paid-confirms">Paid also confirms</label>
-		<input type="checkbox" id="paid-confirms">
-		<div class="hint">Ticking somebody as paid puts them in the league. Leave this off if you confirm on something other than payment.</div>
-	</div>
-
-	<div class="transfer" id="transfer">
-		<div class="transfer-box">
-			<div class="transfer-head">
-				<h3>Name down</h3>
-				<span class="sub" id="count-interested">0</span>
-			</div>
-			<div class="transfer-list" id="list-interested"></div>
-			<div class="transfer-actions">
-				<button type="button" class="btn btn-primary btn-sm" data-move="active" data-from="interested">→ Into the league</button>
-				<button type="button" class="btn btn-danger btn-sm" data-move="suspended" data-from="interested">→ Suspend</button>
-			</div>
-		</div>
-
-		<div class="transfer-box">
-			<div class="transfer-head">
-				<h3>In the league</h3>
-				<span class="sub" id="count-active">0</span>
-			</div>
-			<div class="transfer-list" id="list-active"></div>
-			<div class="transfer-actions">
-				<button type="button" class="btn btn-secondary btn-sm" data-move="interested" data-from="active">← Back to the list</button>
-				<button type="button" class="btn btn-danger btn-sm" data-move="suspended" data-from="active">→ Suspend</button>
-			</div>
-		</div>
-
-		<div class="transfer-box">
-			<div class="transfer-head">
-				<h3>Suspended</h3>
-				<span class="sub" id="count-suspended">0</span>
-			</div>
-			<div class="transfer-list" id="list-suspended"></div>
-			<div class="transfer-actions">
-				<button type="button" class="btn btn-secondary btn-sm" data-move="active" data-from="suspended">← Into the league</button>
-			</div>
-		</div>
-	</div>
-
-	{% comment %}
-		Everything about one player that is not which list they are on: their
-		team, whether they captain it, whether they have paid, and the way out
-		of the league altogether.
-	{% endcomment %}
-	<h2>Teams and payment</h2>
-
-	<div class="table-scroll">
-		<table class="tdc-table" id="player-table" hidden>
-			<thead>
-				<tr>
-					<th>Player</th>
-					<th>Confirmed</th>
-					<th>Team</th>
-					<th>Captain</th>
-					<th>Away</th>
-					<th>Paid</th>
-					<th></th>
-				</tr>
-			</thead>
-			<tbody id="player-rows"></tbody>
-		</table>
-	</div>
-
-	<div class="empty" id="player-empty" hidden>Nobody is in the league yet. Confirm somebody from the list above, or search to add them.</div>
-
-	{% comment %}
-		Only the director makes a team. Captains control one once it exists —
-		they claim confirmed players onto it from the season page.
-	{% endcomment %}
-	<h2>Teams</h2>
-
-	<div class="toolbar">
-		<div class="field">
-			<label for="team-new">New team</label>
-			<input type="text" id="team-new" maxlength="120" autocomplete="off" placeholder="Rack Attack">
-		</div>
-		<button type="button" class="btn btn-primary btn-sm" id="team-add">Add team</button>
-	</div>
-
-	{% comment %}
-		A team's limit is the team size plus the season's reserves (Settings).
-		Only active players count; away players keep their place. A team over
-		it — the director signed somebody past it, or lowered it — keeps
-		everyone but cannot add anyone until it is under.
-	{% endcomment %}
-	<p class="muted" id="team-over" hidden></p>
-
-	<div class="table-scroll">
-		<table class="tdc-table" id="team-table" hidden>
-			<thead>
-				<tr>
-					<th>Team</th>
-					<th>Active</th>
-					<th>Captains</th>
-					<th></th>
-				</tr>
-			</thead>
-			<tbody id="team-rows"></tbody>
-		</table>
-	</div>
-
-	<div class="empty" id="team-empty" hidden>No teams yet. Add one above, then put players on it here or let its captain claim them.</div>
-
-	<h2>Who runs it</h2>
-
-	{% comment %}
-		The role is the one the person being added gets, so it sits beside the
-		search (UV, 24 Oct: "Role" on its own read as if it set who may run
-		the league). It has to be chosen before a name is picked.
-	{% endcomment %}
-	<div id="official-add">
-		<div class="field-row official-row" data-row="official">
-			<div class="field">
-				<label for="official-role">Their role</label>
-				<select id="official-role"></select>
-				<div class="hint">What the person you pick will be. Choose it before picking them.</div>
-			</div>
-
-			<div class="field" id="official-field">
-				<label for="official-search">Add an official by name</label>
-				<input type="search" id="official-search" autocomplete="off" placeholder="Search by name">
-				<div class="hint">Two letters or more. They do not have to be a player in the league.</div>
-			</div>
-		</div>
-
-		<div id="official-results"></div>
-	</div>
-
-	<div class="table-scroll">
-		<table class="tdc-table" id="official-table" hidden>
-			<thead>
-				<tr>
-					<th>Person</th>
-					<th>Role</th>
-					<th></th>
-				</tr>
-			</thead>
-			<tbody id="official-rows"></tbody>
-		</table>
-	</div>
-
-	<div class="status" id="page-status"></div>
-
-</div>
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Run a League — The Dive Club</title>
+	<script>
+		(() => {
+			const u = new URL('/leagues/season/', location.origin);
+			new URLSearchParams(location.search).forEach((v, k) => u.searchParams.set(k, v));
+			u.searchParams.set('tab', 'manage');
+			location.replace(u);
+		})();
+	</script>
+</head>
+<body>
+	<p><a href="/leagues/season/?tab=manage">Run a League has moved to the league's page.</a></p>
+</body>
+</html>

@@ -1,0 +1,62 @@
+{% comment %}
+	The page for somebody who plays in a league, as opposed to running one.
+
+	At the top, the league itself (UV, 24 Oct): a banner with its picture,
+	name, status and everything about how it is played, then its numbers so
+	far. Then the player's own place, the teams (each player with their
+	picture and a link to their profile) and who runs it.
+
+	A league player has to confirm their own place before the league can begin;
+	that button lives here, and the notification they get when they are added
+	links straight to it. A captain controls their own team from here too:
+	claim a confirmed player who is on no team, release one, name another
+	captain, rename the team.
+
+	Everything is one call each, and after every write everything is read again.
+	Reached as /leagues/season/?s=<league season id>, with &team=<team id> to
+	open one team and bring it into view (a team's name on the fixtures page).
+{% endcomment %}
+
+	<section class="jumbo" id="jumbo">
+		<div class="jumbo-pic" id="jumbo-pic"></div>
+		<div class="jumbo-main">
+			<h1 class="jumbo-title"><span id="l-name">League</span> <span class="badge jumbo-status" id="jumbo-status" hidden></span></h1>
+			<p class="jumbo-season" id="l-meta"></p>
+		</div>
+		<dl class="jumbo-facts" id="jumbo-facts"></dl>
+	</section>
+
+	<section class="league-stats" id="stats" aria-label="The league so far"></section>
+
+	<div class="panel" id="me-panel" hidden>
+		<h2>Your place</h2>
+		<p id="me-line"></p>
+		<p class="muted" id="me-detail"></p>
+		<div class="btn-row">
+			<a class="btn btn-primary btn-sm" id="me-card" href="#" hidden>My next match</a>
+			<button type="button" class="btn btn-primary btn-sm" id="me-confirm" hidden>Confirm that I am playing</button>
+			<button type="button" class="btn btn-secondary btn-sm" id="me-withdraw" hidden>I am not playing</button>
+			<button type="button" class="btn btn-secondary btn-sm" id="me-away" hidden>I am away for a while</button>
+		</div>
+	</div>
+
+	{% comment %}
+		Captains only. Players who have confirmed and are on no team, ready to
+		be claimed. A player who has not confirmed is not offered: a team can
+		only take someone who has said they are playing.
+	{% endcomment %}
+	<div class="panel" id="pool-panel" hidden>
+		<h2>Waiting for a team</h2>
+		<p class="muted" id="pool-hint"></p>
+		<div id="pool-list"></div>
+	</div>
+
+	<h2>Teams <span class="badge" id="team-count" hidden></span></h2>
+	<div class="team-boxes" id="team-list"></div>
+	<div class="empty" id="team-empty" hidden>No teams yet. Whoever runs the league makes them.</div>
+
+	<h2>Who runs it</h2>
+	<div id="official-list"></div>
+
+	<div class="status" id="page-status"></div>
+
