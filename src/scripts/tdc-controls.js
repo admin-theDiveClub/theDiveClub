@@ -865,9 +865,13 @@ const TDCControls = (() => {
 		const known = (name) => name && TDCRing.ICONS[name];
 		const ICON0 = known(first.dataset.icon) ? first.dataset.icon : 'tick';
 		const CYCLE = (first.dataset.cycle || '').split(/\s+/).filter(known);
+		// Every icon this control may wear. A cycling one always knows the
+		// tick too: drawn first while it wore, say, rBF, ICON0 is rBF, and
+		// without the tick here it could never go back to it (UV, 29 Oct).
+		const KNOWN = [...new Set([ICON0].concat(CYCLE.length ? ['tick'] : [], CYCLE))];
 		const icon = () => {
 			const name = c.sel && c.sel.dataset.icon;
-			return name === ICON0 || CYCLE.includes(name) ? name : ICON0;
+			return KNOWN.includes(name) ? name : ICON0;
 		};
 		const at = () => (c.sel.selectedIndex < 0 ? 1 : c.sel.selectedIndex) / 2;   // 0 left, 0.5 middle, 1 right
 		const MID = 'dot';   // the middle: a small grey dot, so it is traced like the ends
@@ -898,7 +902,7 @@ const TDCControls = (() => {
 		const startAt = (first.selectedIndex < 0 ? 1 : first.selectedIndex) / 2;
 		c.sel = first;   // for icon(), until bind
 		c.ring = new TDCRing.RingStatus(face, {
-			icons: [ICON0, ...CYCLE.filter((n) => n !== ICON0), MID],
+			icons: [...KNOWN, MID],
 			labels: { [icon()]: first.options[first.selectedIndex] ? first.options[first.selectedIndex].text : 'Chosen', [MID]: 'Nobody', loading: 'Saving' },
 			initial: startAt === 0.5 ? MID : icon()
 		});
