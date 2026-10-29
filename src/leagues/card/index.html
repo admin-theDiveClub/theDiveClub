@@ -186,12 +186,18 @@ extraScripts:
 		<p class="sf-note" id="sf-dispute"></p>
 
 		<details class="set-group" id="changed-since" hidden>
-			<summary>Changed since first signed (<span id="changed-count">0</span>)</summary>
+			<summary>Signatures and changes (<span id="changed-count">0</span>)</summary>
 			<div id="changed-list"></div>
 		</details>
 
+		{% comment %}
+			One button per side: a captain sees their own side's, the league
+			director both (UV, 29 Oct), each while that side's signature does
+			not stand.
+		{% endcomment %}
 		<div class="sf-buttons">
-			<button type="button" class="btn btn-primary" id="sign-btn" hidden>Sign and submit</button>
+			<button type="button" class="btn btn-primary" id="sign-home" data-side="home" hidden>Sign for home</button>
+			<button type="button" class="btn btn-primary" id="sign-away" data-side="away" hidden>Sign for away</button>
 			<button type="button" class="btn btn-danger" id="dispute-btn" hidden>Raise a dispute</button>
 		</div>
 	</section>

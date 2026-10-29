@@ -13,7 +13,7 @@
 //   tdc_match_card     — every frame with its two players, its session and
 //                        the two positions it seats
 //   tdc_card_state     — the two signatures and whether each still matches
-//   tbl_match_events   — the first signature on the card, and from it
+//   tdc_card_signatures — every signature, who and as what; from the first
 //   tdc_frame_history  — every change since, by anybody (UV, 28 Oct)
 // Read once, for the banner and the signatures: the league season's info, its
 // reserves, the fixture's round and tables, and the two rosters (names,
@@ -66,7 +66,7 @@
 		sfAwayName: el('sf-away-name'), sfAwayScore: el('sf-away-score'), sfAwaySig: el('sf-away-sig'), sfAwayCap: el('sf-away-cap'),
 		sfDispute: el('sf-dispute'),
 		changedSince: el('changed-since'), changedCount: el('changed-count'), changedList: el('changed-list'),
-		signBtn: el('sign-btn'), disputeBtn: el('dispute-btn'),
+		signHome: el('sign-home'), signAway: el('sign-away'), disputeBtn: el('dispute-btn'),
 		status: el('page-status')
 	};
 
@@ -90,6 +90,7 @@
 	let pictures = new Map();  // player id -> avatar path, from the two rosters
 	let card = [];
 	let cardState = null;
+	let signatures = [];       // every signature, newest first: side, by_name, signed_as, at
 	let changes = [];          // every change since the first signature
 	let edited = new Map();    // frame no -> { lag, win }: which switch changed since then
 	const unsaved = new Map(); // frame no -> { fields, saves, failed }: L and W chosen, not yet read back
@@ -288,18 +289,18 @@
 		// for everybody to see: listed under the signatures and marked on the
 		// frames in blue. A signature is an append-only event, so the first
 		// one is still there after a side signs again. An edit is stamped with
-		// the version it changed, hence one below the signed version.
+		// the version it changed, hence one below the signed version. The
+		// signatures themselves, with who signed and as what (captain or
+		// league director, UV 29 Oct), join that list and the signature lines.
 		changes = [];
 		edited = new Map();
-		const first = await supabaseClient.from('tbl_match_events')
-			.select('card_version')
-			.eq('match_id', matchId).eq('kind', 'submitted')
-			.order('card_version', { ascending: true }).limit(1);
-		if (first.error) { TDC.showSupabaseError(AREA, first.error, els.status); return false; }
-		const signed = (first.data || [])[0];
-		if (signed) {
+		const sigs = await supabaseClient.rpc('tdc_card_signatures', { p_match_id: matchId });
+		if (sigs.error) { TDC.showSupabaseError(AREA, sigs.error, els.status); return false; }
+		signatures = sigs.data || [];
+		if (signatures.length) {
+			const firstVersion = Math.min(...signatures.map((g) => g.card_version));
 			const { data, error } = await supabaseClient.rpc('tdc_frame_history', {
-				p_match_id: matchId, p_since_version: signed.card_version - 1
+				p_match_id: matchId, p_since_version: firstVersion - 1
 			});
 			if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 			changes = (data || []).filter((c) => c.changed);
@@ -985,6 +986,11 @@
 		}).join(', ');
 	}
 
+	// What a signature was given as, after the name. Signatures from before
+	// 29 Oct were filled in by the migration, so none should be missing.
+	const signedAs = (g) => (g.signed_as === 'director' ? ' · league director'
+		: g.signed_as === 'captain' ? ' · captain' : '');
+
 	// ─── Signatures ───
 	// A form waiting to be signed: the league, the date, the teams and their
 	// scores side by side, a line for each captain's signature, whether
@@ -1006,8 +1012,13 @@
 			line.className = 'sf-line' + (!s ? ' is-empty' : s.current ? ' is-signed' : ' is-stale');
 			line.replaceChildren();
 			if (s) {
-				line.append(node('span', 'sf-signed', 'Signed'),
-					node('span', 'sf-when', when(s.at) + (s.current ? '' : ' · the card changed since')));
+				// Who signed and as what: a director's signature never reads as
+				// the team's own (UV, 29 Oct). The latest per side is the one
+				// the card state reports.
+				const g = signatures.find((x) => x.side === side);
+				line.append(node('span', 'sf-signed', 'Signed'));
+				if (g) line.append(node('span', 'sf-when', g.by_name + signedAs(g)));
+				line.append(node('span', 'sf-when', when(s.at) + (s.current ? '' : ' · the card changed since')));
 			}
 			const teamId = side === 'home' ? match.home_team_id : match.away_team_id;
 			const captains = (rosters.get(teamId) || []).filter((r) => r.is_captain);
@@ -1030,24 +1041,38 @@
 
 		// Folded until opened (UV, 29 Oct), its count in the heading. Only the
 		// list is redrawn, so it stays open or closed as the reader left it.
-		els.changedSince.hidden = !changes.length;
-		els.changedCount.textContent = changes.length;
-		els.changedList.replaceChildren(...changes.map((c) => {
+		// The signatures and the changes since the first, newest first, each
+		// saying whether the league director did it (UV, 29 Oct).
+		const entries = changes.map((c) => ({
+			at: c.at,
+			what: 'Frame ' + c.frame_no + ' — ' + (readable(c.changed) || c.action),
+			who: (c.by_name || 'somebody') + (c.editor_role === 'director' ? ' · league director' : '')
+		})).concat(signatures.map((g) => ({
+			at: g.at,
+			what: teamName(g.side) + ' signed',
+			who: g.by_name + signedAs(g)
+		}))).sort((a, b) => new Date(b.at) - new Date(a.at));
+		els.changedSince.hidden = !entries.length;
+		els.changedCount.textContent = entries.length;
+		els.changedList.replaceChildren(...entries.map((e) => {
 			const row = node('div', 'list-row');
 			const main = node('div', 'list-row-main');
-			main.append(node('span', null, 'Frame ' + c.frame_no + ' — ' + (readable(c.changed) || c.action)));
-			main.append(node('span', 'sub', (c.by_name || 'somebody') + ' · ' + when(c.at)));
+			main.append(node('span', null, e.what));
+			main.append(node('span', 'sub', e.who + ' · ' + when(e.at)));
 			row.append(main);
 			return row;
 		}));
 
-		const mine = working && sides[working];
-		const canSign = working && (lineupState.i_run_it || lineupState.my_side === working)
-			&& state !== 'approved' && state !== 'agreed'
-			&& !(mine && mine.current);
-
-		els.signBtn.hidden = !canSign;
-		els.signBtn.textContent = (mine && !mine.current ? 'Sign again for ' : 'Sign and submit for ') + teamName(working);
+		// A button for each side this person may sign whose signature does not
+		// stand: a captain their own, the league director both (UV, 29 Oct).
+		// It used to sign for the side being set up, whose switch hides once
+		// both lineups are locked, so a director could only ever sign one.
+		const open = state !== 'approved' && state !== 'agreed';
+		for (const [btn, side] of [[els.signHome, 'home'], [els.signAway, 'away']]) {
+			const s = sides[side];
+			btn.hidden = !(open && (lineupState.i_run_it || lineupState.my_side === side) && !(s && s.current));
+			btn.textContent = (s && !s.current ? 'Sign again for ' : 'Sign and submit for ') + teamName(side);
+		}
 		els.disputeBtn.hidden = !working || state === 'approved';
 	}
 
@@ -1184,19 +1209,26 @@
 		}
 	});
 
-	els.signBtn.addEventListener('click', () => {
+	// Each button signs for its own side (data-side), whichever side is being
+	// set up. The league director's signature is recorded as theirs, not the
+	// team's (tdc_submit_card, signed_as).
+	const sign = (e) => {
+		const side = e.currentTarget.dataset.side;
 		const pending = card.filter((f) => f.status === 'pending');
 		const empty = pending.filter((f) => !f.home_player_id || !f.away_player_id).length;
 		const unplayed = pending.length - empty;
 		let warning = '';
 		if (empty) warning += `\n\n${empty} ${empty === 1 ? 'frame still has an empty seat and becomes a walkover' : 'frames still have an empty seat and become walkovers'} to the side that turned up.`;
 		if (unplayed) warning += `\n\n${unplayed} ${unplayed === 1 ? 'frame has' : 'frames have'} no result. Signing says this is the final card, not that every frame was played.`;
-		if (!confirm('Sign this card for ' + teamName(working) + '?' + warning)) return;
+		const as = lineupState.i_run_it ? ' as the league director' : '';
+		if (!confirm('Sign this card for ' + teamName(side) + as + '?' + warning)) return;
 
 		write('Signing', () => supabaseClient.rpc('tdc_submit_card', {
-			p_match_id: matchId, p_side: working
+			p_match_id: matchId, p_side: side
 		}), 'Signed.');
-	});
+	};
+	els.signHome.addEventListener('click', sign);
+	els.signAway.addEventListener('click', sign);
 
 	els.disputeBtn.addEventListener('click', () => {
 		const note = prompt('What is wrong with this card?');

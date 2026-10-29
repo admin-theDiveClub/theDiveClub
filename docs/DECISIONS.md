@@ -903,4 +903,12 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* any change to a signed card voids **both** captains' signatures, not only the other side's, and the card cannot be submitted until both sign again. This is enforced in the database. **If the edit is undone**, so that the card is exactly what both sides signed, both signatures stand again: they signed that card, so nothing needs signing twice.
 *Example:* both captains sign at 13 : 12. The LD changes frame 7's winner, and both signatures go. The LD changes it back: 13 : 12 with every frame as signed, and both signatures are back, with nobody signing again.
 *Rejected:* voiding only the other team's signature (the side that made the edit would still be standing behind a card it had just changed).
-*Not built yet:* STATUS §3b item 6.
+*Built:* migration `20261029075957` (a fingerprint of the card on each signature). Claude's additions: a content match never counts across a later dispute, and each side's latest signature is the one that counts.
+
+## 2026-10-29 — The league director signs both sides, and always as the league director
+
+*Decided by:* UV (both answers asked); the mechanism, Claude
+*So:* on the team card the league director gets a sign button for each side whose signature does not stand (a captain only their own). **Whoever runs the league signs as the league director on every side, their own team's included**, even when they also captain that team. The signature lines say "Signed · Owner TDC · league director" (or "· captain"). The list under the signatures, now "Signatures and changes", **holds the signatures as well as the edits**, and an edit by the director says "league director" after the name.
+*Why:* the page signed for the side being set up, whose switch hides once both lineups lock, so a director could only ever sign one side. And a director's signature read as if the team had signed.
+*Rejected:* labelling by the side's own role (captain on their own team, director on the other); keeping the list to edits only.
+*Touches:* migration `20261029080921` (`signed_as`, `tdc_card_signatures`), `league-card.js`, `leagues/card/index.html`, test `038_card_signature_roles`
