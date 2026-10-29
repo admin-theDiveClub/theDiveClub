@@ -39,6 +39,8 @@
 .tdc-ring .mark.on { stroke-dashoffset: 0; }
 /* Every cross is red, site-wide (UV, 26 Oct); its ring stays cream. */
 .tdc-ring .mark.mark-cross { stroke: var(--color-error); }
+/* The three-way switch's middle: a small grey dot. */
+.tdc-ring .mark.mark-dot { stroke: var(--text-muted); }
 
 /* The live text a screen reader hears ("Saving", "On", "Ticked"). */
 .tdc-check .sr,

@@ -2295,6 +2295,10 @@ const TDCDots = (() => {
 			ctx.globalAlpha = 1; ctx.shadowBlur = 0;
 		}
 
+		// TEMPORARY (29 Oct): catching a dot that gets a number that is not
+		// finite. Reports the first, once per page load; changes nothing.
+		if (!nanSaid) nanCheck(d, p, dt, now, { alpha, k, qx, qy, sc });
+
 		const s = d.e.style;
 		s.background = colS;
 		// The glow, in the dot's own units (before its scale), so it grows from
@@ -2308,6 +2312,33 @@ const TDCDots = (() => {
 		s.filter = p.blur > 0.05 ? `blur(${(p.blur / Math.max(0.15, sc)).toFixed(2)}px)` : 'none';
 		s.transform = `translate(${d.x}px,${d.y}px) rotate(${sr}rad) scale(${sc * p.sx},${sc * p.sy}) rotate(${d.rot - sr}rad) scale(${qx},${qy})`;
 		s.opacity = oa;
+	}
+
+	// TEMPORARY (29 Oct): the check above. Remove both once the cause is found.
+	let nanSaid = false;
+	function nanCheck(d, p, dt, now, v) {
+		const vals = [
+			['p.x', p.x], ['p.y', p.y], ['p.h', p.h], ['p.gs', p.gs], ['p.szm', p.szm],
+			['p.sx', p.sx], ['p.sy', p.sy], ['p.glow', p.glow],
+			['d.sp', d.sp], ['d.rot', d.rot], ['d.glow', d.glow], ['dt', dt],
+			['alpha', v.alpha], ['k', v.k], ['qx', v.qx], ['qy', v.qy], ['sc', v.sc]
+		];
+		const bad = vals.find(([, x]) => !Number.isFinite(x));
+		if (!bad) return;
+		nanSaid = true;
+		try {
+			const r = S && motionOf(S);
+			const detail = {
+				value: bad[0], is: bad[1], dot: D.indexOf(d), phase,
+				target: cur ? nameOf(cur.el) : null,
+				group: r && r.G ? r.G.name : null,
+				solo: r && !r.G && r.v ? r.v.map((x) => x.m.name) : [],
+				dt, now, last
+			};
+			fail(null, `dot ${detail.dot} got ${bad[0]} = ${bad[1]} (phase ${phase}).`, detail);
+		} catch (err) {
+			console.error(`[${AREA}] the not-finite check itself failed.`, err);
+		}
 	}
 
 	return {

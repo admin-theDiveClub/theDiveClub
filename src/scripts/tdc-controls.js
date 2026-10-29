@@ -835,7 +835,8 @@ const TDCControls = (() => {
 		// data-tone its colour (the brand colour unless it says, e.g. warning).
 		const ICON = first.dataset.icon && TDCRing.ICONS[first.dataset.icon] ? first.dataset.icon : 'tick';
 		const at = () => (c.sel.selectedIndex < 0 ? 1 : c.sel.selectedIndex) / 2;   // 0 left, 0.5 middle, 1 right
-		const state = () => at() === 0.5 ? 'empty' : ICON;
+		const MID = 'dot';   // the middle: a small grey dot, so it is traced like the ends
+		const state = () => at() === 0.5 ? MID : ICON;
 		const chosen = () => c.sel.options[c.sel.selectedIndex] ? c.sel.options[c.sel.selectedIndex].text : 'Chosen';
 
 		const wrap = c.wrap = node('span', 'tdc-tri');
@@ -861,9 +862,9 @@ const TDCControls = (() => {
 
 		const startAt = (first.selectedIndex < 0 ? 1 : first.selectedIndex) / 2;
 		c.ring = new TDCRing.RingStatus(face, {
-			icons: [ICON],
-			labels: { [ICON]: first.options[first.selectedIndex] ? first.options[first.selectedIndex].text : 'Chosen', empty: 'Nobody', loading: 'Saving' },
-			initial: startAt === 0.5 ? 'empty' : ICON
+			icons: [ICON, MID],
+			labels: { [ICON]: first.options[first.selectedIndex] ? first.options[first.selectedIndex].text : 'Chosen', [MID]: 'Nobody', loading: 'Saving' },
+			initial: startAt === 0.5 ? MID : ICON
 		});
 		c.place(startAt);
 
