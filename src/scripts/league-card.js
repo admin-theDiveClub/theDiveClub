@@ -94,6 +94,7 @@
 	let changes = [];          // every change since the first signature
 	let edited = new Map();    // frame no -> { lag, win }: which switch changed since then
 	const unsaved = new Map(); // frame no -> { fields, saves, failed }: L and W chosen, not yet read back
+	const foldedSessions = new Set();   // session headings a reader has closed, kept across redraws
 	let working = null;       // the side being set up: mine, or the director's choice
 
 	// How every player's frames are shown: 'h2h' (the default, UV 28 Oct) or
@@ -596,9 +597,21 @@
 	// Three tracks: home player, the frame's L and W in the middle, away
 	// player. The totals sit either side of the middle, under each team's end
 	// of the toggles.
+	//
+	// Each session folds (UV, 29 Oct): a folding group (set-group, so it opens
+	// and closes as every other on the site, tdc-controls.js), open unless the
+	// reader closed it, which is remembered through every redraw. Its heading
+	// carries the session's score, so a closed one still says how it went.
 	function sessionBlock(heading, frames, strict, nextOpen) {
-		const block = node('section', 'cs-session');
-		block.append(node('h3', 'cs-title', heading));
+		const block = node('details', 'cs-session set-group');
+		block.open = !foldedSessions.has(heading);
+		block.addEventListener('toggle', () => {
+			if (block.open) foldedSessions.delete(heading); else foldedSessions.add(heading);
+		});
+		const won = (side) => frames.filter((f) => f.winner_side === side).length;
+		const title = node('summary', 'cs-title', heading);
+		title.append(node('span', 'cs-title-score', won('home') + ' : ' + won('away')));
+		block.append(title);
 
 		const grid = node('div', 'cs-grid');
 		const head = node('div', 'cs-row cs-head');
@@ -681,8 +694,8 @@
 			['lag', 'L', f.break_side, 'won the lag'],
 			['win', 'W', f.winner_side, 'won the frame']]) {
 			const line = node('span', 'cs-tog cs-tog-' + action);
-			// Changed since a captain signed: the knob's ring turns blue, its
-			// icon keeps its colour (UV, 28 Oct).
+			// Changed since this person last signed: the switch's bar turns
+			// blue (UV, 29 Oct; it was the knob's ring).
 			if ((edited.get(f.frame_no) || {})[action]) {
 				line.classList.add('is-edited');
 				line.title = 'Changed after the card was signed';
