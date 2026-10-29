@@ -2116,7 +2116,11 @@ const TDCDots = (() => {
 		else running = false;
 	}
 	function tick(now) {
-		const dt = Math.min(50, now - last) / 16.67;
+		// At least 1 ms: the first frame after a wake (or a tab shown again) is
+		// stamped at the start of its frame, which can be before the moment
+		// `last` was read. A frame of 0 or less made a still dot's speed 0 ÷ 0,
+		// and the dots never drew again (UV's phone, 29 Oct: "d.sp = NaN").
+		const dt = Math.min(50, Math.max(1, now - last)) / 16.67;
 		last = now;
 		frameNo++;
 		const time = now / 1000;
@@ -2289,6 +2293,12 @@ const TDCDots = (() => {
 		const mvx = d.prx === null ? 0 : d.x - d.prx, mvy = d.pry === null ? 0 : d.y - d.pry;
 		d.prx = d.x; d.pry = d.y;
 		d.sp += (Math.hypot(mvx, mvy) / dt - d.sp) * Math.min(1, 0.3 * dt);
+		// A speed that is not a number would stay so (it is a running mean),
+		// and the dot with it: said once, and started again from still.
+		if (!Number.isFinite(d.sp)) {
+			if (!nanSaid) { nanSaid = true; console.error(`[${AREA}] a dot's speed was not a number (dt ${dt}); reset.`); }
+			d.sp = 0;
+		}
 		if (d.sp > 0.4) d.rot = Math.atan2(mvy, mvx);
 		let k = Math.min(STRETCH, Math.max(0, (d.sp - 1.6) * 0.13)) * (1 - p.lit) + p.sq;
 		k = Math.max(-0.6, Math.min(1.6, k));
@@ -2317,10 +2327,6 @@ const TDCDots = (() => {
 			ctx.globalAlpha = 1; ctx.shadowBlur = 0;
 		}
 
-		// TEMPORARY (29 Oct): catching a dot that gets a number that is not
-		// finite. Reports the first, once per page load; changes nothing.
-		if (!nanSaid) nanCheck(d, p, dt, now, { alpha, k, qx, qy, sc });
-
 		const s = d.e.style;
 		s.background = colS;
 		// The glow, in the dot's own units (before its scale), so it grows from
@@ -2336,32 +2342,10 @@ const TDCDots = (() => {
 		s.opacity = oa;
 	}
 
-	// TEMPORARY (29 Oct): the check above. Remove both once the cause is found.
+	// A speed found not a number (draw): said once a page load. The 29 Oct
+	// check that caught it on UV's phone found the cause (a frame of 0 ms,
+	// tick) and went.
 	let nanSaid = false;
-	function nanCheck(d, p, dt, now, v) {
-		const vals = [
-			['p.x', p.x], ['p.y', p.y], ['p.h', p.h], ['p.gs', p.gs], ['p.szm', p.szm],
-			['p.sx', p.sx], ['p.sy', p.sy], ['p.glow', p.glow],
-			['d.sp', d.sp], ['d.rot', d.rot], ['d.glow', d.glow], ['dt', dt],
-			['alpha', v.alpha], ['k', v.k], ['qx', v.qx], ['qy', v.qy], ['sc', v.sc]
-		];
-		const bad = vals.find(([, x]) => !Number.isFinite(x));
-		if (!bad) return;
-		nanSaid = true;
-		try {
-			const r = S && motionOf(S);
-			const detail = {
-				value: bad[0], is: bad[1], dot: D.indexOf(d), phase,
-				target: cur ? nameOf(cur.el) : null,
-				group: r && r.G ? r.G.name : null,
-				solo: r && !r.G && r.v ? r.v.map((x) => x.m.name) : [],
-				dt, now, last
-			};
-			fail(null, `dot ${detail.dot} got ${bad[0]} = ${bad[1]} (phase ${phase}).`, detail);
-		} catch (err) {
-			console.error(`[${AREA}] the not-finite check itself failed.`, err);
-		}
-	}
 
 	return {
 		serve,
