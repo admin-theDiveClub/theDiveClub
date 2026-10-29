@@ -1346,3 +1346,16 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 .cl-table tbody tr:last-child td { border-bottom: none; }
 .sf-buttons { display: flex; flex-direction: column; gap: var(--space-3); }
 .sf-buttons > .btn { width: 100%; margin: 0; }
+
+/* The lineup (UV, 29 Oct): one row per player, here tonight's switch and
+   their position's stepper side by side at the right. */
+.card-lineup-row { align-items: center; }
+/* The stepper loses a chevron at its limit and shrinks (UV, 24 Oct): in a
+   slot as wide as a whole one, so the switches stay in one column. */
+.card-lineup-controls { display: grid; grid-template-columns: auto 4.6rem; align-items: center; justify-items: center; gap: var(--space-3); }
+/* As tall as the switch beside it (UV, 29 Oct). */
+.card-lineup-controls .tdc-stepper.is-across {
+	box-sizing: border-box;
+	height: var(--switch-height);
+	--sn: calc(var(--stepper-across-number) * 1.25);
+}

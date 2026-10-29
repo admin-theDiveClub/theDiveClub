@@ -317,6 +317,20 @@ Measured at 420px: every switch and stepper on `/leagues/new/` and `/tournaments
 
 The engine gained `opts.fake` and `data-dots-load`. Measured at 420px: a group on `/leagues/new/` stayed at 0 while it grew (48 → 462px) and the dots travelled to it, faded in as they arrived (about 1 s), worst change of speed 2.6; three quick taps left it closed and whole. The fixtures page: the heading hidden until its read was back (about 1.1 s), the planner until the fixtures were (about 3 s).
 
+## 8a. Never a loading message (29 Oct)
+
+UV, said many times: no "Loading…", "Saving…", "Checking…", "Reading…" anywhere; **the dots are how the site shows that something is happening and it is not ready for input**. On 29 Oct every such message went (about 45, across 17 files, and four placeholders in the HTML):
+
+| | How the dots come instead |
+|---|---|
+| `TDC.busy(el, work, statusEl)` (`tdc.js`) | The dots on `el` for as long as the promise `work` takes. For a handler that awaits anything before its call (a picture prepared before it is uploaded, the profile's multi-step saves), a native field (the match's date and time), or a form sent with Enter. Used on sign-in, reset, profile, push, league new and settings, new match, every staff page, the bracket's checks and swap picker, new tournament |
+| `TDC.writer` | Prints no "What…" line. A save is shown by the control or button that made it (`writeSince` marks it claimed); one nobody claims within 30 ms gets the dots on the focused element, else the console says it had nothing to show it on |
+| A section loading when opened | The Season tab's teams: the dots on the team (following it through the redraw by its id) until its players are drawn; nothing written inside meanwhile (it said "Open to see the players.") |
+| The nav's list, the credits balance | The bell's row already had the dots: "Reading…" went. The balance line keeps its height, blank, with the dots on it |
+| Placeholders | The card's state line, the join page's heading, the board: empty until filled (the loading screen covers the first read) |
+
+Checked at 420px on the stand-in: every page opened with nothing reading "Loading" or "Reading" as the screen went and no script error; sign-in pressed with a 1.5 s call: the dots on the button, no status text, the failure then shown as "TDC (Error): …"; a team opened on the Season tab: the dots on it, empty inside, then its players.
+
 ## 9. The loading screen (29 Oct, UV's items 10 and 11)
 
 UV: a loading screen on every page, gone only once the page has fully loaded, its data included; **Loader A**: the dots big in the middle of the screen, and the site icon exactly where the nav bar's sits, so the fade leaves the real one in the same spot. ~~The screen is opaque~~ **Since UV's second look (29 Oct) it is see-through with a strong blur** (`--loader-blur`, 24px): the page is there underneath, out of focus, and comes sharp as the screen fades.

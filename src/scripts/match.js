@@ -1766,10 +1766,11 @@
 		// Nothing to say and nobody to tell if it has not moved.
 		if ((MATCH.scheduled_at || null) === iso) return;
 
-		const { error } = await inTurn('Saving the time…', () => supabaseClient.rpc('tdc_set_match_time', {
+		// A native field, not a control or a button: given the dots here.
+		const { error } = await TDC.busy(els.when, inTurn('Saving the time…', () => supabaseClient.rpc('tdc_set_match_time', {
 			p_match_id: liveMatchId,
 			p_scheduled_at: iso
-		}));
+		})), els.stageStatus);
 		await savingFinished(error, iso ? 'Time saved. Both players have been told.' : 'Time cleared.');
 		if (!error) tellTheOther('time_set');
 	}
@@ -2711,7 +2712,7 @@
 		// written somewhere nobody can see.
 		const where = settled() ? els.resultStatus : els.stageStatus;
 
-		TDC.status(where, 'Saving…', '');
+		TDC.status(where, '', '');
 		const { error } = await supabaseClient.rpc(fn, args);
 		if (error) { TDC.showSupabaseError(AREA, error, where); return; }
 
@@ -2862,7 +2863,7 @@
 				+ (n ? `. <strong>${n} waiting.</strong>` : '.')
 				+ ' Match settings and corrections to earlier frames are paused until then.', 'warn');
 		} else if (n) {
-			showNotice(`<strong>${n} change${n === 1 ? '' : 's'} still to send.</strong> Sending now…`, 'warn');
+			showNotice(`<strong>${n} change${n === 1 ? '' : 's'} still to send.</strong>`, 'warn');
 		} else {
 			showNotice('<strong>Live match.</strong> Frames and settings are saved as you change them.', 'warn');
 		}
@@ -2991,7 +2992,9 @@
 		saving += 1;
 		return TDC.queued(async () => {
 			if (burst.stopped) { burst.notSent += 1; return { data: null, error: NOT_SENT }; }
-			TDC.status(els.stageStatus, message, '');
+			// message is no longer shown (UV, 29 Oct: never a loading message, only
+			// the dots); the line is just cleared of the last one.
+			TDC.status(els.stageStatus, '', '');
 			let res;
 			try { res = (await write()) || {}; } catch (err) { res = { data: null, error: err }; }
 			if (res.error && res.error.code === 'TDC01') burst.stopped = true;

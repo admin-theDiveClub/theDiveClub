@@ -331,8 +331,8 @@
 		notifyTray.classList.add('open');
 		notifyBtn.setAttribute('aria-expanded', 'true');
 
-		notifyEmpty.hidden = false;
-		notifyEmpty.textContent = 'Reading…';
+		// No "Reading…": the dots on the bell's row show it (UV, 29 Oct).
+		notifyEmpty.hidden = true;
 		notifyList.replaceChildren();
 
 		// The list first, so what was unread is still drawn as unread. Marking

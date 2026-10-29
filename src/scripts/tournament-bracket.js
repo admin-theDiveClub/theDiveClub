@@ -450,9 +450,9 @@
 		box.append(node('div', 'bracket-entry-name',
 			current ? 'Replace ' + current : 'Who goes in this slot'));
 
-		if (!candidates.length) {
-			box.append(node('div', 'hint', 'Reading the entrants…'));
-		} else {
+		// Until the entrants are read the box holds only its heading, with the
+		// dots on it (UV, 29 Oct: never a loading message).
+		if (candidates.length) {
 			const pick = document.createElement('select');
 			pick.dataset.control = 'none';   // every entrant: far too many for a pill
 			pick.setAttribute('aria-label', 'Who goes in this slot');
@@ -478,7 +478,7 @@
 
 			const go = node('button', 'btn btn-primary btn-sm', 'Check');
 			go.type = 'button';
-			go.addEventListener('click', () => trySwap(f, pick.value || null, why.value));
+			go.addEventListener('click', () => trySwap(f, pick.value || null, why.value, go));
 
 			const cancel = node('button', 'btn btn-secondary btn-sm', 'Cancel');
 			cancel.type = 'button';
@@ -549,8 +549,8 @@
 		return lines.join('\n');
 	}
 
-	async function trySwap(f, entrantId, why) {
-		TDC.status(els.status, 'Checking…', '');
+	async function trySwap(f, entrantId, why, button) {
+		TDC.status(els.status, '', '');
 
 		const args = {
 			p_fixture_id: f.fixture_id,
@@ -560,7 +560,7 @@
 		};
 
 		// The rehearsal. p_apply defaults to false, so this changes nothing.
-		const checked = await rehearse('swap', () => supabaseClient.rpc('tdc_swap_fixture_player', args));
+		const checked = await TDC.busy(button, rehearse('swap', () => supabaseClient.rpc('tdc_swap_fixture_player', args)), els.status);
 		if (!checked) return;
 		const { data, error } = checked;
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
@@ -999,7 +999,7 @@
 		const { bracket, round } = editingRound;
 		const later = els.roundRulesLater.checked;
 
-		TDC.status(els.roundRulesStatus, 'Checking…', '');
+		TDC.status(els.roundRulesStatus, '', '');
 
 		const args = {
 			p_tournament_id: tournamentId,
@@ -1010,7 +1010,7 @@
 		};
 
 		// The rehearsal. p_apply defaults to false, so this changes nothing.
-		const checked = await rehearse('round-rules', () => supabaseClient.rpc('tdc_set_round_rules', args));
+		const checked = await TDC.busy(els.roundRulesSave, rehearse('round-rules', () => supabaseClient.rpc('tdc_set_round_rules', args)), els.roundRulesStatus);
 		if (!checked) return;
 		const { data, error } = checked;
 		if (error) { TDC.showSupabaseError(AREA, error, els.roundRulesStatus); return; }
@@ -1362,12 +1362,12 @@
 			return;
 		}
 
-		TDC.status(els.wiringStatus, 'Checking…', '');
+		TDC.status(els.wiringStatus, '', '');
 
 		// Rehearse every change first, so the TD confirms once against the
 		// whole thing rather than being asked twice halfway through.
 		const fixtureId = wiring;
-		const answers = await rehearse('wiring', async () => {
+		const answers = await TDC.busy(els.wiringSave, rehearse('wiring', async () => {
 			const got = [];
 			for (const w of wanted) {
 				const r = await supabaseClient.rpc('tdc_set_fixture_source', {
@@ -1380,7 +1380,7 @@
 				if (r.error) break;
 			}
 			return got;
-		});
+		}), els.wiringStatus);
 		if (!answers) return;
 		const lines = [];
 		for (const [i, w] of wanted.entries()) {
@@ -1593,12 +1593,12 @@
 	els.redraw.addEventListener('click', async () => {
 		const confirmedOnly = els.who.value === 'confirmed';
 
-		TDC.status(els.status, 'Redrawing…', '');
-		const tried = await rehearse('redraw', () => supabaseClient.rpc('tdc_generate_draw', {
+		TDC.status(els.status, '', '');
+		const tried = await TDC.busy(els.redraw, rehearse('redraw', () => supabaseClient.rpc('tdc_generate_draw', {
 			p_tournament_id: tournamentId,
 			p_confirmed_only: confirmedOnly,
 			p_replace: true
-		}));
+		})), els.status);
 		if (!tried) return;
 		const { error } = tried;
 
@@ -1692,7 +1692,7 @@
 			entering = null;
 			candidates = [];
 			render();
-			loadCandidates(id);
+			TDC.busy(els.bracket.querySelector('.bracket-entry'), loadCandidates(id), els.status);
 			return;
 		}
 

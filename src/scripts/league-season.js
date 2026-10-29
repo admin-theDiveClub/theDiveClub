@@ -587,10 +587,9 @@ TDCLeagueNav.panel('season', () => {
 		if (mine && mine.my_team_id === t.team_id) head.append(node('span', 'badge live', 'Your team'));
 		box.append(head);
 
+		// Not read yet: nothing in it; opening it reads, with the dots (below).
 		const roster = rosters.get(t.team_id);
-		if (!roster) {
-			box.append(node('p', 'muted', 'Open to see the players.'));
-		} else {
+		if (roster) {
 			if (controlsTeam() && t.team_id === mine.my_team_id) {
 				const field = node('div', 'field');
 				const label = node('label', null, 'Team name');
@@ -614,12 +613,21 @@ TDCLeagueNav.panel('season', () => {
 		box.addEventListener('toggle', async () => {
 			if (box.open) {
 				openTeams.add(t.team_id);
-				// First time opened: fetch the players, then draw.
-				if (!rosters.has(t.team_id)) {
-					const { data, error } = await supabaseClient.rpc('tdc_team_roster', { p_team_id: t.team_id });
-					if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
-					rosters.set(t.team_id, data || []);
-					renderTeams();
+				// First time opened: fetch the players, then draw, the dots on
+				// the team until they are in (UV, 29 Oct: every section that
+				// loads shows the dots). The draw makes a new box: the dots
+				// follow it by its id.
+				if (!rosters.has(t.team_id) && !box.dataset.dots) {
+					const read = (async () => {
+						const { data, error } = await supabaseClient.rpc('tdc_team_roster', { p_team_id: t.team_id });
+						if (error) { TDC.showSupabaseError(AREA, error, els.status); throw error; }
+						rosters.set(t.team_id, data || []);
+						renderTeams();
+					})();
+					if (typeof TDCDots !== 'undefined') {
+						TDCDots.serve(box, read, { status: els.status, follow: () => document.getElementById('team-' + t.team_id) });
+					}
+					read.catch(() => {});
 				}
 			} else {
 				openTeams.delete(t.team_id);

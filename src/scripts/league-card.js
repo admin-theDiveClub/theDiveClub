@@ -52,7 +52,6 @@
 		homePic: el('home-pic'), homeName: el('home-name'), awayPic: el('away-pic'), awayName: el('away-name'),
 		setup: el('setup'), sideSwitch: el('side-switch'), sidePick: el('side-pick'),
 		squadHint: el('squad-hint'), squadList: el('squad-list'),
-		orderHint: el('order-hint'), orderList: el('order-list'),
 		lockBtn: el('lock-btn'),
 		otherSide: el('other-side'), otherHead: el('other-head'), otherDetail: el('other-detail'),
 		grid: el('grid'), sessions: el('session-list'), gridHint: el('grid-hint'),
@@ -473,6 +472,43 @@
 		els.sidePick.value = working;
 	}
 
+	// ─── The lineup's choices on their way (UV, 29 Oct) ───
+	// A captain goes down the list without waiting: each choice is kept here
+	// until its save and the card's re-read are back, so a redraw in between
+	// shows what they chose, not what the database held a moment ago. A
+	// position saves POS_SAVE_MS after the last step, so stepping 1 to 4 does
+	// not put the player in 2 and 3 on the way (each knocks out whoever is
+	// there).
+	const pendingHere = new Map();   // player -> here or not
+	const pendingPos = new Map();    // player -> { at: position or null, n: order chosen }
+	const posTimers = new Map();     // player -> the save waiting to go
+	const POS_SAVE_MS = 700;
+	let chosen = 0;
+
+	// Who is here and who is in which position, as this page should show it:
+	// the database's, with the choices on their way laid over. A position
+	// chosen here empties whoever held it, as the database will; of two
+	// chosen for one position, the later stands.
+	function lineupShown() {
+		const inSquad = new Set(squad.filter((s) => s.side === working).map((s) => s.player_id));
+		const saved = new Map(lineup.filter((l) => l.side === working && l.player_id).map((l) => [l.player_id, l.lineup_slot]));
+		const here = (id) => (pendingHere.has(id) ? pendingHere.get(id) : inSquad.has(id));
+		const claim = new Map();   // position -> { id, n } latest chosen
+		for (const [id, p] of pendingPos) {
+			if (p.at != null && here(id) && !(claim.get(p.at) && claim.get(p.at).n > p.n)) claim.set(p.at, { id, n: p.n });
+		}
+		const pos = (id) => {
+			if (!here(id)) return null;
+			if (pendingPos.has(id)) {
+				const p = pendingPos.get(id);
+				return p.at != null && claim.get(p.at).id === id ? p.at : null;
+			}
+			const at = saved.get(id);
+			return at != null && !claim.has(at) ? at : null;
+		};
+		return { here, pos };
+	}
+
 	function renderSetup(locked, both, canSet) {
 		// Nothing to set up once this side is locked.
 		els.setup.hidden = !canSet || !working || locked[working];
@@ -480,65 +516,54 @@
 
 		const teamId = working === 'home' ? match.home_team_id : match.away_team_id;
 		const roster = rosters.get(teamId) || [];
-		const inSquad = new Set(squad.filter((s) => s.side === working).map((s) => s.player_id));
+		const mySlots = lineup.filter((l) => l.side === working);
+		const { here, pos } = lineupShown();
 
 		els.squadHint.textContent = roster.length
-			? 'Tick everybody who is here. You can add somebody later — a reserve changes a frame rather than the order.'
+			? 'Switch on everybody who is here and give each player in the first session their position. Each keeps their position all night; the rest follows from the rotation. A position left empty can still be filled by a reserve or a latecomer until the card is signed.'
 			: 'Nobody is on this team yet.';
 
+		// One row per player (UV, 29 Oct): here tonight, and their position.
 		els.squadList.replaceChildren(...roster.map((r) => {
-			const row = node('div', 'list-row');
+			const id = r.player_id;
+			const row = node('div', 'list-row card-lineup-row');
 			const main = node('div', 'list-row-main');
-			main.append(person(r.player_id, r.display_name));
+			main.append(person(id, r.display_name));
 			const sub = [];
 			if (r.is_captain) sub.push('Captain');
 			if (r.status !== 'active') sub.push(r.status === 'withdrawn' ? 'Withdrawn' : 'Away');
 			if (sub.length) main.append(node('span', 'sub', sub.join(' · ')));
 
-			const actions = node('div', 'list-row-actions');
+			const actions = node('div', 'list-row-actions card-lineup-controls');
 			const box = document.createElement('input');
-			box.type = 'checkbox';
-			box.dataset.control = 'ring';   // a tick against a person, not a setting
-			box.checked = inSquad.has(r.player_id);
+			box.type = 'checkbox';   // a switch
+			box.id = 'here-' + id;
+			box.checked = here(id);
 			// The database refuses anybody not active (away or withdrawn);
 			// saying so here spares a pointless tap. Confirmation is not asked
 			// for, and has not been since 23 Oct.
 			box.disabled = r.status !== 'active';
 			box.dataset.action = 'squad';
-			box.dataset.player = r.player_id;
+			box.dataset.player = id;
 			box.setAttribute('aria-label', 'Here tonight: ' + r.display_name);
-			actions.append(box);
 
+			const at = document.createElement('input');
+			at.type = 'number';      // a stepper
+			at.dataset.stepper = 'across';   // on its side: a row of small numbers, one per player
+			at.id = 'pos-' + id;
+			at.min = '1';
+			at.max = String(mySlots.length || 1);
+			at.step = '1';
+			at.placeholder = '–';
+			at.value = pos(id) == null ? '' : String(pos(id));
+			at.dataset.was = at.value;   // where a step came from (choosePos)
+			at.disabled = !here(id);
+			at.dataset.action = 'pos';
+			at.dataset.player = id;
+			at.setAttribute('aria-label', 'Position for ' + r.display_name);
+
+			actions.append(box, at);
 			row.append(main, actions);
-			return row;
-		}));
-
-		// The order: one row per position, choosing from the squad.
-		const available = squad.filter((s) => s.side === working);
-		const mySlots = lineup.filter((l) => l.side === working);
-		els.orderHint.textContent = available.length
-			? 'Your players for the first session, in order. Each keeps their position all night; the rest of the night follows from the rotation. A position left empty can still be filled by a reserve or a latecomer until the card is signed.'
-			: 'Tick somebody above first — the order is chosen from who is here.';
-
-		els.orderList.replaceChildren(...mySlots.map((slot) => {
-			const row = node('div', 'list-row');
-			const main = node('div', 'list-row-main');
-			main.append(node('span', null, 'Position ' + slot.lineup_slot));
-			if (slot.player_id) main.append(person(slot.player_id, slot.display_name, 'card-person-sm'));
-			row.append(main);
-
-			const actions = node('div', 'list-row-actions');
-			const pick = document.createElement('select');
-			pick.dataset.control = 'none';   // a list of players: a pill would scroll on beside the position
-			pick.dataset.action = 'slot';
-			pick.dataset.slot = slot.lineup_slot;
-			pick.setAttribute('aria-label', 'Who plays position ' + slot.lineup_slot);
-			pick.append(new Option('Nobody yet', '', false, !slot.player_id));
-			for (const s of available) {
-				pick.append(new Option(s.display_name, s.player_id, false, s.player_id === slot.player_id));
-			}
-			actions.append(pick);
-			row.append(actions);
 			return row;
 		}));
 
@@ -1190,26 +1215,131 @@
 		await loadAll();
 	});
 
+	// Here tonight and a position, one row per player (UV, 29 Oct). Neither
+	// waits for the other saves: each is queued (cardWriter) and kept on the
+	// page until it is back (lineupShown).
 	els.squadList.addEventListener('change', (e) => {
-		const box = e.target.closest('[data-action="squad"]');
-		if (!box) return;
-		write('Saving', () => supabaseClient.rpc('tdc_set_match_squad', {
-			p_match_id: matchId,
-			p_player_id: box.dataset.player,
-			p_available: box.checked
-		}));
+		const box = e.target.closest('input[data-action="squad"]');
+		if (box) { setHere(box.dataset.player, box.checked); return; }
+		const at = e.target.closest('input[data-action="pos"]');
+		if (at) choosePos(at);
 	});
 
-	els.orderList.addEventListener('change', (e) => {
-		const pick = e.target.closest('[data-action="slot"]');
-		if (!pick) return;
-		write('Saving', () => supabaseClient.rpc('tdc_set_lineup_slot', {
+	// A position somebody else holds is skipped, not taken (UV, 29 Oct):
+	// stepping onto one carries on in the same direction to the next free
+	// position, rolling through the held ones on the way so it is seen. With
+	// none free that way, it goes back to where it was.
+	const SKIP_MS = 140;   // each held position rolled past
+	function choosePos(field) {
+		const id = field.dataset.player;
+		clearTimeout(field.skipTimer);
+		field.skipTimer = 0;
+		const was = field.dataset.was ? Number(field.dataset.was) : null;
+		const v = field.value === '' ? null : Math.round(Number(field.value));
+		if (v == null) { acceptPos(field, null); return; }
+		const max = lineup.filter((l) => l.side === working).length;
+		const held = takenBesides(id);
+		if (!held.has(v)) { acceptPos(field, v); return; }
+
+		const dir = was == null || v > was ? 1 : -1;
+		const path = [];
+		let n = v + dir;
+		while (n >= 1 && n <= max && held.has(n)) { path.push(n); n += dir; }
+		path.push(n >= 1 && n <= max ? n : was);
+		const next = () => {
+			const to = path.shift();
+			field.value = to == null ? '' : String(to);
+			if (path.length) field.skipTimer = setTimeout(next, SKIP_MS);
+			else { field.skipTimer = 0; acceptPos(field, to); }
+		};
+		field.skipTimer = setTimeout(next, SKIP_MS);
+	}
+
+	// The positions held by everybody else here, as the page shows them.
+	function takenBesides(id) {
+		const { here, pos } = lineupShown();
+		const held = new Set();
+		for (const f of els.squadList.querySelectorAll('input[data-action="pos"]')) {
+			const other = f.dataset.player;
+			if (other !== id && here(other) && pos(other) != null) held.add(pos(other));
+		}
+		return held;
+	}
+
+	function acceptPos(field, at) {
+		field.dataset.was = at == null ? '' : String(at);
+		setPos(field.dataset.player, at);
+	}
+
+	// The page is put right in place rather than drawn again: a stepper held
+	// down would be thrown away under the finger. The card's re-read once the
+	// saves are back draws it all from lineupShown.
+	const posField = (id) => document.getElementById('pos-' + id);
+
+	// Every other stepper set to what lineupShown says. A held position is
+	// skipped now (choosePos), so this puts right only what a re-read or a
+	// race moved.
+	function showPositions(except) {
+		const { pos } = lineupShown();
+		for (const f of els.squadList.querySelectorAll('input[data-action="pos"]')) {
+			if (f.dataset.player === except || f.skipTimer) continue;   // mid-roll: choosePos lands it
+			const v = pos(f.dataset.player);
+			const want = v == null ? '' : String(v);
+			if (f.value !== want) f.value = want;
+			f.dataset.was = want;
+		}
+	}
+
+	function setHere(id, on) {
+		pendingHere.set(id, on);
+		const f = posField(id);
+		if (f) f.disabled = !on;
+		// Here: the first free position, given at once (UV, 29 Oct); the
+		// captain adjusts from there. None free: left empty.
+		if (on && f && f.value === '') {
+			const held = takenBesides(id);
+			const max = lineup.filter((l) => l.side === working).length;
+			let n = 1;
+			while (n <= max && held.has(n)) n++;
+			if (n <= max) { f.value = String(n); acceptPos(f, n); }
+		}
+		if (!on) {
+			// Out of the squad is out of the order (the database does it too).
+			clearTimeout(posTimers.get(id));
+			posTimers.delete(id);
+			pendingPos.delete(id);
+			if (f) { clearTimeout(f.skipTimer); f.value = ''; f.dataset.was = ''; }
+		}
+		write('Saving', () => supabaseClient.rpc('tdc_set_match_squad', {
+			p_match_id: matchId, p_player_id: id, p_available: on
+		})).finally(() => { if (pendingHere.get(id) === on) pendingHere.delete(id); });
+	}
+
+	function setPos(id, at) {
+		const max = lineup.filter((l) => l.side === working).length;
+		if (at != null && !(at >= 1 && at <= max)) at = null;
+		pendingPos.set(id, { at, n: ++chosen });
+		showPositions(id);
+		clearTimeout(posTimers.get(id));
+		posTimers.set(id, setTimeout(() => savePos(id), POS_SAVE_MS));
+	}
+
+	function savePos(id) {
+		posTimers.delete(id);
+		const p = pendingPos.get(id);
+		if (!p) return;
+		// No position: the one they hold is emptied. Holding none, nothing to do.
+		const held = lineup.find((l) => l.side === working && l.player_id === id);
+		if (p.at == null && !held) { pendingPos.delete(id); return; }
+		const stepper = () => { const f = document.getElementById('pos-' + id); return f && f.closest('.tdc-stepper'); };
+		cardWriter.write('Saving', () => supabaseClient.rpc('tdc_set_lineup_slot', {
 			p_match_id: matchId,
-			p_lineup_slot: parseInt(pick.dataset.slot, 10),
-			p_player_id: pick.value || null,
+			p_lineup_slot: p.at == null ? held.lineup_slot : p.at,
+			p_player_id: p.at == null ? null : id,
 			p_side: working
-		}));
-	});
+		}), null, { dots: stepper() || undefined, follow: stepper, leaves: true })
+			.finally(() => { if (pendingPos.get(id) === p) pendingPos.delete(id); });
+	}
 
 	els.lockBtn.addEventListener('click', () => {
 		const mySlots = lineup.filter((l) => l.side === working);
@@ -1355,7 +1485,7 @@
 	function onLive() {
 		clearTimeout(liveTimer);
 		liveTimer = setTimeout(function again() {
-			if (cardWriter.pending || unsaved.size) { liveTimer = setTimeout(again, 1500); return; }
+			if (cardWriter.pending || unsaved.size || posTimers.size) { liveTimer = setTimeout(again, 1500); return; }
 			loadAll();
 		}, 500);
 	}

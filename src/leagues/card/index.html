@@ -64,7 +64,7 @@ extraScripts:
 				<span class="cj-name" id="away-name">Away</span>
 			</div>
 		</div>
-		<p class="cj-detail" id="state-detail">Loading…</p>
+		<p class="cj-detail" id="state-detail"></p>
 		<dl class="jumbo-facts" id="jumbo-facts"></dl>
 	</section>
 
@@ -81,18 +81,15 @@ extraScripts:
 	</div>
 
 	{% comment %}
-		Before the lock. The squad is who is available tonight; the order is
-		who plays which position. Both are a captain's own side only — the league
-		director gets a side switch instead.
+		Before the lock. One row per player (UV, 29 Oct, was two sections): a
+		switch for here tonight (the squad) and a stepper for their position
+		(the order). A captain's own side only — the league director gets a
+		side switch instead.
 	{% endcomment %}
 	<div id="setup" hidden>
-		<h2>Who is here tonight</h2>
+		<h2>Tonight's lineup</h2>
 		<p class="muted" id="squad-hint"></p>
 		<div id="squad-list"></div>
-
-		<h2>The order</h2>
-		<p class="muted" id="order-hint"></p>
-		<div id="order-list"></div>
 
 		<div class="btn-row">
 			<button type="button" class="btn btn-primary btn-sm" id="lock-btn">Lock the lineup</button>

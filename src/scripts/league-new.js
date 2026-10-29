@@ -163,7 +163,9 @@
 	}
 
 	// ─── Create ───
-	els.create.addEventListener('click', async () => {
+	// The dots stay on the button for the whole of it, league and season (UV,
+	// 29 Oct: never a loading message).
+	els.create.addEventListener('click', () => TDC.busy(els.create, (async () => {
 		const seasonName = (els.seasonName.value || '').trim();
 		if (!leagueId && (els.name.value || '').trim().length < 2) {
 			TDC.status(els.status, 'Give the league a name first.', '');
@@ -187,10 +189,9 @@
 		}
 
 		els.create.disabled = true;
+		TDC.status(els.status, '', '');
 
 		if (!leagueId) {
-			TDC.status(els.status, 'Creating the league…', '');
-
 			// p_venue_id is null for now. A venue makes this a club league and
 			// requires staff there; the page to choose one does not exist yet,
 			// and guessing would quietly refuse people who run their own.
@@ -212,7 +213,6 @@
 			leagueId = made.data;
 		}
 
-		TDC.status(els.status, 'Opening the season…', '');
 		const season = await supabaseClient.rpc('tdc_create_league_season', {
 			p_league_id: leagueId,
 			p_name: seasonName,
@@ -241,7 +241,7 @@
 		// Straight to the season's page: a league with nobody in it is not
 		// finished being made.
 		location.href = '/leagues/season/?s=' + encodeURIComponent(season.data) + '&tab=manage';
-	});
+	})(), els.status));
 
 	TDCLoader.hold((async () => {
 		const session = await TDC.requireSession(AREA);

@@ -974,3 +974,27 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* the match page fades what another phone changed (the score, "Frame n", both stats tables), only on that path (`refreshFromRemote`), because this phone's own tap is shown by the dots tracing its score. The bracket fades each slot's frame count and name, so a winner arriving in the next round is seen arriving. The Season tab fades its numbers. `TDC.liveFade` now leaves alone anything the dots are serving. And a redraw that makes a new switch whose value differs from the one it replaces starts it where the old one stood and glides it over (`movedFrom` in `tdc-controls.js`), for every switch, ring and three-way switch, not only the card's.
 *Rejected:* fading the match page after this phone's own saves (the dots already show that change, and the two would fight); fading the ticking clocks (they change every second); limiting the glide to the team card (the same redraw pattern is on every page, and an unchanged switch still never moves).
 *Touches:* `match.js`, `tournament-bracket.js`, `league-season.js`, `tdc.js`, `tdc-controls.js`, `docs/ui.md`
+
+## 2026-10-29 — Never a loading message; the dots show every wait
+
+*Decided by:* UV (repeated: the dots are how the site shows it is working and not ready for input; never a loading message; every section that loads, collapsible groups included); how, Claude
+*So:* every "Loading…", "Saving…", "Checking…", "Reading…" line and placeholder is gone. A handler shows its work with `TDC.busy(el, promise)`, the dots on what was used; `TDC.writer` prints nothing and hands an unclaimed save to the focused element; a section that loads when opened (a team on the Season tab) has the dots on it and nothing written inside until it is in. Success and error messages stay.
+*Rejected:* hiding in-progress messages centrally inside `TDC.status` (it would leave no dots in their place, and a message that never shows is still a message somebody wrote).
+*Touches:* `tdc.js` (`busy`, the writer), 17 page scripts, four pages' HTML, `docs/ui.md`, `docs/systems/dots.md` §8a
+
+## 2026-10-29 — The card's lineup is one list, and a captain never waits on it
+
+*Decided by:* UV (one list: a switch for here tonight and a number for the position; pick the next while the last saves); how, Claude
+*So:* a row per player with a switch and a stepper on its side. Each choice is kept on the page until saved and read again, so going down the list never looks undone. A position saves 0.7 s after the last step, so a stepper passing through a position on its way does not knock its holder out.
+*Example:* Ann to 1; while that save is out, Ben stepped 1 → 2 and Cal 1 → 2 → 3: the page shows Ann 1, Ben 2, Cal 3 throughout, and three saves go (1 Ann, 2 Ben, 3 Cal), not six.
+*Rejected:* saving every step (each passing step would empty a position in the database); the upright stepper (a list of seven players twice as tall on a phone).
+*Touches:* `league-card.js`, `leagues/card/index.html`, `league.css`, `docs/systems/leagues.md`, `docs/ui.md`
+
+## 2026-10-29 — A held position is skipped, not taken; a player switched on gets the first free one
+
+*Decided by:* UV
+*So:* on the card's lineup, stepping onto a position another player holds jumps on, in the same direction, to the next free one, rolling through the held numbers so it is seen; with none free that way it stays where it was. Switching a player on gives them the first free position, which the captain then adjusts. The stepper is the switch's height.
+*Why:* taking the position pushed its holder out, so setting each new player undid the last one (UV: "every time I set a different player's number, it replaces the previous").
+*Replaces:* "taking a position empties its holder" from the entry above, the same day.
+*Consequence:* two players are swapped by switching one off, stepping the other onto the freed number, and switching the first back on (they get the free one).
+*Touches:* `league-card.js` (`choosePos`, `takenBesides`, `setHere`), `league.css`

@@ -232,12 +232,13 @@
 		if (fee === undefined) return;
 
 		els.create.disabled = true;
-		TDC.status(els.status, 'Creating…', '');
+		// The dots show it's working (UV, 29 Oct: never a loading message).
+		TDC.status(els.status, '', '');
 
 		// p_venue_id is null for now. A venue makes this a club tournament and
 		// requires staff there; the page to choose one does not exist yet, and
 		// guessing a venue would quietly refuse people who run their own.
-		const { data, error } = await supabaseClient.rpc('tdc_create_tournament', {
+		const { data, error } = await TDC.busy(els.create, supabaseClient.rpc('tdc_create_tournament', {
 			p_name: name,
 			p_rules: rules,
 			p_format: els.format.value,
@@ -249,7 +250,7 @@
 			p_paid_confirms: els.paidConfirms.checked,
 			p_progression: els.progression.value,
 			p_create_matches: els.createMatches.value
-		});
+		}), els.status);
 
 		if (error) {
 			els.create.disabled = false;

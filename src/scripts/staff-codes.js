@@ -99,13 +99,14 @@ TDCLoader.hold((async () => {
 		}
 
 		els.redeemBtn.disabled = true;
-		TDC.status(els.statusEl, 'Redeeming…', '');
+		// The dots show it's working (UV, 29 Oct: never a loading message).
+		TDC.status(els.statusEl, '', '');
 		try {
-			const { data, error } = await supabaseClient.rpc('tdc_redeem_code', {
+			const { data, error } = await TDC.busy(els.redeemBtn, supabaseClient.rpc('tdc_redeem_code', {
 				p_venue_id: els.selectEl.value,
 				p_code: code,
 				p_player_id: redeemPlayer.id
-			});
+			}), els.statusEl);
 
 			if (error) {
 				TDC.showSupabaseError(AREA, error, els.statusEl);
@@ -153,15 +154,15 @@ TDCLoader.hold((async () => {
 		}
 
 		els.generateBtn.disabled = true;
-		TDC.status(els.statusEl, 'Generating…', '');
+		TDC.status(els.statusEl, '', '');
 		try {
-			const { data, error } = await supabaseClient.rpc('tdc_generate_redeem_codes', {
+			const { data, error } = await TDC.busy(els.generateBtn, supabaseClient.rpc('tdc_generate_redeem_codes', {
 				p_venue_id: els.selectEl.value,
 				p_credits: credits,
 				p_quantity: quantity,
 				p_note: note || null,
 				p_expires_at: expiresAt
-			});
+			}), els.statusEl);
 
 			if (error) {
 				TDC.showSupabaseError(AREA, error, els.statusEl);
@@ -226,12 +227,12 @@ TDCLoader.hold((async () => {
 		}
 
 		els.voidBtn.disabled = true;
-		TDC.status(els.statusEl, 'Voiding…', '');
+		TDC.status(els.statusEl, '', '');
 		try {
-			const { error } = await supabaseClient.rpc('tdc_void_redeem_code', {
+			const { error } = await TDC.busy(els.voidBtn, supabaseClient.rpc('tdc_void_redeem_code', {
 				p_venue_id: els.selectEl.value,
 				p_code: code
-			});
+			}), els.statusEl);
 
 			if (error) {
 				TDC.showSupabaseError(AREA, error, els.statusEl);

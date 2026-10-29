@@ -18,9 +18,15 @@ function urlBase64ToUint8Array(base64String) {
 	return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
 }
 
-document.getElementById('enable-notifications').addEventListener('click', async () => {
+// The dots show it's working, on the button pressed (UV, 29 Oct: never a
+// loading message).
+document.getElementById('enable-notifications').addEventListener('click', (e) => {
+	TDC.busy(e.currentTarget, enableNotifications(), document.getElementById('notif-status'));
+});
+
+async function enableNotifications() {
 	const statusEl = document.getElementById('notif-status');
-	statusEl.textContent = 'Working...';
+	statusEl.textContent = '';
 	console.log('[Push] Button clicked, starting subscribe flow.');
 
 	const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
@@ -88,11 +94,11 @@ document.getElementById('enable-notifications').addEventListener('click', async 
 		console.error('[Push] Unexpected error in subscribe flow:', err);
 		statusEl.textContent = 'TDC (Error): ' + err.message;
 	}
-});
+}
 
 async function sendNotification(title, body, icon) {
 	const statusEl = document.getElementById('notif-status');
-	statusEl.textContent = 'Sending...';
+	statusEl.textContent = '';
 	console.log('[Push] Sending notification:', { title, body, icon });
 
 	const { data, error } = await supabaseClient.functions.invoke('send-test-notification', {
@@ -127,8 +133,8 @@ async function sendNotification(title, body, icon) {
 	statusEl.textContent = `Sent to ${sentCount} device(s)${failedCount ? `, ${failedCount} failed` : ''}.`;
 }
 
-document.getElementById('notif-preset-1').addEventListener('click', () => {
-	sendNotification('Match Starting', 'Your match on Table 3 starts in 10 minutes.', '/resources/icons/notifications/test.png');
+document.getElementById('notif-preset-1').addEventListener('click', (e) => {
+	TDC.busy(e.currentTarget, sendNotification('Match Starting', 'Your match on Table 3 starts in 10 minutes.', '/resources/icons/notifications/test.png'), document.getElementById('notif-status'));
 });
 
 // ─── What buzzes your phone ───────────────────────────────────────

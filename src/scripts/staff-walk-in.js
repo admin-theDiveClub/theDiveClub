@@ -104,9 +104,10 @@ TDCLoader.hold((async () => {
 		}
 
 		els.saveBtn.disabled = true;
-		TDC.status(els.statusEl, 'Saving…', '');
+		// The dots show it's working (UV, 29 Oct: never a loading message).
+		TDC.status(els.statusEl, '', '');
 		try {
-			const { data: playerId, error } = await supabaseClient.rpc('tdc_create_walk_in', {
+			const { data: playerId, error } = await TDC.busy(els.saveBtn, supabaseClient.rpc('tdc_create_walk_in', {
 				p_venue_id: els.selectEl.value,
 				p_display_name: displayName,
 				p_first_name: els.firstName.value.trim() || null,
@@ -118,7 +119,7 @@ TDCLoader.hold((async () => {
 				p_passport_country: docKind === 'passport' ? docCountry : null,
 				p_phone: els.phone.value.trim() || null,
 				p_email: els.email.value.trim() || null
-			});
+			}), els.statusEl);
 
 			if (error) {
 				TDC.showSupabaseError(AREA, error, els.statusEl);

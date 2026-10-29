@@ -81,13 +81,14 @@ TDCLoader.hold((async () => {
 		}
 
 		els.linkBtn.disabled = true;
-		TDC.status(els.statusEl, 'Linking…', '');
+		// The dots show it's working (UV, 29 Oct: never a loading message).
+		TDC.status(els.statusEl, '', '');
 		try {
-			const { error } = await supabaseClient.rpc('tdc_staff_link_account', {
+			const { error } = await TDC.busy(els.linkBtn, supabaseClient.rpc('tdc_staff_link_account', {
 				p_venue_id: els.selectEl.value,
 				p_walk_in_player_id: walkin.id,
 				p_account_player_id: account.id
-			});
+			}), els.statusEl);
 
 			if (error) {
 				TDC.showSupabaseError(AREA, error, els.statusEl);

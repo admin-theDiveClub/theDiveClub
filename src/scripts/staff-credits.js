@@ -87,13 +87,15 @@ TDCLoader.hold((async () => {
 
 	async function loadBalance() {
 		balance = null;
-		els.balanceLine.textContent = 'Loading balance…';
+		// Blank but keeping its height, with the dots on it while it loads (UV,
+		// 29 Oct: never a loading message).
+		els.balanceLine.textContent = '\u00a0';
 		els.adjustArea.hidden = true;
 
-		const { data, error } = await supabaseClient.rpc('tdc_staff_credit_balance', {
+		const { data, error } = await TDC.busy(els.balanceLine, supabaseClient.rpc('tdc_staff_credit_balance', {
 			p_venue_id: els.selectEl.value,
 			p_player_id: selectedPlayer.id
-		});
+		}), els.statusEl);
 
 		if (error) {
 			TDC.showSupabaseError(AREA, error, els.statusEl);
@@ -145,15 +147,15 @@ TDCLoader.hold((async () => {
 		const signedAmount = els.direction.value === 'remove' ? -rawAmount : rawAmount;
 
 		els.adjustBtn.disabled = true;
-		TDC.status(els.statusEl, 'Applying…', '');
+		TDC.status(els.statusEl, '', '');
 		try {
-			const { data, error } = await supabaseClient.rpc('tdc_staff_adjust_credits', {
+			const { data, error } = await TDC.busy(els.adjustBtn, supabaseClient.rpc('tdc_staff_adjust_credits', {
 				p_venue_id: els.selectEl.value,
 				p_player_id: selectedPlayer.id,
 				p_amount: signedAmount,
 				p_reason: reason,
 				p_idempotency_key: idempotencyKey
-			});
+			}), els.statusEl);
 
 			if (error) {
 				TDC.showSupabaseError(AREA, error, els.statusEl);

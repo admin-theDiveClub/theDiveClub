@@ -193,13 +193,15 @@ TDCLeagueNav.panel('settings', () => {
 
 	els.picChoose.addEventListener('click', () => els.picFile.click());
 
-	els.picFile.addEventListener('change', async () => {
+	// The dots show the work on the button used, from the picture's
+	// preparation to the save (UV, 29 Oct: never a loading message).
+	els.picFile.addEventListener('change', () => TDC.busy(els.picChoose, (async () => {
 		const file = els.picFile.files && els.picFile.files[0];
 		els.picFile.value = '';
 		if (!file || !leagueId) return;
 
 		pictureBusy(true);
-		TDC.status(els.picStatus, 'Preparing the picture…', '');
+		TDC.status(els.picStatus, '', '');
 		try {
 			const blob = await TDC.preparePicture(file, 512, AREA, els.picStatus);
 			if (!blob) return;
@@ -209,7 +211,6 @@ TDCLeagueNav.panel('settings', () => {
 			const ext = blob.type === 'image/webp' ? 'webp' : 'jpg';
 			const path = `${leagueId}/${crypto.randomUUID()}.${ext}`;
 
-			TDC.status(els.picStatus, 'Uploading…', '');
 			const { error: upErr } = await supabaseClient.storage
 				.from(PICTURE_BUCKET).upload(path, blob, { contentType: blob.type, upsert: false });
 			if (upErr) { TDC.showSupabaseError(AREA, upErr, els.picStatus); return; }
@@ -237,14 +238,14 @@ TDCLeagueNav.panel('settings', () => {
 		} finally {
 			pictureBusy(false);
 		}
-	});
+	})(), els.picStatus));
 
-	els.picRemove.addEventListener('click', async () => {
+	els.picRemove.addEventListener('click', () => TDC.busy(els.picRemove, (async () => {
 		if (!picturePath || !leagueId) return;
 		if (!confirm('Remove the league\u2019s picture?\n\nIts pages show the trophy again.')) return;
 
 		pictureBusy(true);
-		TDC.status(els.picStatus, 'Removing…', '');
+		TDC.status(els.picStatus, '', '');
 		try {
 			// Cleared on the league first: if the file delete fails, the picture
 			// is already gone from every page.
@@ -265,7 +266,7 @@ TDCLeagueNav.panel('settings', () => {
 		} finally {
 			pictureBusy(false);
 		}
-	});
+	})(), els.picStatus));
 
 	// ─── Reading ───
 	async function load() {
@@ -343,7 +344,7 @@ TDCLeagueNav.panel('settings', () => {
 		return parts.join(' ');
 	}
 
-	els.save.addEventListener('click', async () => {
+	els.save.addEventListener('click', () => TDC.busy(els.save, (async () => {
 		if (busy || !rules) return;
 
 		const name = (els.name.value || '').trim();
@@ -387,7 +388,7 @@ TDCLeagueNav.panel('settings', () => {
 
 		busy = true;
 		els.save.disabled = true;
-		TDC.status(els.status, 'Saving…', '');
+		TDC.status(els.status, '', '');
 
 		// The season first. A refusal here has written nothing at all, so the
 		// form keeps what the person chose.
@@ -441,7 +442,7 @@ TDCLeagueNav.panel('settings', () => {
 		busy = false;
 		els.save.disabled = false;
 		if (ok) TDC.status(els.status, savedText(data), 'success');
-	});
+	})(), els.status));
 
 	// ─── Start ───
 	TDCLoader.hold((async () => {

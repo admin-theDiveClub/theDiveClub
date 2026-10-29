@@ -103,15 +103,16 @@ TDCLoader.hold((async () => {
 		}
 
 		els.verifyBtn.disabled = true;
-		TDC.status(els.statusEl, 'Checking…', '');
+		// The dots show it's working (UV, 29 Oct: never a loading message).
+		TDC.status(els.statusEl, '', '');
 		try {
-			const { error } = await supabaseClient.rpc('tdc_verify_identifier', {
+			const { error } = await TDC.busy(els.verifyBtn, supabaseClient.rpc('tdc_verify_identifier', {
 				p_venue_id: els.selectEl.value,
 				p_player_id: selectedPlayer.id,
 				p_kind: kind,
 				p_value_from_document: number,
 				p_issuing_country: kind === 'passport' ? country : null
-			});
+			}), els.statusEl);
 
 			if (error) {
 				TDC.showSupabaseError(AREA, error, els.statusEl);

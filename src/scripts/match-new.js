@@ -245,11 +245,13 @@
 	document.addEventListener('change', onSettingChange);
 
 	// ─── Start ───
-	els.create.addEventListener('click', async () => {
+	// The dots stay on the button through every call (UV, 29 Oct: never a
+	// loading message).
+	els.create.addEventListener('click', () => TDC.busy(els.create, (async () => {
 		if (!opponent) { TDC.status(els.status, 'Choose who you are playing first.', ''); return; }
 
 		els.create.disabled = true;
-		TDC.status(els.status, 'Starting…', '');
+		TDC.status(els.status, '', '');
 
 		const { data, error } = await supabaseClient.rpc('tdc_create_match', {
 			p_opponent_player_id: opponent.id,
@@ -311,7 +313,7 @@
 		await tellTheOpponent(data);
 
 		location.href = '/match/?id=' + encodeURIComponent(data);
-	});
+	})(), els.status));
 
 	// A datetime-local field has no time zone: "2026-10-21T19:30" means half
 	// seven where the person is standing. Date() reads it as local time, which

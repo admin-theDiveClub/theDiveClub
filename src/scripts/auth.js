@@ -74,21 +74,22 @@
 		}
 
 		submitBtn.disabled = true;
-		TDC.status(statusEl, mode === 'signup' ? 'Creating account…' : 'Logging in…', '');
+		// The dots show it's working (UV, 29 Oct: never a loading message).
+		TDC.status(statusEl, '', '');
 
 		const email    = emailInput.value.trim();
 		const password = passwordInput.value;
 
 		try {
 			if (mode === 'signup') {
-				const { data, error } = await supabaseClient.auth.signUp({
+				const { data, error } = await TDC.busy(submitBtn, supabaseClient.auth.signUp({
 					email,
 					password,
 					options: {
 						data: { display_name: displayNameInput.value.trim() },
 						emailRedirectTo: location.origin + '/accounts/'
 					}
-				});
+				}), statusEl);
 
 				if (error) {
 					TDC.showSupabaseError(AREA, error, statusEl);
@@ -103,7 +104,7 @@
 				updateModeUI();
 				TDC.status(statusEl, 'Check your email for a confirmation link, then log in.', 'success');
 			} else {
-				const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+				const { error } = await TDC.busy(submitBtn, supabaseClient.auth.signInWithPassword({ email, password }), statusEl);
 
 				if (error) {
 					if (error.code === 'email_not_confirmed') {
@@ -116,7 +117,6 @@
 					return;
 				}
 
-				TDC.status(statusEl, 'Logged in, redirecting…', 'success');
 				location.replace(next);
 			}
 		} catch (err) {

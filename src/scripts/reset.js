@@ -63,12 +63,13 @@
 		}
 
 		requestBtn.disabled = true;
-		TDC.status(statusEl, 'Sending…', '');
+		// The dots show it's working (UV, 29 Oct: never a loading message).
+		TDC.status(statusEl, '', '');
 
 		try {
-			const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+			const { error } = await TDC.busy(requestBtn, supabaseClient.auth.resetPasswordForEmail(email, {
 				redirectTo: location.origin + '/accounts/reset/'
-			});
+			}), statusEl);
 
 			if (error) {
 				TDC.showSupabaseError(AREA, error, statusEl);
@@ -105,10 +106,10 @@
 		}
 
 		updateBtn.disabled = true;
-		TDC.status(statusEl, 'Saving…', '');
+		TDC.status(statusEl, '', '');
 
 		try {
-			const { error } = await supabaseClient.auth.updateUser({ password });
+			const { error } = await TDC.busy(updateBtn, supabaseClient.auth.updateUser({ password }), statusEl);
 
 			if (error) {
 				TDC.showSupabaseError(AREA, error, statusEl);

@@ -158,7 +158,27 @@ const TDC = (() => {
 	// gives itself to the dots by asking writeSince() after a change.
 	let writes = 0;          // saves asked for on this page, every writer
 	let lastWrite = null;    // the latest: { saved, status }
-	function writeSince(n) { return writes > n ? lastWrite : null; }
+	// Asked by whoever shows the save with the dots (a control, a button):
+	// marked claimed, so the writer does not also give it to them.
+	function writeSince(n) {
+		if (writes <= n) return null;
+		lastWrite.claimed = true;
+		return lastWrite;
+	}
+
+	// ─── Working, shown by the dots (UV, 29 Oct) ───
+	// Never a loading message ("Saving…", "Checking…"): busy(el, work,
+	// statusEl) puts the site's dots on el for as long as work (a promise)
+	// takes, and returns it. el is what was used: the button pressed, the
+	// control changed, the section loading. A failure still goes on
+	// statusEl, as the dots' own failures do.
+	function busy(el, work, statusEl) {
+		const p = Promise.resolve(work);
+		if (el && el.isConnected && typeof TDCDots !== 'undefined') {
+			TDCDots.serve(el, p, { status: statusEl || undefined, leaves: true });
+		}
+		return p;
+	}
 
 	function writer({ area, status: statusEl, reload, after }) {
 		let pending = 0;
@@ -202,7 +222,8 @@ const TDC = (() => {
 			pending++;
 			let failed = false;
 			queued(async () => {
-				status(statusEl, what + '…', '');
+				// No "Saving…" line (UV, 29 Oct: never a loading message): the
+				// dots on what was used show it (below, and tdc-controls.js).
 				let res;
 				try { res = (await fn()) || {}; } catch (err) { res = { error: err }; }
 				if (res.error) { failed = true; errors.push(res.error); }
@@ -219,9 +240,24 @@ const TDC = (() => {
 			const saved = result.then((ok) => { if (!ok) throw new Error(what + ': not saved.'); });
 			saved.catch(() => {});
 			writes++;
-			lastWrite = { saved, status: statusEl };
+			const mine = lastWrite = { saved, status: statusEl };
 			if (opts && opts.dots && typeof TDCDots !== 'undefined') {
 				TDCDots.serve(opts.dots, saved, { status: statusEl, follow: opts.follow, leaves: opts.leaves });
+			} else {
+				// Nobody gave this save to the dots by the time the page's
+				// handler is done (a control or a button takes it through
+				// writeSince): they go to whatever was used, the focused
+				// element, so no save goes unseen.
+				// After the buttons and controls have had their turn (they ask
+				// a tick after the page's handler): an iPhone does not focus
+				// a tapped button, so going first could pick an older field.
+				const used = document.activeElement;
+				setTimeout(() => {
+					if (mine.claimed || typeof TDCDots === 'undefined') return;
+					const el = used && used !== document.body && used.isConnected ? used : null;
+					if (el && !el.closest('[data-dots]')) TDCDots.serve(el, saved, { status: statusEl, leaves: true });
+					else if (!el) console.error('[Dots] a save had nothing to show it on:', statusEl);
+				}, 30);
 			}
 			return result;
 		}
@@ -314,5 +350,5 @@ const TDC = (() => {
 	}
 
 	return { error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer,
-		get writes() { return writes; }, writeSince, preparePicture, pictureUrl, liveSnapshot, liveFade };
+		get writes() { return writes; }, writeSince, busy, preparePicture, pictureUrl, liveSnapshot, liveFade };
 })();

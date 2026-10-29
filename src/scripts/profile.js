@@ -115,7 +115,11 @@ TDCLoader.hold((async () => {
 		}
 
 		els.passwordBtn.disabled = true;
-		TDC.status(els.passwordStatus, 'Saving…', '');
+		// The dots show it's working until the whole change is done (UV, 29 Oct:
+		// never a loading message).
+		TDC.status(els.passwordStatus, '', '');
+		let finished;
+		TDC.busy(els.passwordBtn, new Promise((r) => { finished = r; }), els.passwordStatus);
 		try {
 			const attributes = { password, currentPassword: current };
 			if (codeNeeded) attributes.nonce = nonce;
@@ -148,6 +152,7 @@ TDCLoader.hold((async () => {
 		} catch (err) {
 			TDC.error(AREA, 'unexpected problem changing your password.', err, els.passwordStatus);
 		} finally {
+			finished();
 			els.passwordBtn.disabled = false;
 		}
 	});
@@ -167,12 +172,12 @@ TDCLoader.hold((async () => {
 		}
 
 		els.emailBtn.disabled = true;
-		TDC.status(els.emailStatus, 'Sending…', '');
+		TDC.status(els.emailStatus, '', '');
 		try {
-			const { error } = await supabaseClient.auth.updateUser(
+			const { error } = await TDC.busy(els.emailBtn, supabaseClient.auth.updateUser(
 				{ email: newEmail },
 				{ emailRedirectTo: location.origin + '/accounts/profile/' }
-			);
+			), els.emailStatus);
 			if (error) {
 				TDC.showSupabaseError(AREA, error, els.emailStatus);
 				return;
@@ -207,9 +212,9 @@ TDCLoader.hold((async () => {
 		}
 
 		els.detailsBtn.disabled = true;
-		TDC.status(els.detailsStatus, 'Saving…', '');
+		TDC.status(els.detailsStatus, '', '');
 		try {
-			const { data, error } = await supabaseClient
+			const { data, error } = await TDC.busy(els.detailsBtn, supabaseClient
 				.from('tbl_players')
 				.update({
 					display_name: displayName,
@@ -217,7 +222,7 @@ TDCLoader.hold((async () => {
 					last_name:    els.lastName.value.trim() || null
 				})
 				.eq('id', player.id)
-				.select('id');
+				.select('id'), els.detailsStatus);
 
 			if (error) {
 				TDC.showSupabaseError(AREA, error, els.detailsStatus);
@@ -281,7 +286,10 @@ TDCLoader.hold((async () => {
 
 		els.avatarChoose.disabled = true;
 		els.avatarRemove.disabled = true;
-		TDC.status(els.avatarStatus, 'Preparing your picture…', '');
+		// From the picture's preparation to the save, on the button that chose it.
+		TDC.status(els.avatarStatus, '', '');
+		let finished;
+		TDC.busy(els.avatarChoose, new Promise((r) => { finished = r; }), els.avatarStatus);
 		try {
 			const blob = await processPicture(file);
 			if (!blob) return;
@@ -292,7 +300,6 @@ TDCLoader.hold((async () => {
 			const ext = blob.type === 'image/webp' ? 'webp' : 'jpg';
 			const path = `${player.id}/${crypto.randomUUID()}.${ext}`;
 
-			TDC.status(els.avatarStatus, 'Uploading…', '');
 			const { error: upErr } = await supabaseClient.storage
 				.from(AVATAR_BUCKET)
 				.upload(path, blob, { contentType: blob.type, upsert: false });
@@ -334,6 +341,7 @@ TDCLoader.hold((async () => {
 		} catch (err) {
 			TDC.error(AREA, 'unexpected problem saving your picture.', err, els.avatarStatus);
 		} finally {
+			finished();
 			els.avatarChoose.disabled = false;
 			els.avatarRemove.disabled = false;
 		}
@@ -345,7 +353,9 @@ TDCLoader.hold((async () => {
 
 		els.avatarChoose.disabled = true;
 		els.avatarRemove.disabled = true;
-		TDC.status(els.avatarStatus, 'Removing…', '');
+		TDC.status(els.avatarStatus, '', '');
+		let finished;
+		TDC.busy(els.avatarRemove, new Promise((r) => { finished = r; }), els.avatarStatus);
 		try {
 			// The row is cleared first. If the file delete fails afterwards the
 			// picture is already gone from the person's point of view.
@@ -369,6 +379,7 @@ TDCLoader.hold((async () => {
 		} catch (err) {
 			TDC.error(AREA, 'unexpected problem removing your picture.', err, els.avatarStatus);
 		} finally {
+			finished();
 			els.avatarChoose.disabled = false;
 			els.avatarRemove.disabled = false;
 		}
@@ -434,7 +445,9 @@ TDCLoader.hold((async () => {
 		}
 
 		els.redeemBtn.disabled = true;
-		TDC.status(els.creditsStatus, 'Redeeming…', '');
+		TDC.status(els.creditsStatus, '', '');
+		let finished;
+		TDC.busy(els.redeemBtn, new Promise((r) => { finished = r; }), els.creditsStatus);
 		try {
 			const { data, error } = await supabaseClient.rpc('tdc_redeem_code', {
 				p_venue_id: els.redeemVenue.value,
@@ -453,6 +466,7 @@ TDCLoader.hold((async () => {
 		} catch (err) {
 			TDC.error(AREA, 'unexpected problem redeeming that code.', err, els.creditsStatus);
 		} finally {
+			finished();
 			els.redeemBtn.disabled = false;
 		}
 	});
@@ -561,7 +575,9 @@ TDCLoader.hold((async () => {
 		}
 
 		els.idBtn.disabled = true;
-		TDC.status(els.idStatus, 'Saving…', '');
+		TDC.status(els.idStatus, '', '');
+		let finished;
+		TDC.busy(els.idBtn, new Promise((r) => { finished = r; }), els.idStatus);
 		try {
 			const { error } = await supabaseClient.rpc('tdc_add_my_identifier', {
 				p_kind: kind,
@@ -579,6 +595,7 @@ TDCLoader.hold((async () => {
 		} catch (err) {
 			TDC.error(AREA, 'unexpected problem saving your ID.', err, els.idStatus);
 		} finally {
+			finished();
 			els.idBtn.disabled = false;
 		}
 	});
@@ -613,14 +630,14 @@ TDCLoader.hold((async () => {
 		btn.textContent = 'Link to My Account';
 		btn.addEventListener('click', async () => {
 			btn.disabled = true;
-			TDC.status(els.claimStatus, 'Linking…', '');
-			const { error } = await supabaseClient.rpc('tdc_claim_my_walk_in', { p_walk_in_player_id: w.player_id });
+			TDC.status(els.claimStatus, '', '');
+			const { error } = await TDC.busy(btn, supabaseClient.rpc('tdc_claim_my_walk_in', { p_walk_in_player_id: w.player_id }), els.claimStatus);
 			if (error) {
 				btn.disabled = false;
 				TDC.showSupabaseError(AREA, error, els.claimStatus);
 				return;
 			}
-			TDC.status(els.claimStatus, '✓ Linked. Reloading…', 'success');
+			TDC.status(els.claimStatus, '✓ Linked.', 'success');
 			location.reload();
 		});
 
