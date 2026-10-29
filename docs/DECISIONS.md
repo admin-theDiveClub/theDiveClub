@@ -1004,3 +1004,19 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by:* UV (the dots in the heading, green, at the right; then: move the + to the right end and let the dots take its place)
 *So:* every folding group's + / – is at the right end of its heading (the ruleset groups had it straight after the words). While a group loads, the + hides and the dots circle in its spot in the site's green (`TDC.groupDots`), then the – comes back. The contents still wait hidden and fade in once ready, as before. Before, the dots went round the whole group as it grew.
 *Touches:* `tdc.js` (`groupDots`), `tdc-controls.js` (`fold`), `league-season.js`, `forms.css`, `league.css`, `dots.css`, `variables.css` and the sandbox (`--group-dots-size`, `--group-dots-stroke`)
+
+## 2026-10-29 — The green glow is every page's, and it is a light that drifts and casts the edge shadow
+
+*Decided by:* UV (the glow on every page; the shadow on the edges away from the light)
+*So:* the green glow above the top of the screen, the match page's alone until now, is on every page. It drifts slowly from one random point to the next (30 s a move, resting at each), within a quarter of the screen's width either side of the centre and 100px up or down, never below the top. The shadow round the screen's edges, an even glow until now, is cast by it: pushed away from the light, so the bottom is heaviest and the side the light has drifted from darker; the top stays clear for the glow. Its place is kept between pages, so moving around the site never makes it jump.
+*Example:* the light drifts to the right: over the next half minute the left edge darkens a little and the right clears, while the bottom stays the darkest.
+*Rejected:* the shadow on the edges nearest the light (a true recess, lit from above, shadows its top edge), which would have darkened the glow itself; the glow on the match page only.
+*Touches:* `global.css` (`body::before`, `body::after`), `match.css`, `page-light.js` (new), `layout.html`, `variables.css` and the sandbox (`--page-glow-*`, replacing `--match-glow-*`; `--page-inset-offset`, `--page-inset-lean`)
+
+## 2026-10-29 — The edge shadow falls on the edges nearest the light
+
+*Decided by:* UV
+*So:* the shadow round the screen's edges lies along the top and down the side the light has drifted to, as the frame of a screen set into a phone shades it when lit from above. It is hard: 14px of blur, not a glow.
+*Example:* the light drifts to the right: the right edge darkens, the left clears; the top is always shaded, the bottom never.
+*Replaces:* "the shadow on the edges away from the light" in the entry above, the same day (there it was the rejected option).
+*Touches:* `page-light.js` (the sign of the offset), `global.css`, `variables.css`, the sandbox's text

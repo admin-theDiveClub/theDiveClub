@@ -99,8 +99,6 @@
 			{ name: '--score-depth-alpha', label: 'Card depth',    kind: 'alpha',  use: 'How dark the bands\' shadow on the score is, and the score\'s dark inner edge' },
 			{ name: '--score-drop-alpha', label: 'Card shadow',    kind: 'alpha',  use: 'How dark the soft shadow under a whole card is' },
 			{ name: '--score-stretch',    label: 'Score stretch',  kind: 'size', unit: '',   min: 1,   max: 2,    step: 0.05, use: 'How much taller than its natural shape a score digit is drawn (1 for none)' },
-			{ name: '--match-glow-size',  label: 'Glow reach',     kind: 'size', unit: 'px', min: 300, max: 2000, step: 10,   use: 'How far the green glow behind the match page reaches from its centre' },
-			{ name: '--match-glow-rise',  label: 'Glow height',    kind: 'size', unit: 'px', min: 0,   max: 1600, step: 10,   use: 'How far above the top of the screen the glow\'s centre is; the closer to the reach, the less of it shows' },
 			{ name: '--timeline-line',    label: 'Timeline line',  kind: 'colour', use: 'The grey line through every win on the frame history\'s timeline (landscape)' }
 		]],
 		['Dots', [
@@ -132,10 +130,19 @@
 		['Depth', [
 			{ name: '--shadow-alpha',     label: 'Shadow strength', kind: 'alpha', use: 'How dark the shadow under floating panels is (black at this opacity)' },
 			{ name: '--pic-shadow-alpha', label: 'Picture shadow', kind: 'alpha', use: 'How dark the shadow under every picture circle is: profile pictures (the nav\'s too), league and team pictures' },
-			{ name: '--scrim-alpha',      label: 'Dim strength',    kind: 'alpha', use: 'How dark the page goes behind a slide-over panel (black at this opacity)' },
-			{ name: '--page-inset-alpha', label: 'Page inset',      kind: 'alpha', use: 'The page set into the screen (an experiment, 29 Oct): how dark the inner glow round the screen\'s edges is. 0 turns it off' },
-			{ name: '--page-inset-size',  label: 'Inset blur',      kind: 'size', unit: 'px', min: 0, max: 200, step: 2, use: 'How far that glow fades in from the edges' },
-			{ name: '--page-inset-spread', label: 'Inset reach',    kind: 'size', unit: 'px', min: 0, max: 80,  step: 1, use: 'How far in from the edges it stays at full strength before it starts to fade' }
+			{ name: '--scrim-alpha',      label: 'Dim strength',    kind: 'alpha', use: 'How dark the page goes behind a slide-over panel (black at this opacity)' }
+		]],
+		['Background', [
+			{ name: '--page-glow-size',   label: 'Glow reach',      kind: 'size', unit: 'px', min: 300, max: 2000, step: 10, use: 'How far the green glow above every page reaches from its centre' },
+			{ name: '--page-glow-rise',   label: 'Glow height',     kind: 'size', unit: 'px', min: 0,   max: 1600, step: 10, use: 'How far above the top of the screen the glow\'s centre rests; the closer to the reach, the less of it shows' },
+			{ name: '--page-glow-drift-x', label: 'Drift sideways', kind: 'size', unit: '',   min: 0,   max: 0.5,  step: 0.01, use: 'How far the light may wander either side of the centre, as a share of the screen\'s width (0 keeps it centred). Takes hold at its next move' },
+			{ name: '--page-glow-drift-y', label: 'Drift up and down', kind: 'size', unit: 'px', min: 0, max: 400, step: 10, use: 'How far higher or lower than the glow height it may wander; never below the top of the screen. Takes hold at its next move' },
+			{ name: '--page-glow-move',   label: 'Drift time',      kind: 'size', unit: 's',  min: 5,   max: 120,  step: 1,  use: 'How long the light takes over one move, from rest to rest, before it picks the next point' },
+			{ name: '--page-inset-alpha', label: 'Edge shadow',     kind: 'alpha', use: 'The page set into the screen (an experiment, 29 Oct): how dark the shadow round the screen\'s edges is. 0 turns it off' },
+			{ name: '--page-inset-size',  label: 'Shadow blur',     kind: 'size', unit: 'px', min: 0, max: 200, step: 2, use: 'How far that shadow fades in from the edges' },
+			{ name: '--page-inset-spread', label: 'Shadow reach',   kind: 'size', unit: 'px', min: 0, max: 80,  step: 1, use: 'How far in from the edges it stays at full strength before it starts to fade' },
+			{ name: '--page-inset-offset', label: 'Shadow cast',    kind: 'size', unit: 'px', min: 0, max: 120, step: 1, use: 'How far the light pushes the shadow onto the edges nearest it: the top, and the side the light is on. 0 puts it evenly round every edge' },
+			{ name: '--page-inset-lean',  label: 'Shadow lean',     kind: 'size', unit: '',   min: 0, max: 10,  step: 0.5, use: 'How much more the light\'s sideways drift moves the shadow than it truly would; 1 is true to life, which is only a few pixels with the light so far up' }
 		]]
 	];
 	var SPEC = {};

@@ -6,19 +6,8 @@
 
 .match-page { width: 100%; }
 
-/* The green glow behind the page: a circle whose centre is far above the
-   screen, so only its faded edge shows at the top. A fixed layer rather than
-   background-attachment: fixed, which iPhones ignore, so it stays put while
-   the page scrolls. The nav is see-through enough to show it. */
-.match-page::before {
-	content: '';
-	position: fixed;
-	inset: 0;
-	z-index: -1;
-	pointer-events: none;
-	background: radial-gradient(circle var(--match-glow-size) at 50% calc(-1 * var(--match-glow-rise)),
-		var(--color-primary), var(--bg-base));
-}
+/* The green glow behind the page is every page's since 29 Oct (body::before
+   in global.css, the light). */
 
 /* ── The stage ───────────────────────────────────────────────────── */
 /* body already carries padding-top: var(--nav-total) for the fixed nav (nav.css), so the

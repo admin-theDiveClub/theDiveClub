@@ -31,6 +31,10 @@
 			<link rel="stylesheet" href="{{ style }}?v={{ build.version }}">
 		{% endfor %}
 	{% endif %}
+	<!-- The light (scripts/page-light.js): the green glow above every page drifts
+	     and the edge shadow falls away from it. In the head, after the styles, so
+	     the first paint has the light where the last page left it. -->
+	<script src="/scripts/page-light.js?v={{ build.version }}"></script>
 	<!-- ?v= build stamp: changes on every build, so browsers fetch fresh styles and scripts after each deploy -->
 </head>
 <!-- data-controls: every number field, date, dropdown and checkbox on the site is

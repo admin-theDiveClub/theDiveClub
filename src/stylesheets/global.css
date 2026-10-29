@@ -60,21 +60,41 @@ body {
 	min-height: 100vh;
 }
 
-/* The page set into the screen (UV, 29 Oct, an experiment): a dark inner
-   glow round the screen's edges, on the background only. A fixed layer at
-   z-index -1, so it is under every page's content, the nav (100) and the
-   loading screen (900), and it never catches a tap. ::after, not ::before:
-   the match page's glow is an opaque layer at the same level, and the later
-   of two paints over the earlier. --page-inset-alpha 0 turns it off. */
+/* The light (UV, 29 Oct): a green glow behind every page, a circle whose
+   centre is far above the screen, so only its faded edge shows at the top.
+   It drifts slowly from point to point (scripts/page-light.js sets
+   --page-light-x and --page-light-y; without it the light rests at the
+   centre, --page-glow-rise up). A fixed layer rather than
+   background-attachment: fixed, which iPhones ignore, so it stays put while
+   the page scrolls; at z-index -1, under every page's content, the nav (100)
+   and the loading screen (900), and it never catches a tap. The nav is
+   see-through enough to show it. */
+body::before {
+	content: "";
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	background: radial-gradient(circle var(--page-glow-size)
+		at calc(50% + var(--page-light-x, 0px)) calc(-1 * var(--page-light-y, var(--page-glow-rise))),
+		var(--color-primary), var(--bg-base));
+}
+
+/* The page set into the screen (UV, 29 Oct, an experiment): a hard shadow
+   round the screen's edges cast by the light above, as the frame of a screen
+   set into a phone would: on the edges nearest the light, the top most and
+   the side the light has drifted to (--page-shadow-x / -y, set by
+   page-light.js with the light). On the background only. ::after, so it paints over the glow, which is an opaque
+   layer at the same level. --page-inset-alpha 0 turns it off. */
 body::after {
 	content: "";
 	position: fixed;
 	inset: 0;
 	z-index: -1;
 	pointer-events: none;
-	box-shadow: inset 0 0 var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
+	box-shadow: inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
 }
-@media print { body::after { display: none; } }
+@media print { body::before, body::after { display: none; } }
 
 /* Scrollbars, everywhere: the grey thumb and nothing else (no track, no
    arrows), the look of Chrome on a phone (UV, 24 Oct). Chrome, Edge and
