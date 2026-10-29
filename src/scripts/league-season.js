@@ -187,7 +187,7 @@
 		if (!ours.length) return;
 
 		// The first one not yet finished, or the most recent if they all are.
-		const next = ours.find((f) => f.match_status !== 'complete') || ours[ours.length - 1];
+		const next = ours.find((f) => f.match_status !== 'complete' && f.match_status !== 'reopened') || ours[ours.length - 1];
 		els.meCard.href = '/leagues/card/?m=' + encodeURIComponent(next.match_id);
 		els.meCard.textContent = mine.i_captain ? 'Set my lineup' : 'My next match';
 		els.meCard.hidden = false;
@@ -384,7 +384,8 @@
 	// Counted from the fixtures and the teams, never stored.
 	function renderStats() {
 		const games = fixtures.filter((f) => !f.is_bye);
-		const played = games.filter((f) => f.match_status === 'complete').length;
+		// A re-opened night (signed, then changed; 29 Oct) was still played.
+		const played = games.filter((f) => f.match_status === 'complete' || f.match_status === 'reopened').length;
 		const live = games.filter((f) => f.match_status === 'in_progress').length;
 		const frames = games.reduce((n, f) => n + (f.home_frames || 0) + (f.away_frames || 0), 0);
 		const nights = new Set(fixtures.filter((f) => f.scheduled_at).map((f) => new Date(f.scheduled_at).toDateString())).size;

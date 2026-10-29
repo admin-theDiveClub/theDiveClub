@@ -163,14 +163,17 @@
 		scheduled: 'Match made',
 		in_progress: 'Playing',
 		complete: 'Finished',
+		reopened: 'Re-opened',
 		abandoned: 'Abandoned'
 	};
 	const stateOf = (f) => f.is_bye ? 'bye' : (f.match_id ? f.match_status : 'none');
 
 	// A match is complete only once both captains have signed it, and from
 	// then on its fixture cannot be moved, re-tabled or have its match taken
-	// off (the database refuses the last; 20261025072000).
-	const signed = (f) => !!f.match_id && f.match_status === 'complete';
+	// off (the database refuses the last; 20261025072000). A signed night
+	// changed since reads 'reopened' (UV, 29 Oct): still locked here, its
+	// card open until it is signed again or the change is undone.
+	const signed = (f) => !!f.match_id && (f.match_status === 'complete' || f.match_status === 'reopened');
 
 	const plural = (n, one) => (n === 1 ? '1 ' + one : (n || 0) + ' ' + one + 's');
 
@@ -322,7 +325,7 @@
 	let liveTimer = null;
 
 	const liveMatchIds = () => fixtures
-		.filter((f) => f.match_id && (f.match_status === 'scheduled' || f.match_status === 'in_progress'))
+		.filter((f) => f.match_id && ['scheduled', 'in_progress', 'reopened'].includes(f.match_status))
 		.map((f) => f.match_id);
 
 	// payload is null when this is a catch-up rather than a pushed event.
@@ -798,7 +801,7 @@
 		// match is finished, whether or not the night is.
 		const mid = node('td', 'fx-mid');
 		const line = node('div', 'fx-mid-line');
-		const scored = f.match_id && (f.home_frames || f.away_frames || f.match_status === 'complete');
+		const scored = f.match_id && (f.home_frames || f.away_frames || signed(f));
 		if (scored) line.append(node('span', 'fx-score fx-score-home', String(f.home_frames || 0)));
 		const items = actions(f);
 		if (items.length) {

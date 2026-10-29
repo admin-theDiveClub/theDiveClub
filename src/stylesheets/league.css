@@ -502,7 +502,9 @@
 .fx-state-in_progress { --strip-color: var(--color-warning); }
 .fx-state-complete    { --strip-color: var(--color-primary); }
 .fx-state-abandoned   { --strip-color: var(--color-error); }
+.fx-state-reopened    { --strip-color: var(--color-warning); }
 .fx-state-in_progress,
+.fx-state-reopened,
 .fx-state-complete    { --strip-glow: 0 0 10px color-mix(in srgb, var(--strip-color) 60%, transparent); }
 
 /* A team: its picture, then its name and how many play for it, a link to
@@ -891,6 +893,7 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 .card-state-lineups  { --strip-color: var(--color-primary); }
 .card-state-playing  { --strip-color: var(--color-success); }
 .card-state-awaiting { --strip-color: var(--color-warning); }
+.card-state-reopened { --strip-color: var(--color-warning); }
 .card-state-disputed { --strip-color: var(--color-error); }
 .card-state-agreed   { --strip-color: var(--color-success); }
 .card-state-approved { --strip-color: var(--text-muted); }
@@ -1286,5 +1289,23 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 .sf-cap-label { width: 100%; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
 .tdc-card .sf-note { margin: var(--space-5) 0; font-size: 0.9rem; color: var(--text-muted); }
 .tdc-card .sf-note.is-disputed { color: var(--color-error); }
+/* The changelog (UV, 29 Oct): a group per signature, newest first, each
+   change as rows of Frame · Change · Was · Now with who and when beneath. */
+.cl-group { margin: var(--space-4) 0; padding-top: var(--space-3); border-top: 1px solid var(--border-color); text-align: left; }
+.cl-group:first-child { border-top: none; padding-top: 0; }
+.tdc-card .cl-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0 var(--space-2); margin: 0 0 var(--space-2); }
+.cl-by { font-size: 0.75rem; color: var(--text-muted); }
+.tdc-card .cl-since,
+.tdc-card .cl-none { margin: 0 0 var(--space-2); font-size: 0.8rem; color: var(--text-muted); }
+.cl-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.cl-table th { padding: var(--space-1); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); text-align: left; }
+.cl-table td { padding: var(--space-1); vertical-align: top; }
+.cl-table td.num { width: 3.2rem; text-align: center; font-variant-numeric: tabular-nums; }
+.cl-table th:first-child { text-align: center; }
+.cl-was { color: var(--text-muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--text-muted) 60%, transparent); }
+.cl-now { color: var(--color-edited); }
+.cl-who td { padding-bottom: var(--space-2); border-bottom: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent); font-size: 0.72rem; color: var(--text-muted); }
+.cl-who td::before { content: ''; display: inline-block; width: 3.2rem; }
+.cl-table tbody tr:last-child td { border-bottom: none; }
 .sf-buttons { display: flex; flex-direction: column; gap: var(--space-3); }
 .sf-buttons > .btn { width: 100%; margin: 0; }

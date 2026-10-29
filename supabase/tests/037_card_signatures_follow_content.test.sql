@@ -8,9 +8,10 @@
 --     card is back to what it signed
 --   a side whose signature stands again cannot sign twice
 --   never across a dispute: undoing back to a disputed card does not agree it
+--   re-opened while edited (20261029082020): the card and the fixtures say so
 begin;
 \ir _helpers.psql
-select plan(14);
+select plan(17);
 
 select tests.create_user('Sig LD') as dee \gset
 select tests.create_user('Sig H1') as h1 \gset
@@ -76,6 +77,11 @@ select tests.sign_out();
 
 select is(private.tdc_card_state(:'m')->>'waiting_on', 'both', 'the LD changes frame 1: neither signature stands');
 select ok(not private.tdc_card_is_locked(:'m'), 'and the card is open again');
+select is(private.tdc_card_state(:'m')->>'reopened', 'true', 'it reads re-opened');
+select tests.sign_in(:'h1');
+select is((select match_status from public.tdc_league_fixtures(:'season') where match_id = :'m'), 'reopened',
+	'and so does its fixture, while the match stays complete');
+select tests.sign_out();
 
 -- ─── Undone: both stand again ───
 
@@ -86,6 +92,10 @@ select tests.sign_out();
 select is(private.tdc_card_state(:'m')->>'state', 'agreed', 'the LD changes it back: agreed again, nobody signs twice');
 select is(private.tdc_card_state(:'m')->'sides'->'home'->>'current', 'true', 'the home signature stands');
 select ok(private.tdc_card_is_locked(:'m'), 'and the card is locked again');
+select tests.sign_in(:'h1');
+select is((select match_status from public.tdc_league_fixtures(:'season') where match_id = :'m'), 'complete',
+	'its fixture reads complete again');
+select tests.sign_out();
 
 -- ─── A new signature by version, an old one by content ───
 

@@ -912,3 +912,14 @@ These predate the log. They are recorded here because every one of them is a dec
 *Why:* the page signed for the side being set up, whose switch hides once both lineups lock, so a director could only ever sign one side. And a director's signature read as if the team had signed.
 *Rejected:* labelling by the side's own role (captain on their own team, director on the other); keeping the list to edits only.
 *Touches:* migration `20261029080921` (`signed_as`, `tdc_card_signatures`), `league-card.js`, `leagues/card/index.html`, test `038_card_signature_roles`
+
+## 2026-10-29 — Re-opened; signing approves the card as it stands; the changelog grouped by signature
+
+*Decided by:* UV (the name, what blue is for, the grouping, the table, newest first); the details, Claude
+*So:*
+- **Re-opened.** A night both captains signed and then someone changed reads **Re-opened**, on the card's badge and the fixtures page. UV: "playing is a bit vague". The match stays complete, so its fixture stays locked as a signed night is, until it is signed again or the change is undone. `tdc_league_fixtures` reports `reopened`, and nothing is stored.
+- **Signing approves the card as it stands**, your own changes and the other captain's. "The point of the blue is that it allows the user to track changes visually." So blue marks only what you have not put your name to: a captain sees changes since their side's latest signature. Anybody else (the league director, a captain who has not signed) sees what both sides have not yet agreed, from the older of the two signatures that no longer stand. A signature that stands means no blue.
+- **The opposition captain signing** a card nobody has changed since the first signature agrees, locks and completes it. This was already so (UV's note, confirmed).
+- **The changelog** (renamed from "Signatures and changes"): a group per signature, newest first, each holding the changes made after it. The top group is "still to be signed". Each change is rows of **Frame · Change · Was · Now**, with who (and "league director") and when on a line beneath. A status or a plain win that only follows the winner is left out; the lag is called Lag.
+*Rejected:* "Playing" for a re-opened night; a new match status (it would have unlocked the fixture and touched every page that reads status).
+*Touches:* migration `20261029082020`, `league-card.js`, `league-fixtures.js`, `league-season.js`, `league.css`, `leagues/card/index.html`, test `037`

@@ -304,7 +304,23 @@
 			});
 			if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 			changes = (data || []).filter((c) => c.changed);
-			for (const c of changes) {
+			// Blue marks only what this person has not yet put their name to
+			// (UV, 29 Oct): a captain who signs approves the card as it stands,
+			// their own changes and the other side's alike. A captain looks
+			// from their side's latest signature. Anybody else (the league
+			// director included) sees what both sides have not yet agreed:
+			// from the older of the two sides' latest signatures that no
+			// longer stand. A signature that stands means the card is what
+			// was signed, so nothing is blue from it.
+			const sides = (cardState && cardState.sides) || {};
+			const latest = (side) => signatures.find((g) => g.side === side);
+			const stale = (g) => g && !(sides[g.side] && sides[g.side].current);
+			// A captain who has not signed yet looks as anybody else does.
+			const mineSide = !lineupState.i_run_it && lineupState.my_side && latest(lineupState.my_side) && lineupState.my_side;
+			const ref = mineSide
+				? [latest(mineSide)].filter(stale)[0]
+				: [latest('home'), latest('away')].filter(stale).sort((a, b) => new Date(a.at) - new Date(b.at))[0];
+			for (const c of ref ? changes.filter((x) => x.card_version >= ref.card_version) : []) {
 				const e = edited.get(c.frame_no) || { lag: false, win: false };
 				if (/\bbreak_side /.test(c.changed)) e.lag = true;
 				if (/\b(winner_side|result_event|status) /.test(c.changed)) e.win = true;
@@ -344,6 +360,8 @@
 		if (state === 'approved') return ['approved', 'Published'];
 		if (state === 'agreed') return ['agreed', 'Signed by both'];
 		if (state === 'disputed') return ['disputed', 'Disputed'];
+		// Signed by both, then changed (UV, 29 Oct: "Re-opened", not "Playing").
+		if (state === 'awaiting' && cardState.reopened) return ['reopened', 'Re-opened'];
 		if (state === 'awaiting') return ['awaiting', 'Waiting on a signature'];
 		return ['playing', 'Playing'];
 	}
@@ -961,29 +979,39 @@
 	// is the column name and the stored value. A captain reading what moved on
 	// their card should see "Winner: Alpha → Bravo".
 	const FIELD = {
-		break_side: 'Break', break_outcome: 'Break outcome', winner_side: 'Winner',
+		break_side: 'Lag', break_outcome: 'Break outcome', winner_side: 'Winner',
 		result_event: 'Result', status: 'Status', abandon_reason: 'Abandoned because',
 		referee_player_id: 'Referee', break_player_id: 'Broke'
 	};
 
-	function readable(changed) {
-		if (!changed) return '';
-		return changed.split(', ').map((part) => {
+	// A stored value as a person says it: a side as its team, a result as
+	// its words, a frame's status as played or not.
+	const STATUS_WORDS = { pending: 'Not played', complete: 'Played', abandoned: 'Abandoned' };
+	function valueText(v, key) {
+		if (v === 'home') return match.home_name;
+		if (v === 'away') return match.away_name;
+		if (v === '—') return key === 'winner_side' || key === 'break_side' ? 'Nobody' : '—';
+		return STATUS_WORDS[v]
+			|| (D.RESULT_EVENT && D.RESULT_EVENT[v])
+			|| (D.BREAK_OUTCOME && D.BREAK_OUTCOME[v])
+			|| v;
+	}
+
+	// One change as rows of the list's table (UV, 29 Oct: frame, what, was,
+	// now): each field that moved, or the action alone for a frame added or
+	// removed. The status, and a plain win, follow from the winner, so they
+	// are left out when the winner moved with them.
+	function fieldsOf(c) {
+		if (!c.changed || !c.changed.includes(' → ')) return [{ what: c.changed || c.action, was: '', now: '' }];
+		const parts = c.changed.split(', ').map((part) => {
 			const key = Object.keys(FIELD).find((k) => part.startsWith(k + ' '));
-			if (!key) return part;
-			const rest = part.slice(key.length + 1)
-				.split(' → ')
-				.map((v) => {
-					if (v === 'home') return match.home_name;
-					if (v === 'away') return match.away_name;
-					if (v === '—') return 'nothing';
-					return (D.RESULT_EVENT && D.RESULT_EVENT[v])
-						|| (D.BREAK_OUTCOME && D.BREAK_OUTCOME[v])
-						|| v;
-				})
-				.join(' → ');
-			return FIELD[key] + ': ' + rest;
-		}).join(', ');
+			if (!key) return { what: part, was: '', now: '' };
+			const [was, now] = part.slice(key.length + 1).split(' → ');
+			return { key, raw: [was, now], what: FIELD[key], was: valueText(was, key), now: valueText(now, key) };
+		});
+		const winner = parts.some((p) => p.key === 'winner_side');
+		const plain = (p) => p.key === 'result_event' && p.raw.every((v) => v === 'win' || v === '—');
+		return parts.filter((p) => !(winner && (p.key === 'status' || plain(p))));
 	}
 
 	// What a signature was given as, after the name. Signatures from before
@@ -1041,27 +1069,49 @@
 
 		// Folded until opened (UV, 29 Oct), its count in the heading. Only the
 		// list is redrawn, so it stays open or closed as the reader left it.
-		// The signatures and the changes since the first, newest first, each
-		// saying whether the league director did it (UV, 29 Oct).
-		const entries = changes.map((c) => ({
-			at: c.at,
-			what: 'Frame ' + c.frame_no + ' — ' + (readable(c.changed) || c.action),
-			who: (c.by_name || 'somebody') + (c.editor_role === 'director' ? ' · league director' : '')
-		})).concat(signatures.map((g) => ({
-			at: g.at,
-			what: teamName(g.side) + ' signed',
-			who: g.by_name + signedAs(g)
-		}))).sort((a, b) => new Date(b.at) - new Date(a.at));
-		els.changedSince.hidden = !entries.length;
-		els.changedCount.textContent = entries.length;
-		els.changedList.replaceChildren(...entries.map((e) => {
-			const row = node('div', 'list-row');
-			const main = node('div', 'list-row-main');
-			main.append(node('span', null, e.what));
-			main.append(node('span', 'sub', e.who + ' · ' + when(e.at)));
-			row.append(main);
-			return row;
-		}));
+		// One group per signature, newest first, each holding the changes made
+		// after it and before the next (UV, 29 Oct): the top group is what is
+		// still to be signed. A change is rows of Frame · Change · Was · Now,
+		// with who made it (the league director said so) and when under them.
+		els.changedSince.hidden = !signatures.length;
+		els.changedCount.textContent = changes.length;
+		const groups = signatures.map((g, i) => {
+			const from = new Date(g.at), to = i ? new Date(signatures[i - 1].at) : null;
+			const mine = changes.filter((c) => new Date(c.at) > from && (!to || new Date(c.at) <= to));
+			const box = node('div', 'cl-group');
+			const head = node('p', 'cl-head');
+			head.append(node('strong', null, teamName(g.side) + ' signed'),
+				node('span', 'cl-by', g.by_name + signedAs(g) + ' · ' + when(g.at)));
+			box.append(head);
+			if (!mine.length) {
+				box.append(node('p', 'cl-none', i ? 'Nothing changed before the next signature.' : 'Nothing has changed since.'));
+				return box;
+			}
+			box.append(node('p', 'cl-since', i ? 'Changed before the next signature:' : 'Changed since, still to be signed:'));
+			const table = node('table', 'cl-table');
+			const hrow = node('tr');
+			for (const h of ['Frame', 'Change', 'Was', 'Now']) hrow.append(node('th', null, h));
+			table.append(node('thead'));
+			table.tHead.append(hrow);
+			const body = node('tbody');
+			for (const c of mine) {
+				for (const [k, f] of fieldsOf(c).entries()) {
+					const tr = node('tr', 'cl-change');
+					tr.append(node('td', 'num', k ? '' : String(c.frame_no)), node('td', null, f.what),
+						node('td', 'cl-was', f.was), node('td', 'cl-now', f.now));
+					body.append(tr);
+				}
+				const who = node('tr', 'cl-who');
+				const td = node('td', null, (c.by_name || 'somebody') + (c.editor_role === 'director' ? ' · league director' : '') + ' · ' + when(c.at));
+				td.colSpan = 4;
+				who.append(td);
+				body.append(who);
+			}
+			table.append(body);
+			box.append(table);
+			return box;
+		});
+		els.changedList.replaceChildren(...groups);
 
 		// A button for each side this person may sign whose signature does not
 		// stand: a captain their own, the league director both (UV, 29 Oct).
