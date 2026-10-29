@@ -26,10 +26,21 @@
 		played counts too, and the tables follow every frame as it is
 		recorded. Kept per device.
 	{% endcomment %}
-	<div class="field sd-live-field">
-		<label for="sd-live">Live</label>
-		<input type="checkbox" id="sd-live">
-		<div class="hint">Count nights still being played, and follow every frame as it is recorded.</div>
+	<div class="field-row sd-switches">
+		<div class="field">
+			<label for="sd-live">Live</label>
+			<input type="checkbox" id="sd-live">
+			<div class="hint">Count nights still being played, and follow every frame as it is recorded.</div>
+		</div>
+		{% comment %}
+			Display name (off, the default) or first and last name (UV, 29 Oct),
+			kept per device. A player with neither keeps their display name.
+		{% endcomment %}
+		<div class="field">
+			<label for="sd-full-names">Full names</label>
+			<input type="checkbox" id="sd-full-names">
+			<div class="hint">Off shows each player's display name.</div>
+		</div>
 	</div>
 
 	<div id="sd-player"></div>

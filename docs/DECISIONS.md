@@ -1046,3 +1046,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* a Live switch on the Standings tab, off by default and kept per device. Off, only nights signed by both captains count. On, a night not yet signed counts too, from its first finished frame (Claude: so a night just started is not a 0–0 draw), never an abandoned one, and the tab follows every frame as it is recorded through realtime, as the fixtures page does. It is the viewer's choice, not the league director's: the signed table is still what everybody sees by default.
 *Rejected:* a league setting deciding it for everybody; counting a started night with no finished frame.
 *Touches:* migration `20261029194712_league_standings_live`, `league-standings.js`, `_includes/league/standings.html`; test `042_league_standings_live`
+
+## 2026-10-29 — Standings tables: frozen name and heading, a names switch, a row-and-column highlight
+
+*Decided by:* UV (bigger numbers, everything centred, the name and heading frozen, every second row tinted, a display name / full name switch with display name the default, hover or tap to light a row and column in a green inner glow that a second tap clears)
+*So:* each table sits in a box at most three-quarters of the screen tall that scrolls both ways (Claude: a frozen heading only sticks inside the box that scrolls; the page's own scroll cannot hold it). In Team Rankings the + / – freezes with the name, and a tap on a team's row now highlights it instead of opening it (Claude: the tap could not do both; the + / – opens it). Full name is first and last name, and a player with neither shows their display name. The dummies' nicknames are a seed script, not a migration.
+*Rejected:* freezing a team's players' own heading under the team table's (it would stack two frozen headings in one box).
+*Touches:* migration `20261029203451_league_standings_full_names`, `league-standings.js`, `league-standings-edit.js`, `_includes/league/standings.html`, `league.css`, `supabase/seed/dummy-player-nicknames.sql`, `supabase/seed/dummy-league-players.sql`; test `043_league_standings_full_names`

@@ -1429,29 +1429,210 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
    The Standings tab's two tables (league-standings.js) and the columns
    builder on the Settings tab (league-standings-edit.js). Both pills are
    the card's .cp-views. */
-/* Headings wrap, so a long column name does not widen its column. */
-.tdc-card .sd-table th { white-space: normal; vertical-align: bottom; min-width: 3rem; }
-.sd-table .sd-rank { width: 2rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-.sd-table .sd-pic { width: 2.4rem; padding-right: var(--space-2); }
+/* Every column centred, the numbers large (UV, 29 Oct). Headings wrap, so
+   a long column name does not widen its column. */
+.tdc-card .sd-table th,
+.tdc-card .sd-table td { text-align: center; }
+.tdc-card .sd-table th { white-space: normal; vertical-align: bottom; }
+.tdc-card .sd-table td.num { font-size: 1.15rem; font-weight: 600; }
+.tdc-card .sd-nested .sd-table td.num { font-size: 1rem; }
+.sd-table .sd-rank { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.sd-table .team-pic { width: 2rem; height: 2rem; }
+/* A player's picture no taller than a line of their name (UV, 29 Oct):
+   the name's size times the table's line height, so it never sets the
+   row's height. */
+.sd-table { --sd-name-size: 0.92rem; --sd-line: 1.25; --sd-pic: calc(var(--sd-name-size) * var(--sd-line)); line-height: var(--sd-line); }
+.sd-nested .sd-table { --sd-name-size: 0.85rem; }
+.sd-table .person-pic { width: var(--sd-pic); height: var(--sd-pic); font-size: 0.5rem; }
+/* Centred in their column (UV, 29 Oct): the circles are blocks, so margins,
+   not text-align. */
 .sd-table .person-pic,
-.sd-table .team-pic { width: 2rem; height: 2rem; font-size: 0.7rem; }
+.sd-table .team-pic { margin-left: auto; margin-right: auto; }
+/* The names left-aligned, heading included (UV, 29 Oct); every other
+   column stays centred. */
+.tdc-card .sd-table td.sd-name,
+.tdc-card .sd-table th.sd-name { text-align: left; }
+/* The rank at the name's size, smaller than the numbers (UV, 29 Oct). */
+.tdc-card .sd-table td.sd-rank { font-size: var(--sd-name-size); }
 .sd-table .sd-name { font-weight: 600; overflow-wrap: break-word; }
 .sd-table .sd-name a { color: var(--text-primary); text-decoration: none; }
 .sd-table .sd-name a:hover,
 .sd-table .sd-name a:focus-visible { color: var(--color-primary); outline: none; }
 .tdc-card .sd-by { text-align: center; font-size: 0.85rem; margin-top: calc(-1 * var(--space-3)); }
+.sd-switches { margin-bottom: var(--space-4); }
 
-/* A team's row opens onto its players. */
-.sd-team-row { cursor: pointer; transition: background-color 0.15s ease; }
-.sd-team-row:hover { background: var(--hover-wash); }
-.sd-table .sd-toggle-cell { width: 2.4rem; padding-right: var(--space-2); }
-/* A team's players, under it and indented past its + / –. As narrow as
-   they need, so their numbers sit beside their names. */
-.tdc-card .sd-nested > td { padding: 0 0 var(--space-3) var(--space-6); text-align: left; }
-.sd-nested .table-scroll { margin-bottom: 0; }
+/* The names at the table's own size, the numbers alone large (UV, 29 Oct:
+   "revert the size of the names"). Stated, and the phone told not to
+   enlarge the text in this wide box itself (Chrome's font boosting on
+   Android, Safari turned sideways), which nothing on the site had said. */
+.sd-table { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+.tdc-card .sd-table td.sd-name { font-size: var(--sd-name-size); }
+
+/* As tight as it can be, both ways (UV, 29 Oct, which replaced "at least
+   --space-3 above and below"): a quarter rem round every cell, a team's
+   players included, and no minimum column width. */
+.tdc-card .sd-table td,
+.tdc-card .sd-table th { padding: var(--space-1); }
+
+/* Every second row tinted (UV, 29 Oct; .sd-alt, set by the script, since a
+   team's hidden players row would upset nth-child). */
+.sd-table { --sd-tint: color-mix(in srgb, var(--text-primary) 5%, transparent); }
+.sd-table > tbody > tr.sd-alt > td { background-color: var(--sd-tint); }
+
+/* A team's + / – smaller than the fixtures page's (UV, 29 Oct). */
+.tdc-card .sd-teams button.sd-toggle { width: 1.5rem; height: 1.5rem; }
+
+/* Rank, picture and name frozen at the left as the table scrolls sideways
+   (UV, 29 Oct), in Team Rankings after the + / –. The picture freezes too:
+   between two frozen columns it would slide under the name. Each has a
+   fixed width so the next knows where to stop: --sd-lead is the + / –
+   column (none in Individual Rankings, nor in a team's players, who start
+   at the left edge). A frozen cell
+   needs a solid background, the page's, with the row's tint laid over it. */
+.sd-table { --sd-lead: 0rem; --sd-w-rank: 1.75rem; --sd-w-pic: 2.5rem; --sd-w-lead: 2rem; }
+.sd-table.sd-teams { --sd-lead: var(--sd-w-lead); }
+/* A team's players start at the left edge (UV, 29 Oct: no left padding),
+   so their frozen columns do too. */
+.sd-nested .sd-table { --sd-lead: 0rem; }
+.sd-table .sd-rank,
+.sd-table .sd-pic,
+.sd-table .sd-name,
+.sd-teams > * > tr > .sd-toggle-cell {
+	position: sticky;
+	z-index: 1;
+	background-color: var(--bg-base);
+}
+.tdc-card .sd-teams > * > tr > .sd-toggle-cell {
+	left: 0;
+	width: var(--sd-w-lead);
+	min-width: var(--sd-w-lead);
+	max-width: var(--sd-w-lead);
+	box-sizing: border-box;
+	padding-left: 0;
+	padding-right: var(--space-2);
+}
+.tdc-card .sd-table .sd-rank {
+	left: var(--sd-lead);
+	width: var(--sd-w-rank);
+	min-width: var(--sd-w-rank);
+	max-width: var(--sd-w-rank);
+	box-sizing: border-box;
+	padding-left: 0;
+	padding-right: 0;
+}
+.tdc-card .sd-table .sd-pic {
+	left: calc(var(--sd-lead) + var(--sd-w-rank));
+	width: var(--sd-w-pic);
+	min-width: var(--sd-w-pic);
+	max-width: var(--sd-w-pic);
+	box-sizing: border-box;
+	padding-left: 0;
+	padding-right: 0;
+}
+.sd-table .sd-name { left: calc(var(--sd-lead) + var(--sd-w-rank) + var(--sd-w-pic)); }
+.sd-table > tbody > tr.sd-alt > td.sd-rank,
+.sd-table > tbody > tr.sd-alt > td.sd-pic,
+.sd-table > tbody > tr.sd-alt > td.sd-name,
+.sd-teams > tbody > tr.sd-alt > td.sd-toggle-cell {
+	background-color: var(--bg-base);
+	--sd-g-tint: linear-gradient(var(--sd-tint), var(--sd-tint));
+}
+/* The heading rows frozen too (UV, 29 Oct). A frozen heading sticks to the
+   box that scrolls, and the page's own scroll does not count, so each
+   table's box scrolls both ways, at most three-quarters of the screen tall.
+   The heading's line is a shadow: a collapsed table's border stays behind
+   when the row moves. The frozen corner sits over both. */
+/* At most one screen tall (UV, 29 Oct), and edge to edge: the card's
+   side padding (1.25rem, .tdc-card in forms.css) taken back, so the table
+   has the whole width of a phone. A team's players stay inside it. */
+.table-scroll.sd-scroll { max-height: 100vh; max-height: 100dvh; overflow: auto; }
+.tdc-card .league-panel > div > .table-scroll.sd-scroll { margin-left: -1.25rem; margin-right: -1.25rem; }
+.sd-table > thead > tr > th {
+	position: sticky;
+	top: 0;
+	z-index: 2;
+	background-color: var(--bg-base);
+	box-shadow: inset 0 -1px 0 var(--border-color);
+}
+.sd-table > thead > tr > th.sd-rank,
+.sd-table > thead > tr > th.sd-pic,
+.sd-table > thead > tr > th.sd-name,
+.sd-teams > thead > tr > th.sd-toggle-cell { z-index: 3; }
+/* A team's players keep their heading in place: the team table's heading
+   is the one frozen at the top. */
+.sd-nested .sd-table > thead > tr > th { top: auto; z-index: 1; }
+/* The sideways fade only at the right: at the left it would dim the
+   frozen columns. */
+@supports (animation-timeline: scroll()) {
+	.table-scroll.sd-scroll {
+		-webkit-mask-image: linear-gradient(to right, black calc(100% - var(--fade-r)), transparent);
+		mask-image: linear-gradient(to right, black calc(100% - var(--fade-r)), transparent);
+	}
+}
+
+/* A team's players, under it, from the left edge. As narrow as
+   they need, so their numbers sit beside their names. Their box does not
+   scroll on its own: the team table's does, so their columns freeze too. */
+.tdc-card .sd-nested > td { padding: 0; text-align: left; }
+.sd-nested .table-scroll.sd-scroll {
+	margin-bottom: 0;
+	max-height: none;
+	overflow: visible;
+	-webkit-mask-image: none;
+	mask-image: none;
+	animation: none;
+}
 .sd-nested .sd-table { width: auto; font-size: 0.85rem; }
-.sd-nested .sd-table td { padding-top: var(--space-2); padding-bottom: var(--space-2); }
 .sd-nested .empty { padding: var(--space-3); }
+
+/* A cell hovered or tapped lights its row and column with a green inner
+   glow (UV, 29 Oct; league-standings.js). Each edge is a gradient layer,
+   so a row's glow runs unbroken across its cells (a shadow's spread left a
+   gap at every cell's edge): the row lights its cells' top and bottom (and
+   its two ends), the column its cells' sides (and its two ends), so the two
+   meet as one cross. The last layer is a frozen cell's row tint. */
+.sd-table {
+	--sd-glow: color-mix(in srgb, var(--color-primary) 70%, transparent);
+	--sd-edge: 5px;
+}
+.sd-table th,
+.sd-table td {
+	--sd-g-t: linear-gradient(transparent, transparent);
+	--sd-g-b: linear-gradient(transparent, transparent);
+	--sd-g-l: linear-gradient(transparent, transparent);
+	--sd-g-r: linear-gradient(transparent, transparent);
+	--sd-m-t: linear-gradient(transparent, transparent);
+	--sd-m-b: linear-gradient(transparent, transparent);
+	--sd-m-l: linear-gradient(transparent, transparent);
+	--sd-m-r: linear-gradient(transparent, transparent);
+	--sd-g-tint: linear-gradient(transparent, transparent);
+	background-image: var(--sd-g-t), var(--sd-g-b), var(--sd-g-l), var(--sd-g-r),
+		var(--sd-m-t), var(--sd-m-b), var(--sd-m-l), var(--sd-m-r), var(--sd-g-tint);
+}
+.sd-table td { cursor: pointer; }
+.sd-table tr.sd-hl-row > * {
+	--sd-g-t: linear-gradient(to bottom, var(--sd-glow), transparent var(--sd-edge));
+	--sd-g-b: linear-gradient(to top, var(--sd-glow), transparent var(--sd-edge));
+}
+.sd-table tr.sd-hl-row > :first-child { --sd-g-l: linear-gradient(to right, var(--sd-glow), transparent var(--sd-edge)); }
+.sd-table tr.sd-hl-row > :last-child { --sd-g-r: linear-gradient(to left, var(--sd-glow), transparent var(--sd-edge)); }
+.sd-table .sd-hl-col {
+	--sd-g-l: linear-gradient(to right, var(--sd-glow), transparent var(--sd-edge));
+	--sd-g-r: linear-gradient(to left, var(--sd-glow), transparent var(--sd-edge));
+}
+.sd-table .sd-hl-col.sd-hl-top { --sd-g-t: linear-gradient(to bottom, var(--sd-glow), transparent var(--sd-edge)); }
+.sd-table .sd-hl-col.sd-hl-bottom { --sd-g-b: linear-gradient(to top, var(--sd-glow), transparent var(--sd-edge)); }
+
+/* The signed-in person's own rows glow yellow, always (UV, 29 Oct): their
+   player row and their team's row. Drawn the same way, under the green,
+   so a highlight on their own row still shows. */
+.sd-table { --sd-mine: color-mix(in srgb, var(--color-warning) 75%, transparent); }
+.sd-table tr.sd-me > * {
+	--sd-m-t: linear-gradient(to bottom, var(--sd-mine), transparent var(--sd-edge));
+	--sd-m-b: linear-gradient(to top, var(--sd-mine), transparent var(--sd-edge));
+}
+.sd-table tr.sd-me > :first-child { --sd-m-l: linear-gradient(to right, var(--sd-mine), transparent var(--sd-edge)); }
+.sd-table tr.sd-me > :last-child { --sd-m-r: linear-gradient(to left, var(--sd-mine), transparent var(--sd-edge)); }
 
 /* The builder: the columns as a table of three rows. */
 .sc-cols th,
@@ -1479,6 +1660,8 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 /* One button per value and per operator, wrapping. */
 .sc-keys { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .tdc-card .sc-keys > .sc-key { width: auto; flex: 0 0 auto; margin: 0; text-transform: none; letter-spacing: 0; }
+/* The operators and brackets bigger (UV, 29 Oct): a sign alone is small. */
+.tdc-card .sc-keys > .sc-key.sc-op { min-width: 3.2rem; padding: var(--space-2) var(--space-3); font-size: 1.5rem; line-height: 1; }
 .sc-num-row { display: flex; align-items: center; gap: var(--space-3); }
 .sc-num-row input { flex: 0 1 8rem; min-width: 0; text-align: center; }
 .tdc-card .sc-num-row > .btn { width: auto; flex: 0 0 auto; margin: 0; }

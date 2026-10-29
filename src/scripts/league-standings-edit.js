@@ -217,6 +217,8 @@ const TDCStandingsEdit = (() => {
 				keyButton('(', { t: 'paren', v: '(' }, 'Open a bracket'),
 				keyButton(')', { t: 'paren', v: ')' }, 'Close a bracket')
 			);
+			// Bigger than the value buttons (UV, 29 Oct): a sign alone is small.
+			for (const b of els.ops.children) b.classList.add('sc-op');
 		}
 
 		// Only the buttons that make a good next part are live.

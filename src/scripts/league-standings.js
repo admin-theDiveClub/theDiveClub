@@ -5,9 +5,9 @@
 // Two views on a pill, kept per device:
 //   • Individual Rankings: Rank | picture | Player | the player columns.
 //   • Team Rankings: + / – | Rank | picture | Team | the team columns, each team
-//     opening (its + / – button, or a tap on its row) onto its players in
-//     the Individual columns, ranked within the team. playerTable() draws
-//     both player tables.
+//     opening (its + / – button) onto its players in the Individual
+//     columns, each with their rank in the whole league, in that order.
+//     playerTable() draws both player tables.
 //
 // The counts are tdc_league_standings (every value, every player and team,
 // from the frames of the season's signed nights); the columns are the
@@ -34,7 +34,7 @@ TDCLeagueNav.panel('standings', () => {
 
 	const el = (id) => document.getElementById(id);
 	const els = {
-		title: el('sd-title'), meta: el('sd-meta'), views: el('sd-views'), live: el('sd-live'),
+		title: el('sd-title'), meta: el('sd-meta'), views: el('sd-views'), live: el('sd-live'), fullNames: el('sd-full-names'),
 		player: el('sd-player'), team: el('sd-team'), status: el('sd-status')
 	};
 
@@ -58,6 +58,16 @@ TDCLeagueNav.panel('standings', () => {
 	let live = false;
 	try { live = localStorage.getItem(LIVE_KEY) === 'on'; } catch (err) { /* private window: off */ }
 	els.live.checked = live;
+	// Display name (the default) or full name (UV, 29 Oct), per device. A
+	// player with no first or last name keeps their display name.
+	const NAMES_KEY = 'tdc.standings.names';
+	let fullNames = false;
+	try { fullNames = localStorage.getItem(NAMES_KEY) === 'full'; } catch (err) { /* private window: display names */ }
+	els.fullNames.checked = fullNames;
+	const nameOf = (p) => (fullNames && p.full_name) || p.display_name;
+	// The signed-in person's own rows glow yellow (UV, 29 Oct): their player
+	// row wherever it is, and their team's row in Team Rankings.
+	let myPlayerId = null;
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -110,23 +120,34 @@ TDCLeagueNav.panel('standings', () => {
 	const rankText = (r) => (r.rank === null ? '–' : String(r.rank));
 
 	// ─── The player table: Individual Rankings, and inside each team ───
-	// key keeps each table's fading numbers apart (data-live is per page).
-	function playerTable(players, key) {
-		const cols = colsFor('player');
-		if (!players.length) return node('div', 'empty', 'Nobody to show yet.');
+	// Every player ranked across the whole league, once: Individual Rankings
+	// shows them all, and a team shows its own players with these same ranks
+	// (UV, 29 Oct: rank within the league; their order is then their order
+	// within the team).
+	function leagueRanked() {
+		return S.rank((data.players || []).map((p) => Object.assign({ name: nameOf(p) }, p)), colsFor('player'));
+	}
 
-		const rows = S.rank(players.map((p) => Object.assign({ name: p.display_name }, p)), cols);
+	// rows: players already ranked (leagueRanked, or a team's share of it).
+	// key keeps each table's fading numbers apart (data-live is per page).
+	function playerTable(rows, key) {
+		const cols = colsFor('player');
+		if (!rows.length) return node('div', 'empty', 'Nobody to show yet.');
+
 		const table = node('table', 'tdc-table sd-table');
+		table.dataset.key = key;
 		table.append(head('Player', cols));
 		const body = node('tbody');
-		for (const r of rows) {
-			const tr = node('tr');
+		rows.forEach((r, i) => {
+			const tr = node('tr', i % 2 ? 'sd-alt' : null);
+			tr.dataset.key = r.player_id;
+			if (myPlayerId && r.player_id === myPlayerId) tr.classList.add('sd-me');
 			const rank = node('td', 'num sd-rank', rankText(r));
 			rank.dataset.live = key + ':' + r.player_id + ':rank';
 			const pic = node('td', 'sd-pic');
-			pic.append(avatar(r.avatar_path, r.display_name));
+			pic.append(avatar(r.avatar_path, r.name));
 			const name = node('td', 'sd-name');
-			const a = node('a', null, r.display_name);
+			const a = node('a', null, r.name);
 			a.href = '/players/?p=' + encodeURIComponent(r.player_id);
 			name.append(a);
 			tr.append(rank, pic, name);
@@ -136,9 +157,9 @@ TDCLeagueNav.panel('standings', () => {
 				tr.append(td);
 			}
 			body.append(tr);
-		}
+		});
 		table.append(body);
-		const wrap = node('div', 'table-scroll');
+		const wrap = node('div', 'table-scroll sd-scroll');
 		wrap.append(table);
 		return wrap;
 	}
@@ -146,7 +167,7 @@ TDCLeagueNav.panel('standings', () => {
 	function renderPlayers() {
 		const cols = colsFor('player');
 		els.player.replaceChildren(
-			playerTable(data.players || [], 'p'),
+			playerTable(leagueRanked(), 'p'),
 			node('p', 'muted sd-by', rankedBy(cols))
 		);
 	}
@@ -197,19 +218,23 @@ TDCLeagueNav.panel('standings', () => {
 			els.team.replaceChildren(node('div', 'empty', 'No teams yet. Whoever runs the league makes them.'));
 			return;
 		}
-		const players = data.players || [];
+		const ranked = leagueRanked();
+		const myTeamId = ((data.players || []).find((p) => p.player_id === myPlayerId) || {}).team_id || null;
 		const rows = S.rank(teams.map((t) => Object.assign({}, t)), cols);
 		const span = 3 + cols.length + 1;
 
 		const table = node('table', 'tdc-table sd-table sd-teams');
+		table.dataset.key = 't';
 		const toggleHead = node('th', 'sd-toggle-cell');
 		toggleHead.setAttribute('aria-label', 'Players');
 		table.append(head('Team', cols, toggleHead));
 		const body = node('tbody');
-		for (const r of rows) {
+		rows.forEach((r, i) => {
 			const open = openTeams.has(r.team_id);
-			const tr = node('tr', 'sd-team-row');
+			const tr = node('tr', 'sd-team-row' + (i % 2 ? ' sd-alt' : ''));
 			tr.dataset.team = r.team_id;
+			tr.dataset.key = r.team_id;
+			if (myTeamId && r.team_id === myTeamId) tr.classList.add('sd-me');
 			const rank = node('td', 'num sd-rank', rankText(r));
 			rank.dataset.live = 't:' + r.team_id + ':rank';
 			const pic = node('td', 'sd-pic');
@@ -230,12 +255,12 @@ TDCLeagueNav.panel('standings', () => {
 			nested.hidden = !open;
 			const cell = node('td');
 			cell.colSpan = span;
-			cell.append(playerTable(players.filter((p) => p.team_id === r.team_id), 'tp:' + r.team_id));
+			cell.append(playerTable(ranked.filter((p) => p.team_id === r.team_id), 'tp:' + r.team_id));
 			nested.append(cell);
 			body.append(tr, nested);
-		}
+		});
 		table.append(body);
-		const wrap = node('div', 'table-scroll');
+		const wrap = node('div', 'table-scroll sd-scroll');
 		wrap.append(table);
 		els.team.replaceChildren(wrap, node('p', 'muted sd-by', rankedBy(cols)));
 		wakeIcons(els.team);
@@ -257,16 +282,91 @@ TDCLeagueNav.panel('standings', () => {
 		if (open) fadeIn(nested);
 	}
 
+	// Only the + / – opens a team: a tap elsewhere on its row highlights it
+	// (below; UV, 29 Oct, which replaced "the whole row opens it").
 	els.team.addEventListener('click', (e) => {
 		const b = e.target.closest('.sd-toggle');
-		if (b) { toggleTeam(b.dataset.team); return; }
-		// The whole row opens it too, except a link inside it.
-		const row = e.target.closest('.sd-team-row');
-		if (row && !e.target.closest('a')) {
-			const btn = row.querySelector('.sd-toggle');
-			if (btn) btn.click();
-		}
+		if (b) toggleTeam(b.dataset.team);
 	});
+
+	// ─── Row and column highlight (UV, 29 Oct) ───
+	// Hovering a cell (a mouse only) or tapping one lights its row and its
+	// column with a green inner glow (league.css, .sd-hl-*). A tap pins it:
+	// the same cell again clears it, another cell moves it. A hover shows
+	// over a pinned one and the pinned one comes back when the pointer leaves
+	// the table. Each table lights alone (a team's players are a table of
+	// their own). Pinned by table, row and column, so it survives a redraw
+	// (a live update, the names switch).
+	let pinned = null;          // { table, row, col }
+	const HL = ['sd-hl-row', 'sd-hl-col', 'sd-hl-top', 'sd-hl-bottom'];
+
+	function clearLight() {
+		for (const e of els.player.parentElement.querySelectorAll('.sd-hl-row, .sd-hl-col')) e.classList.remove(...HL);
+	}
+
+	// The cell a pointer or tap is on: a cell of a standings table, not the
+	// cell holding a team's players.
+	function cellOf(target) {
+		const cell = target.closest('.sd-table td, .sd-table th');
+		if (!cell || cell.parentElement.classList.contains('sd-nested')) return null;
+		return cell;
+	}
+
+	function light(cell) {
+		clearLight();
+		if (!cell) return;
+		const table = cell.closest('table');
+		const col = cell.cellIndex;
+		cell.parentElement.classList.add('sd-hl-row');
+		const inCol = [...table.rows]
+			.filter((r) => !r.classList.contains('sd-nested') && !r.hidden && r.cells[col])
+			.map((r) => r.cells[col]);
+		for (const c of inCol) c.classList.add('sd-hl-col');
+		if (inCol.length) {
+			inCol[0].classList.add('sd-hl-top');
+			inCol[inCol.length - 1].classList.add('sd-hl-bottom');
+		}
+	}
+
+	function pinnedCell() {
+		if (!pinned) return null;
+		const table = els.player.parentElement.querySelector(`table.sd-table[data-key="${CSS.escape(pinned.table)}"]`);
+		if (!table) return null;
+		const row = pinned.row === 'head'
+			? table.tHead && table.tHead.rows[0]
+			: [...table.tBodies[0].rows].find((r) => r.dataset.key === pinned.row);
+		return (row && row.cells[pinned.col]) || null;
+	}
+
+	for (const box of [els.player, els.team]) {
+		box.addEventListener('pointerover', (e) => {
+			if (e.pointerType !== 'mouse') return;
+			const cell = cellOf(e.target);
+			if (cell) light(cell);
+		});
+		box.addEventListener('pointerleave', (e) => {
+			if (e.pointerType === 'mouse') light(pinnedCell());
+		});
+		box.addEventListener('click', (e) => {
+			// A link (a player's name) and the + / – keep their own jobs.
+			if (e.target.closest('a, button')) return;
+			const cell = cellOf(e.target);
+			if (!cell) return;
+			const row = cell.parentElement;
+			const here = {
+				table: cell.closest('table').dataset.key,
+				row: row.parentElement.tagName === 'THEAD' ? 'head' : row.dataset.key,
+				col: cell.cellIndex
+			};
+			if (pinned && pinned.table === here.table && pinned.row === here.row && pinned.col === here.col) {
+				pinned = null;
+				clearLight();
+			} else {
+				pinned = here;
+				light(cell);
+			}
+		});
+	}
 
 	// ─── The views ───
 	function fadeIn(box) {
@@ -311,6 +411,7 @@ TDCLeagueNav.panel('standings', () => {
 		}
 		renderPlayers();
 		renderTeams();
+		if (pinned) light(pinnedCell());
 		if (!first) TDC.liveFade(root, snap);
 	}
 
@@ -406,6 +507,13 @@ TDCLeagueNav.panel('standings', () => {
 
 	// The switch reads the tables again at once, counted the new way; the
 	// site's dots serve the switch for as long as that read takes.
+	// Both names are already on the page: drawn again, nothing read.
+	els.fullNames.addEventListener('change', () => {
+		fullNames = els.fullNames.checked;
+		try { localStorage.setItem(NAMES_KEY, fullNames ? 'full' : 'display'); } catch (err) { /* kept for this visit only */ }
+		if (data) render(false);
+	});
+
 	els.live.addEventListener('change', () => {
 		live = els.live.checked;
 		try { localStorage.setItem(LIVE_KEY, live ? 'on' : 'off'); } catch (err) { /* kept for this visit only */ }
@@ -422,6 +530,9 @@ TDCLeagueNav.panel('standings', () => {
 			TDC.error(AREA, 'no league season in the address. Open this page from the league.', null, els.status);
 			return;
 		}
+		// For the yellow rows. A failure says so and the tables still draw.
+		const me = await TDC.getMyPlayer(AREA, session.user.id, els.status);
+		myPlayerId = me ? me.id : null;
 		await load(true);
 	})(), 'Standings');
 

@@ -62,8 +62,10 @@ begin
 			insert into auth.users (id, email) values (v_user, v_email);
 		end if;
 
-		-- The player row is made by the trigger on auth.users; name it.
-		update public.tbl_players set display_name = v_names[i] where user_id = v_user;
+		-- The player row is made by the trigger on auth.users; name it. Not
+		-- one given a nickname by dummy-player-nicknames.sql (it has a first
+		-- name then), so running this again keeps the nicknames.
+		update public.tbl_players set display_name = v_names[i] where user_id = v_user and first_name is null;
 		select id into v_id from public.tbl_players where user_id = v_user;
 		v_ids := v_ids || v_id;
 	end loop;
