@@ -4,7 +4,7 @@
 
 Updated at every milestone, in the same breath as giving UV a commit subject. Never batched to the end of a session.
 
-Last updated: **29 Oct 2026** (UV's list, §3b; item 1, the card's lost switch changes)
+Last updated: **29 Oct 2026** (UV's list, §3b; items 10 and 11, the loading screen)
 
 **Production is current through `20261029082020`** (checked 29 Oct: signatures follow the card's content, say captain or league director, and a changed signed night reads Re-opened). Nothing waiting to push.
 
@@ -143,9 +143,9 @@ Worked one at a time: investigate, cause and plan, change; UV tests and commits 
 | 6a | Signing | UV's notes, 29 Oct: a signed night changed afterwards reads **Re-opened**; signing approves the card as it stands, so blue marks only changes since your own side signed; the changelog grouped by signature, newest first, as a table (Frame · Change · Was · Now, who and when beneath) | **Built and pushed 29 Oct; UV to try (§1).** Second pass the same day (page only): groups fold on their own, Lag yellow and Winner green, team and player in Was and Now, the section full width. 533 tests pass; changelog and blue marks driven at 420px as a captain and as the LD on a stand-in (`docs/DECISIONS.md`) |
 | 8 | Navigation | The league pages as one page: the top tabs switch in place, with the dots | **Built 29 Oct, UV to try.** `/leagues/season/?s=…&tab=…`: Season, Fixtures, Run it, Settings switch in place, the dots tracing the tab; each tab's script starts when first opened; Back steps between tabs; old addresses forward; New season stays a link. Driven at 420px on a stand-in (`docs/DECISIONS.md`). A tab shown again is re-read since item 13 |
 | 9 | Navigation | Notifications into the nav bar | |
-| 10 | Loading | A loading screen on every page, gone only once its data is in | |
-| 11 | Loading | Loader A: the dots big in the middle, the site icon exactly where the nav's sits, so the fade reveals the real one | |
-| 12 | Loading | Loader B: the diver falling through the hole (the email gif). Build A first; B stays an option | |
+| 10 | Loading | A loading screen on every page, gone only once its data is in | **Built 29 Oct with 11, UV to try.** Opaque (UV), over the nav too. Each page says what it waits for (`TDCLoader.hold`: every page's start block, `TDCDots.track`, the league page's first tab); it goes once those, the network and the page's pictures are in. 20 s and it shows the page with "TDC (Error): … (waiting for …)". Every page opened at 420px on a stand-in: no errors, nothing left marked (`docs/systems/dots.md` §9, `docs/DECISIONS.md`). **To try after deploying, on a phone:** open a few pages (a league's Fixtures tab, a match, the profile) and watch for any page whose screen goes before its content is drawn, or that sits on the screen; reload with the phone's reduced motion on |
+| 11 | Loading | Loader A: the dots big in the middle, the site icon exactly where the nav's sits, so the fade reveals the real one | **Built 29 Oct, UV to look.** The icon measured identical to the nav's at 420 and 1440. **To judge:** the ring's size and the dots' (`--loader-size`, `--loader-stroke`) and the fade (`--loader-fade`), on the main sandbox's Dots group; and the faint ring that fades in under the dots' race as the screen goes (one line to remove) |
+| 12 | Loading | Loader B: the diver falling through the hole (the email gif). Build A first; B stays an option | Not chosen (UV took A, 29 Oct); kept as an option, nothing to build |
 | 13 | Live data | Where a page reloads for new data, update in place (realtime or a re-read), changed text fading out and in | **Built 29 Oct, UV to try.** No page actually reloaded; the card did not follow at all. Now: the card follows the other captain live, in place; changed scores fade out and in (`TDC.liveFade`, card and fixtures); a league tab shown again is read again (not Settings). Driven headless on a stand-in. **Still to do:** fades on the match page, the bracket and the season numbers (`docs/DECISIONS.md`) |
 | 14 | Visual test | An inner glow on the page background's edges, as if set into the screen. Experimental, easy to undo | |
 

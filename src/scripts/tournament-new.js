@@ -267,12 +267,12 @@
 		location.href = '/tournaments/manage/?t=' + encodeURIComponent(data);
 	});
 
-	(async () => {
+	TDCLoader.hold((async () => {
 		const session = await TDC.requireSession(AREA);
 		if (!session) return;
 
 		showFormatHint();
 		renderSettings();
 		els.name.focus();
-	})();
+	})(), 'New tournament');
 })();

@@ -251,7 +251,7 @@
 	});
 	for (const menu of [els.discipline, els.leagueStatus, els.kind]) menu.addEventListener('change', searchOpen);
 
-	(async () => {
+	TDCLoader.hold((async () => {
 		const session = await TDC.requireSession(AREA);
 		if (!session) return;
 
@@ -270,5 +270,5 @@
 		els.intro.textContent = data.length === 1
 			? 'One league season.'
 			: `${data.length} league seasons, newest first.`;
-	})();
+	})(), 'Leagues');
 })();

@@ -4,7 +4,7 @@
 // Opening /staff/verify/?player=<id> selects that player straight away (used after adding a walk-in).
 // Needs: supabaseClient.js, tdc.js, staff-common.js.
 
-(async () => {
+TDCLoader.hold((async () => {
 	const AREA = 'StaffVerify';
 
 	const el = (id) => document.getElementById(id);
@@ -129,4 +129,4 @@
 			els.verifyBtn.disabled = false;
 		}
 	});
-})();
+})(), 'StaffVerify');

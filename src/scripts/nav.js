@@ -375,7 +375,7 @@
 	}
 
 	// --- Check login state on load ---
-	(async () => {
+	TDCLoader.hold((async () => {
 		const session = await TDC.getSession(AREA);
 		if (!session) return;
 
@@ -419,7 +419,7 @@
 			return;
 		}
 		if (me && me.avatar_path) showNavAvatar(avatarUrlFor(me.avatar_path));
-	})();
+	})(), 'Nav');
 
 	// ─── Hiding on scroll (UV, 24 Oct) ────────────────────────────────
 	// One long scroll down (SCROLL_FOR pixels without turning back up) slides

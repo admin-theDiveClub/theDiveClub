@@ -727,7 +727,7 @@ TDCLeagueNav.panel('manage', () => {
 	});
 
 	// ─── Start ───
-	(async () => {
+	TDCLoader.hold((async () => {
 		const session = await TDC.requireSession(AREA);
 		if (!session) return;
 
@@ -762,7 +762,7 @@ TDCLeagueNav.panel('manage', () => {
 		if (!await loadAll()) return;
 
 		els.search.focus();
-	})();
+	})(), 'League');
 
 	// Shown again as a tab (league-nav.js): read again in place, once the
 	// page knows this person may run it.

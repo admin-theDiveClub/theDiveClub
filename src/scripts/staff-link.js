@@ -1,7 +1,7 @@
 // Staff: link a walk-in/guest record to a player's account (/staff/link/).
 // Needs: supabaseClient.js, tdc.js, staff-common.js.
 
-(async () => {
+TDCLoader.hold((async () => {
 	const AREA = 'StaffLink';
 	const el = (id) => document.getElementById(id);
 	const els = {
@@ -102,4 +102,4 @@
 			els.linkBtn.disabled = false;
 		}
 	});
-})();
+})(), 'StaffLink');

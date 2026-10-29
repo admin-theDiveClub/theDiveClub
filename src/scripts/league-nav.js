@@ -26,7 +26,10 @@
 // New season) are offered to them alone: tdc_league_season_info says who
 // they are, and each of those panels refuses anybody else anyway.
 //
-// Needs: tdc.js, supabaseClient.js; dots.js for the switch.
+// The tab the page opens on, and the bar itself, hold the loading screen
+// until they have read (loader.js, 29 Oct).
+//
+// Needs: tdc.js, supabaseClient.js; dots.js for the switch; loader.js.
 
 const TDCLeagueNav = (() => {
 	const AREA = 'League pages';
@@ -112,6 +115,9 @@ const TDCLeagueNav = (() => {
 			}
 		}
 		if (typeof TDCNet !== 'undefined' && TDCNet.started > before) call = TDCNet.quiet();
+		// The tab the page opens on holds the loading screen until it has
+		// read (loader.js); a tab opened later is the dots' alone.
+		if (call && typeof TDCLoader !== 'undefined') TDCLoader.hold(call, `the ${target.dataset.title || key} tab`);
 		// The dots trace the tab's pill while its first load runs (at least
 		// DOTS_MIN, so a tab already open still gets them, UV 28 Oct).
 		if (tab && typeof TDCDots !== 'undefined') {
@@ -175,7 +181,8 @@ const TDCLeagueNav = (() => {
 		if (tabbed()) open(tabInAddress());
 		const nav = document.getElementById('league-nav');
 		if (!nav || nav.dataset.auto === 'no') return;
-		show(new URLSearchParams(location.search).get('s'));
+		const bar = show(new URLSearchParams(location.search).get('s'));
+		if (typeof TDCLoader !== 'undefined') TDCLoader.hold(bar, 'the league’s tabs');
 	});
 
 	return { show, panel, open };

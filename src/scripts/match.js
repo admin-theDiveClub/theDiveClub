@@ -3352,7 +3352,7 @@
 		setInterval(tick, 250);
 	}
 
-	(async () => {
+	TDCLoader.hold((async () => {
 		const id = new URLSearchParams(location.search).get('id');
 
 		// Nothing is drawn without a match. Both of these used to fall back to
@@ -3465,5 +3465,5 @@
 
 		// Anything left over from a previous visit goes now.
 		if (!isOffline() && queuedCount()) flushQueue();
-	})();
+	})(), 'Match');
 })();

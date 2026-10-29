@@ -243,7 +243,7 @@
 		location.href = '/leagues/season/?s=' + encodeURIComponent(season.data) + '&tab=manage';
 	});
 
-	(async () => {
+	TDCLoader.hold((async () => {
 		const session = await TDC.requireSession(AREA);
 		if (!session) return;
 
@@ -255,5 +255,5 @@
 
 		renderSettings();
 		els.name.focus();
-	})();
+	})(), 'New league');
 })();

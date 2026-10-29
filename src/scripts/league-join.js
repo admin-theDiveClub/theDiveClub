@@ -125,7 +125,7 @@
 		}), (data) => data === 'active' ? 'You are in.' : 'Your name is down.', { single: true });
 	});
 
-	(async () => {
+	TDCLoader.hold((async () => {
 		const session = await TDC.requireSession(AREA);
 		if (!session) return;
 
@@ -134,5 +134,5 @@
 			return;
 		}
 		await load();
-	})();
+	})(), 'Join a league');
 })();

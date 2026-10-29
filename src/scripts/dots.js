@@ -1917,7 +1917,11 @@ const TDCDots = (() => {
 	// A tap takes the dots at once; something loading with the page joins the
 	// queue (track). Both are a record in `records` until they come back.
 	const serve = (el, promise, opts = {}) => enlist(el, promise, opts, false);
-	const track = (el, promise, opts = {}) => enlist(el, promise, opts, true);
+	// Something loading with the page holds the loading screen too (loader.js).
+	const track = (el, promise, opts = {}) => {
+		if (typeof TDCLoader !== 'undefined') TDCLoader.hold(promise, nameOf(el));
+		return enlist(el, promise, opts, true);
+	};
 	function enlist(el, promise, opts, load) {
 		// Whatever goes wrong here, the result still goes onto the page when
 		// the call is back.
@@ -2004,9 +2008,12 @@ const TDCDots = (() => {
 	// instant load, nor pulled off a trace or a race by one.
 	const late = (t, now) => now - t.at >= GRACE - 1;
 	// With reduced motion there is none: the dots never go anywhere. One
-	// whose serving broke the dots (recover) is not gone to again.
+	// whose serving broke the dots (recover) is not gone to again. While the
+	// loading screen is up there is none either: everything loading is under
+	// it, and the dots are its own (loader.js).
 	function nextPending(now, grace) {
 		if (calm) return null;
+		if (typeof TDCLoader !== 'undefined' && TDCLoader.up) return null;
 		sweep();
 		let best = null;
 		for (const t of records.values()) {

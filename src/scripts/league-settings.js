@@ -444,7 +444,7 @@ TDCLeagueNav.panel('settings', () => {
 	});
 
 	// ─── Start ───
-	(async () => {
+	TDCLoader.hold((async () => {
 		const session = await TDC.requireSession(AREA);
 		if (!session) return;
 
@@ -467,5 +467,5 @@ TDCLeagueNav.panel('settings', () => {
 
 		if (!await load()) return;
 		els.save.disabled = false;
-	})();
+	})(), 'League settings');
 });

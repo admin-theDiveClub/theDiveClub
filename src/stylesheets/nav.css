@@ -101,7 +101,7 @@
 
 /* The nav uses the primary icon, not the full logo (UV, 24 Oct). */
 .nav-logo img {
-	height: 46px;
+	height: var(--nav-logo-height);
 	width: auto;
 }
 

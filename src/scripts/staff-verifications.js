@@ -2,7 +2,7 @@
 // Revoking keeps the record, marked as revoked with a reason.
 // Needs: supabaseClient.js, tdc.js, staff-common.js.
 
-(async () => {
+TDCLoader.hold((async () => {
 	const AREA = 'StaffVerifications';
 	const el = (id) => document.getElementById(id);
 	const els = {
@@ -110,4 +110,4 @@
 	els.filter.addEventListener('change', () => { TDC.status(els.statusEl, '', ''); load(); });
 	els.selectEl.addEventListener('change', () => { TDC.status(els.statusEl, '', ''); load(); });
 	await load();
-})();
+})(), 'StaffVerifications');

@@ -1,7 +1,7 @@
 // Staff: add a walk-in or guest (/staff/walk-in/).
 // Needs: supabaseClient.js, tdc.js, staff-common.js.
 
-(async () => {
+TDCLoader.hold((async () => {
 	const AREA = 'StaffWalkIn';
 	const el = (id) => document.getElementById(id);
 	const els = {
@@ -140,4 +140,4 @@
 			els.saveBtn.disabled = false;
 		}
 	});
-})();
+})(), 'StaffWalkIn');

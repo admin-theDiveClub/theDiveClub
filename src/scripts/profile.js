@@ -1,7 +1,7 @@
 // Profile page (/accounts/profile/).
 // Needs: supabaseClient.js, tdc.js (loaded by layout.html).
 
-(async () => {
+TDCLoader.hold((async () => {
 	const AREA = 'Profile';
 
 	const el = (id) => document.getElementById(id);
@@ -627,4 +627,4 @@
 		row.append(name, sub, btn);
 		els.claimList.appendChild(row);
 	}
-})();
+})(), 'Profile');

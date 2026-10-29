@@ -108,6 +108,9 @@
   --dots-pulse: 2s;               /* reduced motion: one breath of a tapped target while it waits */
   --dots-pulse-peak: 0.5;         /* reduced motion: how bright it gets at the top of each breath */
   --live-fade: 0.5s;              /* text a re-read changed: its old value fading out, then the new in (TDC.liveFade) */
+  --loader-size: 9rem;            /* the loading screen: the box of the ring its dots serve, in the middle (a square: the ring margin is added) */
+  --loader-stroke: 5px;           /* the loading screen: the dots' size on that ring */
+  --loader-fade: 0.5s;            /* the loading screen fading out once the page is ready */
   /* The match page's score cards (match.css; docs/design/match-score-input.md) */
   --score-band: #2b2b2b;          /* a card's solid header and footer */
   --score-depth-alpha: 0.55;      /* the bands' shadow on the score, and the score's dark inner edge */
@@ -146,6 +149,7 @@
   --nav-top: env(safe-area-inset-top, 0px);
   --nav-total: calc(var(--nav-height) + var(--nav-top));
   --nav-slide: 0.5s;              /* the bar sliding away and back on scroll */
+  --nav-logo-height: 46px;        /* the icon in the middle of the bar, and the loading screen's in the same spot */
 }
 
 [data-theme="light"] {

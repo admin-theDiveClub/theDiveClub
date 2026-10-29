@@ -526,7 +526,7 @@
 	}
 
 	// ─── Start ───
-	(async () => {
+	TDCLoader.hold((async () => {
 		if (!tournamentId) {
 			els.nothing.hidden = false;
 			TDC.error(AREA, 'no tournament in the address.', null, els.status);
@@ -547,5 +547,5 @@
 
 		render(row);
 		await loadEntry(!!session);
-	})();
+	})(), 'Poster');
 })();

@@ -3,7 +3,7 @@
 // Generated codes are shown once, for printing, then never seen again.
 // Needs: supabaseClient.js, tdc.js, staff-common.js.
 
-(async () => {
+TDCLoader.hold((async () => {
 	const AREA = 'StaffCodes';
 
 	const el = (id) => document.getElementById(id);
@@ -246,4 +246,4 @@
 			els.voidBtn.disabled = false;
 		}
 	});
-})();
+})(), 'StaffCodes');

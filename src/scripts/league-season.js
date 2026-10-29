@@ -709,7 +709,7 @@ TDCLeagueNav.panel('season', () => {
 	});
 
 	// ─── Start ───
-	(async () => {
+	TDCLoader.hold((async () => {
 		const session = await TDC.requireSession(AREA);
 		if (!session) return;
 
@@ -725,7 +725,7 @@ TDCLeagueNav.panel('season', () => {
 
 		if (!await loadInfo()) return;
 		await loadAll();
-	})();
+	})(), 'League season');
 
 	// Shown again as a tab (league-nav.js): read again in place.
 	return { refresh: () => loadAll() };

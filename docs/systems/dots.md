@@ -17,6 +17,7 @@ Four dots, **one set for the whole page**, that show that something is happening
 | `scripts/ring-status.js` | The ring icons, with no dots of their own since step 7 |
 | `scripts/tdc.js` (`TDC.writer`), `scripts/tdc-controls.js`, `scripts/nav.js`, `scripts/league-fixtures.js` | Where the site hands its calls to the dots (§7) |
 | `variables.css` `--dots-*` | Every size and time (§5) |
+| `scripts/loader.js` + `stylesheets/loader.css` | The loading screen, whose dots are these (§9, 29 Oct) |
 | `sandbox/dots/index.html` + `scripts/sandbox-dots.js` | `/sandbox/dots/`: real components that pretend to call the network. Styles at the end of `sandbox.css` |
 
 ## 3. How it works
@@ -315,3 +316,32 @@ Measured at 420px: every switch and stepper on `/leagues/new/` and `/tournaments
 | Something loading with the page (`track()`) | **Hidden** (`data-dots-load`: opacity 0), not dimmed, until it is back; it fades in as the dots move on, or under their race when it is the last |
 
 The engine gained `opts.fake` and `data-dots-load`. Measured at 420px: a group on `/leagues/new/` stayed at 0 while it grew (48 → 462px) and the dots travelled to it, faded in as they arrived (about 1 s), worst change of speed 2.6; three quick taps left it closed and whole. The fixtures page: the heading hidden until its read was back (about 1.1 s), the planner until the fixtures were (about 3 s).
+
+## 9. The loading screen (29 Oct, UV's items 10 and 11)
+
+UV: a loading screen on every page, gone only once the page has fully loaded, its data included; **Loader A**: the dots big in the middle of the screen, and the site icon exactly where the nav bar's sits, so the fade leaves the real one in the same spot. The screen is opaque (UV): nothing of the page shows through it.
+
+| Piece | Where | What |
+|---|---|---|
+| The screen | `layout.html`, first in `<body>` | There from the first paint, before any script. Opaque `--bg-base`, `z-index: 900`: over the nav (100), its menu and tray, under the dots (1000) and their error line (1001). It catches taps, so nothing under it can be pressed |
+| The icon | `.tdc-loader-icon` (`loader.css`) | Placed with the nav logo's own tokens (`--nav-top`, `--nav-height`, `--nav-logo-height`, now shared with `nav.css`). Measured: 187, 7, 46 × 46 at 420px and 697, 7, 46 × 46 at 1440, identical to the nav's |
+| The ring | `.tdc-loader-ring` | A fake ring in the middle (`--loader-size`, a square, so the ring margin is added), its border transparent: only its width counts, the dots' size on it (`--loader-stroke`). The dots take their colour from its text colour (cream) |
+| How a page says it is ready | `TDCLoader.hold(promise, label)` | Every page's start block (the `async` block at the end of its script) is wrapped in it: 27 blocks in 26 scripts, the nav's own included. `TDCDots.track` holds what it tracks; `league-nav.js` holds the tab the page opens on and the tab bar. A tab opened later does not (the screen has gone) |
+| Ready | `loader.js` `ready()` | The page's `load` (styles, scripts, the icon), its fonts, every hold settled, the network quiet (`TDCNet.quiet()`: the nav's bell and picture, and pages with no start block, sign-in for one), the pictures on the page loaded (not lazy ones); again until nothing new is held; then two frames, so what was drawn is painted behind the screen |
+| The end | `hide()` | The screen fades over `--loader-fade`. The dots' call is the screen going: they race the ring and fade once it is back, and its comeback is set to the same `--loader-fade`, so they go as the screen does (measured: the last dot seen 80 ms after the screen). The screen is then hidden, not removed: a target that leaves while the dots race it would read to them as a failure |
+
+**Building on the dots, not beside them.** The loader's ring is an ordinary `serve()`, so it is a tap to the dots and takes them at once. While the screen is up the page-load queue goes nowhere (`nextPending` returns none while `TDCLoader.up`): whatever `track()` is loading is under the screen, and before this the dots could fly off to the fixtures planner underneath. Tracked elements still dim and come back as before, unseen; by the time the screen goes every one of them has settled, since each held it. A tab tapped afterwards gets the dots exactly as before (checked: they go to the Fixtures tab's planner).
+
+**Timing.** The dots come only after `GRACE` (150 ms, the queue's own), so an instant page shows the icon and fades with no dots (the signed-out home page: gone at 173 ms). Measured at 420px on a stand-in with every call 1.2 s: the dots appear at 260 ms, travel, orbit, race, fade; the screen goes once the last read is drawn.
+
+| | What happens |
+|---|---|
+| Reduced motion | No dots. The ring is drawn (`::before`) and breathes with the dots' calm pulse; it fades with the screen |
+| A page still not ready after 20 s (`HANG`) | Shown as it stands; "TDC (Error): the page was still loading after 20 s (waiting for Matches), so it is shown as it stands." on a line at the foot of the screen (the dots' error look) for 8 s, and in the console with `[Loader]`. It names the holds still out at that moment |
+| A page's start block that throws | Reported the same way ("Matches could not finish loading…"), and the page is shown |
+| A stranger sent to sign in (`TDC.requireSession`) | `TDCLoader.leaving()`: the screen stays up until the browser has gone, so the empty page never shows on the way |
+| `loader.js` never runs (a broken or missing script) | `loader.css` drops the screen after 30 s by itself, so the page cannot be locked. The script stops that timer the moment it starts |
+
+**Checked 29 Oct at 420px** against the stand-in (§6): every page (30 addresses, the league tabs and staff pages included) loads, the screen goes, no script error, nothing left marked by the dots, nothing wider than the screen. A hung call: shown at 20.1 s with the message. The league page opened on Fixtures: the screen went just after its last read (2.66 s with 0.5 s calls), the dots never left the ring for the planner. Not checked against the real database or on a phone.
+
+*For UV to judge:* as the dots race at the end, the ring fades in faintly while the screen fades out (as any target's ring comes back under the dots' race); the ring's size and the dots' size (`--loader-size` 9rem, `--loader-stroke` 5px) and the fade (0.5 s), all on the main sandbox's Dots group.

@@ -1816,7 +1816,7 @@
 	window.addEventListener('pagehide', stopLiveUpdates);
 
 	// ─── Start ───
-	(async () => {
+	TDCLoader.hold((async () => {
 		const session = await TDC.requireSession(AREA);
 		if (!session) return;
 
@@ -1856,5 +1856,5 @@
 				await describeField();
 			}
 		}
-	})();
+	})(), 'Draw');
 })();

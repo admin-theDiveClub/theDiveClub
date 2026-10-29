@@ -46,6 +46,8 @@ const TDC = (() => {
 		const session = await getSession(area);
 		if (!session) {
 			const back = encodeURIComponent(location.pathname + location.search);
+			// The loading screen stays up until the browser has gone (loader.js).
+			if (typeof TDCLoader !== 'undefined') TDCLoader.leaving();
 			location.replace('/accounts/?next=' + back);
 			return null;
 		}

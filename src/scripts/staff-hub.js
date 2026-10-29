@@ -1,7 +1,7 @@
 // Staff hub (/staff/): lists the staff tools, only for venue staff.
 // Needs: supabaseClient.js, tdc.js, staff-common.js.
 
-(async () => {
+TDCLoader.hold((async () => {
 	const AREA = 'StaffHub';
 	const el = (id) => document.getElementById(id);
 	const els = { lineEl: el('venue-line'), fieldEl: el('venue-field'), selectEl: el('venue-select'), statusEl: el('status-msg') };
@@ -39,4 +39,4 @@
 	};
 	els.selectEl.addEventListener('change', showTiles);
 	showTiles();
-})();
+})(), 'StaffHub');

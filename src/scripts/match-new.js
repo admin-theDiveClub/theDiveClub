@@ -347,7 +347,7 @@
 		}
 	}
 
-	(async () => {
+	TDCLoader.hold((async () => {
 		const session = await TDC.requireSession(AREA);
 		if (!session) return;
 
@@ -356,5 +356,5 @@
 
 		renderSettings();
 		els.search.focus();
-	})();
+	})(), 'New match');
 })();

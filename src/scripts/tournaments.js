@@ -108,7 +108,7 @@
 		return box;
 	}
 
-	(async () => {
+	TDCLoader.hold((async () => {
 		const session = await TDC.requireSession(AREA);
 		if (!session) return;   // requireSession has already sent them to log in
 
@@ -127,5 +127,5 @@
 		els.intro.textContent = data.length === 1
 			? 'One tournament.'
 			: `${data.length} tournaments, newest first.`;
-	})();
+	})(), 'Tournaments');
 })();

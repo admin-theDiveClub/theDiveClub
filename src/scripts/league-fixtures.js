@@ -1350,7 +1350,7 @@ TDCLeagueNav.panel('fixtures', () => {
 	const { write } = writeQueue;
 
 	// ─── Start ───
-	(async () => {
+	TDCLoader.hold((async () => {
 		const session = await TDC.requireSession(AREA);
 		if (!session) return;
 
@@ -1372,7 +1372,7 @@ TDCLeagueNav.panel('fixtures', () => {
 			TDCDots.track(els.planner, all, { status: els.status });
 		}
 		await all;
-	})();
+	})(), 'Fixtures');
 
 	// Shown again as a tab (league-nav.js): read again in place, as a live
 	// change would be (waiting while the director's hands are on something).

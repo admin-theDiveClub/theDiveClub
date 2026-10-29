@@ -3,7 +3,7 @@
 // Guests never hold credits (their play is paid by their host), so they don't appear in this search.
 // Needs: supabaseClient.js, tdc.js, staff-common.js.
 
-(async () => {
+TDCLoader.hold((async () => {
 	const AREA = 'StaffCredits';
 
 	const el = (id) => document.getElementById(id);
@@ -171,4 +171,4 @@
 			els.adjustBtn.disabled = false;
 		}
 	});
-})();
+})(), 'StaffCredits');

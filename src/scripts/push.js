@@ -1,4 +1,4 @@
-(async () => {
+TDCLoader.hold((async () => {
 	const { data: { session } } = await supabaseClient.auth.getSession();
 	const notifBtn = document.getElementById('enable-notifications');
 	const loginLink = document.getElementById('login-link');
@@ -7,7 +7,7 @@
 	} else {
 		if (notifBtn) notifBtn.style.display = 'none';
 	}
-})();
+})(), 'Notifications');
 
 const VAPID_PUBLIC_KEY = 'BENdnENh5pBAg7H09U_01mIC_PFgg3DxfS3DBsMKz0YZ1-nEhA-xid2FLLPnY7eRbImKWT851SyLwqrmBzDg_OI';
 
@@ -205,7 +205,7 @@ document.getElementById('notif-preset-1').addEventListener('click', () => {
 		}, () => 'Saved.');
 	}
 
-	(async () => {
+	TDCLoader.hold((async () => {
 		const session = await TDC.getSession(AREA);
 		if (!session) return;   // the section above already hides itself
 
@@ -213,5 +213,5 @@ document.getElementById('notif-preset-1').addEventListener('click', () => {
 		if (error) { TDC.showSupabaseError(AREA, error, status); return; }
 
 		box.replaceChildren(...(data || []).map(row));
-	})();
+	})(), 'Notifications');
 })();
