@@ -308,6 +308,12 @@ negotiation, not a checkpoint in it.**
 
 ## 6. Standings
 
+> **Built 29 Oct** (migration `20261029162031`): see `docs/systems/leagues.md`, Standings.
+> Built as below, except: no abbreviation and no `visible_to_players` yet;
+> the streak, last 5 and home/away record primitives are not numbers and are
+> left out; the equation is worked out in the browser from counts the
+> database returns.
+
 Computed on fetch over all matches in the league season — never cached. At
 16 teams × 25 frames ≈ 3,000 rows a season, aggregation is trivially fast and a
 cached total only creates drift bugs.

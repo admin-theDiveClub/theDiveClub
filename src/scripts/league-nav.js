@@ -40,6 +40,7 @@ const TDCLeagueNav = (() => {
 	const TABS = [
 		['season', 'Season', false],
 		['fixtures', 'Fixtures', false],
+		['standings', 'Standings', false],
 		['manage', 'Run it', true],
 		['settings', 'Settings', true]
 	];

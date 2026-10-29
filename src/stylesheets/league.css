@@ -1424,3 +1424,80 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 	height: var(--switch-height);
 	--sn: calc(var(--stepper-across-number) * 1.25);
 }
+
+/* ── Standings (UV, 29 Oct) ───────────────────────────────────────────
+   The Standings tab's two tables (league-standings.js) and the columns
+   builder on the Settings tab (league-standings-edit.js). Both pills are
+   the card's .cp-views. */
+/* Headings wrap, so a long column name does not widen its column. */
+.tdc-card .sd-table th { white-space: normal; vertical-align: bottom; min-width: 3rem; }
+.sd-table .sd-rank { width: 2rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.sd-table .sd-pic { width: 2.4rem; padding-right: var(--space-2); }
+.sd-table .person-pic,
+.sd-table .team-pic { width: 2rem; height: 2rem; font-size: 0.7rem; }
+.sd-table .sd-name { font-weight: 600; overflow-wrap: break-word; }
+.sd-table .sd-name a { color: var(--text-primary); text-decoration: none; }
+.sd-table .sd-name a:hover,
+.sd-table .sd-name a:focus-visible { color: var(--color-primary); outline: none; }
+.tdc-card .sd-by { text-align: center; font-size: 0.85rem; margin-top: calc(-1 * var(--space-3)); }
+
+/* A team's row opens onto its players. */
+.sd-team-row { cursor: pointer; transition: background-color 0.15s ease; }
+.sd-team-row:hover { background: var(--hover-wash); }
+.sd-table .sd-toggle-cell { width: 2.4rem; padding-right: var(--space-2); }
+/* A team's players, under it and indented past its + / –. As narrow as
+   they need, so their numbers sit beside their names. */
+.tdc-card .sd-nested > td { padding: 0 0 var(--space-3) var(--space-6); text-align: left; }
+.sd-nested .table-scroll { margin-bottom: 0; }
+.sd-nested .sd-table { width: auto; font-size: 0.85rem; }
+.sd-nested .sd-table td { padding-top: var(--space-2); padding-bottom: var(--space-2); }
+.sd-nested .empty { padding: var(--space-3); }
+
+/* The builder: the columns as a table of three rows. */
+.sc-cols th,
+.sc-cols td { text-align: center; vertical-align: middle; }
+.tdc-card .sc-cols td:last-child,
+.tdc-card .sc-cols th:last-child { text-align: center; }
+.sc-cols .sc-row-label { text-align: left; color: var(--text-muted); white-space: nowrap; }
+.sc-cols .sc-name { white-space: normal; min-width: 6.5rem; color: var(--text-primary); letter-spacing: 0.04em; }
+.sc-cols .sc-name .sub { margin-top: var(--space-1); font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--text-muted); }
+.sc-tool-row { display: flex; justify-content: center; gap: var(--space-1); }
+.tdc-card .sc-tool-row button.fx-icon:disabled { opacity: 0.3; cursor: default; box-shadow: none; }
+/* A hint outside a .field, so it is given the field hint's look here. */
+.tdc-card .sc-hint { text-align: center; font-size: 0.8rem; color: var(--text-muted); margin: calc(-1 * var(--space-3)) 0 var(--space-3); }
+.sc-reset-row { justify-content: center; margin-bottom: var(--space-5); }
+.sc-reset-row > .btn { flex: 0 1 auto; }
+
+.sc-label {
+	margin: var(--space-4) 0 var(--space-2);
+	font-size: 0.7rem;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+}
+/* One button per value and per operator, wrapping. */
+.sc-keys { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.tdc-card .sc-keys > .sc-key { width: auto; flex: 0 0 auto; margin: 0; text-transform: none; letter-spacing: 0; }
+.sc-num-row { display: flex; align-items: center; gap: var(--space-3); }
+.sc-num-row input { flex: 0 1 8rem; min-width: 0; text-align: center; }
+.tdc-card .sc-num-row > .btn { width: auto; flex: 0 0 auto; margin: 0; }
+
+/* The equation as it is built: each part a small pill. */
+.sc-eq {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-1);
+	min-height: 2.75rem;
+	padding: var(--space-2) var(--space-3);
+	border: var(--control-border) solid var(--control-line);
+	border-radius: var(--radius-md);
+	margin-bottom: var(--space-2);
+}
+.sc-part { padding: 0 var(--space-2); border-radius: var(--radius-pill); line-height: 1.8; }
+.sc-part-var { background: var(--hover-wash); color: var(--color-primary); font-weight: 600; }
+.sc-part-num { background: var(--hover-wash); font-variant-numeric: tabular-nums; }
+.sc-part-op,
+.sc-part-paren { font-weight: 700; }
+.sc-eq-tools { margin-bottom: var(--space-4); }

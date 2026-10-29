@@ -66,6 +66,8 @@ const TDCRing = (() => {
 		// Added 26 Oct for the match page's slide to undo: an arrow pointing
 		// left along the top, its tail curling down and back underneath.
 		undo: { label: 'Undo', strokes: ['M36 40L60 40A13 13 0 0 1 60 66L44 66', 'M47 29L36 40L47 51'] },
+		// Added 29 Oct for the standings columns' move left: arrow, the other way.
+		back: { label: 'Back', strokes: ['M68 50L32 50', 'M46 36L32 50', 'M46 64L32 50'] },
 		// Added 29 Oct for the three-way switch's middle: a small dot (grey,
 		// status.css), so the middle has a line to trace like the two ends.
 		dot: { label: 'Neither', widths: [8], strokes: ['M50 46A4 4 0 1 1 50 54A4 4 0 1 1 50 46'] },

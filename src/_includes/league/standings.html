@@ -1,0 +1,26 @@
+{% comment %}
+	The league's standings (UV, 29 Oct): Individual Rankings and Team
+	Rankings, switched by a pill. Everybody who can see the season sees them.
+
+	Every number is counted from the frames of the season's signed nights each
+	time the tab is read (tdc_league_standings); the columns, and which of
+	them decide the rank, are the league director's, built on the Settings
+	tab (tbl_league_standing_columns). Rank, picture and name are always
+	there; everything after them is a column.
+
+	Team Rankings lists the teams, each opening onto its players in the
+	Individual table's columns, ranked within the team.
+{% endcomment %}
+
+	<h1 id="sd-title">Standings</h1>
+	<p class="muted" id="sd-meta"></p>
+
+	<div class="cp-views" id="sd-views" role="group" aria-label="Which standings">
+		<button type="button" class="cp-view" data-sd-view="player" aria-pressed="true">Individual Rankings</button>
+		<button type="button" class="cp-view" data-sd-view="team" aria-pressed="false">Team Rankings</button>
+	</div>
+
+	<div id="sd-player"></div>
+	<div id="sd-team" hidden></div>
+
+	<div class="status" id="sd-status"></div>

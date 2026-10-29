@@ -100,3 +100,67 @@
 	<button type="button" class="btn-primary" id="save-btn" disabled>Save</button>
 	<div class="status" id="st-status"></div>
 
+	{% comment %}
+		The standings columns (UV, 29 Oct; league-standings-edit.js): this
+		season's, for each of the two tables, each change saved at once (not
+		with Save above). The table shows the columns left to right: move and
+		remove, the name with its equation, and its place in the ranking. Below
+		it a new column is built from buttons only (docs/design/leagues.md §6:
+		a token array, never a string).
+	{% endcomment %}
+	<section class="section sc-edit" id="sc-edit" hidden>
+		<h2>Standings</h2>
+		<p class="muted">This season's columns on the Standings tab. Each change saves at once.</p>
+
+		<div class="cp-views" id="sc-views" role="group" aria-label="Which table">
+			<button type="button" class="cp-view" data-sc-scope="player" aria-pressed="true">Individual Rankings</button>
+			<button type="button" class="cp-view" data-sc-scope="team" aria-pressed="false">Team Rankings</button>
+		</div>
+
+		<div class="table-scroll" id="sc-cols"></div>
+		<p class="hint sc-hint">Rank order: the column at 1 decides the order, 2 settles a tie, and so on. 0 is not used for ranking. Rank, picture and name are always shown first.</p>
+		<div class="btn-row sc-reset-row">
+			<button type="button" class="btn btn-secondary btn-sm" id="sc-reset">Put the default columns back</button>
+		</div>
+
+		<h3>New column</h3>
+		<div class="field">
+			<label for="sc-name">Column name</label>
+			<input type="text" id="sc-name" maxlength="24" autocomplete="off">
+			<div class="hint">Up to 24 characters, and not a name this table already has.</div>
+		</div>
+
+		<div class="sc-label">Values</div>
+		<div class="sc-keys" id="sc-vars"></div>
+
+		<div class="sc-label">Operators</div>
+		<div class="sc-keys" id="sc-ops"></div>
+
+		<div class="sc-label">A number</div>
+		<div class="sc-num-row">
+			<input type="text" id="sc-num" inputmode="decimal" maxlength="9" autocomplete="off" aria-label="A number for the equation">
+			<button type="button" class="btn btn-secondary btn-sm" id="sc-num-add">Add the number</button>
+		</div>
+
+		<div class="sc-label">Equation</div>
+		<div class="sc-eq" id="sc-eq" aria-live="polite"></div>
+		<div class="btn-row sc-eq-tools">
+			<button type="button" class="btn btn-secondary btn-sm" id="sc-undo">Take the last one off</button>
+			<button type="button" class="btn btn-secondary btn-sm" id="sc-clear">Clear</button>
+		</div>
+
+		<div class="field-row">
+			<div class="field">
+				<label for="sc-decimals">Decimal places</label>
+				<input type="number" id="sc-decimals" inputmode="numeric" min="0" max="3" value="0">
+			</div>
+			<div class="field">
+				<label for="sc-higher">Highest ranks first</label>
+				<input type="checkbox" id="sc-higher" checked>
+			</div>
+		</div>
+
+		<button type="button" class="btn-primary" id="sc-add" disabled>Add the column</button>
+		<div class="status" id="sc-status"></div>
+	</section>
+

@@ -9,7 +9,10 @@ extraScripts:
   - /scripts/league-nav.js
   - /scripts/league-season.js
   - /scripts/league-fixtures.js
+  - /scripts/league-standings-def.js
+  - /scripts/league-standings.js
   - /scripts/league-manage.js
+  - /scripts/league-standings-edit.js
   - /scripts/league-settings.js
 ---
 {% comment %}
@@ -35,6 +38,10 @@ extraScripts:
 
 	<div class="league-panel" data-tab="fixtures" data-title="Fixtures" hidden>
 {% include "league/fixtures.html" %}
+	</div>
+
+	<div class="league-panel" data-tab="standings" data-title="Standings" hidden>
+{% include "league/standings.html" %}
 	</div>
 
 	<div class="league-panel" data-tab="manage" data-title="Run a League" hidden>

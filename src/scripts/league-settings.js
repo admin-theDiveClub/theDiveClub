@@ -26,7 +26,11 @@
 // the page says both: a director must not believe a match follows the new
 // rules when it does not. Then everything is read again.
 //
-// Needs: tdc.js, match-settings.js.
+// The standings columns are a section of this tab with a script of their
+// own (league-standings-edit.js), started once the page knows the person
+// runs the league; each of its changes saves at once.
+//
+// Needs: tdc.js, match-settings.js, league-standings-edit.js.
 
 TDCLeagueNav.panel('settings', () => {
 	const AREA = 'League settings';
@@ -468,5 +472,8 @@ TDCLeagueNav.panel('settings', () => {
 
 		if (!await load()) return;
 		els.save.disabled = false;
+
+		// The standings columns (29 Oct), saved on their own, not with Save.
+		await TDCStandingsEdit.start(seasonId);
 	})(), 'League settings');
 });
