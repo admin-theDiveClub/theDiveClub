@@ -20,6 +20,18 @@
 		<button type="button" class="cp-view" data-sd-view="team" aria-pressed="false">Team Rankings</button>
 	</div>
 
+	{% comment %}
+		Live (UV, 29 Oct): off, only nights signed by both captains count and
+		the tables are read when the tab is shown. On, a night still being
+		played counts too, and the tables follow every frame as it is
+		recorded. Kept per device.
+	{% endcomment %}
+	<div class="field sd-live-field">
+		<label for="sd-live">Live</label>
+		<input type="checkbox" id="sd-live">
+		<div class="hint">Count nights still being played, and follow every frame as it is recorded.</div>
+	</div>
+
 	<div id="sd-player"></div>
 	<div id="sd-team" hidden></div>
 

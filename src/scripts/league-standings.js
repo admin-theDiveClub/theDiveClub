@@ -18,6 +18,14 @@
 // Read when the tab is first opened (under the loading screen) and again
 // each time it is shown, the numbers that changed fading (TDC.liveFade).
 //
+// Live (UV, 29 Oct; a switch, kept per device): on, tdc_league_standings
+// also counts nights not yet signed by both (p_live), and the tab follows
+// the season's matches as the fixtures page does: one realtime channel on
+// tbl_matches (every frame written moves its card_version), the matches
+// named by the function's watch_match_ids, read again 0.4 s after the last
+// change. While another tab is showing it does not read; showing it again
+// does. Off, nothing is watched.
+//
 // Needs: tdc.js, ring-status.js, league-standings-def.js, league-nav.js.
 
 TDCLeagueNav.panel('standings', () => {
@@ -26,7 +34,7 @@ TDCLeagueNav.panel('standings', () => {
 
 	const el = (id) => document.getElementById(id);
 	const els = {
-		title: el('sd-title'), meta: el('sd-meta'), views: el('sd-views'),
+		title: el('sd-title'), meta: el('sd-meta'), views: el('sd-views'), live: el('sd-live'),
 		player: el('sd-player'), team: el('sd-team'), status: el('sd-status')
 	};
 
@@ -46,6 +54,10 @@ TDCLeagueNav.panel('standings', () => {
 	const VIEW_KEY = 'tdc.standings.view';
 	let view = 'player';
 	try { if (localStorage.getItem(VIEW_KEY) === 'team') view = 'team'; } catch (err) { /* private window: the default */ }
+	const LIVE_KEY = 'tdc.standings.live';
+	let live = false;
+	try { live = localStorage.getItem(LIVE_KEY) === 'on'; } catch (err) { /* private window: off */ }
+	els.live.checked = live;
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -285,9 +297,18 @@ TDCLeagueNav.panel('standings', () => {
 		const root = els.player.parentElement;
 		const snap = first ? null : TDC.liveSnapshot(root);
 		const n = data.matches_counted || 0;
-		els.meta.textContent = n
-			? 'Counted from ' + plural(n, 'signed night') + '. A night counts once both captains have signed it.'
-			: 'Nothing counted yet. A night counts once both captains have signed it.';
+		const unsigned = data.matches_unsigned || 0;
+		if (live) {
+			els.meta.textContent = !n
+				? 'Live: nothing counted yet. A night counts from its first finished frame.'
+				: !unsigned
+					? 'Live: counted from ' + plural(n, 'signed night') + '. Nothing is being played right now.'
+					: 'Live: counted from ' + plural(n - unsigned, 'signed night') + ' and ' + plural(unsigned, 'night') + ' not yet signed by both captains.';
+		} else {
+			els.meta.textContent = n
+				? 'Counted from ' + plural(n, 'signed night') + '. A night counts once both captains have signed it.'
+				: 'Nothing counted yet. A night counts once both captains have signed it.';
+		}
 		renderPlayers();
 		renderTeams();
 		if (!first) TDC.liveFade(root, snap);
@@ -296,7 +317,12 @@ TDCLeagueNav.panel('standings', () => {
 	async function load(first) {
 		const [inf, st, cols] = await Promise.all([
 			supabaseClient.rpc('tdc_league_season_info', { p_league_season_id: seasonId }),
-			supabaseClient.rpc('tdc_league_standings', { p_league_season_id: seasonId }),
+			// p_live only when on: off is the call 20261029162031 made, so the
+			// tab does not depend on 20261029194712 unless Live is used (UV hit
+			// a deploy that went out before that push, 29 Oct).
+			supabaseClient.rpc('tdc_league_standings', live
+				? { p_league_season_id: seasonId, p_live: true }
+				: { p_league_season_id: seasonId }),
 			supabaseClient.from('tbl_league_standing_columns')
 				.select('id, scope, position, name, equation, decimals, rank_priority, higher_first')
 				.eq('league_season_id', seasonId).order('position')
@@ -317,8 +343,75 @@ TDCLeagueNav.panel('standings', () => {
 		columns = cols.data || [];
 		els.title.textContent = info.league_name + ' — Standings';
 		render(first);
+		if (live) watchLive(data.watch_match_ids || []); else stopLive();
 		return true;
 	}
+
+	// ─── Live ───
+	// As the fixtures page follows its night (league-fixtures.js, watchLive).
+	let liveChannel = null;
+	let liveKey = '';
+	let liveSet = new Set();
+	let liveTimer = null;
+	const panelShown = () => !els.title.closest('.league-panel').hidden;
+
+	// payload is null for a catch-up (shown again, back online).
+	function onLive(payload) {
+		if (!live || !data) return;
+		if (payload && payload.new && !liveSet.has(payload.new.id)) return;
+		clearTimeout(liveTimer);
+		liveTimer = setTimeout(() => {
+			// Another tab is showing: showing this one reads it anyway.
+			if (!panelShown()) return;
+			load(false).catch((err) => TDC.error(AREA, 'the live standings could not be read again.', err, els.status));
+		}, 400);
+	}
+
+	function watchLive(ids) {
+		const key = ids.slice().sort().join(',');
+		if (key === liveKey && liveChannel) return;
+		stopLive();
+		liveKey = key;
+		liveSet = new Set(ids);
+		if (!ids.length) return;
+
+		// A long filter may pass realtime's length limit; a big season drops
+		// it and sorts on arrival instead.
+		const filter = ids.length <= 20 ? { filter: 'id=in.(' + ids.join(',') + ')' } : {};
+		liveChannel = supabaseClient
+			.channel('standings:' + seasonId)
+			.on('postgres_changes', Object.assign({ event: 'UPDATE', schema: 'public', table: 'tbl_matches' }, filter), onLive)
+			.subscribe((status) => {
+				if (status === 'SUBSCRIBED') return;
+				// Not fatal: the tab still shows what it last read. Said, and the
+				// tab says so too, rather than left to go stale unseen.
+				if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+					TDC.error(AREA, 'live updates are not running (' + status + '). Showing the tab again reads it again.', null, els.status);
+				}
+			});
+	}
+
+	function stopLive() {
+		clearTimeout(liveTimer);
+		liveKey = '';
+		if (!liveChannel) return;
+		supabaseClient.removeChannel(liveChannel);
+		liveChannel = null;
+	}
+
+	document.addEventListener('visibilitychange', () => {
+		if (document.visibilityState === 'visible') onLive(null);
+	});
+	window.addEventListener('online', () => onLive(null));
+
+	// The switch reads the tables again at once, counted the new way; the
+	// site's dots serve the switch for as long as that read takes.
+	els.live.addEventListener('change', () => {
+		live = els.live.checked;
+		try { localStorage.setItem(LIVE_KEY, live ? 'on' : 'off'); } catch (err) { /* kept for this visit only */ }
+		if (!data) return;
+		load(false).catch((err) => TDC.error(AREA, 'the standings could not be read again.', err, els.status));
+	});
 
 	// ─── Start ───
 	showView(view, false);
