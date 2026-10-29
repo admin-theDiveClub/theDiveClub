@@ -1,13 +1,17 @@
-/* The loader (scripts/loader.js, UV 29 Oct): an opaque screen over the whole
-   page, the nav included, until the page has loaded, its data included.
-   Above the nav, its menu and tray (100, 99, 101), under the dots (1000) and
-   their error line (1001). Sizes and times are --loader-* in variables.css,
-   set from the main sandbox's Dots group. */
+/* The loader (scripts/loader.js, UV 29 Oct): a screen over the whole page,
+   the nav included, until the page (or a tab opened later) has loaded, its
+   data included. See-through with a strong blur (UV, 29 Oct, replacing
+   opaque): the page is there underneath, out of focus, and comes sharp as
+   the screen fades. Above the nav and its menu (100, 99), under the dots
+   (1000) and their error line (1001). Sizes and times are --loader-* in
+   variables.css, set from the main sandbox's Dots group. */
 .tdc-loader {
 	position: fixed;
 	inset: 0;
 	z-index: 900;
-	background: var(--bg-base);
+	background: transparent;
+	backdrop-filter: blur(var(--loader-blur));
+	-webkit-backdrop-filter: blur(var(--loader-blur));
 	opacity: 1;
 	transition: opacity var(--loader-fade) ease;
 	/* If loader.js never runs (a broken or missing script), the screen goes

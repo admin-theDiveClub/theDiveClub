@@ -43,6 +43,9 @@
   --shadow-alpha: 0;       /* floating panels and menus */
   --scrim-alpha: 0.38;        /* the dim behind a slide-over panel */
   --pic-shadow-alpha: 0.45;   /* under every picture circle (24 Oct) */
+  --page-inset-alpha: 0.6;    /* the page set into the screen: its edges' inner glow (29 Oct, an experiment; 0 is off) */
+  --page-inset-size: 60px;    /* how far that glow blurs in from the edge */
+  --page-inset-spread: 0px;   /* how far it reaches in at full strength before the blur */
 
   --shadow-panel: 0 10px 30px rgba(0, 0, 0, var(--shadow-alpha));
   --shadow-pic: 0 3px 8px rgba(0, 0, 0, var(--pic-shadow-alpha));
@@ -111,6 +114,7 @@
   --loader-size: 9rem;            /* the loading screen: the box of the ring its dots serve, in the middle (a square: the ring margin is added) */
   --loader-stroke: 5px;           /* the loading screen: the dots' size on that ring */
   --loader-fade: 0.5s;            /* the loading screen fading out once the page is ready */
+  --loader-blur: 24px;            /* the loading screen is see-through: how strongly it blurs the page under it (29 Oct) */
   /* The match page's score cards (match.css; docs/design/match-score-input.md) */
   --score-band: #2b2b2b;          /* a card's solid header and footer */
   --score-depth-alpha: 0.55;      /* the bands' shadow on the score, and the score's dark inner edge */
@@ -177,6 +181,7 @@
   --shadow-alpha: 0;
   --scrim-alpha: 0.47;
   --pic-shadow-alpha: 0.2;
+  --page-inset-alpha: 0.2;
   --surface-blur: 8px;
   --score-band: #e6d8bd;
   --score-depth-alpha: 0.15;

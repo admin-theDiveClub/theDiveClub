@@ -117,7 +117,8 @@
 			{ name: '--live-fade',        label: 'Live change',    kind: 'size', unit: 's',  min: 0,    max: 2,    step: 0.05,  use: 'Text a page re-read changed (a live score, a total): its old value fading out, then the new in (UV, 29 Oct)' },
 			{ name: '--loader-size',      label: 'Loader ring',    kind: 'size', unit: 'rem', min: 3,   max: 20,   step: 0.5,   use: 'The loading screen: how big the ring its dots go round in the middle of the screen is (the ring margin is added, as round any square)' },
 			{ name: '--loader-stroke',    label: 'Loader dots',    kind: 'size', unit: 'px', min: 1,    max: 12,   step: 0.5,   use: 'The loading screen: how big its dots are on that ring' },
-			{ name: '--loader-fade',      label: 'Loader fade',    kind: 'size', unit: 's',  min: 0,    max: 2,    step: 0.05,  use: 'The loading screen fading out once the page is ready; its dots race the ring and fade with it' }
+			{ name: '--loader-fade',      label: 'Loader fade',    kind: 'size', unit: 's',  min: 0,    max: 2,    step: 0.05,  use: 'The loading screen fading out once the page is ready; its dots race the ring and fade with it' },
+			{ name: '--loader-blur',      label: 'Loader blur',    kind: 'size', unit: 'px', min: 0,    max: 80,   step: 1,     use: 'The loading screen is see-through: how strongly it blurs the page under it while the page loads' }
 		]],
 		['States', [
 			{ name: '--color-success',    label: 'Success',        kind: 'colour', use: 'Success messages, Paid badge, staff tile glow' },
@@ -129,7 +130,10 @@
 		['Depth', [
 			{ name: '--shadow-alpha',     label: 'Shadow strength', kind: 'alpha', use: 'How dark the shadow under floating panels is (black at this opacity)' },
 			{ name: '--pic-shadow-alpha', label: 'Picture shadow', kind: 'alpha', use: 'How dark the shadow under every picture circle is: profile pictures (the nav\'s too), league and team pictures' },
-			{ name: '--scrim-alpha',      label: 'Dim strength',    kind: 'alpha', use: 'How dark the page goes behind a slide-over panel (black at this opacity)' }
+			{ name: '--scrim-alpha',      label: 'Dim strength',    kind: 'alpha', use: 'How dark the page goes behind a slide-over panel (black at this opacity)' },
+			{ name: '--page-inset-alpha', label: 'Page inset',      kind: 'alpha', use: 'The page set into the screen (an experiment, 29 Oct): how dark the inner glow round the screen\'s edges is. 0 turns it off' },
+			{ name: '--page-inset-size',  label: 'Inset blur',      kind: 'size', unit: 'px', min: 0, max: 200, step: 2, use: 'How far that glow fades in from the edges' },
+			{ name: '--page-inset-spread', label: 'Inset reach',    kind: 'size', unit: 'px', min: 0, max: 80,  step: 1, use: 'How far in from the edges it stays at full strength before it starts to fade' }
 		]]
 	];
 	var SPEC = {};

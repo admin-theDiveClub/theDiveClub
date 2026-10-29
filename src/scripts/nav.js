@@ -27,6 +27,7 @@
 	const notifyWrap  = document.getElementById('nav-notify-wrap');
 	const notifyBtn   = document.getElementById('nav-notify');
 	const notifyPip   = document.getElementById('nav-notify-pip');
+	const menuPip     = document.getElementById('nav-menu-pip');
 	const notifyTray  = document.getElementById('nav-notify-tray');
 	const notifyList  = document.getElementById('nav-notify-list');
 	const notifyEmpty = document.getElementById('nav-notify-empty');
@@ -38,10 +39,12 @@
 	// Every button on the bar is a ring icon (ring-status.js, UV's design):
 	// each draws itself in as the page opens, and the menu turns into a cross
 	// and back, with no dots: nothing is waited for. A press that waits on
-	// something (the tray reading, sign-in, a reload) is served by the site's
+	// something (the list reading, sign-in, a reload) is served by the site's
 	// one set of dots (scripts/dots.js, 26 Oct) until it is done; they trace
-	// its icon as they finish. The bell and reload are drawn when they are
-	// first shown, since nothing measures a hidden icon reliably.
+	// its icon as they finish. The bell and reload (rows in the menu since
+	// 29 Oct) are made when they are first shown, since nothing measures a
+	// hidden icon reliably, and draw in again each time the menu opens, or
+	// they would only ever draw unseen behind the shut menu.
 	const rings = {};
 
 	function makeRing(name, faceId, icons, labels) {
@@ -97,11 +100,18 @@
 	makeRing('user', 'nav-profile-icon', ['user'], { user: 'Account' });
 
 	// --- Hamburger menu open/close ---
-	// The three lines become a cross while it is open.
+	// The three lines become a cross while it is open. Shut, it folds the
+	// notifications away, so the menu always opens on its rows.
 	function setMenu(open) {
 		menu.classList.toggle('open', open);
 		menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
 		drawTo(rings.menu, open ? 'cross' : 'menu');
+		if (open) {
+			if (rings.bell) rings.bell.drawIn();
+			if (rings.reload) rings.reload.drawIn();
+		} else {
+			closeNotifications();
+		}
 	}
 	menuToggle.addEventListener('click', () => setMenu(!menu.classList.contains('open')));
 
@@ -211,10 +221,19 @@
 			console.error('[' + AREA + '] could not count notifications.', error);
 			return;
 		}
-		// Something new since the last look: the bell draws itself again.
+		// Something new since the last look: the menu button, which carries
+		// the pip on the bar, draws itself again.
 		const was = notifyPip.hidden;
-		notifyPip.hidden = !(data > 0);
-		if (was && !notifyPip.hidden) drawTo(rings.bell, 'bell');
+		setPip(data > 0);
+		if (was && !notifyPip.hidden && !menu.classList.contains('open')) {
+			if (rings.menu) rings.menu.drawIn();
+		}
+	}
+
+	// The pip is on the bell in the menu and on the menu button on the bar.
+	function setPip(on) {
+		if (notifyPip) notifyPip.hidden = !on;
+		if (menuPip) menuPip.hidden = !on;
 	}
 
 	function notifyWhen(iso) {
@@ -327,11 +346,11 @@
 			console.error('[' + AREA + '] could not mark notifications seen.', error);
 			return;
 		}
-		if (notifyPip) notifyPip.hidden = true;
+		setPip(false);
 	}
 
 	function closeNotifications() {
-		if (!notifyTray) return;
+		if (!notifyTray || !notifyBtn) return;
 		notifyTray.classList.remove('open');
 		notifyBtn.setAttribute('aria-expanded', 'false');
 	}
@@ -355,7 +374,7 @@
 			notifyEmpty.hidden = false;
 			notifyEmpty.textContent = 'Nothing yet.';
 			notifyClearAll.hidden = true;
-			if (notifyPip) notifyPip.hidden = true;
+			setPip(false);
 		});
 
 		// Escape closes it, as it should any layer over the page.

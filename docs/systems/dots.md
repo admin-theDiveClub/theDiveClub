@@ -319,14 +319,25 @@ The engine gained `opts.fake` and `data-dots-load`. Measured at 420px: a group o
 
 ## 9. The loading screen (29 Oct, UV's items 10 and 11)
 
-UV: a loading screen on every page, gone only once the page has fully loaded, its data included; **Loader A**: the dots big in the middle of the screen, and the site icon exactly where the nav bar's sits, so the fade leaves the real one in the same spot. The screen is opaque (UV): nothing of the page shows through it.
+UV: a loading screen on every page, gone only once the page has fully loaded, its data included; **Loader A**: the dots big in the middle of the screen, and the site icon exactly where the nav bar's sits, so the fade leaves the real one in the same spot. ~~The screen is opaque~~ **Since UV's second look (29 Oct) it is see-through with a strong blur** (`--loader-blur`, 24px): the page is there underneath, out of focus, and comes sharp as the screen fades.
+
+**UV's second look (29 Oct): the screen shows wherever a section is still loading, and goes only once the page is present and populated.**
+
+| | What changed |
+|---|---|
+| A tab opened later | `TDCLoader.hold` made after the screen has gone **brings it back** (`raise()`), at once with no fade in, and runs the same wait as at page load (`cycle()`). A league tab opened for the first time holds through its own start block and league-nav's network wait, so the screen covers it until it is drawn. Its pill gets no dots of its own then (the screen's dots are showing) |
+| A tab shown again | No screen: it is drawn already, and reads again in place with its changed text fading (item 13). league-nav holds only on a tab's first start (before, every showing held the network, which would now have raised the screen over a re-read) |
+| Sections loading under the screen | Something tracked (`TDCDots.track`) that is back while the screen is up is shown at once (`underScreen()` in `dots.js`), not faded in over `--dots-reveal`: the fixtures planner was still fading in for a second after the screen had gone. Its fade is the screen's |
+| A team opened on the Season tab | Not covered: it already stays empty with the dots on it until its players are in (§8, "nothing fades in before it is ready") |
+
+Checked at 420px on the stand-in: the Fixtures tab tapped, the screen up within 60 ms, gone after its reads (3.1 s with 0.7 s calls), the planner whole at that moment; Season shown again, no screen. Every page opened with a watcher noting, at the moment the screen starts to fade, anything still hidden by the dots, busy, or reading "Loading…" / "Reading…": none, except the team card and the join page **with a match or league that was not found**, which leave their "Loading…" placeholder beside the error.
 
 | Piece | Where | What |
 |---|---|---|
-| The screen | `layout.html`, first in `<body>` | There from the first paint, before any script. Opaque `--bg-base`, `z-index: 900`: over the nav (100), its menu and tray, under the dots (1000) and their error line (1001). It catches taps, so nothing under it can be pressed |
+| The screen | `layout.html`, first in `<body>` | There from the first paint, before any script. See-through, blurring the page by `--loader-blur` (opaque `--bg-base` until UV's second look), `z-index: 900`: over the nav (100), its menu and tray, under the dots (1000) and their error line (1001). It catches taps, so nothing under it can be pressed |
 | The icon | `.tdc-loader-icon` (`loader.css`) | Placed with the nav logo's own tokens (`--nav-top`, `--nav-height`, `--nav-logo-height`, now shared with `nav.css`). Measured: 187, 7, 46 × 46 at 420px and 697, 7, 46 × 46 at 1440, identical to the nav's |
 | The ring | `.tdc-loader-ring` | A fake ring in the middle (`--loader-size`, a square, so the ring margin is added), its border transparent: only its width counts, the dots' size on it (`--loader-stroke`). The dots take their colour from its text colour (cream) |
-| How a page says it is ready | `TDCLoader.hold(promise, label)` | Every page's start block (the `async` block at the end of its script) is wrapped in it: 27 blocks in 26 scripts, the nav's own included. `TDCDots.track` holds what it tracks; `league-nav.js` holds the tab the page opens on and the tab bar. A tab opened later does not (the screen has gone) |
+| How a page says it is ready | `TDCLoader.hold(promise, label)` | Every page's start block (the `async` block at the end of its script) is wrapped in it: 27 blocks in 26 scripts, the nav's own included. `TDCDots.track` holds what it tracks; `league-nav.js` holds the tab the page opens on and the tab bar. A tab opened later for the first time brings the screen back (below) |
 | Ready | `loader.js` `ready()` | The page's `load` (styles, scripts, the icon), its fonts, every hold settled, the network quiet (`TDCNet.quiet()`: the nav's bell and picture, and pages with no start block, sign-in for one), the pictures on the page loaded (not lazy ones); again until nothing new is held; then two frames, so what was drawn is painted behind the screen |
 | The end | `hide()` | The screen fades over `--loader-fade`. The dots' call is the screen going: they race the ring and fade once it is back, and its comeback is set to the same `--loader-fade`, so they go as the screen does (measured: the last dot seen 80 ms after the screen). The screen is then hidden, not removed: a target that leaves while the dots race it would read to them as a failure |
 

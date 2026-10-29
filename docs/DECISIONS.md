@@ -951,3 +951,19 @@ These predate the log. They are recorded here because every one of them is a dec
 *Example:* `/leagues/season/?s=…&tab=fixtures`. The screen is up with the dots circling; the season is read, then the fixtures; the tab's heading and planner are drawn underneath; the moment the last read is in, the screen fades over half a second while the dots race the ring and fade with it, and the page is there with the real nav icon where the screen's was.
 *Rejected:* deciding "ready" from the network going quiet alone (it cannot tell a page between two reads from a page that is done, and the request was for each page to say so; quiet is kept as a backstop for the nav and pages with no data of their own); a separate spinner beside the dots (UV: build on the dots and their page-load queue); Loader B, the diver falling through the hole (not chosen, kept as an option in STATUS).
 *Touches:* `scripts/loader.js`, `stylesheets/loader.css`, `_includes/layout.html`, `dots.js` (`track` holds, the queue waits), `league-nav.js`, `tdc.js` (`requireSession` keeps the screen up on its way to sign-in), every page script's start block, `variables.css` (`--loader-*`, `--nav-logo-height`), `nav.css`, `sandbox.js`
+
+## 2026-10-29 — Notifications and reload live in the menu, not on the bar
+
+*Decided by:* UV (the menu, not the bar); the layout, Claude
+*So:* the bell and reload are rows in the slide-out menu: Notifications at the top, its list unfolding under the row; the page links; Reload at the foot, still only in an installed app. The bar holds the menu button, the logo, the offline tag and the account. **The unread pip sits on the menu button as well as on the bell**, since otherwise nothing on the bar says something is waiting.
+*Why:* the bar was crowded: at 375px the bell's slot overlapped the logo by 16px, and an installed app's reload would have made it overlap at 420px too. Now the logo has over 100px clear each side.
+*Rejected:* keeping the tray as a floating panel opened from the menu (a second layer over a layer); a count on the menu button (the pip is a dot, not a count, 22 Oct).
+*Touches:* `_includes/nav.html`, `nav.css`, `nav.js`, `docs/systems/notifications.md`, `docs/ui.md`
+
+## 2026-10-29 — The loading screen is see-through, and comes back for a section still loading
+
+*Decided by:* UV (blurred, not opaque; on every page or tab where a section is still loading; gone only once the page is present and populated); how, Claude
+*So:* the screen blurs the page under it (`--loader-blur`) rather than hiding it. A hold made after the screen has gone brings it back at once, so a league tab opened for the first time is covered until it is drawn, exactly as a page is. A tab shown again is not covered: it is drawn already and reads again in place (item 13). Anything loading with the page that is back while the screen is up is shown at once rather than fading in under it, so it is whole when the screen goes.
+*Example:* on a league's Season tab, tap Fixtures for the first time. The screen is back within a frame, the dots in the middle; the season and fixtures are read and the planner drawn underneath; the screen fades with everything in place. Tap Season: no screen, the numbers re-read in place.
+*Rejected:* a screen over every re-read (it would hide the changed-text fades and flash on every live update); a screen over a team opened on the Season tab (it already waits with the dots until its players are in, and covering the page to open one team is heavy; UV may ask for it).
+*Touches:* `loader.js` (`raise`, `cycle`), `loader.css`, `league-nav.js`, `dots.js` (`underScreen`), `variables.css`, `sandbox.js`, `docs/systems/dots.md` §9

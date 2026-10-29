@@ -1,16 +1,21 @@
 <nav class="site-nav">
 	<!-- Every button on the bar is a ring icon (ring-status.js), drawn into
-	     its .tdc-ring by nav.js: the menu, reload, the bell and the account. -->
+	     its .tdc-ring by nav.js: the menu and the account. Notifications and
+	     reload are in the menu since 29 Oct (UV), so the bar stays clear of
+	     the logo at any width. -->
 	<button class="nav-menu-toggle" id="nav-menu-toggle" aria-label="Open menu" aria-expanded="false">
 		<span class="tdc-ring nav-ring" id="nav-menu-ring"></span>
+		<!-- Something unread: the bell is in the menu, so the menu button
+		     carries its pip too, or nothing on the bar would say so. -->
+		<span class="nav-notify-pip" id="nav-menu-pip" hidden></span>
 	</button>
 
 	<a href="/" class="nav-logo">
 		<img src="/resources/branding/icon-primary.svg" alt="The Dive Club">
 	</a>
 
-	<!-- The right-hand group, pushed to the right edge: offline, reload, the
-	     bell, then the account. The logo is centred on the bar by itself. -->
+	<!-- The right-hand group, pushed to the right edge: offline, then the
+	     account. The logo is centred on the bar by itself. -->
 	<div class="nav-right">
 
 	<!-- Shown by nav.js whenever the device loses its connection. Every page
@@ -18,32 +23,6 @@
 	<span class="nav-offline" id="nav-offline" hidden role="status">
 		<span class="nav-offline-pip" aria-hidden="true"></span>Offline
 	</span>
-
-	<!-- Shown by nav.js only when the app is running installed, where there is
-	     no browser chrome and therefore no way to reload. -->
-	<button class="nav-reload" id="nav-reload" hidden aria-label="Reload" title="Reload">
-		<span class="tdc-ring nav-ring" id="nav-reload-ring"></span>
-	</button>
-
-	<!-- Notifications. Hidden until nav.js finds a signed-in player: there is
-	     nothing to show a stranger, and a bell that opens an empty tray is
-	     worse than no bell. The pip is the only thing that says "unread" —
-	     a count would mean reading the list on every page load. -->
-	<div class="nav-notify-wrap" id="nav-notify-wrap" hidden>
-		<button class="nav-notify" id="nav-notify" aria-label="Notifications" aria-expanded="false">
-			<span class="tdc-ring nav-ring" id="nav-notify-ring"></span>
-			<span class="nav-notify-pip" id="nav-notify-pip" hidden></span>
-		</button>
-
-		<div class="nav-notify-tray" id="nav-notify-tray" role="region" aria-label="Notifications">
-			<div class="nav-notify-head">
-				<span>Notifications</span>
-				<button type="button" class="nav-notify-clear-all" id="nav-notify-clear-all" hidden>Clear all</button>
-			</div>
-			<div class="nav-notify-list" id="nav-notify-list"></div>
-			<div class="nav-notify-empty" id="nav-notify-empty">Nothing yet.</div>
-		</div>
-	</div>
 
 	<div class="nav-profile-wrap">
 		<button class="nav-profile" id="nav-profile" aria-label="Account">
@@ -66,9 +45,37 @@
 </nav>
 
 <div class="nav-menu" id="nav-menu">
+	<!-- Notifications. Hidden until nav.js finds a signed-in player: there is
+	     nothing to show a stranger, and a bell that opens an empty list is
+	     worse than no bell. The pip is the only thing that says "unread" —
+	     a count would mean reading the list on every page load. The list
+	     unfolds under its row. -->
+	<div class="nav-notify-wrap" id="nav-notify-wrap" hidden>
+		<button type="button" class="nav-menu-row nav-notify" id="nav-notify" aria-expanded="false" aria-controls="nav-notify-tray">
+			<span class="nav-menu-icon">
+				<span class="tdc-ring nav-ring" id="nav-notify-ring"></span>
+				<span class="nav-notify-pip" id="nav-notify-pip" hidden></span>
+			</span>
+			<span>Notifications</span>
+		</button>
+
+		<div class="nav-notify-tray" id="nav-notify-tray" role="region" aria-label="Notifications">
+			<div class="nav-notify-list" id="nav-notify-list"></div>
+			<div class="nav-notify-empty" id="nav-notify-empty">Nothing yet.</div>
+			<button type="button" class="nav-notify-clear-all" id="nav-notify-clear-all" hidden>Clear all</button>
+		</div>
+	</div>
+
 	<ul>
 		{% for link in navLinks %}
 			<li><a href="{{ link.url }}">{{ link.label }}</a></li>
 		{% endfor %}
 	</ul>
-</div>
+
+	<!-- Shown by nav.js only when the app is running installed, where there is
+	     no browser chrome and therefore no way to reload. -->
+	<button type="button" class="nav-menu-row nav-reload" id="nav-reload" hidden>
+		<span class="nav-menu-icon"><span class="tdc-ring nav-ring" id="nav-reload-ring"></span></span>
+		<span>Reload</span>
+	</button>
+</div>

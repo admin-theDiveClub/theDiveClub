@@ -1,5 +1,6 @@
-// The loader (UV, 29 Oct, items 10 and 11): an opaque screen over every page
-// until it has fully loaded, its data included, not just the HTML. Loader A:
+// The loader (UV, 29 Oct, items 10 and 11): a screen over every page until it
+// has fully loaded, its data included, not just the HTML. Since UV's second
+// look (29 Oct) it is see-through with a strong blur, not opaque. Loader A:
 // the site's dots, big, in the middle of the screen, and the site icon exactly
 // where the nav bar's icon sits, so as the loader fades the real one is left
 // in the same spot. The screen itself is in layout.html, first in <body>, so
@@ -9,8 +10,11 @@
 //     how a page says "I am not ready until this settles". Every page's start
 //     (its async block at the end) is wrapped in it; TDCDots.track holds what
 //     it tracks, and league-nav.js the first tab's start and the tab bar.
-//     Returns the promise. Held after the page is shown, it does nothing. A
-//     start that throws is reported ("TDC (Error): …") and the page shown
+//     Returns the promise. **Held after the screen has gone, it brings the
+//     screen back** (UV, 29 Oct: the loader shows wherever a section is still
+//     loading), at once, until that is in: a league tab opened for the first
+//     time, whose start holds as the page's did. A start that throws is
+//     reported ("TDC (Error): …") and the page shown
 //   TDCLoader.leaving()
 //     the page is going elsewhere (TDC.requireSession sending a stranger to
 //     sign in): the loader stays up until the browser has gone, rather than
@@ -53,9 +57,11 @@ const TDCLoader = (() => {
 	let up = !!box, away = false;
 	let stage = 'the page';    // what it is waiting on, for the hang message
 	let shown = null;          // resolves when the screen starts to fade
+	let hideTimer = 0;         // hides the faded screen; stopped if it comes back
 
 	function hold(promise, label) {
-		if (!up) return promise;
+		if (!box) return promise;
+		if (!up) raise();
 		const h = { promise: Promise.resolve(promise), label: label || 'the page' };
 		holds.add(h);
 		h.promise.then(() => holds.delete(h), (err) => {
@@ -112,8 +118,23 @@ const TDCLoader = (() => {
 		shown();
 		// Hidden, not removed, once it has faded: the dots may still be racing
 		// its ring, and a target that leaves the page before they are done
-		// reads to them as a failure (dots.js, gone).
-		setTimeout(() => { box.hidden = true; }, fadeMs() + 50);
+		// reads to them as a failure (dots.js, gone). It also comes back.
+		clearTimeout(hideTimer);
+		hideTimer = setTimeout(() => { box.hidden = true; }, fadeMs() + 50);
+	}
+
+	// ─── The screen comes back (a section loading after the page is shown) ───
+	// At once, with no fade in: what is under it is not ready to be seen.
+	function raise() {
+		clearTimeout(hideTimer);
+		up = true;
+		box.hidden = false;
+		box.style.transition = 'none';
+		box.dataset.state = 'up';
+		box.setAttribute('aria-busy', 'true');
+		void box.offsetWidth;   // the opacity lands before the transition is back
+		box.style.transition = '';
+		cycle();
 	}
 	function fadeMs() {
 		const s = getComputedStyle(box).getPropertyValue('--loader-fade').trim();
@@ -138,7 +159,9 @@ const TDCLoader = (() => {
 		errTimer = setTimeout(() => { delete errBox.dataset.shown; }, ERROR_MS);
 	}
 
-	if (box) {
+	// One showing of the screen: from up until ready, then the fade. The page
+	// opening, and each time a hold brings it back.
+	function cycle() {
 		const gone = new Promise((r) => { shown = r; });
 		const hang = setTimeout(() => {
 			if (!up) return;
@@ -166,6 +189,8 @@ const TDCLoader = (() => {
 			TDCDots.serve(ring, gone, { trace: 'none', timeout: HANG + 1000 });
 		}, GRACE);
 	}
+
+	if (box) cycle();
 
 	return {
 		hold,

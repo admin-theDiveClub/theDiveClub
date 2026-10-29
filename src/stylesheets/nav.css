@@ -52,12 +52,11 @@
 }
 
 /* ── The bar's buttons: ring icons (UV, 24 Oct) ──────────────────────
- * Menu, reload, the bell and the account are each a round button holding a
- * ring (ring-status.js, drawn by nav.js) of --nav-ring-size, glowing on
- * hover like the fixtures page's icon buttons. */
+ * The menu and the account are each a round button holding a ring
+ * (ring-status.js, drawn by nav.js) of --nav-ring-size, glowing on hover
+ * like the fixtures page's icon buttons. The bell and reload are rows in the
+ * menu since 29 Oct (below). */
 .nav-menu-toggle,
-.nav-reload,
-.nav-notify,
 .nav-profile {
 	position: relative;
 	flex: 0 0 auto;
@@ -76,11 +75,6 @@
 }
 .nav-menu-toggle:hover,
 .nav-menu-toggle:focus-visible,
-.nav-reload:hover,
-.nav-reload:focus-visible,
-.nav-notify:hover,
-.nav-notify:focus-visible,
-.nav-notify[aria-expanded="true"],
 .nav-menu-toggle[aria-expanded="true"],
 .nav-profile:hover,
 .nav-profile:focus-visible { box-shadow: var(--glow-primary); outline: none; }
@@ -89,8 +83,10 @@
 /* Lighter lines than a control's: the icons are small, and the default
    weight closes the gaps in the menu's lines and fills the bell in. */
 .tdc-ring.nav-ring .mark { stroke-width: 7; }
-/* The live text each ring keeps for a screen reader. */
-.site-nav .sr {
+/* The live text each ring keeps for a screen reader (the menu's rings too:
+   the menu is not inside the bar). */
+.site-nav .sr,
+.nav-menu .sr {
 	position: absolute;
 	width: 1px;
 	height: 1px;
@@ -128,6 +124,10 @@
 	transform: translateX(-100%);
 	transition: transform 0.25s ease;
 	z-index: 99;
+	/* The notifications unfold inside it, so it scrolls when they are long. */
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+	padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .nav-menu.open {
 	transform: translateX(0);
@@ -137,14 +137,51 @@
 	margin: 0;
 	padding: 1rem 0;
 }
-.nav-menu a {
+/* The page links only: a notification in the menu is a link too. */
+.nav-menu ul a {
 	display: block;
 	padding: 0.75rem 1.5rem;
 	color: var(--text-primary);
 	text-decoration: none;
 }
-.nav-menu a:hover {
+.nav-menu ul a:hover {
 	background: var(--hover-wash);
+}
+/* With notifications above the links, the list's own top gap would double
+   the space under them. */
+.nav-notify-wrap:not([hidden]) + ul { padding-top: 0; }
+
+/* ── The menu's rows with an icon: notifications and reload (29 Oct) ──
+ * UV: in the menu, not on the bar. A row as wide as the menu, its ring icon
+ * at the left where a link's words start, the label beside it. */
+.nav-menu-row {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	width: 100%;
+	padding: 0.5rem 1.5rem 0.5rem calc(1.5rem - 0.2rem);
+	border: none;
+	background: none;
+	color: var(--text-primary);
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+}
+.nav-menu-row[hidden] { display: none; }
+.nav-menu-row:hover,
+.nav-menu-row:focus-visible,
+.nav-notify[aria-expanded="true"] { background: var(--hover-wash); outline: none; }
+.nav-menu-row:disabled { opacity: 0.4; cursor: default; }
+.nav-notify { margin-top: 1rem; }
+.nav-reload { margin-bottom: 1rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem; }
+/* The ring and its pip, so the pip sits on the ring rather than the row. */
+.nav-menu-icon {
+	position: relative;
+	flex: 0 0 auto;
+	display: inline-flex;
+	padding: 0.2rem;
+	line-height: 0;
 }
 
 body {
@@ -228,25 +265,17 @@ body {
 	flex: 0 0 auto;
 }
 
-/* Reload, for an installed app with no browser chrome to do it from.
-   Sits beside the offline pip and is hidden in a browser. */
-.nav-reload:disabled { opacity: 0.4; cursor: default; }
-
 /* ── Notifications ─────────────────────────────────────────────────
  *
- * A bell, a pip, and a tray. The tray borrows the profile dropdown's shape
- * deliberately: it sits in the same row and opens the same way, so there is
- * one dropdown idea on this bar rather than two that nearly match. */
+ * A bell, a pip, and a list, in the menu since 29 Oct (UV): the bell's row
+ * at the top, the list unfolding under it. The same pip sits on the menu
+ * button while the menu is shut. */
 
-.nav-notify-wrap {
-	position: relative;
-}
-
+.nav-notify-wrap[hidden] { display: none; }
 
 /* The pip. Deliberately not a count: a number would mean reading the whole
    list on every page load, when "something is waiting" is the entire
-   message. Positioned on the bell's ring rather than beside it so it survives the
-   bar getting tighter on a phone. */
+   message. On the ring's edge, on the bell and on the menu button. */
 .nav-notify-pip {
 	position: absolute;
 	top: 0.15rem;
@@ -260,70 +289,41 @@ body {
 	box-shadow: 0 0 0 2px var(--bg-base);
 }
 
-/* Fixed to the viewport, not hung off the bell.
- *
- * Right-aligned to the bell it overflowed the left edge of a phone: the bell
- * sits mid-bar, and a 22rem tray anchored to it starts off-screen. The nav is
- * itself position:fixed with a 1rem gutter, so matching that puts the tray
- * under the bar's right edge (below --nav-total, the notch included) and makes overflowing impossible at any width. */
+/* In the menu's flow under the bell's row, not floating: the menu scrolls
+ * when it is long. (On the bar it had to be fixed to the screen, since a
+ * 22rem tray hung off a mid-bar bell ran off a phone's left edge.) Indented
+ * to the links' words, a line down its left side to show it belongs to the
+ * row above. */
 .nav-notify-tray {
-	position: fixed;
-	top: var(--nav-total);
-	right: 1rem;
-	width: min(22rem, calc(100vw - 2rem));
-	max-height: min(26rem, 70vh);
-	background: var(--bg-surface);
-	backdrop-filter: blur(var(--surface-blur));
-	-webkit-backdrop-filter: blur(var(--surface-blur));
-	border: 1px solid var(--border-color);
-	border-radius: 8px;
 	display: none;
 	flex-direction: column;
-	overflow: hidden;
-	/* Above the bar (100) so it is never clipped by it, and above page
-	   content that might raise itself. */
-	z-index: 101;
+	margin: 0 1rem 0.5rem 1.5rem;
+	border-left: 1px solid var(--border-color);
 }
 
 .nav-notify-tray.open {
 	display: flex;
 }
 
-.nav-notify-head {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: var(--space-3);
-	padding: 0.6rem 0.75rem;
-	border-bottom: 1px solid var(--border-color);
-	font-size: 0.72rem;
-	font-weight: 700;
-	letter-spacing: 0.12em;
-	text-transform: uppercase;
-	color: var(--color-primary);
-}
-
 .nav-notify-clear-all {
+	align-self: flex-end;
+	margin: 0.25rem 0 0;
 	background: none;
 	border: none;
-	padding: 0;
+	padding: 0.4rem 0;
 	color: var(--text-muted);
 	font: inherit;
-	font-weight: 400;
-	letter-spacing: normal;
-	text-transform: none;
+	font-size: 0.82rem;
 	cursor: pointer;
 }
+.nav-notify-clear-all[hidden] { display: none; }
 
 .nav-notify-clear-all:hover,
 .nav-notify-clear-all:focus-visible {
 	color: var(--color-error);
 }
 
-.nav-notify-list {
-	overflow-y: auto;
-	-webkit-overflow-scrolling: touch;
-}
+.nav-notify-list:empty { display: none; }
 
 /* One notification. A grid rather than a flex line, for the same reason the
    bracket row is: the text must never be squeezed to nothing by the clear

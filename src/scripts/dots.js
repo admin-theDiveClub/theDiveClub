@@ -1168,6 +1168,20 @@ const TDCDots = (() => {
 	// page puts it back. Its call still reveals when it is back (restore). One
 	// whose result is already shown (racing, fading) has not failed: a page
 	// redrawing after a save replaces its elements all the time.
+	// Something loading with the page that is back while the loading screen is
+	// up (loader.js) is shown at once, not faded in: it is under the screen,
+	// whose fade is its fade, and it must be whole by the time the screen goes
+	// (UV, 29 Oct: the loader fades only once the page is populated). Faded,
+	// the fixtures planner was still coming in for a second after the screen
+	// had gone.
+	const covered = () => typeof TDCLoader !== 'undefined' && TDCLoader.up;
+	function underScreen(t) {
+		if (t.restored) return;
+		t.restored = true;
+		if (records.get(t.el) === t) records.delete(t.el);
+		if (!t.hung) reveal(t);
+		if (!t.gone) clearLook(t.el);
+	}
 	function gone(t) {
 		if (t.gone || t.restored) return;
 		t.gone = true;
@@ -1971,7 +1985,8 @@ const TDCDots = (() => {
 			if (--t.pending) return;
 			t.settled = true;
 			if (!present(t)) gone(t);
-			if (t !== cur) restore(t);   // abandoned: it comes back without the dots
+			if (t !== cur && t.load && covered()) underScreen(t);
+			else if (t !== cur) restore(t);   // abandoned: it comes back without the dots
 			else wake();
 		};
 		const timer = setTimeout(() => {
