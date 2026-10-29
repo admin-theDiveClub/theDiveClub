@@ -113,7 +113,8 @@
 			{ name: '--dots-dim',         label: 'Dim time',       kind: 'size', unit: 's',  min: 0,    max: 1,    step: 0.05,  use: 'How long a target takes to go faint when it is tapped' },
 			{ name: '--dots-reveal',      label: 'Fade time',      kind: 'size', unit: 's',  min: 0,    max: 1.5,  step: 0.05,  use: 'How long a target (a ring icon\'s ring) takes to fade in after the dots have traced it; the dots fade out only once it is in' },
 			{ name: '--dots-pulse',       label: 'Calm pulse',     kind: 'size', unit: 's',  min: 0.8,  max: 4,    step: 0.1,   use: 'Reduced motion: how long one breath of a tapped target takes while it waits (no dots fly then)' },
-			{ name: '--dots-pulse-peak',  label: 'Pulse peak',     kind: 'size', unit: '',   min: 0.2,  max: 1,    step: 0.05,  use: 'Reduced motion: how bright the waiting target (or a ring icon\'s ring) gets at the top of each breath' }
+			{ name: '--dots-pulse-peak',  label: 'Pulse peak',     kind: 'size', unit: '',   min: 0.2,  max: 1,    step: 0.05,  use: 'Reduced motion: how bright the waiting target (or a ring icon\'s ring) gets at the top of each breath' },
+			{ name: '--live-fade',        label: 'Live change',    kind: 'size', unit: 's',  min: 0,    max: 2,    step: 0.05,  use: 'Text a page re-read changed (a live score, a total): its old value fading out, then the new in (UV, 29 Oct)' }
 		]],
 		['States', [
 			{ name: '--color-success',    label: 'Success',        kind: 'colour', use: 'Success messages, Paid badge, staff tile glow' },

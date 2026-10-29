@@ -77,6 +77,11 @@
 	}
 
 	const matchId = new URLSearchParams(location.search).get('m');
+	// The scores that fade when a re-read changes them (TDC.liveFade).
+	els.sumHomeScore.dataset.live = 'sum|home';
+	els.sumAwayScore.dataset.live = 'sum|away';
+	els.sfHomeScore.dataset.live = 'sf|home';
+	els.sfAwayScore.dataset.live = 'sf|away';
 
 	// ─── State ───
 	let match = null;          // the row, plus the two team names
@@ -94,7 +99,9 @@
 	let changes = [];          // every change since the first signature
 	let edited = new Map();    // frame no -> { lag, win }: which switch changed since then
 	const unsaved = new Map(); // frame no -> { fields, saves, failed }: L and W chosen, not yet read back
-	const foldedSessions = new Set();   // session headings a reader has closed, kept across redraws
+	let drawnOnce = false;              // a re-read after the first draw fades what changed
+	const foldedSessions = new Set();
+	const clOpen = new Map();           // changelog group (side|time) -> open, as the reader left it   // session headings a reader has closed, kept across redraws
 	let working = null;       // the side being set up: mine, or the director's choice
 
 	// How every player's frames are shown: 'h2h' (the default, UV 28 Oct) or
@@ -329,7 +336,12 @@
 			}
 		}
 
+		// Text a re-read changed fades out and in (UV, 29 Oct); not on the
+		// first draw, which changes everything.
+		const snap = drawnOnce ? TDC.liveSnapshot(document) : null;
 		render();
+		TDC.liveFade(document, snap);
+		drawnOnce = true;
 		return true;
 	}
 
@@ -610,7 +622,9 @@
 		});
 		const won = (side) => frames.filter((f) => f.winner_side === side).length;
 		const title = node('summary', 'cs-title', heading);
-		title.append(node('span', 'cs-title-score', won('home') + ' : ' + won('away')));
+		const sesScore = node('span', 'cs-title-score', won('home') + ' : ' + won('away'));
+		sesScore.dataset.live = 'ses|' + heading;
+		title.append(sesScore);
 		block.append(title);
 
 		const grid = node('div', 'cs-grid');
@@ -624,8 +638,9 @@
 		const both = node('div', 'cs-tots');
 		for (const side of ['home', 'away']) {
 			const cell = node('span', 'cs-tot cs-' + side);
-			cell.append(node('span', 'cs-tot-label', 'Total'),
-				node('span', 'cs-tot-value', String(frames.filter((f) => f.winner_side === side).length)));
+			const value = node('span', 'cs-tot-value', String(frames.filter((f) => f.winner_side === side).length));
+			value.dataset.live = 'tot|' + heading + '|' + side;
+			cell.append(node('span', 'cs-tot-label', 'Total'), value);
 			both.append(cell);
 		}
 		total.append(both);
@@ -1000,14 +1015,29 @@
 	// A stored value as a person says it: a side as its team, a result as
 	// its words, a frame's status as played or not.
 	const STATUS_WORDS = { pending: 'Not played', complete: 'Played', abandoned: 'Abandoned' };
-	function valueText(v, key) {
-		if (v === 'home') return match.home_name;
-		if (v === 'away') return match.away_name;
+	// A side, in a winner or a lag, is its team and that frame's player
+	// (UV, 29 Oct): "Team 0 · Home Player 2".
+	function valueText(v, key, frameNo) {
+		if (v === 'home' || v === 'away') {
+			const f = card.find((x) => x.frame_no === frameNo);
+			const who = f && (v === 'home' ? f.home_player : f.away_player);
+			return teamName(v) + (who ? ' · ' + who : '');
+		}
 		if (v === '—') return key === 'winner_side' || key === 'break_side' ? 'Nobody' : '—';
 		return STATUS_WORDS[v]
 			|| (D.RESULT_EVENT && D.RESULT_EVENT[v])
 			|| (D.BREAK_OUTCOME && D.BREAK_OUTCOME[v])
 			|| v;
+	}
+
+	// A was or now cell: the team on its line, that frame's player under it,
+	// so neither breaks mid-name on a phone.
+	function teamAndPlayer(cls, text) {
+		const td = node('td', cls);
+		const at = text.indexOf(' · ');
+		if (at < 0) { td.textContent = text; return td; }
+		td.append(node('span', 'cl-team', text.slice(0, at)), node('span', 'cl-player', text.slice(at + 3)));
+		return td;
 	}
 
 	// One change as rows of the list's table (UV, 29 Oct: frame, what, was,
@@ -1020,7 +1050,7 @@
 			const key = Object.keys(FIELD).find((k) => part.startsWith(k + ' '));
 			if (!key) return { what: part, was: '', now: '' };
 			const [was, now] = part.slice(key.length + 1).split(' → ');
-			return { key, raw: [was, now], what: FIELD[key], was: valueText(was, key), now: valueText(now, key) };
+			return { key, raw: [was, now], what: FIELD[key], was: valueText(was, key, c.frame_no), now: valueText(now, key, c.frame_no) };
 		});
 		const winner = parts.some((p) => p.key === 'winner_side');
 		const plain = (p) => p.key === 'result_event' && p.raw.every((v) => v === 'win' || v === '—');
@@ -1088,13 +1118,19 @@
 		// with who made it (the league director said so) and when under them.
 		els.changedSince.hidden = !signatures.length;
 		els.changedCount.textContent = changes.length;
+		// Each group folds on its own (UV, 29 Oct): the newest open, the rest
+		// closed, each as the reader left it through every redraw.
 		const groups = signatures.map((g, i) => {
 			const from = new Date(g.at), to = i ? new Date(signatures[i - 1].at) : null;
 			const mine = changes.filter((c) => new Date(c.at) > from && (!to || new Date(c.at) <= to));
-			const box = node('div', 'cl-group');
-			const head = node('p', 'cl-head');
+			const box = node('details', 'cl-group set-group');
+			const key = g.side + '|' + g.at;
+			box.open = clOpen.has(key) ? clOpen.get(key) : i === 0;
+			box.addEventListener('toggle', () => clOpen.set(key, box.open));
+			const head = node('summary', 'cl-head');
 			head.append(node('strong', null, teamName(g.side) + ' signed'),
-				node('span', 'cl-by', g.by_name + signedAs(g) + ' · ' + when(g.at)));
+				node('span', 'cl-by', g.by_name + signedAs(g) + ' · ' + when(g.at)),
+				node('span', 'cl-count', mine.length === 1 ? '1 change' : mine.length + ' changes'));
 			box.append(head);
 			if (!mine.length) {
 				box.append(node('p', 'cl-none', i ? 'Nothing changed before the next signature.' : 'Nothing has changed since.'));
@@ -1109,9 +1145,9 @@
 			const body = node('tbody');
 			for (const c of mine) {
 				for (const [k, f] of fieldsOf(c).entries()) {
-					const tr = node('tr', 'cl-change');
-					tr.append(node('td', 'num', k ? '' : String(c.frame_no)), node('td', null, f.what),
-						node('td', 'cl-was', f.was), node('td', 'cl-now', f.now));
+					const tr = node('tr', 'cl-change' + (f.key === 'break_side' ? ' is-lag' : f.key === 'winner_side' ? ' is-win' : ''));
+					tr.append(node('td', 'num', k ? '' : String(c.frame_no)), node('td', 'cl-what', f.what),
+						teamAndPlayer('cl-was', f.was), teamAndPlayer('cl-now', f.now));
 					body.append(tr);
 				}
 				const who = node('tr', 'cl-who');
@@ -1305,6 +1341,40 @@
 		}));
 	});
 
+	// ─── Live (UV, 29 Oct) ───
+	// The other captain's changes and signatures arrive without a reload. A
+	// frame write moves the match's card_version and a signature is an event,
+	// and both tables are sent live (20261017130000), as the match page uses
+	// them. Realtime is for immediacy, not correctness: the card is read again
+	// whenever it is shown again or the connection returns, so a missed
+	// message does no harm. Never while this person's own saves are going out
+	// or a choice of theirs is still waiting (unsaved, above): tried again
+	// shortly. The echo of their own save cannot be told from the other
+	// captain's change, so it costs one more re-read.
+	let liveTimer = null;
+	function onLive() {
+		clearTimeout(liveTimer);
+		liveTimer = setTimeout(function again() {
+			if (cardWriter.pending || unsaved.size) { liveTimer = setTimeout(again, 1500); return; }
+			loadAll();
+		}, 500);
+	}
+	function startLive() {
+		supabaseClient.channel('card:' + matchId)
+			.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tbl_matches', filter: 'id=eq.' + matchId }, onLive)
+			.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tbl_match_events', filter: 'match_id=eq.' + matchId }, onLive)
+			.subscribe((status) => {
+				if (status === 'SUBSCRIBED') return;
+				// Not fatal: the card still works and is read again when shown,
+				// it just stops following the other captain until then.
+				if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+					console.error('[' + AREA + '] live updates are not running (' + status + ').');
+				}
+			});
+		document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') onLive(); });
+		window.addEventListener('online', onLive);
+	}
+
 	// ─── Start ───
 	(async () => {
 		const session = await TDC.requireSession(AREA);
@@ -1327,5 +1397,6 @@
 		if (error) TDC.showSupabaseError(AREA, error, els.status);
 
 		await loadAll();
+		startLive();
 	})();
 })();

@@ -1266,9 +1266,7 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 	background: var(--bg-surface);
 	text-align: center;
 }
-@media (min-width: 992px) {
-	.sign-form { width: calc(100% * 4 / 12); min-width: 24rem; }
-}
+/* As wide as the sessions (UV, 29 Oct; a third of the page on a PC before). */
 .tdc-card .sign-form h2 { margin-top: 0; }
 .tdc-card .sf-league {
 	margin: 0;
@@ -1309,9 +1307,23 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 .tdc-card .sf-note.is-disputed { color: var(--color-error); }
 /* The changelog (UV, 29 Oct): a group per signature, newest first, each
    change as rows of Frame · Change · Was · Now with who and when beneath. */
-.cl-group { margin: var(--space-4) 0; padding-top: var(--space-3); border-top: 1px solid var(--border-color); text-align: left; }
-.cl-group:first-child { border-top: none; padding-top: 0; }
-.tdc-card .cl-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0 var(--space-2); margin: 0 0 var(--space-2); }
+/* Each signature's set of changes folds on its own (UV, 29 Oct): a set-group
+   for the fold's motion, with the signature as its heading. */
+.cl-group.set-group { margin: 0; padding: var(--space-3) 0 0; text-align: left; }
+.cl-group.set-group:first-child { border-top: none; }
+.cl-group.set-group > summary.cl-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0 var(--space-2);
+	margin: 0 0 var(--space-2);
+	font-size: 1rem;
+	font-weight: inherit;
+	letter-spacing: normal;
+	text-transform: none;
+	color: var(--text-primary);
+}
+.cl-count { margin-left: auto; font-size: 0.75rem; color: var(--text-muted); }
 .cl-by { font-size: 0.75rem; color: var(--text-muted); }
 .tdc-card .cl-since,
 .tdc-card .cl-none { margin: 0 0 var(--space-2); font-size: 0.8rem; color: var(--text-muted); }
@@ -1322,6 +1334,13 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 .cl-table th:first-child { text-align: center; }
 .cl-was { color: var(--text-muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--text-muted) 60%, transparent); }
 .cl-now { color: var(--color-edited); }
+.cl-team, .cl-player { display: block; }
+.cl-player { font-size: 0.75rem; }
+/* The lag in its yellow and the winner in its green, as their switches. */
+.cl-change.is-lag .cl-what,
+.cl-change.is-lag .cl-now { color: var(--color-warning); }
+.cl-change.is-win .cl-what,
+.cl-change.is-win .cl-now { color: var(--color-primary); }
 .cl-who td { padding-bottom: var(--space-2); border-bottom: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent); font-size: 0.72rem; color: var(--text-muted); }
 .cl-who td::before { content: ''; display: inline-block; width: 3.2rem; }
 .cl-table tbody tr:last-child td { border-bottom: none; }

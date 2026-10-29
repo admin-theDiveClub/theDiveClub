@@ -921,6 +921,7 @@ These predate the log. They are recorded here because every one of them is a dec
 - **Signing approves the card as it stands**, your own changes and the other captain's. "The point of the blue is that it allows the user to track changes visually." So blue marks only what you have not put your name to: a captain sees changes since their side's latest signature. Anybody else (the league director, a captain who has not signed) sees what both sides have not yet agreed, from the older of the two signatures that no longer stand. A signature that stands means no blue.
 - **The opposition captain signing** a card nobody has changed since the first signature agrees, locks and completes it. This was already so (UV's note, confirmed).
 - **The changelog** (renamed from "Signatures and changes"): a group per signature, newest first, each holding the changes made after it. The top group is "still to be signed". Each change is rows of **Frame · Change · Was · Now**, with who (and "league director") and when on a line beneath. A status or a plain win that only follows the winner is left out; the lag is called Lag.
+*Then (UV, same day):* each signature's set of changes folds on its own, the newest open; Lag and Winner rows in their switches' yellow and green; Was and Now show the team and that frame's player; the signature section as wide as the other sections.
 *Rejected:* "Playing" for a re-opened night; a new match status (it would have unlocked the fixture and touched every page that reads status).
 
 ## 2026-10-29 — A league's pages are one page; the pill's items are tabs
@@ -930,4 +931,15 @@ These predate the log. They are recorded here because every one of them is a dec
 *Rejected:* fetching each page and swapping it in (every script would run again, with its listeners twice); starting every panel at load (four pages' reads, and refusals shown to players from tabs they never opened); one shared heading for every tab (each panel keeps its own, as it was).
 *Not yet:* a tab opened again is not read again, so a change made in one tab (a team renamed in Run it) shows in another (Fixtures) after a reload. That is UV's item 13 (data updated in place).
 *Touches:* `league-nav.js`, `leagues/season/index.html`, `_includes/league/*`, the four league scripts, the three old pages (now forwarders), `league-new.js`, `leagues.js`, `forms.css`, `docs/ui.md`, `docs/systems/file-map.md`
+
+## 2026-10-29 — Data arriving updates the page in place, and changed text fades out and in
+
+*Decided by:* UV (item 13); where and how, Claude
+*Found:* no page reloads itself when data arrives (the two `location.reload()` calls are the nav's Reload and the profile after linking a walk-in). What did happen: **the team card did not follow at all**, so a captain saw the other side's changes only by reloading; the live pages (fixtures, match, bracket) redraw everything with nothing to show what moved; and the league tabs (item 8) showed what they had when shown again.
+*So:*
+- **The card follows its match live**: a frame written (the match's `card_version` moves) or a signature (an event), both already sent live. It re-reads in place within half a second, and again whenever it is shown or back online. It waits while this person's saves are out or a choice is unsaved. The echo of their own save cannot be told apart, so it costs one more re-read.
+- **`TDC.liveSnapshot` / `TDC.liveFade`**: before a re-read is drawn, the text of every `[data-live]` element is noted; after, each one that changed fades out with its old value and in with its new (`--live-fade`, 0.5 s, on the sandbox). Not on a first draw; nothing under reduced motion. Marked so far: the card's scores, session totals and signature scores; the fixtures' scores.
+- **A league tab shown again is read again** (a panel's start returns `{ refresh }`). Season and Run it re-read; Fixtures as a live change would. **Settings is not**, so a half-made change is not thrown away.
+*Rejected:* telling the card's own echo apart by reading `card_version` on every re-read (one more call per re-read on a phone, to save one re-read per burst of taps).
+*Not yet:* fades on the match page and the bracket (they already update live; marking their text is the next step), the season page's numbers, and a switch moved by the other captain gliding rather than appearing in place.
 *Touches:* migration `20261029082020`, `league-card.js`, `league-fixtures.js`, `league-season.js`, `league.css`, `leagues/card/index.html`, test `037`

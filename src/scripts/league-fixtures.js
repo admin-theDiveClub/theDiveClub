@@ -307,7 +307,12 @@ TDCLeagueNav.panel('fixtures', () => {
 		});
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		fixtures = data || [];
+		// A score a re-read changed fades out and in (UV, 29 Oct); not on the
+		// first draw.
+		const snap = drawnOnce ? TDC.liveSnapshot(els.planner.closest('.league-panel') || document) : null;
 		renderFixtures();
+		TDC.liveFade(els.planner.closest('.league-panel') || document, snap);
+		drawnOnce = true;
 		watchLive();
 		return true;
 	}
@@ -324,6 +329,7 @@ TDCLeagueNav.panel('fixtures', () => {
 	let liveKey = '';
 	let liveSet = new Set();
 	let liveTimer = null;
+	let drawnOnce = false;   // a re-read after the first draw fades the scores that changed
 
 	const liveMatchIds = () => fixtures
 		.filter((f) => f.match_id && ['scheduled', 'in_progress', 'reopened'].includes(f.match_status))
@@ -662,6 +668,14 @@ TDCLeagueNav.panel('fixtures', () => {
 	const readDateTime = (id) => fromInput(joinDateTime(
 		el('move-' + id + '-date').value, el('move-' + id + '-hour').value, el('move-' + id + '-minute').value), 'Played on');
 
+	// A side's score in a fixture, marked so a live re-read that changes it
+	// fades it out and in (TDC.liveFade, UV 29 Oct).
+	function liveScore(f, side) {
+		const score = node('span', 'fx-score fx-score-' + side, String((side === 'home' ? f.home_frames : f.away_frames) || 0));
+		score.dataset.live = 'fx|' + f.fixture_id + '|' + side;
+		return score;
+	}
+
 	// ─── A fixture ───
 	// One table row (UV, 24 Oct): its state as a strip, home, its buttons
 	// (with the score either side once there is one), away, all centred. Under
@@ -803,7 +817,7 @@ TDCLeagueNav.panel('fixtures', () => {
 		const mid = node('td', 'fx-mid');
 		const line = node('div', 'fx-mid-line');
 		const scored = f.match_id && (f.home_frames || f.away_frames || signed(f));
-		if (scored) line.append(node('span', 'fx-score fx-score-home', String(f.home_frames || 0)));
+		if (scored) line.append(liveScore(f, 'home'));
 		const items = actions(f);
 		if (items.length) {
 			const box = node('div', 'fx-actions');
@@ -822,7 +836,7 @@ TDCLeagueNav.panel('fixtures', () => {
 			line.classList.add('fx-mid-busy');
 			line.append(node('span', 'fx-v fx-v-busy', ':'));
 		}
-		if (scored) line.append(node('span', 'fx-score fx-score-away', String(f.away_frames || 0)));
+		if (scored) line.append(liveScore(f, 'away'));
 		mid.append(line);
 
 		// Under the buttons: the time when it is not the night's.
@@ -1359,4 +1373,8 @@ TDCLeagueNav.panel('fixtures', () => {
 		}
 		await all;
 	})();
+
+	// Shown again as a tab (league-nav.js): read again in place, as a live
+	// change would be (waiting while the director's hands are on something).
+	return { refresh: () => onLive(null) };
 });

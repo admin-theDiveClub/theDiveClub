@@ -43,6 +43,7 @@ const TDCLeagueNav = (() => {
 
 	const starts = new Map();    // key -> the panel's start(), registered as its script loads
 	const started = new Set();
+	const refreshers = new Map(); // key -> what start() returned to read the tab again (29 Oct)
 	let current = null;
 	const DOTS_MIN = 200;        // ms, as every control (tdc-controls.js)
 
@@ -82,24 +83,35 @@ const TDCLeagueNav = (() => {
 			if (key === 'season') u.searchParams.delete('tab'); else u.searchParams.set('tab', key);
 			history.pushState({ tab: key }, '', u);
 		}
+		const was = current;
 		current = key;
 		for (const p of panels()) p.hidden = p !== target;
 		document.title = (target.dataset.title || 'League') + ' — The Dive Club';
 		mark(key);
 
 		let call = null;
-		if (!started.has(key)) {
+		const before = typeof TDCNet !== 'undefined' ? TDCNet.started : 0;
+		if (started.has(key)) {
+			// Shown again: read again in place (item 13), the changed text
+			// fading. Settings returns none, so a half-made change is kept.
+			const refresh = refreshers.get(key);
+			if (refresh && key !== was) {
+				try { refresh(); }
+				catch (err) { TDC.error(AREA, `the "${key}" tab could not be read again.`, err, target.querySelector('.status')); }
+			}
+		} else {
 			started.add(key);
 			const start = starts.get(key);
 			if (!start) {
 				TDC.error(AREA, `the "${key}" tab has no script.`, null, target.querySelector('.status'));
 			} else {
-				const before = typeof TDCNet !== 'undefined' ? TDCNet.started : 0;
-				try { start(); }
-				catch (err) { TDC.error(AREA, `the "${key}" tab could not start.`, err, target.querySelector('.status')); }
-				if (typeof TDCNet !== 'undefined' && TDCNet.started > before) call = TDCNet.quiet();
+				try {
+					const got = start();
+					if (got && typeof got.refresh === 'function') refreshers.set(key, got.refresh);
+				} catch (err) { TDC.error(AREA, `the "${key}" tab could not start.`, err, target.querySelector('.status')); }
 			}
 		}
+		if (typeof TDCNet !== 'undefined' && TDCNet.started > before) call = TDCNet.quiet();
 		// The dots trace the tab's pill while its first load runs (at least
 		// DOTS_MIN, so a tab already open still gets them, UV 28 Oct).
 		if (tab && typeof TDCDots !== 'undefined') {

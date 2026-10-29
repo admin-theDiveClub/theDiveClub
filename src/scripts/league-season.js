@@ -726,4 +726,7 @@ TDCLeagueNav.panel('season', () => {
 		if (!await loadInfo()) return;
 		await loadAll();
 	})();
+
+	// Shown again as a tab (league-nav.js): read again in place.
+	return { refresh: () => loadAll() };
 });

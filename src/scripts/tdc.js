@@ -274,6 +274,39 @@ const TDC = (() => {
 		return supabaseClient.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 	}
 
+	// ─── Text that changed, faded (UV, 29 Oct) ───
+	// A page that draws itself again with data it has re-read (a live update,
+	// a tab shown again) shows what moved: before drawing it takes
+	// liveSnapshot(root), the text of every [data-live] element by its key,
+	// and after drawing liveFade(root, snap) fades each one whose text changed
+	// out with its old value and in with its new, in --live-fade. For elements
+	// holding text alone; the first draw (no snapshot) fades nothing. With
+	// reduced motion the new text simply shows.
+	function liveSnapshot(root) {
+		const snap = new Map();
+		if (root) for (const el of root.querySelectorAll('[data-live]')) snap.set(el.dataset.live, el.textContent);
+		return snap;
+	}
+	function liveFade(root, snap) {
+		if (!root || !snap || !snap.size) return;
+		if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		const ms = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--live-fade')) || 0.5) * 1000;
+		for (const el of root.querySelectorAll('[data-live]')) {
+			const was = snap.get(el.dataset.live);
+			const now = el.textContent;
+			if (was === undefined || was === now || el.children.length) continue;
+			el.textContent = was;
+			const out = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms / 2, easing: 'ease-in' });
+			const swap = () => {
+				// Drawn again meanwhile: what the page put there stands.
+				if (el.textContent !== was) return;
+				el.textContent = now;
+				el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: ms / 2, easing: 'ease-out' });
+			};
+			out.finished.then(swap, swap);
+		}
+	}
+
 	return { error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer,
-		get writes() { return writes; }, writeSince, preparePicture, pictureUrl };
+		get writes() { return writes; }, writeSince, preparePicture, pictureUrl, liveSnapshot, liveFade };
 })();

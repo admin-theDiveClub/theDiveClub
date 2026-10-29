@@ -701,6 +701,8 @@ TDCLeagueNav.panel('manage', () => {
 
 	// ─── Reading everything ───
 	// Teams first: the player rows build their team menus from them.
+	let ready = false;   // set once tdc_may_run_league has said yes
+
 	async function loadAll() {
 		const results = [];
 		results.push(await loadSeason());
@@ -749,6 +751,7 @@ TDCLeagueNav.panel('manage', () => {
 		// The director's list carries payment and private notes, so a player
 		// would get an empty one — which would read as "nobody has been added".
 		// They are sent to the season page instead, which is for them.
+		ready = !!mayRun;
 		if (!mayRun) {
 			TDC.status(els.status, 'Taking you to the season — this page is for whoever is running it.', '');
 			location.replace('/leagues/season/?s=' + encodeURIComponent(seasonId));
@@ -760,4 +763,8 @@ TDCLeagueNav.panel('manage', () => {
 
 		els.search.focus();
 	})();
+
+	// Shown again as a tab (league-nav.js): read again in place, once the
+	// page knows this person may run it.
+	return { refresh: () => { if (ready) loadAll(); } };
 });
