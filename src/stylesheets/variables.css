@@ -99,12 +99,12 @@
   /* The dots (dots.css, scripts/dots.js): the loading and feedback motion */
   --dots-ring-margin: 16px;       /* a fake ring's gap round a square element (anything else: its shorter side, no gap) */
   --dots-fake-stroke: 1.5px;      /* the dots' size on a fake ring round an element with no border */
-  --dots-draw: 0.12s;             /* draw time: the dots tracing a result (a number a third more a digit) */
-  --dots-blend: 0.5s;             /* transition time: waiting into tracing, tracing into the race, and the dots fading out */
+  --dots-draw: 0.5s;            /* draw time: the dots tracing a result (a number a third more a digit) */
+  --dots-blend: 0.1s;            /* transition time: waiting into tracing, tracing into the race, and the dots fading out */
   --dots-busy-dim: 0.1;           /* how faint a target is while it waits */
   --dots-busy-fill: 0.45;         /* how faint a filled button or green pill is while it waits and is traced */
   --dots-dim: 0.2s;               /* a target dimming as it goes busy */
-  --dots-reveal: 0.25s;           /* fade time: the target (its ring) fading in after the trace; the dots fade only after */
+  --dots-reveal: 1s;          /* fade time: the target (its ring) fading in after the trace; the dots fade only after */
   --dots-pulse: 2s;               /* reduced motion: one breath of a tapped target while it waits */
   --dots-pulse-peak: 0.5;         /* reduced motion: how bright it gets at the top of each breath */
   /* The match page's score cards (match.css; docs/design/match-score-input.md) */

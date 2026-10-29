@@ -188,11 +188,11 @@ Measured 26 Oct at 420px (headless Chrome, 7 ms frames), every move forced in tu
 |---|---|---|
 | `--dots-ring-margin` | 16px | A fake ring's gap round a **square** element. Anything else takes its shorter side as the ring, with no gap (UV, 28 Oct: "always use the shorter dimension"); a 360 × 47 button's ring is 47px across |
 | `--dots-fake-stroke` | 1.5px | The dots' size on a fake ring with no border |
-| `--dots-draw` | 0.12s | **Draw time** (UV, 28 Oct: a time, where it was a speed on the prototype's time per kind): how long the dots trace a result, any kind; a number a third more for each digit after its first. 0.12 s is UV's 3× on the 0.35 s icon |
-| `--dots-blend` | 0.5s | **Transition time** (UV, 28 Oct): waiting into tracing, tracing into the race, the cruise into the race, a trace into a trip, and the dots fading out (evenly, from wherever they are) |
+| `--dots-draw` | 0.5s | **Draw time** (UV, 28 Oct: a time, where it was a speed on the prototype's time per kind): how long the dots trace a result, any kind; a number a third more for each digit after its first. UV set 0.5 s from the sandbox on 29 Oct (was 0.12 s) |
+| `--dots-blend` | 0.1s | **Transition time** (UV, 28 Oct): waiting into tracing, tracing into the race, the cruise into the race, a trace into a trip, and the dots fading out (evenly, from wherever they are) |
 | `--dots-busy-dim` | 0.1 | How faint a waiting target is |
 | `--dots-dim` | 0.2s | A target dimming as it goes busy |
-| `--dots-reveal` | 0.25s | **Fade time** (UV, 28 Oct): how long the target (a ring icon's ring) takes to fade in after the trace. The dots fade out only once it is fully in and every dot is racing; there is no longer a race of its own before they do (`RACE_HOLD` and `--dots-fade` went) |
+| `--dots-reveal` | 1s | **Fade time** (UV, 28 Oct): how long the target (a ring icon's ring) takes to fade in after the trace. The dots fade out only once it is fully in and every dot is racing; there is no longer a race of its own before they do (`RACE_HOLD` and `--dots-fade` went) |
 | `--dots-pulse` | 2s | Reduced motion: one breath of a tapped target while it waits |
 | `--dots-pulse-peak` | 0.5 | Reduced motion: how bright the target (or a ring icon's ring) gets at the top of each breath |
 

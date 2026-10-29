@@ -890,8 +890,8 @@ const TDCDots = (() => {
 		return {
 			margin: num('--dots-ring-margin', 6),
 			fakeStroke: num('--dots-fake-stroke', 1.5),
-			draw: Math.max(1, ms('--dots-draw', 120)),
-			blend: Math.max(1, ms('--dots-blend', 600)),
+			draw: Math.max(1, ms('--dots-draw', 500)),
+			blend: Math.max(1, ms('--dots-blend', 100)),
 			dim: ms('--dots-dim', 200)
 		};
 	}
