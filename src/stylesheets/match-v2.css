@@ -334,6 +334,12 @@
 	color: var(--text-primary);
 	text-shadow: var(--match-mark-shadow);
 }
+/* While the dots run on the ring its icon fades out altogether (UV, 30 Oct),
+   in the dots' dim time, and back in their reveal time as they race it. */
+.mv-light[data-dots="busy"] :is(.mv-frame, .mv-target),
+.mv-light[data-dots="busy"]::before { opacity: 0; transition: opacity var(--dots-dim) ease; }
+.mv-light[data-dots="revealing"] :is(.mv-frame, .mv-target),
+.mv-light[data-dots="revealing"]::before { transition: opacity var(--dots-reveal) ease; }
 .mv-frame { align-self: end; margin-bottom: calc(var(--mv-icon-text) * 0.7); }
 .mv-target { align-self: start; margin-top: calc(var(--mv-icon-text) * 0.7); }
 
