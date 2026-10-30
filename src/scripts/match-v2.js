@@ -824,7 +824,7 @@
 
 		svg.addEventListener('click', (e) => {
 			const q = e.target.closest('.mv-break-q, .mv-win-q');
-			if (!q) return;
+			if (!q || q.classList.contains('is-off')) return;   // disabled: nothing happens
 			if (q.classList.contains('mv-break-q')) breakTap(q);
 			else if (q.classList.contains('mv-more-q')) openMore();
 			else specialWin(q.dataset.value);
@@ -1024,6 +1024,9 @@
 		if (ev === 'win') return false;
 		if (!draft.break_outcome) return true;
 		if ((ev === 'break_and_finish' || ev === 'golden_break') && draft.break_outcome !== 'in') return true;
+		// A reverse B&F is the other player clearing after a break that potted
+		// nothing for the breaker, so not after "In" (UV, 30 Oct).
+		if (ev === 'reverse_break_and_finish' && draft.break_outcome === 'in') return true;
 		return false;
 	}
 
@@ -1043,8 +1046,8 @@
 	//   The break ring is setOutcome, offered while somebody is breaking.
 	//   Who breaks first is asked by the lag pop-up when nobody knows
 	//   (showBreakOverlay), as the old overlay did.
-	// A button that does nothing now is greyed (is-off) rather than hidden,
-	// so the stage keeps its shape; a tap on one says why.
+	// A button that cannot act now is disabled and greyed (is-off) rather
+	// than hidden, so the stage keeps its shape.
 	// ─────────────────────────────────────────────────────────────────
 
 	let whoDrawn = null;
@@ -1087,64 +1090,57 @@
 		els.morePause.textContent = timerRunning(matchTimer) ? 'Pause match' : 'Resume match';
 		els.morePause.disabled = matchOver();
 
-		// The lag question while nobody knows who breaks; gone again when the
-		// answer arrives from another phone.
-		const needsBreak = MATCH.rules.track_breaks && !draft.break_side && !matchOver();
-		if (overlayMode === 'break' && !needsBreak) { setOverlayMode(null); closeDialogs(); }
-		if (overlayMode === null && needsBreak) showBreakOverlay();
+		// The lag question while nobody knows who breaks (match.js's renderStage)
+		if (overlayMode === null && !panelOpen) {
+			const needsBreak = MATCH.rules.track_breaks && !draft.break_side && !matchOver();
+			if (needsBreak) showBreakOverlay();
+			else closeDialogs();
+		}
 	}
 
 	// Which sides a special win can go to on the frame in play
 	const winSides = (ev) => ['home', 'away'].filter((s) => resultsFor(s, draft.break_side).includes(ev));
 
-	// Why a greyed button does nothing, in the words of the rule in the way
-	function whyOff(ev) {
-		if (!canEdit) return noEditNote || 'Only the players and venue staff can score this match.';
-		if (matchOver()) return 'The match is over.';
-		if (!MATCH.rules.track_breaks) return 'Breaks are not recorded in this match. Turn them on in Match settings.';
-		if (!draft.break_side) return 'Say who breaks first.';
-		if (ev === 'break') return '';
-		if (!winSides(ev).length) return `${RESULT_EVENT[ev]} is not played in this match.`;
-		if (!draft.break_outcome) return `Tap the break first: a ${RESULT_EVENT[ev].toLowerCase()} is about the break.`;
-		if ((ev === 'break_and_finish' || ev === 'golden_break') && draft.break_outcome !== 'in') {
-			return `A ${RESULT_EVENT[ev].toLowerCase()} needs a ball potted on the break.`;
-		}
-		return '';
-	}
+	// Whether a button can act now: exactly match.js's rules for its
+	// controls, through its own functions. The break event: renderBreakRow
+	// showed it while breaks are tracked, somebody is breaking and the match
+	// is not over, disabled for a watcher. A special win: renderHalf offered
+	// it by resultsFor and disabled it by resultDisabled (and mbtn for a
+	// watcher), with none once the match is over.
+	const breakOn = () => canEdit && MATCH.rules.track_breaks && !!draft.break_side && !matchOver();
+	const winOn = (ev) => canEdit && !matchOver() && winSides(ev).length > 0 && !resultDisabled(ev);
 
 	// The break ring and the special wins, as the match stands. Called by
 	// renderStage, and by buildBreak when the phone turns and they are drawn
-	// again.
+	// again. A button that cannot act is disabled, as the old page's were:
+	// greyed, out of the tab order, and a tap on it does nothing (UV, 30 Oct).
 	function paintButtons() {
-		const breakOn = canEdit && MATCH.rules.track_breaks && !!draft.break_side && !matchOver();
-		for (const q of els.breakRing.querySelectorAll('.mv-break-q')) {
-			q.classList.toggle('is-off', !breakOn);
-			q.setAttribute('aria-disabled', String(!breakOn));
-		}
+		for (const q of els.breakRing.querySelectorAll('.mv-break-q')) setOff(q, !breakOn());
 		markChosen(els.breakRing, '.mv-break-q', draft.break_outcome);
 		for (const q of els.breakRing.querySelectorAll('.mv-win-q:not(.mv-more-q)')) {
-			const off = !!whyOff(q.dataset.value);
-			q.classList.toggle('is-off', off);
-			q.setAttribute('aria-disabled', String(off));
+			setOff(q, !winOn(q.dataset.value));
 			q.setAttribute('aria-checked', 'false');
 		}
 	}
+	function setOff(q, off) {
+		q.classList.toggle('is-off', off);
+		q.setAttribute('aria-disabled', String(off));
+		q.setAttribute('tabindex', off ? '-1' : '0');
+	}
 
-	// A break ring button: setOutcome, with the dots for a moment as for any
-	// control (UV, 28 Oct; on this page they run on the cream ring).
+	// A break ring button: setOutcome. No dots: nothing is sent to the
+	// network, and on this page the dots are the cream ring's, for network
+	// calls (UV, 30 Oct); a pretend 0.2 s wait blanked the ring for a second
+	// on every tap (UV: "glitching").
 	function breakTap(q) {
-		if (!MATCH) return;
-		if (q.classList.contains('is-off')) { TDC.status(els.status, whyOff('break'), ''); return; }
-		TDCDots.serve(q, new Promise((r) => setTimeout(r, 200)));
+		if (!MATCH || q.classList.contains('is-off')) return;
 		setOutcome(q.dataset.value);
 	}
 
 	// A special win: the frame to the side it can go to, or the page asks
 	// whose when the rules allow either (B&F without "needs the breaker").
 	function specialWin(ev) {
-		if (!MATCH) return;
-		const why = whyOff(ev);
-		if (why) { TDC.status(els.status, why, ''); return; }
+		if (!MATCH || !winOn(ev)) return;
 		const sides = winSides(ev);
 		if (sides.length === 1) { saveFrame(sides[0], ev); return; }
 		showWhoOverlay(ev, sides);
@@ -2010,15 +2006,16 @@
 	els.lag.addEventListener('cancel', (e) => e.preventDefault());
 
 	function showBreakOverlay() {
-		// A watcher waits for the players to answer it.
-		if (!canEdit) return;
 		setOverlayMode('break');
 		els.lagQ.textContent = MATCH.rules.break_determination === 'by_schedule'
 			? 'Who breaks this frame?'
 			: 'Who won the lag?';
 		els.lagHint.textContent = BREAK_DETERMINATION[MATCH.rules.break_determination] || '';
+		// A watcher sees the question with its buttons disabled, as the old
+		// overlay's were (mbtn, WRITE_ACTS).
 		for (const b of els.lag.querySelectorAll('[data-act="breakside"]')) {
 			b.textContent = MATCH.rules.break_determination === 'by_schedule' ? 'Breaks' : 'Won the lag';
+			b.disabled = !canEdit;
 		}
 		// A pop-up is drawn over everything, the loading screen included, so
 		// it waits for that to go.
@@ -2026,7 +2023,10 @@
 			setTimeout(() => { if (overlayMode === 'break') showBreakOverlay(); }, 100);
 			return;
 		}
-		if (!els.lag.open) els.lag.showModal();
+		// Modal for a player, who has to answer it. Not for a watcher, who
+		// cannot: the old overlay covered only the stage, and the page under
+		// it (the notice's refresh link among it) stayed in reach.
+		if (!els.lag.open) { if (canEdit) els.lag.showModal(); else els.lag.show(); }
 	}
 
 	// A button in the pop-ups' look (the stage buttons', match-v2.css .mv-act)
@@ -2332,19 +2332,25 @@
 
 	// Opened from the more pop-up (step 4; it was a button in the nav bar,
 	// which hides on this page). A pop-up is modal and would keep the panel
-	// behind it, so any is closed first; while the panel is open the page
-	// counts as busy and the lag question waits.
+	// behind it, so any is closed first. The panel itself is not "busy", as
+	// on the old page; a lag question it was opened from stays asked
+	// (overlayMode 'break') and its pop-up comes back when the panel closes.
+	let panelOpen = false;
 	const openPanel = () => {
+		panelOpen = true;
+		if (overlayMode === 'more') setOverlayMode(null);
 		closeDialogs();
-		setOverlayMode('settings');
-		renderPanel();
 		els.panel.hidden = false;
 		els.scrim.hidden = false;
 	};
 	const closePanel = () => {
 		els.panel.hidden = true;
 		els.scrim.hidden = true;
-		if (overlayMode === 'settings') closeOverlay();
+		if (!panelOpen) return;
+		panelOpen = false;
+		// Asked again only if still needed (breaks may have been turned off)
+		if (overlayMode === 'break') setOverlayMode(null);
+		renderStage();
 	};
 
 	function setCell(field, no, value, confirmed) {
@@ -2636,12 +2642,9 @@
 			case 'togglematchtimer':
 				if (timerRunning(matchTimer)) timerPause(matchTimer); else timerResume(matchTimer);
 				renderTimePanel();
-				// From the more pop-up's Pause match: it closes, and the stage
-				// says what happened (the timing panel is under it).
-				if (overlayMode === 'more') {
-					closeOverlay();
-					TDC.status(els.status, timerRunning(matchTimer) ? 'Match clock running.' : 'Match clock paused.', '');
-				}
+				// From the more pop-up's Pause match: it closes, as after any
+				// of its actions.
+				if (overlayMode === 'more') closeOverlay();
 				return;
 			case 'turn':
 				startTurn(side);
@@ -3801,12 +3804,9 @@
 	// Mid-frame is the wrong moment to redraw: a reload starts a fresh draft,
 	// which would throw away a break event somebody has already tapped. So the
 	// screen is left alone and the change is offered instead.
-	// (On this page the lag question is not "busy": nothing half-recorded is
-	// lost by reading the match again, and the answer may be what arrived.
-	// Held back, its refresh link would sit behind the modal pop-up.)
 	function busyScoring() {
 		if (!draft) return false;
-		return !!(draft.break_outcome || frameStartedAt !== null || (overlayMode && overlayMode !== 'break') || cellMenuOpen);
+		return !!(draft.break_outcome || frameStartedAt !== null || overlayMode || cellMenuOpen);
 	}
 
 	function onRemoteChange() {
@@ -3822,7 +3822,13 @@
 				showNotice('<strong>Someone else has scored this match.</strong> '
 					+ 'Finish what you are doing, then <button type="button" class="link-toggle" '
 					+ 'data-act="refreshnow">refresh</button> to see it.', '');
-				stageSay('Someone else has scored. Finish this frame, then refresh (below).', 'error');
+				// With the notice's refresh link beside it, as the old notice had
+				stageSay('Someone else has scored. Finish what you are doing, then ', 'error');
+				const link = document.createElement('button');
+				Object.assign(link, { type: 'button', className: 'link-toggle', textContent: 'refresh' });
+				link.dataset.act = 'refreshnow';
+				els.status.append(link, '.');
+				stageSaid = els.status.textContent;
 				return;
 			}
 			await refreshFromRemote();

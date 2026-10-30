@@ -63,11 +63,11 @@ extraScripts:
 	<div class="mv-stage" id="mv-stage">
 		<section class="mv-side" id="mv-p0" data-side="home" aria-label="Home player">
 			<div class="mv-who" id="mv-who-home"></div>
-			<div class="mv-score"><svg class="mv-score-svg"><g filter="url(#mv-score-fx)"><text class="mv-score-n" id="mv-score-home" x="50%" y="50%"></text></g></svg></div>
+			<div class="mv-score"><svg class="mv-score-svg"><g filter="url(#mv-score-fx)"><text class="mv-score-n" id="mv-score-home" data-live="score|home" x="50%" y="50%"></text></g></svg></div>
 		</section>
 		<section class="mv-side" id="mv-p1" data-side="away" aria-label="Away player">
 			<div class="mv-who" id="mv-who-away"></div>
-			<div class="mv-score"><svg class="mv-score-svg"><g filter="url(#mv-score-fx)"><text class="mv-score-n" id="mv-score-away" x="50%" y="50%"></text></g></svg></div>
+			<div class="mv-score"><svg class="mv-score-svg"><g filter="url(#mv-score-fx)"><text class="mv-score-n" id="mv-score-away" data-live="score|away" x="50%" y="50%"></text></g></svg></div>
 		</section>
 
 		{% comment %}The cream ring, the dots' ring, round its icon: the frame in play above, the win condition below.{% endcomment %}

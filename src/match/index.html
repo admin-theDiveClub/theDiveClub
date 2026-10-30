@@ -2,6 +2,7 @@
 layout: layout.html
 title: Match
 description: "Match scorecard: frame-by-frame scoring, timing, history and match settings."
+navAutoHide: true
 extraStyles:
   - /stylesheets/match.css
 extraScripts:
@@ -20,11 +21,14 @@ extraScripts:
 	There is one match page. Leagues, tournaments and social matches are not
 	different pages — they are the same page reading different settings.
 
-	Layout: the stage fills the screen below the nav and is the whole scoring
-	surface. The two players' cards sit side by side in both orientations,
-	home on the left (UV, 26 Oct; docs/design/match-score-input.md). Timing
-	and frame history are panels below the stage; settings are in the Match
-	panel from the nav bar.
+	Layout (UV, 30 Oct, the new match page's look put onto this page): the
+	stage is the whole screen (the nav hides until asked for, navAutoHide),
+	split between the two players, top and bottom upright, side by side
+	sideways, home first. The rings sit in the middle: the cream ring with the
+	frame and the win condition, the break event round it, the special wins
+	and the more button beside them. Below the stage, in order: the notice,
+	the undo slide, frame history, stats, timing and the scorecard. Match
+	settings open from the more pop-up.
 {% endcomment %}
 
 {% comment %}
@@ -59,23 +63,27 @@ extraScripts:
 
 <div class="match-page" id="match-page">
 
-	<section class="stage" id="stage">
+	<div class="mv-stage" id="mv-stage">
+		<section class="mv-side" id="mv-p0" data-side="home" aria-label="Home player">
+			<div class="mv-who" id="mv-who-home"></div>
+			<div class="mv-score"><svg class="mv-score-svg"><g filter="url(#mv-score-fx)"><text class="mv-score-n" id="mv-score-home" data-live="score|home" x="50%" y="50%"></text></g></svg></div>
+		</section>
+		<section class="mv-side" id="mv-p1" data-side="away" aria-label="Away player">
+			<div class="mv-who" id="mv-who-away"></div>
+			<div class="mv-score"><svg class="mv-score-svg"><g filter="url(#mv-score-fx)"><text class="mv-score-n" id="mv-score-away" data-live="score|away" x="50%" y="50%"></text></g></svg></div>
+		</section>
 
-		<!-- The frame in play and what the match is played to: a line across
-		     the top in portrait, a narrow column between the cards in landscape -->
-		<div class="stage-line">
-			<div class="mid-frame" id="mid-frame"></div>
-			<div class="mid-target" id="mid-target"></div>
+		{% comment %}The cream ring, the dots' ring, round its icon: the frame in play above, the win condition below.{% endcomment %}
+		<div class="mv-light" id="mv-light">
+			<span class="mv-frame" id="mv-frame" data-live="frame"></span>
+			<span class="mv-target" id="mv-target"></span>
 		</div>
 
-		<!-- The players' cards, home on the left in both orientations -->
-		<div class="pcard" id="half-home" data-side="home"></div>
-		<div class="pcard" id="half-away" data-side="away"></div>
+		{% comment %}The break event: a yellow ring round the cream one, four quadrants built by match.js from TDCMatchDef.BREAK_OUTCOME; the special wins and the more button beside it.{% endcomment %}
+		<div class="mv-break" id="mv-break"></div>
 
-		<!-- The break event, across both cards. It belongs to the breaker -->
-		<div class="stage-break" id="stage-break"></div>
-
-		<!-- Covers the cards when something has to be answered first -->
+		<!-- Covers the stage when something has to be answered first: the lag,
+		     the more pop-up, whose a special win is, submitting a finished card -->
 		<div class="stage-overlay" id="overlay" hidden>
 			<div class="overlay-card">
 				<p class="overlay-q" id="overlay-q"></p>
@@ -84,8 +92,12 @@ extraScripts:
 			</div>
 		</div>
 
-		<div class="stage-status" id="stage-status"></div>
-	</section>
+		{% comment %}Over the stage's foot: "Offline · n waiting" and "Someone else has scored" (stage-note, UV 30 Oct), then the page's messages (stage-status).{% endcomment %}
+		<div class="stage-foot">
+			<div class="stage-note" id="stage-note"></div>
+			<div class="stage-status" id="stage-status"></div>
+		</div>
+	</div>
 
 	<div class="below">
 
@@ -163,7 +175,7 @@ extraScripts:
 
 	</div>
 
-	<!-- Settings, opened from the nav bar -->
+	<!-- Match settings, opened from the more pop-up and the lag question -->
 	<div class="panel-scrim" id="panel-scrim" hidden></div>
 	<aside class="settings-panel" id="settings-panel" hidden aria-label="Match settings">
 		<div class="panel-head">

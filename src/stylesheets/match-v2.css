@@ -536,8 +536,12 @@
 	outline: none;
 }
 
-/* An error has to be seen whatever is on the stage: over its foot. */
-.mv-status {
+/* An error has to be seen whatever is on the stage: over its foot. By its
+   id: TDC.status rewrites the class to "status <kind>", and once the class
+   was gone the line fell into the stage's grid as a second row, squeezing
+   both halves (sideways, to half their height) and breaking the breaker's
+   outline against its glow mask (UV, 30 Oct: the glitch on the borders). */
+#mv-status {
 	position: absolute;
 	left: var(--space-3);
 	right: var(--space-3);
@@ -1230,8 +1234,8 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
 .mv-side[data-winnable] .mv-score:active { background: color-mix(in srgb, var(--color-primary) 10%, transparent); }
 .mv-score:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -4px; }
 
-/* A break or special-win button that does nothing now: greyed, no wash. A
-   tap still says why (match-v2.js, whyOff). */
+/* A break or special-win button that cannot act now: disabled, greyed, no
+   wash, and a tap does nothing (match-v2.js, paintButtons). */
 :is(.mv-break-q, .mv-win-q).is-off { opacity: 0.3; cursor: default; }
 :is(.mv-break-q, .mv-win-q).is-off:hover path { fill: transparent; }
 

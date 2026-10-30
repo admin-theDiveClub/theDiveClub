@@ -87,8 +87,11 @@
 
 	const el = (id) => document.getElementById(id);
 	const els = {
-		halfHome: el('half-home'), halfAway: el('half-away'),
-		midFrame: el('mid-frame'), midTarget: el('mid-target'), stageBreak: el('stage-break'),
+		stage: el('mv-stage'), p0: el('mv-p0'), p1: el('mv-p1'),
+		scoreHome: el('mv-score-home'), scoreAway: el('mv-score-away'),
+		whoHome: el('mv-who-home'), whoAway: el('mv-who-away'),
+		ring: el('mv-light'), frame: el('mv-frame'), target: el('mv-target'), breakRing: el('mv-break'),
+		stageNote: el('stage-note'),
 		overlay: el('overlay'), overlayQ: el('overlay-q'), overlayRow: el('overlay-row'), overlayHint: el('overlay-hint'),
 		stageStatus: el('stage-status'),
 		timeBody: el('time-body'),
@@ -435,24 +438,6 @@
 		return h;
 	}
 
-	// Initials stand in until there is a real picture.
-	function initialsOf(text) {
-		return text.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
-	}
-
-	function avatar(url, label, cls) {
-		if (url) {
-			const img = document.createElement('img');
-			img.className = 'avatar' + (cls ? ' ' + cls : '');
-			img.src = url;
-			img.alt = '';
-			return img;
-		}
-		const d = div('avatar placeholder' + (cls ? ' ' + cls : ''), initialsOf(label));
-		d.setAttribute('aria-hidden', 'true');
-		return d;
-	}
-
 	const liveVals = {};
 	function readout(label, value, opts = {}) {
 		const r = div('time-readout' + (opts.cls ? ' ' + opts.cls : ''));
@@ -499,138 +484,612 @@
 		if (ev === 'win') return false;
 		if (!draft.break_outcome) return true;
 		if ((ev === 'break_and_finish' || ev === 'golden_break') && draft.break_outcome !== 'in') return true;
+		// A reverse B&F is the other player clearing after a break that potted
+		// nothing for the breaker, so not after "In" (UV, 30 Oct).
+		if (ev === 'reverse_break_and_finish' && draft.break_outcome === 'in') return true;
 		return false;
 	}
 
-	// The yellow cue ball on the breaker's picture: the team card's lag icon
-	// (ring-status.js), drawn still and without its ring.
-	function breakBadge() {
-		const NS = 'http://www.w3.org/2000/svg';
-		const s = document.createElementNS(NS, 'svg');
-		s.setAttribute('viewBox', '15 15 70 70');
-		s.setAttribute('class', 'break-badge');
-		s.setAttribute('aria-hidden', 'true');
-		const ic = TDCRing.ICONS.cue;
-		ic.strokes.forEach((d, i) => {
-			const p = document.createElementNS(NS, 'path');
-			p.setAttribute('d', d);
-			p.style.strokeWidth = ic.widths[i];
-			s.append(p);
+	// ─────────────────────────────────────────────────────────────────
+	// The stage's drawing (UV, 30 Oct: the new match page's look, put onto
+	// this page so its behaviour stays this page's). Copied from match-v2.js
+	// as it was: the scores, each player's name and picture, the break ring,
+	// the special wins and the more button, their glow and inside shadow,
+	// the ring's icon and the breaker's half.
+	// ─────────────────────────────────────────────────────────────────
+
+	// A score, centred by its own ink (UV, 30 Oct: the space above and below
+	// was uneven): each digit of the display face stands a little differently
+	// (1.05 to 1.08 of its size tall, up to 0.03 below the baseline), so the
+	// score's actual digits are measured and moved down by half their height
+	// from the baseline (--mv-score-shift; match.css, .mv-score-n). Measured
+	// once the face has loaded; until then the average digit's 0.525.
+	const inkCanvas = document.createElement('canvas').getContext('2d');
+	function paintScore(node, n) {
+		const text = String(n);
+		node.textContent = text;
+		node.style.setProperty('--digits', text.length);
+		// Across too (UV, 30 Oct): centred by its ink, not by the space the face
+		// sets aside for each digit (text-anchor's middle), so measured from the
+		// middle of the text, the ink's left and right reaches; --mv-score-shift-x
+		// moves it by half their difference.
+		const centre = () => {
+			inkCanvas.font = '100px "Rushford Clean"';
+			inkCanvas.textAlign = 'center';
+			const m = inkCanvas.measureText(text);
+			if (!(m.actualBoundingBoxAscent > 0)) return;
+			node.style.setProperty('--mv-score-shift', ((m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 200).toFixed(4) + 'em');
+			node.style.setProperty('--mv-score-shift-x', ((m.actualBoundingBoxLeft - m.actualBoundingBoxRight) / 200).toFixed(4) + 'em');
+		};
+		// Always through load(), which is at once when the face is in: check()
+		// said yes before it was, and a fallback face's digits moved the score
+		// up 0.19 of its size.
+		document.fonts.load('100px "Rushford Clean"').then(centre, (err) => TDC.error(AREA, 'the score\'s face would not load, so it is centred by the average digit', err, els.stageStatus));
+	}
+
+	// The scores read as buttons (UV, 30 Oct): one filter both share,
+	// #mv-score-fx, on the unstretched group round each digit (match.css,
+	// .mv-score-n), laying over the digit the buttons' green inner glow
+	// (--match-glow-size, --match-win-glow-colour) and an inside shadow cast by
+	// the light, built as the halves' (--page-inset-size) but stronger (UV,
+	// 30 Oct: --match-score-inset-alpha, and --match-score-inset-reach times
+	// the light's offset). The scores' SVGs have no
+	// viewBox, so its units are px: a box-shadow's blur is twice the
+	// deviation, and the offset is the light's own, set again whenever
+	// page-light.js moves it.
+	function buildScoreFx() {
+		const svg = document.createElementNS(SVG_NS, 'svg');
+		svg.setAttribute('class', 'mv-fx-defs');
+		svg.setAttribute('aria-hidden', 'true');
+		svg.setAttribute('width', '0');
+		svg.setAttribute('height', '0');
+		const filter = document.createElementNS(SVG_NS, 'filter');
+		filter.id = 'mv-score-fx';
+		for (const [k, v] of Object.entries({ x: '-20%', y: '-20%', width: '140%', height: '140%' })) filter.setAttribute(k, v);
+		const prim = (name, attrs) => {
+			const e = document.createElementNS(SVG_NS, name);
+			for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+			filter.append(e);
+			return e;
+		};
+		prim('feFlood', { class: 'mv-glow-flood-win', result: 'green' });
+		prim('feComposite', { in: 'green', in2: 'SourceAlpha', operator: 'out', result: 'greenOut' });
+		const glowBlur = prim('feGaussianBlur', { in: 'greenOut', stdDeviation: '0', result: 'greenSoft' });
+		prim('feComposite', { in: 'greenSoft', in2: 'SourceAlpha', operator: 'in', result: 'glow' });
+		prim('feFlood', { class: 'mv-score-inset-flood', result: 'dark' });
+		prim('feComposite', { in: 'dark', in2: 'SourceAlpha', operator: 'out', result: 'darkOut' });
+		const move = prim('feOffset', { in: 'darkOut', dx: '0', dy: '0', result: 'darkMoved' });
+		const insetBlur = prim('feGaussianBlur', { in: 'darkMoved', stdDeviation: '0', result: 'darkSoft' });
+		prim('feComposite', { in: 'darkSoft', in2: 'SourceAlpha', operator: 'in', result: 'inset' });
+		// The outline, as a button's: a line --match-break-stroke wide centred
+		// on the digit's edge, the shape grown by half of it less the shape
+		// shrunk by half of it, in green. Made here, in the unstretched group,
+		// so it is even all round: a text stroke was stretched with the digit
+		// (non-scaling-stroke does not reach text), 3.75px on its flat edges.
+		const grow = prim('feMorphology', { in: 'SourceAlpha', operator: 'dilate', radius: '0', result: 'grown' });
+		const shrink = prim('feMorphology', { in: 'SourceAlpha', operator: 'erode', radius: '0', result: 'shrunk' });
+		prim('feComposite', { in: 'grown', in2: 'shrunk', operator: 'out', result: 'band' });
+		prim('feFlood', { class: 'mv-score-line-flood', result: 'lineColour' });
+		prim('feComposite', { in: 'lineColour', in2: 'band', operator: 'in', result: 'line' });
+		const merge = prim('feMerge', {});
+		// In the buttons' order: the fill, its glow, the line, the inside shadow over all
+		for (const input of ['SourceGraphic', 'glow', 'line', 'inset']) {
+			const node = document.createElementNS(SVG_NS, 'feMergeNode');
+			node.setAttribute('in', input);
+			merge.append(node);
+		}
+		svg.append(filter);
+		els.stage.append(svg);
+		const root = document.documentElement;
+		const place = () => {
+			const cs = getComputedStyle(root);
+			const glow = px('--match-glow-size'), soft = px('--page-inset-size');
+			if (!(glow >= 0) || !(soft >= 0)) { TDC.error(AREA, 'the scores\' glow or inside shadow has no size (--match-glow-size, --page-inset-size)', null, els.stageStatus); return; }
+			const line = px('--match-break-stroke');
+			if (line > 0) { grow.setAttribute('radius', (line / 2).toFixed(2)); shrink.setAttribute('radius', (line / 2).toFixed(2)); }
+			const reach = px('--match-score-inset-reach');
+			const k = reach > 0 ? reach : 1;
+			glowBlur.setAttribute('stdDeviation', (glow / 2).toFixed(2));
+			insetBlur.setAttribute('stdDeviation', (soft / 2).toFixed(2));
+			move.setAttribute('dx', ((parseFloat(cs.getPropertyValue('--page-shadow-x')) || 0) * k).toFixed(2));
+			move.setAttribute('dy', ((parseFloat(cs.getPropertyValue('--page-shadow-y')) || 0) * k).toFixed(2));
+		};
+		place();
+		new MutationObserver(place).observe(root, { attributes: true, attributeFilter: ['style'] });
+	}
+
+	// A player's name and picture (UV, 30 Oct): the picture on the left (or
+	// their initials in a circle, as on the season page), the display name on
+	// the right with the full name under it, unless the two are the same.
+	// p is a player as loadPlayers() keeps them (display_name, full_name,
+	// avatar_url).
+	function paintWho(node, p) {
+		const pic = div('mv-pic');
+		const url = p.avatar_url;
+		if (url) {
+			const img = document.createElement('img');
+			img.src = url;
+			img.alt = '';
+			pic.append(img);
+		} else {
+			pic.textContent = (p.display_name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+		}
+		const names = div('mv-names');
+		names.append(div('mv-name', p.display_name));
+		const full = p.full_name;
+		if (full !== p.display_name) names.append(div('mv-full', full));
+		const person = div('mv-person');
+		person.append(pic, names);
+		node.replaceChildren(person);
+	}
+
+	// ─── The break event (UV, 30 Oct) ─────────────────────────────────
+	// A yellow ring inside the cream one, split like an X into a button per
+	// break event (TDCMatchDef.BREAK_OUTCOME, so the names are defined once):
+	// In at the top, Dry at the bottom, Scratch left and Foul right. The
+	// chosen one is filled. As on /match/, nothing is chosen at first and a
+	// choice can be changed, never cleared. A tap is match.js's setOutcome
+	// (breakTap, step 2): it starts the frame and ends racking, and is saved
+	// with the frame. Drawn in a 100 box: each quadrant an annular sector, its
+	// straight edges BREAK_RING.gap from the X's lines on both sides, so the
+	// gap between two quadrants is even from the hole to the rim. The words
+	// run along the rim (UV, 30 Oct), so the quadrants can be a narrow band and
+	// the hole large. Dry's arc runs the other way round, so it reads upright;
+	// Scratch reads upwards and Foul downwards, their tops to the rim.
+	//
+	// Each word's capitals are centred in the band (UV, 30 Oct: the padding
+	// was uneven): the word stands on its baseline, which is CAP / 2 of its
+	// size off the band's middle, inwards where its top faces the rim and
+	// outwards for Dry, whose top faces the hole. CAP is a Rushford Clean
+	// capital's height for its size (1.05 with size-adjust, measured 30 Oct;
+	// none of these words reaches below the baseline). Centring the font's
+	// em box instead (dominant-baseline: central) left the capitals 0.15 of
+	// their size off the middle, outwards on three and inwards on Dry.
+	const SVG_NS = 'http://www.w3.org/2000/svg';
+	const BREAK_AT = { in: -90, foul: 0, dry: 90, scratch: 180 };   // each quadrant's middle, degrees clockwise from the right
+	const BREAK_RING = { outer: 48, inner: 35, gap: 2.5 };
+	const CAP = 1.05;
+
+	const DEG = 180 / Math.PI;
+	const at = (r, a) => [50 + r * Math.cos(a / DEG), 50 + r * Math.sin(a / DEG)].map((n) => n.toFixed(2)).join(' ');
+	const norm = (a) => ((a + 540) % 360) - 180;   // an angle in degrees, brought into -180 to 180
+
+	function sector(mid) {
+		const { outer, inner, gap } = BREAK_RING;
+		const oa = Math.asin(gap / outer) * DEG, ia = Math.asin(gap / inner) * DEG;
+		return `M ${at(outer, mid - 45 + oa)} A ${outer} ${outer} 0 0 1 ${at(outer, mid + 45 - oa)}`
+			+ ` L ${at(inner, mid + 45 - ia)} A ${inner} ${inner} 0 0 0 ${at(inner, mid - 45 + ia)} Z`;
+	}
+
+	// The arc a word stands on, centred on the angle mid and reaching half
+	// either side of it, its capitals centred on the circle of radius middle:
+	// clockwise (its top outwards), except in the lower half, where clockwise
+	// would point its top down and out (a special win at 150° read nearly
+	// upside down); exactly sideways (0°, 180°: Foul, Scratch) stays
+	// clockwise. size: the words' size in the box (--mv-word). The break
+	// words' middle is their band's.
+	function wordArc(mid, size, half = 40, middle = (BREAK_RING.outer + BREAK_RING.inner) / 2) {
+		const lift = CAP * size / 2;
+		if (mid > 0 && mid < 180) {
+			const r = middle + lift;
+			return `M ${at(r, mid + half)} A ${r} ${r} 0 0 0 ${at(r, mid - half)}`;
+		}
+		const r = middle - lift;
+		return `M ${at(r, mid - half)} A ${r} ${r} 0 0 1 ${at(r, mid + half)}`;
+	}
+
+	// ─── The special wins (UV, 30 Oct) ────────────────────────────────
+	// Four buttons in the break buttons' style, in green, two a slot either
+	// side of the ring upright and above and below it sideways: slot A Break
+	// & finish and Golden break, slot B Reverse B&F and the more button (UV
+	// chose four, two a slot; the fourth was a walkover until UV made it three
+	// dots opening the more pop-up, which holds the walkovers; the wins are
+	// named by TDCMatchDef.RESULT_SHORT). Each slot is a rounded rectangle split in two by the
+	// quadrants' gap, its inner edge a curve round the ring, as far from the
+	// ring's line as two quadrants' lines are apart (winR), rounded where it
+	// meets the straight edges; its words run along that curve, padded as the
+	// break words are. Slot A is the left one upright and the top one sideways;
+	// in a slot the first is the top one upright and the left one sideways.
+	// Drawn in the break ring's 100 box, reaching outside it, and drawn again
+	// when the phone turns. A tap records the frame (specialWin, step 2);
+	// which are offered follows the rules (paintButtons).
+	const WIN_SLOTS = [['break_and_finish', 'golden_break'], ['reverse_break_and_finish', 'more']];
+	const WIN = { depth: 40, corner: 4 };   // a slot's depth beyond its curve, and its corners' radius
+	const winR = () => BREAK_RING.outer + 2 * BREAK_RING.gap;
+	const landscape = matchMedia('(orientation: landscape)');
+
+	// A slot's button drawn to the left of the ring between the heights y1
+	// and y2, then turned rot degrees about the ring's centre (a rotation, so
+	// every arc's sweep holds). wordR: the radius its word is centred on.
+	function winButton(y1, y2, rot, wordR) {
+		const R = winR(), c = WIN.corner, xo = 50 - R - WIN.depth;
+		const turn = (x, y) => {
+			const a = rot / DEG, dx = x - 50, dy = y - 50;
+			return [50 + dx * Math.cos(a) - dy * Math.sin(a), 50 + dx * Math.sin(a) + dy * Math.cos(a)];
+		};
+		const p = (x, y) => turn(x, y).map((n) => n.toFixed(2)).join(' ');
+		// The rounded corner where a straight edge at y meets the curve: a circle
+		// of radius c touching the edge on the button's side (s: 1 below it, -1
+		// above) and the ring's curve from outside.
+		const fillet = (y, s) => {
+			const cy = y + s * c, cx = 50 - Math.sqrt((R + c) ** 2 - (cy - 50) ** 2), k = R / (R + c);
+			return { line: [cx, y], curve: [50 + (cx - 50) * k, 50 + (cy - 50) * k] };
+		};
+		const top = fillet(y1, 1), bottom = fillet(y2, -1);
+		const d = `M ${p(xo, y1 + c)} A ${c} ${c} 0 0 1 ${p(xo + c, y1)}`
+			+ ` L ${p(...top.line)} A ${c} ${c} 0 0 1 ${p(...top.curve)}`
+			+ ` A ${R} ${R} 0 0 0 ${p(...bottom.curve)}`
+			+ ` A ${c} ${c} 0 0 1 ${p(...bottom.line)}`
+			+ ` L ${p(xo + c, y2)} A ${c} ${c} 0 0 1 ${p(xo, y2 - c)} Z`;
+		// The word's arc spans the curve between the corners, at wordR
+		const angle = (y) => 180 - Math.asin(Math.max(-1, Math.min(1, (y - 50) / wordR))) * DEG;
+		const a1 = angle(y1 + c), a2 = angle(y2 - c);
+		return { d, mid: norm((a1 + a2) / 2 + rot), half: Math.abs(a1 - a2) / 2, wordR, centre: turn(50 - R, (y1 + y2) / 2) };
+	}
+
+	function winButtons(size) {
+		const wide = landscape.matches, h = BREAK_RING.outer, g = BREAK_RING.gap;
+		const cap = CAP * size, pad = (BREAK_RING.outer - BREAK_RING.inner - cap) / 2;
+		const wordR = winR() + pad + cap / 2;
+		const rots = wide ? [90, -90] : [0, 180];
+		const out = [];
+		WIN_SLOTS.forEach((values, i) => {
+			const pair = [winButton(50 - h, 50 - g, rots[i], wordR), winButton(50 + g, 50 + h, rots[i], wordR)];
+			pair.sort((a, b) => (wide ? a.centre[0] - b.centre[0] : a.centre[1] - b.centre[1]));
+			values.forEach((value, j) => out.push(Object.assign({ value }, pair[j])));
 		});
-		return s;
+		return out;
 	}
 
-	// Band 1: who is playing, the picture and the name. A team (which this
-	// page does not load yet) shows its lineup as a button under the name.
-	function renderHalfHeader(side) {
-		const head = div('pc-head');
-		const lineup = draft[side + '_players'];
-		const isTeam = MATCH[side].players.length > 1;
+	// The buttons' inside effects, each a layer of its own over or under them,
+	// built as the halves' inset box-shadows are: every path is a button
+	// filled, run through a filter that takes a colour from outside the shape,
+	// (moves it,) softens it and cuts it back to inside the shape. A
+	// box-shadow's blur is twice the Gaussian's deviation, and the box is 100
+	// units across whatever its size on screen, so px become units by the
+	// ring's size; set again when the ring resizes, and the shadow's offset
+	// whenever the light moves.
+	//   The glow (UV, 30 Oct: as the breaker's border glows), under the
+	//   buttons, so their shadow falls on their lines and words, not on it:
+	//   yellow in the break buttons, green in the special wins.
+	//   The shadow (UV, 30 Oct: inside the buttons as well as out, cast by the
+	//   light as everything else's): the halves' own inset shadow
+	//   (--page-inset-*, offset by --page-shadow-x / -y from page-light.js),
+	//   over the buttons, so it falls across a chosen one's fill and word.
+	//   Their outside shadow is the score digits', on the buttons' layer
+	//   (match.css, .mv-break-lines).
+	const px = (name) => parseFloat(getComputedStyle(els.stage).getPropertyValue(name));
 
-		const title = isTeam ? MATCH[side].name : (lineup.length ? player(lineup[0]).display_name : MATCH[side].name);
-
-		const pic = div('pc-pic');
-		pic.append(avatar(isTeam ? MATCH[side].crest_url : (lineup.length ? player(lineup[0]).avatar_url : null), title));
-		if (draft.break_side === side) pic.append(breakBadge());
-		head.append(pic);
-
-		const name = heading('h3', title, 'pc-name');
-		if (draft.break_side === side) {
-			const sr = document.createElement('span');
-			sr.className = 'sr';
-			sr.textContent = ', breaking';
-			name.append(sr);
+	function effectLayer(cls, filters) {
+		const svg = document.createElementNS(SVG_NS, 'svg');
+		svg.setAttribute('viewBox', '0 0 100 100');
+		svg.setAttribute('class', cls);
+		svg.setAttribute('aria-hidden', 'true');
+		const defs = document.createElementNS(SVG_NS, 'defs');
+		const parts = {};
+		for (const [id, steps] of Object.entries(filters)) {
+			const filter = document.createElementNS(SVG_NS, 'filter');
+			filter.id = id;
+			for (const [k, v] of Object.entries({ x: '-50%', y: '-50%', width: '200%', height: '200%' })) filter.setAttribute(k, v);
+			parts[id] = steps((name, attrs) => {
+				const e = document.createElementNS(SVG_NS, name);
+				for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+				filter.append(e);
+				return e;
+			});
+			defs.append(filter);
 		}
-		head.append(name);
-
-		if (isTeam) {
-			const subEl = document.createElement('button');
-			subEl.type = 'button';
-			subEl.className = 'pc-sub';
-			subEl.textContent = lineup.length ? names(lineup) : 'Choose players';
-			subEl.dataset.act = 'pick';
-			subEl.dataset.side = side;
-			head.append(subEl);
-		}
-		return head;
+		const shapes = document.createElementNS(SVG_NS, 'g');
+		svg.append(defs, shapes);
+		// list: [{ d, filter }], the filter by id
+		const paint = (list) => shapes.replaceChildren(...list.map(({ d, filter }) => {
+			const path = document.createElementNS(SVG_NS, 'path');
+			path.setAttribute('d', d);
+			path.setAttribute('filter', `url(#${filter})`);
+			return path;
+		}));
+		return { svg, parts, paint };
 	}
 
-	function renderHalf(side) {
-		const host = side === 'home' ? els.halfHome : els.halfAway;
-		host.replaceChildren();
-		host.classList.toggle('breaking', draft.break_side === side);
-		host.classList.toggle('leading', framesWon(side) > framesWon(otherSide(side)));
-
-		// The whole card, footer aside, is the button for a plain win (UV,
-		// 26 Oct): the header and the score both say "this player won it".
-		// The score is the real <button>, for the keyboard and for a screen
-		// reader; the header carries the same action for a thumb.
-		const name = MATCH[side].name;
-		const winnable = !matchOver() && canEdit && !resultDisabled('win');
-		host.classList.toggle('winnable', winnable);
-
-		const head = renderHalfHeader(side);
-		if (winnable) Object.assign(head.dataset, { act: 'result', side, value: 'win' });
-		host.append(head);
-
-		// Band 2: the score. The stylesheet sizes it by how many digits it has,
-		// so 10 and over still fit the card's width.
-		const won = framesWon(side);
-		const mid = document.createElement('button');
-		mid.type = 'button';
-		mid.className = 'pc-mid';
-		mid.disabled = !winnable;
-		mid.setAttribute('aria-label', `${name}: ${won}. Tap to give ${name} this frame`);
-		Object.assign(mid.dataset, { act: 'result', side, value: 'win' });
-		mid.style.setProperty('--digits', String(won).length);
-		const score = div('pc-score', won);
-		score.dataset.live = 'score|' + side;   // fades when another phone moves it (refreshFromRemote)
-		mid.append(score);
-		host.append(mid);
-
-		// Band 3: the special wins as rings, and ⋯ for the rest (won by
-		// default, abandon, the table). The plain win is the card itself.
-		const foot = div('pc-foot');
-
-		if (matchOver()) {
-			foot.append(div('pc-foot-label', matchWinner() === side ? 'Match won' : ''));
-			host.append(foot);
-			return;
-		}
-
-		for (const ev of resultsFor(side, draft.break_side)) {
-			if (ev === 'win') continue;
-			const b = mbtn(RESULT_SHORT[ev] || RESULT_EVENT[ev], 'pc-ring', { act: 'result', side, value: ev }, resultDisabled(ev));
-			b.setAttribute('aria-label', `${RESULT_EVENT[ev]} for ${name}`);
-			b.title = RESULT_EVENT[ev];
-			foot.append(b);
-		}
-		const more = mbtn('⋯', 'pc-ring more', { act: 'more', side });
-		more.setAttribute('aria-label', `More for ${name}`);
-		foot.append(more);
-
-		host.append(foot);
+	function buildGlow() {
+		const glow = (flood) => (prim) => {
+			prim('feFlood', { class: flood, result: 'colour' });
+			prim('feComposite', { in: 'colour', in2: 'SourceAlpha', operator: 'out', result: 'outside' });
+			const blur = prim('feGaussianBlur', { in: 'outside', stdDeviation: '0', result: 'soft' });
+			prim('feComposite', { in: 'soft', in2: 'SourceAlpha', operator: 'in' });
+			return { blur };
+		};
+		const layer = effectLayer('mv-break-glow', { 'mv-glow-break': glow('mv-glow-flood'), 'mv-glow-win': glow('mv-glow-flood-win') });
+		const size = () => {
+			const box = layer.svg.getBoundingClientRect().width, glowPx = px('--match-glow-size');
+			if (!(box > 0)) return;
+			if (!(glowPx >= 0)) { TDC.error(AREA, 'the buttons\' glow has no size (--match-glow-size)', null, els.stageStatus); return; }
+			for (const part of Object.values(layer.parts)) part.blur.setAttribute('stdDeviation', (glowPx / 2 / (box / 100)).toFixed(3));
+		};
+		new ResizeObserver(size).observe(layer.svg);
+		return layer;
 	}
 
-	// The break event, across both cards: what happened on the breaker's
-	// break, as the site's dropdown pill in the lag colour. Shown only while
-	// somebody is breaking. It starts with nothing chosen; choosing one
-	// starts the frame and ends racking.
-	function renderBreakRow() {
-		const row = els.stageBreak;
-		row.replaceChildren();
-		if (!MATCH.rules.track_breaks || !draft.break_side || matchOver()) return;
+	function buildInset() {
+		const layer = effectLayer('mv-break-inset', { 'mv-inset': (prim) => {
+			prim('feFlood', { class: 'mv-inset-flood', result: 'colour' });
+			prim('feComposite', { in: 'colour', in2: 'SourceAlpha', operator: 'out', result: 'outside' });
+			const move = prim('feOffset', { in: 'outside', dx: '0', dy: '0', result: 'moved' });
+			const blur = prim('feGaussianBlur', { in: 'moved', stdDeviation: '0', result: 'soft' });
+			prim('feComposite', { in: 'soft', in2: 'SourceAlpha', operator: 'in' });
+			return { move, blur };
+		} });
+		const { move, blur } = layer.parts['mv-inset'];
+		const root = document.documentElement;
+		const place = () => {
+			const box = layer.svg.getBoundingClientRect().width;
+			if (!(box > 0)) return;
+			const k = 100 / box, cs = getComputedStyle(root);
+			const dx = parseFloat(cs.getPropertyValue('--page-shadow-x')) || 0;
+			const dy = parseFloat(cs.getPropertyValue('--page-shadow-y')) || 0;
+			const soft = px('--page-inset-size');
+			if (!(soft >= 0)) { TDC.error(AREA, 'the buttons\' inside shadow has no size (--page-inset-size)', null, els.stageStatus); return; }
+			move.setAttribute('dx', (dx * k).toFixed(3));
+			move.setAttribute('dy', (dy * k).toFixed(3));
+			blur.setAttribute('stdDeviation', (soft / 2 * k).toFixed(3));
+		};
+		new ResizeObserver(place).observe(layer.svg);
+		// page-light.js writes the light's place on <html>'s style, at most 15
+		// times a second
+		new MutationObserver(place).observe(root, { attributes: true, attributeFilter: ['style'] });
+		return layer;
+	}
 
-		const sel = document.createElement('select');
-		sel.id = 'break-event';
-		sel.dataset.control = 'select';
-		sel.dataset.tone = 'warning';
-		sel.dataset.icon = 'cue';   // the break's cue ball on the chosen one (UV, 28 Oct)
-		sel.setAttribute('aria-label', `${MATCH[draft.break_side].name}'s break`);
-		for (const [value, label] of Object.entries(BREAK_OUTCOME)) sel.append(new Option(label, value));
-		sel.selectedIndex = draft.break_outcome ? Object.keys(BREAK_OUTCOME).indexOf(draft.break_outcome) : -1;
-		sel.disabled = !canEdit;
-		row.append(sel);
+	// A button: its outline and its word on an arc, as a radio
+	function choice(cls, value, label, d, arcId, arcD, defs) {
+		const g = document.createElementNS(SVG_NS, 'g');
+		g.classList.add(cls);
+		g.dataset.value = value;
+		g.setAttribute('role', 'radio');
+		g.setAttribute('aria-checked', 'false');
+		g.setAttribute('aria-label', label);
+		g.setAttribute('tabindex', '0');
+		const path = document.createElementNS(SVG_NS, 'path');
+		path.setAttribute('d', d);
+		const arc = document.createElementNS(SVG_NS, 'path');
+		arc.id = arcId;
+		arc.setAttribute('d', arcD);
+		defs.append(arc);
+		const text = document.createElementNS(SVG_NS, 'text');
+		text.setAttribute('aria-hidden', 'true');
+		const onArc = document.createElementNS(SVG_NS, 'textPath');
+		onArc.setAttribute('href', '#' + arcId);
+		onArc.setAttribute('startOffset', '50%');
+		onArc.textContent = label;
+		text.append(onArc);
+		g.append(path, text);
+		return g;
+	}
+
+	function buildBreak() {
+		const svg = document.createElementNS(SVG_NS, 'svg');
+		svg.setAttribute('viewBox', '0 0 100 100');
+		svg.setAttribute('class', 'mv-break-lines');
+		const defs = document.createElementNS(SVG_NS, 'defs');
+		const ring = document.createElementNS(SVG_NS, 'g');
+		ring.setAttribute('role', 'radiogroup');
+		ring.setAttribute('aria-label', 'Break event');
+		const wins = document.createElementNS(SVG_NS, 'g');
+		wins.setAttribute('role', 'radiogroup');
+		wins.setAttribute('aria-label', 'Special wins');
+		svg.append(defs, ring, wins);
+		const size = px('--mv-word');
+		if (!(size > 0)) TDC.error(AREA, 'the button words have no size (--mv-word in match.css), so they cannot be placed', null, els.stageStatus);
+		const word = size > 0 ? size : 0;
+		for (const [value, label] of Object.entries(TDCMatchDef.BREAK_OUTCOME)) {
+			if (!(value in BREAK_AT)) {
+				TDC.error(AREA, `the break ring has no place for "${value}"`, null, els.stageStatus);
+				continue;
+			}
+			ring.append(choice('mv-break-q', value, label, sector(BREAK_AT[value]), 'mv-break-arc-' + value, wordArc(BREAK_AT[value], word), defs));
+		}
+		const glow = buildGlow(), inset = buildInset();
+		let buttons = [];
+
+		// The breaker's glow stops at the buttons themselves (UV, 30 Oct: a
+		// rectangle round the group cut it with hard edges beside the special
+		// wins' rounded corners): each half gets a mask (--mv-glow-mask, used by
+		// match.css, .mv-side[data-breaking]::before), an SVG the half's size
+		// that hides the glow inside the special wins and the break ring, each
+		// grown by half a line so no glow lies under an outline, and shows it
+		// everywhere else, the gaps between them included. Drawn from the same
+		// shapes as the buttons, in the ring's box placed where it sits on the
+		// half, again whenever the stage resizes or the phone turns.
+		const glowMasks = () => {
+			const br = els.breakRing.getBoundingClientRect();
+			const line = px('--match-break-stroke');
+			if (!(br.width > 0) || !buttons.length) return;
+			const u = br.width / 100;
+			const holes = buttons.map((b) => `<path d="${b.d}"/>`).join('') + `<circle cx="50" cy="50" r="${BREAK_RING.outer}"/>`;
+			for (const side of [els.p0, els.p1]) {
+				const sr = side.getBoundingClientRect();
+				const w = sr.width.toFixed(2), h = sr.height.toFixed(2);
+				const mask = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`
+					+ `<mask id="m"><rect width="100%" height="100%" fill="#fff"/>`
+					+ `<g transform="translate(${(br.left - sr.left).toFixed(2)} ${(br.top - sr.top).toFixed(2)}) scale(${u.toFixed(4)})" fill="#000" stroke="#000" stroke-width="${(line / u).toFixed(3)}">${holes}</g></mask>`
+					+ `<rect width="100%" height="100%" mask="url(#m)"/></svg>`;
+				side.style.setProperty('--mv-glow-mask', `url("data:image/svg+xml,${encodeURIComponent(mask)}")`);
+			}
+		};
+		new ResizeObserver(glowMasks).observe(els.stage);
+
+		// The special wins and both effect layers, drawn for how the phone is held
+		const paintWins = () => {
+			buttons = winButtons(word);
+			const winDefs = document.createElementNS(SVG_NS, 'defs');
+			wins.replaceChildren(winDefs, ...buttons.map((b) => {
+				if (b.value === 'more') return moreButton(b, word);
+				const label = TDCMatchDef.RESULT_SHORT[b.value];
+				if (!label) TDC.error(AREA, `no short name for the special win "${b.value}"`, null, els.stageStatus);
+				const g = choice('mv-win-q', b.value, label || b.value, b.d, 'mv-win-arc-' + b.value, wordArc(b.mid, word, b.half, b.wordR), winDefs);
+				g.setAttribute('aria-label', TDCMatchDef.RESULT_EVENT[b.value] || label);
+				return g;
+			}));
+			if (MATCH && draft) paintButtons();   // offered and greyed as the match stands
+			const shapes = [
+				...Object.keys(BREAK_AT).map((v) => ({ d: sector(BREAK_AT[v]), kind: 'break' })),
+				...buttons.map((b) => ({ d: b.d, kind: 'win' }))
+			];
+			glow.paint(shapes.map((s) => ({ d: s.d, filter: s.kind === 'break' ? 'mv-glow-break' : 'mv-glow-win' })));
+			inset.paint(shapes.map((s) => ({ d: s.d, filter: 'mv-inset' })));
+			requestAnimationFrame(glowMasks);   // once the turned layout is in
+		};
+		paintWins();
+		landscape.addEventListener('change', paintWins);
+
+		svg.addEventListener('click', (e) => {
+			const q = e.target.closest('.mv-break-q, .mv-win-q');
+			if (!q || q.classList.contains('is-off')) return;   // disabled: nothing happens
+			if (q.classList.contains('mv-break-q')) breakTap(q);
+			else if (q.classList.contains('mv-more-q')) showMore();
+			else specialWin(q.dataset.value);
+		});
+		svg.addEventListener('keydown', (e) => {
+			const q = e.target.closest('.mv-break-q, .mv-win-q');
+			if (!q || (e.key !== 'Enter' && e.key !== ' ')) return;
+			e.preventDefault();
+			q.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+		});
+		els.breakRing.append(glow.svg, svg, inset.svg);
+		// For the cream ring that sits in the hole (match.css, .mv-light): the
+		// hole's share of the ring's box, and how far apart two quadrants'
+		// edges are, as a share of it
+		els.stage.style.setProperty('--mv-break-hole', String(BREAK_RING.inner * 2 / 100));
+		els.stage.style.setProperty('--mv-break-gap', String(BREAK_RING.gap * 2 / 100));
+		// for the breaker's outline and glow, which stop at the buttons
+		els.stage.style.setProperty('--mv-break-rim', String(BREAK_RING.outer * 2 / 100));
+		// and the whole group's length along the split, the special wins'
+		// outside edges apart, as a share of the ring's box: the ring is sized
+		// so the group fits (match.css, --mv-centre)
+		els.stage.style.setProperty('--mv-cluster', String(2 * (winR() + WIN.depth) / 100));
+	}
+
+	// The more button: a special win's shape, three dots along its curve in
+	// place of a word (the display face has no ellipsis), a button that opens
+	// the more pop-up rather than a choice.
+	function moreButton(b, size) {
+		const g = document.createElementNS(SVG_NS, 'g');
+		g.classList.add('mv-win-q', 'mv-more-q');
+		g.dataset.value = 'more';
+		g.setAttribute('role', 'button');
+		g.setAttribute('aria-label', 'More: walkovers, abandon the frame, pause the match');
+		g.setAttribute('aria-haspopup', 'dialog');
+		g.setAttribute('tabindex', '0');
+		const path = document.createElementNS(SVG_NS, 'path');
+		path.setAttribute('d', b.d);
+		g.append(path);
+		const cap = CAP * size, step = (cap * 0.75 / b.wordR) * DEG;
+		for (const k of [-1, 0, 1]) {
+			const a = (b.mid + k * step) / DEG;
+			const dot = document.createElementNS(SVG_NS, 'circle');
+			dot.setAttribute('class', 'mv-more-dot');
+			dot.setAttribute('cx', (50 + b.wordR * Math.cos(a)).toFixed(2));
+			dot.setAttribute('cy', (50 + b.wordR * Math.sin(a)).toFixed(2));
+			dot.setAttribute('r', (cap * 0.16).toFixed(2));
+			g.append(dot);
+		}
+		return g;
+	}
+
+	function markChosen(root, sel, value) {
+		for (const g of root.querySelectorAll(sel)) {
+			const on = g.dataset.value === value;
+			g.classList.toggle('is-on', on);
+			g.setAttribute('aria-checked', String(on));
+		}
+	}
+
+	buildBreak();
+	buildScoreFx();
+
+	// ─── The ring's icon (UV, 30 Oct) ─────────────────────────────────
+	// Inside the cream ring, the old page's frame line in two parts: above,
+	// the frame in play and the most frames the match can take where there
+	// is a most (race to 5: 9, as 5 + 4 decides it; best of n and n fixed
+	// frames: n; timed and free play: none), or Final once it is decided
+	// (matchOver, as /match/ reckons it); below, the win condition as /match/
+	// words it (free play alone, the rest with their number).
+	function paintRingIcon() {
+		const rules = MATCH.rules;
+		const type = rules.win_condition_type, t = Number(rules.win_condition_target);
+		const most = !(t > 0) ? null : type === 'race_to' ? 2 * t - 1 : (type === 'best_of' || type === 'fixed_frames') ? t : null;
+		els.frame.textContent = matchOver() ? 'Final' : `Frame ${MATCH.frames.length + 1}${most ? '/' + most : ''}`;
+		const wc = WIN_CONDITION[type];
+		if (!wc) TDC.error(AREA, `unknown win condition "${type}"`, null, els.stageStatus);
+		els.target.textContent = type === 'free_play' ? wc : `${wc || 'TDC (Error)'} ${rules.win_condition_target}`;
+	}
+
+	// The breaker's half of the stage wears a yellow outline and inner glow
+	// (match.css, [data-breaking]); nobody's while nobody is known.
+	function paintBreaker(side) {
+		els.p0.toggleAttribute('data-breaking', side === 'home');
+		els.p1.toggleAttribute('data-breaking', side === 'away');
+	}
+
+	// ─── The stage's buttons ──────────────────────────────────────────
+	// The four special wins are always drawn (the stage keeps its shape).
+
+	// Which sides a special win can go to on the frame in play
+	const winSides = (ev) => ['home', 'away'].filter((s) => resultsFor(s, draft.break_side).includes(ev));
+
+	// Whether a button can act now: exactly match.js's rules for its
+	// controls, through its own functions. The break event: renderBreakRow
+	// showed it while breaks are tracked, somebody is breaking and the match
+	// is not over, disabled for a watcher. A special win: renderHalf offered
+	// it by resultsFor and disabled it by resultDisabled (and mbtn for a
+	// watcher), with none once the match is over.
+	const breakOn = () => canEdit && MATCH.rules.track_breaks && !!draft.break_side && !matchOver();
+	const winOn = (ev) => canEdit && !matchOver() && winSides(ev).length > 0 && !resultDisabled(ev);
+
+	// The break ring and the special wins, as the match stands. Called by
+	// renderStage, and by buildBreak when the phone turns and they are drawn
+	// again. A button that cannot act is disabled, as the old page's were:
+	// greyed, out of the tab order, and a tap on it does nothing (UV, 30 Oct).
+	function paintButtons() {
+		for (const q of els.breakRing.querySelectorAll('.mv-break-q')) setOff(q, !breakOn());
+		markChosen(els.breakRing, '.mv-break-q', draft.break_outcome);
+		for (const q of els.breakRing.querySelectorAll('.mv-win-q:not(.mv-more-q)')) {
+			setOff(q, !winOn(q.dataset.value));
+			q.setAttribute('aria-checked', 'false');
+		}
+	}
+	function setOff(q, off) {
+		q.classList.toggle('is-off', off);
+		q.setAttribute('aria-disabled', String(off));
+		q.setAttribute('tabindex', off ? '-1' : '0');
+	}
+
+	// A break ring button: setOutcome. No dots: nothing is sent to the
+	// network, and on this page the dots are the cream ring's, for network
+	// calls (UV, 30 Oct); a pretend 0.2 s wait blanked the ring for a second
+	// on every tap (UV: "glitching").
+	function breakTap(q) {
+		if (!MATCH || q.classList.contains('is-off')) return;
+		setOutcome(q.dataset.value);
+	}
+
+	// A special win: the frame to the side it can go to, or the page asks
+	// whose when the rules allow either (B&F without "needs the breaker").
+	function specialWin(ev) {
+		if (!MATCH || !winOn(ev)) return;
+		const sides = winSides(ev);
+		if (sides.length === 1) { saveFrame(sides[0], ev); return; }
+		showWhoOverlay(ev, sides);
+	}
+
+	// "Offline · n waiting" and "Someone else has scored" said on the stage
+	// too (UV, 30 Oct): the notice is under the stage, out of sight while
+	// scoring. A line of its own over the stage's foot, so it never takes the
+	// place of a message on the status line.
+	let noteOffline = '';
+	let noteStale = '';
+	function paintStageNote() {
+		els.stageNote.textContent = [noteStale, noteOffline].filter(Boolean).join(' · ');
 	}
 
 	function setOutcome(value) {
@@ -645,15 +1104,10 @@
 		renderHistory();
 	}
 
+	let whoDrawn = null;
 	function renderStage() {
-		els.midFrame.textContent = matchOver() ? 'Final' : `Frame ${MATCH.frames.length + 1}`;
-		els.midFrame.dataset.live = 'frame';
-		// Free play has no number to show, and "Free play 5" would read as a
-		// target somebody is counting to.
-		const wc = WIN_CONDITION[MATCH.rules.win_condition_type] || 'TDC (Error)';
-		els.midTarget.textContent = MATCH.rules.win_condition_type === 'free_play'
-			? wc
-			: `${wc} ${MATCH.rules.win_condition_target}`;
+		// The frame in play and what the match is played to, in the ring
+		paintRingIcon();
 
 		if (overlayMode === null) {
 			const needsBreak = MATCH.rules.track_breaks && !draft.break_side && !matchOver();
@@ -661,9 +1115,35 @@
 			else els.overlay.hidden = true;
 		}
 
-		renderHalf('home');
-		renderHalf('away');
-		renderBreakRow();
+		// renderHalf's work, on the new stage: the score, who breaks, the
+		// names and pictures (drawn again only when the people change), and
+		// the score and name as the plain-win button while a win can be given.
+		paintScore(els.scoreHome, framesWon('home'));
+		paintScore(els.scoreAway, framesWon('away'));
+		paintBreaker(draft.break_side);
+		const who = ['home', 'away'].map((s) => JSON.stringify(player(MATCH[s].players[0]))).join('|');
+		if (who !== whoDrawn) {
+			whoDrawn = who;
+			paintWho(els.whoHome, player(MATCH.home.players[0]));
+			paintWho(els.whoAway, player(MATCH.away.players[0]));
+		}
+		const winnable = !matchOver() && canEdit && !resultDisabled('win');
+		for (const [half, side] of [[els.p0, 'home'], [els.p1, 'away']]) {
+			half.toggleAttribute('data-winnable', winnable);
+			const name = MATCH[side].name;
+			for (const part of half.querySelectorAll('.mv-score, .mv-who')) {
+				if (winnable) Object.assign(part.dataset, { act: 'result', side, value: 'win' });
+				else { delete part.dataset.act; delete part.dataset.side; delete part.dataset.value; }
+			}
+			const score = half.querySelector('.mv-score');
+			score.setAttribute('role', 'button');
+			score.tabIndex = winnable ? 0 : -1;
+			score.setAttribute('aria-disabled', String(!winnable));
+			score.setAttribute('aria-label', `${name}: ${framesWon(side)}. Tap to give ${name} this frame`);
+		}
+		// renderBreakRow's and the special wins' work: the break ring and the
+		// special wins, enabled as the pill and the rings were
+		paintButtons();
 	}
 
 	// ─────────────────────────────────────────────────────────────────
@@ -1518,9 +1998,24 @@
 		els.overlayHint.textContent = BREAK_DETERMINATION[MATCH.rules.break_determination] || '';
 		els.overlayRow.replaceChildren(
 			mbtn(MATCH.home.name, '', { act: 'breakside', value: 'home' }),
-			mbtn(MATCH.away.name, '', { act: 'breakside', value: 'away' })
+			mbtn(MATCH.away.name, '', { act: 'breakside', value: 'away' }),
+			settingsButton()
 		);
 		els.overlay.hidden = false;
+	}
+
+	// Match settings opens from the more pop-up and from the lag question
+	// (UV, 30 Oct: the nav hides on this page, so its Match button went). Not
+	// a data-act: it changes nothing on the card, so a watcher may open it
+	// too, as the nav button let them. From More the pop-up closes first;
+	// the lag question stays asked under the panel.
+	function settingsButton() {
+		const b = mbtn('Match settings', '', {});
+		b.addEventListener('click', () => {
+			if (overlayMode === 'more') closeOverlay();
+			openPanel();
+		});
+		return b;
 	}
 
 	function showPicker(side) {
@@ -1536,18 +2031,58 @@
 		els.overlay.hidden = false;
 	}
 
-	function showMore(side) {
-		overlayMode = 'more:' + side;
+	// One ⋯ on the new stage, so one pop-up (UV, 30 Oct): each player's box,
+	// headed by their picture and names, with their walkover; the match's
+	// actions between them. The same acts as each card's ⋯ had. Off for a
+	// watcher as before (mbtn, WRITE_ACTS), and the walkovers and abandon off
+	// once the match is over, when the old cards had no ⋯ at all.
+	function showMore() {
+		overlayMode = 'more';
 		els.overlayQ.textContent = 'More';
-		els.overlayHint.textContent = `Actions for ${MATCH[side].name}.`;
-		els.overlayRow.replaceChildren(
-			mbtn('Walkover to ' + MATCH[side].name, 'result', { act: 'walkover', side }),
-			mbtn('Abandon frame', '', { act: 'abandon' }),
+		els.overlayHint.textContent = '';
+		const body = div('mv-more-body');
+		const box = (side) => {
+			const s = div('mv-more-side');
+			const who = div('mv-more-who');
+			paintWho(who, player(MATCH[side].players[0]));
+			s.append(who, mbtn('Walkover', 'result', { act: 'walkover', side }, matchOver()));
+			return s;
+		};
+		const mid = div('mv-more-match');
+		mid.append(
+			mbtn('Abandon frame', '', { act: 'abandon' }, matchOver()),
 			mbtn('Change table', '', { act: 'changetable' }, MATCH.tables.length < 2),
+			mbtn(timerRunning(matchTimer) ? 'Pause match' : 'Resume match', '', { act: 'togglematchtimer' }, !!matchOver()),
+			settingsButton(),
+			mbtn('Close', '', { act: 'closeoverlay' })
+		);
+		body.append(box('home'), mid, box('away'));
+		els.overlayRow.replaceChildren(body);
+		els.overlay.hidden = false;
+	}
+
+	// Whose a special win is, when the rules let either player have it: the
+	// old cards had a B&F on each, the new stage has one (UV, 30 Oct).
+	function showWhoOverlay(ev, sides) {
+		setOverlayMode('who');
+		els.overlayQ.textContent = `${RESULT_EVENT[ev]}: to whom?`;
+		els.overlayHint.textContent = 'Either player can have it under this match\'s rules.';
+		els.overlayRow.replaceChildren(
+			...sides.map((s) => mbtn(MATCH[s].name, 'result', { act: 'result', side: s, value: ev })),
 			mbtn('Close', '', { act: 'closeoverlay' })
 		);
 		els.overlay.hidden = false;
 	}
+
+	// The overlay's own taps, before onClick has them: a result chosen in
+	// it puts the overlay away first (the old cards' result buttons were
+	// never in one), and Pause match redraws the pop-up so it reads Resume.
+	els.overlay.addEventListener('click', (e) => {
+		const b = e.target.closest('[data-act]');
+		if (!b || b.disabled) return;
+		if (b.dataset.act === 'result') { setOverlayMode(null); els.overlay.hidden = true; }
+		if (b.dataset.act === 'togglematchtimer') setTimeout(() => { if (overlayMode === 'more') showMore(); }, 0);
+	});
 
 	// The match is over on the card. Asking before submitting is the difference
 	// between a mis-tap costing a tap and a mis-tap locking the night's match:
@@ -1853,25 +2388,6 @@
 	const openPanel  = () => { els.panel.hidden = false; els.scrim.hidden = false; };
 	const closePanel = () => { els.panel.hidden = true;  els.scrim.hidden = true; };
 
-	function addNavButton() {
-		const nav = document.querySelector('.site-nav');
-		const profile = nav && nav.querySelector('.nav-profile-wrap');
-		if (!nav || !profile) {
-			TDC.error(AREA, 'could not add the match settings button: nav not found.');
-			return;
-		}
-		const b = document.createElement('button');
-		b.type = 'button';
-		b.className = 'nav-match-btn';
-		b.id = 'nav-match-settings';
-		b.textContent = 'Match';
-		b.setAttribute('aria-label', 'Match settings');
-		b.addEventListener('click', openPanel);
-		// Into the profile's own parent (.nav-right since 24 Oct), not the
-		// bar: insertBefore needs a reference node that is a direct child.
-		profile.parentNode.insertBefore(b, profile);
-	}
-
 	// ─────────────────────────────────────────────────────────────────
 	// Actions
 	// ─────────────────────────────────────────────────────────────────
@@ -1909,12 +2425,11 @@
 	// A save that failed is not traced; the page says why.
 	function scoreDots(side, saved) {
 		if (typeof TDCDots === 'undefined') return;
-		const score = () => (side === 'home' ? els.halfHome : els.halfAway).querySelector('.pc-mid');
-		const el = score();
+		const el = (side === 'home' ? els.p0 : els.p1).querySelector('.mv-score');
 		if (!el) return;
 		const least = new Promise((r) => setTimeout(r, 200));
 		const call = Promise.all([Promise.resolve(saved).then((r) => { if (r && r.error) throw r.error; }), least]);
-		TDCDots.serve(el, call, { trace: 'number', ink: '.pc-score', follow: score, status: els.stageStatus });
+		TDCDots.serve(el, call, { status: els.stageStatus });
 	}
 
 	function walkover(side) {
@@ -2209,6 +2724,8 @@
 	function hideNotice() {
 		els.notice.hidden = true;
 		els.notice.replaceChildren();
+		noteStale = '';
+		paintStageNote();
 	}
 
 	// Storage paths are turned into URLs here rather than stored, so moving the
@@ -2867,6 +3384,8 @@
 		} else {
 			showNotice('<strong>Live match.</strong> Frames and settings are saved as you change them.', 'warn');
 		}
+		noteOffline = !canEdit ? '' : isOffline() ? (n ? `Offline · ${n} waiting` : 'Offline') : (n ? `${n} waiting` : '');
+		paintStageNote();
 	}
 
 	// Anything the page must refuse while offline says why, in the one place
@@ -2910,6 +3429,8 @@
 				+ ' not been sent, because sending them now would renumber their frames. '
 				+ 'Check the card against what you wrote down before carrying on.', 'error');
 			TDC.error(AREA, 'queue held back: card_version moved from ' + q.card_version + ' to ' + m.card_version);
+			noteStale = 'Someone else has scored';
+			paintStageNote();
 			return;
 		}
 
@@ -3039,6 +3560,8 @@
 				+ 'not saved, because it was aimed at the card as it was before theirs.' + more
 				+ ' The score above is up to date — check it, then carry on.', 'error');
 			TDC.status(els.stageStatus, 'Not saved — the card had already moved on.', '');
+			noteStale = 'Someone else has scored';
+			paintStageNote();
 			console.error('[' + AREA + '] write refused: ' + (moved.details || moved.message));
 			return true;
 		}
@@ -3301,6 +3824,8 @@
 				showNotice('<strong>Someone else has scored this match.</strong> '
 					+ 'Finish what you are doing, then <button type="button" class="link-toggle" '
 					+ 'data-act="refreshnow">refresh</button> to see it.', '');
+				noteStale = 'Someone else has scored';
+				paintStageNote();
 				return;
 			}
 			await refreshFromRemote();
@@ -3339,9 +3864,14 @@
 		els.undoSlide.addEventListener('change', () => {
 			if (Number(els.undoSlide.value) <= Number(els.undoSlide.min)) undo();
 		});
-		els.stageBreak.addEventListener('change', (e) => {
-			if (e.target.id === 'break-event') setOutcome(e.target.value);
-		});
+		// The score is the plain-win button, as the old card's <button> was
+		for (const half of [els.p0, els.p1]) {
+			half.querySelector('.mv-score').addEventListener('keydown', (e) => {
+				if (e.key !== 'Enter' && e.key !== ' ') return;
+				e.preventDefault();
+				e.currentTarget.click();
+			});
+		}
 		els.tlToggle.addEventListener('click', () => { setTimelinePref('timeline', !timelineOn()); renderHistory(); });
 		els.tlWidths.addEventListener('click', () => { setTimelinePref('widths', !widthsByTime()); renderHistory(); });
 		new ResizeObserver(() => drawTimeline()).observe(els.wideBox);
@@ -3361,7 +3891,6 @@
 		closeCellMenu();
 	}, true);
 
-		addNavButton();
 		recomputeBreaks();
 		syncClocks();
 		draft = newDraft();
@@ -3483,4 +4012,33 @@
 		// Anything left over from a previous visit goes now.
 		if (!isOffline() && queuedCount()) flushQueue();
 	})(), 'Match');
+
+	// ─── The dots, always on the ring (UV, 30 Oct) ─────────────────────
+	// Every network call on this page is shown by the dots on the cream ring,
+	// never by the dots flying to whatever was tapped: they come to the ring
+	// and wait on its line, sized by its stroke (line: the ring is its own
+	// border), while it dims, words and all (dots.css, the busy look), then
+	// race it and fade as it comes back. (Until then they ran on a loop, a
+	// pretend 15 s call every 20 s, while there were no calls to show.)
+	//   Each call asked for (TDCNet.onAsk, every rpc and from) serves the
+	//   ring until the network is quiet; more calls meanwhile are waited for.
+	//   Anything else on the page that serves the dots (the nav, a control,
+	//   TDC.writer) is sent to the ring instead, its own result still shown
+	//   when its call is back. The loading screen keeps its own dots: while it
+	//   is up nothing is sent to the ring, and its own ring is let through.
+	//   Nor once the card is submitted and the result view has put the
+	//   stage away (the ring has no size then): each control there keeps its
+	//   own dots, as on every other page.
+	const serveAt = TDCDots.serve;
+	const ringShown = () => !els.matchPage.hidden && els.ring.offsetWidth > 0;
+	const onRing = (promise) => serveAt(els.ring, promise, { line: true, status: els.stageStatus });
+	TDCDots.serve = (el, promise, opts = {}) => {
+		if (TDCLoader.up || !ringShown() || (el && el.closest && el.closest('.tdc-loader'))) return serveAt(el, promise, opts);
+		onRing(promise);
+		if (opts.reveal) Promise.resolve(promise).then(() => opts.reveal(), () => opts.reveal());
+		return promise;
+	};
+	TDCNet.onAsk(() => {
+		if (!TDCLoader.up && ringShown()) onRing(TDCNet.quiet());
+	});
 })();
