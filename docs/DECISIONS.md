@@ -1101,3 +1101,11 @@ These predate the log. They are recorded here because every one of them is a dec
 *Then (UV, same day):* **B&F and GB sit on the side of the player breaking, rB&F and the ⋯ on the opposition's half**, so the dots are always on the side that is not breaking. They move when the break passes. Drawing only.
 
 *Then (UV, same day):* **the break event goes live to the other phone as it is tapped.** It was never sent before (checked against `match.js` at `9766988`, 29 Oct: only the saved frame carried it). It is sent as a Realtime broadcast on the match's existing channel, with nothing stored, because the frame carries it once saved. On the receiving phone it does not count as busy, so that phone still follows the saved frame by itself. *Rejected:* storing the frame in play on the match (a migration, and a second record of a frame that is not played yet).
+
+## 2026-10-30 — The break event in play is saved on the match
+
+*Decided by UV:* a break event that has been tapped is shown, solid, whenever the match page is opened, on any phone. The broadcast (above) reached only the phones already open, so a phone opening the match afterwards, or the same phone after a reload, showed none until the frame was saved. UV chose to save it on the match (asked 30 Oct: "B, save it on the match").
+*So:* migration `20261030155332` adds `break_in_play`, its frame number and the card version it was tapped at to `tbl_matches`, written only by `tdc_set_break_in_play` (whoever may score, the frame in play, never a settled card). It does not move `card_version`. An event older than the card's version is ignored, so saving, removing or correcting a frame retires it with no clearing and no change to `tdc_record_frame`. The other phones hear it through the `tbl_matches` changes they already follow; the broadcast is gone. The save has no dots on the ring (UV, 30 Oct).
+*Replaces:* the same day's "nothing stored", and its rejection of storing the frame in play. It is still not a record of the frame: never counted, and the frame carries the event once saved.
+*Rejected:* Realtime presence (lasts only while the tapping phone is open and online); keeping the tap on the phone only (no help to another phone).
+*Touches:* `supabase/migrations/20261030155332_match_break_in_play.sql`, `supabase/tests/044_match_break_in_play.test.sql`, `match.js`, `docs/systems/matches.md`

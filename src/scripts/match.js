@@ -332,13 +332,20 @@
 		return MATCH[side].players.length === 1 ? MATCH[side].players.slice() : [];
 	}
 
+	// The break event saved for the frame in play (MATCH.break_in_play,
+	// 20261030155332) comes into a new draft as another phone's: shown on the
+	// ring, never making this phone busy. Only for its own frame, so the frame
+	// just pushed (pushFrame) does not hand its event to the next.
 	function newDraft() {
+		const b = MATCH.break_in_play;
+		const outcome = b && b.frame_no === MATCH.frames.length + 1 ? b.outcome : null;
 		return {
 			home_players: carriedLineup('home'),
 			away_players: carriedLineup('away'),
 			table: MATCH.tables[0],
 			break_side: breakSideAt(MATCH.frames.length, MATCH.frames),
-			break_outcome: null
+			break_outcome: outcome,
+			remoteBreak: !!outcome
 		};
 	}
 
@@ -1118,7 +1125,7 @@
 		// Entering a break event is what starts the frame and ends racking.
 		beginFrame();
 		TDC.status(els.stageStatus, '', '');
-		sendBreakLive();
+		saveBreakInPlay();
 		renderStage();
 		renderTimePanel();
 		renderHistory();
@@ -2796,7 +2803,8 @@
 		const { data: m, error } = await supabaseClient
 			.from('tbl_matches')
 			.select('id, venue_id, scheduled_at, first_break_side, sanctioned, rules, status, card_version,'
-				+ ' home_side_kind, home_player_id, away_side_kind, away_player_id, referee_player_id')
+				+ ' home_side_kind, home_player_id, away_side_kind, away_player_id, referee_player_id,'
+				+ ' break_in_play, break_in_play_frame_no, break_in_play_card_version')
 			.eq('id', id)
 			.maybeSingle();
 
@@ -2896,6 +2904,11 @@
 				home: { name: nameOf(m.home_player_id), crest_url: null, players: [m.home_player_id] },
 				away: { name: nameOf(m.away_player_id), crest_url: null, players: [m.away_player_id] },
 				rules: m.rules,
+				// The break event tapped for the frame in play (20261030155332),
+				// only while the card is as it was when it was tapped: any frame
+				// saved, removed or corrected since moved card_version on.
+				break_in_play: m.break_in_play && m.break_in_play_card_version === m.card_version
+					? { frame_no: m.break_in_play_frame_no, outcome: m.break_in_play } : null,
 				frames
 			}
 		};
@@ -3801,14 +3814,14 @@
 				{ event: 'UPDATE', schema: 'public', table: 'tbl_matches', filter: 'id=eq.' + liveMatchId },
 				(payload) => {
 					// Our own write, already on screen. The reload after every
-					// save has set cardVersion to this value.
-					if (payload.new && payload.new.card_version === cardVersion) return;
+					// save has set cardVersion to this value. With the card
+					// unchanged, it may be a break event tapped (onBreakInPlay).
+					if (payload.new && payload.new.card_version === cardVersion) { onBreakInPlay(payload.new); return; }
 					onRemoteChange();
 				})
 			.on('postgres_changes',
 				{ event: 'INSERT', schema: 'public', table: 'tbl_match_events', filter: 'match_id=eq.' + liveMatchId },
 				onRemoteChange)
-			.on('broadcast', { event: 'break' }, onRemoteBreak)
 			.subscribe((status) => {
 				if (status === 'SUBSCRIBED') return;
 				// Not fatal: the page still works, it just stops being live
@@ -3826,26 +3839,49 @@
 		liveChannel = null;
 	}
 
-	// The break event goes to the other phones as it is tapped (UV, 30 Oct):
-	// a broadcast on the match's channel, nothing stored; the frame carries it
-	// once saved, so a phone that misses it (locked, offline) gets it then.
-	function sendBreakLive() {
-		if (!liveChannel || isOffline()) return;
-		liveChannel.send({ type: 'broadcast', event: 'break', payload: {
-			frame_no: MATCH.frames.length + 1, break_outcome: draft.break_outcome
-		} }).then((r) => {
-			if (r !== 'ok') TDC.error(AREA, `the break event could not be sent to the other phone (${r}).`, null, els.stageStatus);
-		});
+	// The break event is saved on the match as it is tapped (UV, 30 Oct:
+	// every phone that opens the match shows it; 20261030155332). In the
+	// page's write queue, so it goes after a frame still saving and names the
+	// frame that will then be in play; no reload, and no dots (UV: the ring
+	// blanking on a break tap read as glitching), so it is asked for quietly
+	// (quietAsk, the ring's onAsk at the end). Offline, nothing is sent: the
+	// frame carries it once saved. The other phones hear the match change
+	// (onBreakInPlay); this phone's own come back too and are let pass.
+	let quietAsk = false;
+	const ownBreaks = [];   // this phone's saved break events not yet heard back, oldest first
+	function saveBreakInPlay() {
+		if (!liveMatchId || isOffline()) return;
+		const frameNo = MATCH.frames.length + 1, outcome = draft.break_outcome;
+		const key = frameNo + '|' + outcome;
+		// Noted before it is sent: the match's change can be heard before the
+		// call's own answer
+		ownBreaks.push(key);
+		const unnote = () => { const i = ownBreaks.indexOf(key); if (i >= 0) ownBreaks.splice(i, 1); };
+		TDC.queued(() => {
+			quietAsk = true;
+			try {
+				return supabaseClient.rpc('tdc_set_break_in_play', { p_match_id: liveMatchId, p_frame_no: frameNo, p_break_outcome: outcome });
+			} finally { quietAsk = false; }
+		}).then(({ error }) => {
+			if (error) { unnote(); TDC.showSupabaseError(AREA, error, els.stageStatus); }
+		}, (err) => { unnote(); TDC.error(AREA, 'the break event could not be saved.', err, els.stageStatus); });
 	}
 
 	// Another phone's break event, selected here as if tapped, so the ring and
 	// the special wins follow it (renderStage); nothing else changes. Held as
 	// another's (draft.remoteBreak), so it never makes this phone busy and the
-	// saved frame still comes in by itself.
-	function onRemoteBreak({ payload: p }) {
-		if (!MATCH || !draft || !p || p.frame_no !== MATCH.frames.length + 1) return;
-		if (!(p.break_outcome in TDCMatchDef.BREAK_OUTCOME)) return;
-		draft.break_outcome = p.break_outcome;
+	// saved frame still comes in by itself. Only for the frame in play on
+	// the card as this phone has it.
+	function onBreakInPlay(row) {
+		if (!MATCH || !draft || !row.break_in_play) return;
+		if (row.break_in_play_frame_no !== MATCH.frames.length + 1 || row.break_in_play_card_version !== cardVersion) return;
+		const key = row.break_in_play_frame_no + '|' + row.break_in_play;
+		// This phone's own, heard back: what it shows already, or older than it
+		const own = ownBreaks.indexOf(key);
+		if (own >= 0) { ownBreaks.splice(0, own + 1); return; }
+		MATCH.break_in_play = { frame_no: row.break_in_play_frame_no, outcome: row.break_in_play };
+		if (draft.break_outcome === row.break_in_play) return;
+		draft.break_outcome = row.break_in_play;
 		draft.remoteBreak = true;
 		renderStage();
 	}
@@ -3855,7 +3891,7 @@
 	// screen is left alone and the change is offered instead.
 	function busyScoring() {
 		if (!draft) return false;
-		// Another phone's break event is not this phone scoring (onRemoteBreak)
+		// Another phone's break event is not this phone scoring (onBreakInPlay)
 		if (draft.remoteBreak) return !!(overlayMode || cellMenuOpen);
 		return !!(draft.break_outcome || frameStartedAt !== null || overlayMode || cellMenuOpen);
 	}
@@ -4091,6 +4127,7 @@
 		return promise;
 	};
 	TDCNet.onAsk(() => {
+		if (quietAsk) return;   // the break event's save has no dots (saveBreakInPlay)
 		if (!TDCLoader.up && ringShown()) onRing(TDCNet.quiet());
 	});
 })();
