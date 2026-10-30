@@ -11,6 +11,10 @@ This file is read at the start of every session, so it is kept short. **The deta
 - **Claude writes files. UV reviews, runs and commits. Claude never commits or pushes** (`.claude/settings.json` blocks both). At each milestone give a **commit subject**, plus a body of three or four lines when the change is not self-evident.
 - **Explain what you are about to do before you do it**, especially before running a command that changes anything or asking for access.
 - **Ask when you don't know, and say so when in doubt.** Never guess at a design question. Before asking, check `docs/design/`, `docs/DECISIONS.md` and the system file for that area — re-asking something already answered wastes UV's time.
+- **Build only what UV asked for.** No extra features, refactors or "while I'm here" changes. If something else looks worth doing, propose it and wait.
+- **Decisions in `docs/DECISIONS.md` and `docs/design/` are settled.** Follow them; don't reopen them. If the work seems to conflict with one, stop and say so.
+- **Plan first, then wait.** For anything beyond a small fix, say which files will change and how, and wait for UV's go-ahead before writing.
+- **Before starting a task, check the working tree is clean** and remind UV to commit first if it isn't, so a bad run can be reset.
 - **One thing at a time**, with a test after each. Plain language, explain outcomes rather than internals; UV reads code only up to a point and does not want to write SQL. **Tables over prose** for lists.
 - **Tell UV when to start a fresh conversation** (at each milestone, or when a session has grown long) and **which model suits the next job**, by the rules in `docs/MODELS.md`. UV aims to use his Max 5x allowance fully.
 - **Never fall back silently.** On a failure show `TDC (Error): …` on the page and `console.error` with an `[Area]` prefix, using the helpers in `scripts/tdc.js`.
