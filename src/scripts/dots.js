@@ -29,6 +29,9 @@
 //              dots finish where it was
 //     fake     true: a fake ring from the target's shorter side, even if it
 //              holds ring icons (a folding group full of switches)
+//     line     true: the target is itself a ring, a round element drawn by
+//              its border (the new match page's ring, 30 Oct). The dots run
+//              on the middle of that border, no margin, sized by its width
 //     ink      for trace 'number': a selector, inside the target, for the
 //              part holding the digits (a stepper's field, a score inside its
 //              button); only that part fades in under the dots
@@ -154,6 +157,11 @@ const TDCDots = (() => {
 	// prototype's 16 frames at 60 fps); TRAIL_EVERY: how often a trail takes a
 	// point (ms).
 	const CARRY = 300, LAND = 220, TRAIL_MS = 270, TRAIL_EVERY = 12;
+	// Depth by the ring's size (UV, 30 Oct): height shows in a dot's size
+	// as on the prototype (gain 0) on a ring up to `from` px in radius, and
+	// 1 + gain times as strongly from `to` px; no dot wider than `cap` of the
+	// ring's diameter.
+	const DEPTH = { from: 20, to: 100, gain: 0.8, cap: 0.45 };
 
 	// ─── Maths ───
 	const sm = (x) => x * x * (3 - 2 * x);
@@ -422,7 +430,9 @@ const TDCDots = (() => {
 	function drawFloor(g, G, f, p, a, col) {
 		const I = sm(cl(p * 5)) * sm(cl((1 - p) * 5));
 		if (I < 0.01) return;
-		const S = G.sh, rr = f.r * 1.15, N = 64;
+		// As wide as the ring, no wider (UV, 30 Oct): its edge on the screen is
+		// the floor's level axis, so it touches the ring at two points.
+		const S = G.sh, rr = f.r, N = 64;
 		g.save(); g.strokeStyle = col; g.lineWidth = 0.75; g.setLineDash([1.5, 3]); g.globalAlpha = a * 0.28 * I;
 		g.beginPath();
 		for (let k = 0; k <= N; k++) {
@@ -569,19 +579,23 @@ const TDCDots = (() => {
 	// small loop and recombines with a flash (annihilation), and pops out.
 	// About a third are Hawking pops: a faint core glows at the centre, one
 	// partner falls in towards it (stretching, dimming) and the other escapes
-	// out past the ring with a glowing trail, and both vanish where they are.
-	// Between pops a pair is unseen, and moves to its next spot at once. Each
-	// spot is well away from the last few. At the end all four pop back in,
-	// evenly round the ring, already cruising. Times in s from the start.
-	const MERGE = { first: 0.7, gap: 0.9, len: 1.3, last: 6.0, back: 6.1, end: 7.0, loop: 0.25, apart: 1.2 };
+	// out to the ring with a glowing trail, and both vanish where they are.
+	// Between pops a pair is unseen, and moves to its next spot at once. A
+	// spot is anywhere inside the sphere, the middle included (UV, 30 Oct), and
+	// well away from the last few. At the end all four pop back in, evenly
+	// round the ring, already cruising. Times in s from the start. in: how
+	// far from the centre a spot may be, Hawking's (hin) nearer the middle so
+	// the escape to the ring is seen.
+	const MERGE = { first: 0.7, gap: 0.9, len: 1.3, last: 6.0, back: 6.1, end: 7.0, loop: 0.25, apart: 0.9, in: [0.15, 1], hin: [0.3, 0.55] };
 	function mergeStart(G) {
 		const pops = [], recent = [];
 		for (let k = 0; MERGE.first + k * MERGE.gap + MERGE.len <= MERGE.last + 1e-6; k++) {
-			const hawk = Math.random() < 1 / 3;
+			const hawk = Math.random() < 1 / 3, [r0, r1] = hawk ? MERGE.hin : MERGE.in;
 			let C, n = 0;
-			// A Hawking pair starts near the ring, so the one escaping is seen to.
-			do { C = sph(Math.random() * 2 * PI, hawk ? (Math.random() - 0.5) * 0.8 : -0.35 + Math.random() * 1.2); }
-			while (++n < 50 && recent.some((r) => dot3(r, C) > Math.cos(MERGE.apart)));
+			// A Hawking pair starts near the page's plane, so the one escaping
+			// runs out across the screen.
+			do { C = sph(Math.random() * 2 * PI, hawk ? (Math.random() - 0.5) * 0.8 : -0.35 + Math.random() * 1.2).map((x) => x * mix(r0, r1, Math.random())); }
+			while (++n < 50 && recent.some((r) => Math.hypot(r[0] - C[0], r[1] - C[1], r[2] - C[2]) < MERGE.apart));
 			recent.push(C);
 			if (recent.length > 3) recent.shift();
 			const t1 = nrm(cross(C, randAxis()));
@@ -610,30 +624,33 @@ const TDCDots = (() => {
 		// Unseen, where it is: fading out at the start, between pops.
 		if (!pop || e - pop.t > MERGE.len) return { aim: V.slice(), free: Math.hypot(V[0], V[1], V[2]) < 0.98 ? 1 : 0, vm: 0 };
 		const s = e - pop.t, sg = i % 2 ? 1 : -1;
-		// Moved to the spot at once, unseen.
-		if (s < 0.05) return { aim: pop.C, snap: 1, vm: 0 };
+		// Moved to the spot at once, unseen. Free of the sphere throughout: a
+		// spot may be inside it.
+		if (s < 0.05) return { aim: pop.C, free: 1, snap: 1, vm: 0 };
 		// Popping in as one dot.
-		if (s < 0.25) { const q = cl((s - 0.05) / 0.15); return { aim: pop.C, szm: 0.4 + 0.6 * eob(q), sq: -0.5 * Math.sin(PI * q), glow: 0.8 }; }
+		if (s < 0.25) { const q = cl((s - 0.05) / 0.15); return { aim: pop.C, free: 1, szm: 0.4 + 0.6 * eob(q), sq: -0.5 * Math.sin(PI * q), glow: 0.8 }; }
 		const q = cl((s - 0.25) / 0.8);
 		if (pop.hawk) {
-			// Hawking: one falls in to the core, the other escapes past the ring.
-			// Both vanish where they are.
+			// Hawking: one falls in to the core, the other escapes to the ring,
+			// reaching it as it vanishes. Both vanish where they are.
 			const gone = s > 1.05 ? 0 : 1;
 			if (sg < 0) {
 				const f = 0.92 * q * q;
 				return { aim: pop.C.map((x) => x * (1 - f)), free: 1, vm: gone * (1 - 0.85 * q), sx: 1 + 1.6 * q, sy: 1 - 0.4 * q, srot: null, glow: 0.3, k: 0.5, damp: 0.5 };
 			}
-			const l = Math.hypot(pop.C[0], pop.C[1]) || 1, f = 0.9 * q * q;
-			return { aim: [pop.C[0] * (1 + f / l), pop.C[1] * (1 + f / l), pop.C[2] * (1 - q)], free: 1, vm: gone, glow: 0.6, trail: true, tl: 700, k: 0.5, damp: 0.5 };
+			const l = Math.hypot(pop.C[0], pop.C[1]) || 1, R = mix(l, 1, q * q) / l;
+			return { aim: [pop.C[0] * R, pop.C[1] * R, pop.C[2] * (1 - q)], free: 1, vm: gone, glow: 0.6, trail: true, tl: 700, k: 0.5, damp: 0.5 };
 		}
 		// A small loop each, point for point opposite, back to where they began.
+		// A spot near the sphere's surface keeps its loop on it.
 		if (s < 1.05) {
 			const u = sm(q), x = sg * pop.side * MERGE.loop * Math.sin(2 * PI * u), y = sg * MERGE.loop * (1 - Math.cos(2 * PI * u));
-			return { aim: nrm(pop.C.map((w, j) => w + x * pop.e1[j] + y * pop.e2[j])), glow: 0.35 + 0.3 * u, k: 0.5, damp: 0.5 };
+			const P = pop.C.map((w, j) => w + x * pop.e1[j] + y * pop.e2[j]);
+			return { aim: Math.hypot(P[0], P[1], P[2]) > 1 ? nrm(P) : P, free: 1, glow: 0.35 + 0.3 * u, k: 0.5, damp: 0.5 };
 		}
 		// Annihilation: a flash and a squash, then gone.
 		const fl = cl((s - 1.05) / 0.1);
-		return { aim: pop.C, glow: 1, sq: -0.6 * Math.sin(PI * fl), vm: s > 1.15 ? 0 : 1, szm: s > 1.15 ? 0.5 : 1 };
+		return { aim: pop.C, free: 1, glow: 1, sq: -0.6 * Math.sin(PI * fl), vm: s > 1.15 ? 0 : 1, szm: s > 1.15 ? 0.5 : 1 };
 	}
 	// The Hawking core: a faint glow at the centre while a pair is torn apart.
 	function mergeDraw(g, G, f, p, a, col, time) {
@@ -655,7 +672,9 @@ const TDCDots = (() => {
 				G.sh = P;
 			},
 			// Two dots bounce above the floor; the other two are their shadows,
-			// cast flat onto it along the light (off the sphere: free).
+			// cast flat onto it along the light (off the sphere: free). Cast that
+			// way a shadow reaches 1.25 of the ring at most (a dot 0.6 above the
+			// floor), so they are drawn at 0.8 of it: the furthest on the ring.
 			step(c, G) {
 				const p = c.p, i = c.i, env = sm(cl(p * 5)) * sm(cl((1 - p) * 5)), S = G.sh;
 				if (i < 2) {
@@ -668,7 +687,7 @@ const TDCDots = (() => {
 				const O = c.ring.v[i - 2].V, h = Math.max(0, dot3(nrm(O), S.n));
 				const P = O.map((x, j) => x - h * S.n[j] + h * 0.75 * S.Lt[j]), Pn = nrm(P);
 				return {
-					aim: P.map((x, j) => x * env + Pn[j] * (1 - env)), free: 1, k: 0.45, damp: 0.5,
+					aim: P.map((x, j) => x * 0.8 * env + Pn[j] * (1 - env)), free: 1, k: 0.45, damp: 0.5,
 					vm: 1 - env * (0.55 + 0.25 * h), szm: 1 + env * (0.8 + 2 * h), blur: env * (0.3 + 1.6 * h),
 					sx: 1 + env * 0.5 * h, sy: 1 - env * (1 - S.n[2]) * 0.9, srot: Math.atan2(S.n[1], S.n[0]) + PI / 2, h: -0.2 * env, hw: 1
 				};
@@ -677,14 +696,31 @@ const TDCDots = (() => {
 		},
 		stars: {
 			weight: 1.1, dur: 4600,
+			// The stars anywhere inside the ring, the middle included (UV, 30
+			// Oct): a quarter apart round it (give or take), each from 0.15 of
+			// the ring out to the ring itself, a little above or below the page,
+			// and each dot given the star nearest it. (They were a tetrahedron's
+			// corners held to latitudes that kept them all near the ring.)
 			start(G, ring) {
-				const P = tetraFor(ring).map((v) => sph(Math.atan2(v[1], v[0]), Math.max(-0.5, Math.min(0.7, Math.asin(v[2])))));
+				const a0 = Math.random() * 2 * PI, used = [];
+				const S = [0, 1, 2, 3].map((k) => {
+					// Nearer the middle, further above or below the page it may be
+					// (inside the sphere still), so the stars show their depth.
+					const a = a0 + k * PI / 2 + (Math.random() - 0.5) * 0.7, r = mix(0.15, 1, Math.random()), z = (Math.random() * 2 - 1) * 0.8 * Math.sqrt(1 - r * r);
+					return [r * Math.cos(a), r * Math.sin(a), z];
+				});
+				const P = ring.v.map((v) => {
+					let best = -1, bd = -9;
+					S.forEach((q, j) => { if (used.includes(j)) return; const s = (q[0] * v.V[0] + q[1] * v.V[1]) / (Math.hypot(q[0], q[1]) || 1); if (s > bd) { bd = s; best = j; } });
+					used.push(best);
+					return S[best];
+				});
 				G.ball = { P, axis: nrm([0.15, 0.1, 1]), speed: 0.45 };
 			},
 			frame: spin,
 			step(c, G) {
 				const env = sm(cl(c.p * 4)) * sm(cl((1 - c.p) * 4)), tw = Math.pow(0.5 + 0.5 * Math.sin(c.t * c.g.tw.w + c.g.tw.ph), 4);
-				return { aim: G.ball.P[c.i], k: 0.1, damp: 0.8, vm: 1 - env + env * (0.25 + 0.75 * tw), szm: 1 + env * (-0.2 + 0.7 * tw), glow: env * 0.95 * tw };
+				return { aim: G.ball.P[c.i], free: 1, k: 0.1, damp: 0.8, vm: 1 - env + env * (0.25 + 0.75 * tw), szm: 1 + env * (-0.2 + 0.7 * tw), glow: env * 0.95 * tw };
 			}
 		},
 		blackhole: {
@@ -722,13 +758,16 @@ const TDCDots = (() => {
 					return { e1, e2: cross(n, e1), be: Math.random() * 2 * PI };
 				});
 			},
+			// A moon reaches its host's distance plus its orbit's (its orbit's
+			// first axis lies flat in the screen), so the whole is drawn in by
+			// that much, the moon's furthest on the ring (UV, 30 Oct).
 			step(c, G) {
-				const p = c.p, k = c.i % 2, env = sm(cl(p * 4)) * sm(cl((1 - p) * 4));
-				const host = sph(G.th0 + k * PI + 2.4 * PI * p, 0.15 * Math.sin(2 * PI * p + k));
-				if (c.i < 2) return { aim: host, szm: 1 + 0.7 * env, glow: 0.3 * env, k: 0.45, damp: 0.55 };
-				const O = G.orb[k], be = O.be + 8 * PI * p, r = 0.3 * env;
+				const p = c.p, k = c.i % 2, env = sm(cl(p * 4)) * sm(cl((1 - p) * 4)), r = 0.3 * env, s = 1 / (1 + r);
+				const host = sph(G.th0 + k * PI + 2.4 * PI * p, 0.15 * Math.sin(2 * PI * p + k)).map((x) => x * s);
+				if (c.i < 2) return { aim: host, free: 1, szm: 1 + 0.7 * env, glow: 0.3 * env, k: 0.45, damp: 0.55 };
+				const O = G.orb[k], be = O.be + 8 * PI * p;
 				return {
-					aim: host.map((x, j) => x + r * (Math.cos(be) * O.e1[j] + Math.sin(be) * O.e2[j])), free: 1,
+					aim: host.map((x, j) => x + r * s * (Math.cos(be) * O.e1[j] + Math.sin(be) * O.e2[j])), free: 1,
 					szm: 1 - 0.15 * env, trail: env > 0.3, tl: 2600, k: 0.6, damp: 0.45
 				};
 			}
@@ -771,11 +810,33 @@ const TDCDots = (() => {
 			frame: spin,
 			step: (c, G) => ({ aim: G.ball.P[c.i], k: 0.55, damp: 0.5 })
 		},
+		// A line of four, round twice (UV, 30 Oct: through the middle, where it
+		// ran round the ring): along the ring, then diving in to 0.2 of it and
+		// out again, twice a lap, one dive over the middle in front of the
+		// page and the next under it, behind (depth: on the sphere's surface
+		// as near as 0.8 allows). It opens from the ring and closes back onto
+		// it. Where it is on the ring it curves as the ring does (sin⁴), and it
+		// takes 3 s, where it took 2 on the ring: the bend into each dive is
+		// about three times the ring's, and at the old speed a dot turned
+		// sharply there (a change of speed of 7px against 3 on the ring;
+		// three pointed petals in 2 s, 15px).
+		// Each dot joins the line from where it is, behind the first in the
+		// order they stand, and closes up over the first 40% (all four aimed
+		// at the first dot's place at once, and dashed there).
 		conga: {
-			weight: 1, dur: 2000,
+			weight: 1, dur: 3000,
+			start(G, ring) {
+				const o = ring.v.map((v) => { const a = Math.atan2(v.V[1], v.V[0]) - G.th0; return -(((-a % (2 * PI)) + 2 * PI) % (2 * PI)); });
+				const order = o.map((x, i) => i).sort((a, b) => o[b] - o[a]);
+				G.line = o.map((x, i) => ({ from: x, to: -0.32 * order.indexOf(i), n: order.indexOf(i) }));
+			},
 			step(c, G) {
-				const p = c.p, i = c.i, L = G.th0 + 4 * PI * sm(p);
-				return { aim: sph(L - i * 0.32 * sm(cl(p * 4)), 0.18 * Math.sin(3 * L - i * 0.9)), trail: true, k: 0.4, glow: (i === 0 ? 0.7 : 0.2) * Math.sin(PI * p) };
+				const p = c.p, D = G.line[c.i], L = G.th0 + 4 * PI * sm(p), Li = L + mix(D.from, D.to, sm(cl(p * 2.5)));
+				const env = sm(cl(p * 4)) * sm(cl((1 - p) * 4)), rho = 1 - env * 0.8 * Math.pow(Math.sin(Li - G.th0), 4);
+				return {
+					aim: [rho * Math.cos(Li), rho * Math.sin(Li), 0.8 * Math.sqrt(Math.max(0, 1 - rho * rho)) * Math.sign(Math.sin(Li - G.th0))], free: 1,
+					trail: true, k: 0.4, glow: (D.n === 0 ? 0.7 : 0.2) * Math.sin(PI * p)
+				};
 			}
 		},
 		atom: {
@@ -786,14 +847,35 @@ const TDCDots = (() => {
 				return { aim: [0, 1, 2].map((j) => e1[j] * Math.cos(ps) + e2[j] * Math.sin(ps)), trail: true, glow: 0.7 * Math.sin(PI * c.p) };
 			}
 		},
+		// Drawn into the middle, pressed together, then exploding out to the
+		// ring a quarter apart, landing on it (UV, 30 Oct: through the middle;
+		// they gathered at a point on the ring and burst round it). Each comes
+		// in along its own line and leaves along its new one, turning while
+		// they are pressed together. With depth (UV, 30 Oct): they gather a
+		// little raised towards the viewer and explode across a plane at a
+		// random tilt, so some fly out in front (growing) and some behind.
 		burst: {
 			weight: 1, dur: 1800,
+			start(G) { G.bp = tiltedPlane(0.35, 0.7); },
 			step(c, G) {
-				const p = c.p, i = c.i, off = [PI / 2, PI, 3 * PI / 2, 2 * PI][i];
-				if (p < 0.35) return { aim: sph(G.th0 + (i - 1.5) * 0.1 * (1 - p / 0.35), 0), k: 0.45 };
-				if (p < 0.55) { const q = (p - 0.35) / 0.2; return { aim: sph(G.th0 + (i - 1.5) * 0.03, 0), sq: -0.55 * Math.sin(PI * q), glow: 0.9 * q, k: 0.45 }; }
-				const q = (p - 0.55) / 0.45;
-				return { aim: sph(G.th0 + (i - 1.5) * 0.03 + off * eob(q), 0.75 * Math.sin(PI * q) * (i % 2 ? 1 : -1)), trail: q < 0.7, glow: 0.9 * (1 - q), k: 0.45 };
+				const p = c.p, i = c.i, V0 = c.g.V0, B = G.bp, b = Math.atan2(V0[1], V0[0]), a = G.th0 + i * PI / 2 + PI / 4;
+				// Where it is going, in the tilted plane, and the line in to the
+				// middle along its own direction on the page.
+				const out = (an, r) => [0, 1, 2].map((j) => r * (B.u[j] * Math.cos(an) + B.v[j] * Math.sin(an)));
+				const inn = (an, r, z) => [r * Math.cos(an), r * Math.sin(an), z], up = (P, z) => [P[0], P[1], P[2] + z];
+				let aim, sq = 0, glow = 0, trail = false;
+				if (p < 0.35) { const e = ease(p / 0.35); aim = inn(b, mix(1, 0.06, e), 0.35 * e); }
+				else if (p < 0.55) {
+					const q = (p - 0.35) / 0.2;
+					aim = slerp(inn(b, 0.06, 0.35), up(out(a, 0.06), 0.35), sm(q));
+					sq = -0.55 * Math.sin(PI * q); glow = 0.9 * q;
+				} else {
+					const q = (p - 0.55) / 0.45, e = 1 - Math.pow(1 - q, 3);
+					aim = up(out(a + 0.4 * q, mix(0.06, 1, e)), 0.35 * (1 - e));
+					trail = q < 0.7; glow = 0.9 * (1 - q);
+					if (q > 0.55) sq = -0.4 * Math.sin(PI * (q - 0.55) / 0.45);
+				}
+				return { aim, free: 1, sq, glow, trail, k: 0.45 };
 			}
 		},
 		juggle: {
@@ -824,16 +906,39 @@ const TDCDots = (() => {
 				return { aim: sph(ctr + s * amp * Math.cos(be), s * amp * Math.sin(be)), trail: true, glow: 0.45 * Math.sin(PI * p) };
 			}
 		},
+		// Two pairs on parallel lines across the middle (UV, 30 Oct: they met
+		// on the ring): each dot starts at its line's end on the ring, rushes
+		// in, the pair meet with a flash and bounce back out to the ring. The
+		// second pair a little after the first. The lines run a quarter-turn
+		// from the first dot, so each line's ends lie between the dots, and
+		// each dot takes the end nearest it (given fixed ends, a dot crossed
+		// the whole ring to reach its own).
 		collide: {
 			weight: 0.9, dur: 1700,
+			// With depth (UV, 30 Oct): the lines lie on a plane at a random
+			// tilt, so one end of each is nearer the viewer than the other.
+			start(G, ring) {
+				const P = tiltedPlane(0.45, 0.8), ax = G.th0 + PI / 4, X = Math.sqrt(1 - 0.1024);
+				G.U = [0, 1, 2].map((j) => P.u[j] * Math.cos(ax) + P.v[j] * Math.sin(ax));
+				G.W = [0, 1, 2].map((j) => P.v[j] * Math.cos(ax) - P.u[j] * Math.sin(ax));
+				const at = (side, k) => { const q = [0, 1].map((j) => side * X * G.U[j] + 0.32 * k * G.W[j]); return Math.atan2(q[1], q[0]); };
+				const ends = [[1, -1], [1, 1], [-1, 1], [-1, -1]].map(([side, k]) => ({ side, k, a: at(side, k) })), used = [];
+				G.ends = ring.v.map((v) => {
+					const b = Math.atan2(v.V[1], v.V[0]);
+					let best = -1, bd = -9;
+					ends.forEach((q, j) => { if (!used.includes(j) && Math.cos(q.a - b) > bd) { bd = Math.cos(q.a - b); best = j; } });
+					used.push(best);
+					return ends[best];
+				});
+			},
 			step(c, G) {
-				const p = c.p, m = G.th0 + (c.i >> 1) * PI;
+				const E = G.ends[c.i], k = E.k > 0 ? 1 : 0, p = cl((c.p - k * 0.06) / 0.94), y = 0.32 * E.k, X = Math.sqrt(1 - y * y), side = E.side;
 				let x, sq = 0, glow = 0, trail = false;
-				if (p < 0.25) x = PI / 3;
-				else if (p < 0.5) { const q = (p - 0.25) / 0.25; x = 0.04 + (PI / 3 - 0.04) * (1 - q * q * q); trail = true; glow = 0.3 * q; }
+				if (p < 0.25) x = X;
+				else if (p < 0.5) { const q = (p - 0.25) / 0.25; x = 0.04 + (X - 0.04) * (1 - q * q * q); trail = true; glow = 0.3 * q; }
 				else if (p < 0.6) { x = 0.04; sq = -0.65 * Math.sin(PI * (p - 0.5) / 0.1); glow = 1; }
-				else { const q = (p - 0.6) / 0.4; x = 0.04 + (PI / 3) * eob(q); glow = 1 - q; }
-				return { aim: sph(m + (c.i % 2 ? x : -x), 0), sq, glow, trail, k: 0.5, damp: 0.5 };
+				else { const q = (p - 0.6) / 0.4; x = 0.04 + (X - 0.04) * (1 - Math.pow(1 - q, 3)); glow = 1 - q; }
+				return { aim: [0, 1, 2].map((j) => side * x * G.U[j] + y * G.W[j]), free: 1, sq, glow, trail, k: 0.5, damp: 0.5 };
 			}
 		},
 		polar: {
@@ -1017,9 +1122,12 @@ const TDCDots = (() => {
 			const q = t.el.getBoundingClientRect();
 			if (!q.width && !q.height) return;
 			// The shorter side is the ring (UV, 28 Oct); the margin is only for
-			// a square, which has no shorter side.
+			// a square, which has no shorter side. A ring drawn as a round
+			// element's border (opts.line) is the middle of that border.
 			const square = Math.abs(q.width - q.height) < 1;
-			settle(t, q.left + q.width / 2, q.top + q.height / 2, Math.min(q.width, q.height) / 2 + (square ? T.margin : 0));
+			const r = t.opts.line ? Math.min(q.width, q.height) / 2 - t.sw / 2
+				: Math.min(q.width, q.height) / 2 + (square ? T.margin : 0);
+			settle(t, q.left + q.width / 2, q.top + q.height / 2, r);
 		}
 	}
 	// Where the dots put a target's ring (step 7). It follows the page
@@ -1558,9 +1666,11 @@ const TDCDots = (() => {
 	// 0 for none) and cut (it has just been moved at once: no trail across);
 	// and from a move, a squash of its own (sx, sy at srot; null is along its
 	// path), how visible it is (vm), its size (szm, times) and blur.
-	const pose = (x, y, h, gs, c) => ({ x, y, h, gs, c, glow: 0, sq: 0, lit: 0, trail: 0, cut: false, sx: 1, sy: 1, srot: 0, vm: 1, szm: 1, blur: 0 });
+	// dg: how strongly height shows in size (depth), cap: the most a dot may
+	// measure across (px); both from the ring (Ring.step), plain on a trace.
+	const pose = (x, y, h, gs, c) => ({ x, y, h, gs, c, glow: 0, sq: 0, lit: 0, trail: 0, cut: false, sx: 1, sy: 1, srot: 0, vm: 1, szm: 1, blur: 0, dg: 1, cap: 1e4 });
 	const mixPose = (a, b, e) => ({
-		x: mix(a.x, b.x, e), y: mix(a.y, b.y, e), h: mix(a.h, b.h, e), gs: mix(a.gs, b.gs, e),
+		x: mix(a.x, b.x, e), y: mix(a.y, b.y, e), h: mix(a.h, b.h, e), gs: mix(a.gs, b.gs, e), dg: mix(a.dg, b.dg, e), cap: mix(a.cap, b.cap, e),
 		c: mixC(a.c, b.c, e), glow: mix(a.glow, b.glow, e), sq: mix(a.sq, b.sq, e), lit: mix(a.lit, b.lit, e),
 		trail: e < 0.5 ? a.trail : b.trail, cut: a.cut || b.cut,
 		sx: mix(a.sx, b.sx, e), sy: mix(a.sy, b.sy, e), srot: round(a) ? b.srot : round(b) ? a.srot : (e < 0.5 ? a.srot : b.srot),
@@ -1570,12 +1680,32 @@ const TDCDots = (() => {
 	// A spring on the sphere: pulled towards P, then put back on the surface,
 	// its velocity kept tangent. Overshoot and follow-through come free. A
 	// shadow is free of the sphere (free 1): pulled to P and left there.
+	// The sphere is a wall (UV, 30 Oct: every animation confined to the ring):
+	// a dot is never further from the centre than 1, so on the screen never
+	// outside its ring. A free dot meets it softly (wall): over the last
+	// WALL of the way out its distance is pressed in and its speed outwards
+	// taken off as it is, so one coming back out to the ring curves onto it
+	// rather than stopping dead (a hard stop turned the conga's dots 8px in
+	// a frame), and settles about 1% inside it. On the sphere a dot's distance
+	// eases back to 1 from where its speed in or out carried it, leaving out
+	// its speed along the surface: counted, a fast dot crept a few % outside
+	// the ring, since every step along the surface also leaves it; and with
+	// the speed in or out left out too, a dot passing from the sphere to a
+	// free move (the shadows beginning) kept that speed and lurched with it.
+	const WALL = 0.05;
+	function wall(l) {
+		const a = 1 - WALL;
+		if (l <= a) return [l, 1];
+		const x = (l - a) / WALL;
+		return [a + WALL * Math.tanh(x), 1 / (Math.cosh(x) ** 2)];   // its distance, and how much speed outwards it keeps
+	}
 	function springTo(v, P, dt, k, damp, free = 0) {
 		for (let j = 0; j < 3; j++) { v.Vv[j] += (P[j] - v.V[j]) * k * dt; v.Vv[j] *= Math.pow(damp, dt); }
-		const nv = v.V.map((x, j) => x + v.Vv[j] * dt), l = Math.hypot(nv[0], nv[1], nv[2]) || 1;
-		const l2 = l + (1 - l) * Math.min(1, 0.15 * dt) * (1 - free);
+		const l0 = Math.hypot(v.V[0], v.V[1], v.V[2]) || 1, lr = l0 + dot3(v.Vv, v.V) / l0 * dt;
+		const nv = v.V.map((x, j) => x + v.Vv[j] * dt), l = Math.hypot(nv[0], nv[1], nv[2]) || 1, [lw, keep] = wall(l);
+		const l2 = mix(lw, Math.min(1, lr + (1 - lr) * Math.min(1, 0.15 * dt)), 1 - free);
 		v.V = nv.map((x) => x / l * l2);
-		const u = nrm(v.V), rd = dot3(v.Vv, u) * (1 - free);
+		const u = nrm(v.V), out = dot3(v.Vv, u), rd = out * (1 - free) + (out > 0 ? out * free * (1 - keep) : 0);
 		v.Vv = v.Vv.map((x, j) => x - rd * u[j]);
 	}
 
@@ -1718,7 +1848,11 @@ const TDCDots = (() => {
 				let k = 1;
 				if (this.mode === 'race') k = mix(1, 1 / (Math.hypot(v.V[0], v.V[1]) || 1), eR);
 				const q = pose(v.fc[0] + v.fc[2] * v.V[0] * k, v.fc[1] + v.fc[2] * v.V[1] * k, mix(v.V[2], o.h, o.hw), f.gs, f.c);
-				Object.assign(q, { glow: o.glow, sq: o.sq, trail: o.trail > 0.5 ? o.tl : 0, cut, sx: o.sx, sy: o.sy, srot: o.srot, vm: v.vmS, szm: v.szS, blur: v.blS });
+				// Depth grows with the ring (UV, 30 Oct): on a small ring a dot's
+				// height barely shows, on a big one it shows nearly twice as
+				// strongly (DEPTH), and no dot is wider than CAP of the ring.
+				Object.assign(q, { glow: o.glow, sq: o.sq, trail: o.trail > 0.5 ? o.tl : 0, cut, sx: o.sx, sy: o.sy, srot: o.srot, vm: v.vmS, szm: v.szS, blur: v.blS,
+					dg: 1 + DEPTH.gain * cl((v.fc[2] - DEPTH.from) / (DEPTH.to - DEPTH.from)), cap: DEPTH.cap * 2 * v.fc[2] });
 				return q;
 			});
 			if (p && arrived) this.trip = null;
@@ -2074,6 +2208,21 @@ const TDCDots = (() => {
 			const W = innerWidth, H = innerHeight;
 			let x = D[0].x, y = D[0].y;
 			if (!(x > 0 && x < W && y > 0 && y < H)) { x = W / 2; y = H / 2; }
+			// Starting on or inside this ring (last seen on it, as on a page
+			// serving one target again and again, the new match page's ring;
+			// or the screen's middle, where that ring is), they appear on it, a
+			// quarter-turn apart, fading in, with no trip: a trip from a point
+			// there burst out to LIFT times the ring and fell back onto it
+			// (UV, 30 Oct: confined to the ring unless a move says otherwise).
+			if (Math.hypot(x - t.cx, y - t.cy) <= t.r + Math.max(t.sw, 4)) {
+				D.forEach((d) => { d.h = 0; d.gs = t.sw; d.hist.length = 0; d.prx = d.pry = null; });
+				cur = t; tr = null;
+				S = new Ring(t, 'orbit', now);
+				aT = 1; fading = false; revealAt = 0;
+				phase = 'orbit';
+				wake();
+				return;
+			}
 			D.forEach((d) => { d.x = x; d.y = y; d.h = 0; d.gs = t.sw; d.hist.length = 0; d.prx = d.pry = null; });
 			S = null;
 			from = { cx: x, cy: y, r: 0, gs: t.sw, c: t.colour.slice(0, 3) };
@@ -2289,7 +2438,7 @@ const TDCDots = (() => {
 		d.x = p.x; d.y = p.y; d.h = p.h; d.gs = p.gs; d.c = p.c;
 		const cR = p.c.map(Math.round), colS = `rgb(${cR.join(',')})`;
 		d.glow += (p.glow - d.glow) * Math.min(1, 0.18 * dt);
-		const size = d.gs * Math.pow(2, 1.5 * d.h) * p.szm, sc = size / BASE;
+		const size = Math.min(d.gs * Math.pow(2, 1.5 * p.dg * d.h), Math.max(d.gs, p.cap)) * p.szm, sc = size / BASE;
 		const mvx = d.prx === null ? 0 : d.x - d.prx, mvy = d.pry === null ? 0 : d.y - d.pry;
 		d.prx = d.x; d.pry = d.y;
 		d.sp += (Math.hypot(mvx, mvy) / dt - d.sp) * Math.min(1, 0.3 * dt);

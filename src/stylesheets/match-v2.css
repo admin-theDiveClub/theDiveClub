@@ -1,0 +1,541 @@
+/* The new match page (/match-v2/). Tokens only: every colour, size and
+   radius comes from variables.css. */
+
+/* ── The stage (UV, 30 Oct) ───────────────────────────────────────
+   The whole screen: the nav hides until asked for on this page and floats
+   over the stage when it shows (navAutoHide; nav.css drops the body's
+   padding for it). The body still keeps clear of the home bar. Upright, the
+   two players top and bottom; sideways, side by side. A size container, so
+   the rings can be sized from it.
+   In thirds along the split (UV, 30 Oct: thirds, then 5 : 2 : 5 in twelfths,
+   then thirds again): each player the outer third on their side, the rings
+   the middle one.
+   --mv-centre is the break ring's box (UV, 30 Oct, with the special wins:
+   the ring shrinks so the group fits): no more than the middle third
+   (upright of the height, sideways of the width), and small enough that the
+   group (the special wins' outside edges apart, --mv-cluster times the box,
+   set by match-v2.js) fits across the stage upright and in the space below
+   the name strips sideways, --space-3 clear at each end. Its container
+   units are worked out on the rings themselves, whose container is this.
+   Sideways the rings and buttons centre in the space below the name strips,
+   60% down (UV, 30 Oct), not the stage's middle.
+   --mv-word is the break words' size in the break ring's 100 box, and
+   --mv-word-stem a Rushford Clean stem's width for its size (0.23: an H or
+   L drawn at 200px has 46px stems, measured 30 Oct with size-adjust in
+   play; a different display face needs it measured again). The cream ring's
+   line is that stem at that size. */
+.mv-stage {
+	--mv-centre: min(100cqh / 3, (100cqw - 2 * var(--space-3)) / var(--mv-cluster, 1));
+	--mv-centre-y: 50%;
+	--mv-word: 6.5;
+	--mv-word-stem: 0.23;
+	display: grid;
+	grid-template-rows: 1fr 1fr;
+	height: calc(100dvh - env(safe-area-inset-bottom, 0px));
+	position: relative;
+	overflow: hidden;
+	container-type: size;
+}
+
+@media (orientation: landscape) {
+	.mv-stage {
+		--mv-centre: min(100cqw / 3, (100cqh * 0.8 - 2 * var(--space-3)) / var(--mv-cluster, 1));
+		--mv-centre-y: 60%;
+		grid-template-rows: none;
+		grid-template-columns: 1fr 1fr;
+	}
+}
+
+/* Both sides are the page itself (the site's dark theme, its light showing
+   through), each set in with an inner shadow so the split reads (UV, 30 Oct).
+   The shadow is the page edge's own (--page-inset-*, on /sandbox/ under
+   Background), cast by the light as that one is (UV, 30 Oct: every shadow
+   on this page follows the glow): on each side's edges nearest the light,
+   moving as it drifts (--page-shadow-x / -y, page-light.js).
+   min-* 0 so content can never push the halves unequal. */
+.mv-side {
+	position: relative;
+	min-width: 0;
+	min-height: 0;
+	box-shadow: inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
+}
+
+/* The breaker's half (UV, 30 Oct; match-v2.js, paintBreaker): a yellow
+   outline as heavy as the break ring's (--match-break-stroke) and a yellow
+   inner glow (--match-glow-size, --match-glow-colour, which the break
+   buttons wear too), never crossing a button's see-through inside (UV,
+   30 Oct). They stop in different places, so each is a layer of its own:
+   The glow (::before, under the name and score) reaches far enough into
+   the half to lie under the special wins, so it stops at the buttons
+   themselves: --mv-glow-mask, set on each half by match-v2.js (glowMasks),
+   is an SVG the half's size hiding it inside the special wins and the
+   break ring (each grown by half a line) and showing it everywhere else,
+   the gaps included. (A rectangle round the whole group, the first way,
+   cut it with hard edges beside the special wins' rounded corners; UV,
+   30 Oct.) Until the script has drawn the mask the glow shows whole.
+   The line (::after) runs on to the break ring and meets it (UV, 30 Oct:
+   the special wins had cut it off): along the split it passes through the
+   gap between a slot's two buttons and the gap between the slot and the
+   ring, clear of their lines, so its mask cuts out only a circle the size
+   of the ring's outside, centred where the ring sits on this half's edge. */
+.mv-side[data-breaking]::after {
+	--mv-rim-r: calc(var(--mv-centre) * var(--mv-break-rim) / 2 + var(--match-break-stroke) / 2);
+	--mv-rim-at: 50% 100%;
+	content: "";
+	position: absolute;
+	inset: 0;
+	box-sizing: border-box;
+	border: var(--match-break-stroke) solid var(--color-warning);
+	-webkit-mask: radial-gradient(circle at var(--mv-rim-at), transparent var(--mv-rim-r), #000 calc(var(--mv-rim-r) + 0.5px));
+	mask: radial-gradient(circle at var(--mv-rim-at), transparent var(--mv-rim-r), #000 calc(var(--mv-rim-r) + 0.5px));
+	pointer-events: none;
+}
+.mv-side[data-side="away"][data-breaking]::after { --mv-rim-at: 50% 0%; }
+@media (orientation: landscape) {
+	.mv-side[data-side="home"][data-breaking]::after { --mv-rim-at: 100% var(--mv-centre-y); }
+	.mv-side[data-side="away"][data-breaking]::after { --mv-rim-at: 0% var(--mv-centre-y); }
+}
+.mv-side[data-breaking]::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	box-sizing: border-box;
+	border: var(--match-break-stroke) solid transparent;   /* the glow starts inside the line, as it did when they were one layer */
+	box-shadow: inset 0 0 var(--match-glow-size) var(--match-glow-colour);
+	-webkit-mask: var(--mv-glow-mask, none) 0 0 / 100% 100% no-repeat;
+	mask: var(--mv-glow-mask, none) 0 0 / 100% 100% no-repeat;
+	pointer-events: none;
+}
+
+/* ── A player's third ─────────────────────────────────────────────
+   A side is half the stage: its outer two thirds (the stage's outer third)
+   are the player's, split 1 : 4 (UV, 30 Oct) between the name and picture
+   (.mv-who) and the score; the inner third of the half is half the rings'
+   band. In a half that is 2/15 for the name and 8/15 for the score.
+   Upright the split runs along the screen, the names at the outer ends
+   (the top and the bottom), so both scores sit beside the rings. Sideways
+   it runs down each side instead, the name across the top (along the width
+   it would be a narrow strip), and the name's strip is the whole half wide
+   (UV, 30 Oct) while the score keeps the outer third. Each keeps clear of
+   the notch or status bar on its end. */
+.mv-who,
+.mv-score {
+	position: absolute;
+	left: 0;
+	right: 0;
+	box-sizing: border-box;
+}
+.mv-who { height: calc(200% / 15); }
+.mv-score {
+	height: calc(800% / 15);
+	container-type: size;
+	display: grid;
+	place-items: center;
+	overflow: hidden;
+}
+.mv-side[data-side="home"] .mv-who { top: 0; padding-top: env(safe-area-inset-top, 0px); }
+.mv-side[data-side="home"] .mv-score { top: calc(200% / 15); }
+.mv-side[data-side="away"] .mv-score { bottom: calc(200% / 15); }
+.mv-side[data-side="away"] .mv-who { bottom: 0; padding-bottom: var(--space-3); }   /* clear of the screen's foot (UV, 30 Oct) */
+
+/* [data-side] in every one of these, to match the upright rules' weight:
+   with plain .mv-side the home score kept its upright top. */
+@media (orientation: landscape) {
+	.mv-side[data-side] :is(.mv-who, .mv-score) { bottom: auto; }
+	.mv-side[data-side] .mv-who { top: 0; height: 20%; width: 100%; padding-top: 0; padding-bottom: 0; }
+	.mv-side[data-side] .mv-score { top: 20%; height: 80%; width: calc(200% / 3); padding-bottom: var(--space-3); }   /* clear of the screen's foot (UV, 30 Oct) */
+	.mv-side[data-side="home"] :is(.mv-who, .mv-score) { left: 0; right: auto; padding-left: env(safe-area-inset-left, 0px); }
+	.mv-side[data-side="away"] :is(.mv-who, .mv-score) { left: auto; right: 0; padding-right: env(safe-area-inset-right, 0px); }
+}
+
+/* The number as big as its four parts allow, drawn --score-stretch taller
+   than its natural shape, as on /match/. 0.65 and 1.1 are a Rushford Clean
+   digit's width and height for its size (measured 26 Oct); --digits is set
+   by the script, so 10 and over share the width.
+   Since 30 Oct it reads as a button (UV): SVG text, its green outline, the
+   buttons' green inner glow and a light-cast inside shadow all from
+   #mv-score-fx (match-v2.js, buildScoreFx) on the unstretched group round
+   it, so the outline is a button's exactly, --match-break-stroke centred on
+   the digit's edge and even all round (a text stroke was stretched with the
+   digit, and all outside it); the score digits' shadow outside from the
+   SVG's own filter. The digit stands on its
+   baseline half its own ink's height below the middle (--mv-score-shift,
+   measured by match-v2.js from the score's digits, which each stand a
+   little differently; 0.525 of its size, the average digit, until the face
+   has loaded; a fixed 0.55 had left them up to 5px low), and is stretched
+   about the middle. The fill is cream until the frame history
+   colours it. */
+/* The SVG holding #mv-score-fx sits in the stage but out of its grid:
+   sideways a third grid item opened a second row and halved the halves. */
+.mv-fx-defs {
+	position: absolute;
+	width: 0;
+	height: 0;
+	overflow: hidden;
+}
+.mv-score-svg {
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+	filter: drop-shadow(var(--match-mark-shadow));
+}
+.mv-score-n {
+	font-family: var(--font-display);
+	font-variant-numeric: tabular-nums;
+	font-size: min(
+		(100cqw - 2 * var(--space-3)) / (0.65 * var(--digits, 1)),
+		(100cqh - 2 * var(--space-3)) / (1.1 * var(--score-stretch)));
+	text-anchor: middle;
+	dominant-baseline: alphabetic;
+	fill: var(--text-primary);
+	transform: scaleY(var(--score-stretch)) translate(var(--mv-score-shift-x, 0em), var(--mv-score-shift, 0.525em));   /* centred first, across and down, by its own ink (set by the script), then stretched about the middle */
+	transform-box: view-box;
+	transform-origin: 50% 50%;
+}
+
+/* ── A player's name and picture (UV, 30 Oct) ─────────────────────
+   The picture on the left, the display name on the right with the full
+   name under it; the two together centred in the player's name area, and
+   as tall as each other: --mv-who-h, three fifths of the area's height, a
+   fifth clear above and below (UV, 30 Oct: it was all but 8px, and the
+   names read huge). The picture is that tall. The display name's
+   capitals start level with its top and the full name's baseline is level
+   with its bottom (each line trimmed to its capitals and baseline, pushed
+   apart). Sizes as shares of that height: the display name 0.5 of it (its
+   capitals 0.525, Rushford Clean being 1.05 with size-adjust), the full
+   name 0.32. A long name ends in "…" rather than leaving the area. The
+   shadows are the page's, cast by the light. */
+.mv-who {
+	container-type: size;
+	display: grid;
+	place-items: center;
+}
+.mv-person {
+	--mv-who-h: calc(100cqh * 0.6);
+	display: flex;
+	align-items: center;
+	gap: calc(var(--mv-who-h) * 0.25);
+	height: var(--mv-who-h);
+	max-width: calc(100cqw - 2 * var(--space-3));
+}
+.mv-pic {
+	flex: 0 0 auto;
+	width: var(--mv-who-h);
+	height: var(--mv-who-h);
+	border-radius: var(--radius-round);
+	overflow: hidden;
+	display: grid;
+	place-items: center;
+	background: var(--hover-wash);
+	color: var(--color-primary);
+	font-size: calc(var(--mv-who-h) * 0.36);
+	font-weight: 700;
+	box-shadow: var(--match-mark-shadow);
+}
+.mv-pic img { width: 100%; height: 100%; object-fit: cover; }
+.mv-names {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	min-width: 0;
+	height: 100%;
+	/* On the block, not the lines: a line's text-shadow was cut square by
+	   its own sideways clip, a faint box behind the name. */
+	filter: drop-shadow(var(--match-mark-shadow));
+}
+.mv-names:has(> :only-child) { justify-content: center; }
+/* Clipped sideways only, for the "…": trimmed to the baseline, a y or g
+   reaches below the line's box, and overflow: hidden cut its tail off. */
+.mv-name,
+.mv-full {
+	overflow-x: clip;
+	overflow-y: visible;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	line-height: 1;
+	text-box: trim-both cap alphabetic;
+}
+.mv-name {
+	font-family: var(--font-display);
+	font-size: calc(var(--mv-who-h) * 0.5);
+	color: var(--text-primary);
+}
+.mv-full {
+	font-size: calc(var(--mv-who-h) * 0.32);
+	color: var(--text-muted);
+}
+
+/* ── The light (UV, 30 Oct) ───────────────────────────────────────
+   A cream ring in the middle of the screen, inside the break event's hole
+   (UV, 30 Oct: it was a third of the screen's height, the size the break
+   ring then took). Its line is as thick as the break words' letter strokes
+   (UV, 30 Oct): --mv-word-stem of the words' size, which is --mv-word in
+   the break ring's 100 box, --mv-centre across. The space between it
+   and the yellow line is the space between two quadrants (UV, 30 Oct): both
+   from match-v2.js's drawing, the hole's share of the box (--mv-break-hole)
+   and two quadrants' edges apart (--mv-break-gap), so the visible gap is
+   that less one yellow line. So its outside radius is the hole's inner edge
+   (hole / 2 less half a yellow line) less that gap, and across:
+   box × (hole − 2 × gap) + one yellow line. The cream is the dark theme's
+   text colour (there is no cream token of its own since 22 Oct). */
+.mv-light {
+	position: absolute;
+	left: 50%;
+	top: var(--mv-centre-y);
+	height: calc(var(--mv-centre) * (var(--mv-break-hole) - 2 * var(--mv-break-gap)) + var(--match-break-stroke));
+	aspect-ratio: 1;
+	translate: -50% -50%;
+	box-sizing: border-box;
+	border: calc(var(--mv-centre) / 100 * var(--mv-word) * var(--mv-word-stem)) solid var(--text-primary);
+	border-radius: var(--radius-round);
+	/* Shadows inside and out, both cast by the light (UV, 30 Oct: as the
+	   break buttons'): outside, the score digits' (--match-mark-shadow);
+	   inside the hole, the halves' inset shadow (--page-inset-*). Box
+	   shadows rather than a drop-shadow(), which would have shadowed the
+	   inside one too. While the dots run the ring dims whole (dots.css), so
+	   its shadows fade with it. */
+	box-shadow: var(--match-mark-shadow),
+		inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
+	pointer-events: none;
+	/* Its icon (UV, 30 Oct): two halves, the frame in play in the top one and
+	   the win condition in the bottom, each against a short divider across
+	   the middle; the rest of the hole see-through. */
+	--mv-icon-text: calc(var(--mv-centre) * 0.065);
+	--mv-icon-line: calc(var(--mv-centre) / 100 * var(--mv-word) * var(--mv-word-stem));
+	display: grid;
+	grid-template-rows: 1fr 1fr;
+	justify-items: center;
+}
+/* The divider: as thin as the ring's line, across the middle of the hole,
+   casting the score digits' shadow. */
+.mv-light::before {
+	content: "";
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 60%;
+	height: var(--mv-icon-line);
+	translate: -50% -50%;
+	border-radius: var(--radius-pill);
+	background: var(--text-primary);
+	box-shadow: var(--match-mark-shadow);
+}
+/* The words in the display face, trimmed to their capitals, a word's height
+   clear of the divider, casting the score digits' shadow. Their size is a
+   share of the ring's box (0.065; UV, 30 Oct: at 0.085 they crowded the
+   ring): about 14px upright, 10px sideways, every corner inside the hole. */
+.mv-frame,
+.mv-target {
+	font-family: var(--font-display);
+	font-size: var(--mv-icon-text);
+	line-height: 1;
+	text-box: trim-both cap alphabetic;
+	white-space: nowrap;
+	color: var(--text-primary);
+	text-shadow: var(--match-mark-shadow);
+}
+.mv-frame { align-self: end; margin-bottom: calc(var(--mv-icon-text) * 0.7); }
+.mv-target { align-self: start; margin-top: calc(var(--mv-icon-text) * 0.7); }
+
+/* ── The break event (UV, 30 Oct) ─────────────────────────────────
+   A yellow ring (--mv-centre across; UV, 30 Oct: in place of the cream
+   ring, which now sits in its hole), split
+   like an X into four buttons: In at the top, Dry at the bottom, Scratch
+   and Foul either side. Drawn by match-v2.js in a 100 box; the outline is
+   --match-break-stroke whatever the ring's size (non-scaling), the words
+   scale with it. Outlined in the break yellow; the chosen one filled, its
+   word dark, as the old page's yellow pill (controls.css, data-tone
+   warning).
+   Three layers (UV, 30 Oct: the glow and shadows as the halves' and the
+   scores', the shadows inside the buttons and out, all cast by the light):
+   underneath, each quadrant's yellow inner glow, built as the breaker's
+   half's (--match-glow-size, --match-glow-colour: from the outline
+   inwards; match-v2.js, buildGlow); then the buttons, casting the light's
+   shadow outside as the score digits do, from their lines, fill and words
+   (--match-mark-shadow); on top, each quadrant's inside shadow, the halves'
+   own inset shadow (--page-inset-*, offset by the light; buildInset), so it
+   falls across a chosen one's fill and word too. (A drop-shadow glow round
+   the lines came out fainter than the half's and was shadowed too.) */
+.mv-break {
+	position: absolute;
+	left: 50%;
+	top: var(--mv-centre-y);
+	height: var(--mv-centre);
+	aspect-ratio: 1;
+	translate: -50% -50%;
+}
+.mv-break svg {
+	position: absolute;
+	inset: 0;
+	display: block;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+}
+.mv-break-glow,
+.mv-break-inset { pointer-events: none; }
+.mv-glow-flood { flood-color: var(--match-glow-colour); }
+.mv-inset-flood { flood-color: #000; flood-opacity: var(--page-inset-alpha); }
+.mv-score-line-flood { flood-color: var(--color-primary); }   /* the scores' outline, a button's (match-v2.js, buildScoreFx) */
+.mv-score-inset-flood { flood-color: #000; flood-opacity: var(--match-score-inset-alpha); }   /* the scores' stronger inside shadow (match-v2.js, buildScoreFx) */
+.mv-break-lines { filter: drop-shadow(var(--match-mark-shadow)); }
+/* The special wins (UV, 30 Oct; match-v2.js, winButtons): the same buttons
+   in the site's green, beside the ring upright and above and below it
+   sideways, their words along their inner curve. --q is a button's colour,
+   so both kinds share every rule below; the green glow is
+   --match-win-glow-colour. */
+.mv-break-q { --q: var(--color-warning); }
+.mv-win-q { --q: var(--color-primary); }
+.mv-glow-flood-win { flood-color: var(--match-win-glow-colour); }
+:is(.mv-break-q, .mv-win-q) {
+	cursor: pointer;
+	outline: none;
+}
+:is(.mv-break-q, .mv-win-q) path {
+	fill: transparent;   /* not none: an empty button still takes the tap */
+	stroke: var(--q);
+	stroke-width: var(--match-break-stroke);
+	stroke-linejoin: round;
+	vector-effect: non-scaling-stroke;
+	transition: fill var(--control-reveal) ease;
+}
+/* The word stands on its arc (match-v2.js, wordArc, which places the arc so
+   the capitals are centred in the break buttons' band, and on the special
+   wins' inner curve with the same padding). --mv-word (6.5) is in the 100
+   box: the word scales with the ring. */
+:is(.mv-break-q, .mv-win-q) text {
+	fill: var(--q);
+	font-family: var(--font-display);
+	font-size: calc(var(--mv-word) * 1px);
+	text-anchor: middle;
+	dominant-baseline: alphabetic;
+	pointer-events: none;
+	transition: fill var(--control-reveal) ease;
+}
+:is(.mv-break-q, .mv-win-q):hover path,
+:is(.mv-break-q, .mv-win-q):focus-visible path { fill: color-mix(in srgb, var(--q) 18%, transparent); }
+:is(.mv-break-q, .mv-win-q).is-on path { fill: var(--q); }
+:is(.mv-break-q, .mv-win-q).is-on text { fill: var(--color-on-primary); }
+/* The more button's three dots, in its colour (match-v2.js, moreButton) */
+.mv-more-dot { fill: var(--q); }
+
+/* ── The more pop-up (UV, 30 Oct) ─────────────────────────────────
+   The site's panel (forms.css .panel: the translucent surface, its blur,
+   the border, rounded corners) floating over the scrim, with the floating
+   panels' shadow. Laid out as the stage is: upright each player's box above
+   and below the match's actions, sideways either side of them. A player's
+   box is headed by their picture and names, drawn as on the stage
+   (match-v2.js, paintWho) in a size container of its own. */
+.mv-more {
+	width: min(100% - 2 * var(--space-4), 24rem);
+	max-height: calc(100dvh - 2 * var(--space-4));
+	padding: 0;
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-lg);
+	background: var(--bg-surface);
+	-webkit-backdrop-filter: blur(var(--surface-blur));
+	backdrop-filter: blur(var(--surface-blur));
+	color: var(--text-primary);
+	box-shadow: var(--shadow-panel);
+	overflow: auto;
+}
+.mv-more::backdrop { background: var(--scrim, rgba(0, 0, 0, 0.5)); }
+.mv-more-in {
+	display: grid;
+	gap: var(--space-4);
+	padding: var(--space-4);
+}
+.mv-more-head {
+	display: grid;
+	grid-template-columns: 2.5rem 1fr 2.5rem;
+	align-items: center;
+}
+.mv-more-head h2 {
+	grid-column: 2;
+	margin: 0;
+	text-align: center;
+}
+.mv-more-close {
+	grid-column: 3;
+	width: 2.5rem;
+	height: 2.5rem;
+	padding: 0;
+	border: none;
+	border-radius: var(--radius-round);
+	background: transparent;
+	color: var(--color-error);
+	font-size: 1.75rem;
+	line-height: 1;
+	cursor: pointer;
+}
+.mv-more-close:hover,
+.mv-more-close:focus-visible { background: var(--hover-wash); outline: none; }
+.mv-more-body {
+	display: grid;
+	gap: var(--space-4);
+}
+.mv-more-side,
+.mv-more-match {
+	display: grid;
+	gap: var(--space-3);
+	align-content: start;
+}
+.mv-more-side {
+	padding: var(--space-3);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-md);
+}
+.mv-more-who {
+	container-type: size;
+	height: 3.5rem;
+	display: grid;
+	place-items: center;
+}
+@media (orientation: landscape) {
+	.mv-more { width: min(100% - 2 * var(--space-4), 46rem); }
+	.mv-more-body { grid-template-columns: 1fr minmax(0, 13rem) 1fr; align-items: start; }
+	.mv-more-match { align-self: center; }
+}
+
+/* The pop-up's buttons, in the stage buttons' look on ordinary buttons:
+   --q's outline as heavy as theirs, its glow inside (--mv-act-glow), the
+   halves' inset shadow cast by the light, the score digits' shadow outside
+   and on the word, and the same wash on hover. A walkover is a win, so
+   green; the match's actions belong to neither player, so cream. */
+.mv-act {
+	--q: var(--text-primary);
+	--mv-act-glow: color-mix(in srgb, var(--text-primary) 25%, transparent);
+	min-height: 3rem;
+	padding: var(--space-2) var(--space-4);
+	border: var(--match-break-stroke) solid var(--q);
+	border-radius: var(--radius-md);
+	background: transparent;
+	color: var(--q);
+	font-family: var(--font-display);
+	font-size: 1.25rem;
+	text-shadow: var(--match-mark-shadow);
+	box-shadow: var(--match-mark-shadow),
+		inset 0 0 var(--match-glow-size) var(--mv-act-glow),
+		inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
+	transition: background var(--control-reveal) ease;
+	cursor: pointer;
+}
+.mv-act-win {
+	--q: var(--color-primary);
+	--mv-act-glow: var(--match-win-glow-colour);
+}
+.mv-act:hover,
+.mv-act:focus-visible {
+	background: color-mix(in srgb, var(--q) 18%, transparent);
+	outline: none;
+}
+
+/* An error has to be seen whatever is on the stage: over its foot. */
+.mv-status {
+	position: absolute;
+	left: var(--space-3);
+	right: var(--space-3);
+	bottom: var(--space-3);
+	margin: 0;
+	text-align: center;
+}

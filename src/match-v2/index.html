@@ -1,0 +1,81 @@
+---
+layout: layout.html
+title: Match
+description: "Match scorecard."
+navAutoHide: true
+extraStyles:
+  - /stylesheets/match-v2.css
+extraScripts:
+  - /scripts/match-settings.js
+  - /scripts/match-v2.js
+---
+{% comment %}
+	The new match page (UV, 30 Oct: "I don't like the current one"), at
+	/match-v2/?id=<uuid>. Built beside /match/, which stays as the reference
+	until this one replaces it; then this moves to /match/ and the old page,
+	match.js and match.css are deleted.
+
+	The stage (UV, 30 Oct): the whole screen (the nav hides until asked for,
+	navAutoHide), split between the two players, top and bottom on a phone
+	held upright, side by side turned sideways. Home (p0) first: the top, or
+	the left. Everything a player needs is meant to fit on it without
+	scrolling. Both sides are the site's dark theme; an inner shadow round
+	each shows the split.
+
+	The screen in twelfths, 5 : 2 : 5 (UV, 30 Oct; it was thirds): each
+	player has the outer five on their side, split 1 : 4 between their name
+	and picture (.mv-who, empty for now) and their score; the rings fill the
+	middle two.
+{% endcomment %}
+
+<div class="mv-stage" id="mv-stage">
+	<section class="mv-side" id="mv-p0" data-side="home" aria-label="Home player">
+		<div class="mv-who" id="mv-who-home"></div>
+		<div class="mv-score"><svg class="mv-score-svg"><g filter="url(#mv-score-fx)"><text class="mv-score-n" id="mv-score-home" x="50%" y="50%"></text></g></svg></div>
+	</section>
+	<section class="mv-side" id="mv-p1" data-side="away" aria-label="Away player">
+		<div class="mv-who" id="mv-who-away"></div>
+		<div class="mv-score"><svg class="mv-score-svg"><g filter="url(#mv-score-fx)"><text class="mv-score-n" id="mv-score-away" x="50%" y="50%"></text></g></svg></div>
+	</section>
+
+	{% comment %}The cream ring, the dots' ring, round its icon: the frame in play above, the win condition below.{% endcomment %}
+	<div class="mv-light" id="mv-light">
+		<span class="mv-frame" id="mv-frame" data-live="frame"></span>
+		<span class="mv-target" id="mv-target" data-live="target"></span>
+	</div>
+
+	{% comment %}The break event: a yellow ring round the cream one, four quadrants built by match-v2.js from TDCMatchDef.BREAK_OUTCOME.{% endcomment %}
+	<div class="mv-break" id="mv-break"></div>
+
+	<div class="status mv-status" id="mv-status"></div>
+</div>
+
+{% comment %}
+	The more pop-up (UV, 30 Oct), opened by the three dots among the special
+	wins: each player's own actions in a box headed by their picture and
+	names, the match's in the middle, laid out as the stage is (home on top
+	upright, on the left sideways). Its buttons are the stage buttons' look.
+	Nothing here saves yet.
+{% endcomment %}
+<dialog class="mv-more" id="mv-more" aria-labelledby="mv-more-title">
+	<div class="mv-more-in">
+		<div class="mv-more-head">
+			<h2 id="mv-more-title">More</h2>
+			<button type="button" class="mv-more-close" id="mv-more-close" aria-label="Close">&times;</button>
+		</div>
+		<div class="mv-more-body">
+			<section class="mv-more-side" data-side="home" aria-label="Home player">
+				<div class="mv-more-who" id="mv-more-who-home"></div>
+				<button type="button" class="mv-act mv-act-win" data-act="walkover" data-side="home">Walkover</button>
+			</section>
+			<section class="mv-more-match" aria-label="The match">
+				<button type="button" class="mv-act" data-act="abandon">Abandon frame</button>
+				<button type="button" class="mv-act" data-act="pause">Pause match</button>
+			</section>
+			<section class="mv-more-side" data-side="away" aria-label="Away player">
+				<div class="mv-more-who" id="mv-more-who-away"></div>
+				<button type="button" class="mv-act mv-act-win" data-act="walkover" data-side="away">Walkover</button>
+			</section>
+		</div>
+	</div>
+</dialog>

@@ -13,6 +13,7 @@ const TDCNet = (() => {
 	let inflight = 0;
 	let waiters = [];
 	let calm = null;
+	const askers = [];   // onAsk: told each time a page asks (the new match page shows every call on its ring)
 
 	// Quiet means nothing in flight for a moment, so a page's re-read straight
 	// after its write is waited for too. That gap is a few promise steps and
@@ -43,7 +44,16 @@ const TDCNet = (() => {
 		// A page asking (rpc, from) counts at once: the fetch itself starts a
 		// moment later, once the client has its sign-in token, and quiet must
 		// not be declared in that gap.
-		asked() { started++; settle(); },
+		asked() {
+			started++;
+			settle();
+			for (const fn of askers) {
+				try { fn(); } catch (err) { console.error('[Net] a page\'s onAsk listener failed:', err); }
+			}
+		},
+		// A page that wants to know whenever a call is asked for (match-v2.js,
+		// 30 Oct). Told synchronously, before the call's fetch has started.
+		onAsk(fn) { askers.push(fn); },
 		get started() { return started; },
 		quiet() {
 			return new Promise((resolve) => { waiters.push(resolve); settle(); });

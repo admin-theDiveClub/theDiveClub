@@ -191,6 +191,13 @@ body {
 	padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* A page whose nav hides until asked for (navAutoHide, scripts/nav.js) has
+   the whole screen: the nav floats over it when shown. A phone's pull to
+   refresh is off there, so a pull down at the top reaches the nav instead. */
+body[data-nav="auto"] { padding-top: 0; }
+html:has(body[data-nav="auto"]),
+body[data-nav="auto"] { overscroll-behavior-y: none; }
+
 .nav-profile-wrap {
 	position: relative;
 }
