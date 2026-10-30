@@ -680,8 +680,10 @@
 
 	// ─── The special wins (UV, 30 Oct) ────────────────────────────────
 	// Four buttons in the break buttons' style, in green, two a slot either
-	// side of the ring upright and above and below it sideways: slot A Break
-	// & finish and Golden break, slot B Reverse B&F and the more button (UV
+	// side of the ring upright and above and below it sideways: Break & finish
+	// and Golden break on the breaker's half, Reverse B&F and the more button
+	// on the other (UV, 30 Oct), so slot A holds B&F and rB&F, slot B GB and
+	// the more button (UV
 	// chose four, two a slot; the fourth was a walkover until UV made it three
 	// dots opening the more pop-up, which holds the walkovers; the wins are
 	// named by TDCMatchDef.RESULT_SHORT). Each slot is a rounded rectangle split in two by the
@@ -691,9 +693,9 @@
 	// break words are. Slot A is the left one upright and the top one sideways;
 	// in a slot the first is the top one upright and the left one sideways.
 	// Drawn in the break ring's 100 box, reaching outside it, and drawn again
-	// when the phone turns. A tap records the frame (specialWin, step 2);
-	// which are offered follows the rules (paintButtons).
-	const WIN_SLOTS = [['break_and_finish', 'golden_break'], ['reverse_break_and_finish', 'more']];
+	// when the phone turns or the breaker changes. A tap records the frame
+	// (specialWin, step 2); which are offered follows the rules (paintButtons).
+	const WIN_SLOTS = [['break_and_finish', 'reverse_break_and_finish'], ['golden_break', 'more']];   // each slot: [the breaker's half, the other half]
 	const WIN = { depth: 40, corner: 4 };   // a slot's depth beyond its curve, and its corners' radius
 	const winR = () => BREAK_RING.outer + 2 * BREAK_RING.gap;
 	const landscape = matchMedia('(orientation: landscape)');
@@ -727,7 +729,9 @@
 		return { d, mid: norm((a1 + a2) / 2 + rot), half: Math.abs(a1 - a2) / 2, wordR, centre: turn(50 - R, (y1 + y2) / 2) };
 	}
 
-	function winButtons(size) {
+	// breakSide: who is breaking; home's half is the top one upright and the
+	// left one sideways, the first of a slot's pair
+	function winButtons(size, breakSide) {
 		const wide = landscape.matches, h = BREAK_RING.outer, g = BREAK_RING.gap;
 		const cap = CAP * size, pad = (BREAK_RING.outer - BREAK_RING.inner - cap) / 2;
 		const wordR = winR() + pad + cap / 2;
@@ -736,7 +740,8 @@
 		WIN_SLOTS.forEach((values, i) => {
 			const pair = [winButton(50 - h, 50 - g, rots[i], wordR), winButton(50 + g, 50 + h, rots[i], wordR)];
 			pair.sort((a, b) => (wide ? a.centre[0] - b.centre[0] : a.centre[1] - b.centre[1]));
-			values.forEach((value, j) => out.push(Object.assign({ value }, pair[j])));
+			const halves = breakSide === 'away' ? values.slice().reverse() : values;
+			halves.forEach((value, j) => out.push(Object.assign({ value }, pair[j])));
 		});
 		return out;
 	}
@@ -866,6 +871,7 @@
 		return g;
 	}
 
+	let repaintWins = null, winsBreaker = null;   // buildBreak's paintWins, and the breaker it last drew for
 	function buildBreak() {
 		const svg = document.createElementNS(SVG_NS, 'svg');
 		svg.setAttribute('viewBox', '0 0 100 100');
@@ -918,9 +924,11 @@
 		};
 		new ResizeObserver(glowMasks).observe(els.stage);
 
-		// The special wins and both effect layers, drawn for how the phone is held
+		// The special wins and both effect layers, drawn for how the phone is
+		// held and who is breaking
 		const paintWins = () => {
-			buttons = winButtons(word);
+			winsBreaker = (draft && draft.break_side) || null;
+			buttons = winButtons(word, winsBreaker);
 			const winDefs = document.createElementNS(SVG_NS, 'defs');
 			wins.replaceChildren(winDefs, ...buttons.map((b) => {
 				if (b.value === 'more') return moreButton(b, word);
@@ -940,6 +948,7 @@
 			requestAnimationFrame(glowMasks);   // once the turned layout is in
 		};
 		paintWins();
+		repaintWins = paintWins;
 		landscape.addEventListener('change', paintWins);
 
 		svg.addEventListener('click', (e) => {
@@ -1096,9 +1105,11 @@
 		if (!canEdit) return;
 		if (!value || draft.break_outcome === value) return;
 		draft.break_outcome = value;
+		draft.remoteBreak = false;   // this phone's own now, if it was another's
 		// Entering a break event is what starts the frame and ends racking.
 		beginFrame();
 		TDC.status(els.stageStatus, '', '');
+		sendBreakLive();
 		renderStage();
 		renderTimePanel();
 		renderHistory();
@@ -1142,8 +1153,10 @@
 			score.setAttribute('aria-label', `${name}: ${framesWon(side)}. Tap to give ${name} this frame`);
 		}
 		// renderBreakRow's and the special wins' work: the break ring and the
-		// special wins, enabled as the pill and the rings were
-		paintButtons();
+		// special wins, enabled as the pill and the rings were; drawn again
+		// first when the breaker has changed, so B&F and GB move to their half
+		if ((draft.break_side || null) !== winsBreaker) repaintWins();
+		else paintButtons();
 	}
 
 	// ─────────────────────────────────────────────────────────────────
@@ -3786,6 +3799,7 @@
 			.on('postgres_changes',
 				{ event: 'INSERT', schema: 'public', table: 'tbl_match_events', filter: 'match_id=eq.' + liveMatchId },
 				onRemoteChange)
+			.on('broadcast', { event: 'break' }, onRemoteBreak)
 			.subscribe((status) => {
 				if (status === 'SUBSCRIBED') return;
 				// Not fatal: the page still works, it just stops being live
@@ -3803,11 +3817,37 @@
 		liveChannel = null;
 	}
 
+	// The break event goes to the other phones as it is tapped (UV, 30 Oct):
+	// a broadcast on the match's channel, nothing stored; the frame carries it
+	// once saved, so a phone that misses it (locked, offline) gets it then.
+	function sendBreakLive() {
+		if (!liveChannel || isOffline()) return;
+		liveChannel.send({ type: 'broadcast', event: 'break', payload: {
+			frame_no: MATCH.frames.length + 1, break_outcome: draft.break_outcome
+		} }).then((r) => {
+			if (r !== 'ok') TDC.error(AREA, `the break event could not be sent to the other phone (${r}).`, null, els.stageStatus);
+		});
+	}
+
+	// Another phone's break event, selected here as if tapped, so the ring and
+	// the special wins follow it (renderStage); nothing else changes. Held as
+	// another's (draft.remoteBreak), so it never makes this phone busy and the
+	// saved frame still comes in by itself.
+	function onRemoteBreak({ payload: p }) {
+		if (!MATCH || !draft || !p || p.frame_no !== MATCH.frames.length + 1) return;
+		if (!(p.break_outcome in TDCMatchDef.BREAK_OUTCOME)) return;
+		draft.break_outcome = p.break_outcome;
+		draft.remoteBreak = true;
+		renderStage();
+	}
+
 	// Mid-frame is the wrong moment to redraw: a reload starts a fresh draft,
 	// which would throw away a break event somebody has already tapped. So the
 	// screen is left alone and the change is offered instead.
 	function busyScoring() {
 		if (!draft) return false;
+		// Another phone's break event is not this phone scoring (onRemoteBreak)
+		if (draft.remoteBreak) return !!(overlayMode || cellMenuOpen);
 		return !!(draft.break_outcome || frameStartedAt !== null || overlayMode || cellMenuOpen);
 	}
 
