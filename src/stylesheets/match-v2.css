@@ -545,3 +545,716 @@
 	margin: 0;
 	text-align: center;
 }
+
+/* The notice, first below the stage: /match/'s, plainly. */
+.mv-notice {
+	margin: 0 0 var(--space-6);
+	padding: var(--space-3);
+	border: 1px solid var(--border-color);
+	border-left-width: 3px;
+	border-radius: var(--radius-md);
+	font-size: 0.85rem;
+	line-height: 1.45;
+	color: var(--text-muted);
+	background: var(--bg-surface);
+}
+.mv-notice strong { color: var(--text-primary); font-weight: 600; }
+.mv-notice.warn { border-left-color: var(--color-warning); }
+.mv-notice.error { border-left-color: var(--color-error); }
+
+/* ════════════════════════════════════════════════════════════════
+   Below the stage, the pop-ups' old-page parts and the settings panel
+   (steps 3 and 4 of the port, 30 Oct): match.css's own rules, copied by
+   line range, so /match/'s panels look as they did. Changes for this page
+   are after them, under "This page". When /match/ is deleted these stay.
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── The page's buttons ──────────────────────────────────────────── */
+.mbtn {
+	flex: 1 1 auto;
+	min-width: 4.2rem;
+	min-height: 2.75rem;
+	padding: 0.45rem 0.6rem;
+	border-radius: 8px;
+	border: 1px solid var(--border-color);
+	background: var(--bg-surface);
+	color: var(--text-primary);
+	font-family: inherit;
+	font-size: 0.85rem;
+	font-weight: 600;
+	cursor: pointer;
+	line-height: 1.15;
+}
+.mbtn:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+.mbtn.on {
+	border-color: var(--color-primary);
+	background: color-mix(in srgb, var(--color-primary) 28%, transparent);
+}
+/* Result buttons end the frame, so they read as the committing action. */
+.mbtn.result {
+	border-color: color-mix(in srgb, var(--color-primary) 45%, var(--border-color));
+}
+.mbtn.more {
+	flex: 0 0 auto;
+	min-width: 2.75rem;
+	font-size: 1rem;
+	font-weight: 400;
+	color: var(--text-muted);
+}
+
+/* ── Panels below the stage ──────────────────────────────────────── */
+.below {
+	width: 100%;
+	max-width: 640px;
+	margin: 0 auto;
+	padding: 1.25rem 1rem 3rem;
+}
+/* Sideways and on a PC the panels take the screen's width (UV, 28 Oct: the
+   stats, side by side in 640px, were squashed): the whole width on a phone
+   turned sideways, ten of twelve columns on a PC as every other page. The
+   slide to undo keeps its old width; a bar across a PC screen is no easier
+   to slide. */
+@media (orientation: landscape) {
+	.below { max-width: none; }
+	.undo-row { max-width: 640px; margin-inline: auto; }
+}
+@media (min-width: 992px) {
+	.below { max-width: none; width: calc(100% * 10 / 12); }
+	.undo-row { max-width: 640px; margin-inline: auto; }
+}
+
+.panel-block { margin-bottom: 2.25rem; }
+/* The same heading as .tdc-card h2 on the account pages — the display face,
+   sentence case, in the text colour rather than tracked-out and muted. The
+   flex row stays, because some of these carry a toggle link on the right. */
+.panel-block h2 {
+	font-size: 1.1rem;
+	color: var(--text-primary);
+	margin: 0 0 0.75rem;
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 0.75rem;
+}
+.panel-block h3 {
+	font-size: 0.9rem;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--text-muted);
+	margin: 1.5rem 0 0.5rem;
+}
+.link-toggle {
+	background: none;
+	border: none;
+	padding: 0;
+	color: var(--color-primary);
+	font-family: var(--font-body);
+	font-size: 0.8rem;
+	text-transform: none;
+	letter-spacing: 0;
+	cursor: pointer;
+}
+
+/* ── Timing readouts ─────────────────────────────────────────────── */
+.time-readout {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 0.3rem 0;
+	font-size: 0.85rem;
+}
+.time-key { color: var(--text-muted); }
+.time-val {
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
+}
+.time-readout.live .time-val    { color: var(--color-primary); }
+.time-readout.warn .time-val    { color: var(--color-owner); }
+.time-readout.expired .time-val { color: var(--color-error); }
+
+.time-actions {
+	display: flex;
+	gap: 0.5rem;
+	margin: 0.6rem 0 0.2rem;
+}
+.time-actions .mbtn { flex: 1 1 0; }
+
+.time-note {
+	font-size: 0.75rem;
+	color: var(--text-muted);
+	margin-top: 0.5rem;
+}
+
+.ext-line {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.35rem 0;
+	font-size: 0.85rem;
+}
+.ext-line .time-key { flex: 1 1 auto; }
+.ext-pips { display: flex; gap: 0.25rem; }
+.pip {
+	width: 0.55rem;
+	height: 0.55rem;
+	border-radius: 50%;
+	border: 1px solid var(--border-color);
+}
+.pip.on { background: var(--color-primary); border-color: var(--color-primary); }
+.mbtn.ext {
+	flex: 0 0 auto;
+	min-width: 0;
+	min-height: 2.1rem;
+	padding: 0.3rem 0.65rem;
+	font-size: 0.8rem;
+}
+
+/* ── Slide to undo, first below the stage ────────────────────────── */
+.undo-row { margin-bottom: var(--space-6); }
+.undo-row[hidden] { display: none; }
+
+/* ── Frame history ───────────────────────────────────────────────── */
+/* Portrait gets the tall table, landscape the wide one. Both are rendered from
+   the same frames; only one is shown. */
+.history-tall { display: table; width: 100%; }
+.history-scroll { display: none; }
+.tl-toggles { display: none; gap: var(--space-3); }
+@media (orientation: landscape) {
+	.history-tall { display: none; }
+	.history-scroll {
+		display: block;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+	.tl-toggles { display: flex; }
+}
+
+.history-tall,
+.history-wide {
+	border-collapse: collapse;
+	font-size: 0.8rem;
+	font-variant-numeric: tabular-nums;
+}
+.history-tall th, .history-tall td,
+.history-wide th, .history-wide td {
+	padding: var(--space-1) var(--space-2);
+	border-bottom: 1px solid var(--border-color);
+	text-align: center;
+	vertical-align: middle;
+	font-weight: normal;
+}
+.history-tall th, .history-wide th { color: var(--text-muted); }
+
+/* A player's name heads their columns (portrait) or rows (landscape). */
+.history-tall .hn,
+.history-wide .row-name {
+	font-family: var(--font-display);
+	font-size: 1.05rem;
+	color: var(--text-primary);
+}
+.history-tall .sub-head th,
+.history-wide .row-label {
+	font-size: 0.65rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+}
+.history-tall .col-no { width: 2.5rem; color: var(--text-muted); }
+.history-tall tfoot td { border-bottom: none; border-top: 1px solid var(--text-muted); }
+
+/* The marks. A break: the event in yellow, or a yellow dot when only who
+   broke is known. A win: a green dot, ringed yellow for a golden break and
+   green for a break & finish. */
+.hb-dot {
+	width: 0.45rem;
+	height: 0.45rem;
+	margin: 0 auto;
+	border-radius: var(--radius-round);
+	background: var(--color-warning);
+}
+.hb-event { color: var(--color-warning); font-size: 0.75rem; font-weight: 600; }
+.hw-dot {
+	position: relative;
+	z-index: 1;
+	width: 0.75rem;
+	height: 0.75rem;
+	margin: 0 auto;
+	border-radius: var(--radius-round);
+	background: var(--color-primary);
+	box-shadow: 0 0 6px color-mix(in srgb, var(--color-primary) 50%, transparent);
+}
+.hw-dot.ring-gb { box-shadow: 0 0 0 2px var(--bg-base), 0 0 0 3.5px var(--color-warning); }
+.hw-dot.ring-bf { box-shadow: 0 0 0 2px var(--bg-base), 0 0 0 3.5px var(--color-primary); }
+.hw-none { color: var(--text-muted); }
+
+/* Rack time in yellow, frame time in green. */
+.t-rack, .t-frame { font-size: 0.7rem; line-height: 1.3; margin-top: 2px; }
+.t-rack { color: var(--color-warning); }
+.t-frame { color: var(--color-primary); }
+
+/* The frame in play, lightly shaded. */
+.history-tall .in-play td,
+.history-wide .in-play { background: color-mix(in srgb, var(--color-warning) 8%, transparent); }
+
+/* Totals: frames won large and glowing, breaks in yellow at body size. */
+.tot-won {
+	font-family: var(--font-display);
+	font-size: 1.5rem;
+	line-height: 1.1;
+	color: var(--color-primary);
+	text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 60%, transparent);
+}
+.tot-breaks { color: var(--color-warning); font-size: 0.85rem; }
+
+/* Wide: frames across. The name and row label stay put while the frames
+   scroll under them. */
+.history-wide-box { position: relative; width: max-content; min-width: 100%; }
+.history-wide { position: relative; white-space: nowrap; }
+.history-wide .row-name,
+.history-wide .row-label {
+	position: sticky;
+	z-index: 2;
+	box-sizing: border-box;
+	background: var(--bg-base);
+}
+.history-wide .row-name {
+	left: 0;
+	width: 5rem;
+	min-width: 5rem;
+	max-width: 5rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	text-align: left;
+}
+.history-wide .row-label { left: 5rem; width: 3.25rem; min-width: 3.25rem; }
+.history-wide .row-time .row-name,
+.history-wide .row-head .row-name { max-width: none; }
+.history-wide .row-time td { border-bottom-color: var(--border-color); }
+.history-wide .col-total { border-left: 1px solid var(--text-muted); }
+
+/* The timeline (design §9, an experiment): a yellow tick at each frame's
+   left edge marks its rack, the rack time over it; the frame time in the
+   middle; one grey line through every win, behind everything. */
+.tl-line {
+	position: absolute;
+	left: 0;
+	top: 0;
+	pointer-events: none;
+	overflow: visible;
+}
+.tl-line path { fill: none; stroke: var(--timeline-line); stroke-width: 2; stroke-linecap: round; }
+.tl-line .tl-tail { stroke-dasharray: 4 5; }
+.history-wide.timeline .ht { position: relative; padding-top: 1.1rem; }
+.history-wide.timeline .ht:not(.col-total)::before {
+	content: '';
+	position: absolute;
+	left: -1px;
+	bottom: 15%;
+	width: 2px;
+	height: 45%;
+	border-radius: 1px;
+	background: var(--color-warning);
+}
+.history-wide.timeline .ht:not(.col-total) .t-rack {
+	position: absolute;
+	left: 0;
+	top: 2px;
+	margin: 0;
+	transform: translateX(-50%);
+	font-size: 0.62rem;
+}
+/* The first frame's rack time would sit under the names: it starts at its tick. */
+.history-wide.timeline .row-time > .ht:nth-child(2) .t-rack { transform: none; }
+.history-wide.timeline .ht .t-frame { margin: 0; }
+
+/* Every cell is a correction waiting to happen. */
+td.edit { cursor: pointer; }
+td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transparent); }
+
+/* ── Stats ───────────────────────────────────────────────────────── */
+/* Each player's (home · what · away) and the match's (what · value):
+   stacked in portrait, side by side in landscape. */
+.stats-grid { display: grid; gap: var(--space-5); }
+@media (orientation: landscape) {
+	.stats-grid { grid-template-columns: 1fr 1fr; align-items: start; }
+}
+.stats-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.85rem;
+	font-variant-numeric: tabular-nums;
+}
+.stats-table th,
+.stats-table td {
+	padding: var(--space-1) var(--space-2);
+	border-bottom: 1px solid var(--border-color);
+	font-weight: normal;
+}
+.stats-table .st-k { color: var(--text-muted); }
+.player-stats .st-k { text-align: center; }
+.player-stats .st-v { width: 28%; text-align: center; }
+.match-stats .st-k { text-align: left; }
+.match-stats .st-v { text-align: right; }
+.player-stats .ps-side {
+	font-family: var(--font-display);
+	font-size: 1.05rem;
+	color: var(--text-primary);
+	text-align: center;
+}
+.stats-table .st-group th {
+	padding-top: var(--space-4);
+	text-align: left;
+	font-size: 0.7rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--text-primary);
+}
+.player-stats .st-group th { text-align: center; }
+.player-stats .st-won .st-v {
+	font-family: var(--font-display);
+	font-size: 1.6rem;
+	line-height: 1.1;
+	color: var(--color-primary);
+	text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 60%, transparent);
+}
+.player-stats .st-yellow .st-v { color: var(--color-warning); }
+
+/* ── Settings panel ──────────────────────────────────────────────── */
+/* Starts below the fixed nav, so the nav stays reachable with the panel open. */
+.panel-scrim {
+	position: fixed;
+	inset: var(--nav-total) 0 0 0;
+	background: var(--scrim);
+	z-index: 150;
+}
+.settings-panel {
+	position: fixed;
+	top: var(--nav-total);
+	right: 0;
+	bottom: 0;
+	width: min(22rem, 100vw);
+	z-index: 160;
+	background: var(--bg-base);
+	border-left: 1px solid var(--border-color);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+.panel-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 1rem;
+	height: 48px;
+	border-bottom: 1px solid var(--border-color);
+	flex: 0 0 auto;
+}
+.panel-head h2 { font-size: 1.05rem; margin: 0; }
+.panel-close {
+	background: none;
+	border: none;
+	color: var(--text-primary);
+	font-size: 1.75rem;
+	line-height: 1;
+	cursor: pointer;
+	padding: 0 0.25rem;
+}
+.panel-body {
+	padding: 1rem;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+.context-line { margin: 0 0 0.6rem; font-size: 0.9rem; color: var(--text-muted); }
+.badge-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1rem; }
+
+/* Says what a settings change did to frames already played. */
+.panel-note {
+	margin: 0 0 1rem;
+	padding: 0.6rem 0.75rem;
+	border: 1px solid var(--color-owner);
+	border-radius: 6px;
+	background: color-mix(in srgb, var(--color-owner) 12%, transparent);
+	font-size: 0.8rem;
+}
+.panel-note .note-line {
+	margin-top: 0.3rem;
+	color: var(--text-muted);
+}
+
+/* ── Settings cards ──────────────────────────────────────────────── */
+.set-card {
+	padding: 0.9rem 0.85rem 1rem;
+	margin-bottom: 1rem;
+	border: 1px solid var(--border-color);
+	border-radius: 8px;
+	background: var(--bg-surface);
+	display: grid;
+	gap: 0.9rem;
+}
+.set-card h3 {
+	margin: 0;
+	font-size: 0.8rem;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+}
+
+/* The settings panel is a form, so it is laid out like every other form on
+   the site: label above, full-width underlined field below, hint under that.
+   It used to be a two-column list with the control right-aligned beside its
+   label, which read as a different product the moment you opened it next to
+   the account pages. These are deliberately the same numbers as .field in
+   forms.css rather than numbers that merely look similar. */
+.set-row {
+	margin-bottom: 1.5rem;
+}
+.set-label {
+	display: block;
+	font-size: 0.7rem;
+	font-weight: 600;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--color-primary);
+	margin-bottom: 0.45rem;
+}
+.set-hint {
+	font-size: 0.8rem;
+	color: var(--text-muted);
+	margin-top: 0.45rem;
+}
+/* A line, not a box. Less furniture on a panel that is mostly fields. */
+.set-row select,
+.set-row input[type="text"],
+.set-row input[type="search"],
+.set-row input[type="number"] {
+	width: 100%;
+	padding: 0.5rem 0;
+	border: none;
+	border-bottom: 1px solid var(--border-color);
+	border-radius: 0;
+	background: transparent;
+	color: var(--text-primary);
+	font-family: inherit;
+	font-size: 1rem; /* 16px stops iPhone zooming in on focus */
+	text-align: left;
+	transition: border-color 0.15s ease;
+}
+.set-row select:focus,
+.set-row input[type="text"]:focus,
+.set-row input[type="search"]:focus,
+.set-row input[type="number"]:focus {
+	outline: none;
+	border-bottom-color: var(--color-primary);
+}
+/* A select has no box to hang the native arrow on any more, so it gets its
+   own. currentColor keeps it right in both themes. */
+.set-row select {
+	appearance: none;
+	-webkit-appearance: none;
+	padding-right: 1.5rem;
+	background-image:
+		linear-gradient(45deg, transparent 50%, currentColor 50%),
+		linear-gradient(135deg, currentColor 50%, transparent 50%);
+	background-position: right 0.6rem center, right 0.3rem center;
+	background-size: 0.3rem 0.3rem, 0.3rem 0.3rem;
+	background-repeat: no-repeat;
+}
+/* The native dropdown list is drawn by the operating system and does not
+   inherit the panel's dark background — on Windows it came out as near-white
+   text on white. These two properties are the only ones it honours. */
+.set-row select option {
+	background: var(--bg-base);
+	color: var(--text-primary);
+}
+/* A number is a number: full width would be a wall of empty box. */
+.set-row input[type="number"] { width: 6rem; }
+
+/* .stack was the class that pulled a select onto its own line. Every row is
+   its own line now, so it is left as a no-op rather than chased out of
+   match.js, where it is still emitted. */
+.set-row.stack { }
+
+/* A checkbox has to be worth aiming a thumb at. */
+.set-check {
+	width: 1.4rem;
+	height: 1.4rem;
+	margin-top: 0.1rem;
+	accent-color: var(--color-primary);
+}
+
+
+/* Read-only: a watcher sees the match but cannot change it. Dimmed rather
+   than hidden — knowing it is a race to 5 is the point. */
+.set-row input:disabled,
+.set-row select:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* ── Scorecard panel ─────────────────────────────────────────────── */
+.card-line { margin-bottom: 0.6rem; line-height: 1.45; }
+.card-note {
+	font-size: 0.82rem;
+	color: var(--text-muted);
+	line-height: 1.45;
+	margin-bottom: 0.6rem;
+}
+.card-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.75rem 0; }
+.card-row .mbtn { flex: 1 1 auto; }
+#card-body textarea {
+	width: 100%;
+	padding: 0.5rem 0;
+	border: none;
+	border-bottom: 1px solid var(--border-color);
+	background: transparent;
+	color: var(--text-primary);
+	font-family: inherit;
+	font-size: 1rem;
+	resize: vertical;
+}
+#card-body textarea:focus { outline: none; border-bottom-color: var(--color-primary); }
+
+/* Same as the account pages: the open dropdown list needs its own colours. */
+.set-row select option {
+	background: var(--bg-base);
+	color: var(--text-primary);
+	direction: ltr;
+}
+
+/* ── The result, once both players have agreed ───────────────────── */
+.result-view {
+	width: 100%;
+	max-width: 640px;
+	margin: 0 auto;
+	padding: 2rem 1rem 3rem;
+}
+.result-view[hidden] { display: none; }
+.result-head { text-align: center; margin-bottom: 2.5rem; }
+.result-label {
+	font-size: 0.7rem;
+	font-weight: 600;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--color-primary);
+	margin: 0 0 0.75rem;
+}
+.score-pair { display: flex; align-items: center; justify-content: center; gap: 0.75rem; }
+.score-big {
+	font-family: var(--font-display);
+	font-size: 4rem;
+	line-height: 1;
+}
+.score-dash { font-size: 2rem; color: var(--text-muted); }
+.result-line { margin: 0.75rem 0 0; font-size: 1.05rem; }
+
+.result-frames { list-style: none; margin: 0; padding: 0; }
+.result-frame {
+	display: grid;
+	grid-template-columns: 2rem 1fr;
+	gap: 0.15rem 0.75rem;
+	padding: 0.55rem 0;
+	border-bottom: 1px solid var(--border-color);
+}
+.rf-no { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.rf-who { font-weight: 600; }
+.rf-extra { grid-column: 2; font-size: 0.8rem; color: var(--text-muted); }
+
+.result-facts { display: grid; gap: 0.1rem; }
+.fact {
+	display: flex;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 0.45rem 0;
+	border-bottom: 1px solid var(--border-color);
+}
+.fact-k { color: var(--text-muted); font-size: 0.9rem; }
+.fact-v { font-weight: 600; }
+
+
+/* ── The menu that drops out of a history cell ───────────────────── */
+.below { position: relative; }      /* the menu is placed against this */
+.cell-menu {
+	position: absolute;
+	z-index: 40;
+	width: max-content;
+	max-width: min(20rem, calc(100vw - 2rem));
+	padding: 0.75rem;
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-lg);
+	background: var(--bg-base);
+	box-shadow: var(--shadow-panel);
+}
+.cell-menu[hidden] { display: none; }
+.cell-menu-q {
+	margin: 0 0 0.6rem;
+	font-size: 0.8rem;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--color-primary);
+}
+.cell-menu-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.cell-menu-row .mbtn { flex: 1 1 auto; white-space: nowrap; }
+.cell-menu-hint {
+	margin: 0.6rem 0 0;
+	font-size: 0.78rem;
+	line-height: 1.4;
+	color: var(--text-muted);
+}
+.cell-menu-hint[hidden] { display: none; }
+
+/* A cell you can change should look like one. */
+.history-tall .edit, .history-wide .edit { cursor: pointer; }
+
+/* ── This page (steps 2 to 4) ──────────────────────────────────── */
+
+/* The nav hides on this page, so the settings panel and its scrim start at
+   the top of the screen, clear of the notch, and sit over the stage. */
+.panel-scrim { inset: 0; }
+.settings-panel { top: 0; padding-top: env(safe-area-inset-top, 0px); }
+/* A settings card's one column may shrink below its widest content, so a
+   pill of options (Discipline, Win condition) scrolls inside the panel
+   rather than running off its edge (a grid column's minimum is its
+   content's width; found rendering it at 420px, 30 Oct). */
+.set-card { grid-template-columns: minmax(0, 1fr); }
+
+/* A player's score and name are the plain-win button while a win can be
+   given (renderStage, data-winnable): a pointer, and a press lights the
+   score for an instant, as the old card did. */
+.mv-side[data-winnable] :is(.mv-score, .mv-who) { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.mv-side[data-winnable] .mv-score:active { background: color-mix(in srgb, var(--color-primary) 10%, transparent); }
+.mv-score:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -4px; }
+
+/* A break or special-win button that does nothing now: greyed, no wash. A
+   tap still says why (match-v2.js, whyOff). */
+:is(.mv-break-q, .mv-win-q).is-off { opacity: 0.3; cursor: default; }
+:is(.mv-break-q, .mv-win-q).is-off:hover path { fill: transparent; }
+
+/* The pop-ups' buttons: off when they would do nothing; the lag's in the
+   break yellow. */
+.mv-act:disabled { opacity: 0.35; cursor: default; background: transparent; }
+.mv-act-break {
+	--q: var(--color-warning);
+	--mv-act-glow: var(--match-glow-colour);
+}
+
+/* The question pop-up and the lag pop-up's hint */
+.mv-ask { width: min(100% - 2 * var(--space-4), 24rem); }
+.mv-ask-hint {
+	margin: 0;
+	text-align: center;
+	font-size: 0.85rem;
+	color: var(--text-muted);
+}
+.mv-ask-hint[hidden] { display: none; }
+.mv-ask-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-3);
+}
+.mv-ask-row .mv-act { flex: 1 1 8rem; }
