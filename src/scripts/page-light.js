@@ -79,9 +79,23 @@
 		return { x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e };
 	}
 
+	// The loading screen (loader.js) is up: nothing can be seen through its
+	// blur, and on the match page every move of the light repaints the
+	// stage's shadows and filters and then the blur over them, which slowed
+	// the screen's dots on a phone (30 Oct). Before loader.js has run, the
+	// screen is up if it is on the page and not hidden.
+	function screenUp() {
+		if (typeof TDCLoader !== 'undefined') return TDCLoader.up;
+		var box = document.querySelector('.tdc-loader');
+		return !!box && !box.hidden;
+	}
+
 	function tick(now) {
 		if (!running) return;
 		requestAnimationFrame(tick);
+		// The light holds while the loading screen is up and carries on from
+		// there once it goes
+		if (screenUp()) { last = now; return; }
 		// Time counts only while the page is shown, a frame at most STEP*2, so
 		// a page brought back from the background carries on where it was
 		if (now - last < STEP) return;
