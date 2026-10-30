@@ -543,6 +543,44 @@
 		return false;
 	}
 
+	// Upright, each player's name and picture fill the room between the
+	// stage's edge and their score's digits (UV, 30 Oct): the top player's
+	// from the top of the stage to the digit's top, the bottom player's from
+	// the digit's foot to the stage's foot (match.css, --mv-who-top and
+	// --mv-who-size). The digit's ink is worked out from what the browser has
+	// actually laid out: the text's computed size and transform (its stretch
+	// and every shift, in px, about the middle of the score's box, where its
+	// baseline stands) and the face's ascent and descent for these digits.
+	// Again whenever a score's text or centring changes (paintScore, a live
+	// fade), the stage resizes or the phone turns. Sideways the names keep
+	// their strip across the top (match.css) and nothing is set.
+	function placeWho() {
+		for (const [half, who, node] of [[els.p0, els.whoHome, els.scoreHome], [els.p1, els.whoAway, els.scoreAway]]) {
+			if (landscape.matches) { who.style.removeProperty('--mv-who-top'); who.style.removeProperty('--mv-who-size'); continue; }
+			const box = node.ownerSVGElement.getBoundingClientRect(), side = half.getBoundingClientRect();
+			if (!(box.height > 0) || !node.textContent || !scoreFaceIn()) continue;   // not drawn yet: the CSS's own place meanwhile
+			const cs = getComputedStyle(node);
+			const fs = parseFloat(cs.fontSize);
+			const m = new DOMMatrixReadOnly(cs.transform === 'none' ? undefined : cs.transform);
+			inkCanvas.font = '100px "Rushford Clean"';
+			const ink = inkCanvas.measureText(node.textContent);
+			if (!(fs > 0) || !(ink.actualBoundingBoxAscent > 0)) continue;
+			const mid = box.top + box.height / 2;
+			const top = mid + m.f - m.d * ink.actualBoundingBoxAscent / 100 * fs;
+			const foot = mid + m.f + m.d * ink.actualBoundingBoxDescent / 100 * fs;
+			const [from, to] = half.dataset.side === 'home' ? [side.top, top] : [foot, side.bottom];
+			who.style.setProperty('--mv-who-top', Math.max(0, from - side.top).toFixed(1) + 'px');
+			who.style.setProperty('--mv-who-size', Math.max(0, to - from).toFixed(1) + 'px');
+		}
+	}
+	function followScores() {
+		const watch = new MutationObserver(placeWho);
+		for (const node of [els.scoreHome, els.scoreAway]) watch.observe(node, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+		new ResizeObserver(placeWho).observe(els.stage);
+		landscape.addEventListener('change', placeWho);
+		placeWho();
+	}
+
 	// The scores read as buttons (UV, 30 Oct): one filter both share,
 	// #mv-score-fx, on the unstretched group round each digit (match.css,
 	// .mv-score-n), laying over the digit the buttons' green inner glow
@@ -1035,6 +1073,7 @@
 
 	buildBreak();
 	buildScoreFx();
+	followScores();
 
 	// ─── The ring's icon (UV, 30 Oct) ─────────────────────────────────
 	// Inside the cream ring, the old page's frame line in two parts: above,
@@ -3528,7 +3567,6 @@
 		writeQueue(null);
 		await reloadFromServer();
 		renderOfflineNotice();
-		TDC.status(els.stageStatus, 'Everything saved on this phone has been sent.', 'success');
 	}
 
 	function framePayload(f) {
@@ -3647,7 +3685,9 @@
 		// player is already looking at.
 		if (staleKnown) { staleKnown = false; hideNotice(); }
 
-		if (b.ok) TDC.status(els.stageStatus, b.ok, 'success');
+		// Saved: nothing is said (UV, 30 Oct: no line saying what a call did;
+		// the score and the dots show it), and an earlier message goes
+		if (b.ok) TDC.status(els.stageStatus, '', '');
 
 		// An official editing somebody else's card writes them a notification
 		// (20261022110000), so the push for it goes out now rather than

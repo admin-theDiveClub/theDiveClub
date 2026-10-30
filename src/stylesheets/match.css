@@ -6,8 +6,11 @@
 
 /* ── The stage (UV, 30 Oct) ───────────────────────────────────────
    The whole screen below the nav (--nav-total, the body's padding, notch
-   included; UV, 30 Oct: the nav stays, as on every page). The body keeps
-   clear of the home bar. Upright, the
+   included; UV, 30 Oct: the nav stays, as on every page), down to the
+   screen's very foot (UV, 30 Oct: nothing below the stage shows on
+   opening; it stopped above the home bar, and the undo slide showed in
+   the gap): what sits at the foot keeps clear of the home bar itself
+   (.mv-who, .mv-score). Upright, the
    two players top and bottom; sideways, side by side. A size container, so
    the rings can be sized from it.
    In thirds along the split (UV, 30 Oct: thirds, then 5 : 2 : 5 in twelfths,
@@ -34,7 +37,7 @@
 	--mv-word-stem: 0.23;
 	display: grid;
 	grid-template-rows: 1fr 1fr;
-	height: calc(100dvh - var(--nav-total) - env(safe-area-inset-bottom, 0px));
+	height: calc(100dvh - var(--nav-total));
 	position: relative;
 	overflow: hidden;
 	container-type: size;
@@ -142,13 +145,26 @@
    the buttons reach from the stage's middle along the split: the break
    ring's outside (the special wins sit beside it, no further along the
    split), worked out against the stage, the nearest container. Upright the
-   score's inner edge is there and the name, at its size, is centred in
-   what is left between the page's edge and the score. */
+   score's inner edge is there.
+   Upright the name area fills the room between the stage's edge and the
+   score's digits (UV, 30 Oct): --mv-who-top and --mv-who-size, set by
+   match.js (placeWho) from where the digit's ink actually is. Until then,
+   the name's own height centred in what is left beside the score. No
+   notch padding at the top: the nav already clears it (it was counted
+   twice, and on an iPhone it was taller than the strip, so the top name
+   vanished). The bottom one keeps clear of the home bar. */
 .mv-side { --mv-to-buttons: calc(var(--mv-centre) * var(--mv-break-rim, 1) / 2); }
-.mv-side[data-side="home"] .mv-who { top: max(0px, (100% - var(--mv-to-buttons) - 1000% / 15) / 2); padding-top: env(safe-area-inset-top, 0px); }
+.mv-side[data-side="home"] .mv-who {
+	top: var(--mv-who-top, max(0px, (100% - var(--mv-to-buttons) - 1000% / 15) / 2));
+	height: var(--mv-who-size, calc(200% / 15));
+}
 .mv-side[data-side="home"] .mv-score { bottom: var(--mv-to-buttons); }
 .mv-side[data-side="away"] .mv-score { top: var(--mv-to-buttons); }
-.mv-side[data-side="away"] .mv-who { bottom: max(0px, (100% - var(--mv-to-buttons) - 1000% / 15) / 2); padding-bottom: var(--space-3); }   /* clear of the screen's foot (UV, 30 Oct) */
+.mv-side[data-side="away"] .mv-who {
+	top: var(--mv-who-top, calc(100% - max(0px, (100% - var(--mv-to-buttons) - 1000% / 15) / 2) - 200% / 15));
+	height: var(--mv-who-size, calc(200% / 15));
+	padding-bottom: env(safe-area-inset-bottom, 0px);
+}
 
 /* [data-side] in every one of these, to match the upright rules' weight:
    with plain .mv-side the home score kept its upright top.
@@ -158,7 +174,7 @@
 @media (orientation: landscape) {
 	.mv-side[data-side] :is(.mv-who, .mv-score) { bottom: auto; }
 	.mv-side[data-side] .mv-who { top: 0; height: 20%; width: 100%; padding-top: 0; padding-bottom: 0; }
-	.mv-side[data-side] .mv-score { top: 20%; height: 80%; width: calc(200% / 3); padding-bottom: var(--space-3); }   /* clear of the screen's foot (UV, 30 Oct) */
+	.mv-side[data-side] .mv-score { top: 20%; height: 80%; width: calc(200% / 3); padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px)); }   /* clear of the screen's foot and the home bar (UV, 30 Oct) */
 	.mv-side[data-side="home"] .mv-who { left: 0; right: auto; padding-left: env(safe-area-inset-left, 0px); }
 	.mv-side[data-side="away"] .mv-who { left: auto; right: 0; padding-right: env(safe-area-inset-right, 0px); }
 	.mv-side[data-side="home"] .mv-score { left: max(0px, (100% - var(--mv-to-buttons) - 200% / 3) / 2); right: auto; padding-left: env(safe-area-inset-left, 0px); }
@@ -224,9 +240,10 @@
 /* ── A player's name and picture (UV, 30 Oct) ─────────────────────
    The picture on the left, the display name on the right with the full
    name under it; the two together centred in the player's name area, and
-   as tall as each other: --mv-who-h, three fifths of the area's height, a
-   fifth clear above and below (UV, 30 Oct: it was all but 8px, and the
-   names read huge). The picture is that tall. The display name's
+   as tall as each other: --mv-who-h (below; sideways three fifths of the
+   strip, a fifth clear above and below, after UV found all but 8px read
+   huge; upright, since the area runs to the score, all of it but
+   --space-3 each end, UV 30 Oct). The picture is that tall. The display name's
    capitals start level with its top and the full name's baseline is level
    with its bottom (each line trimmed to its capitals and baseline, pushed
    apart). Sizes as shares of that height: the display name 0.5 of it (its
@@ -238,8 +255,10 @@
 	display: grid;
 	place-items: center;
 }
+/* Upright (UV, 30 Oct) the two fill the name area, --space-3 clear above
+   and below; sideways three fifths of the strip, as before. */
 .mv-person {
-	--mv-who-h: calc(100cqh * 0.6);
+	--mv-who-h: max(0px, 100cqh - 2 * var(--space-3));
 	display: flex;
 	align-items: center;
 	gap: calc(var(--mv-who-h) * 0.25);
@@ -259,6 +278,9 @@
 	font-size: calc(var(--mv-who-h) * 0.36);
 	font-weight: 700;
 	box-shadow: var(--match-mark-shadow);
+}
+@media (orientation: landscape) {
+	.mv-person { --mv-who-h: calc(100cqh * 0.6); }
 }
 .mv-pic img { width: 100%; height: 100%; object-fit: cover; }
 .mv-names {
@@ -1241,7 +1263,7 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
 	position: absolute;
 	left: var(--space-3);
 	right: var(--space-3);
-	bottom: var(--space-3);
+	bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));   /* clear of the home bar: the stage runs to the screen's foot */
 	z-index: 4;
 	display: grid;
 	gap: var(--space-1);
