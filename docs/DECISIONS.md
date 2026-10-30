@@ -1109,3 +1109,17 @@ These predate the log. They are recorded here because every one of them is a dec
 *Replaces:* the same day's "nothing stored", and its rejection of storing the frame in play. It is still not a record of the frame: never counted, and the frame carries the event once saved.
 *Rejected:* Realtime presence (lasts only while the tapping phone is open and online); keeping the tap on the phone only (no help to another phone).
 *Touches:* `supabase/migrations/20261030155332_match_break_in_play.sql`, `supabase/tests/044_match_break_in_play.test.sql`, `match.js`, `docs/systems/matches.md`
+
+## 2026-10-30 — Buttons a match's settings rule out are hidden; the score meets the buttons
+
+*Decided by UV:* "when a specific setting is turned off, we should hide buttons that aren't used for the match", and without break events no special win can be recorded, so the break ring and the special wins go. The answers were already in the docs (UV: "check all docs"): the old card's footer offered only what the settings allow and always had ⋯ (`docs/design/match-score-input.md` §2), and a player's name and picture sit centred in their area.
+*So:* `shownByRules` in `match.js` hides the break ring when breaks are not tracked, B&F and GB when Break & finish is off, GB when Golden break is off, rB&F when Reverse B&F is off; ⋯ always stays. A button the settings allow but that cannot act now is still greyed. The others keep their places and the ring its size. Upright, the score keeps its size and moves in to meet the buttons, the digit at that end of its space, the name centred in the room left; sideways, the score is centred between the page's edge and the buttons.
+*Replaces:* the same day's "greyed and silent when the old card would not have offered one" for buttons the settings rule out.
+*Touches:* `match.js`, `match.css`, `docs/systems/matches.md`
+
+## 2026-10-30 — The nav stays on the match page; the auto-hide is gone
+
+*Decided by UV:* "Remove the auto-hide on the nav bar in the match page and adjust the stage area accordingly", then "remove the auto-hide completely".
+*So:* everything 5ffd9fa added for it is taken out (`navAutoHide`, `data-nav="auto"`, its part of `nav.js` and `nav.css`; those files are as they were before it). The stage is the screen below the nav. The settings panel, its scrim and the floating overlay start below the nav again, as built. The top name keeps its notch padding (UV).
+*Replaces:* the same day's "on this page only the nav hides until asked for".
+*Touches:* `nav.js`, `nav.css`, `layout.html`, `src/match/index.html`, `match.css`, `docs/ui.md`, `docs/systems/matches.md`, `docs/systems/file-map.md`

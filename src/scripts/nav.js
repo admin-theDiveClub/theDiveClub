@@ -461,7 +461,6 @@
 	}
 
 	window.addEventListener('scroll', () => {
-		if (autoNav) return;   // that page has its own rule, below
 		const y = Math.max(0, window.scrollY);   // a phone's bounce past the top reads negative
 		const dy = y - lastY;
 		lastY = y;
@@ -478,71 +477,6 @@
 	}, { passive: true });
 
 	if (navBar) navBar.addEventListener('focusin', () => setNavHidden(false));
-
-	// ─── Hidden until asked for (UV, 30 Oct) ──────────────────────────
-	// A page that wants the whole screen (the new match page) sets
-	// navAutoHide in its front matter, which puts data-nav="auto" on <body>.
-	// There the bar starts hidden. On a PC the mouse reaching the strip where
-	// it sits brings it back, and it goes again once the mouse has left it.
-	// On a phone a small pull down at the top of the page (a scroll up when
-	// already at the top) brings it back, and it goes AUTO_HIDE_AFTER after
-	// the last touch on it. Never while its menu or account panel is open.
-	const autoNav = !!navBar && document.body.dataset.nav === 'auto';
-	const PULL_FOR = 12;             // px of pull down that asks for it
-	const AUTO_HIDE_AFTER = 3000;    // ms after the last touch on a phone
-	const LEAVE_HIDE_AFTER = 400;    // ms after the mouse leaves it
-	let autoTimer = 0;
-	let pullFrom = null;
-
-	function navInUse() {
-		return menu.classList.contains('open') || profileDropdown.classList.contains('open')
-			|| navBar.matches(':hover') || menu.matches(':hover')
-			|| !!navBar.querySelector(':focus-visible');
-	}
-
-	function hideNavSoon(ms) {
-		clearTimeout(autoTimer);
-		autoTimer = setTimeout(() => {
-			if (navInUse()) hideNavSoon(ms);
-			else setNavHidden(true);
-		}, ms);
-	}
-
-	function showNav(thenHideAfter) {
-		clearTimeout(autoTimer);
-		setNavHidden(false);
-		if (thenHideAfter) hideNavSoon(thenHideAfter);
-	}
-
-	if (autoNav) {
-		setNavHidden(true);
-
-		document.addEventListener('pointermove', (e) => {
-			if (e.pointerType !== 'mouse') return;
-			if (e.clientY <= navBar.getBoundingClientRect().height) showNav(0);
-		}, { passive: true });
-		navBar.addEventListener('pointerleave', (e) => {
-			if (e.pointerType === 'mouse') hideNavSoon(LEAVE_HIDE_AFTER);
-		});
-		menu.addEventListener('pointerleave', (e) => {
-			if (e.pointerType === 'mouse') hideNavSoon(LEAVE_HIDE_AFTER);
-		});
-
-		document.addEventListener('touchstart', (e) => {
-			const onNav = navBar.contains(e.target) || menu.contains(e.target);
-			if (onNav) clearTimeout(autoTimer);
-			pullFrom = (!onNav && window.scrollY <= 0) ? e.touches[0].clientY : null;
-		}, { passive: true });
-		document.addEventListener('touchmove', (e) => {
-			if (pullFrom === null || !navBar.classList.contains('is-hidden')) return;
-			if (e.touches[0].clientY - pullFrom >= PULL_FOR) { pullFrom = null; showNav(AUTO_HIDE_AFTER); }
-		}, { passive: true });
-		document.addEventListener('touchend', (e) => {
-			if (navBar.contains(e.target) || menu.contains(e.target)) hideNavSoon(AUTO_HIDE_AFTER);
-		}, { passive: true });
-
-		navBar.addEventListener('focusout', () => hideNavSoon(AUTO_HIDE_AFTER));
-	}
 
 	// ─── Offline ──────────────────────────────────────────────────────
 	// The indicator is the nav's job on every page. What a page does about

@@ -887,7 +887,7 @@
 		return g;
 	}
 
-	let repaintWins = null, winsBreaker = null;   // buildBreak's paintWins, and the breaker it last drew for
+	let repaintWins = null, winsBreaker = null, winsShown = null;   // buildBreak's paintWins, and the breaker and buttons (shownKey) it last drew for
 	function buildBreak() {
 		const svg = document.createElementNS(SVG_NS, 'svg');
 		svg.setAttribute('viewBox', '0 0 100 100');
@@ -927,7 +927,9 @@
 			const line = px('--match-break-stroke');
 			if (!(br.width > 0) || !buttons.length) return;
 			const u = br.width / 100;
-			const holes = buttons.map((b) => `<path d="${b.d}"/>`).join('') + `<circle cx="50" cy="50" r="${BREAK_RING.outer}"/>`;
+			// Only what is shown (shownByRules): a hidden button leaves the glow
+			const holes = buttons.filter((b) => shownByRules(b.value)).map((b) => `<path d="${b.d}"/>`).join('')
+				+ (shownByRules('in') ? `<circle cx="50" cy="50" r="${BREAK_RING.outer}"/>` : '');
 			for (const side of [els.p0, els.p1]) {
 				const sr = side.getBoundingClientRect();
 				const w = sr.width.toFixed(2), h = sr.height.toFixed(2);
@@ -944,6 +946,7 @@
 		// held and who is breaking
 		const paintWins = () => {
 			winsBreaker = (draft && draft.break_side) || null;
+			winsShown = shownKey();
 			buttons = winButtons(word, winsBreaker);
 			const winDefs = document.createElementNS(SVG_NS, 'defs');
 			wins.replaceChildren(winDefs, ...buttons.map((b) => {
@@ -955,9 +958,10 @@
 				return g;
 			}));
 			if (MATCH && draft) paintButtons();   // offered and greyed as the match stands
+			// The glow and inside shadow only under what is shown (shownByRules)
 			const shapes = [
-				...Object.keys(BREAK_AT).map((v) => ({ d: sector(BREAK_AT[v]), kind: 'break' })),
-				...buttons.map((b) => ({ d: b.d, kind: 'win' }))
+				...Object.keys(BREAK_AT).filter(shownByRules).map((v) => ({ d: sector(BREAK_AT[v]), kind: 'break' })),
+				...buttons.filter((b) => shownByRules(b.value)).map((b) => ({ d: b.d, kind: 'win' }))
 			];
 			glow.paint(shapes.map((s) => ({ d: s.d, filter: s.kind === 'break' ? 'mv-glow-break' : 'mv-glow-win' })));
 			inset.paint(shapes.map((s) => ({ d: s.d, filter: 'mv-inset' })));
@@ -1057,7 +1061,28 @@
 	}
 
 	// ─── The stage's buttons ──────────────────────────────────────────
-	// The four special wins are always drawn (the stage keeps its shape).
+	// The four special wins keep their places (the stage keeps its shape),
+	// but a button the match's settings rule out is hidden (UV, 30 Oct; the
+	// old card's footer "offers only what the settings allow", design §2):
+	// breaks not tracked, the break ring and every special win, since a
+	// special win needs a break event; Break & finish off, B&F and golden
+	// break; golden break off, GB; reverse B&F off, rB&F. The more button
+	// always stays. One that the settings allow but that cannot act now is
+	// greyed, as before (paintButtons).
+	function shownByRules(value) {
+		if (!MATCH || value === 'more') return true;   // drawn before the match is read: all
+		const r = MATCH.rules;
+		if (!r.track_breaks) return false;
+		if (value === 'break_and_finish') return !!r.break_finish_enabled;
+		if (value === 'golden_break') return !!(r.break_finish_enabled && r.golden_break_enabled);
+		if (value === 'reverse_break_and_finish') return !!r.reverse_break_finish_enabled;
+		return true;   // a break event
+	}
+	// What is shown, as one string, so the stage knows when to draw again.
+	// A declaration, since buildBreak runs before this line is reached.
+	function shownKey() {
+		return [...Object.keys(BREAK_AT), ...WIN_SLOTS.flat()].filter(shownByRules).join();
+	}
 
 	// Which sides a special win can go to on the frame in play
 	const winSides = (ev) => ['home', 'away'].filter((s) => resultsFor(s, draft.break_side).includes(ev));
@@ -1076,6 +1101,11 @@
 	// again. A button that cannot act is disabled, as the old page's were:
 	// greyed, out of the tab order, and a tap on it does nothing (UV, 30 Oct).
 	function paintButtons() {
+		for (const q of els.breakRing.querySelectorAll('.mv-break-q, .mv-win-q')) {
+			const gone = !shownByRules(q.dataset.value);
+			q.classList.toggle('is-gone', gone);
+			q.toggleAttribute('aria-hidden', gone);
+		}
 		for (const q of els.breakRing.querySelectorAll('.mv-break-q')) setOff(q, !breakOn());
 		markChosen(els.breakRing, '.mv-break-q', draft.break_outcome);
 		for (const q of els.breakRing.querySelectorAll('.mv-win-q:not(.mv-more-q)')) {
@@ -1086,7 +1116,7 @@
 	function setOff(q, off) {
 		q.classList.toggle('is-off', off);
 		q.setAttribute('aria-disabled', String(off));
-		q.setAttribute('tabindex', off ? '-1' : '0');
+		q.setAttribute('tabindex', off || q.classList.contains('is-gone') ? '-1' : '0');
 	}
 
 	// A break ring button: setOutcome. No dots: nothing is sent to the
@@ -1171,7 +1201,9 @@
 		// renderBreakRow's and the special wins' work: the break ring and the
 		// special wins, enabled as the pill and the rings were; drawn again
 		// first when the breaker has changed, so B&F and GB move to their half
-		if ((draft.break_side || null) !== winsBreaker) repaintWins();
+		// first when the breaker or the settings have changed, so B&F and GB
+		// move to their half and a button ruled out goes (shownByRules)
+		if ((draft.break_side || null) !== winsBreaker || shownKey() !== winsShown) repaintWins();
 		else paintButtons();
 	}
 
@@ -2034,7 +2066,8 @@
 	}
 
 	// Match settings opens from the more pop-up and from the lag question
-	// (UV, 30 Oct: the nav hides on this page, so its Match button went). Not
+	// (UV, 30 Oct: the nav's Match button went when the nav hid on this page;
+	// the nav stays since, the button not brought back). Not
 	// a data-act: it changes nothing on the card, so a watcher may open it
 	// too, as the nav button let them. From More the pop-up closes first;
 	// the lag question stays asked under the panel.

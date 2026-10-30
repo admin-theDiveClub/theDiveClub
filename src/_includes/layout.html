@@ -43,9 +43,8 @@
 <!-- data-controls: every number field, date, dropdown and checkbox on the site is
      a custom control (scripts/tdc-controls.js), except a number, date or
      dropdown inside a table, or anything marked data-control="none". A checkbox
-     is a switch unless made with data-control="ring". navAutoHide in a page's
-     front matter keeps the nav hidden until asked for (scripts/nav.js). -->
-<body data-controls="stepper date select switch"{% if navAutoHide %} data-nav="auto"{% endif %}>
+     is a switch unless made with data-control="ring". -->
+<body data-controls="stepper date select switch">
 	<!-- The loading screen (scripts/loader.js): over everything until the page
 	     and its data have loaded. First in the body so it is there from the
 	     first paint. The icon sits exactly where the nav's does. -->
