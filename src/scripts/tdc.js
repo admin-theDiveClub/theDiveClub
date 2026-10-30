@@ -361,29 +361,37 @@ const TDC = (() => {
 	// out with its old value and in with its new, in --live-fade. For elements
 	// holding text alone; the first draw (no snapshot) fades nothing, nor does
 	// anything the dots are serving. With reduced motion the new text simply
-	// shows.
+	// shows. Its inline style goes with the text (the match score's centring
+	// is set there for its digits), so the old value fades out as it stood.
 	function liveSnapshot(root) {
 		const snap = new Map();
-		if (root) for (const el of root.querySelectorAll('[data-live]')) snap.set(el.dataset.live, el.textContent);
+		if (root) for (const el of root.querySelectorAll('[data-live]')) snap.set(el.dataset.live, { text: el.textContent, style: el.getAttribute('style') });
 		return snap;
+	}
+	function setStyle(el, style) {
+		if (style === null) el.removeAttribute('style');
+		else el.setAttribute('style', style);
 	}
 	function liveFade(root, snap) {
 		if (!root || !snap || !snap.size) return;
 		if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 		const ms = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--live-fade')) || 0.5) * 1000;
 		for (const el of root.querySelectorAll('[data-live]')) {
-			const was = snap.get(el.dataset.live);
-			const now = el.textContent;
-			if (was === undefined || was === now || el.children.length) continue;
+			const old = snap.get(el.dataset.live);
+			const was = old && old.text;
+			const now = el.textContent, nowStyle = el.getAttribute('style');
+			if (old === undefined || was === now || el.children.length) continue;
 			// The dots are showing this one's change already (a tap's save,
 			// traced): a fade on top would fight them.
 			if (el.closest('[data-dots]')) continue;
 			el.textContent = was;
+			setStyle(el, old.style);
 			const out = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms / 2, easing: 'ease-in' });
 			const swap = () => {
 				// Drawn again meanwhile: what the page put there stands.
 				if (el.textContent !== was) return;
 				el.textContent = now;
+				setStyle(el, nowStyle);
 				el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: ms / 2, easing: 'ease-out' });
 			};
 			out.finished.then(swap, swap);

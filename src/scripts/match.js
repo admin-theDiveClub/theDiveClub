@@ -514,6 +514,8 @@
 		// middle of the text, the ink's left and right reaches; --mv-score-shift-x
 		// moves it by half their difference.
 		const centre = () => {
+			// Drawn again since, or a fade holding the old score (TDC.liveFade)
+			if (node.textContent !== text) return;
 			inkCanvas.font = '100px "Rushford Clean"';
 			inkCanvas.textAlign = 'center';
 			const m = inkCanvas.measureText(text);
@@ -521,10 +523,17 @@
 			node.style.setProperty('--mv-score-shift', ((m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 200).toFixed(4) + 'em');
 			node.style.setProperty('--mv-score-shift-x', ((m.actualBoundingBoxLeft - m.actualBoundingBoxRight) / 200).toFixed(4) + 'em');
 		};
-		// Always through load(), which is at once when the face is in: check()
-		// said yes before it was, and a fallback face's digits moved the score
-		// up 0.19 of its size.
-		document.fonts.load('100px "Rushford Clean"').then(centre, (err) => TDC.error(AREA, 'the score\'s face would not load, so it is centred by the average digit', err, els.stageStatus));
+		// At once when the face itself says it is loaded, so the score is
+		// centred in the same task it is drawn in and a fade takes its old
+		// centring with the old score (TDC.liveFade); else through load().
+		// Not check(): it said yes before the face was in, and a fallback
+		// face's digits moved the score up 0.19 of its size.
+		if (scoreFaceIn()) centre();
+		else document.fonts.load('100px "Rushford Clean"').then(centre, (err) => TDC.error(AREA, 'the score\'s face would not load, so it is centred by the average digit', err, els.stageStatus));
+	}
+	function scoreFaceIn() {
+		for (const f of document.fonts) if (f.family.replace(/["']/g, '') === 'Rushford Clean' && f.status === 'loaded') return true;
+		return false;
 	}
 
 	// The scores read as buttons (UV, 30 Oct): one filter both share,
@@ -3882,8 +3891,11 @@
 		hideNotice();
 		const snap = TDC.liveSnapshot(document);
 		await reloadFromServer();
-		await loadCardState();
+		// At once, in the same task as the drawing, so the new score is never
+		// painted before the old one fades out; the card state's wait came
+		// between them, and the new score showed for its length (UV, 30 Oct).
 		TDC.liveFade(document, snap);
+		await loadCardState();
 	}
 
 	// Coming back to the page, or back onto the network, is the moment a missed
