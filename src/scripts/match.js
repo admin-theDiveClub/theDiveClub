@@ -279,7 +279,15 @@
 
 		const prev = frames[i - 1];
 		switch (rule) {
-			case 'alternate':     return i % 2 === 0 ? first : otherSide(first);
+			// The frame before it flipped, as the database does
+			// (private.tdc_break_side_for_frame), so a breaker corrected by hand
+			// carries through to what follows. Counting from the first frame
+			// here (until 30 Oct) put every later frame's breaker on the other
+			// side from the database's, and a break & finish offered to the
+			// page's breaker was refused.
+			case 'alternate':
+				if (prev && prev.break_side) return otherSide(prev.break_side);
+				return i % 2 === 0 ? first : otherSide(first);
 			case 'winner_breaks': return prev && prev.winner_side ? prev.winner_side : first;
 			case 'loser_breaks':  return prev && prev.winner_side ? otherSide(prev.winner_side) : first;
 			case 'first_breaks':  return first;
@@ -554,9 +562,19 @@
 	// Again whenever a score's text or centring changes (paintScore, a live
 	// fade), the stage resizes or the phone turns. Sideways the names keep
 	// their strip across the top (match.css) and nothing is set.
+	//   Both then take the smaller room (--mv-who-fit, its height inside any
+	//   padding: the bottom one keeps clear of the home bar), so the top and
+	//   bottom players' names and pictures are the same size (UV, 30 Oct).
+	//   And no taller than lets the whole of each fit across (fitWho), both
+	//   ways up.
 	function placeWho() {
+		roomWho();
+		fitWho();
+	}
+	function roomWho() {
+		const rooms = [];
 		for (const [half, who, node] of [[els.p0, els.whoHome, els.scoreHome], [els.p1, els.whoAway, els.scoreAway]]) {
-			if (landscape.matches) { who.style.removeProperty('--mv-who-top'); who.style.removeProperty('--mv-who-size'); continue; }
+			if (landscape.matches) { for (const p of ['--mv-who-top', '--mv-who-size', '--mv-who-fit']) who.style.removeProperty(p); continue; }
 			const box = node.ownerSVGElement.getBoundingClientRect(), side = half.getBoundingClientRect();
 			if (!(box.height > 0) || !node.textContent || !scoreFaceIn()) continue;   // not drawn yet: the CSS's own place meanwhile
 			const cs = getComputedStyle(node);
@@ -571,13 +589,50 @@
 			const [from, to] = half.dataset.side === 'home' ? [side.top, top] : [foot, side.bottom];
 			who.style.setProperty('--mv-who-top', Math.max(0, from - side.top).toFixed(1) + 'px');
 			who.style.setProperty('--mv-who-size', Math.max(0, to - from).toFixed(1) + 'px');
+			const pad = getComputedStyle(who);
+			rooms.push(Math.max(0, to - from - parseFloat(pad.paddingTop) - parseFloat(pad.paddingBottom)));
 		}
+		if (rooms.length !== 2) return;
+		const fit = Math.min(...rooms).toFixed(1) + 'px';
+		for (const who of [els.whoHome, els.whoAway]) who.style.setProperty('--mv-who-fit', fit);
+	}
+	// Sized to fit, not run past the edge (UV, 30 Oct: the height was held and
+	// a long name ended in "…"): the picture, the gap and the names all scale
+	// with the block's height, so its width over its height is fixed for a
+	// given pair of names, measured as laid out (the names' full text, by a
+	// Range, so a cut name counts whole). The height that just fits the room
+	// across (the block's max-width) is that width divided by it. Both
+	// players take the smaller (--mv-who-cap), as for the room, so a long
+	// name shrinks the other player's too. Again with placeWho, after the
+	// names are drawn and once the faces have loaded.
+	const whoRange = document.createRange();
+	function fitWho() {
+		const caps = [];
+		for (const who of [els.whoHome, els.whoAway]) {
+			const person = who.querySelector('.mv-person');
+			const h = person ? person.getBoundingClientRect().height : 0;
+			if (!(h > 0)) continue;
+			let text = 0;
+			for (const line of person.querySelectorAll('.mv-name, .mv-full')) {
+				whoRange.selectNodeContents(line);
+				text = Math.max(text, whoRange.getBoundingClientRect().width);
+			}
+			const cs = getComputedStyle(person);
+			const pic = person.querySelector('.mv-pic');
+			const across = (pic ? pic.getBoundingClientRect().width : 0) + (parseFloat(cs.columnGap) || 0) + text;
+			const room = parseFloat(cs.maxWidth);
+			if (across > 0 && room > 0) caps.push(room * h / across);
+		}
+		if (!caps.length) return;
+		const cap = Math.max(0, Math.min(...caps) - 0.5).toFixed(1) + 'px';   // half a pixel spare for rounding
+		for (const who of [els.whoHome, els.whoAway]) who.style.setProperty('--mv-who-cap', cap);
 	}
 	function followScores() {
 		const watch = new MutationObserver(placeWho);
 		for (const node of [els.scoreHome, els.scoreAway]) watch.observe(node, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['style'] });
 		new ResizeObserver(placeWho).observe(els.stage);
 		landscape.addEventListener('change', placeWho);
+		document.fonts.addEventListener('loadingdone', placeWho);   // the names' widths in their own faces
 		placeWho();
 	}
 
@@ -840,11 +895,13 @@
 		}
 		const shapes = document.createElementNS(SVG_NS, 'g');
 		svg.append(defs, shapes);
-		// list: [{ d, filter }], the filter by id
-		const paint = (list) => shapes.replaceChildren(...list.map(({ d, filter }) => {
+		// list: [{ d, filter, value }], the filter by id, value the button's
+		// (setOff finds a disabled button's glow by it)
+		const paint = (list) => shapes.replaceChildren(...list.map(({ d, filter, value }) => {
 			const path = document.createElementNS(SVG_NS, 'path');
 			path.setAttribute('d', d);
 			path.setAttribute('filter', `url(#${filter})`);
+			if (value) path.dataset.value = value;
 			return path;
 		}));
 		return { svg, parts, paint };
@@ -995,14 +1052,16 @@
 				g.setAttribute('aria-label', TDCMatchDef.RESULT_EVENT[b.value] || label);
 				return g;
 			}));
-			if (MATCH && draft) paintButtons();   // offered and greyed as the match stands
 			// The glow and inside shadow only under what is shown (shownByRules)
 			const shapes = [
-				...Object.keys(BREAK_AT).filter(shownByRules).map((v) => ({ d: sector(BREAK_AT[v]), kind: 'break' })),
-				...buttons.filter((b) => shownByRules(b.value)).map((b) => ({ d: b.d, kind: 'win' }))
+				...Object.keys(BREAK_AT).filter(shownByRules).map((v) => ({ d: sector(BREAK_AT[v]), kind: 'break', value: v })),
+				...buttons.filter((b) => shownByRules(b.value)).map((b) => ({ d: b.d, kind: 'win', value: b.value }))
 			];
-			glow.paint(shapes.map((s) => ({ d: s.d, filter: s.kind === 'break' ? 'mv-glow-break' : 'mv-glow-win' })));
+			glow.paint(shapes.map((s) => ({ d: s.d, filter: s.kind === 'break' ? 'mv-glow-break' : 'mv-glow-win', value: s.value })));
 			inset.paint(shapes.map((s) => ({ d: s.d, filter: 'mv-inset' })));
+			// Offered and greyed as the match stands, once the glow is drawn, so
+			// a disabled button's glow is hidden with it (setOff)
+			if (MATCH && draft) paintButtons();
 			requestAnimationFrame(glowMasks);   // once the turned layout is in
 		};
 		paintWins();
@@ -1154,6 +1213,10 @@
 	}
 	function setOff(q, off) {
 		q.classList.toggle('is-off', off);
+		// and its glow, a layer of its own under the buttons (UV, 30 Oct: a
+		// disabled button is grey with no glow; match.css)
+		const glow = els.breakRing.querySelector(`.mv-break-glow path[data-value="${q.dataset.value}"]`);
+		if (glow) glow.classList.toggle('is-off', off);
 		q.setAttribute('aria-disabled', String(off));
 		q.setAttribute('tabindex', off || q.classList.contains('is-gone') ? '-1' : '0');
 	}
@@ -1222,6 +1285,7 @@
 			whoDrawn = who;
 			paintWho(els.whoHome, player(MATCH.home.players[0]));
 			paintWho(els.whoAway, player(MATCH.away.players[0]));
+			placeWho();   // sized to the new names (fitWho)
 		}
 		const winnable = !matchOver() && canEdit && !resultDisabled('win');
 		for (const [half, side] of [[els.p0, 'home'], [els.p1, 'away']]) {

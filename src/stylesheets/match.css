@@ -84,6 +84,9 @@
    gap between a slot's two buttons and the gap between the slot and the
    ring, clear of their lines, so its mask cuts out only a circle the size
    of the ring's outside, centred where the ring sits on this half's edge. */
+/* Its corners rounded as the special wins' are (UV, 30 Oct): WIN.corner in
+   match.js, 4 in the break ring's 100 box, so 4% of --mv-centre. */
+.mv-side { --mv-half-corner: calc(var(--mv-centre) * 0.04); }
 .mv-side[data-breaking]::after {
 	--mv-rim-r: calc(var(--mv-centre) * var(--mv-break-rim) / 2 + var(--match-break-stroke) / 2);
 	--mv-rim-at: 50% 100%;
@@ -92,6 +95,7 @@
 	inset: 0;
 	box-sizing: border-box;
 	border: var(--match-break-stroke) solid var(--color-warning);
+	border-radius: var(--mv-half-corner);
 	-webkit-mask: radial-gradient(circle at var(--mv-rim-at), transparent var(--mv-rim-r), #000 calc(var(--mv-rim-r) + 0.5px));
 	mask: radial-gradient(circle at var(--mv-rim-at), transparent var(--mv-rim-r), #000 calc(var(--mv-rim-r) + 0.5px));
 	pointer-events: none;
@@ -107,6 +111,7 @@
 	inset: 0;
 	box-sizing: border-box;
 	border: var(--match-break-stroke) solid transparent;   /* the glow starts inside the line, as it did when they were one layer */
+	border-radius: var(--mv-half-corner);
 	box-shadow: inset 0 0 var(--match-glow-size) var(--match-glow-colour);
 	-webkit-mask: var(--mv-glow-mask, none) 0 0 / 100% 100% no-repeat;
 	mask: var(--mv-glow-mask, none) 0 0 / 100% 100% no-repeat;
@@ -243,13 +248,22 @@
    as tall as each other: --mv-who-h (below; sideways three fifths of the
    strip, a fifth clear above and below, after UV found all but 8px read
    huge; upright, since the area runs to the score, all of it but
-   --space-3 each end, UV 30 Oct). The picture is that tall. The display name's
-   capitals start level with its top and the full name's baseline is level
-   with its bottom (each line trimmed to its capitals and baseline, pushed
-   apart). Sizes as shares of that height: the display name 0.5 of it (its
-   capitals 0.525, Rushford Clean being 1.05 with size-adjust), the full
-   name 0.32. A long name ends in "…" rather than leaving the area. The
-   shadows are the page's, cast by the light. */
+   --space-3 each end, UV 30 Oct). Upright both players take the smaller
+   of their two rooms (--mv-who-fit, set by match.js, placeWho), so top
+   and bottom match (UV, 30 Oct), each centred in its own.
+   The full name sits right under the display name, and the picture is as
+   tall as the two lines together (UV, 30 Oct: they were pushed apart to
+   the picture's top and bottom, a gap between them). Each line is trimmed
+   to its capitals and baseline, so the pair is exactly: the display
+   name's capitals (Rushford Clean's are 1.05 of its size, size-adjust in
+   play) + the gap + the full name's (Selawik's, the site's own body face,
+   0.7). Sized so that comes to the picture's height: the display name
+   0.6 of it (capitals 0.63), the gap 0.1, the full name 0.385 (capitals
+   0.27). Never wider than the area (UV, 30 Oct: sized to fit rather than
+   run past it): no taller than lets the whole block fit across
+   (--mv-who-cap, set by match.js, fitWho), both players alike. The "…"
+   stays only for a moment before that is measured. The shadows are the
+   page's, cast by the light. */
 .mv-who {
 	container-type: size;
 	display: grid;
@@ -258,7 +272,7 @@
 /* Upright (UV, 30 Oct) the two fill the name area, --space-3 clear above
    and below; sideways three fifths of the strip, as before. */
 .mv-person {
-	--mv-who-h: max(0px, 100cqh - 2 * var(--space-3));
+	--mv-who-h: min(max(0px, min(100cqh, var(--mv-who-fit, 100cqh)) - 2 * var(--space-3)), var(--mv-who-cap, 100cqh));
 	display: flex;
 	align-items: center;
 	gap: calc(var(--mv-who-h) * 0.25);
@@ -280,20 +294,20 @@
 	box-shadow: var(--match-mark-shadow);
 }
 @media (orientation: landscape) {
-	.mv-person { --mv-who-h: calc(100cqh * 0.6); }
+	.mv-person { --mv-who-h: min(100cqh * 0.6, var(--mv-who-cap, 100cqh)); }
 }
 .mv-pic img { width: 100%; height: 100%; object-fit: cover; }
 .mv-names {
 	display: flex;
 	flex-direction: column;
-	justify-content: space-between;
+	justify-content: center;
+	gap: calc(var(--mv-who-h) * 0.1);
 	min-width: 0;
 	height: 100%;
 	/* On the block, not the lines: a line's text-shadow was cut square by
 	   its own sideways clip, a faint box behind the name. */
 	filter: drop-shadow(var(--match-mark-shadow));
 }
-.mv-names:has(> :only-child) { justify-content: center; }
 /* Clipped sideways only, for the "…": trimmed to the baseline, a y or g
    reaches below the line's box, and overflow: hidden cut its tail off. */
 .mv-name,
@@ -307,11 +321,11 @@
 }
 .mv-name {
 	font-family: var(--font-display);
-	font-size: calc(var(--mv-who-h) * 0.5);
+	font-size: calc(var(--mv-who-h) * 0.6);
 	color: var(--text-primary);
 }
 .mv-full {
-	font-size: calc(var(--mv-who-h) * 0.32);
+	font-size: calc(var(--mv-who-h) * 0.385);
 	color: var(--text-muted);
 }
 
@@ -1310,7 +1324,16 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
 
 /* A break or special-win button that cannot act now: disabled, greyed, no
    wash, and a tap does nothing (match.js, paintButtons). */
-:is(.mv-break-q, .mv-win-q).is-off { opacity: 0.3; cursor: default; }
+/* Grey, not faded, and no glow (UV, 30 Oct; the glow's own path carries
+   is-off too, set by match.js, setOff); the shadows stay. */
+:is(.mv-break-q, .mv-win-q).is-off { --q: var(--text-muted); cursor: default; }
+.mv-break-glow path.is-off { display: none; }
+/* The scores are buttons too: while no win can be given (a watcher, the
+   match over, nobody yet known to break; renderStage, data-winnable) their
+   outline is grey and their green glow goes; the shadows stay. One filter
+   serves both, and both halves are winnable or neither. */
+.mv-stage:not(:has(.mv-side[data-winnable])) .mv-fx-defs .mv-score-line-flood { flood-color: var(--text-muted); }
+.mv-stage:not(:has(.mv-side[data-winnable])) .mv-fx-defs .mv-glow-flood-win { flood-opacity: 0; }
 :is(.mv-break-q, .mv-win-q).is-off:hover path { fill: transparent; }
 /* One the match's settings rule out: not drawn at all (match.js,
    shownByRules); its place stays empty. */

@@ -79,12 +79,17 @@
 		return { x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e };
 	}
 
-	// The loading screen (loader.js) is up: nothing can be seen through its
-	// blur, and on the match page every move of the light repaints the
-	// stage's shadows and filters and then the blur over them, which slowed
-	// the screen's dots on a phone (30 Oct). Before loader.js has run, the
-	// screen is up if it is on the page and not hidden.
-	function screenUp() {
+	// The light holds while the loading screen (loader.js) is up or the dots
+	// (dots.js) are playing anywhere on the page (UV, 30 Oct). Every move of
+	// the light repaints whatever is cast by it, and on the match page that
+	// is the stage's shadows and filters (and the loading screen's blur over
+	// them): on a phone it took frames from the dots, which crawled, first on
+	// the loading screen and then on the cream ring. Nothing is seen moving
+	// through the blur, and the drift is too slow to miss for a moment.
+	// Before loader.js has run, the screen is up if it is on the page and not
+	// hidden.
+	function hold() {
+		if (typeof TDCDots !== 'undefined' && TDCDots.playing) return true;
 		if (typeof TDCLoader !== 'undefined') return TDCLoader.up;
 		var box = document.querySelector('.tdc-loader');
 		return !!box && !box.hidden;
@@ -93,9 +98,8 @@
 	function tick(now) {
 		if (!running) return;
 		requestAnimationFrame(tick);
-		// The light holds while the loading screen is up and carries on from
-		// there once it goes
-		if (screenUp()) { last = now; return; }
+		// Held, it carries on from where it was once let go
+		if (hold()) { last = now; return; }
 		// Time counts only while the page is shown, a frame at most STEP*2, so
 		// a page brought back from the background carries on where it was
 		if (now - last < STEP) return;

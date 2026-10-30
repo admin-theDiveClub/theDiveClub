@@ -2501,6 +2501,10 @@ const TDCDots = (() => {
 		track,
 		moves: Object.keys(SOLO),
 		groups: Object.keys(GROUP),
+		// True while the dots' loop runs (it stops whenever they are hidden).
+		// page-light.js holds the light meanwhile (UV, 30 Oct), so its repaints
+		// never take frames from the dots.
+		get playing() { return running; },
 		// The waiting move (solo or group) to play on repeat, or null for random.
 		force(name) {
 			if (name !== null && !SOLO[name] && !GROUP[name]) { fail(null, `there is no move called "${name}".`); return; }
