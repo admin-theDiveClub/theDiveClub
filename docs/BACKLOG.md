@@ -23,7 +23,7 @@ Built from the project doc `claude/stats-todo.md` on 23 Oct 2026, with everythin
 | 3 | **The visualisation** on the match page — placeholder still sitting there. Show `tdc_frame_history` with it (UV, 22 Oct) | Medium |
 | 4 | **Credits: split a table** between players at the end of a match | Needs the ledger changes first |
 | 5 | **Offline for the other input pages** — the nav pip and `tdc:offline` / `tdc:online` already work everywhere; only the match page acts on them | Small each |
-| 6 | **Payments**: `orders` and `payment_events` tables plus the PayFast ITN webhook | Medium; needs the PayFast account |
+| 6 | ~~Payments~~ **Moved to `docs/STATUS.md` §0 (P4), 31 Oct** | |
 | 7 | **An owner finance tracker** — payments, invoices and receipts in the owner tools, with exports for the accountant and financial advisor (UV, 23 Oct) | Medium |
 | 8 | **Add to Home Screen** install prompt | Small |
 

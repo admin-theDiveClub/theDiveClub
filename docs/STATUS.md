@@ -4,9 +4,33 @@
 
 Updated at every milestone, in the same breath as giving UV a commit subject. Never batched to the end of a session.
 
-Last updated: **30 Oct 2026** (the new look put onto /match/)
+Last updated: **31 Oct 2026** (§0, the direction to launch, from UV's testing)
 
 **Production is current through `20261029162031`** (checked 29 Oct, evening: My matches' team route, team pictures and standings are in). **Waiting to push: `20261029194712`** (the Live switch) **and `20261029203451`** (full names), §1. The site was deployed before it, so the Standings tab failed with "Could not find the function public.tdc_league_standings(p_league_season_id, p_live)"; the page now sends `p_live` only when Live is on.
+
+---
+
+## 0. The direction to launch (UV, 31 Oct)
+
+**Read this before choosing what to do next.** UV tested leagues and tournaments on 30 Oct as a brand-new user (an old email, signing in with Google). His conclusions:
+
+- **About a month to opening.** Everything below is ranked against that.
+- **Nothing may ever feel broken.** The site must be complete technically and aesthetically, clean and polished, before people are asked to put money near it.
+- **The site must feel complete from the moment anyone lands.** Customisation matters a lot to UV.
+- **Pool came first because it was time sensitive.** UV wants to roll it out to other clubs as fast as possible, so the usage and policies for other clubs must be finished too.
+- **What to do next is chosen from UV's testing (item T)**, not from this list's order.
+- Business admin (the club, not the code) takes more of UV's time once pending funds arrive; that work lives on the owner board.
+
+| | Big ticket | State, 31 Oct | Notes |
+|---|---|---|---|
+| T | **UV's testing walk-through** | Not started | UV walks the site as a new player from the first landing (sign-up, Google sign-in, profile, leagues, tournaments, matches) and notes what feels broken, unfinished or ugly. **Its findings decide what comes next** |
+| P1 | **First landing and polish** | — | Whatever T finds. The home page is a placeholder (logo, "Lonehill, Fourways · Opening soon", one My Account button). Confirm the location wording with UV: the venue is C5, The Gantry |
+| P2 | **Public pages** | Not built | Home page proper; about / contact / hours / location; a player guide or FAQ (`docs/BACKLOG.md` §5); the venue, player and team pages (§4); real 404, privacy, terms (C4, B1) |
+| P3 | **Usage and policies for other clubs** | Not written | C6 (what the platform is for, what "free" covers), C7 (the director's guide), §5 (who may create leagues and tournaments), B1 (privacy, terms, Information Officer), a credits / refund policy |
+| P4 | **Payments** | Not started | Moved from `docs/BACKLOG.md` §2 on 31 Oct: `orders` and `payment_events` tables plus the PayFast ITN webhook. **Needs the PayFast account first** (UV, owner board): Aggregator vs Gateway undecided; ask PayFast whether the account is approvable given the cannabis track, registering it as the pool/entertainment side |
+| D1 | **One profile, an environment per sport** | **Needs design (Opus, new chat)** | UV: one profile that links to a separate environment for each sport, pool being the first, so other sports could be added one day. Settle this **before** building the player, venue and team pages (§4), since it shapes all three |
+| D2 | **The social side** | **Needs design, no base design yet** | UV wants specific ways for players to interact with other players. Depends on D1 |
+| D3 | **Games and game modes** | **Needs design** | *Games*: the other games UV has been designing on the side. *Game modes* (cue sports): social formats run from a phone, e.g. killers, managing doubles, a random-number survival game. Game modes live inside the pool environment (D1) |
 
 ---
 
