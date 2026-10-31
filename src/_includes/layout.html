@@ -34,6 +34,9 @@
 			<link rel="stylesheet" href="{{ style }}?v={{ build.version }}">
 		{% endfor %}
 	{% endif %}
+	<!-- The person's theme and motion choices (scripts/prefs.js), put on <html>
+	     before the first paint so a light page never flashes dark. -->
+	<script src="/scripts/prefs.js?v={{ build.version }}"></script>
 	<!-- The light (scripts/page-light.js): the green glow above every page drifts
 	     and the edge shadow falls away from it. In the head, after the styles, so
 	     the first paint has the light where the last page left it. -->

@@ -26,7 +26,8 @@
 // moving between pages carries on the drift rather than jumping. Written at
 // most every STEP ms: it moves a few pixels a second, and every write
 // repaints the background and the blurred surfaces over it. With reduced
-// motion the light rests at the centre.
+// motion the light rests at the centre: the device's setting, unless the
+// profile menu's toggle has put its own on <html> (data-motion, prefs.js).
 (function () {
 	'use strict';
 	var STEP = 66;
@@ -149,8 +150,16 @@
 		}
 	});
 	window.addEventListener('resize', function () { if (!running) put({ x: 0, y: 0 }); });
-	calm.addEventListener('change', function () { if (calm.matches) still(); else start(); });
 
-	if (calm.matches) still();
+	// data-motion="reduce" or "full" overrides the device, as in dots.js
+	function isCalm() {
+		var m = root.dataset.motion;
+		return m === 'reduce' || (m !== 'full' && calm.matches);
+	}
+	function motionChanged() { if (isCalm()) still(); else start(); }
+	calm.addEventListener('change', motionChanged);
+	new MutationObserver(motionChanged).observe(root, { attributes: true, attributeFilter: ['data-motion'] });
+
+	if (isCalm()) still();
 	else { put(at()); start(); }
 })();

@@ -191,54 +191,114 @@ body {
 	padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-.nav-profile-wrap {
-	position: relative;
-}
+/* While the profile menu is open, the account button glows, as the menu's
+   does while open. */
+.nav-profile[aria-expanded="true"] { box-shadow: var(--glow-primary); }
 
-.nav-profile-dropdown {
-	position: absolute;
-	top: 44px;
+/* ── The profile menu (UV, 31 Oct) ───────────────────────────────────
+ * The menu's mirror: in from the right, under the bar, the same blurred
+ * surface. On a phone it fills the screen under the bar. Three parts down
+ * it: the player banner, the middle set into the screen (its inner shadow,
+ * --shadow-sunken), and the toggles on a flat bar (--account-foot). */
+.nav-account {
+	position: fixed;
+	top: var(--nav-total);
 	right: 0;
-	min-width: 200px;
+	bottom: 0;
+	width: var(--account-width);
+	display: flex;
+	flex-direction: column;
 	background: var(--bg-surface);
 	backdrop-filter: blur(var(--surface-blur));
 	-webkit-backdrop-filter: blur(var(--surface-blur));
-	border: 1px solid var(--border-color);
-	border-radius: 8px;
-	padding: 0.75rem;
-	display: none;
-	flex-direction: column;
-	gap: 0.5rem;
+	border-left: 1px solid var(--border-color);
+	transform: translateX(100%);
+	transition: transform 0.25s ease;
+	z-index: 99;
+	/* Shut, it is off the screen: hidden from taps and the keyboard too. */
+	visibility: hidden;
 }
-.nav-profile-dropdown.open {
-	display: flex;
+.nav-account.open {
+	transform: translateX(0);
+	visibility: visible;
 }
-.nav-profile-email {
-	font-size: 0.85rem;
-	color: var(--text-muted);
-	word-break: break-all;
-}
-.nav-profile-dropdown button {
-	background: var(--color-primary);
-	color: #fff;
-	border: none;
-	border-radius: 6px;
-	padding: 0.5rem;
-	cursor: pointer;
-	font-weight: 600;
+/* Its slide out finishes before it is hidden. */
+.nav-account:not(.open) { transition: transform 0.25s ease, visibility 0s linear 0.25s; }
+@media (max-width: 40rem) {
+	.nav-account { width: 100%; border-left: none; }
 }
 
-.nav-dropdown-link {
-	display: block;
-	padding: 0.5rem;
-	border-radius: 6px;
+/* The player banner: picture, display name, full name. The whole of it is
+   the link to the profile page. */
+.nav-account-banner {
+	flex: 0 0 auto;
+	display: grid;
+	grid-template-columns: auto 1fr;
+	align-items: center;
+	gap: var(--space-3);
+	padding: var(--space-5) var(--space-5);
 	color: var(--text-primary);
+	text-decoration: none;
+	-webkit-tap-highlight-color: transparent;
 }
-.nav-dropdown-link:hover {
-	background: var(--hover-wash);
+.nav-account-banner:hover,
+.nav-account-banner:focus-visible { background: var(--hover-wash); outline: none; }
+.nav-account-pic {
+	width: var(--account-pic);
+	height: var(--account-pic);
+	border-radius: var(--radius-round);
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--bg-surface);
+	border: 1px solid var(--border-color);
+	color: var(--text-muted);
+	font-size: calc(var(--account-pic) * 0.36);
+	font-weight: 600;
+	letter-spacing: 0.03em;
 }
-.nav-dropdown-link[hidden] {
-	display: none;
+.nav-account-pic img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+.nav-account-names {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+.nav-account-display {
+	font-size: 1.15rem;
+	font-weight: 700;
+	overflow-wrap: anywhere;
+}
+.nav-account-full {
+	margin-top: 0.15rem;
+	font-size: 0.9rem;
+	color: var(--text-muted);
+	overflow-wrap: anywhere;
+}
+.nav-account-full[hidden] { display: none; }
+
+/* The middle, set into the screen. Empty for now: what goes in it (quick
+   links, business tools, the sports profiles) is still to be discussed. */
+.nav-account-middle {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	box-shadow: var(--shadow-sunken);
+}
+
+/* The toggles: icons only, on a flat bar, clear of an iPhone's home bar. */
+.nav-account-foot {
+	flex: 0 0 auto;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: var(--space-6);
+	padding: var(--space-4) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+	background: var(--account-foot);
 }
 
 /* Offline indicator. First in the right-hand group, on every page. */

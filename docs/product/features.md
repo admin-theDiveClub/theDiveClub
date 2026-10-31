@@ -117,7 +117,7 @@ A scorecard has a lifecycle, and who closes it is a setting rather than a rule.
 |---|---|
 | ✅ | **Installs as an app** on phone and desktop, with its own icon |
 | ✅ | **Works offline** for scoring |
-| ✅ | **Dark and light**, following the device |
+| ✅ | **Dark and light**, chosen in the profile menu, and **less motion** |
 
 ---
 

@@ -90,6 +90,9 @@
 			{ name: '--switch-width',     label: 'Switch width',   kind: 'size', unit: 'rem', min: 2.5,  max: 7,   step: 0.05, use: 'How wide a switch is; the knob travels this less the height' },
 			{ name: '--nav-slide',        label: 'Nav slide',        kind: 'size', unit: 's', min: 0, max: 1.5, step: 0.05, use: 'How long the nav bar takes to slide away on a scroll down and back on a scroll up. 0 for none' },
 			{ name: '--nav-ring-size',    label: 'Nav icons',        kind: 'size', unit: 'rem', min: 1.25, max: 3, step: 0.05, use: 'How big the ring icons on the nav bar are: menu, reload, the bell and the account (the picture takes the same size)' },
+			{ name: '--account-width',    label: 'Profile menu',     kind: 'size', unit: 'px', min: 240, max: 480, step: 10, use: 'How wide the profile menu is from a phone\'s width up (on a phone it fills the screen)' },
+			{ name: '--account-pic',      label: 'Menu picture',     kind: 'size', unit: 'rem', min: 2, max: 7, step: 0.25, use: 'How big the picture in the profile menu\'s banner is' },
+			{ name: '--account-foot',     label: 'Menu toggles bar', kind: 'colour', use: 'The flat colour behind the theme and motion toggles at the foot of the profile menu' },
 			{ name: '--tri-height',       label: 'Three-way height', kind: 'size', unit: 'rem', min: 1,  max: 3,   step: 0.05, use: 'How tall a three-way switch is (left, nobody, right: the team card\'s L and W)' },
 			{ name: '--tri-width',        label: 'Three-way width',  kind: 'size', unit: 'rem', min: 3,  max: 8,   step: 0.05, use: 'How wide a three-way switch is; longer than a switch so the three stops read as three' },
 			{ name: '--ring-draw',        label: 'Draw',           kind: 'size', unit: 's',   min: 0.2,  max: 2,   step: 0.1,  use: 'How long an icon takes to draw, stroke by stroke: the ring\'s tick and cross, and the chevrons, calendar and cross of the other controls' },
@@ -130,6 +133,7 @@
 		['Depth', [
 			{ name: '--shadow-alpha',     label: 'Shadow strength', kind: 'alpha', use: 'How dark the shadow under floating panels is (black at this opacity)' },
 			{ name: '--pic-shadow-alpha', label: 'Picture shadow', kind: 'alpha', use: 'How dark the shadow under every picture circle is: profile pictures (the nav\'s too), league and team pictures' },
+			{ name: '--sunken-alpha',     label: 'Sunken shadow',  kind: 'alpha', use: 'How dark the inner shadow is on a section set into the screen: the profile menu\'s middle' },
 			{ name: '--scrim-alpha',      label: 'Dim strength',    kind: 'alpha', use: 'How dark the page goes behind a slide-over panel (black at this opacity)' }
 		]],
 		['Background', [

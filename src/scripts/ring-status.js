@@ -71,6 +71,20 @@ const TDCRing = (() => {
 		// Added 29 Oct for the three-way switch's middle: a small dot (grey,
 		// status.css), so the middle has a line to trace like the two ends.
 		dot: { label: 'Neither', widths: [8], strokes: ['M50 46A4 4 0 1 1 50 54A4 4 0 1 1 50 46'] },
+		// Added 31 Oct for the profile menu's toggles (UV): the theme (a moon
+		// for dark, a sun for light) and motion (a ball with speed lines, or
+		// the ball held still between two bars).
+		moon: { label: 'Dark theme', strokes: ['M57 30A21 21 0 1 0 70 58A16 16 0 1 1 57 30'] },
+		sun: { label: 'Light theme', strokes: [
+			'M50 40A10 10 0 1 1 50 60A10 10 0 1 1 50 40',
+			'M50 25L50 31M50 69L50 75M25 50L31 50M69 50L75 50',
+			'M32 32L36.5 36.5M63.5 63.5L68 68M68 32L63.5 36.5M36.5 63.5L32 68'] },
+		motion: { label: 'Full motion', strokes: [
+			'M61 41A9 9 0 1 1 61 59A9 9 0 1 1 61 41',
+			'M33 42L46 42M27 50L46 50M33 58L46 58'] },
+		still: { label: 'Less motion', strokes: [
+			'M50 41A9 9 0 1 1 50 59A9 9 0 1 1 50 41',
+			'M31 38L31 62M69 38L69 62'] },
 		// Added 29 Oct for the team card's W (UV): a win that was a break &
 		// finish or a golden break, the letters in place of the tick. Thinner
 		// than the tick, so two letters fit in a small knob.

@@ -1,0 +1,37 @@
+---
+eleventyExcludeFromCollections: true
+---
+<!DOCTYPE html>
+<html lang="en" data-theme>
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Dots move</title>
+	{% comment %}
+		One of the site's waiting moves on the real dots, on repeat. The
+		animation picker shows each site move in its own card through this
+		page in a frame (?m=<move>), since the dots are one set to a page.
+		No layout: nothing but the dots, so thirty-odd frames stay light.
+	{% endcomment %}
+	<link rel="stylesheet" href="/stylesheets/variables.css?v={{ build.version }}">
+	<link rel="stylesheet" href="/stylesheets/dots.css?v={{ build.version }}">
+	<script src="/scripts/prefs.js?v={{ build.version }}"></script>
+	<style>
+		html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg-base); color: var(--text-primary); font-family: var(--font-body); }
+		/* The dots are as wide as the line they run on: the site's 2px line
+		   makes dots too small to judge at card size, so this ring's is
+		   thicker. */
+		.move-ring { position: absolute; inset: 16%; border: calc(var(--control-border) * 2.5) solid var(--control-line); border-radius: var(--radius-round); }
+		.status { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; font-size: 0.6rem; text-align: center; }
+		.status.error { color: var(--color-error); }
+	</style>
+</head>
+<body>
+	<!-- data-dots-hold: the dots do not dim the ring while they wait on it. -->
+	<div class="move-ring" id="move-ring" data-dots-hold></div>
+	<p class="status" id="move-status" role="status"></p>
+	<script src="/scripts/tdc.js?v={{ build.version }}"></script>
+	<script src="/scripts/dots.js?v={{ build.version }}"></script>
+	<script src="/scripts/sandbox-move.js?v={{ build.version }}"></script>
+</body>
+</html>

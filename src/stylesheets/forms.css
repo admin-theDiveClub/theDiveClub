@@ -983,6 +983,7 @@ button.league-nav-item:focus-visible { background: var(--hover-wash); outline: n
    set on /sandbox/ (Depth: Picture shadow). Here because every page loads
    this file; the circles themselves are styled in their own stylesheets. */
 .nav-avatar,
+.nav-account-pic,
 .avatar,
 .avatar-large,
 .chosen-avatar,

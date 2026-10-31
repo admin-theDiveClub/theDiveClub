@@ -1,0 +1,59 @@
+---
+layout: layout.html
+title: Animation Picker
+description: "A scratch page for choosing the dots' animations: every move on the site and a library of new ones. Not part of the product."
+extraStyles:
+  - /stylesheets/sandbox.css
+extraScripts:
+  - /scripts/sandbox-animations.js
+---
+{% comment %}
+	The animation picker (UV, 31 Oct and 1 Nov): every waiting move the dots
+	play on the site, each in its own card on the real dots (a frame of
+	/sandbox/animations/move/), and a library of new scenes drawn on their own
+	small stages by sandbox-animations.js. Each can be marked "In the loop";
+	the marks are kept in this browser only, copied out as a list, and played
+	one after another in The loop. Nothing is wired into dots.js from here yet.
+	Nothing touches the database.
+{% endcomment %}
+
+<div class="tdc-card sandbox anim-picker">
+	<h1>Animation picker</h1>
+	<p class="muted">Every move the dots play on the site, then a library of new ones to choose from. Mark the ones you want "In the loop": The loop plays them one after another. The marks are kept in this browser; Copy the list to hand it over. Not linked from the nav.</p>
+
+	<div class="ap-bar" role="group" aria-label="Adjust the animations">
+		<div class="ap-sliders" id="ap-sliders"></div>
+		<div class="ap-bar-row">
+			<button type="button" class="btn btn-secondary" id="ap-play">Pause</button>
+			<button type="button" class="btn btn-secondary" id="ap-reset">Reset the sliders</button>
+		</div>
+	</div>
+
+	<section class="sb-section ap-loop">
+		<h2>The loop</h2>
+		<p class="muted">Everything marked "In the loop", one after another: about six seconds each.</p>
+		<div class="ap-loop-stage" id="ap-loop-stage"></div>
+		<p class="ap-loop-name" id="ap-loop-name" role="status"></p>
+		<div class="ap-bar-row ap-loop-nav">
+			<button type="button" class="btn btn-secondary" id="ap-loop-prev">Previous</button>
+			<span class="muted" id="ap-loop-count"></span>
+			<button type="button" class="btn btn-secondary" id="ap-loop-next">Next</button>
+		</div>
+	</section>
+
+	<section class="sb-section">
+		<h2>Find</h2>
+		<div class="ap-filters" id="ap-filters" role="group" aria-label="Show"></div>
+		<div class="ap-bar-row">
+			<label class="ap-check"><input type="checkbox" id="ap-active-only"> In the loop only</label>
+			<input type="search" id="ap-search" placeholder="Search by name" aria-label="Search by name">
+		</div>
+		<p class="muted" id="ap-count" role="status"></p>
+		<div class="ap-bar-row">
+			<button type="button" class="btn btn-primary" id="ap-copy">Copy the list</button>
+		</div>
+		<div class="status" id="ap-status" role="status"></div>
+	</section>
+
+	<div id="ap-library"></div>
+</div>

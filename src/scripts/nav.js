@@ -1,6 +1,7 @@
 // Shared nav behavior: hamburger menu + login-aware profile menu.
 // Every button on the bar is a ring icon (ring-status.js), drawn here.
-// Needs: supabaseClient.js, tdc.js, ring-status.js (loaded by layout.html).
+// Needs: supabaseClient.js, tdc.js, ring-status.js (loaded by layout.html),
+// prefs.js (in the head).
 
 (function () {
 	const AREA = 'Nav';
@@ -8,18 +9,22 @@
 	const menuToggle      = document.getElementById('nav-menu-toggle');
 	const menu            = document.getElementById('nav-menu');
 	const profileBtn      = document.getElementById('nav-profile');
-	const profileDropdown = document.getElementById('nav-profile-dropdown');
-	const profileEmail    = document.getElementById('nav-profile-email');
-	const staffLink       = document.getElementById('nav-staff-link');
-	const logoutBtn       = document.getElementById('nav-logout-btn');
+	const account         = document.getElementById('nav-account');
 	const profileIcon     = document.getElementById('nav-profile-icon');
 	const profileAvatar   = document.getElementById('nav-avatar');
 
-	if (!menuToggle || !menu || !profileBtn || !profileDropdown || !profileEmail || !staffLink || !logoutBtn
-		|| !profileIcon || !profileAvatar) {
+	if (!menuToggle || !menu || !profileBtn || !account || !profileIcon || !profileAvatar) {
 		TDC.error(AREA, 'nav is missing expected elements.');
 		return;
 	}
+
+	// The profile menu's banner and toggles. Not in the required list: if
+	// they are missing, the rest of the nav must still work.
+	const accountPic     = document.getElementById('nav-account-pic');
+	const accountDisplay = document.getElementById('nav-account-display');
+	const accountFull    = document.getElementById('nav-account-full');
+	const prefTheme      = document.getElementById('nav-pref-theme');
+	const prefMotion     = document.getElementById('nav-pref-motion');
 
 	// Notifications. Deliberately not in the required list above: if this part
 	// of the nav is missing, the rest of it must still work. Everything below
@@ -107,6 +112,7 @@
 		menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
 		drawTo(rings.menu, open ? 'cross' : 'menu');
 		if (open) {
+			setAccount(false);
 			if (rings.bell) rings.bell.drawIn();
 			if (rings.reload) rings.reload.drawIn();
 		} else {
@@ -115,10 +121,19 @@
 	}
 	menuToggle.addEventListener('click', () => setMenu(!menu.classList.contains('open')));
 
-	// --- Profile icon: menu when logged in, login page when not ---
+	// --- The profile menu (UV, 31 Oct) ---
+	// Slides in from the right, as the menu does from the left; one of the
+	// two at a time.
+	function setAccount(open) {
+		account.classList.toggle('open', open);
+		profileBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+		if (open && menu.classList.contains('open')) setMenu(false);
+	}
+
+	// --- Profile icon: the profile menu when logged in, login page when not ---
 	profileBtn.addEventListener('click', () => {
 		if (loggedIn) {
-			profileDropdown.classList.toggle('open');
+			setAccount(!account.classList.contains('open'));
 		} else {
 			// The dots stay until the sign-in page takes over.
 			serveUntil(profileBtn, rings.user, pageGoes(), { timeout: LEAVE_MS });
@@ -127,28 +142,39 @@
 		}
 	});
 
-	logoutBtn.addEventListener('click', async () => {
-		const { error } = await supabaseClient.auth.signOut();
-		if (error) {
-			TDC.error(AREA, 'could not log out.', error);
-			profileEmail.textContent = 'TDC (Error): could not log out.';
-			return;
-		}
-		window.location.replace('/');
-	});
-
-	// --- Close menu/dropdown when clicking outside ---
+	// --- Close the menus when clicking outside ---
 	document.addEventListener('click', (e) => {
 		if (!menu.contains(e.target) && !menuToggle.contains(e.target) && menu.classList.contains('open')) {
 			setMenu(false);
 		}
-		if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
-			profileDropdown.classList.remove('open');
+		if (!account.contains(e.target) && !profileBtn.contains(e.target) && account.classList.contains('open')) {
+			setAccount(false);
 		}
 		if (notifyBtn && !notifyBtn.contains(e.target) && !notifyTray.contains(e.target)) {
 			closeNotifications();
 		}
 	});
+
+	// Escape closes it, as it should any layer over the page.
+	document.addEventListener('keydown', (e) => {
+		if (e.key === 'Escape') setAccount(false);
+	});
+
+	// --- The toggles: the theme and less motion (prefs.js keeps them) ---
+	// Each is a switch with its own icon on each side (tdc-controls.js). A
+	// change saves nothing to the network, so the dots serve it briefly.
+	if (typeof TDCPrefs === 'undefined') {
+		TDC.error(AREA, 'prefs.js is not loaded, so the theme and motion toggles cannot work.');
+	} else {
+		if (prefTheme) {
+			prefTheme.checked = TDCPrefs.light;
+			prefTheme.addEventListener('change', () => TDCPrefs.setLight(prefTheme.checked));
+		}
+		if (prefMotion) {
+			prefMotion.checked = TDCPrefs.lessMotion;
+			prefMotion.addEventListener('change', () => TDCPrefs.setLessMotion(prefMotion.checked));
+		}
+	}
 
 	// --- Profile picture in place of the generic icon ---
 	// Only ever shown for a signed-in player who has one. If the file has gone
@@ -190,10 +216,44 @@
 		profileAvatar.src = url;
 	}
 
+	// The profile menu's banner: the picture, or the initials in a circle when
+	// there is none (as on the Season tab), and the names.
+	let bannerName = '';
+
+	function showBannerPic(url) {
+		if (!accountPic) return;
+		accountPic.replaceChildren();
+		if (!url) {
+			accountPic.textContent = (bannerName || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+			return;
+		}
+		const img = document.createElement('img');
+		img.alt = '';
+		img.onerror = () => {
+			console.error('[' + AREA + '] the profile menu\'s picture could not be loaded, using the initials.', url);
+			showBannerPic(null);
+		};
+		img.src = url;
+		accountPic.append(img);
+	}
+
+	function showBanner(me) {
+		bannerName = (me && me.display_name) || '';
+		if (accountDisplay) accountDisplay.textContent = bannerName;
+		if (accountFull) {
+			const full = me ? [me.first_name, me.last_name].filter(Boolean).join(' ') : '';
+			accountFull.textContent = full;
+			accountFull.hidden = !full;
+		}
+		showBannerPic(me ? avatarUrlFor(me.avatar_path) : null);
+	}
+
 	// The profile page fires this after a picture is changed or removed, so the
 	// nav follows without a reload.
 	window.addEventListener('tdc:avatar-changed', (e) => {
-		showNavAvatar(avatarUrlFor(e.detail && e.detail.path));
+		const url = avatarUrlFor(e.detail && e.detail.path);
+		showNavAvatar(url);
+		showBannerPic(url);
 	});
 
 
@@ -399,7 +459,6 @@
 		if (!session) return;
 
 		loggedIn = true;
-		profileEmail.textContent = session.user.email || 'TDC (No Email)';
 
 		// Nothing to show a stranger, so the bell appears only now.
 		if (notifyWrap) notifyWrap.hidden = false;
@@ -412,31 +471,21 @@
 		// on it, and a failure costs the push and nothing else.
 		TDC.flushPushes();
 
-		// Show the "Staff" link only to venue staff. The page and the database check again for real.
-		const { data, error } = await supabaseClient
-			.from('tbl_venue_staff')
-			.select('venue_id')
-			.eq('user_id', session.user.id)
-			.limit(1);
-
-		if (error) {
-			TDC.error(AREA, 'could not check staff role.', error);
-		} else {
-			staffLink.hidden = data.length === 0;
-		}
-
-		// The player's picture. A missing player row is not worth shouting about
-		// in the nav; the generic icon simply stays.
+		// The player's picture and names, for the bar and the profile menu's
+		// banner. A missing player row is not worth shouting about in the nav;
+		// the generic icon simply stays.
 		const { data: me, error: playerErr } = await supabaseClient
 			.from('tbl_players')
-			.select('avatar_path')
+			.select('avatar_path, display_name, first_name, last_name')
 			.eq('user_id', session.user.id)
 			.maybeSingle();
 
 		if (playerErr) {
-			console.error('[' + AREA + '] could not load the profile picture.', playerErr);
+			console.error('[' + AREA + '] could not load the profile picture and names.', playerErr);
+			showBanner(null);
 			return;
 		}
+		showBanner(me);
 		if (me && me.avatar_path) showNavAvatar(avatarUrlFor(me.avatar_path));
 	})(), 'Nav');
 
@@ -455,7 +504,7 @@
 		navBar.classList.toggle('is-hidden', hide);
 		if (hide) {
 			if (menu.classList.contains('open')) setMenu(false);
-			profileDropdown.classList.remove('open');
+			setAccount(false);
 			closeNotifications();
 		}
 	}

@@ -519,3 +519,128 @@
 	margin-bottom: var(--space-3);
 }
 .dots-fails .btn { margin: 0; width: 100%; }
+
+/* ── The animation picker (/sandbox/animations/, 31 Oct, 1 Nov) ───────
+   A bar of sliders that stays at the top, The loop's big stage, filter
+   chips, and a grid of cards, each with its own stage (a site move's is a
+   frame of the real dots). The stages use the page's own colours (the ring
+   in the control line, the dots in the brand colour, the page colour
+   behind), so the theme switch in the profile menu shows both. */
+.anim-picker {
+	--ap-stage: 9rem;
+	--ap-kr: 1;
+}
+.ap-bar {
+	position: sticky;
+	top: calc(var(--nav-total) + var(--space-2));
+	z-index: 5;
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: var(--space-3) var(--space-4);
+	align-items: center;
+	margin: var(--space-4) 0;
+	padding: var(--space-3);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-lg);
+	background: var(--bg-base);
+}
+/* Nothing in the bar may be wider than the bar: the sliders' grid would
+   otherwise push a phone's page sideways. */
+.ap-bar > *, .ap-bar-row > * { min-width: 0; }
+.ap-sliders {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr));
+	gap: 0 var(--space-4);
+}
+.ap-slider { margin-bottom: var(--space-1); }
+.ap-slider label { font-size: 0.8rem; }
+.ap-slider output { font-variant-numeric: tabular-nums; }
+.ap-bar-row {
+	grid-column: 1 / -1;
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2) var(--space-3);
+	align-items: center;
+}
+.ap-bar-row .btn { margin: 0; width: auto; }
+@media (max-width: 40rem) {
+	.ap-bar { position: static; }
+}
+
+/* The loop: one big stage, the name of what is playing, and back / next. */
+.ap-loop-stage {
+	width: min(calc(var(--ap-stage) * 2.2), 100%);
+	aspect-ratio: 1;
+	margin: 0 auto;
+	display: grid;
+	place-items: center;
+	border-radius: var(--radius-lg);
+	background: var(--bg-base);
+}
+.ap-loop-stage svg { width: 86%; height: auto; overflow: visible; }
+.ap-loop-name { margin: var(--space-2) 0 0; text-align: center; font-weight: 600; }
+.ap-loop-nav { justify-content: center; }
+
+.ap-filters { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
+.anim-picker .ap-chip {
+	width: auto;
+	margin: 0;
+	padding: var(--space-1) var(--space-3);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-pill);
+	background: none;
+	color: var(--text-muted);
+	font-size: 0.8rem;
+	cursor: pointer;
+}
+.anim-picker .ap-chip[aria-pressed="true"] { border-color: var(--color-primary); color: var(--color-primary); }
+.ap-check { display: inline-flex; align-items: center; gap: var(--space-2); font-size: 0.9rem; }
+#ap-search { flex: 1 1 12rem; }
+
+.ap-cat > h2 { text-align: left; }
+.ap-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(calc(var(--ap-stage) + 1.5rem), 1fr));
+	gap: var(--space-3);
+}
+.ap-card {
+	display: grid;
+	align-content: start;
+	gap: var(--space-1);
+	padding: var(--space-2);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-md);
+}
+.ap-card h3 { margin: 0; font-size: 0.9rem; display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-2); align-items: baseline; }
+.ap-card p { margin: 0; font-size: 0.8rem; }
+.ap-tag {
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	padding: 0 var(--space-2);
+	border: 1px solid var(--color-primary);
+	border-radius: var(--radius-pill);
+	color: var(--color-primary);
+}
+.ap-level { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+.ap-active { display: inline-flex; align-items: center; gap: var(--space-2); font-size: 0.8rem; color: var(--text-muted); }
+
+.ap-stage {
+	width: var(--ap-stage);
+	max-width: 100%;
+	aspect-ratio: 1;
+	justify-self: center;
+	display: grid;
+	place-items: center;
+	border-radius: var(--radius-md);
+	background: var(--bg-base);
+}
+.ap-stage svg { width: 86%; height: auto; overflow: visible; }
+/* A site move: the real dots in a frame of their own page. */
+.ap-move { width: 100%; height: 100%; border: 0; border-radius: inherit; display: block; }
+.ap-ring { fill: none; stroke: var(--control-line); stroke-width: calc(5 * var(--ap-kr)); }
+.ap-dot, .ap-fxc { fill: var(--color-primary); }
+.ap-fxbg { fill: var(--bg-base); }
+/* Fake light: a highlight in the text colour, and a shadow darker than the page. */
+.ap-fxhl { fill: var(--text-primary); }
+.ap-fxdark { fill: color-mix(in srgb, var(--bg-base) 25%, black); }
+.ap-fxl { fill: none; stroke: var(--color-primary); stroke-linecap: round; stroke-linejoin: round; }

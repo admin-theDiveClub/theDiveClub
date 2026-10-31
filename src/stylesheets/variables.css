@@ -43,6 +43,7 @@
   --shadow-alpha: 0;       /* floating panels and menus */
   --scrim-alpha: 0.38;        /* the dim behind a slide-over panel */
   --pic-shadow-alpha: 0.45;   /* under every picture circle (24 Oct) */
+  --sunken-alpha: 0.6;        /* a section set into the screen: the profile menu's middle (31 Oct) */
 
   /* The background (global.css, scripts/page-light.js; 29 Oct): the green
      glow above every page is a light that drifts, and the shadow round the
@@ -61,6 +62,7 @@
 
   --shadow-panel: 0 10px 30px rgba(0, 0, 0, var(--shadow-alpha));
   --shadow-pic: 0 3px 8px rgba(0, 0, 0, var(--pic-shadow-alpha));
+  --shadow-sunken: inset 0 2px 14px rgba(0, 0, 0, var(--sunken-alpha));
   --scrim: rgba(0, 0, 0, var(--scrim-alpha));
 
   /* A hover that lifts a surface without introducing another colour. Built
@@ -173,6 +175,11 @@
   --nav-total: calc(var(--nav-height) + var(--nav-top));
   --nav-slide: 0.5s;              /* the bar sliding away and back on scroll */
   --nav-logo-height: 46px;        /* the icon in the middle of the bar, and the loading screen's in the same spot */
+  /* The profile menu (nav.css; 31 Oct): slides in from the right, the
+     whole screen under the bar on a phone */
+  --account-width: 320px;         /* its width from a phone's width up */
+  --account-pic: 4rem;            /* the picture in its banner */
+  --account-foot: #2b2b2b;        /* the flat colour behind its toggles */
 }
 
 [data-theme="light"] {
@@ -200,11 +207,13 @@
   --shadow-alpha: 0;
   --scrim-alpha: 0.47;
   --pic-shadow-alpha: 0.2;
+  --sunken-alpha: 0.15;
   --page-inset-alpha: 0.2;
   --surface-blur: 8px;
   --score-band: #e6d8bd;
   --score-depth-alpha: 0.15;
   --score-drop-alpha: 0.2;
+  --account-foot: #e6d8bd;
 
   /* Logo. Set from the artwork section of /sandbox/. */
   --logo-primary: #594f4f;

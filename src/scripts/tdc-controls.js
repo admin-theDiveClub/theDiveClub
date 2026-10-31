@@ -737,8 +737,13 @@ const TDCControls = (() => {
 	function makeCheck(kind, first) {
 		const isSwitch = kind === 'switch';
 		// Off is an empty ring for both (UV, 26 Oct: a switch was a cross off).
-		const ON = 'tick';
-		const OFF = 'empty';
+		// A box may name its own icon for each side instead (data-icon-on,
+		// data-icon-off: the profile menu's theme and motion toggles, 31 Oct),
+		// whose labels then say what each side is.
+		const known = (name) => name && TDCRing.ICONS[name];
+		const ON = known(first.dataset.iconOn) ? first.dataset.iconOn : 'tick';
+		const OFF = known(first.dataset.iconOff) ? first.dataset.iconOff : 'empty';
+		const ownIcons = ON !== 'tick' || OFF !== 'empty';
 		const c = { kind, box: null, key: null, knobAt: 0 };
 		const state = () => c.box.checked ? ON : OFF;
 
@@ -758,8 +763,9 @@ const TDCControls = (() => {
 		c.place = (p) => { c.knobAt = p; wrap.style.setProperty('--p', p.toFixed(3)); };
 
 		c.ring = new TDCRing.RingStatus(face, {
-			icons: [ON],
-			labels: isSwitch ? { tick: 'On', empty: 'Off', loading: 'Saving' } : { tick: 'Ticked', empty: 'Not ticked', loading: 'Saving' },
+			icons: [ON, OFF].filter((n) => n !== 'empty'),
+			labels: ownIcons ? { loading: 'Saving' }
+				: isSwitch ? { tick: 'On', empty: 'Off', loading: 'Saving' } : { tick: 'Ticked', empty: 'Not ticked', loading: 'Saving' },
 			initial: first.checked ? ON : OFF
 		});
 		if (isSwitch) c.place(first.checked ? 1 : 0);

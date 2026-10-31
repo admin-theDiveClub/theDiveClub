@@ -24,22 +24,15 @@
 		<span class="nav-offline-pip" aria-hidden="true"></span>Offline
 	</span>
 
-	<div class="nav-profile-wrap">
-		<button class="nav-profile" id="nav-profile" aria-label="Account">
-			<!-- The person until nav.js finds a signed-in player with a picture,
-			     then the picture. Both are decorative: the button's aria-label
-			     is what a screen reader announces. -->
-			<span class="tdc-ring nav-ring" id="nav-profile-icon"></span>
-			<img class="nav-avatar" id="nav-avatar" alt="" hidden>
-		</button>
-
-		<div class="nav-profile-dropdown" id="nav-profile-dropdown">
-			<div class="nav-profile-email" id="nav-profile-email"></div>
-			<a href="/accounts/profile/" class="nav-dropdown-link">Profile</a>
-			<a href="/staff/" class="nav-dropdown-link" id="nav-staff-link" hidden>Staff</a>
-			<button id="nav-logout-btn">Log Out</button>
-		</div>
-	</div>
+	<!-- Signed in, it opens the profile menu (below); signed out, it goes to
+	     sign-in. -->
+	<button class="nav-profile" id="nav-profile" aria-label="Account" aria-expanded="false" aria-controls="nav-account">
+		<!-- The person until nav.js finds a signed-in player with a picture,
+		     then the picture. Both are decorative: the button's aria-label
+		     is what a screen reader announces. -->
+		<span class="tdc-ring nav-ring" id="nav-profile-icon"></span>
+		<img class="nav-avatar" id="nav-avatar" alt="" hidden>
+	</button>
 
 	</div>
 </nav>
@@ -79,3 +72,27 @@
 		<span>Reload</span>
 	</button>
 </div>
+
+<!-- The profile menu (UV, 31 Oct): slides in from the right, the whole screen
+     under the bar on a phone. Outside the bar, as the menu is, so its blur
+     reaches the page. Three parts: the player banner (a tap anywhere on it
+     opens the profile), the middle, set into the screen (empty: what goes in
+     it is still to be discussed, STATUS), and the toggles on a flat bar. -->
+<aside class="nav-account" id="nav-account" aria-label="Your profile menu">
+	<a href="/accounts/profile/" class="nav-account-banner">
+		<span class="nav-account-pic" id="nav-account-pic" aria-hidden="true"></span>
+		<span class="nav-account-names">
+			<span class="nav-account-display" id="nav-account-display"></span>
+			<span class="nav-account-full" id="nav-account-full" hidden></span>
+		</span>
+	</a>
+
+	<div class="nav-account-middle"></div>
+
+	<!-- Icons only (UV): each side of a toggle has its own icon, and the
+	     aria-label says what it is. Made into switches by tdc-controls.js. -->
+	<div class="nav-account-foot">
+		<input type="checkbox" id="nav-pref-theme" data-icon-off="moon" data-icon-on="sun" aria-label="Light theme">
+		<input type="checkbox" id="nav-pref-motion" data-icon-off="motion" data-icon-on="still" aria-label="Less motion">
+	</div>
+</aside>
