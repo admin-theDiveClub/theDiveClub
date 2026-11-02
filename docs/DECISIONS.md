@@ -1144,3 +1144,9 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* `match.js` draws the pill's buttons and runs the toggle (`placeKnob`) and the idle controller; `dots.js` gains three serve options (`move`, `from: 'centre'`, `end: 'gather'`), inert unless asked for, and the pool move's new look everywhere.
 *Replaces:* 30 Oct's special wins in slots round the ring, the score against the buttons, the breaker's screen-half outline.
 *Touches:* `src/match/index.html`, `match.js`, `match.css`, `dots.js`, `docs/systems/matches.md`, `docs/systems/dots.md`, `docs/STATUS.md`
+
+## 2026-11-02 — The light theme's muted grey is #a3a3a3
+
+*Decided by UV:* the light theme's `--text-muted` becomes a real grey, site-wide: first the dark theme's #808080, then #a3a3a3, set by UV in the file the same day. It had been #20333b, the same as `--text-primary`, so every muted element in light mode (muted text, disabled buttons, the match page's idle dots) drew as the main text colour.
+*Rejected:* a token for the idle dots alone; a warm grey (#8a8178).
+*Touches:* `variables.css` (UV may still retune it on `/sandbox/`)
