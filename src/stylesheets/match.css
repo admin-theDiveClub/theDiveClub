@@ -13,26 +13,55 @@
    (.mv-who, .mv-score). Upright, the
    two players top and bottom; sideways, side by side. A size container, so
    the rings can be sized from it.
-   In thirds along the split (UV, 30 Oct: thirds, then 5 : 2 : 5 in twelfths,
-   then thirds again): each player the outer third on their side, the rings
-   the middle one.
-   --mv-centre is the break ring's box (UV, 30 Oct, with the special wins:
-   the ring shrinks so the group fits): no more than the middle third
-   (upright of the height, sideways of the width), and small enough that the
-   group (the special wins' outside edges apart, --mv-cluster times the box,
-   set by match.js) fits across the stage upright and in the space below
-   the name strips sideways, --space-3 clear at each end. Its container
-   units are worked out on the rings themselves, whose container is this.
-   Sideways the rings and buttons centre in the space below the name strips,
-   60% down (UV, 30 Oct), not the stage's middle.
+   The green pill (UV, 2 Nov; .mv-pill below) runs along the split round
+   both scores and the rings, the special wins filling its round ends.
+   Sideways it fills the space below the name strips, --space-3 clear all
+   round; upright it runs between the two names (13/15 of the stage, the
+   names a fifteenth each, as their 1 : 4 share of a player's third was),
+   --mv-pill-share of the stage's width thick (UV, 2 Nov: as the mock's
+   C, 220px on a 420px phone). Both ways it is at least --mv-pill-ratio
+   times as long as it is thick, so the round ends (each as deep as half the
+   thickness) and the rings leave the scores room: 3.4 gives each score
+   about 120px along the pill on a phone held either way, and holds on a
+   PC's wide screen, where the height alone made a pill too fat.
+   --mv-centre is the break ring's box: --mv-ring-share of the pill's
+   thickness. --mv-yellow-half is half the length the rings take along the
+   pill: the yellow toggle's pill, two rings long (UV, 2 Nov), its line two
+   quadrants' gaps outside the ring's (--mv-knob-reach, 53 in the ring's
+   100 box: its outside at 48 and two gaps of 2.5, from match.js's
+   BREAK_RING, which sets it), so the rings slide that far either way of
+   the middle; the same whether or not breaks are recorded, so the scores
+   never move.
+   --mv-knob is registered (below) so it slides: the rings, the yellow
+   pill's glow and the breaker's glow all follow it, in a switch's time
+   and curve (controls.css, the three-way switch's knob). Its container
+   units are worked out where used (the rings, the pill, the scores), whose
+   container is this.
+   Sideways the rings and the pill centre in the space below the name
+   strips, 60% down (UV, 30 Oct), not the stage's middle; both ways they
+   keep clear of the home bar (--mv-centre-y). */
+/* Its other values:
    --mv-word is the break words' size in the break ring's 100 box, and
    --mv-word-stem a Rushford Clean stem's width for its size (0.23: an H or
    L drawn at 200px has 46px stems, measured 30 Oct with size-adjust in
    play; a different display face needs it measured again). The cream ring's
    line is that stem at that size. */
+@property --mv-knob { syntax: '<number>'; inherits: true; initial-value: 0; }
+.mv-stage.mv-knob-still { transition: none; }   /* the page opening: drawn where it stands */
 .mv-stage {
-	--mv-centre: min(100cqh / 3, (100cqw - 2 * var(--space-3)) / var(--mv-cluster, 1));
-	--mv-centre-y: 50%;
+	--mv-pill-share: 0.52;
+	--mv-pill-ratio: 3.4;
+	--mv-ring-share: 0.57;
+	--mv-pill-long: calc(100cqh * 13 / 15 - 2 * var(--space-3) - env(safe-area-inset-bottom, 0px));
+	--mv-pill-thick: min(100cqw * var(--mv-pill-share), var(--mv-pill-long) / var(--mv-pill-ratio));
+	--mv-centre: calc(var(--mv-pill-thick) * var(--mv-ring-share));
+	--mv-knob-reach: 53;
+	--mv-yellow-half: calc(var(--mv-centre) * var(--mv-knob-reach) * 2 / 100);
+	/* how far the rings stand from the middle: --mv-knob (match.js,
+	   placeKnob: -1 home, 0 nobody, 1 away) times the yellow pill's radius */
+	--mv-knob-shift: calc(var(--mv-knob) * var(--mv-centre) * var(--mv-knob-reach) / 100);
+	transition: --mv-knob var(--control-motion) cubic-bezier(0.2, 0.7, 0.3, 1);
+	--mv-centre-y: calc(50% - env(safe-area-inset-bottom, 0px) / 2);
 	--mv-word: 6.5;
 	--mv-word-stem: 0.23;
 	display: grid;
@@ -45,8 +74,9 @@
 
 @media (orientation: landscape) {
 	.mv-stage {
-		--mv-centre: min(100cqw / 3, (100cqh * 0.8 - 2 * var(--space-3)) / var(--mv-cluster, 1));
-		--mv-centre-y: 60%;
+		--mv-pill-long: calc(100cqw - 2 * var(--space-3) - 2 * max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)));
+		--mv-pill-thick: min(100cqh * 0.8 - 2 * var(--space-3) - env(safe-area-inset-bottom, 0px), var(--mv-pill-long) / var(--mv-pill-ratio));
+		--mv-centre-y: calc(60% - env(safe-area-inset-bottom, 0px) / 2);
 		grid-template-rows: none;
 		grid-template-columns: 1fr 1fr;
 	}
@@ -63,72 +93,33 @@
 	position: relative;
 	min-width: 0;
 	min-height: 0;
+}
+/* On a layer of its own (UV, 2 Nov: the line between the halves hidden
+   behind the yellow pill, but not behind the green one): --mv-split-mask,
+   set by match.js (glowMasks) while the yellow pill shows, cuts the pill's
+   shape out of it. */
+.mv-side::before {
+	content: "";
+	position: absolute;
+	inset: 0;
 	box-shadow: inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
+	-webkit-mask: var(--mv-split-mask, none) 0 0 / 100% 100% no-repeat;
+	mask: var(--mv-split-mask, none) 0 0 / 100% 100% no-repeat;
+	pointer-events: none;
 }
 
-/* The breaker's half (UV, 30 Oct; match.js, paintBreaker): a yellow
-   outline as heavy as the break ring's (--match-break-stroke) and a yellow
-   inner glow (--match-glow-size, --match-glow-colour, which the break
-   buttons wear too), never crossing a button's see-through inside (UV,
-   30 Oct). They stop in different places, so each is a layer of its own:
-   The glow (::before, under the name and score) reaches far enough into
-   the half to lie under the special wins, so it stops at the buttons
-   themselves: --mv-glow-mask, set on each half by match.js (glowMasks),
-   is an SVG the half's size hiding it inside the special wins and the
-   break ring (each grown by half a line) and showing it everywhere else,
-   the gaps included. (A rectangle round the whole group, the first way,
-   cut it with hard edges beside the special wins' rounded corners; UV,
-   30 Oct.) Until the script has drawn the mask the glow shows whole.
-   The line (::after) runs on to the break ring and meets it (UV, 30 Oct:
-   the special wins had cut it off): along the split it passes through the
-   gap between a slot's two buttons and the gap between the slot and the
-   ring, clear of their lines, so its mask cuts out only a circle the size
-   of the ring's outside, centred where the ring sits on this half's edge. */
-/* Its corners rounded as the special wins' are (UV, 30 Oct): WIN.corner in
-   match.js, 4 in the break ring's 100 box, so 4% of --mv-centre. */
-.mv-side { --mv-half-corner: calc(var(--mv-centre) * 0.04); }
-.mv-side[data-breaking]::after {
-	--mv-rim-r: calc(var(--mv-centre) * var(--mv-break-rim) / 2 + var(--match-break-stroke) / 2);
-	--mv-rim-at: 50% 100%;
-	content: "";
-	position: absolute;
-	inset: 0;
-	box-sizing: border-box;
-	border: var(--match-break-stroke) solid var(--color-warning);
-	border-radius: var(--mv-half-corner);
-	-webkit-mask: radial-gradient(circle at var(--mv-rim-at), transparent var(--mv-rim-r), #000 calc(var(--mv-rim-r) + 0.5px));
-	mask: radial-gradient(circle at var(--mv-rim-at), transparent var(--mv-rim-r), #000 calc(var(--mv-rim-r) + 0.5px));
-	pointer-events: none;
-}
-.mv-side[data-side="away"][data-breaking]::after { --mv-rim-at: 50% 0%; }
-@media (orientation: landscape) {
-	.mv-side[data-side="home"][data-breaking]::after { --mv-rim-at: 100% var(--mv-centre-y); }
-	.mv-side[data-side="away"][data-breaking]::after { --mv-rim-at: 0% var(--mv-centre-y); }
-}
-.mv-side[data-breaking]::before {
-	content: "";
-	position: absolute;
-	inset: 0;
-	box-sizing: border-box;
-	border: var(--match-break-stroke) solid transparent;   /* the glow starts inside the line, as it did when they were one layer */
-	border-radius: var(--mv-half-corner);
-	box-shadow: inset 0 0 var(--match-glow-size) var(--match-glow-colour);
-	-webkit-mask: var(--mv-glow-mask, none) 0 0 / 100% 100% no-repeat;
-	mask: var(--mv-glow-mask, none) 0 0 / 100% 100% no-repeat;
-	pointer-events: none;
-}
+/* The breaker's half wore a yellow outline and inner glow until 2 Nov;
+   since then (UV) the breaker's yellow glow is inside the green pill's
+   half (.mv-breaker-glow) and the yellow toggle says who breaks. */
 
 /* ── A player's third ─────────────────────────────────────────────
-   A side is half the stage: its outer two thirds (the stage's outer third)
-   are the player's, split 1 : 4 (UV, 30 Oct) between the name and picture
-   (.mv-who) and the score; the inner third of the half is half the rings'
-   band. In a half that is 2/15 for the name and 8/15 for the score.
-   Upright the split runs along the screen, the names at the outer ends
-   (the top and the bottom), so both scores sit beside the rings. Sideways
-   it runs down each side instead, the name across the top (along the width
-   it would be a narrow strip), and the name's strip is the whole half wide
-   (UV, 30 Oct) while the score keeps the outer third. Each keeps clear of
-   the notch or status bar on its end. */
+   A side is half the stage: the player's name and picture (.mv-who) and
+   their score. Since 2 Nov (UV) the score sits inside the green pill,
+   between its end's buttons and the rings (below). Upright the names are
+   at the outer ends (the top and the bottom), beyond the pill's ends.
+   Sideways the name runs across the top (along the width it would be a
+   narrow strip), the whole half wide (UV, 30 Oct), the pill below. Each
+   keeps clear of the notch or status bar on its end. */
 .mv-who,
 .mv-score {
 	position: absolute;
@@ -137,53 +128,64 @@
 	box-sizing: border-box;
 }
 .mv-who { height: calc(200% / 15); }
+/* Its one grid cell exactly the box (UV, 2 Nov: in the pill the box is
+   about 117px upright): an auto row was at least the SVG's own 150px, so
+   in a smaller box the digit sat low and was cut at its foot. */
 .mv-score {
 	height: calc(800% / 15);
 	container-type: size;
 	display: grid;
+	grid-template: minmax(0, 1fr) / minmax(0, 1fr);
 	place-items: center;
 	overflow: hidden;
 }
-/* Against the buttons (UV, 30 Oct): when the ring shrinks so the special
-   wins fit, the score keeps its size and moves in to meet the buttons'
-   edge, so the room it leaves goes to the name. --mv-to-buttons is how far
-   the buttons reach from the stage's middle along the split: the break
-   ring's outside (the special wins sit beside it, no further along the
-   split), worked out against the stage, the nearest container. Upright the
-   score's inner edge is there.
+/* Inside the green pill (UV, 2 Nov): each score between its end's buttons
+   (the line through the end's centre) and the rings (--mv-yellow-half from
+   the pill's centre), the pill's whole thickness across. Worked out in the
+   half, whose edge on the split is the stage's middle; the pill's centre
+   is --mv-k from it towards the top, clear of the home bar.
    Upright the name area fills the room between the stage's edge and the
-   score's digits (UV, 30 Oct): --mv-who-top and --mv-who-size, set by
-   match.js (placeWho) from where the digit's ink actually is. Until then,
-   the name's own height centred in what is left beside the score. No
-   notch padding at the top: the nav already clears it (it was counted
-   twice, and on an iPhone it was taller than the strip, so the top name
-   vanished). The bottom one keeps clear of the home bar. */
-.mv-side { --mv-to-buttons: calc(var(--mv-centre) * var(--mv-break-rim, 1) / 2); }
-.mv-side[data-side="home"] .mv-who {
-	top: var(--mv-who-top, max(0px, (100% - var(--mv-to-buttons) - 1000% / 15) / 2));
-	height: var(--mv-who-size, calc(200% / 15));
+   pill (UV, 2 Nov): --mv-who-top and --mv-who-size, set by match.js
+   (placeWho) from where the pill is laid out; until then the same room
+   worked out here. No notch padding at the top: the nav already clears it
+   (it was counted twice, and on an iPhone it was taller than the strip, so
+   the top name vanished). The bottom one keeps clear of the home bar. */
+.mv-side {
+	--mv-k: calc(env(safe-area-inset-bottom, 0px) / 2);
+	/* a score's length along the pill */
+	--mv-score-long: calc(var(--mv-pill-long) / 2 - var(--mv-pill-thick) / 2 - var(--mv-yellow-half));
 }
-.mv-side[data-side="home"] .mv-score { bottom: var(--mv-to-buttons); }
-.mv-side[data-side="away"] .mv-score { top: var(--mv-to-buttons); }
+.mv-side[data-side="home"] .mv-who {
+	top: var(--mv-who-top, 0px);
+	height: var(--mv-who-size, calc(100% - var(--mv-k) - var(--mv-pill-long) / 2));
+}
 .mv-side[data-side="away"] .mv-who {
-	top: var(--mv-who-top, calc(100% - max(0px, (100% - var(--mv-to-buttons) - 1000% / 15) / 2) - 200% / 15));
-	height: var(--mv-who-size, calc(200% / 15));
+	top: var(--mv-who-top, calc(var(--mv-pill-long) / 2 - var(--mv-k)));
+	height: var(--mv-who-size, calc(100% + var(--mv-k) - var(--mv-pill-long) / 2));
 	padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+.mv-side[data-side] .mv-score {
+	left: calc(50% - var(--mv-pill-thick) / 2);
+	right: auto;
+	width: var(--mv-pill-thick);
+	height: var(--mv-score-long);
+}
+.mv-side[data-side="home"] .mv-score { top: calc(100% - var(--mv-k) - var(--mv-pill-long) / 2 + var(--mv-pill-thick) / 2); }
+.mv-side[data-side="away"] .mv-score { top: calc(var(--mv-yellow-half) - var(--mv-k)); }
 
 /* [data-side] in every one of these, to match the upright rules' weight:
    with plain .mv-side the home score kept its upright top.
-   Sideways the score, at its size, is centred across between the page's
-   edge and the buttons' edge (UV, 30 Oct), and in the middle of the space
-   below the name strip up and down. */
+   Sideways the score runs across from its end's buttons to the rings, and
+   up and down the pill's thickness (UV, 2 Nov). */
 @media (orientation: landscape) {
 	.mv-side[data-side] :is(.mv-who, .mv-score) { bottom: auto; }
 	.mv-side[data-side] .mv-who { top: 0; height: 20%; width: 100%; padding-top: 0; padding-bottom: 0; }
-	.mv-side[data-side] .mv-score { top: 20%; height: 80%; width: calc(200% / 3); padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px)); }   /* clear of the screen's foot and the home bar (UV, 30 Oct) */
+	.mv-side[data-side] .mv-score { top: calc(60% - var(--mv-k) - var(--mv-pill-thick) / 2); height: var(--mv-pill-thick); }
 	.mv-side[data-side="home"] .mv-who { left: 0; right: auto; padding-left: env(safe-area-inset-left, 0px); }
 	.mv-side[data-side="away"] .mv-who { left: auto; right: 0; padding-right: env(safe-area-inset-right, 0px); }
-	.mv-side[data-side="home"] .mv-score { left: max(0px, (100% - var(--mv-to-buttons) - 200% / 3) / 2); right: auto; padding-left: env(safe-area-inset-left, 0px); }
-	.mv-side[data-side="away"] .mv-score { left: auto; right: max(0px, (100% - var(--mv-to-buttons) - 200% / 3) / 2); padding-right: env(safe-area-inset-right, 0px); }
+	.mv-side[data-side] .mv-score { width: var(--mv-score-long); }
+	.mv-side[data-side="home"] .mv-score { left: calc(100% - var(--mv-pill-long) / 2 + var(--mv-pill-thick) / 2); }
+	.mv-side[data-side="away"] .mv-score { left: var(--mv-yellow-half); }
 }
 
 /* The number as big as its four parts allow, drawn --score-stretch taller
@@ -226,21 +228,15 @@
 	text-anchor: middle;
 	dominant-baseline: alphabetic;
 	fill: var(--text-primary);
-	transform: translateY(var(--mv-score-pull, 0px)) scaleY(var(--score-stretch)) translate(var(--mv-score-shift-x, 0em), var(--mv-score-shift, 0.525em));   /* centred first, across and down, by its own ink (set by the script), then stretched about the middle, then pulled to the buttons (below) */
+	transform: scaleY(var(--score-stretch)) translate(var(--mv-score-shift-x, 0em), var(--mv-score-shift, 0.525em));   /* centred first, across and down, by its own ink (set by the script), then stretched about the middle */
 	transform-box: view-box;
 	transform-origin: 50% 50%;
 }
 
-/* Upright, the digit at its space's end nearest the buttons (UV, 30 Oct:
-   the top player's at the bottom, the bottom player's at the top), not in
-   its middle, when it is narrower than the space lets it be tall: pulled by
-   half the room its stretched height leaves (1.1 its size, as above).
-   Sideways it stays in the middle. */
-.mv-side[data-side="home"] { --mv-score-pull: calc((100cqh - 2 * var(--space-3) - 1.1 * var(--score-stretch) * 1em) / 2); }
-.mv-side[data-side="away"] { --mv-score-pull: calc((2 * var(--space-3) + 1.1 * var(--score-stretch) * 1em - 100cqh) / 2); }
-@media (orientation: landscape) {
-	.mv-side[data-side] { --mv-score-pull: 0px; }
-}
+/* Centred in its space both ways, between the buttons and the rings along
+   the pill and between its sides across it (UV, 2 Nov; until then pulled
+   to the end nearest the rings), and the same size as the other score:
+   match.js gives both the longer score's --digits. */
 
 /* ── A player's name and picture (UV, 30 Oct) ─────────────────────
    The picture on the left, the display name on the right with the full
@@ -329,6 +325,226 @@
 	color: var(--text-muted);
 }
 
+/* ── The green pill (UV, 2 Nov) ───────────────────────────────────
+   Round both scores and the rings, upright from one name to the other,
+   sideways under the name strips (its size: .mv-stage). Only a line, no
+   fill: the green of the buttons (--color-primary), as heavy as theirs
+   (--match-break-stroke), with their look: the score digits' shadow
+   outside (--match-mark-shadow), and inside, on a layer of its own
+   (::before), the buttons' green inner glow and the halves' inside shadow,
+   both cast by the light. That layer stops at the special wins, which fill
+   the pill's round ends (match.js draws them, and the mask, --mv-glow-mask,
+   as the breaker's glow's), so no glow lies inside a button. Over the
+   halves, so their inside shadow along the split does not cross it; it
+   catches no taps (the scores are under it). */
+.mv-pill {
+	position: absolute;
+	left: 50%;
+	top: var(--mv-centre-y);
+	width: var(--mv-pill-thick);
+	height: var(--mv-pill-long);
+	translate: -50% -50%;
+	box-sizing: border-box;
+	border: var(--match-break-stroke) solid var(--color-primary);
+	border-radius: var(--radius-pill);
+	box-shadow: var(--match-mark-shadow);
+	pointer-events: none;
+}
+@media (orientation: landscape) {
+	.mv-pill { width: var(--mv-pill-long); height: var(--mv-pill-thick); }
+}
+.mv-pill::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	box-shadow: inset 0 0 var(--match-glow-size) var(--match-win-glow-colour),
+		inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
+	-webkit-mask: var(--mv-glow-mask, none) 0 0 / 100% 100% no-repeat;
+	mask: var(--mv-glow-mask, none) 0 0 / 100% 100% no-repeat;
+}
+
+/* The breaker's yellow glow (UV, 2 Nov: "the inside of the green pill" on
+   the breaker's side; then stronger, along the edge across the middle too,
+   and behind the buttons and the score, never in them). A layer in each
+   half, under its score so the digits lie over it, the size of that half
+   of the pill inside its line: round at the pill's end, straight across
+   the middle, and the break buttons' inner glow (--match-glow-colour) round
+   all of it, three times over (UV, 2 Nov: stronger, then stronger again):
+   a bright edge in the full yellow, then the glow at its own depth and at
+   twice it (--mv-breaker-inset). Shown as far as the yellow toggle has reached its
+   end (--mv-knob), so it moves across with the rings, and neither while
+   nobody is known. Masked (--mv-glow-mask; match.js, glowMasks) away from
+   the special wins and the whole yellow pill, where the break ring slides. */
+.mv-side {
+	--mv-breaker-inset: inset 0 0 calc(var(--match-glow-size) / 2) color-mix(in srgb, var(--color-warning) 70%, transparent),
+		inset 0 0 var(--match-glow-size) var(--match-glow-colour),
+		inset 0 0 calc(var(--match-glow-size) * 2) var(--match-glow-colour);
+}
+.mv-breaker-glow {
+	--mv-glow-r: calc(var(--mv-pill-thick) / 2 - var(--match-break-stroke));
+	position: absolute;
+	left: calc(50% - var(--mv-pill-thick) / 2 + var(--match-break-stroke));
+	width: calc(var(--mv-pill-thick) - 2 * var(--match-break-stroke));
+	height: calc(var(--mv-pill-long) / 2 - var(--match-break-stroke));
+	box-shadow: var(--mv-breaker-inset);
+	-webkit-mask: var(--mv-glow-mask, linear-gradient(#000, #000)) 0 0 / 100% 100% no-repeat;
+	mask: var(--mv-glow-mask, linear-gradient(#000, #000)) 0 0 / 100% 100% no-repeat;
+	pointer-events: none;
+}
+.mv-side[data-side="home"] .mv-breaker-glow {
+	top: calc(100% - var(--mv-k) - var(--mv-pill-long) / 2 + var(--match-break-stroke));
+	border-radius: var(--mv-glow-r) var(--mv-glow-r) 0 0;
+	opacity: max(0, -1 * var(--mv-knob));
+}
+.mv-side[data-side="away"] .mv-breaker-glow {
+	top: calc(0px - var(--mv-k));
+	border-radius: 0 0 var(--mv-glow-r) var(--mv-glow-r);
+	opacity: max(0, var(--mv-knob));
+}
+@media (orientation: landscape) {
+	.mv-side[data-side] .mv-breaker-glow {
+		top: calc(60% - var(--mv-k) - var(--mv-pill-thick) / 2 + var(--match-break-stroke));
+		width: calc(var(--mv-pill-long) / 2 - var(--match-break-stroke));
+		height: calc(var(--mv-pill-thick) - 2 * var(--match-break-stroke));
+	}
+	.mv-side[data-side="home"] .mv-breaker-glow { left: calc(100% - var(--mv-pill-long) / 2 + var(--match-break-stroke)); border-radius: var(--mv-glow-r) 0 0 var(--mv-glow-r); }
+	.mv-side[data-side="away"] .mv-breaker-glow { left: 0; border-radius: 0 var(--mv-glow-r) var(--mv-glow-r) 0; }
+}
+
+/* ── The yellow toggle (UV, 2 Nov) ────────────────────────────────
+   While breaks are recorded (data-breaks, match.js), a yellow pill round
+   the break ring, two rings long, so the rings slide from one end to the
+   other (--mv-knob-shift; match.js, placeKnob). Its line two quadrants'
+   gaps outside the ring's (--mv-knob-reach), with the break buttons' look:
+   their yellow, as heavy, the drop shadow outside, and inside the yellow
+   inner glow and the halves' inside shadow, which stop at the ring (the
+   glow never lies inside a button), the hole moving with it. The break ring
+   and its glow and shadow layers move by .mv-knob-part, in the ring's 100
+   box (px there are the box's units); the cream ring by its translate. */
+.mv-yellow {
+	display: none;
+	position: absolute;
+	left: 50%;
+	top: var(--mv-centre-y);
+	width: calc(var(--mv-centre) * var(--mv-knob-reach) / 50);
+	height: calc(var(--mv-yellow-half) * 2);
+	translate: -50% -50%;
+	box-sizing: border-box;
+	border: var(--match-break-stroke) solid var(--color-warning);
+	border-radius: var(--radius-pill);
+	box-shadow: var(--match-mark-shadow);
+	pointer-events: none;
+}
+.mv-stage[data-breaks] .mv-yellow { display: block; }
+.mv-yellow::before {
+	--mv-hole-r: calc(var(--mv-centre) * var(--mv-break-rim, 0.96) / 2 + var(--match-break-stroke) / 2);
+	--mv-hole-at: 50% calc(50% + var(--mv-knob-shift));
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	box-shadow: inset 0 0 var(--match-glow-size) var(--match-glow-colour),
+		inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
+	-webkit-mask: radial-gradient(circle at var(--mv-hole-at), transparent var(--mv-hole-r), #000 calc(var(--mv-hole-r) + 0.5px));
+	mask: radial-gradient(circle at var(--mv-hole-at), transparent var(--mv-hole-r), #000 calc(var(--mv-hole-r) + 0.5px));
+}
+/* Its outer glow, on the breaker's half only (UV, 2 Nov: "on the yellow
+   pill only"): the breaker's glow outwards from its line (the inner glow's
+   two softer layers), one layer a half, shown as far as the toggle has
+   reached that end (--mv-knob). Each is a box reaching --mv-halo past
+   that half of the pill on its three outer sides and flush with the
+   middle, clipping, so nothing crosses into the other half; inside it the
+   whole pill's shape (::before) casts the glow, which is never drawn
+   inside its own box, so none falls in the pill. The yellow pill is first
+   on the stage, so this lies behind the scores. Placed from the pill's
+   padding box (inside its line, --match-break-stroke). */
+.mv-yellow {
+	--mv-y-long: calc(var(--mv-yellow-half) * 2);
+	--mv-y-thick: calc(var(--mv-centre) * var(--mv-knob-reach) / 50);
+	--mv-halo: calc(var(--match-glow-size) * 2);
+	--mv-y-out: calc(0px - var(--match-break-stroke) - var(--mv-halo));
+}
+.mv-yellow-halo {
+	position: absolute;
+	left: var(--mv-y-out);
+	right: var(--mv-y-out);
+	height: calc(var(--mv-y-long) / 2 + var(--mv-halo));
+	overflow: hidden;
+	opacity: max(0, -1 * var(--mv-knob));
+}
+.mv-yellow-halo::before {
+	content: "";
+	position: absolute;
+	left: var(--mv-halo);
+	width: var(--mv-y-thick);
+	height: var(--mv-y-long);
+	border-radius: var(--radius-pill);
+	box-shadow: 0 0 var(--match-glow-size) var(--match-glow-colour),
+		0 0 calc(var(--match-glow-size) * 2) var(--match-glow-colour);
+}
+.mv-yellow-halo[data-for="home"] { top: var(--mv-y-out); }
+.mv-yellow-halo[data-for="home"]::before { top: var(--mv-halo); }
+.mv-yellow-halo[data-for="away"] { top: calc(var(--mv-y-long) / 2 - var(--match-break-stroke)); opacity: max(0, var(--mv-knob)); }
+.mv-yellow-halo[data-for="away"]::before { top: calc(0px - var(--mv-y-long) / 2); }
+@media (orientation: landscape) {
+	.mv-yellow-halo { left: auto; right: auto; top: var(--mv-y-out); bottom: var(--mv-y-out); height: auto; width: calc(var(--mv-y-long) / 2 + var(--mv-halo)); }
+	.mv-yellow-halo::before { top: var(--mv-halo); width: var(--mv-y-long); height: var(--mv-y-thick); }
+	.mv-yellow-halo[data-for="home"] { top: var(--mv-y-out); left: var(--mv-y-out); }
+	.mv-yellow-halo[data-for="home"]::before { top: var(--mv-halo); left: var(--mv-halo); }
+	.mv-yellow-halo[data-for="away"] { top: var(--mv-y-out); left: calc(var(--mv-y-long) / 2 - var(--match-break-stroke)); }
+	.mv-yellow-halo[data-for="away"]::before { top: var(--mv-halo); left: calc(0px - var(--mv-y-long) / 2); }
+}
+/* The idle dots (UV, 2 Nov): at each end's centre a grey dot (--text-muted),
+   as the three-way switch's stops (status.css, .tdc-tri-stops) but bigger
+   than their 4px, hidden at the end the rings stand at (--mv-knob), as the
+   switch hides the stop under its knob. Each is the dots' target for the
+   idle pool (match.js): a box the ring's size, its border as wide as the
+   cream ring's line and see-through, so the dots run on a ring that is
+   never drawn and are as big as the ring's own; its colour is theirs.
+   While the dots are out the grey dot shrinks into them (data-dots, set
+   by dots.js), and grows back as they gather into it. */
+.mv-idle {
+	position: absolute;
+	left: 50%;
+	top: calc(50% - var(--mv-centre) * var(--mv-knob-reach) / 100);
+	width: calc(var(--mv-centre) * var(--mv-break-rim, 0.96));
+	aspect-ratio: 1;
+	translate: -50% -50%;
+	box-sizing: border-box;
+	border: calc(var(--mv-centre) / 100 * var(--mv-word) * var(--mv-word-stem)) solid transparent;
+	border-radius: var(--radius-round);
+	color: var(--text-muted);   /* the dots' colour here: grey, as the dot, and cream on the info ring (UV, 2 Nov); they blend between the two as they fly */
+	pointer-events: none;
+	opacity: calc(1 + min(0, var(--mv-knob)));
+}
+.mv-idle[data-for="away"] {
+	top: calc(50% + var(--mv-centre) * var(--mv-knob-reach) / 100);
+	opacity: calc(1 - max(0, var(--mv-knob)));
+}
+.mv-idle::after {
+	content: "";
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: calc(var(--mv-centre) * 0.08);   /* bigger than the switch's 4px (UV, 2 Nov): about 9px on a phone held upright, 11px sideways */
+	aspect-ratio: 1;
+	translate: -50% -50%;
+	border-radius: var(--radius-round);
+	background: var(--text-muted);
+	transition: scale var(--dots-reveal) ease;
+}
+.mv-idle[data-dots="busy"]::after { scale: 0; transition: scale var(--dots-dim) ease; }
+.mv-knob-part { transform: translate(0, calc(var(--mv-knob) * var(--mv-knob-reach) * 1px)); }
+@media (orientation: landscape) {
+	.mv-yellow { width: calc(var(--mv-yellow-half) * 2); height: calc(var(--mv-centre) * var(--mv-knob-reach) / 50); }
+	.mv-yellow::before { --mv-hole-at: calc(50% + var(--mv-knob-shift)) 50%; }
+	.mv-knob-part { transform: translate(calc(var(--mv-knob) * var(--mv-knob-reach) * 1px), 0); }
+	.mv-stage .mv-light { translate: calc(-50% + var(--mv-knob-shift)) -50%; }   /* .mv-stage: its own rule comes later */
+	.mv-idle { top: 50%; left: calc(50% - var(--mv-centre) * var(--mv-knob-reach) / 100); }
+	.mv-idle[data-for="away"] { top: 50%; left: calc(50% + var(--mv-centre) * var(--mv-knob-reach) / 100); }
+}
+
 /* ── The light (UV, 30 Oct) ───────────────────────────────────────
    A cream ring in the middle of the screen, inside the break event's hole
    (UV, 30 Oct: it was a third of the screen's height, the size the break
@@ -348,7 +564,7 @@
 	top: var(--mv-centre-y);
 	height: calc(var(--mv-centre) * (var(--mv-break-hole) - 2 * var(--mv-break-gap)) + var(--match-break-stroke));
 	aspect-ratio: 1;
-	translate: -50% -50%;
+	translate: -50% calc(-50% + var(--mv-knob-shift));   /* with the yellow toggle (UV, 2 Nov) */
 	box-sizing: border-box;
 	border: calc(var(--mv-centre) / 100 * var(--mv-word) * var(--mv-word-stem)) solid var(--text-primary);
 	border-radius: var(--radius-round);

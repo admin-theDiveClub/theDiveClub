@@ -5,7 +5,7 @@
 // how it should feel is docs/design/dots-prototype.html, and the moves are
 // ported from it.
 //
-//   TDCDots.serve(el, promise, { reveal, trace, status, timeout, follow, leaves })
+//   TDCDots.serve(el, promise, { reveal, trace, status, timeout, follow, leaves, move, from, end })
 //     el       the target. A ring icon (anything holding a .tdc-ring) uses its
 //              real ring; anything else gets a fake ring from its shorter side
 //     promise  the call; when it settles, the target is revealed
@@ -35,6 +35,13 @@
 //     ink      for trace 'number': a selector, inside the target, for the
 //              part holding the digits (a stepper's field, a score inside its
 //              button); only that part fades in under the dots
+//     move     a waiting move (solo or group) played for this serve alone,
+//              at once and on repeat; force() is for the whole page
+//     from     'centre': hidden dots open out from the target's middle onto
+//              its ring, with no lift past it (the match page's idle dot,
+//              2 Nov); dots already showing fly there as usual
+//     end      'gather': when the call is back the dots gather into the
+//              target's middle and vanish, with no trace and no race
 //   A target marked data-dots-hold (by the page, while a finger is still on
 //   it: a stepper held, the slide dragged) is not dimmed while it waits.
 //   Returns the promise. A target already busy is not served twice: the dots
@@ -102,6 +109,9 @@ const TDCDots = (() => {
 	// as particles.
 	const TRAVEL_BASE = 350, TRAVEL_PER_PX = 2.2, TRAVEL_MIN = 450, TRAVEL_MAX = 1200;
 	const LIFT = 1.5, RISE = 0.3, FALL = 0.4, LAG = 60;
+	// Gathering back into a target's middle (opts.end 'gather'), ms (UV,
+	// 2 Nov: the match page's idle dot)
+	const GATHER = 600;
 	// How far a fast dot may stretch along its path (0.35: to 1.35 times its
 	// length, a little thinner), and how far its glow reaches at full glow, as
 	// times its size. Both in proportion to the dot: the prototype's (2.5 times,
@@ -452,10 +462,39 @@ const TDCDots = (() => {
 	// constant rolling friction). Then the group ends and the dots go back
 	// onto the sphere. Positions are in the table's own units (its radius is
 	// POOL.r of the ring's); the physics runs in POOL.sub steps.
-	const POOL = { r: 0.78, ball: 0.07, lift: 0.06, set: 0.9, pull: 0.35, back: 0.07, drag: 0.3, roll: 0.13, bank: 0.75, slide: 0.92, rest: 0.015, hold: 500, max: 12, sub: 0.004 };
+	// Since 2 Nov (UV: "the balls a little bigger on the plane, casting
+	// realistic shadows from a light source, meeting their shadow on the
+	// plane", as the animation picker's sunShadow): each ball rests on the
+	// table (its centre a ball's radius above it, ball) and is drawn dot of
+	// the ring's radius across (UV, 2 Nov: first the size of the match page's
+	// idle dot, a sixth, then a little smaller), the ball's radius
+	// for the physics the same; its shadow is the one a far light makes, starting where
+	// the ball touches the table and stretching away from the light, cast
+	// from the page's own drifting light (--page-shadow-x / -y, page-light.js:
+	// the way every shadow on the page falls; down the screen without it),
+	// the light sun degrees above the table.
+	// Then (UV, 2 Nov, again): the balls a little smaller (dot), their trails
+	// shorter and so fainter (trail, ms; it was 1 s), the depth gentler: a
+	// ball is sized by depth of its height (it changed size too much near
+	// and far), and a shadow lies flat, the same size and strength wherever
+	// it is on the table.
+	const POOL = { r: 0.78, ball: 0.083, dot: 0.13, trail: 400, depth: 0.12, sun: 50, set: 0.9, pull: 0.35, back: 0.07, drag: 0.3, roll: 0.13, bank: 0.75, slide: 0.92, rest: 0.015, hold: 500, max: 12, sub: 0.004 };
+	// The direction on the table, in its own units, whose picture on the
+	// screen runs along the page's shadows.
+	function poolLight(tb) {
+		const cs = getComputedStyle(document.documentElement);
+		let dx = parseFloat(cs.getPropertyValue('--page-shadow-x')) || 0, dy = parseFloat(cs.getPropertyValue('--page-shadow-y')) || 0;
+		if (Math.hypot(dx, dy) < 1e-3) { dx = 0; dy = 1; }
+		// a·u + b·v (their x and y on the screen) along (dx, dy)
+		const det = tb.u[0] * tb.v[1] - tb.v[0] * tb.u[1];
+		let a = (dx * tb.v[1] - tb.v[0] * dy) / det, b = (tb.u[0] * dy - dx * tb.u[1]) / det;
+		if (!isFinite(a) || !isFinite(b)) { a = 1; b = 0; }
+		const l = Math.hypot(a, b) || 1;
+		return [a / l, b / l];
+	}
 	function poolStart(G) {
-		const tb = tiltedPlane(0.55, 0.85), la = Math.random() * 2 * PI, lim = POOL.r - POOL.ball - 0.04;
-		tb.L = [Math.cos(la), Math.sin(la)];
+		const tb = tiltedPlane(0.55, 0.85), lim = POOL.r - POOL.ball - 0.04;
+		tb.L = poolLight(tb);
 		// The object ball somewhere near the middle, the cue ball well away.
 		let ob, cb;
 		do {
@@ -541,10 +580,12 @@ const TDCDots = (() => {
 	}
 	function poolStep(c, G) {
 		const P = G.pool, tb = P.tb, e = (c.now - G.t0) / 1000, k = c.i % 2, o = P.b[k];
+		// A dot is drawn as wide as its line (gs), so this many lines is dot of the ring's radius
+		const szm = POOL.dot * c.ring.f.r / Math.max(0.5, c.ring.f.gs);
 		const speed = Math.hypot(o.v[0], o.v[1]);
 		if (c.i < 2) {
 			const flash = 0.8 * Math.exp(-(c.now - P.flash) / 150);
-			const r = Object.assign(poolPlace(c, G, onTable(tb, o.p[0], o.p[1], POOL.lift)), { glow: flash, trail: speed > 0.05, tl: 1000 });
+			const r = Object.assign(poolPlace(c, G, onTable(tb, o.p[0], o.p[1], POOL.r * POOL.ball)), { glow: flash, trail: speed > 0.05, tl: POOL.trail, szm, h: 0, hw: 1 - POOL.depth });
 			// The pull back: a slight stretch along the shot.
 			if (k === 0 && e > POOL.set && !P.hit) {
 				const s = Math.sin(PI * cl((e - POOL.set) / POOL.pull)) * 0.12, dir = onTable(tb, P.dir[0], P.dir[1], 0);
@@ -552,11 +593,29 @@ const TDCDots = (() => {
 			}
 			return r;
 		}
-		// The shadow: on the table, off along the light, flattened to its tilt.
-		const off = POOL.lift * 1.6 / POOL.r;
+		// The shadow a far light casts of a ball resting on the table: an ellipse
+		// as wide as the ball, 1 / sin(sun) as long along the light, its middle
+		// cot(sun) of a radius from where the ball touches, so the ball sits in
+		// its near end. Drawn as the ball's dot, stretched to the picture of
+		// that ellipse on the screen (its two axes as the table tilts them,
+		// sx and sy along srot).
+		const sun = POOL.sun * PI / 180, off = POOL.ball / Math.tan(sun);
+		const shadow = poolEllipse(tb, tb.L, 1 / Math.sin(sun), 1);
 		return Object.assign(poolPlace(c, G, onTable(tb, o.p[0] + tb.L[0] * off, o.p[1] + tb.L[1] * off, 0)), {
-			vm: 0.4, blur: 0.6, szm: 1.15, sx: 1.2, sy: 1.2 * tb.n[2], srot: Math.atan2(tb.n[1], tb.n[0]) + PI / 2
+			vm: 0.4, blur: 0.6, szm, sx: shadow.sx, sy: shadow.sy, srot: shadow.rot, h: 0, hw: 1
 		});
+	}
+	// The picture on the screen of an ellipse on the table: semi-axes a along
+	// the table direction dir and b across it (in a ball's radius), as the
+	// dot's two stretches and its angle (a 2 × 2 map's singular values).
+	function poolEllipse(tb, dir, a, b) {
+		const along = [0, 1].map((j) => dir[0] * tb.u[j] + dir[1] * tb.v[j]);
+		const across = [0, 1].map((j) => -dir[1] * tb.u[j] + dir[0] * tb.v[j]);
+		const m = [along[0] * a, across[0] * b, along[1] * a, across[1] * b];   // columns: the two axes on the screen
+		const E = (m[0] + m[3]) / 2, F = (m[0] - m[3]) / 2, Gc = (m[2] + m[1]) / 2, H = (m[2] - m[1]) / 2;
+		const Q = Math.hypot(E, H), R = Math.hypot(F, Gc);
+		const a1 = Math.atan2(Gc, F), a2 = Math.atan2(H, E);
+		return { sx: Q + R, sy: Math.abs(Q - R), rot: (a2 + a1) / 2 };
 	}
 	// The cushion: a faint dotted ellipse, in as the balls are set and out
 	// as they come to rest.
@@ -1722,8 +1781,9 @@ const TDCDots = (() => {
 		const s = Math.random() < 0.5 ? 1 : -1;
 		return { name, b0: now, bd, th0: v.th, ph0: v.ph, V0: nrm(v.V), sg: s, inc: 0.6 + Math.random() * 0.7, sr: Math.random() * PI, carry: null, done: false };
 	}
-	// When the first group comes, from the moment the dots begin to wait.
-	const firstGroup = (now) => (GROUP[forced] ? now + 500 : SOLO[forced] ? Infinity : now + 1400 + Math.random() * 1500);
+	// When the first group comes, from the moment the dots begin to wait. f:
+	// the move forced for them (the page's, or the serve's own, opts.move).
+	const firstGroup = (now, f = forced) => (GROUP[f] ? now + 500 : SOLO[f] ? Infinity : now + 1400 + Math.random() * 1500);
 
 	// The sphere a target's dots live on: mode 'orbit' (waiting) or 'race'
 	// (the call is back). It holds the dots' own motion (four unit vectors that
@@ -1770,14 +1830,29 @@ const TDCDots = (() => {
 			if (mode === 'race') {
 				this.nextGroup = Infinity;
 				for (const v of this.v) v.rth = Math.atan2(v.V[1], v.V[0]);
-			} else if (!this.G && !(this.nextGroup < Infinity)) this.nextGroup = firstGroup(now);
+			} else if (!this.G && !(this.nextGroup < Infinity)) this.nextGroup = firstGroup(now, this.fd);
+			// A serve's own group (opts.move) begins at once, and plays again
+			// back to back; it is that serve's alone (UV, 2 Nov: the match
+			// page's idle pool, while its cream ring keeps the random moves).
+			if (mode === 'orbit' && this.own) {
+				if (this.G && !this.G.out && this.G.name !== this.fd) this.groupOut(now);
+				if (!this.G || this.G.out) this.nextGroup = now;
+			}
 			this.trip = opts.trip ? Object.assign({ vx: 0, vy: 0, vr: 0 }, opts.trip.from, { t0: now, dur: opts.trip.dur }) : null;
+			// Gathering (opts.end 'gather'): the sphere shrinks to its centre over
+			// shrink ms and nothing new begins (the tick then hides the dots).
+			this.shrink = opts.shrink ? { t0: now, dur: opts.shrink } : null;
+			if (this.shrink) this.hushed = true;
 			this.f = this.frameAt(this.trip ? 0 : 1);
 			// How fast the frame is moving (px a ms), so a trip that turns for
 			// another target leaves at the speed this one had.
 			this.vel = this.trip ? { vx: this.trip.vx, vy: this.trip.vy, vr: this.trip.vr } : { vx: 0, vy: 0, vr: 0 };
 		}
 		get travelling() { return !!this.trip; }
+		// The move forced for these dots: their serve's own (opts.move), else
+		// the page's (force).
+		get own() { return !!(this.t.opts && this.t.opts.move); }
+		get fd() { return this.own ? this.t.opts.move : forced; }
 		// The sphere's frame at a point in the trip (u from 0 to 1; 1, or no trip,
 		// is the ring itself).
 		frameAt(u) {
@@ -1802,6 +1877,7 @@ const TDCDots = (() => {
 			measure(t);
 			const u0 = p ? cl((now - p.t0) / p.dur) : 1, f0 = this.f;
 			this.f = this.frameAt(u0);
+			if (this.shrink) this.f.r *= 1 - ease(cl((now - this.shrink.t0) / this.shrink.dur));
 			const ms = Math.max(1, dt * 16.67), fc = [this.f.cx, this.f.cy, this.f.r];
 			this.vel = { vx: (fc[0] - f0.cx) / ms, vy: (fc[1] - f0.cy) / ms, vr: (fc[2] - f0.r) / ms };
 			const eR = this.mode === 'race' ? ease(cl((now - this.r0) / this.easeMs)) : 0;
@@ -1819,11 +1895,14 @@ const TDCDots = (() => {
 					o = mixMove(o, Object.assign({}, RESTING, { aim: sph(v.rth, 0.22 * Math.sin(time * 4.2 + i * 1.7)), glow: 0.25, k: 0.5, damp: 0.5 }), eR);
 				}
 				const aim = o.free > 0 ? o.aim : nrm(o.aim);
-				springTo(v, aim, dt, o.k, o.damp, o.free);
+				// Gathering (opts.end 'gather'), each dot holds where it is and the
+				// shrinking frame draws it straight in to the middle (UV, 2 Nov: no
+				// petals); otherwise it follows its move.
+				if (!this.shrink) springTo(v, aim, dt, o.k, o.damp, o.free);
 				// Pinned (a pool ball following its physics, a merge pair
 				// appearing): put on its aim. Moved far at once, its trail is cut.
 				let cut = false;
-				if (o.snap > 0) {
+				if (o.snap > 0 && !this.shrink) {
 					const s = o.snap > 0.999 ? 1 : 1 - Math.pow(1 - o.snap, dt);   // the same at any frame rate
 					cut = s === 1 && Math.hypot(v.V[0] - aim[0], v.V[1] - aim[1], v.V[2] - aim[2]) > 0.2;
 					v.V = v.V.map((x, j) => mix(x, aim[j], s));
@@ -1870,7 +1949,7 @@ const TDCDots = (() => {
 			const def = SOLO[m.name];
 			// Staging (spec §7): while another dot does a big move, this one
 			// calms to 70% speed and a smaller bob, easing into and out of it.
-			const calm = !forced && this.v.some((o) => o !== v && SOLO[o.m.name].big) ? 1 : 0;
+			const calm = !this.fd && this.v.some((o) => o !== v && SOLO[o.m.name].big) ? 1 : 0;
 			v.cf += (calm - v.cf) * Math.min(1, 0.05 * dt);
 			const c = { i, p, now, t: time, step: dt * 0.0167, w: v.w * (1 - 0.3 * v.cf), bob: mix(0.25, 0.1, v.cf) * Math.sin(time * 1.6 + i * 2.1) };
 			const o = Object.assign({}, RESTING, { k: def.k || 0.34, damp: def.damp || 0.6, trail: def.trail ? 1 : 0 }, def.step(v, m, c));
@@ -1894,7 +1973,7 @@ const TDCDots = (() => {
 		pickSolo(v, now) {
 			let name;
 			if (this.mode === 'race') name = 'cruise';
-			else if (SOLO[forced]) name = forced;
+			else if (SOLO[this.fd]) name = this.fd;
 			else {
 				name = pick(SOLO);
 				if (SOLO[name].big && this.v.some((o) => o !== v && SOLO[o.m.name].big)) name = Math.random() < 0.5 ? 'cruise' : 'weave';
@@ -1914,7 +1993,7 @@ const TDCDots = (() => {
 		// next is due 2.2 to 4.7 s later (the prototype's). Forced, a group
 		// plays back to back; a forced solo stops them.
 		schedule(now, dt) {
-			if (this.fv !== forcedV) this.applyForce(now);
+			if (this.fv !== forcedV && !this.own) this.applyForce(now);
 			const G = this.G;
 			if (G) {
 				if (GROUP[G.name].frame) GROUP[G.name].frame(G, this, now, dt);
@@ -1923,28 +2002,32 @@ const TDCDots = (() => {
 			} else if (this.mode === 'orbit' && !this.hushed && now > this.nextGroup) this.startGroup(now);
 		}
 		startGroup(now) {
-			const name = GROUP[forced] ? forced : pick(GROUP), v0 = this.v[0].V;
+			const name = GROUP[this.fd] ? this.fd : pick(GROUP), v0 = this.v[0].V;
 			this.G = {
 				name, t0: now, dur: GROUP[name].dur, out: 0, th0: Math.atan2(v0[1], v0[0]),
 				d: this.v.map((v) => ({ V0: v.V.slice(), passT: null, bhL: Math.atan2(v.V[1], v.V[0]), tw: { w: 1.6 + Math.random() * 2.6, ph: Math.random() * 6.3 } }))
 			};
 			if (GROUP[name].start) GROUP[name].start(this.G, this);
+			// Opened from the centre (opts.from): shown whole at once, so it
+			// alone moves the dots from the middle (a cruise mixed in while it
+			// faded in pushed them out towards the ring)
+			if (this.open) this.G.w0 = now - T.blend;
 		}
 		// The group fades out, and each dot cruises on from where it is.
 		groupOut(now) {
 			this.G.out = now;
 			for (const v of this.v) {
 				this.endSolo(v, now, true);
-				v.m = moveOf('cruise', v, now, SOLO[forced] ? 1 : 500 + Math.random() * 700);
+				v.m = moveOf('cruise', v, now, SOLO[this.fd] ? 1 : 500 + Math.random() * 700);
 			}
 		}
 		endGroup(now) {
 			this.G = null;
-			this.nextGroup = GROUP[forced] ? now : SOLO[forced] ? Infinity : now + 2200 + Math.random() * 2500;
+			this.nextGroup = GROUP[this.fd] ? now : SOLO[this.fd] ? Infinity : now + 2200 + Math.random() * 2500;
 		}
 		groupWeight(now) {
 			const G = this.G;
-			return ease(cl((now - G.t0) / T.blend)) * (G.out ? 1 - ease(cl((now - G.out) / T.blend)) : 1);
+			return ease(cl((now - (G.w0 === undefined ? G.t0 : G.w0)) / T.blend)) * (G.out ? 1 - ease(cl((now - G.out) / T.blend)) : 1);
 		}
 		applyForce(now) {
 			this.fv = forcedV;
@@ -2053,7 +2136,8 @@ const TDCDots = (() => {
 
 	// ─── Where things stand ───
 	let S = null;           // the animation the dots show
-	let phase = 'hidden';   // hidden · travel · orbit · trace · race · fade
+	let phase = 'hidden';   // hidden · travel · orbit · trace · race · fade · gather
+	let gatherAt = 0;       // when the dots began gathering into their target's middle (opts.end 'gather')
 	let cur = null;         // the target the dots are serving
 	let tr = null;          // the trace, while tracing
 	let alpha = 0, aT = 0, fading = false, revealAt = 0, revealHold = 0, fadeAt = 0;
@@ -2205,6 +2289,23 @@ const TDCDots = (() => {
 		if (cur && cur !== t && cur.settled && records.get(cur.el) === cur) restore(cur);
 		let from, left = null;
 		if (phase === 'hidden' || !S) {
+			// Opening out from the middle of the target (opts.from 'centre'; UV,
+			// 2 Nov: the match page's idle dot splitting into the dots): the
+			// sphere at its full size at once and every dot at its centre, so
+			// the serve's move takes each dot straight out to its place. (Grown
+			// from nothing, the sphere carried the dots out to the ring and the
+			// move brought them back in: petals, UV.)
+			if (t.opts.from === 'centre') {
+				D.forEach((d) => { d.x = t.cx; d.y = t.cy; d.h = 0; d.gs = t.sw; d.hist.length = 0; d.prx = d.pry = null; });
+				cur = t; tr = null;
+				S = new Ring(t, 'orbit', now);
+				S.open = true;
+				for (const v of S.v) { v.V = v.V.map((x) => x * 1e-3); v.Vv = [0, 0, 0]; }
+				aT = 1; fading = false; revealAt = 0;
+				phase = 'orbit';
+				wake();
+				return;
+			}
 			const W = innerWidth, H = innerHeight;
 			let x = D[0].x, y = D[0].y;
 			if (!(x > 0 && x < W && y > 0 && y < H)) { x = W / 2; y = H / 2; }
@@ -2313,12 +2414,29 @@ const TDCDots = (() => {
 			const next = nextPending(now, false);
 			if (next) goTo(next);
 			else if (cur.load && phase === 'travel') restore(cur);
-		} else if (phase === 'trace' || phase === 'race' || phase === 'fade') {
+		} else if (phase === 'trace' || phase === 'race' || phase === 'fade' || phase === 'gather') {
 			const next = nextPending(now, true);
 			if (next) goTo(next);
 		}
 
 		if (phase === 'travel' && S instanceof Ring && !S.travelling) phase = 'orbit';
+		// Gathering into the middle (opts.end 'gather'; UV, 2 Nov): no trace and
+		// no race; the sphere shrinks to the target's centre over GATHER,
+		// fading over the last part, and the target comes back as they vanish.
+		if (phase === 'orbit' && cur.settled && cur.opts.end === 'gather') {
+			// The move is kept as it stands (not quieted), so nothing turns the
+			// dots while they go in; nothing new begins (shrink hushes).
+			S = new Ring(cur, 'orbit', now, S, { shrink: GATHER });
+			gatherAt = now;
+			phase = 'gather';
+		}
+		if (phase === 'gather' && !fading && now - gatherAt > GATHER * 0.6) { fading = true; aT = 0; }
+		if (phase === 'gather' && now - gatherAt >= GATHER) {
+			restore(cur);
+			phase = 'hidden'; cur = null; S = null; tr = null; alpha = 0;
+			D.forEach((d) => { d.e.style.opacity = 0; d.hist.length = 0; });
+			return false;
+		}
 		if (phase === 'orbit' && cur.settled) {
 			// Back before the dots reached it: it is already on the page. A
 			// call that failed or hung has nothing to trace: it comes back

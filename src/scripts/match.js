@@ -90,7 +90,7 @@
 		stage: el('mv-stage'), p0: el('mv-p0'), p1: el('mv-p1'),
 		scoreHome: el('mv-score-home'), scoreAway: el('mv-score-away'),
 		whoHome: el('mv-who-home'), whoAway: el('mv-who-away'),
-		ring: el('mv-light'), frame: el('mv-frame'), target: el('mv-target'), breakRing: el('mv-break'),
+		ring: el('mv-light'), frame: el('mv-frame'), target: el('mv-target'), breakRing: el('mv-break'), pill: el('mv-pill'), breakerGlows: document.querySelectorAll('.mv-breaker-glow'),
 		stageNote: el('stage-note'),
 		overlay: el('overlay'), overlayQ: el('overlay-q'), overlayRow: el('overlay-row'), overlayHint: el('overlay-hint'),
 		stageStatus: el('stage-status'),
@@ -520,10 +520,13 @@
 	// from the baseline (--mv-score-shift; match.css, .mv-score-n). Measured
 	// once the face has loaded; until then the average digit's 0.525.
 	const inkCanvas = document.createElement('canvas').getContext('2d');
-	function paintScore(node, n) {
+	// digits: how many digits the size is worked out for, the longer score's,
+	// so both scores are always the same size (UV, 2 Nov: if one gets
+	// smaller, so does the other).
+	function paintScore(node, n, digits = String(n).length) {
 		const text = String(n);
 		node.textContent = text;
-		node.style.setProperty('--digits', text.length);
+		node.style.setProperty('--digits', digits);
 		// Across too (UV, 30 Oct): centred by its ink, not by the space the face
 		// sets aside for each digit (text-anchor's middle), so measured from the
 		// middle of the text, the ink's left and right reaches; --mv-score-shift-x
@@ -552,16 +555,13 @@
 	}
 
 	// Upright, each player's name and picture fill the room between the
-	// stage's edge and their score's digits (UV, 30 Oct): the top player's
-	// from the top of the stage to the digit's top, the bottom player's from
-	// the digit's foot to the stage's foot (match.css, --mv-who-top and
-	// --mv-who-size). The digit's ink is worked out from what the browser has
-	// actually laid out: the text's computed size and transform (its stretch
-	// and every shift, in px, about the middle of the score's box, where its
-	// baseline stands) and the face's ascent and descent for these digits.
-	// Again whenever a score's text or centring changes (paintScore, a live
-	// fade), the stage resizes or the phone turns. Sideways the names keep
-	// their strip across the top (match.css) and nothing is set.
+	// stage's edge and the green pill (UV, 2 Nov; until then their score's
+	// digits, 30 Oct): the top player's from the top of the stage to the
+	// pill's top, the bottom player's from the pill's foot to the stage's foot
+	// (match.css, --mv-who-top and --mv-who-size), as the browser has laid
+	// the pill out. Again whenever a score changes (paintScore, a live fade),
+	// the stage resizes or the phone turns. Sideways the names keep their
+	// strip across the top (match.css) and nothing is set.
 	//   Both then take the smaller room (--mv-who-fit, its height inside any
 	//   padding: the bottom one keeps clear of the home bar), so the top and
 	//   bottom players' names and pictures are the same size (UV, 30 Oct).
@@ -573,20 +573,12 @@
 	}
 	function roomWho() {
 		const rooms = [];
-		for (const [half, who, node] of [[els.p0, els.whoHome, els.scoreHome], [els.p1, els.whoAway, els.scoreAway]]) {
+		const pill = els.pill.getBoundingClientRect();
+		for (const [half, who] of [[els.p0, els.whoHome], [els.p1, els.whoAway]]) {
 			if (landscape.matches) { for (const p of ['--mv-who-top', '--mv-who-size', '--mv-who-fit']) who.style.removeProperty(p); continue; }
-			const box = node.ownerSVGElement.getBoundingClientRect(), side = half.getBoundingClientRect();
-			if (!(box.height > 0) || !node.textContent || !scoreFaceIn()) continue;   // not drawn yet: the CSS's own place meanwhile
-			const cs = getComputedStyle(node);
-			const fs = parseFloat(cs.fontSize);
-			const m = new DOMMatrixReadOnly(cs.transform === 'none' ? undefined : cs.transform);
-			inkCanvas.font = '100px "Rushford Clean"';
-			const ink = inkCanvas.measureText(node.textContent);
-			if (!(fs > 0) || !(ink.actualBoundingBoxAscent > 0)) continue;
-			const mid = box.top + box.height / 2;
-			const top = mid + m.f - m.d * ink.actualBoundingBoxAscent / 100 * fs;
-			const foot = mid + m.f + m.d * ink.actualBoundingBoxDescent / 100 * fs;
-			const [from, to] = half.dataset.side === 'home' ? [side.top, top] : [foot, side.bottom];
+			const side = half.getBoundingClientRect();
+			if (!(pill.height > 0)) continue;   // not laid out yet: the CSS's own place meanwhile
+			const [from, to] = half.dataset.side === 'home' ? [side.top, pill.top] : [pill.bottom, side.bottom];
 			who.style.setProperty('--mv-who-top', Math.max(0, from - side.top).toFixed(1) + 'px');
 			who.style.setProperty('--mv-who-size', Math.max(0, to - from).toFixed(1) + 'px');
 			const pad = getComputedStyle(who);
@@ -776,81 +768,114 @@
 	// would point its top down and out (a special win at 150° read nearly
 	// upside down); exactly sideways (0°, 180°: Foul, Scratch) stays
 	// clockwise. size: the words' size in the box (--mv-word). The break
-	// words' middle is their band's.
-	function wordArc(mid, size, half = 40, middle = (BREAK_RING.outer + BREAK_RING.inner) / 2) {
+	// words' middle is their band's. o: the circle's centre, the ring's
+	// unless given (a special win's is its end of the green pill's).
+	function wordArc(mid, size, half = 40, middle = (BREAK_RING.outer + BREAK_RING.inner) / 2, o = [50, 50]) {
 		const lift = CAP * size / 2;
+		const on = (r, a) => [o[0] + r * Math.cos(a / DEG), o[1] + r * Math.sin(a / DEG)].map((n) => n.toFixed(2)).join(' ');
 		if (mid > 0 && mid < 180) {
 			const r = middle + lift;
-			return `M ${at(r, mid + half)} A ${r} ${r} 0 0 0 ${at(r, mid - half)}`;
+			return `M ${on(r, mid + half)} A ${r} ${r} 0 0 0 ${on(r, mid - half)}`;
 		}
 		const r = middle - lift;
-		return `M ${at(r, mid - half)} A ${r} ${r} 0 0 1 ${at(r, mid + half)}`;
+		return `M ${on(r, mid - half)} A ${r} ${r} 0 0 1 ${on(r, mid + half)}`;
 	}
 
-	// ─── The special wins (UV, 30 Oct) ────────────────────────────────
-	// Four buttons in the break buttons' style, in green, two a slot either
-	// side of the ring upright and above and below it sideways: Break & finish
-	// and Golden break on the breaker's half, Reverse B&F and the more button
-	// on the other (UV, 30 Oct), so slot A holds B&F and rB&F, slot B GB and
-	// the more button (UV
-	// chose four, two a slot; the fourth was a walkover until UV made it three
-	// dots opening the more pop-up, which holds the walkovers; the wins are
-	// named by TDCMatchDef.RESULT_SHORT). Each slot is a rounded rectangle split in two by the
-	// quadrants' gap, its inner edge a curve round the ring, as far from the
-	// ring's line as two quadrants' lines are apart (winR), rounded where it
-	// meets the straight edges; its words run along that curve, padded as the
-	// break words are. Slot A is the left one upright and the top one sideways;
-	// in a slot the first is the top one upright and the left one sideways.
-	// Drawn in the break ring's 100 box, reaching outside it, and drawn again
-	// when the phone turns or the breaker changes. A tap records the frame
-	// (specialWin, step 2); which are offered follows the rules (paintButtons).
-	const WIN_SLOTS = [['break_and_finish', 'reverse_break_and_finish'], ['golden_break', 'more']];   // each slot: [the breaker's half, the other half]
-	const WIN = { depth: 40, corner: 4 };   // a slot's depth beyond its curve, and its corners' radius
-	const winR = () => BREAK_RING.outer + 2 * BREAK_RING.gap;
+	// ─── The special wins (UV, 2 Nov: in the green pill's round ends) ──
+	// Four buttons in the break buttons' style, in green: Break & finish and
+	// Golden break at the breaker's end of the green pill, Reverse B&F and the
+	// more button at the other (UV, 30 Oct), so they swap ends when the break
+	// passes. They fill the pill's two round ends as quarter circles (UV,
+	// 2 Nov; until then they sat two a slot round the break ring). In an end
+	// the first is the top one sideways and the left one upright (Claude).
+	// Each quarter lies two quadrants' gaps inside the pill's line (as the
+	// special wins lay round the ring), split from its partner along the
+	// pill's axis by the quadrants' gap and from the scores by the line
+	// through its end's centre, its corners rounded (WIN.corner). Its word
+	// runs along its round outer edge (UV, 2 Nov), padded from it as the break
+	// words are from theirs. Drawn in the break ring's 100 box from where the
+	// pill (#mv-pill, sized by match.css) lies against it, so drawn again when
+	// the stage resizes, the phone turns or the breaker changes. A tap records
+	// the frame (specialWin); which are offered follows the rules
+	// (paintButtons). The wins are named by TDCMatchDef.RESULT_SHORT; the
+	// fourth button is the more pop-up, which holds the walkovers.
+	const WIN_SLOTS = [['break_and_finish', 'reverse_break_and_finish'], ['golden_break', 'more']];   // each slot: [the breaker's end, the other end]
+	// a button's corners' radius, and its word's size as a share of its radius
+	// (UV, 2 Nov: sized to the button; the break words' size was about 7px in
+	// the round ends of a phone held upright, now about 15px)
+	const WIN = { corner: 4, word: 0.16 };
 	const landscape = matchMedia('(orientation: landscape)');
 
-	// A slot's button drawn to the left of the ring between the heights y1
-	// and y2, then turned rot degrees about the ring's centre (a rotation, so
-	// every arc's sweep holds). wordR: the radius its word is centred on.
-	function winButton(y1, y2, rot, wordR) {
-		const R = winR(), c = WIN.corner, xo = 50 - R - WIN.depth;
-		const turn = (x, y) => {
-			const a = rot / DEG, dx = x - 50, dy = y - 50;
-			return [50 + dx * Math.cos(a) - dy * Math.sin(a), 50 + dx * Math.sin(a) + dy * Math.cos(a)];
+	// Where the green pill lies, in the break ring's box: its centre, half its
+	// length and half its thickness, and whether it runs across (sideways).
+	// null until both are laid out.
+	function pillBox() {
+		const br = els.breakRing.getBoundingClientRect(), pr = els.pill.getBoundingClientRect();
+		if (!(br.width > 0) || !(pr.width > 0) || !(pr.height > 0)) return null;
+		const u = 100 / br.width;
+		return {
+			cx: 50 + (pr.left + pr.width / 2 - br.left - br.width / 2) * u,
+			cy: 50 + (pr.top + pr.height / 2 - br.top - br.height / 2) * u,
+			half: Math.max(pr.width, pr.height) / 2 * u,
+			thick: Math.min(pr.width, pr.height) / 2 * u,
+			wide: pr.width >= pr.height
 		};
-		const p = (x, y) => turn(x, y).map((n) => n.toFixed(2)).join(' ');
-		// The rounded corner where a straight edge at y meets the curve: a circle
-		// of radius c touching the edge on the button's side (s: 1 below it, -1
-		// above) and the ring's curve from outside.
-		const fillet = (y, s) => {
-			const cy = y + s * c, cx = 50 - Math.sqrt((R + c) ** 2 - (cy - 50) ** 2), k = R / (R + c);
-			return { line: [cx, y], curve: [50 + (cx - 50) * k, 50 + (cy - 50) * k] };
-		};
-		const top = fillet(y1, 1), bottom = fillet(y2, -1);
-		const d = `M ${p(xo, y1 + c)} A ${c} ${c} 0 0 1 ${p(xo + c, y1)}`
-			+ ` L ${p(...top.line)} A ${c} ${c} 0 0 1 ${p(...top.curve)}`
-			+ ` A ${R} ${R} 0 0 0 ${p(...bottom.curve)}`
-			+ ` A ${c} ${c} 0 0 1 ${p(...bottom.line)}`
-			+ ` L ${p(xo + c, y2)} A ${c} ${c} 0 0 1 ${p(xo, y2 - c)} Z`;
-		// The word's arc spans the curve between the corners, at wordR
-		const angle = (y) => 180 - Math.asin(Math.max(-1, Math.min(1, (y - 50) / wordR))) * DEG;
-		const a1 = angle(y1 + c), a2 = angle(y2 - c);
-		return { d, mid: norm((a1 + a2) / 2 + rot), half: Math.abs(a1 - a2) / 2, wordR, centre: turn(50 - R, (y1 + y2) / 2) };
 	}
 
-	// breakSide: who is breaking; home's half is the top one upright and the
-	// left one sideways, the first of a slot's pair
-	function winButtons(size, breakSide) {
-		const wide = landscape.matches, h = BREAK_RING.outer, g = BREAK_RING.gap;
-		const cap = CAP * size, pad = (BREAK_RING.outer - BREAK_RING.inner - cap) / 2;
-		const wordR = winR() + pad + cap / 2;
-		const rots = wide ? [90, -90] : [0, 180];
+	// One quarter circle of radius R, drawn about its end's centre with its
+	// round edge to the left and above the pill's axis (mirrored below it when
+	// s is -1),
+	// then turned rot degrees and moved to (ox, oy). Its outline is points
+	// along each edge and corner, so no arc's sweep has to survive the turn.
+	// wordR: the radius its word is centred on.
+	function winQuarter(R, s, rot, ox, oy, wordR) {
+		const g = BREAK_RING.gap, c = WIN.corner;
+		const a = rot / DEG;
+		const place = (x, y) => [ox + x * Math.cos(a) - y * s * Math.sin(a), oy + x * Math.sin(a) + y * s * Math.cos(a)];
+		const pts = [];
+		const arc = (cx, cy, r, from, to, n) => {
+			for (let i = 0; i <= n; i++) {
+				const t = (from + (to - from) * i / n) / DEG;
+				pts.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]);
+			}
+		};
+		// The corner where the two straight edges meet, then the corners where
+		// each meets the round edge: circles of radius c touching the edge and,
+		// from inside, the circle of radius R
+		const off = Math.sqrt((R - c) ** 2 - (g + c) ** 2);
+		const along = [-off, -g - c], across = [-g - c, -off];
+		const aAt = Math.atan2(along[1], along[0]) * DEG + 360, bAt = Math.atan2(across[1], across[0]) * DEG + 360;
+		arc(-g - c, -g - c, c, 0, 90, 6);
+		arc(along[0], along[1], c, 90, aAt, 6);
+		arc(0, 0, R, aAt, bAt, 40);
+		arc(across[0], across[1], c, bAt, 360, 6);
+		const d = 'M ' + pts.map((p) => place(...p).map((n) => n.toFixed(2)).join(' ')).join(' L ') + ' Z';
+		const centre = place(-R / 2, -R / 2);
+		const [wx, wy] = place(-wordR * Math.SQRT1_2, -wordR * Math.SQRT1_2);
+		return { d, mid: norm(Math.atan2(wy - oy, wx - ox) * DEG), half: 34, wordR, o: [ox, oy], centre };
+	}
+
+	// breakSide: who is breaking; home's end is the left one sideways and the
+	// top one upright. With nobody breaking they sit as for home. Each button
+	// carries its word's size (word, in the box), padded from the round edge
+	// in the break words' proportion (their padding is 0.46 of a capital).
+	function winButtons(breakSide) {
+		const box = pillBox();
+		if (!box) return [];
+		const R = box.thick - 2 * BREAK_RING.gap;
+		const word = R * WIN.word, cap = CAP * word, pad = cap * 0.46;
+		const wordR = R - pad - cap / 2;
 		const out = [];
-		WIN_SLOTS.forEach((values, i) => {
-			const pair = [winButton(50 - h, 50 - g, rots[i], wordR), winButton(50 + g, 50 + h, rots[i], wordR)];
-			pair.sort((a, b) => (wide ? a.centre[0] - b.centre[0] : a.centre[1] - b.centre[1]));
-			const halves = breakSide === 'away' ? values.slice().reverse() : values;
-			halves.forEach((value, j) => out.push(Object.assign({ value }, pair[j])));
+		[-1, 1].forEach((dir, end) => {
+			const reach = dir * (box.half - box.thick);
+			const ox = box.wide ? box.cx + reach : box.cx, oy = box.wide ? box.cy : box.cy + reach;
+			// the round edge outwards: left or right sideways, up or down upright
+			const rot = box.wide ? (dir < 0 ? 0 : 180) : (dir < 0 ? 90 : -90);
+			const pair = [-1, 1].map((s) => winQuarter(R, s, rot, ox, oy, wordR));
+			pair.sort((p, q) => (box.wide ? p.centre[1] - q.centre[1] : p.centre[0] - q.centre[0]));
+			const breakerEnd = (breakSide === 'away') === (end === 1);
+			const values = WIN_SLOTS.map((slot) => slot[breakerEnd ? 0 : 1]);
+			pair.forEach((q, j) => out.push(Object.assign({ value: values[j], word }, q)));
 		});
 		return out;
 	}
@@ -895,13 +920,15 @@
 		}
 		const shapes = document.createElementNS(SVG_NS, 'g');
 		svg.append(defs, shapes);
-		// list: [{ d, filter, value }], the filter by id, value the button's
-		// (setOff finds a disabled button's glow by it)
-		const paint = (list) => shapes.replaceChildren(...list.map(({ d, filter, value }) => {
+		// list: [{ d, filter, value, cls }], the filter by id, value the button's
+		// (setOff finds a disabled button's glow by it), cls a class (a break
+		// quadrant's moves with the yellow toggle: mv-knob-part)
+		const paint = (list) => shapes.replaceChildren(...list.map(({ d, filter, value, cls }) => {
 			const path = document.createElementNS(SVG_NS, 'path');
 			path.setAttribute('d', d);
 			path.setAttribute('filter', `url(#${filter})`);
 			if (value) path.dataset.value = value;
+			if (cls) path.setAttribute('class', cls);
 			return path;
 		}));
 		return { svg, parts, paint };
@@ -983,6 +1010,7 @@
 	}
 
 	let repaintWins = null, winsBreaker = null, winsShown = null;   // buildBreak's paintWins, and the breaker and buttons (shownKey) it last drew for
+	let knobSide = null;   // the side the yellow toggle stands at (placeKnob), behind the breaker while the ring's dots run
 	function buildBreak() {
 		const svg = document.createElementNS(SVG_NS, 'svg');
 		svg.setAttribute('viewBox', '0 0 100 100');
@@ -991,6 +1019,7 @@
 		const ring = document.createElementNS(SVG_NS, 'g');
 		ring.setAttribute('role', 'radiogroup');
 		ring.setAttribute('aria-label', 'Break event');
+		ring.classList.add('mv-knob-part');   // slides with the yellow toggle (match.css); the special wins stay
 		const wins = document.createElementNS(SVG_NS, 'g');
 		wins.setAttribute('role', 'radiogroup');
 		wins.setAttribute('aria-label', 'Special wins');
@@ -1008,47 +1037,76 @@
 		const glow = buildGlow(), inset = buildInset();
 		let buttons = [];
 
-		// The breaker's glow stops at the buttons themselves (UV, 30 Oct: a
-		// rectangle round the group cut it with hard edges beside the special
-		// wins' rounded corners): each half gets a mask (--mv-glow-mask, used by
-		// match.css, .mv-side[data-breaking]::before), an SVG the half's size
-		// that hides the glow inside the special wins and the break ring, each
-		// grown by half a line so no glow lies under an outline, and shows it
-		// everywhere else, the gaps between them included. Drawn from the same
-		// shapes as the buttons, in the ring's box placed where it sits on the
-		// half, again whenever the stage resizes or the phone turns.
+		// The glows inside the green pill stop at its buttons (UV, 30 Oct: a
+		// glow never lies inside a button; a rectangle round the group, the
+		// first way, cut it with hard edges beside their rounded corners): the
+		// pill gets a mask (--mv-glow-mask, used by match.css: .mv-pill::before,
+		// its own green glow and inside shadow), an SVG the size of the pill
+		// inside its line, where that layer starts, and so does each half's
+		// .mv-breaker-glow, the breaker's yellow glow, the size of its box;
+		// each hides the glow inside the special wins,
+		// each grown by half a line so no glow lies under an outline, and shows
+		// it everywhere else, the gaps between them included. Drawn from the
+		// same shapes as the buttons, in the ring's box placed where it sits on
+		// the pill, whenever the buttons are. (Until 2 Nov the breaker's glow
+		// was each screen half's, masked the same way round the ring as well;
+		// the ring now slides, and its yellow pill keeps the glow clear of it.)
 		const glowMasks = () => {
 			const br = els.breakRing.getBoundingClientRect();
 			const line = px('--match-break-stroke');
 			if (!(br.width > 0) || !buttons.length) return;
 			const u = br.width / 100;
 			// Only what is shown (shownByRules): a hidden button leaves the glow
-			const holes = buttons.filter((b) => shownByRules(b.value)).map((b) => `<path d="${b.d}"/>`).join('')
-				+ (shownByRules('in') ? `<circle cx="50" cy="50" r="${BREAK_RING.outer}"/>` : '');
+			const holes = buttons.filter((b) => shownByRules(b.value)).map((b) => `<path d="${b.d}"/>`).join('');
+			// The breaker's glow (UV, 2 Nov: behind the buttons and the score,
+			// never in them) also keeps out of the whole yellow pill, where the
+			// break ring slides: two rings long, its radius --mv-knob-reach
+			const reach = BREAK_RING.outer + 2 * BREAK_RING.gap, wide = landscape.matches;
+			const [yw, yh] = wide ? [4 * reach, 2 * reach] : [2 * reach, 4 * reach];
+			const yellow = `<rect x="${50 - yw / 2}" y="${50 - yh / 2}" width="${yw}" height="${yh}" rx="${reach}"/>`;
+			for (const side of [els.pill, ...els.breakerGlows]) {
+				const box = side.getBoundingClientRect(), inset = side === els.pill ? line : 0;
+				const sr = { left: box.left + inset, top: box.top + inset, width: box.width - 2 * inset, height: box.height - 2 * inset };
+				if (!(sr.width > 0) || !(sr.height > 0)) continue;
+				const w = sr.width.toFixed(2), h = sr.height.toFixed(2);
+				const mask = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`
+					+ `<mask id="m"><rect width="100%" height="100%" fill="#fff"/>`
+					+ `<g transform="translate(${(br.left - sr.left).toFixed(2)} ${(br.top - sr.top).toFixed(2)}) scale(${u.toFixed(4)})" fill="#000" stroke="#000" stroke-width="${(line / u).toFixed(3)}">${holes}${side === els.pill ? '' : yellow}</g></mask>`
+					+ `<rect width="100%" height="100%" mask="url(#m)"/></svg>`;
+				side.style.setProperty('--mv-glow-mask', `url("data:image/svg+xml,${encodeURIComponent(mask)}")`);
+			}
+			// The line between the halves (their inside shadow, match.css,
+			// .mv-side::before) hidden behind the yellow pill while it shows
+			// (UV, 2 Nov), not behind the green one
 			for (const side of [els.p0, els.p1]) {
+				if (!shownByRules('in')) { side.style.removeProperty('--mv-split-mask'); continue; }
 				const sr = side.getBoundingClientRect();
 				const w = sr.width.toFixed(2), h = sr.height.toFixed(2);
 				const mask = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`
 					+ `<mask id="m"><rect width="100%" height="100%" fill="#fff"/>`
-					+ `<g transform="translate(${(br.left - sr.left).toFixed(2)} ${(br.top - sr.top).toFixed(2)}) scale(${u.toFixed(4)})" fill="#000" stroke="#000" stroke-width="${(line / u).toFixed(3)}">${holes}</g></mask>`
+					+ `<g transform="translate(${(br.left - sr.left).toFixed(2)} ${(br.top - sr.top).toFixed(2)}) scale(${u.toFixed(4)})" fill="#000">${yellow}</g></mask>`
 					+ `<rect width="100%" height="100%" mask="url(#m)"/></svg>`;
-				side.style.setProperty('--mv-glow-mask', `url("data:image/svg+xml,${encodeURIComponent(mask)}")`);
+				side.style.setProperty('--mv-split-mask', `url("data:image/svg+xml,${encodeURIComponent(mask)}")`);
 			}
 		};
-		new ResizeObserver(glowMasks).observe(els.stage);
+		// The buttons follow the pill, whose shape changes with the stage's
+		// (UV, 2 Nov), so they are drawn again, and their masks with them,
+		// whenever it resizes
+		new ResizeObserver(() => paintWins()).observe(els.stage);
 
 		// The special wins and both effect layers, drawn for how the phone is
-		// held and who is breaking
+		// held, where the pill lies and who is breaking
 		const paintWins = () => {
-			winsBreaker = (draft && draft.break_side) || null;
+			winsBreaker = knobSide;   // where the toggle stands, so they swap ends with it (placeKnob)
 			winsShown = shownKey();
-			buttons = winButtons(word, winsBreaker);
+			buttons = winButtons(winsBreaker);
 			const winDefs = document.createElementNS(SVG_NS, 'defs');
 			wins.replaceChildren(winDefs, ...buttons.map((b) => {
-				if (b.value === 'more') return moreButton(b, word);
+				if (b.value === 'more') return moreButton(b, b.word);
 				const label = TDCMatchDef.RESULT_SHORT[b.value];
 				if (!label) TDC.error(AREA, `no short name for the special win "${b.value}"`, null, els.stageStatus);
-				const g = choice('mv-win-q', b.value, label || b.value, b.d, 'mv-win-arc-' + b.value, wordArc(b.mid, word, b.half, b.wordR), winDefs);
+				const g = choice('mv-win-q', b.value, label || b.value, b.d, 'mv-win-arc-' + b.value, wordArc(b.mid, b.word, b.half, b.wordR, b.o), winDefs);
+				g.querySelector('text').style.fontSize = b.word.toFixed(2) + 'px';   // sized to the button (WIN.word), not the break words' --mv-word
 				g.setAttribute('aria-label', TDCMatchDef.RESULT_EVENT[b.value] || label);
 				return g;
 			}));
@@ -1057,8 +1115,9 @@
 				...Object.keys(BREAK_AT).filter(shownByRules).map((v) => ({ d: sector(BREAK_AT[v]), kind: 'break', value: v })),
 				...buttons.filter((b) => shownByRules(b.value)).map((b) => ({ d: b.d, kind: 'win', value: b.value }))
 			];
-			glow.paint(shapes.map((s) => ({ d: s.d, filter: s.kind === 'break' ? 'mv-glow-break' : 'mv-glow-win', value: s.value })));
-			inset.paint(shapes.map((s) => ({ d: s.d, filter: 'mv-inset' })));
+			const knob = (s) => (s.kind === 'break' ? 'mv-knob-part' : undefined);
+			glow.paint(shapes.map((s) => ({ d: s.d, filter: s.kind === 'break' ? 'mv-glow-break' : 'mv-glow-win', value: s.value, cls: knob(s) })));
+			inset.paint(shapes.map((s) => ({ d: s.d, filter: 'mv-inset', cls: knob(s) })));
 			// Offered and greyed as the match stands, once the glow is drawn, so
 			// a disabled button's glow is hidden with it (setOff)
 			if (MATCH && draft) paintButtons();
@@ -1087,16 +1146,16 @@
 		// edges are, as a share of it
 		els.stage.style.setProperty('--mv-break-hole', String(BREAK_RING.inner * 2 / 100));
 		els.stage.style.setProperty('--mv-break-gap', String(BREAK_RING.gap * 2 / 100));
-		// for the breaker's outline and glow, which stop at the buttons
+		// the ring's outside, as a share of its box: the yellow pill's glow stops there
 		els.stage.style.setProperty('--mv-break-rim', String(BREAK_RING.outer * 2 / 100));
-		// and the whole group's length along the split, the special wins'
-		// outside edges apart, as a share of the ring's box: the ring is sized
-		// so the group fits (match.css, --mv-centre)
-		els.stage.style.setProperty('--mv-cluster', String(2 * (winR() + WIN.depth) / 100));
+		// and how far the rings slide either way from the middle, in the box: the
+		// yellow pill's radius, two quadrants' gaps outside the ring (match.css,
+		// --mv-knob-reach)
+		els.stage.style.setProperty('--mv-knob-reach', String(BREAK_RING.outer + 2 * BREAK_RING.gap));
 	}
 
-	// The more button: a special win's shape, three dots along its curve in
-	// place of a word (the display face has no ellipsis), a button that opens
+	// The more button: a special win's shape, three dots along its round edge
+	// (about its end's centre, b.o) in place of a word (the display face has no ellipsis), a button that opens
 	// the more pop-up rather than a choice.
 	function moreButton(b, size) {
 		const g = document.createElementNS(SVG_NS, 'g');
@@ -1114,8 +1173,8 @@
 			const a = (b.mid + k * step) / DEG;
 			const dot = document.createElementNS(SVG_NS, 'circle');
 			dot.setAttribute('class', 'mv-more-dot');
-			dot.setAttribute('cx', (50 + b.wordR * Math.cos(a)).toFixed(2));
-			dot.setAttribute('cy', (50 + b.wordR * Math.sin(a)).toFixed(2));
+			dot.setAttribute('cx', (b.o[0] + b.wordR * Math.cos(a)).toFixed(2));
+			dot.setAttribute('cy', (b.o[1] + b.wordR * Math.sin(a)).toFixed(2));
 			dot.setAttribute('r', (cap * 0.16).toFixed(2));
 			g.append(dot);
 		}
@@ -1151,12 +1210,39 @@
 		els.target.textContent = type === 'free_play' ? wc : `${wc || 'TDC (Error)'} ${rules.win_condition_target}`;
 	}
 
-	// The breaker's half of the stage wears a yellow outline and inner glow
-	// (match.css, [data-breaking]); nobody's while nobody is known.
+	// ─── The yellow toggle (UV, 2 Nov) ────────────────────────────────
+	// While breaks are recorded, a yellow pill two rings long runs round the
+	// break ring, and the break ring and the cream ring move in it as one, as
+	// the team card's switches move: to the breaker's end, the middle while
+	// nobody is known. The special wins swap ends with it, and the breaker's
+	// yellow glow inside the green pill goes to that half (match.css,
+	// --mv-knob: -1 home, 0 nobody, 1 away). It moves only once the load is
+	// done: while the ring's dots run (a frame saving, another phone's frame
+	// being read) it waits, and slides as they come back, as a switch's knob
+	// does; a break tap sends nothing and moves nothing. Drawn where it
+	// stands, without sliding, the first time (the page opening).
+	let knobWant = null, knobDrawn = false;
 	function paintBreaker(side) {
-		els.p0.toggleAttribute('data-breaking', side === 'home');
-		els.p1.toggleAttribute('data-breaking', side === 'away');
+		knobWant = MATCH && MATCH.rules.track_breaks ? side || null : null;
+		els.stage.toggleAttribute('data-breaks', shownByRules('in'));
+		if (!knobDrawn) { placeKnob(); return; }
+		// A frame is drawn before its save is asked for, so the ring is not
+		// busy yet: asked again once this task is done (measured: it slid
+		// 20ms after the tap, while the save's dots ran)
+		setTimeout(() => { if (els.ring.dataset.dots !== 'busy') placeKnob(); }, 0);
 	}
+	function placeKnob() {
+		if (knobSide === knobWant && knobDrawn) return;
+		knobSide = knobWant;
+		if (!knobDrawn) els.stage.classList.add('mv-knob-still');
+		els.stage.style.setProperty('--mv-knob', knobSide === 'home' ? '-1' : knobSide === 'away' ? '1' : '0');
+		if (!knobDrawn) {
+			knobDrawn = true;
+			requestAnimationFrame(() => requestAnimationFrame(() => els.stage.classList.remove('mv-knob-still')));
+		}
+		if (knobSide !== winsBreaker && repaintWins) repaintWins();
+	}
+	new MutationObserver(() => { if (els.ring.dataset.dots !== 'busy' && knobDrawn) placeKnob(); }).observe(els.ring, { attributes: true, attributeFilter: ['data-dots'] });
 
 	// ─── The stage's buttons ──────────────────────────────────────────
 	// The four special wins keep their places (the stage keeps its shape),
@@ -1277,8 +1363,9 @@
 		// renderHalf's work, on the new stage: the score, who breaks, the
 		// names and pictures (drawn again only when the people change), and
 		// the score and name as the plain-win button while a win can be given.
-		paintScore(els.scoreHome, framesWon('home'));
-		paintScore(els.scoreAway, framesWon('away'));
+		const digits = Math.max(String(framesWon('home')).length, String(framesWon('away')).length);
+		paintScore(els.scoreHome, framesWon('home'), digits);
+		paintScore(els.scoreAway, framesWon('away'), digits);
 		paintBreaker(draft.break_side);
 		const who = ['home', 'away'].map((s) => JSON.stringify(player(MATCH[s].players[0]))).join('|');
 		if (who !== whoDrawn) {
@@ -1303,10 +1390,10 @@
 		}
 		// renderBreakRow's and the special wins' work: the break ring and the
 		// special wins, enabled as the pill and the rings were; drawn again
-		// first when the breaker has changed, so B&F and GB move to their half
-		// first when the breaker or the settings have changed, so B&F and GB
-		// move to their half and a button ruled out goes (shownByRules)
-		if ((draft.break_side || null) !== winsBreaker || shownKey() !== winsShown) repaintWins();
+		// first when the settings have changed, so a button ruled out goes
+		// (shownByRules). B&F and GB move to the breaker's end with the
+		// yellow toggle (paintBreaker, above).
+		if (shownKey() !== winsShown) repaintWins();
 		else paintButtons();
 	}
 
@@ -4265,6 +4352,74 @@
 	};
 	TDCNet.onAsk(() => {
 		if (quietAsk) return;   // the break event's save has no dots (saveBreakInPlay)
-		if (!TDCLoader.up && ringShown()) onRing(TDCNet.quiet());
+		if (!TDCLoader.up && ringShown()) { idleCancel(); onRing(TDCNet.quiet()); }
 	});
+
+	// ─── The idle dots (UV, 2 Nov) ─────────────────────────────────────
+	// While breaks are recorded and somebody is breaking, the yellow pill's
+	// empty end (the one the rings are not at) holds a faint grey dot
+	// (match.css, .mv-idle), and the page's one set of dots plays there
+	// between saves: still for IDLE_REST, then the grey dot shrinks into
+	// the dots (from 'centre'), they play the pool move (the two balls on a
+	// tilted table) for IDLE_PLAY, cut off if it has not finished, and they
+	// gather back into it (end 'gather'), and round again. Never on both
+	// at once (UV): a save takes them to the cream ring mid-cycle, and once
+	// it is back they come back here (the ring revealing). If the toggle
+	// moved, they fly to the new empty end and play at once; if not, they
+	// fly back and gather into its dot (UV), then rest. Not with less motion
+	// (dots.js's own reading of it), behind the loading screen, or once the
+	// stage is put away.
+	const IDLE_REST = 10000, IDLE_PLAY = 5000;   // the rest 10 s since UV's second look (2 Nov; it was 5)
+	const idleBoxes = [...document.querySelectorAll('.mv-idle')];
+	let idleTimer = null, idleEnd = null, idleKnob = null;
+	const idleBox = () => idleBoxes.find((b) => b.dataset.for === (knobSide === 'home' ? 'away' : 'home'));
+	const idleOn = () => !!knobSide && els.stage.hasAttribute('data-breaks') && !TDCLoader.up && ringShown() && !TDCDots.state.reduced;
+	const idleBusy = () => !!idleEnd || idleBoxes.some((b) => b.dataset.dots) || !!els.ring.dataset.dots;
+	function idleCancel() {
+		clearTimeout(idleTimer);
+		idleTimer = null;
+		if (idleEnd) { const end = idleEnd; idleEnd = null; end(); }
+	}
+	function idleRest() {
+		clearTimeout(idleTimer);
+		idleTimer = setTimeout(() => { idleTimer = null; idlePlay(); }, IDLE_REST);
+	}
+	// The pool, at the empty end, for IDLE_PLAY; from 'centre' when the dots
+	// are hidden, else they fly there from the ring as usual
+	function idlePlay(fromRing = false) {
+		if (!idleOn()) return;
+		if (!fromRing && idleBusy()) { idleRest(); return; }
+		const box = idleBox();
+		let end;
+		const play = new Promise((resolve) => { end = resolve; });
+		idleEnd = end;
+		idleKnob = knobSide;
+		idleTimer = setTimeout(() => { idleTimer = null; if (idleEnd === end) { idleEnd = null; end(); } }, IDLE_PLAY);
+		serveAt(box, play, { move: 'pool', from: 'centre', end: 'gather', line: true, timeout: IDLE_PLAY * 4, status: els.stageStatus });
+	}
+	// A save is back and its dots race the ring (the toggle has moved by
+	// now, placeKnob): they leave it for the empty end
+	function idleBack() {
+		if (!idleOn()) return;
+		idleCancel();
+		if (knobSide !== idleKnob) { idlePlay(true); return; }
+		serveAt(idleBox(), Promise.resolve(), { end: 'gather', line: true, status: els.stageStatus });
+	}
+	new MutationObserver(() => {
+		if (els.ring.dataset.dots === 'revealing') setTimeout(idleBack, 0);   // after placeKnob has read the same change
+	}).observe(els.ring, { attributes: true, attributeFilter: ['data-dots'] });
+	// Once the dots have gathered into a dot and it is back (dots.js takes
+	// data-dots off), the rest begins
+	for (const box of idleBoxes) {
+		new MutationObserver(() => { if (!box.dataset.dots && !idleEnd && !idleTimer) idleRest(); })
+			.observe(box, { attributes: true, attributeFilter: ['data-dots'] });
+	}
+	// The first round once the page is in (the loading screen has no event
+	// for it, so it is looked for four times a second until then)
+	const idleStart = setInterval(() => {
+		if (TDCLoader.up || !knobDrawn) return;
+		clearInterval(idleStart);
+		idleKnob = knobSide;
+		idleRest();
+	}, 250);
 })();
