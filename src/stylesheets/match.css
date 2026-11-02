@@ -14,17 +14,20 @@
    two players top and bottom; sideways, side by side. A size container, so
    the rings can be sized from it.
    The green pill (UV, 2 Nov; .mv-pill below) runs along the split round
-   both scores and the rings, the special wins filling its round ends.
-   Sideways it fills the space below the name strips, --space-3 clear all
-   round; upright it runs between the two names (13/15 of the stage, the
-   names a fifteenth each, as their 1 : 4 share of a player's third was),
-   --mv-pill-share of the stage's width thick (UV, 2 Nov: as the mock's
-   C, 220px on a 420px phone). Both ways it is at least --mv-pill-ratio
-   times as long as it is thick, so the round ends (each as deep as half the
-   thickness) and the rings leave the scores room: 3.4 gives each score
-   about 120px along the pill on a phone held either way, and holds on a
-   PC's wide screen, where the height alone made a pill too fat.
-   --mv-centre is the break ring's box: --mv-ring-share of the pill's
+   both scores and the rings, the special wins in its corners. It is a
+   rectangle with rounded corners (UV, 2 Nov, second look; it was a pill
+   with round ends): upright it runs between the two names (13/15 of the
+   stage, the names a fifteenth each) and fills the width, sideways it
+   fills the space below the name strips, --space-3 clear all round
+   (--mv-pill-thick). Its corners keep the round ends' radius
+   (--mv-pill-r, half of --mv-pill-core: --mv-pill-share of the width
+   upright, as the mock's C, and both ways at most a --mv-pill-ratio-th of
+   its length, so the corners and the rings leave the scores room). Where
+   it is thicker than its corners (upright, and sideways on a wide screen)
+   a gap opens between each end's two buttons, which the score takes when
+   its digits fit there bigger (match.js, fitScores); a phone held
+   sideways has none and is as before.
+   --mv-centre is the break ring's box: --mv-ring-share of the core
    thickness. --mv-yellow-half is half the length the rings take along the
    pill: the yellow toggle's pill, two rings long (UV, 2 Nov), its line two
    quadrants' gaps outside the ring's (--mv-knob-reach, 53 in the ring's
@@ -53,8 +56,10 @@
 	--mv-pill-ratio: 3.4;
 	--mv-ring-share: 0.57;
 	--mv-pill-long: calc(100cqh * 13 / 15 - 2 * var(--space-3) - env(safe-area-inset-bottom, 0px));
-	--mv-pill-thick: min(100cqw * var(--mv-pill-share), var(--mv-pill-long) / var(--mv-pill-ratio));
-	--mv-centre: calc(var(--mv-pill-thick) * var(--mv-ring-share));
+	--mv-pill-core: min(100cqw * var(--mv-pill-share), var(--mv-pill-long) / var(--mv-pill-ratio));
+	--mv-pill-r: calc(var(--mv-pill-core) / 2);
+	--mv-pill-thick: calc(100cqw - 2 * var(--space-3));
+	--mv-centre: calc(var(--mv-pill-core) * var(--mv-ring-share));
 	--mv-knob-reach: 53;
 	--mv-yellow-half: calc(var(--mv-centre) * var(--mv-knob-reach) * 2 / 100);
 	/* how far the rings stand from the middle: --mv-knob (match.js,
@@ -75,7 +80,8 @@
 @media (orientation: landscape) {
 	.mv-stage {
 		--mv-pill-long: calc(100cqw - 2 * var(--space-3) - 2 * max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)));
-		--mv-pill-thick: min(100cqh * 0.8 - 2 * var(--space-3) - env(safe-area-inset-bottom, 0px), var(--mv-pill-long) / var(--mv-pill-ratio));
+		--mv-pill-thick: calc(100cqh * 0.8 - 2 * var(--space-3) - env(safe-area-inset-bottom, 0px));
+		--mv-pill-core: min(var(--mv-pill-thick), var(--mv-pill-long) / var(--mv-pill-ratio));
 		--mv-centre-y: calc(60% - env(safe-area-inset-bottom, 0px) / 2);
 		grid-template-rows: none;
 		grid-template-columns: 1fr 1fr;
@@ -139,9 +145,12 @@
 	place-items: center;
 	overflow: hidden;
 }
-/* Inside the green pill (UV, 2 Nov): each score between its end's buttons
-   (the line through the end's centre) and the rings (--mv-yellow-half from
-   the pill's centre), the pill's whole thickness across. Worked out in the
+/* Inside the green pill (UV, 2 Nov): each score's box runs from the pill's
+   end (inside its line) to the rings (--mv-yellow-half from the pill's
+   centre), the pill's whole thickness across: the space between its end's
+   buttons (the line through their corners' centres) and the rings, and the
+   gap between the two buttons as well (UV, 2 Nov, second look). Which the
+   digits take, and their size, is match.js's (fitScores). Worked out in the
    half, whose edge on the split is the stage's middle; the pill's centre
    is --mv-k from it towards the top, clear of the home bar.
    Upright the name area fills the room between the stage's edge and the
@@ -152,8 +161,8 @@
    the top name vanished). The bottom one keeps clear of the home bar. */
 .mv-side {
 	--mv-k: calc(env(safe-area-inset-bottom, 0px) / 2);
-	/* a score's length along the pill */
-	--mv-score-long: calc(var(--mv-pill-long) / 2 - var(--mv-pill-thick) / 2 - var(--mv-yellow-half));
+	/* a score's box's length along the pill, from its end (inside the line) to the rings */
+	--mv-score-long: calc(var(--mv-pill-long) / 2 - var(--match-break-stroke) - var(--mv-yellow-half));
 }
 .mv-side[data-side="home"] .mv-who {
 	top: var(--mv-who-top, 0px);
@@ -170,7 +179,7 @@
 	width: var(--mv-pill-thick);
 	height: var(--mv-score-long);
 }
-.mv-side[data-side="home"] .mv-score { top: calc(100% - var(--mv-k) - var(--mv-pill-long) / 2 + var(--mv-pill-thick) / 2); }
+.mv-side[data-side="home"] .mv-score { top: calc(100% - var(--mv-k) - var(--mv-pill-long) / 2 + var(--match-break-stroke)); }
 .mv-side[data-side="away"] .mv-score { top: calc(var(--mv-yellow-half) - var(--mv-k)); }
 
 /* [data-side] in every one of these, to match the upright rules' weight:
@@ -184,7 +193,7 @@
 	.mv-side[data-side="home"] .mv-who { left: 0; right: auto; padding-left: env(safe-area-inset-left, 0px); }
 	.mv-side[data-side="away"] .mv-who { left: auto; right: 0; padding-right: env(safe-area-inset-right, 0px); }
 	.mv-side[data-side] .mv-score { width: var(--mv-score-long); }
-	.mv-side[data-side="home"] .mv-score { left: calc(100% - var(--mv-pill-long) / 2 + var(--mv-pill-thick) / 2); }
+	.mv-side[data-side="home"] .mv-score { left: calc(100% - var(--mv-pill-long) / 2 + var(--match-break-stroke)); }
 	.mv-side[data-side="away"] .mv-score { left: var(--mv-yellow-half); }
 }
 
@@ -222,13 +231,17 @@
 .mv-score-n {
 	font-family: var(--font-display);
 	font-variant-numeric: tabular-nums;
-	font-size: min(
+	/* The size and the place along the pill are match.js's (fitScores: the
+	   bigger of the space beside the rings and that space with the gap
+	   between the end's buttons, both scores alike); until it has run, the
+	   box's own fit. */
+	font-size: var(--mv-score-size, min(
 		(100cqw - 2 * var(--space-3)) / (0.65 * var(--digits, 1)),
-		(100cqh - 2 * var(--space-3)) / (1.1 * var(--score-stretch)));
+		(100cqh - 2 * var(--space-3)) / (1.1 * var(--score-stretch))));
 	text-anchor: middle;
 	dominant-baseline: alphabetic;
 	fill: var(--text-primary);
-	transform: scaleY(var(--score-stretch)) translate(var(--mv-score-shift-x, 0em), var(--mv-score-shift, 0.525em));   /* centred first, across and down, by its own ink (set by the script), then stretched about the middle */
+	transform: translate(var(--mv-score-dx, 0px), var(--mv-score-dy, 0px)) scaleY(var(--score-stretch)) translate(var(--mv-score-shift-x, 0em), var(--mv-score-shift, 0.525em));   /* centred first, across and down, by its own ink (set by the script), then stretched about the middle, then moved to the middle of the space it takes */
 	transform-box: view-box;
 	transform-origin: 50% 50%;
 }
@@ -346,7 +359,7 @@
 	translate: -50% -50%;
 	box-sizing: border-box;
 	border: var(--match-break-stroke) solid var(--color-primary);
-	border-radius: var(--radius-pill);
+	border-radius: var(--mv-pill-r);   /* the round ends' radius, kept as corners (UV, 2 Nov); match.js reads it to place the buttons */
 	box-shadow: var(--match-mark-shadow);
 	pointer-events: none;
 }
@@ -382,7 +395,7 @@
 		inset 0 0 calc(var(--match-glow-size) * 2) var(--match-glow-colour);
 }
 .mv-breaker-glow {
-	--mv-glow-r: calc(var(--mv-pill-thick) / 2 - var(--match-break-stroke));
+	--mv-glow-r: calc(var(--mv-pill-r) - var(--match-break-stroke));
 	position: absolute;
 	left: calc(50% - var(--mv-pill-thick) / 2 + var(--match-break-stroke));
 	width: calc(var(--mv-pill-thick) - 2 * var(--match-break-stroke));

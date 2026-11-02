@@ -1145,6 +1145,13 @@ These predate the log. They are recorded here because every one of them is a dec
 *Replaces:* 30 Oct's special wins in slots round the ring, the score against the buttons, the breaker's screen-half outline.
 *Touches:* `src/match/index.html`, `match.js`, `match.css`, `dots.js`, `docs/systems/matches.md`, `docs/systems/dots.md`, `docs/STATUS.md`
 
+## 2026-11-02 — The green pill becomes a rounded rectangle, so the scores can grow
+
+*Decided by UV:* the green pill fills the width upright and the height sideways (stopping at the name strips), its corners keeping today's radius; the special wins stay quarter circles tucked into the corners; where space opens between an end's two buttons, a score takes it only if its numbers fit there (bigger).
+*Claude's, for UV to judge:* the ring and yellow toggle kept at today's size (sized from the old thickness); the larger tap area for a plain win (the gap is part of the score's box).
+*So:* a phone held sideways is unchanged (the pill was already as tall as the space; its corners meet); upright the scores roughly double; a wide screen sideways gets a taller pill.
+*Touches:* `match.css`, `match.js` (`pillBox`, `winButtons`, `fitScores`), `docs/systems/matches.md`
+
 ## 2026-11-02 — The light theme's muted grey is #a3a3a3
 
 *Decided by UV:* the light theme's `--text-muted` becomes a real grey, site-wide: first the dark theme's #808080, then #a3a3a3, set by UV in the file the same day. It had been #20333b, the same as `--text-primary`, so every muted element in light mode (muted text, disabled buttons, the match page's idle dots) drew as the main text colour.

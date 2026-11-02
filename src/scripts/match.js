@@ -570,6 +570,50 @@
 	function placeWho() {
 		roomWho();
 		fitWho();
+		fitScores();
+	}
+
+	// The scores' size and place (UV, 2 Nov, second look). Each score's box
+	// (match.css) runs from the pill's end to the rings, the pill's whole
+	// thickness across: the space between its end's buttons and the rings
+	// (the old box: from the line through the corners' centres), and,
+	// where the pill is thicker than its two corners, the gap between the
+	// two buttons as well, as wide as that leaves and the box's whole length.
+	// A score takes the gap only if its digits fit there bigger (UV: "only if
+	// the numbers will fit in that new space"): the size for each space is
+	// the box rule's (0.65 a digit across, 1.1 stretched up and down, --space-3
+	// clear), the bigger kept. Both scores take the smaller of the two players'
+	// (always the same size, with the longer score's digits), each centred in
+	// the space that size fits: the whole box, or the part beside the rings.
+	function fitScores() {
+		const root = getComputedStyle(document.documentElement);
+		const space = getComputedStyle(els.stage).getPropertyValue('--space-3').trim();
+		const m = parseFloat(space) * (space.endsWith('rem') ? parseFloat(root.fontSize) : 1);
+		const stretch = parseFloat(root.getPropertyValue('--score-stretch')) || 1;
+		const rad = parseFloat(getComputedStyle(els.pill).borderTopLeftRadius) || 0, line = px('--match-break-stroke') || 0;
+		const nodes = [els.scoreHome, els.scoreAway];
+		const digits = Math.max(...nodes.map((n) => n.textContent.length), 1);
+		const wide = landscape.matches;
+		const fit = (W, H) => Math.max(0, Math.min((W - 2 * m) / (0.65 * digits), (H - 2 * m) / (1.1 * stretch)));
+		const each = nodes.map((node) => {
+			const box = node.ownerSVGElement.getBoundingClientRect();
+			const along = wide ? box.width : box.height, across = wide ? box.height : box.width;
+			const corner = Math.max(0, rad - line), gap = across - 2 * rad;
+			const beside = wide ? fit(along - corner, across) : fit(across, along - corner);
+			const all = gap > 0 ? (wide ? fit(along, gap) : fit(gap, along)) : 0;
+			return { node, corner, beside, all };
+		});
+		if (each.some((e) => !(e.beside > 0))) return;   // not laid out yet: the CSS's own fit meanwhile
+		const size = Math.min(...each.map((e) => Math.max(e.beside, e.all)));
+		each.forEach((e, i) => {
+			// Beside the rings, the middle of that part is half a corner nearer them
+			// (home's rings are below it upright and right of it sideways)
+			const shift = size > e.beside + 0.5 ? 0 : (i === 0 ? 1 : -1) * e.corner / 2;
+			const set = (name, value) => { if (e.node.style.getPropertyValue(name) !== value) e.node.style.setProperty(name, value); };
+			set('--mv-score-size', size.toFixed(2) + 'px');
+			set('--mv-score-dx', (wide ? shift : 0).toFixed(2) + 'px');
+			set('--mv-score-dy', (wide ? 0 : shift).toFixed(2) + 'px');
+		});
 	}
 	function roomWho() {
 		const rooms = [];
@@ -807,17 +851,19 @@
 	const landscape = matchMedia('(orientation: landscape)');
 
 	// Where the green pill lies, in the break ring's box: its centre, half its
-	// length and half its thickness, and whether it runs across (sideways).
-	// null until both are laid out.
+	// length and half its thickness, its corners' radius (rad), and whether
+	// it runs across (sideways). null until both are laid out.
 	function pillBox() {
 		const br = els.breakRing.getBoundingClientRect(), pr = els.pill.getBoundingClientRect();
 		if (!(br.width > 0) || !(pr.width > 0) || !(pr.height > 0)) return null;
-		const u = 100 / br.width;
+		const u = 100 / br.width, thick = Math.min(pr.width, pr.height) / 2;
+		const rad = Math.min(thick, parseFloat(getComputedStyle(els.pill).borderTopLeftRadius) || thick);
 		return {
 			cx: 50 + (pr.left + pr.width / 2 - br.left - br.width / 2) * u,
 			cy: 50 + (pr.top + pr.height / 2 - br.top - br.height / 2) * u,
 			half: Math.max(pr.width, pr.height) / 2 * u,
-			thick: Math.min(pr.width, pr.height) / 2 * u,
+			thick: thick * u,
+			rad: rad * u,
 			wide: pr.width >= pr.height
 		};
 	}
@@ -859,19 +905,31 @@
 	// top one upright. With nobody breaking they sit as for home. Each button
 	// carries its word's size (word, in the box), padded from the round edge
 	// in the break words' proportion (their padding is 0.46 of a capital).
+	// Since UV's second look (2 Nov) the pill is a rectangle with rounded
+	// corners, as thick as the space allows, its corners the old round ends'
+	// radius (rad): each button is a quarter of its corner's circle, tucked
+	// into it, so where the pill is thicker than two corners a gap opens
+	// between an end's two buttons (the score's, fitScores). As thick as two
+	// corners (a phone held sideways), they meet as they did.
 	function winButtons(breakSide) {
 		const box = pillBox();
 		if (!box) return [];
-		const R = box.thick - 2 * BREAK_RING.gap;
+		const R = box.rad - 2 * BREAK_RING.gap;
 		const word = R * WIN.word, cap = CAP * word, pad = cap * 0.46;
 		const wordR = R - pad - cap / 2;
 		const out = [];
 		[-1, 1].forEach((dir, end) => {
-			const reach = dir * (box.half - box.thick);
-			const ox = box.wide ? box.cx + reach : box.cx, oy = box.wide ? box.cy : box.cy + reach;
+			const reach = dir * (box.half - box.rad), across = box.thick - box.rad;
 			// the round edge outwards: left or right sideways, up or down upright
-			const rot = box.wide ? (dir < 0 ? 0 : 180) : (dir < 0 ? 90 : -90);
-			const pair = [-1, 1].map((s) => winQuarter(R, s, rot, ox, oy, wordR));
+			const rot = box.wide ? (dir < 0 ? 0 : 180) : (dir < 0 ? 90 : -90), a = rot / DEG;
+			const pair = [-1, 1].map((side) => {
+				// this corner's centre, and which way round the quarter is drawn so
+				// its round edge also faces out across the pill (towards side)
+				const ox = box.cx + (box.wide ? reach : side * across), oy = box.cy + (box.wide ? side * across : reach);
+				const out2 = box.wide ? [0, side] : [side, 0];
+				const s = Math.sign(Math.sin(a) * out2[0] - Math.cos(a) * out2[1]) || 1;
+				return winQuarter(R, s, rot, ox, oy, wordR);
+			});
 			pair.sort((p, q) => (box.wide ? p.centre[1] - q.centre[1] : p.centre[0] - q.centre[0]));
 			const breakerEnd = (breakSide === 'away') === (end === 1);
 			const values = WIN_SLOTS.map((slot) => slot[breakerEnd ? 0 : 1]);
