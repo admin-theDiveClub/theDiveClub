@@ -100,10 +100,9 @@
 	min-width: 0;
 	min-height: 0;
 }
-/* On a layer of its own (UV, 2 Nov: the line between the halves hidden
-   behind the yellow pill, but not behind the green one): --mv-split-mask,
-   set by match.js (glowMasks) while the yellow pill shows, cuts the pill's
-   shape out of it. */
+/* On a layer of its own (UV, 2 Nov): --mv-split-mask, set by match.js
+   (glowMasks), cuts the green pill's inside out of it, where the centre
+   line is green instead (.mv-split; first it cut out the yellow pill only). */
 .mv-side::before {
 	content: "";
 	position: absolute;
@@ -304,6 +303,10 @@
 }
 @media (orientation: landscape) {
 	.mv-person { --mv-who-h: min(100cqh * 0.6, var(--mv-who-cap, 100cqh)); }
+	/* The left player mirrored (UV, 2 Nov): the picture on the right, the
+	   names right-aligned, so both players' pictures face the middle. */
+	.mv-side[data-side="home"] .mv-person { flex-direction: row-reverse; }
+	.mv-side[data-side="home"] .mv-names { text-align: right; }
 }
 .mv-pic img { width: 100%; height: 100%; object-fit: cover; }
 .mv-names {
@@ -394,35 +397,90 @@
 		inset 0 0 var(--match-glow-size) var(--match-glow-colour),
 		inset 0 0 calc(var(--match-glow-size) * 2) var(--match-glow-colour);
 }
-.mv-breaker-glow {
+/* The player's half of the pill inside its line, shared by the breaker's
+   glow and the plain-win button's tap area (.mv-hit, below). */
+:is(.mv-breaker-glow, .mv-hit) {
 	--mv-glow-r: calc(var(--mv-pill-r) - var(--match-break-stroke));
 	position: absolute;
 	left: calc(50% - var(--mv-pill-thick) / 2 + var(--match-break-stroke));
 	width: calc(var(--mv-pill-thick) - 2 * var(--match-break-stroke));
 	height: calc(var(--mv-pill-long) / 2 - var(--match-break-stroke));
+}
+.mv-breaker-glow {
 	box-shadow: var(--mv-breaker-inset);
 	-webkit-mask: var(--mv-glow-mask, linear-gradient(#000, #000)) 0 0 / 100% 100% no-repeat;
 	mask: var(--mv-glow-mask, linear-gradient(#000, #000)) 0 0 / 100% 100% no-repeat;
 	pointer-events: none;
 }
-.mv-side[data-side="home"] .mv-breaker-glow {
+.mv-side[data-side="home"] :is(.mv-breaker-glow, .mv-hit) {
 	top: calc(100% - var(--mv-k) - var(--mv-pill-long) / 2 + var(--match-break-stroke));
 	border-radius: var(--mv-glow-r) var(--mv-glow-r) 0 0;
-	opacity: max(0, -1 * var(--mv-knob));
 }
-.mv-side[data-side="away"] .mv-breaker-glow {
+.mv-side[data-side="away"] :is(.mv-breaker-glow, .mv-hit) {
 	top: calc(0px - var(--mv-k));
 	border-radius: 0 0 var(--mv-glow-r) var(--mv-glow-r);
-	opacity: max(0, var(--mv-knob));
 }
+.mv-side[data-side="home"] .mv-breaker-glow { opacity: max(0, -1 * var(--mv-knob)); }
+.mv-side[data-side="away"] .mv-breaker-glow { opacity: max(0, var(--mv-knob)); }
 @media (orientation: landscape) {
-	.mv-side[data-side] .mv-breaker-glow {
+	.mv-side[data-side] :is(.mv-breaker-glow, .mv-hit) {
 		top: calc(60% - var(--mv-k) - var(--mv-pill-thick) / 2 + var(--match-break-stroke));
 		width: calc(var(--mv-pill-long) / 2 - var(--match-break-stroke));
 		height: calc(var(--mv-pill-thick) - 2 * var(--match-break-stroke));
 	}
-	.mv-side[data-side="home"] .mv-breaker-glow { left: calc(100% - var(--mv-pill-long) / 2 + var(--match-break-stroke)); border-radius: var(--mv-glow-r) 0 0 var(--mv-glow-r); }
-	.mv-side[data-side="away"] .mv-breaker-glow { left: 0; border-radius: 0 var(--mv-glow-r) var(--mv-glow-r) 0; }
+	.mv-side[data-side="home"] :is(.mv-breaker-glow, .mv-hit) { left: calc(100% - var(--mv-pill-long) / 2 + var(--match-break-stroke)); border-radius: var(--mv-glow-r) 0 0 var(--mv-glow-r); }
+	.mv-side[data-side="away"] :is(.mv-breaker-glow, .mv-hit) { left: 0; border-radius: 0 var(--mv-glow-r) var(--mv-glow-r) 0; }
+}
+
+/* The plain-win button (UV, 2 Nov: only the space inside the green pill):
+   the player's half of the pill, its rounded corners clipping the tap
+   (overflow), under the score, which lets taps through (pointer-events)
+   and keeps the keyboard and the screen reader (renderStage). The special
+   wins and the yellow toggle lie above it and take their own taps. */
+.mv-hit { overflow: hidden; pointer-events: none; -webkit-tap-highlight-color: transparent; }
+.mv-side[data-winnable] .mv-hit { pointer-events: auto; cursor: pointer; }
+.mv-side[data-winnable] .mv-hit:active { background: color-mix(in srgb, var(--color-primary) 10%, transparent); }
+.mv-score { pointer-events: none; }
+
+/* The centre line inside the green pill (UV, 2 Nov): green, as heavy as
+   the pill's line, with its glow, the halves' dark line cut out of the
+   pill (match.js, glowMasks, --mv-split-mask). Two pieces, from the pill's
+   line to the yellow pill on each side of it, so none of it lies inside
+   the yellow pill. The glow is clipped to the side that is not breaking
+   (the breaker's has its yellow), both sides when nobody is or breaks are
+   not recorded, following the toggle (--mv-knob). */
+.mv-split {
+	--mv-split-y: calc(var(--mv-centre) * var(--mv-knob-reach) / 50);   /* the yellow pill's thickness */
+	--mv-split-home: calc(var(--mv-halo-g) * (1 - max(0, -1 * var(--mv-knob))));   /* how far the glow may reach into home's half */
+	--mv-split-away: calc(var(--mv-halo-g) * (1 - max(0, var(--mv-knob))));
+	--mv-halo-g: calc(var(--match-glow-size) * 2);
+	position: absolute;
+	left: 50%;
+	top: var(--mv-centre-y);
+	width: calc(var(--mv-pill-thick) - 2 * var(--match-break-stroke));
+	height: var(--match-break-stroke);
+	translate: -50% -50%;
+	pointer-events: none;
+}
+.mv-split::before,
+.mv-split::after {
+	content: "";
+	position: absolute;
+	top: 0;
+	height: 100%;
+	width: calc((100% - var(--mv-split-y)) / 2);
+	background: var(--color-primary);
+	box-shadow: 0 0 var(--match-glow-size) var(--match-win-glow-colour), 0 0 calc(var(--match-glow-size) / 2) var(--match-win-glow-colour);
+	clip-path: inset(calc(0px - var(--mv-split-home)) 0 calc(0px - var(--mv-split-away)) 0);
+}
+.mv-split::before { left: 0; }
+.mv-split::after { right: 0; }
+@media (orientation: landscape) {
+	.mv-split { width: var(--match-break-stroke); height: calc(var(--mv-pill-thick) - 2 * var(--match-break-stroke)); }
+	.mv-split::before,
+	.mv-split::after { left: 0; width: 100%; height: calc((100% - var(--mv-split-y)) / 2); clip-path: inset(0 calc(0px - var(--mv-split-away)) 0 calc(0px - var(--mv-split-home))); }
+	.mv-split::before { top: 0; }
+	.mv-split::after { top: auto; bottom: 0; }
 }
 
 /* ── The yellow toggle (UV, 2 Nov) ────────────────────────────────
@@ -1544,11 +1602,11 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
    content's width; found rendering it at 420px, 30 Oct). */
 .set-card { grid-template-columns: minmax(0, 1fr); }
 
-/* A player's score and name are the plain-win button while a win can be
-   given (renderStage, data-winnable): a pointer, and a press lights the
-   score for an instant, as the old card did. */
-.mv-side[data-winnable] :is(.mv-score, .mv-who) { cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.mv-side[data-winnable] .mv-score:active { background: color-mix(in srgb, var(--color-primary) 10%, transparent); }
+/* The plain-win button while a win can be given (renderStage,
+   data-winnable) is the player's half of the green pill (.mv-hit, with the
+   green pill above; UV, 2 Nov), no longer the name: a pointer, and a press
+   lights it for an instant, as the old card did. The score keeps the
+   keyboard's focus ring. */
 .mv-score:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -4px; }
 
 /* A break or special-win button that cannot act now: disabled, greyed, no

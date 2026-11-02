@@ -1136,13 +1136,16 @@
 			// The line between the halves (their inside shadow, match.css,
 			// .mv-side::before) hidden behind the yellow pill while it shows
 			// (UV, 2 Nov), not behind the green one
+			// Since UV's next look (2 Nov), out of the whole green pill inside its
+			// line, where the centre line is green (match.css, .mv-split), breaks
+			// recorded or not; the yellow pill lies inside it.
+			const pr = els.pill.getBoundingClientRect(), rad = Math.max(0, (parseFloat(getComputedStyle(els.pill).borderTopLeftRadius) || 0) - line);
 			for (const side of [els.p0, els.p1]) {
-				if (!shownByRules('in')) { side.style.removeProperty('--mv-split-mask'); continue; }
 				const sr = side.getBoundingClientRect();
 				const w = sr.width.toFixed(2), h = sr.height.toFixed(2);
+				const hole = `<rect x="${(pr.left - sr.left + line).toFixed(2)}" y="${(pr.top - sr.top + line).toFixed(2)}" width="${(pr.width - 2 * line).toFixed(2)}" height="${(pr.height - 2 * line).toFixed(2)}" rx="${rad.toFixed(2)}"/>`;
 				const mask = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`
-					+ `<mask id="m"><rect width="100%" height="100%" fill="#fff"/>`
-					+ `<g transform="translate(${(br.left - sr.left).toFixed(2)} ${(br.top - sr.top).toFixed(2)}) scale(${u.toFixed(4)})" fill="#000">${yellow}</g></mask>`
+					+ `<mask id="m"><rect width="100%" height="100%" fill="#fff"/><g fill="#000">${hole}</g></mask>`
 					+ `<rect width="100%" height="100%" mask="url(#m)"/></svg>`;
 				side.style.setProperty('--mv-split-mask', `url("data:image/svg+xml,${encodeURIComponent(mask)}")`);
 			}
@@ -1436,7 +1439,10 @@
 		for (const [half, side] of [[els.p0, 'home'], [els.p1, 'away']]) {
 			half.toggleAttribute('data-winnable', winnable);
 			const name = MATCH[side].name;
-			for (const part of half.querySelectorAll('.mv-score, .mv-who')) {
+			// the score (for the keyboard) and the player's half of the green
+			// pill (the tap, .mv-hit; UV, 2 Nov: only the space inside the pill),
+			// no longer the name
+			for (const part of half.querySelectorAll('.mv-score, .mv-hit')) {
 				if (winnable) Object.assign(part.dataset, { act: 'result', side, value: 'win' });
 				else { delete part.dataset.act; delete part.dataset.side; delete part.dataset.value; }
 			}

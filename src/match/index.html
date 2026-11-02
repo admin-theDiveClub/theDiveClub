@@ -73,14 +73,20 @@ extraScripts:
 			<div class="mv-idle" data-for="away"></div>
 		</div>
 
+		{% comment %}The centre line inside the green pill (UV, 2 Nov): green with the pill's glow, on the side that is not breaking, both sides when nobody is; behind the scores.{% endcomment %}
+		<div class="mv-split" aria-hidden="true"></div>
+
 		<section class="mv-side" id="mv-p0" data-side="home" aria-label="Home player">
 			{% comment %}The breaker's yellow glow inside this half of the green pill, behind the score (UV, 2 Nov).{% endcomment %}
 			<div class="mv-breaker-glow" aria-hidden="true"></div>
+			{% comment %}The plain-win button's tap area: this player's half of the green pill, inside its line (UV, 2 Nov).{% endcomment %}
+			<div class="mv-hit" aria-hidden="true"></div>
 			<div class="mv-who" id="mv-who-home"></div>
 			<div class="mv-score"><svg class="mv-score-svg"><g filter="url(#mv-score-fx)"><text class="mv-score-n" id="mv-score-home" data-live="score|home" x="50%" y="50%"></text></g></svg></div>
 		</section>
 		<section class="mv-side" id="mv-p1" data-side="away" aria-label="Away player">
 			<div class="mv-breaker-glow" aria-hidden="true"></div>
+			<div class="mv-hit" aria-hidden="true"></div>
 			<div class="mv-who" id="mv-who-away"></div>
 			<div class="mv-score"><svg class="mv-score-svg"><g filter="url(#mv-score-fx)"><text class="mv-score-n" id="mv-score-away" data-live="score|away" x="50%" y="50%"></text></g></svg></div>
 		</section>

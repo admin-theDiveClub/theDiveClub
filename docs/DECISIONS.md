@@ -1152,6 +1152,12 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* a phone held sideways is unchanged (the pill was already as tall as the space; its corners meet); upright the scores roughly double; a wide screen sideways gets a taller pill.
 *Touches:* `match.css`, `match.js` (`pillBox`, `winButtons`, `fitScores`), `docs/systems/matches.md`
 
+## 2026-11-02 — Only the pill wins a frame; a green centre line; the left player mirrored
+
+*Decided by UV:* only the space inside the green pill is the plain-win button (the names no longer are); the centre line inside the green pill is green with the pill's glow, on the side that is not breaking when breaks are recorded, both sides otherwise; sideways, the left player's picture on the right and the names right-aligned.
+*Claude's, for UV to judge:* the yellow pill's empty part counts as inside the pill (a tap there is a win; the break ring and special wins take their own taps); the centre line's glow follows the toggle as it slides.
+*Touches:* `src/match/index.html`, `match.css`, `match.js` (`renderStage`, `glowMasks`), `docs/systems/matches.md`
+
 ## 2026-11-02 — The light theme's muted grey is #a3a3a3
 
 *Decided by UV:* the light theme's `--text-muted` becomes a real grey, site-wide: first the dark theme's #808080, then #a3a3a3, set by UV in the file the same day. It had been #20333b, the same as `--text-primary`, so every muted element in light mode (muted text, disabled buttons, the match page's idle dots) drew as the main text colour.
