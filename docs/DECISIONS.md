@@ -1186,3 +1186,23 @@ These predate the log. They are recorded here because every one of them is a dec
 *Why:* a drawing carries nobody's contacts or notifications, follows the site's own icon and logo files when they change (`apple-touch-icon.png`, `icon-primary.svg`, `logo-primary-dark.svg` are referenced, not copied), and weighs a few KB.
 *Rejected:* real screenshots; Claude taking them (it cannot see a phone's own screens).
 *Touches:* nothing in the repo yet; the draft is the claude.ai artifact "Install on iPhone" (https://claude.ai/artifact/BFoihUrXck3AnBZYwTujnB)
+
+## 2026-11-03 — Payments before spending, designed as one
+
+*Decided by UV:* the payment gateway (PayFast, STATUS P4) is built and working before anything spends credits. Ledger changes for spending, entry-fee charging, part-payment, the travelling-league fee scope and splitting a table all wait for it. Payments and spending are designed together, in one document UV reads and understands in depth, before any of it is built.
+*Why:* UV does not want money handled by pieces built in different places at different times. He needs to understand the whole design of how money comes in and how it is spent.
+*Rejected:* Claude's suggestion (3 Nov) to build the ledger's spending changes and entry fees now, with credits loaded by codes, and add the gateway later as one more way in.
+*Touches:* `docs/STATUS.md` §0 (P4)
+
+## 2026-11-03 — Light and dark apply everywhere, the artwork included
+
+*Decided by UV:* "The point of the light and dark schemes is that it's applied everywhere, consistently." Every logo and icon the site draws follows the theme: the light theme shows the `-light` files (`logo-primary-light.svg` on the home page, `logo-mark-light.svg` in the nav and on the loading screen), the dark theme the dark ones.
+*So:* an `<img>` draws the colours its file holds, so each is placed twice, the dark file with `.for-dark` and the light with `.for-light`, and one rule in `global.css` hides the other theme's. It lasts until the logo goes inline (22 Oct). Anything new that is drawn in fixed colours must follow the theme too.
+*Not yet following it (found 3 Nov, for UV):* the install tutorial's drawing (it draws the dark home screen in fixed colours), and the phone's status bar (`theme-color` is #202020 in both themes).
+*Touches:* `global.css`, `_includes/nav.html`, `_includes/layout.html`, `index.html`, `docs/ui.md`
+
+## 2026-11-03 — The share picture
+
+*Decided by UV:* option A (the full logo centred under the site's green light) with option D's green band across the foot, "OPENING SOON" in the background colour, and a hard shadow along the top edge so the logo sits sunken (the site's own page-edge shadow: 70% black, 14px blur, cast 10px). "Opening soon" is a placeholder until opening. The hero picture waits for the home page design.
+*Why:* chosen from six options at https://claude.ai/artifact/F1ymSFgb3hiUDQQEfGm2pQ (option F there; its page renders each at 1200 × 630, so the picture can be remade from it when the words change).
+*Touches:* `src/resources/branding/social-share.jpg` (1200 × 630, 68 KB). Nothing shows it until `layout.html` has share-preview tags (`docs/STATUS.md` §1, item 4)

@@ -63,6 +63,8 @@ Fonts: **Rushford Clean** for display, **Selawik** for body, both self-hosted in
 
 Branding: UV moved to **black elements with alpha** for shadows and gradients in the artwork. He now sets the alphas himself on `/sandbox/` and saves them; do not guess values.
 
+**The logo files carry their own colours** (checked 3 Nov). Every live page shows a logo as an `<img>`, so it draws exactly what the file holds: `logo-primary-dark.svg` and `logo-mark-dark.svg` green #61ffad and cream #f4e8d2, the `-light` pair cream #f4e8d2 and navy #20333b, all with 32% flat shadows, 64% blurred shadows at 12.5% blur and the same gradient. The `--logo-*` variables in `variables.css` are read **only by `/sandbox/`**, which loads a file inline; since 3 Nov both themes' sets are the files' own values (the light set had been an early grey trial, #594f4f / #a8a7a7). They start doing something on the live site only once the logo goes inline (the row below). **The artwork follows the theme** (UV, 3 Nov; `docs/DECISIONS.md`): every logo and icon is placed twice, the dark file with `.for-dark` and the light with `.for-light`, and `global.css` hides the other theme's. Home page: `logo-primary-dark.svg` / `-light.svg`; nav and loading screen: `icon-primary.svg` / `logo-mark-light.svg`. A new logo anywhere does the same. **Not following the theme yet:** the install tutorial's drawing (fixed dark colours) and the status bar's `theme-color` (#202020 in both).
+
 ---
 
 ## 2. Known UI problems and wanted work
@@ -88,10 +90,7 @@ Branding: UV moved to **black elements with alpha** for shadows and gradients in
 | The match list and nav are not live | Everything else is. **The league pages are not live either** — a captain confirming, or a player putting their name down, does not appear on the director's screen until it is reloaded |
 | A future fixture does not read as upcoming | In the match list |
 | Nothing displays `tdc_frame_history` | The audit log is written and queryable; `/leagues/card/` is the first thing to read any of it, and only the part since a captain signed |
-| PWA icons are still the old silver artwork | `resources/icons/*` — the branding refresh did not reach them |
-| Email assets are pre-refresh | `email-wordmark.png`, `email-dive.gif` |
-| Duplicate light/dark SVGs are byte-identical | `logo-mark-dark.svg` / `logo-mark-light.svg`, and the `logo-primary-*` pair. One of each is redundant or one was never made |
-| `hero.jpg` and `social-share.jpg` are 0 bytes | Referenced, empty |
+| `hero.jpg` is 0 bytes; nothing shows `social-share.jpg` | The share picture is made (3 Nov) but the site has no share-preview tags, so a pasted link shows no picture (`docs/STATUS.md` §1). The hero waits for the home page design |
 | Literal colours outside `variables.css` | `#fff` / `#000` / `#222` in print rules and `.btn-google` (deliberate, print and a brand button), `board.css` `--pm-blue` and a `rgba(0,0,0,0.35)` drag shadow. Found in the 22 Oct audit; not yet moved onto tokens |
 | `/leagues/manage/` teams-and-payment table scrolls sideways | Five columns at 420px. The Team select still carries an inline `min-width: 9rem` from the script, which is a stopgap that belongs in a stylesheet. The status column came out of this table on 23 Oct and is now the three transfer lists, so it is smaller than it was |
 | `.list-row-actions` cannot wrap | `flex: 0 0 auto` with no `flex-wrap`, so two or three controls beside the text squeeze `.list-row-main` (which is `min-width: 0`) to nothing — see §3. `/leagues/fixtures/` and `/leagues/card/` both work around it in their own markup by nesting a `.btn-row` inside `.list-row-main` instead. **The component itself is still like this**, and the next page with three row actions will hit it |

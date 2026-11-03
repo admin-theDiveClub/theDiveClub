@@ -52,7 +52,7 @@
 	     and its data have loaded. First in the body so it is there from the
 	     first paint. The icon sits exactly where the nav's does. -->
 	<div class="tdc-loader" id="tdc-loader" role="status" aria-label="Loading" aria-busy="true">
-		{% unless hideNav %}<img class="tdc-loader-icon" src="/resources/branding/icon-primary.svg" alt="">{% endunless %}
+		{% unless hideNav %}<img class="tdc-loader-icon for-dark" src="/resources/branding/icon-primary.svg" alt=""><img class="tdc-loader-icon for-light" src="/resources/branding/logo-mark-light.svg" alt="">{% endunless %}
 		<span class="tdc-loader-ring" id="tdc-loader-ring"></span>
 	</div>
 

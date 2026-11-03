@@ -88,7 +88,7 @@ Built from the project doc `claude/stats-todo.md` on 23 Oct 2026, with everythin
 |---|---|
 | 1 | **Audit log for staff actions** — who linked, verified or revoked what |
 | 2 | Emails not yet seen live: change email (both addresses), reauthentication code, sign-in method linked/removed |
-| 3 | Slim down the email images (GIF ~456 KB, wordmark ~143 KB) — and they are pre-branding-refresh |
+| 3 | Slim down the email images (GIF ~456 KB, wordmark ~379 KB at 2048 × 2048 for a picture shown about 200px wide). Both are the new artwork since 3 Nov |
 | 4 | The `thediveclub.org` TXT record has the doubled-domain problem and isn't visible to Google — sort out during SEO work |
 | 5 | Phone login — probably dropped in favour of SA ID verification, not decided |
 | 6 | Consider encrypting SA ID numbers at rest (Vault or pgsodium), keeping a hashed copy for lookups |

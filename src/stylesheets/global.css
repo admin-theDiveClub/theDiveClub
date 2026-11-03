@@ -60,6 +60,16 @@ body {
 	min-height: 100vh;
 }
 
+/* The theme reaches the artwork too (UV, 3 Nov: light and dark apply
+   everywhere, consistently). A logo or icon is placed twice, the dark file
+   with .for-dark and the light file with .for-light, and only the theme's
+   own shows. An <img> draws what its file holds, so this is the one way to
+   recolour it until the logo goes inline. */
+:root:not([data-theme="light"]) .for-light,
+[data-theme="light"] .for-dark {
+	display: none !important;
+}
+
 /* The light (UV, 29 Oct): a green glow behind every page, a circle whose
    centre is far above the screen, so only its faded edge shows at the top.
    It drifts slowly from point to point (scripts/page-light.js sets

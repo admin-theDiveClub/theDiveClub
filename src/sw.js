@@ -11,6 +11,7 @@ const CORE_ASSETS = [
   '/index.html',
   '/site.webmanifest',
   '/resources/branding/logo-primary-dark.svg',
+  '/resources/branding/logo-primary-light.svg',
   '/favicon.ico',
   '/resources/icons/apple-touch-icon.png',
   '/resources/icons/icon-192.png',

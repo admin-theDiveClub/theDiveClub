@@ -180,6 +180,19 @@
   --account-width: 320px;         /* its width from a phone's width up */
   --account-pic: 4rem;            /* the picture in its banner */
   --account-foot: #2b2b2b;        /* the flat colour behind its toggles */
+
+  /* Logo. Set from the artwork section of /sandbox/. These are the values
+     logo-primary-dark.svg itself carries (3 Nov); the live pages show the
+     files as images, so only the sandbox reads these. */
+  --logo-primary: #61ffad;
+  --logo-light: #f4e8d2;
+  --logo-shadow-alpha: 0.32;
+  --logo-blur-alpha: 0.64;
+  --logo-blur: 12.5;
+  --logo-grad-start: 1;
+  --logo-grad-mid: 0;
+  --logo-grad-end: 0;
+  --logo-grad-offset: 0.60562778;
 }
 
 [data-theme="light"] {
@@ -215,9 +228,10 @@
   --score-drop-alpha: 0.2;
   --account-foot: #e6d8bd;
 
-  /* Logo. Set from the artwork section of /sandbox/. */
-  --logo-primary: #594f4f;
-  --logo-light: #a8a7a7;
+  /* Logo. Set from the artwork section of /sandbox/. The values
+     logo-primary-light.svg carries (3 Nov). */
+  --logo-primary: #f4e8d2;
+  --logo-light: #20333b;
   --logo-shadow-alpha: 0.32;
   --logo-blur-alpha: 0.64;
   --logo-blur: 12.5;
