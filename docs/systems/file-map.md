@@ -43,6 +43,7 @@
   - Use a token or an existing component before adding a value or a class. Four stylesheets had invented their own variable names (`--warning-color`, `--error-color`, `--accent-color`, `--text-color`), none of which existed, so they had been silently falling back to hardcoded hexes since they were written.
 - Pages:
   - `index.html`: placeholder home page (logo, "Opening soon", My Account button) until the Phase 4 site.
+  - `install/index.html` + `scripts/install.js` + `stylesheets/install.css` + `_includes/install/safari.svg` (3 Nov): **the install tutorial**, `/install/`. Safari on an iPhone so far, one animation of the whole process with the steps beside it, Full and Compact. Not linked from anywhere yet. See `docs/systems/foundations.md`, "The install tutorial".
   - `accounts/index.html` + `scripts/auth.js`: login and signup (display name, password rules, `?next=` return to the previous page).
   - `accounts/reset/index.html` + `scripts/reset.js`: request a reset email, then set a new password.
   - `accounts/profile/index.html` + `scripts/profile.js` + `scripts/push.js`: earlier-record claim banner, details, ID entry and verification badges, notifications, change password (with the emailed code step when Supabase asks for reauthentication), change email (confirmed on both addresses), log out. Password/email changes are only shown to email-and-password accounts.

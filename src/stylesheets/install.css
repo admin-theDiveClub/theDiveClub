@@ -1,0 +1,266 @@
+/* The install tutorial, /install/ (UV, 3 Nov). The drawn iPhone, its caption
+   and controls, the steps; Full and Compact. See docs/systems/foundations.md,
+   "The install tutorial". */
+
+.install {
+	/* The drawn iPhone is iOS in dark mode in either theme: it is a picture of
+	   a phone, not part of the page. */
+	--ios-bg: #1c1c1e;
+	--ios-fill: #2c2c2e;
+	--ios-sec: #8e8e93;
+	--ios-blue: #0a84ff;
+	--ios-green: #34c759;
+	--ios-font: -apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+	--ins-card: color-mix(in srgb, var(--text-primary) 5%, transparent);
+	max-width: 960px;
+	margin: 0 auto;
+	padding: var(--space-6) var(--space-4) var(--space-7);
+	display: grid;
+	gap: var(--space-6);
+}
+
+/* In Compact the heading gives way, so the block sits right under the nav:
+   the page is too short to scroll it there. */
+.install.is-compact { padding-top: var(--space-2); }
+.install.is-compact .install-head { display: none; }
+
+.install-head {
+	view-transition-name: ins-head;
+	display: grid;
+	gap: var(--space-2);
+	justify-items: center;
+	text-align: center;
+}
+.install-eyebrow {
+	color: var(--color-primary);
+	font-size: 0.78rem;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+.install-head h1 {
+	margin: 0;
+	font-size: clamp(1.7rem, 6vw, 2.1rem);
+	line-height: 1.1;
+	text-wrap: balance;
+}
+.install-head p {
+	margin: 0;
+	max-width: 46ch;
+	color: var(--text-muted);
+	line-height: 1.5;
+}
+
+/* ── Full: the screen, its caption and the controls, then the steps (beside
+   them from 820px) ── */
+.install-stage {
+	--ins-pw: min(300px, 76vw);
+	display: grid;
+	gap: var(--space-4) var(--space-7);
+	align-items: start;
+	justify-items: center;
+	grid-template-areas: "phone" "cap" "ctl" "steps";
+	scroll-margin-top: var(--nav-total);
+}
+.install-stage > .install-phone { grid-area: phone; view-transition-name: ins-phone; }
+.install-stage > .install-caption { grid-area: cap; view-transition-name: ins-cap; }
+.install-stage > .install-controls { grid-area: ctl; view-transition-name: ins-ctl; }
+.install-stage > .install-window {
+	grid-area: steps;
+	view-transition-name: ins-steps;
+	justify-self: stretch;
+	min-width: 0;
+	margin-top: var(--space-3);
+}
+@media (min-width: 820px) {
+	.install-stage {
+		grid-template-columns: auto 1fr;
+		grid-template-rows: auto auto 1fr;
+		grid-template-areas: "phone steps" "cap steps" "ctl steps";
+	}
+	.install-stage > .install-window { margin-top: 0; }
+}
+
+/* ── Compact: a small screen with the live step beside it, held under the nav.
+   About 198px tall with its padding: Safari's half-open Share sheet leaves about 211px of page under
+   the nav on an iPhone (measured from UV's screenshots, 3 Nov). ── */
+.install-stage.is-compact {
+	--ins-pw: 84px;
+	position: sticky;
+	top: var(--nav-total);
+	z-index: 5;
+	grid-template-columns: var(--ins-pw) minmax(0, 1fr);
+	grid-template-rows: auto auto;
+	grid-template-areas: "phone steps" "phone ctl";
+	gap: var(--space-2) var(--space-3);
+	justify-items: stretch;
+	padding-block: var(--space-2);
+	border-bottom: 1px solid var(--border-color);
+	background: var(--bg-base);   /* the page scrolls under it */
+}
+.install-stage.is-compact > .install-caption { display: none; }
+.install-stage.is-compact > .install-window {
+	margin: 0;
+	height: calc(var(--ins-pw) * 844 / 390 - 42px);
+	overflow: hidden;
+	-webkit-mask-image: linear-gradient(#000 72%, transparent);
+	mask-image: linear-gradient(#000 72%, transparent);
+}
+.install-stage.is-compact .install-steps {
+	gap: 6px;
+	transition: transform 0.5s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+.install-stage.is-compact .install-step { padding: 8px 10px; grid-template-columns: 24px 1fr; gap: 1px 10px; }
+.install-stage.is-compact .install-step .num { width: 24px; height: 24px; font-size: 0.75rem; }
+.install-stage.is-compact .install-step .st { font-size: 0.95rem; line-height: 1.3; }
+.install-stage.is-compact .install-step .sd { font-size: 0.82rem; line-height: 1.35; }
+.install-stage.is-compact > .install-controls { justify-content: flex-start; }
+.install-stage.is-compact #ins-replay { display: none; }
+.install-stage.is-compact .install-btn,
+.install-stage.is-compact .install-seg button { padding: 4px 11px; font-size: 0.8rem; }
+::view-transition-group(ins-head),
+::view-transition-group(ins-phone),
+::view-transition-group(ins-cap),
+::view-transition-group(ins-ctl),
+::view-transition-group(ins-steps) {
+	animation-duration: 0.45s;
+	animation-timing-function: cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+
+/* ── The screen: no phone frame, the rounded corners say iPhone; a soft
+   shadow only lifts it off the page ── */
+.install-phone {
+	width: var(--ins-pw);
+	max-width: 100%;
+	aspect-ratio: 390 / 844;
+	border-radius: 10.26% / 4.74%;
+	box-shadow: 0 24px 50px -18px rgba(0, 0, 0, 0.85);
+}
+.install-phone svg { display: block; width: 100%; height: 100%; }
+
+.install-caption {
+	display: grid;
+	gap: 2px;
+	min-height: 3.2em;
+	text-align: center;
+}
+.install-caption .n {
+	color: var(--color-primary);
+	font-size: 0.78rem;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+.install-caption .t { font-size: 1.05rem; font-weight: 600; }
+
+.install-controls {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--space-2);
+}
+.install-btn,
+.install-seg button {
+	padding: 6px 14px;
+	border: 0;
+	background: transparent;
+	color: var(--color-primary);
+	font: inherit;
+	font-size: 0.9rem;
+	font-weight: 600;
+	cursor: pointer;
+}
+.install-btn {
+	border: 1.5px solid var(--color-primary);
+	border-radius: var(--radius-pill);
+}
+.install-btn.is-on,
+.install-seg button[aria-pressed="true"] {
+	background: var(--color-primary);
+	color: var(--color-on-primary);
+}
+.install-seg {
+	display: inline-flex;
+	overflow: hidden;
+	border: 1.5px solid var(--color-primary);
+	border-radius: var(--radius-pill);
+}
+.install-btn:focus-visible,
+.install-seg button:focus-visible,
+.install-step:focus-visible {
+	outline: 2px solid var(--text-primary);
+	outline-offset: 2px;
+}
+
+/* ── The steps ── */
+.install-steps {
+	position: relative;
+	display: grid;
+	gap: var(--space-2);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.install-step {
+	position: relative;
+	display: grid;
+	grid-template-columns: 30px 1fr;
+	gap: 2px var(--space-3);
+	align-items: start;
+	width: 100%;
+	overflow: hidden;
+	padding: var(--space-3) 14px;
+	border: 1.5px solid transparent;
+	border-radius: var(--radius-lg);
+	background: var(--ins-card);
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+.install-step .num {
+	grid-row: span 2;
+	display: grid;
+	place-items: center;
+	width: 30px;
+	height: 30px;
+	border: 1.5px solid var(--text-muted);
+	border-radius: 50%;
+	color: var(--text-muted);
+	font-size: 0.85rem;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+.install-step.is-lead .num { border-style: dashed; }
+.install-step .st { font-weight: 600; }
+.install-step .sd { color: var(--text-muted); font-size: 0.9rem; }
+.install-step .bar {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	width: 0;
+	height: 2px;
+	background: var(--color-primary);
+}
+.install-step.is-live { border-color: var(--color-primary); }
+.install-step.is-live .num {
+	border-color: var(--color-primary);
+	background: var(--color-primary);
+	color: var(--color-on-primary);
+}
+.install-step.is-done .num { border-color: var(--color-primary); color: var(--color-primary); }
+
+/* ── Inside the drawing ── */
+.install-phone svg text { font-family: var(--ios-font); }
+.install-phone .i-glass { fill: rgba(28, 28, 30, 0.72); stroke: rgba(255, 255, 255, 0.2); stroke-width: 1; }
+.install-phone .i-ic { fill: none; stroke: #fff; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.install-phone .i-key { fill: #3a3a3c; }
+.install-phone .i-key2 { fill: #2a2a2c; }
+.install-phone .i-keygo { fill: var(--ios-blue); }
+.install-phone .i-key.i-down,
+.install-phone .i-key2.i-down { fill: #7a7a7f; }
+.install-phone .i-keygo.i-down { fill: #5aa9ff; }
+.install-phone .i-keyl { fill: #fff; font-size: 21px; text-anchor: middle; }
+.install-phone .i-ph { fill: #48484a; }
+.install-phone .i-lbl { fill: #fff; font-size: 12.5px; text-anchor: middle; }
+.install-phone .i-row { fill: #fff; font-size: 15.5px; }

@@ -1,0 +1,49 @@
+---
+layout: layout.html
+title: Install the app
+description: "Put The Dive Club on your iPhone's home screen, step by step."
+extraStyles:
+  - /stylesheets/install.css
+extraScripts:
+  - /scripts/install.js
+---
+{% comment %}
+	The install tutorial (UV, 3 Nov; docs/DECISIONS.md, docs/systems/foundations.md).
+	Safari on an iPhone first: one animation of the whole process, a green dot
+	for the finger, the steps beside it. Full / Compact: Compact holds a small
+	screen and the live step under the nav, short enough to stay in view above
+	Safari's half-open Share sheet while the person follows along.
+
+	The drawing is _includes/install/safari.svg; the timeline and the switch are
+	scripts/install.js. The step list is built there too, from the same list the
+	timeline uses. Not linked from anywhere yet (UV, 3 Nov).
+{% endcomment %}
+
+<div class="install">
+	<header class="install-head">
+		<span class="install-eyebrow">iPhone · Safari</span>
+		<h1>Put The Dive Club on your home screen</h1>
+		<p>It then opens like an app: full screen, one tap from your home screen.</p>
+	</header>
+
+	<div class="install-stage" id="ins-stage">
+		<div class="install-phone">
+			{% include "install/safari.svg" %}
+		</div>
+		<div class="install-caption" aria-live="polite">
+			<span class="n" id="ins-cap-n">Before you start</span>
+			<span class="t" id="ins-cap-t">Open thediveclub.org in Safari</span>
+		</div>
+		<div class="install-controls">
+			<button class="install-btn is-on" id="ins-play" type="button">Pause</button>
+			<button class="install-btn" id="ins-replay" type="button">Start again</button>
+			<div class="install-seg" role="group" aria-label="Layout">
+				<button type="button" id="ins-m-full" aria-pressed="true">Full</button>
+				<button type="button" id="ins-m-compact" aria-pressed="false">Compact</button>
+			</div>
+		</div>
+		<div class="install-window"><ol class="install-steps" id="ins-steps"></ol></div>
+	</div>
+
+	<div class="status" id="ins-msg"></div>
+</div>

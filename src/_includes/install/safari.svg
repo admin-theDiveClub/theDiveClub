@@ -1,0 +1,297 @@
+<!-- The install tutorial's drawing: Safari on an iPhone, iOS 26, dark mode
+     (src/install/, scripts/install.js). Redrawn from UV's screenshots (3 Nov);
+     everything personal is a plain shape. The icon and logos are the site's own
+     files, so a new icon or logo arrives by itself; the site's home page is the
+     one block #ins-tdc-home, redrawn when the home page changes. Every id starts
+     ins- and every class i-, so nothing here meets the site's own styles.
+     install.js moves the finger to coordinates in this drawing's 390 × 844 points:
+     move a button here and its point there moves with it. -->
+<svg id="ins-phone" viewBox="0 0 390 844" role="img" aria-label="An iPhone showing each step of adding The Dive Club to the home screen in Safari">
+	<defs>
+		<clipPath id="ins-screen"><rect width="390" height="844" rx="40"/></clipPath>
+		<symbol id="ins-app-icon" viewBox="0 0 180 180"><image href="/resources/icons/apple-touch-icon.png" width="180" height="180"/></symbol>
+		<linearGradient id="ins-navg" x1="0" y1="0" x2="0" y2="1">
+			<stop offset="0" stop-color="#1f2723"/><stop offset="0.5" stop-color="#2b4537"/><stop offset="1" stop-color="#26392e"/>
+		</linearGradient>
+		<linearGradient id="ins-glow" x1="0" y1="0" x2="0" y2="1">
+			<stop offset="0" stop-color="#61ffad" stop-opacity="0.09"/><stop offset="1" stop-color="#61ffad" stop-opacity="0"/>
+		</linearGradient>
+		<linearGradient id="ins-wall" x1="0" y1="0" x2="0.4" y2="1">
+			<stop offset="0" stop-color="#4a4844"/><stop offset="0.5" stop-color="#2e2d2b"/><stop offset="1" stop-color="#3c3b38"/>
+		</linearGradient>
+
+		<!-- The site's home page, drawn once. When the home page changes, only this block is redrawn.
+		     The logo files are the site's own, so a new logo arrives by itself. -->
+		<symbol id="ins-tdc-home" viewBox="0 0 390 844">
+			<rect width="390" height="844" fill="#202020"/>
+			<rect width="390" height="118" fill="url(#ins-navg)"/>
+			<rect y="118" width="390" height="300" fill="url(#ins-glow)"/>
+			<line x1="0" y1="118.5" x2="390" y2="118.5" stroke="rgba(255,255,255,0.12)"/>
+			<circle cx="37" cy="89" r="15.5" fill="none" stroke="#f4e8d2" stroke-width="1.6"/>
+			<g stroke="#61ffad" stroke-width="2.4" stroke-linecap="round"><line x1="31" y1="84" x2="43" y2="84"/><line x1="31" y1="89" x2="43" y2="89"/><line x1="31" y1="94" x2="43" y2="94"/></g>
+			<image href="/resources/branding/icon-primary.svg" x="176" y="70" width="38" height="38"/>
+			<circle cx="352" cy="89" r="15.5" fill="none" stroke="#f4e8d2" stroke-width="1.6"/>
+			<g fill="none" stroke="#61ffad" stroke-width="2" stroke-linecap="round"><circle cx="352" cy="85" r="4.3"/><path d="M344.5 97.5 c1.5-5 13.5-5 15 0"/></g>
+			<image href="/resources/branding/logo-primary-dark.svg" x="75" y="268" width="240" height="240"/>
+			<text x="195" y="545" fill="#61ffad" font-size="12.5" letter-spacing="0.9" text-anchor="middle">LONEHILL, FOURWAYS · OPENING SOON</text>
+			<rect x="128" y="593" width="134" height="43" rx="6" fill="#61ffad"/>
+			<text x="195" y="620" fill="#fff" font-size="15.5" font-weight="700" text-anchor="middle">My Account</text>
+		</symbol>
+	</defs>
+
+	<g clip-path="url(#ins-screen)">
+		<!-- ── Safari ── -->
+		<g id="ins-safari">
+			<!-- Safari's start page (contents replaced by plain shapes) -->
+			<g id="ins-start">
+				<rect width="390" height="844" fill="var(--ios-bg)"/>
+				<text x="22" y="98" fill="#fff" font-size="20" font-weight="700">Favourites</text>
+				<g class="i-ph">
+					<rect x="16" y="111" width="69" height="69" rx="16"/><rect x="112" y="111" width="69" height="69" rx="16"/>
+					<rect x="208" y="111" width="69" height="69" rx="16"/><rect x="305" y="111" width="69" height="69" rx="16"/>
+				</g>
+				<g fill="#3a3a3c">
+					<rect x="33" y="191" width="35" height="7" rx="3.5"/><rect x="129" y="191" width="35" height="7" rx="3.5"/>
+					<rect x="225" y="191" width="35" height="7" rx="3.5"/><rect x="322" y="191" width="35" height="7" rx="3.5"/>
+				</g>
+				<text x="16" y="250" fill="#fff" font-size="20" font-weight="700">Suggestions</text>
+				<rect x="16" y="263" width="171" height="171" rx="18" fill="var(--ios-fill)"/>
+				<rect x="28" y="370" width="120" height="8" rx="4" fill="#48484a"/><rect x="28" y="386" width="80" height="7" rx="3.5" fill="#3a3a3c"/>
+				<text x="16" y="482" fill="#fff" font-size="20" font-weight="700">Privacy Report</text>
+				<rect x="16" y="496" width="358" height="68" rx="20" fill="var(--ios-fill)"/>
+				<rect x="70" y="518" width="250" height="8" rx="4" fill="#48484a"/><rect x="70" y="534" width="150" height="8" rx="4" fill="#48484a"/>
+				<rect x="163" y="601" width="64" height="30" rx="15" fill="var(--ios-fill)"/>
+				<text x="195" y="621" fill="#fff" font-size="15" font-weight="600" text-anchor="middle">Edit</text>
+			</g>
+
+			<!-- The site, loaded in Safari -->
+			<g id="ins-home-safari" style="opacity:0">
+				<use href="#ins-tdc-home" width="390" height="844"/>
+				<rect y="752" width="390" height="92" fill="#1e1e1e"/>
+				<rect id="ins-loadbar" y="118" width="0" height="2.5" fill="var(--ios-blue)"/>
+			</g>
+
+			<!-- Typing: black page with the suggestion -->
+			<g id="ins-typeov" style="opacity:0">
+				<rect width="390" height="844" fill="#000"/>
+				<g id="ins-sugg">
+					<rect x="16" y="61" width="358" height="48" rx="24" fill="var(--ios-bg)"/>
+					<use href="#ins-app-icon" x="30" y="70" width="30" height="30"/>
+					<text x="64" y="81" fill="#fff" font-size="15" font-weight="600">The Dive Club</text>
+					<text x="64" y="98" fill="var(--ios-sec)" font-size="12">thediveclub.org</text>
+					<text x="31" y="146" fill="var(--ios-sec)" font-size="12.5" font-weight="600">Suggestions</text>
+					<circle cx="40" cy="170" r="6" class="i-ic" stroke="#fff"/><line x1="44.5" y1="174.5" x2="49" y2="179" class="i-ic"/>
+					<text x="62" y="178" fill="#fff" font-size="15">thediveclub.org</text>
+				</g>
+			</g>
+
+			<!-- The bottom bar, at rest -->
+			<g id="ins-bar-rest">
+				<circle cx="56" cy="791" r="23" class="i-glass"/>
+				<path d="M60 783 L52 791 L60 799" fill="none" stroke="#8e8e93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+				<rect x="87" y="768" width="215" height="46" rx="23" class="i-glass"/>
+				<g id="ins-f-empty">
+					<circle cx="106" cy="789" r="6" class="i-ic"/><line x1="110.5" y1="793.5" x2="115" y2="798" class="i-ic"/>
+					<text x="127" y="796" fill="var(--ios-sec)" font-size="14">Search or enter website</text>
+					<rect x="280" y="780" width="7" height="12" rx="3.5" class="i-ic"/><path d="M276.5 788 a7 7 0 0 0 14 0 M283.5 795 v4" class="i-ic"/>
+				</g>
+				<g id="ins-f-url" style="opacity:0">
+					<rect x="102" y="782" width="16" height="10" rx="2.5" class="i-ic"/><line x1="102" y1="797" x2="118" y2="797" class="i-ic"/><line x1="102" y1="801" x2="112" y2="801" class="i-ic"/>
+					<text x="196" y="797" fill="#fff" font-size="15" text-anchor="middle">thediveclub.org</text>
+					<path d="M287 786 a7.5 7.5 0 1 0 1.5 6" class="i-ic"/><path d="M283 785.5 l4.5 0.5 l0.3-4.5" class="i-ic"/>
+				</g>
+				<circle cx="333" cy="791" r="23" class="i-glass"/>
+				<g fill="#fff"><circle cx="324" cy="791" r="2.3"/><circle cx="333" cy="791" r="2.3"/><circle cx="342" cy="791" r="2.3"/></g>
+			</g>
+
+			<!-- The address field while typing -->
+			<g id="ins-bar-type" style="opacity:0">
+				<rect x="8" y="494" width="319" height="47" rx="23.5" fill="var(--ios-bg)" stroke="rgba(255,255,255,0.25)"/>
+				<text id="ins-typed" x="20" y="524" fill="#fff" font-size="15.5"></text>
+				<rect id="ins-caret" x="20" y="507" width="2" height="22" rx="1" fill="var(--ios-blue)"/>
+				<circle cx="306" cy="518" r="9.5" fill="#e5e5ea"/>
+				<path d="M302.5 514.5 l7 7 M309.5 514.5 l-7 7" stroke="#1c1c1e" stroke-width="2" stroke-linecap="round"/>
+				<circle cx="358" cy="518" r="23.5" fill="var(--ios-bg)" stroke="rgba(255,255,255,0.25)"/>
+				<path d="M351 511 l14 14 M365 511 l-14 14" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+			</g>
+
+			<rect id="ins-dim" width="390" height="844" fill="#000" style="opacity:0"/>
+
+			<!-- The ⋯ menu -->
+			<g id="ins-menu" style="opacity:0">
+				<rect x="117" y="537" width="242" height="277" rx="30" fill="rgba(30,30,32,0.97)" stroke="rgba(255,255,255,0.14)"/>
+				<g class="i-ic">
+					<path d="M147 562 v10 h12 v-10 M153 566 v-13 M149 557 l4-4 l4 4"/>
+					<path d="M148.5 591 h9 v16 l-4.5-3.5 l-4.5 3.5z"/>
+					<path d="M153 627 c-3-2-7-2-9 0 v13 c2-2 6-2 9 0 c3-2 7-2 9 0 v-13 c-2-2-6-2-9 0z M153 627 v13"/>
+					<path d="M153 682 v14 M146 689 h14"/>
+					<rect x="148" y="716" width="10" height="13" rx="4"/>
+				</g>
+				<text x="174" y="570" class="i-row">Share</text>
+				<text x="174" y="605" class="i-row">Add to Bookmarks</text>
+				<text x="174" y="639" class="i-row">Add Bookmark to…</text>
+				<line x1="141" y1="660" x2="336" y2="660" stroke="rgba(255,255,255,0.14)"/>
+				<text x="174" y="695" class="i-row">New Tab</text>
+				<text x="174" y="729" class="i-row">New Private Tab</text>
+				<line x1="141" y1="750" x2="336" y2="750" stroke="rgba(255,255,255,0.14)"/>
+				<path d="M182 766 c-3-2-7-2-9 0 v13 c2-2 6-2 9 0 c3-2 7-2 9 0 v-13 c-2-2-6-2-9 0z" fill="#fff"/>
+				<text x="182" y="799" class="i-lbl">Bookmarks</text>
+				<rect x="287" y="768" width="13" height="12" rx="2.5" fill="#fff"/><rect x="290" y="765" width="13" height="12" rx="2.5" fill="none" stroke="#fff" stroke-width="1.6"/>
+				<text x="295" y="799" class="i-lbl">All Tabs</text>
+			</g>
+
+			<!-- The share sheet, drawn in its half-open position (top at 329) -->
+			<g id="ins-sheet" style="opacity:0">
+				<rect x="9" y="329" width="372" height="820" rx="40" fill="rgba(34,40,37,0.98)" stroke="rgba(255,255,255,0.12)"/>
+				<rect x="33" y="353" width="61" height="61" rx="14" fill="#fff"/>
+				<use href="#ins-app-icon" x="37" y="357" width="53" height="53"/>
+				<text x="109" y="366" fill="#fff" font-size="15" font-weight="700">Home</text>
+				<text x="109" y="384" fill="#8e9a93" font-size="14">thediveclub.org</text>
+				<rect x="109" y="394" width="88" height="35" rx="17.5" fill="rgba(0,0,0,0.3)" stroke="rgba(255,255,255,0.15)"/>
+				<text x="121" y="417" fill="#fff" font-size="15">Options ›</text>
+				<g id="ins-sh-close" style="opacity:0">
+					<circle cx="353" cy="360" r="21" fill="rgba(0,0,0,0.3)" stroke="rgba(255,255,255,0.15)"/>
+					<path d="M346 353 l14 14 M360 353 l-14 14" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+				</g>
+				<line x1="33" y1="445" x2="357" y2="445" stroke="rgba(255,255,255,0.12)"/>
+				<!-- People and apps: plain shapes -->
+				<g fill="#3d4440">
+					<circle cx="66" cy="494" r="33"/><circle cx="152" cy="494" r="33"/><circle cx="238" cy="494" r="33"/><circle cx="323" cy="494" r="33"/>
+					<rect x="33" y="605" width="66" height="66" rx="15"/><rect x="119" y="605" width="66" height="66" rx="15"/>
+					<rect x="205" y="605" width="66" height="66" rx="15"/><rect x="290" y="605" width="66" height="66" rx="15"/>
+				</g>
+				<g fill="#4a524d">
+					<rect x="46" y="536" width="40" height="6" rx="3"/><rect x="132" y="536" width="40" height="6" rx="3"/><rect x="218" y="536" width="40" height="6" rx="3"/><rect x="303" y="536" width="40" height="6" rx="3"/>
+					<rect x="46" y="683" width="40" height="6" rx="3"/><rect x="132" y="683" width="40" height="6" rx="3"/><rect x="218" y="683" width="40" height="6" rx="3"/><rect x="303" y="683" width="40" height="6" rx="3"/>
+				</g>
+				<line x1="33" y1="588" x2="357" y2="588" stroke="rgba(255,255,255,0.12)"/>
+				<line x1="33" y1="708" x2="357" y2="708" stroke="rgba(255,255,255,0.12)"/>
+				<!-- Actions -->
+				<g fill="rgba(255,255,255,0.1)">
+					<circle cx="66" cy="757" r="33"/><circle cx="152" cy="757" r="33"/><circle cx="238" cy="757" r="33"/><circle cx="323" cy="757" r="33"/>
+				</g>
+				<g class="i-ic" stroke-width="2">
+					<rect x="57" y="748" width="13" height="16" rx="2.5"/><path d="M62 748 v-3 a2.5 2.5 0 0 1 2.5-2.5 h8 a2.5 2.5 0 0 1 2.5 2.5 v11 a2.5 2.5 0 0 1-2.5 2.5 h-3"/>
+					<path d="M146 744 h12 v25 l-6-5 l-6 5z"/>
+					<circle cx="230" cy="757" r="6"/><circle cx="246" cy="757" r="6"/><path d="M236 757 h4 M224 757 h-4 M252 757 h4"/>
+					<path id="ins-vm-more" d="M313 752 l10 10 l10-10"/>
+					<path id="ins-vm-less" d="M313 762 l10-10 l10 10" style="opacity:0"/>
+				</g>
+				<text x="66" y="805" class="i-lbl">Copy</text>
+				<text x="152" y="805" class="i-lbl">Add to</text><text x="152" y="820" class="i-lbl">Bookmarks</text>
+				<text x="238" y="805" class="i-lbl">Add to Reading</text><text x="238" y="820" class="i-lbl">List</text>
+				<text id="ins-vm-more-l" x="323" y="805" class="i-lbl">View More</text>
+				<text id="ins-vm-less-l" x="323" y="805" class="i-lbl" style="opacity:0">View Less</text>
+				<!-- The longer list -->
+				<g id="ins-sh-list" style="opacity:0">
+					<rect x="16" y="853" width="358" height="226" rx="22" fill="rgba(255,255,255,0.09)"/>
+					<g stroke="rgba(255,255,255,0.1)">
+						<line x1="64" y1="898" x2="358" y2="898"/><line x1="64" y1="943" x2="358" y2="943"/><line x1="64" y1="989" x2="358" y2="989"/><line x1="64" y1="1035" x2="358" y2="1035"/>
+					</g>
+					<g class="i-ic">
+						<path d="M43 866 c-3-2-7-2-9 0 v13 c2-2 6-2 9 0 c3-2 7-2 9 0 v-13 c-2-2-6-2-9 0z M43 866 v13"/>
+						<path d="M43 910 l2.9 6 l6.6 0.9 l-4.8 4.6 l1.2 6.5 l-5.9-3.1 l-5.9 3.1 l1.2-6.5 l-4.8-4.6 l6.6-0.9z"/>
+						<rect x="34" y="958" width="18" height="16" rx="3"/><path d="M38 969 l3-4 l2 3 l2-2 l3 3"/>
+						<rect x="35" y="1002" width="14" height="18" rx="2.5"/><circle cx="48" cy="1018" r="3.5"/><path d="M50.5 1020.5 l2.5 2.5"/>
+						<rect x="34" y="1048" width="18" height="18" rx="4.5"/><path d="M43 1052 v10 M38 1057 h10"/>
+					</g>
+					<text x="64" y="881" class="i-row">Add Bookmark to…</text>
+					<text x="64" y="926" class="i-row">Add to Favourites</text>
+					<text x="64" y="972" class="i-row">Add to Quick Note</text>
+					<text x="64" y="1018" class="i-row">Find on Page</text>
+					<text x="64" y="1063" class="i-row">Add to Home Screen</text>
+				</g>
+			</g>
+
+			<!-- Add to Home Screen -->
+			<g id="ins-dlg" transform="translate(0 800)">
+				<rect x="0" y="61" width="390" height="860" rx="40" fill="var(--ios-bg)"/>
+				<circle cx="36" cy="107" r="21" fill="none" stroke="rgba(255,255,255,0.25)"/>
+				<path d="M29 100 l14 14 M43 100 l-14 14" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+				<text x="186" y="113" fill="#fff" font-size="16.5" font-weight="700" text-anchor="middle">Add to Home Screen</text>
+				<rect x="312" y="85" width="62" height="43" rx="21.5" fill="#4f8ef7"/>
+				<text x="343" y="113" fill="#fff" font-size="16.5" font-weight="600" text-anchor="middle">Add</text>
+				<rect x="0" y="155" width="390" height="90" fill="var(--ios-fill)"/>
+				<rect x="15" y="172" width="57" height="57" rx="13" fill="#fff"/>
+				<use href="#ins-app-icon" x="18" y="175" width="51" height="51"/>
+				<text x="88" y="182" fill="#fff" font-size="15">The Dive Club</text>
+				<circle cx="369" cy="177" r="7.5" fill="#636366"/><path d="M366 174 l6 6 M372 174 l-6 6" stroke="#2c2c2e" stroke-width="1.6" stroke-linecap="round"/>
+				<line x1="88" y1="198" x2="390" y2="198" stroke="rgba(255,255,255,0.12)"/>
+				<text x="88" y="226" fill="#6e6e73" font-size="15">https://thediveclub.org/</text>
+				<rect x="0" y="280" width="390" height="46" fill="var(--ios-fill)"/>
+				<text x="16" y="308" fill="#fff" font-size="15">Open as Web App</text>
+				<rect x="314" y="291" width="60" height="26" rx="13" fill="#39393d"/>
+				<rect id="ins-tog-on" x="314" y="291" width="60" height="26" rx="13" fill="var(--ios-green)" style="opacity:0"/>
+				<rect id="ins-tog-knob" x="316" y="293.5" width="34" height="21" rx="10.5" fill="#fff"/>
+				<text x="16" y="344" fill="var(--ios-sec)" font-size="12">An icon will be added to your Home Screen so you can</text>
+				<text x="16" y="359" fill="var(--ios-sec)" font-size="12">quickly access this website.</text>
+			</g>
+
+			<!-- The keyboard -->
+			<g id="ins-kb" transform="translate(0 330)">
+				<rect id="ins-kb-bg" x="0" y="549" width="390" height="320" rx="30" fill="#1b1b1d" stroke="rgba(255,255,255,0.1)"/>
+				<g id="ins-kb-strip" style="opacity:0" fill="#fff" font-size="15" text-anchor="middle">
+					<text x="65" y="551">“Club”</text><text x="195" y="551">Club’s</text><text x="325" y="551">Clubs</text>
+					<line x1="130" y1="536" x2="130" y2="558" stroke="rgba(255,255,255,0.2)"/><line x1="260" y1="536" x2="260" y2="558" stroke="rgba(255,255,255,0.2)"/>
+				</g>
+				<g id="ins-keys"></g>
+				<path d="M28 688 l-8 9 h4.5 v8 h7 v-8 h4.5z" class="i-ic" stroke-width="1.5"/>
+				<path d="M355 691 h14 v14 h-14 l-6-7z M358 694 l6 8 M364 694 l-6 8" class="i-ic" stroke-width="1.5"/>
+				<path id="ins-go-arrow" d="M341 750 h22 M355 742 l8 8 l-8 8" class="i-ic" stroke-width="2.2"/>
+				<path id="ins-go-check" d="M343 750 l6 7 l13-14" class="i-ic" stroke-width="2.4" style="opacity:0"/>
+				<circle cx="41" cy="808" r="12.5" fill="#fff"/><path d="M35 809 a6 6 0 0 0 12 0z" fill="#1b1b1d"/><circle cx="37" cy="804" r="1.5" fill="#1b1b1d"/><circle cx="45" cy="804" r="1.5" fill="#1b1b1d"/>
+				<rect x="345" y="796" width="7" height="13" rx="3.5" class="i-ic"/><path d="M342 805 a6.5 6.5 0 0 0 13 0 M348.5 811.5 v4.5 M344.5 816 h8" class="i-ic"/>
+			</g>
+		</g>
+
+		<!-- ── The home screen (everything but our icon is a plain shape) ── -->
+		<g id="ins-hs" style="opacity:0">
+			<rect width="390" height="844" fill="url(#ins-wall)"/>
+			<rect x="26" y="88" width="338" height="158" rx="30" fill="rgba(20,20,20,0.55)"/>
+			<g fill="rgba(25,25,25,0.75)">
+				<rect x="30" y="283" width="61" height="61" rx="14"/><rect x="120" y="283" width="61" height="61" rx="14"/><rect x="210" y="283" width="61" height="61" rx="14"/><rect x="300" y="283" width="61" height="61" rx="14"/>
+				<rect x="30" y="380" width="61" height="61" rx="14"/><rect x="120" y="380" width="61" height="61" rx="14"/><rect x="210" y="380" width="61" height="61" rx="14"/><rect x="300" y="380" width="61" height="61" rx="14"/>
+				<rect x="30" y="478" width="61" height="61" rx="14"/><rect x="120" y="478" width="61" height="61" rx="14"/><rect x="210" y="478" width="61" height="61" rx="14"/>
+			</g>
+			<g fill="rgba(255,255,255,0.35)">
+				<rect x="42" y="353" width="37" height="6" rx="3"/><rect x="132" y="353" width="37" height="6" rx="3"/><rect x="222" y="353" width="37" height="6" rx="3"/><rect x="312" y="353" width="37" height="6" rx="3"/>
+				<rect x="42" y="450" width="37" height="6" rx="3"/><rect x="132" y="450" width="37" height="6" rx="3"/><rect x="222" y="450" width="37" height="6" rx="3"/><rect x="312" y="450" width="37" height="6" rx="3"/>
+				<rect x="42" y="548" width="37" height="6" rx="3"/><rect x="132" y="548" width="37" height="6" rx="3"/><rect x="222" y="548" width="37" height="6" rx="3"/>
+			</g>
+			<g id="ins-hs-icon" transform="scale(0)">
+				<rect x="300" y="478" width="61" height="61" rx="14" fill="#000"/>
+				<use href="#ins-app-icon" x="302" y="480" width="57" height="57"/>
+			</g>
+			<text id="ins-hs-label" x="330.5" y="555" fill="#fff" font-size="12.5" text-anchor="middle" style="opacity:0">The Dive Club</text>
+			<rect x="157" y="682" width="76" height="29" rx="14.5" fill="rgba(0,0,0,0.15)" stroke="rgba(255,255,255,0.3)"/>
+			<text x="204" y="701" fill="#fff" font-size="12.5" text-anchor="middle">Search</text>
+			<circle cx="174" cy="695" r="4" class="i-ic" stroke-width="1.4"/><line x1="177" y1="698" x2="179.5" y2="700.5" class="i-ic" stroke-width="1.4"/>
+			<rect x="17" y="731" width="356" height="99" rx="36" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.2)"/>
+			<g fill="rgba(25,25,25,0.75)">
+				<rect x="36" y="750" width="61" height="61" rx="14"/><rect x="121" y="750" width="61" height="61" rx="14"/><rect x="207" y="750" width="61" height="61" rx="14"/><rect x="292" y="750" width="61" height="61" rx="14"/>
+			</g>
+		</g>
+
+		<!-- ── The app, opened from the home screen ── -->
+		<g id="ins-app" style="opacity:0">
+			<use href="#ins-tdc-home" width="390" height="844"/>
+		</g>
+
+		<!-- Status bar, laid out as iOS 26 draws it: the time always 16:20, the battery always 80% -->
+		<g id="ins-status" fill="#fff">
+			<text x="41" y="38" font-size="17" font-weight="600" letter-spacing="-0.2">16:20</text>
+			<rect x="279.5" y="32" width="3.4" height="5" rx="1"/><rect x="284.5" y="29.5" width="3.4" height="7.5" rx="1"/>
+			<rect x="289.5" y="27" width="3.4" height="10" rx="1"/><rect x="294.5" y="24.5" width="3.4" height="12.5" rx="1" opacity="0.35"/>
+			<text x="304" y="37" font-size="15" font-weight="600">4G</text>
+			<rect x="329" y="24.5" width="24.5" height="13" rx="4.2" fill="rgba(255,255,255,0.4)"/>
+			<rect x="329" y="24.5" width="19.6" height="13" rx="4.2"/><rect x="342" y="24.5" width="6.6" height="13"/>
+			<text x="341.2" y="34.6" font-size="10.5" font-weight="700" fill="#000" text-anchor="middle">80</text>
+			<path d="M354.6 28.8 a2.2 2.2 0 0 1 0 5.4z" fill="rgba(255,255,255,0.4)"/>
+		</g>
+
+		<!-- The finger: the site's green, glowing -->
+		<circle id="ins-rip0" r="14" fill="none" stroke="#61ffad" stroke-width="2" style="opacity:0"/>
+		<circle id="ins-rip1" r="14" fill="none" stroke="#61ffad" stroke-width="2" style="opacity:0"/>
+		<circle id="ins-finger" cx="200" cy="700" r="12" fill="#61ffad" style="opacity:0"/>
+	</g>
+</svg>
