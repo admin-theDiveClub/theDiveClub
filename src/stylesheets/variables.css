@@ -125,8 +125,6 @@
   --dots-pulse: 2s;               /* reduced motion: one breath of a tapped target while it waits */
   --dots-pulse-peak: 0.5;         /* reduced motion: how bright it gets at the top of each breath */
   --live-fade: 0.5s;              /* text a re-read changed: its old value fading out, then the new in (TDC.liveFade) */
-  --loader-size: 9rem;            /* the loading screen: the box of the ring its dots serve, in the middle (a square: the ring margin is added) */
-  --loader-stroke: 5px;           /* the loading screen: the dots' size on that ring */
   --loader-fade: 0.5s;            /* the loading screen fading out once the page is ready */
   --loader-blur: 24px;            /* the loading screen is see-through: how strongly it blurs the page under it (29 Oct) */
   --loader-wordmark: 1;           /* the loading screen's wordmark: its width as a multiple of the portal's (3 Nov) */

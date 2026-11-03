@@ -17,7 +17,7 @@ Four dots, **one set for the whole page**, that show that something is happening
 | `scripts/ring-status.js` | The ring icons, with no dots of their own since step 7 |
 | `scripts/tdc.js` (`TDC.writer`), `scripts/tdc-controls.js`, `scripts/nav.js`, `scripts/league-fixtures.js` | Where the site hands its calls to the dots (§7) |
 | `variables.css` `--dots-*` | Every size and time (§5) |
-| `scripts/loader.js` + `stylesheets/loader.css` | The loading screen (§9, 29 Oct); since 3 Nov the dive, its ring served only under reduced motion (§9a) |
+| `scripts/loader.js` + `stylesheets/loader.css` | The loading screen (§9, 29 Oct); since 3 Nov the dive alone, no ring (§9a) |
 | `sandbox/dots/index.html` + `scripts/sandbox-dots.js` | `/sandbox/dots/`: real components that pretend to call the network. Styles at the end of `sandbox.css` |
 
 ## 3. How it works
@@ -372,7 +372,7 @@ Checked at 420px on the stand-in: every page opened with nothing reading "Loadin
 | The screen | Back to front: the wordmark (`wordmark-dark.svg` / `-light.svg`, made by `tools/dive-svg/build.js` from the full logo without its scene) **centred on the screen, as wide as the portal** (UV, 3 Nov, after seeing it fitted to the screen: "way too big on some screens and too striking"): `dive.js` reports the portal's width after each layout (`onLayout`), `loader.js` sets it as `--loader-wordmark-width`, times `--loader-wordmark` (1); never wider than the screen less 16px a side. Measured 272px wide beside a 272px portal at 420 × 860, 360 × 900 and 1440 × 900; the diver's stage over the whole screen (`frame: 'fit'`: the portal at the foot, she falls the screen's length); the still icon at the nav's spot, as before |
 | When she dives | `loader.js`: after `GRACE` (150 ms), as the dots did, so an instant page shows her still; `stop()` when the page is ready, as the screen fades. **The fade does not wait for her** (Claude's, for UV to confirm): she goes through and falls in once more during the fade |
 | No pause | UV, 3 Nov: the next drop starts the moment she is through the hole (`pause: 0`, the dive's default, so the sandbox too) |
-| The ring | Served only under reduced motion, where it breathes beside the diver (UV: kept for now, may go). With full motion nothing serves it: no dots on the screen |
+| The ring | **Gone (UV, 3 Nov, the same day):** no breathing ring on the screen in either mode, so the element, its CSS and `--loader-size` / `--loader-stroke` (and their sandbox entries) went. The diver alone is the screen's loader |
 | The nav's icon | `nav.js` puts a clone (`frame: 'logo'`, measured identical to the `<img>`: 184, 7, 46 × 46 at 420 with a scrollbar) in place of the two `<img>`, which stay in the HTML hidden. **Reduced motion only:** while `TDCDots.waiting` (below) and the screen is not up, after `GRACE`, she dives drop after drop; when all is back she goes through, falls in once more and rests. With full motion she never dives |
 | `TDCDots.waiting` | New in `dots.js`: with reduced motion, true while any record (a tap, something loading) has its call out, the screen's ring not counted. Said on the document as `tdc-dots-waiting` when it changes (`sayWaiting()`: on a serve, a call settling, a target gone, motion switched). The calm pulse on the tapped control stays (UV) |
 | `tdc-loader` | New in `loader.js`: the screen going up or down, said on the document, so the nav's diver waits for it |
@@ -381,7 +381,7 @@ Checked at 420px on the stand-in: every page opened with nothing reading "Loadin
 
 ## 9. The loading screen (29 Oct, UV's items 10 and 11)
 
-> **Since 3 Nov the screen is the dive (§9a)**: the dots no longer serve its ring with full motion. The rest of this section (holds, ready, the hang, `raise()`) is unchanged.
+> **Since 3 Nov the screen is the dive (§9a)**: the ring, its dots and its breathing are gone, so everything below about the ring, the dots on it and their tokens is history. The rest (holds, ready, the hang, `raise()`) is unchanged.
 
 UV: a loading screen on every page, gone only once the page has fully loaded, its data included; **Loader A**: the dots big in the middle of the screen, and the site icon exactly where the nav bar's sits, so the fade leaves the real one in the same spot. ~~The screen is opaque~~ **Since UV's second look (29 Oct) it is see-through with a strong blur** (`--loader-blur`, 24px): the page is there underneath, out of focus, and comes sharp as the screen fades.
 

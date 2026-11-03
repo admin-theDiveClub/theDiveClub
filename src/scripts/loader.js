@@ -34,11 +34,8 @@
 // GRACE, as for the dots' own page-load queue, so a page that is instant
 // shows her still and fades. When the page is ready she is stopped (through
 // once more, then the logo pose) as the screen fades; the fade does not wait
-// for her. In both motion modes: she is the loader.
-//
-// With reduced motion the ring in the middle is also served, as before: no
-// dots, so it breathes (dots.css's calm pulse) until the screen fades (UV:
-// kept for now). With full motion the ring is not served at all.
+// for her. In both motion modes she is the loader, alone: no dots and no
+// breathing ring (UV, 3 Nov: the ring is gone from the screen).
 //
 // The screen going up and down is said on the document as 'tdc-loader'
 // ({ detail: { up } }), for the nav's diver (nav.js).
@@ -48,8 +45,7 @@
 // for. If this script never runs at all, loader.css drops the screen after
 // 30 s, so a broken script cannot lock the page.
 //
-// Needs: tdc.js (TDC.error), supabaseClient.js (TDCNet), dive.js; dots.js for
-// the ring under reduced motion.
+// Needs: tdc.js (TDC.error), supabaseClient.js (TDCNet), dive.js.
 
 const TDCLoader = (() => {
 	const AREA = 'Loader';
@@ -58,13 +54,11 @@ const TDCLoader = (() => {
 	const ERROR_MS = 8000;
 
 	const box = document.getElementById('tdc-loader');
-	const ring = document.getElementById('tdc-loader-ring');
 	if (box) box.dataset.state = 'up';   // the CSS fallback timer stops
 
 	const holds = new Set();   // { promise, label } still out
 	let up = !!box, away = false;
 	let stage = 'the page';    // what it is waiting on, for the hang message
-	let shown = null;          // resolves when the screen starts to fade
 	let hideTimer = 0;         // hides the faded screen; stopped if it comes back
 
 	// The diver: a copy of the layout's drawing, in the screen's stage.
@@ -143,12 +137,9 @@ const TDCLoader = (() => {
 		up = false;
 		box.dataset.state = 'leaving';
 		box.setAttribute('aria-busy', 'false');
-		shown();
 		if (dive) dive.stop();
 		say();
-		// Hidden, not removed, once it has faded: the dots may still be racing
-		// its ring, and a target that leaves the page before they are done
-		// reads to them as a failure (dots.js, gone). It also comes back.
+		// Hidden, not removed, once it has faded: it comes back.
 		clearTimeout(hideTimer);
 		hideTimer = setTimeout(() => { box.hidden = true; }, fadeMs() + 50);
 	}
@@ -193,7 +184,6 @@ const TDCLoader = (() => {
 	// One showing of the screen: from up until ready, then the fade. The page
 	// opening, and each time a hold brings it back.
 	function cycle() {
-		const gone = new Promise((r) => { shown = r; });
 		const hang = setTimeout(() => {
 			if (!up) return;
 			fail(`the page was still loading after ${HANG / 1000} s (waiting for ${waitingFor()}), so it is shown as it stands.`);
@@ -209,17 +199,9 @@ const TDCLoader = (() => {
 			hide();
 		});
 
-		// The diver, once the page has not been instant; with reduced motion
-		// the ring breathes too. The ring's call is the screen going.
+		// The diver, once the page has not been instant.
 		setTimeout(() => {
-			if (!up) return;
-			if (dive) dive.start();
-			if (!ring) return;
-			if (typeof TDCDots === 'undefined') {
-				console.error(`[${AREA}] dots.js is not on this page, so the loader's ring cannot breathe.`);
-				return;
-			}
-			if (TDCDots.state.reduced) TDCDots.serve(ring, gone, { trace: 'none', timeout: HANG + 1000 });
+			if (up && dive) dive.start();
 		}, GRACE);
 	}
 

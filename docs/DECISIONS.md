@@ -1241,3 +1241,9 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* fitted to the screen the wordmark was "way too big on some screens and too striking"; it stays centred, its width proportional to the portal and diver.
 *So:* its width is the portal's on screen times `--loader-wordmark` (1 for now), reported by `dive.js` after each layout (`onLayout`); never wider than the screen less 16px a side. At 420 wide it is 272px, the portal's width, where it was 388.
 *Touches:* `scripts/dive.js`, `scripts/loader.js`, `stylesheets/loader.css`, `stylesheets/variables.css`
+
+## 2026-11-03 — No breathing ring on the loading screen
+
+*Decided by UV:* "The breathing ring shouldn't be on the overlay loader." The diver alone is the loading screen, in both motion modes (it had been kept under reduced motion, beside her).
+*So:* the ring's element, its CSS, its serve in `loader.js` and its tokens `--loader-size` / `--loader-stroke` (with their main-sandbox entries) are gone. A tapped control still breathes under reduced motion.
+*Touches:* `_includes/layout.html`, `scripts/loader.js`, `stylesheets/loader.css`, `stylesheets/variables.css`, `scripts/sandbox.js`, `scripts/dots.js` (a comment)

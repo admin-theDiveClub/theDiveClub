@@ -1075,8 +1075,8 @@ const TDCDots = (() => {
 	// With reduced motion the nav's diver stands in for the dots (UV, 3 Nov;
 	// nav.js): whether anything the dots would be out for is still waiting
 	// on its call (a tap, or something loading) is said on the document as
-	// 'tdc-dots-waiting' ({ detail: { waiting } }) whenever it changes. The
-	// loading screen's own ring is not counted: the screen has its diver.
+	// 'tdc-dots-waiting' ({ detail: { waiting } }) whenever it changes.
+	// Nothing on the loading screen is counted: the screen has its diver.
 	let waitingNow = false;
 	function sayWaiting() {
 		let w = false;

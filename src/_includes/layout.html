@@ -68,13 +68,12 @@
 	     and its data have loaded. First in the body so it is there from the
 	     first paint. The icon sits exactly where the nav's does. -->
 	<div class="tdc-loader" id="tdc-loader" role="status" aria-label="Loading" aria-busy="true">
-		<!-- The dive (UV, 3 Nov): the wordmark behind, fitted to the screen;
+		<!-- The dive (UV, 3 Nov): the wordmark behind, as wide as the portal;
 		     the diver falling the screen's length into the portal at its foot
 		     (loader.js clones the drawing into .tdc-loader-dive). -->
 		<img class="tdc-loader-wordmark for-dark" src="/resources/branding/wordmark-dark.svg" alt=""><img class="tdc-loader-wordmark for-light" src="/resources/branding/wordmark-light.svg" alt="">
 		<div class="tdc-loader-dive" aria-hidden="true"></div>
 		{% unless hideNav %}<img class="tdc-loader-icon for-dark" src="/resources/branding/icon-primary.svg" alt=""><img class="tdc-loader-icon for-light" src="/resources/branding/logo-mark-light.svg" alt="">{% endunless %}
-		<span class="tdc-loader-ring" id="tdc-loader-ring"></span>
 	</div>
 	<!-- The dive's drawing (scripts/dive.js), once: the loading screen and
 	     the nav's icon each clone it. -->

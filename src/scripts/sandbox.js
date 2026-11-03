@@ -116,8 +116,6 @@
 			{ name: '--dots-pulse',       label: 'Calm pulse',     kind: 'size', unit: 's',  min: 0.8,  max: 4,    step: 0.1,   use: 'Reduced motion: how long one breath of a tapped target takes while it waits (no dots fly then)' },
 			{ name: '--dots-pulse-peak',  label: 'Pulse peak',     kind: 'size', unit: '',   min: 0.2,  max: 1,    step: 0.05,  use: 'Reduced motion: how bright the waiting target (or a ring icon\'s ring) gets at the top of each breath' },
 			{ name: '--live-fade',        label: 'Live change',    kind: 'size', unit: 's',  min: 0,    max: 2,    step: 0.05,  use: 'Text a page re-read changed (a live score, a total): its old value fading out, then the new in (UV, 29 Oct)' },
-			{ name: '--loader-size',      label: 'Loader ring',    kind: 'size', unit: 'rem', min: 3,   max: 20,   step: 0.5,   use: 'The loading screen: how big the ring its dots go round in the middle of the screen is (the ring margin is added, as round any square)' },
-			{ name: '--loader-stroke',    label: 'Loader dots',    kind: 'size', unit: 'px', min: 1,    max: 12,   step: 0.5,   use: 'The loading screen: how big its dots are on that ring' },
 			{ name: '--loader-fade',      label: 'Loader fade',    kind: 'size', unit: 's',  min: 0,    max: 2,    step: 0.05,  use: 'The loading screen fading out once the page is ready; its dots race the ring and fade with it' },
 			{ name: '--group-dots-size',  label: 'Group dots ring', kind: 'size', unit: 'rem', min: 0.8, max: 3, step: 0.05, use: 'A folding group loading: how big the ring its dots go round is, at the right of its heading, in green' },
 			{ name: '--group-dots-stroke', label: 'Group dots',     kind: 'size', unit: 'px', min: 1,   max: 6,  step: 0.5,  use: 'A folding group loading: how big its dots are' },
