@@ -1260,3 +1260,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* the scene was a bit too big; side padding, with the wordmark, the diver and the portal each the screen's width ÷ 1.618.
 *So:* the dive's new `across` option (1 / 1.618 on the loading screen) sizes the portal, ladder and diver together, still within the dive's height limit and its largest size (360px diver), so a PC keeps the scene at 300px; the wordmark takes the scene's width (`onLayout` now reports it), times `--loader-wordmark` (1). At 420 wide both are 256px, where the scene was 300 and the wordmark 272.
 *Touches:* `scripts/dive.js`, `scripts/loader.js`, `stylesheets/loader.css`, `stylesheets/variables.css` (a comment)
+
+## 2026-11-03 — A footer on every page
+
+*Decided by UV:* a simple site-wide footer, approved from a mock-up artifact with these changes: the name as tall as the mark beside it; the headings' size and spacing fixed; links made clearly links next to the Visit text; on a phone the mark and name centred, the rest as it was; social links added, all in green, to be linked later; a shadow above the footer so the page looks sunken behind it.
+*Claude's, for UV to confirm:* Instagram, Facebook, TikTok and WhatsApp as the four socials; links cream with a half-strength green underline, plain information muted; About and Contact kept although they have no pages yet; the tagline wording; the match page without the footer.
+*So:* `docs/ui.md`, "The footer".
+*Touches:* `_includes/footer.html` (new), `stylesheets/footer.css` (new), `_includes/layout.html`, `match/index.html`

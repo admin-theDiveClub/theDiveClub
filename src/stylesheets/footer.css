@@ -1,0 +1,198 @@
+/* The site's footer (_includes/footer.html; UV, 3 Nov). On a phone the
+   mark and its line are centred, Visit runs the full width and Play and The
+   club sit side by side; from 48rem everything is one row of four columns. */
+
+/* A short page still puts the footer at the foot of the screen: the main
+   area takes at least the room the nav and the home bar leave. */
+main {
+	min-height: calc(100dvh - var(--nav-total) - env(safe-area-inset-bottom, 0px));
+}
+
+.site-footer {
+	/* The mark's height; the name is set to match it. */
+	--ft-mark: 2.5rem;
+
+	/* The footer stands over the page, casting a shadow up onto it, so the
+	   page reads as sunken behind (UV, 3 Nov). Its own background, so the
+	   drifting light does not show through. */
+	position: relative;
+	background: var(--bg-base);
+	border-top: 1px solid var(--border-color);
+	box-shadow: 0 -12px 24px -8px rgba(0, 0, 0, var(--sunken-alpha));
+	padding: var(--space-7) var(--space-5) 0;
+	font-size: 0.95rem;
+	line-height: 1.5;
+}
+
+.ft-inner {
+	max-width: 1040px;
+	margin: 0 auto;
+}
+
+.ft-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: var(--space-6) var(--space-5);
+}
+.ft-brand,
+.ft-visit {
+	grid-column: 1 / -1;
+}
+
+/* The mark and its line, centred on a phone. */
+.ft-brand {
+	display: grid;
+	justify-items: center;
+	gap: var(--space-4);
+	text-align: center;
+}
+.ft-mark {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	color: var(--text-primary);
+	text-decoration: none;
+}
+.ft-mark img {
+	width: var(--ft-mark);
+	height: var(--ft-mark);
+}
+/* The name as tall as the mark: Rushford Clean's capitals are 1.05 of its
+   size, and the line is trimmed to them so the two centre on each other. */
+.ft-name {
+	font-family: var(--font-display);
+	font-size: calc(var(--ft-mark) / 1.05);
+	line-height: 1;
+	text-box: trim-both cap alphabetic;
+	white-space: nowrap;
+}
+.ft-tag {
+	margin: 0;
+	max-width: 32ch;
+	color: var(--text-muted);
+}
+
+/* The social buttons: green circles, the icon in the colour that sits on
+   green. */
+.site-footer .ft-social {
+	display: flex;
+	gap: var(--space-3);
+}
+/* .site-footer in front, to outrank the text links' rules below. */
+.site-footer .ft-social a {
+	text-decoration: none;
+	display: grid;
+	place-items: center;
+	width: 2.5rem;
+	height: 2.5rem;
+	border-radius: 50%;
+	background: var(--color-primary);
+	color: var(--color-on-primary);
+	cursor: pointer;
+	transition: box-shadow 0.15s;
+}
+.site-footer .ft-social a:hover,
+.site-footer .ft-social a:focus-visible {
+	color: var(--color-on-primary);
+	box-shadow: var(--glow-primary);
+}
+.ft-social svg {
+	width: 1.3rem;
+	height: 1.3rem;
+}
+
+/* Headings: the display face, one size, the same gap to what follows as
+   the links have between them. */
+.site-footer h2 {
+	font-family: var(--font-display);
+	font-size: 1.15rem;
+	line-height: 1;
+	letter-spacing: 0.04em;
+	color: var(--color-primary);
+	margin: 0 0 var(--space-4);
+}
+
+/* Plain information is muted; anything that can be tapped is cream and
+   underlined, so the two never read alike. */
+.site-footer address,
+.ft-hours {
+	font-style: normal;
+	color: var(--text-muted);
+	margin: 0;
+}
+.ft-hours {
+	margin-top: var(--space-3);
+}
+
+.site-footer ul {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	gap: var(--space-3);
+}
+.site-footer ul a {
+	color: var(--text-primary);
+	text-decoration: underline;
+	text-decoration-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 0.3em;
+	transition: color 0.15s, text-decoration-color 0.15s;
+}
+.site-footer ul a:hover,
+.site-footer ul a:focus-visible {
+	color: var(--color-primary);
+	text-decoration-color: var(--color-primary);
+}
+.site-footer a:focus-visible {
+	outline: 2px solid var(--color-primary);
+	outline-offset: 3px;
+	border-radius: 2px;
+}
+
+/* The legal line. */
+.ft-base {
+	margin-top: var(--space-7);
+	padding: var(--space-4) 0 calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
+	border-top: 1px solid var(--border-color);
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	align-items: center;
+	gap: var(--space-2) var(--space-5);
+	color: var(--text-muted);
+	font-size: 0.85rem;
+}
+.ft-base ul {
+	display: flex;
+	gap: var(--space-5);
+}
+.ft-base ul a {
+	color: var(--text-muted);
+}
+
+@media (min-width: 48rem) {
+	.site-footer {
+		padding: var(--space-7) var(--space-6) 0;
+	}
+	.ft-grid {
+		grid-template-columns: 1.6fr 1.2fr 1fr 1fr;
+		gap: var(--space-5) var(--space-7);
+	}
+	.ft-brand,
+	.ft-visit {
+		grid-column: auto;
+	}
+	.ft-brand {
+		justify-items: start;
+		align-content: start;
+		text-align: left;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.site-footer a { transition: none; }
+}
+@media print {
+	.site-footer { display: none; }
+}

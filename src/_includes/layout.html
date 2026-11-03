@@ -45,6 +45,7 @@
 	<link rel="stylesheet" href="/stylesheets/status.css?v={{ build.version }}">
 	<link rel="stylesheet" href="/stylesheets/dots.css?v={{ build.version }}">
 	<link rel="stylesheet" href="/stylesheets/loader.css?v={{ build.version }}">
+	{% unless hideFooter %}<link rel="stylesheet" href="/stylesheets/footer.css?v={{ build.version }}">{% endunless %}
 	{% if extraStyles %}
 		{% for style in extraStyles %}
 			<link rel="stylesheet" href="{{ style }}?v={{ build.version }}">
@@ -86,6 +87,10 @@
 	<main>
 		{{ content }}
 	</main>
+
+	{% unless hideFooter %}
+		{% include "footer.html" %}
+	{% endunless %}
 
 	<script src="/scripts/vendor/supabase.js?v={{ build.version }}"></script>
 	<script src="/scripts/supabaseClient.js?v={{ build.version }}"></script>

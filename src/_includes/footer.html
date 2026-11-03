@@ -1,0 +1,57 @@
+<!-- The site's footer (UV, 3 Nov): on every page but those that set
+     hideFooter (the match page, whose stage fills the screen). The mark,
+     the address, the main pages and the legal line. Styles in footer.css. -->
+<footer class="site-footer">
+	<div class="ft-inner">
+		<div class="ft-grid">
+			<div class="ft-brand">
+				<a href="/" class="ft-mark" aria-label="The Dive Club, home">
+					<img class="for-dark" src="/resources/branding/icon-primary.svg" alt="">
+					<img class="for-light" src="/resources/branding/logo-mark-light.svg" alt="">
+					<span class="ft-name">The Dive Club</span>
+				</a>
+				<p class="ft-tag">A pool lounge in Lonehill. Leagues, tournaments and social nights on the felt.</p>
+				<!-- The club's social accounts (UV, 3 Nov: all in green). No
+				     addresses yet: UV adds each href when the account is ready. -->
+				<ul class="ft-social" aria-label="The Dive Club elsewhere">
+					<li><a aria-label="Instagram" title="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.2" cy="6.8" r="1.2" fill="currentColor"/></svg></a></li>
+					<li><a aria-label="Facebook" title="Facebook"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M13.5 21v-7.6h2.6l.4-3h-3V8.5c0-.9.3-1.5 1.6-1.5h1.6V4.3c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.2H7.9v3h2.6V21z"/></svg></a></li>
+					<li><a aria-label="TikTok" title="TikTok"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16.3 3c.3 2.2 1.6 3.6 3.7 3.8v3c-1.4 0-2.7-.4-3.7-1.1v6.1a5.4 5.4 0 1 1-5.4-5.4h.6v3.1a2.4 2.4 0 1 0 1.7 2.3V3z"/></svg></a></li>
+					<li><a aria-label="WhatsApp" title="WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M4.2 19.8l1.1-3.9A8.2 8.2 0 1 1 8.4 19z"/><path fill="currentColor" d="M9.3 7.6c.2 0 .4 0 .5.4l.7 1.6c.1.2 0 .4-.1.6l-.5.6c.6 1.2 1.6 2.1 2.8 2.7l.6-.6c.2-.2.4-.2.6-.1l1.6.8c.2.1.3.3.3.5 0 .9-.8 1.7-1.8 1.7-2.9-.1-6-3.1-6.1-6.1 0-1 .7-1.9 1.4-2.1z"/></svg></a></li>
+				</ul>
+			</div>
+
+			<div class="ft-visit">
+				<h2>Visit</h2>
+				<address>C5, The Gantry<br>Lonehill, Fourways<br>Johannesburg</address>
+				<p class="ft-hours">Opening soon</p>
+			</div>
+
+			<nav aria-label="Play">
+				<h2>Play</h2>
+				<ul>
+					<li><a href="/leagues/">Leagues</a></li>
+					<li><a href="/tournaments/">Tournaments</a></li>
+					<li><a href="/matches/">My matches</a></li>
+				</ul>
+			</nav>
+
+			<nav aria-label="The club">
+				<h2>The club</h2>
+				<ul>
+					<li><a href="/about/">About</a></li>
+					<li><a href="/contact/">Contact</a></li>
+					<li><a href="/install/">Get the app</a></li>
+				</ul>
+			</nav>
+		</div>
+
+		<div class="ft-base">
+			<span>© {{ "now" | date: "%Y" }} The Dive Club</span>
+			<ul>
+				<li><a href="/privacypolicy.html">Privacy</a></li>
+				<li><a href="/termsofservice.html">Terms</a></li>
+			</ul>
+		</div>
+	</div>
+</footer>
