@@ -6,10 +6,26 @@
 	<title>{{ title }} — The Dive Club</title>
 	<meta name="description" content="{{ description }}">
 
+	<!-- What a pasted link shows in WhatsApp, iMessage, Facebook and X (3 Nov):
+	     the page's title and description, and the one share picture for the
+	     whole site (UV's pick, DECISIONS 3 Nov). The picture's address must be
+	     absolute. A link already seen may keep its old preview a while. -->
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="The Dive Club">
+	<meta property="og:title" content="{{ title }} — The Dive Club">
+	<meta property="og:description" content="{{ description }}">
+	<meta property="og:url" content="https://thediveclub.org{{ page.url }}">
+	<meta property="og:image" content="https://thediveclub.org/resources/branding/social-share.jpg">
+	<meta property="og:image:width" content="1200">
+	<meta property="og:image:height" content="630">
+	<meta property="og:image:alt" content="The Dive Club logo under a green light. Opening soon.">
+	<meta name="twitter:card" content="summary_large_image">
+
 	<link rel="manifest" href="/site.webmanifest">
 	<!-- The browser's and installed app's bar: the page's own background (--bg-base),
 	     so it reads as part of the page. iOS draws the page under it instead
-	     (black-translucent, below). Keep in step with site.webmanifest. -->
+	     (black-translucent, below). Keep in step with site.webmanifest. Both are
+	     the dark theme's; prefs.js swaps them for the light theme (3 Nov). -->
 	<meta name="theme-color" content="#202020">
 
 	<link rel="icon" href="/favicon.ico" sizes="any">

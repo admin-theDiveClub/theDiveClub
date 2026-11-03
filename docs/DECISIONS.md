@@ -1206,3 +1206,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* option A (the full logo centred under the site's green light) with option D's green band across the foot, "OPENING SOON" in the background colour, and a hard shadow along the top edge so the logo sits sunken (the site's own page-edge shadow: 70% black, 14px blur, cast 10px). "Opening soon" is a placeholder until opening. The hero picture waits for the home page design.
 *Why:* chosen from six options at https://claude.ai/artifact/F1ymSFgb3hiUDQQEfGm2pQ (option F there; its page renders each at 1200 × 630, so the picture can be remade from it when the words change).
 *Touches:* `src/resources/branding/social-share.jpg` (1200 × 630, 68 KB). Nothing shows it until `layout.html` has share-preview tags (`docs/STATUS.md` §1, item 4)
+
+## 2026-11-03 — Share tags; the install drawing and the phone's bar follow the theme
+
+*Decided by UV:* share-preview tags on every page, so a pasted link shows the share picture. The install tutorial's drawn iPhone follows the theme, the whole drawing: iOS in light mode with the site's light screen in the light theme. The phone's bar follows the theme wherever the phone allows.
+*So:* `layout.html` carries `og:` and `twitter:` tags from each page's title and description, with the one share picture. `prefs.js` sets `theme-color` to the theme's `--bg-base` and asks an installed iPhone app for dark status-bar text in the light theme. The manifest stays #202020 (fixed at install). The drawing's colours are tokens in `install.css`, with light-mode values; seven stay fixed, the same in both (`docs/systems/foundations.md`). This replaces the 3 Nov build's choice to keep the drawn iPhone dark in either theme, which was Claude's.
+*Unconfirmed:* whether iOS honours the status-bar style set by script before the first paint; only an iPhone can show it (`docs/STATUS.md` §1, 4a).
+*Touches:* `_includes/layout.html`, `scripts/prefs.js`, the three forwarding pages under `/leagues/`, `_includes/install/safari.svg`, `stylesheets/install.css`

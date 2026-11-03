@@ -3,13 +3,71 @@
    "The install tutorial". */
 
 .install {
-	/* The drawn iPhone is iOS in dark mode in either theme: it is a picture of
-	   a phone, not part of the page. */
+	/* The drawn iPhone follows the theme (UV, 3 Nov: light and dark apply
+	   everywhere): iOS in dark mode here, in light mode in the light theme
+	   (below). The site's own screen inside it uses the site's tokens. Every
+	   colour in the drawing is one of these, set by an inline style, so the
+	   drawing itself names no colour but the few that are the same in both. */
 	--ios-bg: #1c1c1e;
 	--ios-fill: #2c2c2e;
 	--ios-sec: #8e8e93;
 	--ios-blue: #0a84ff;
 	--ios-green: #34c759;
+	--ios-text: #fff;
+	--ios-ph: #48484a;              /* plain shapes standing in for content */
+	--ios-ph2: #3a3a3c;
+	--ios-bar: #1e1e1e;             /* under the site, behind Safari's bottom bar */
+	--ios-type-bg: #000;            /* the page while typing an address */
+	--ios-line-10: rgba(255, 255, 255, 0.1);
+	--ios-line-12: rgba(255, 255, 255, 0.12);
+	--ios-line-14: rgba(255, 255, 255, 0.14);
+	--ios-line-20: rgba(255, 255, 255, 0.2);
+	--ios-line-25: rgba(255, 255, 255, 0.25);
+	--ios-clear-bg: #e5e5ea;
+	--ios-clear-x: #1c1c1e;
+	--ios-glass: rgba(28, 28, 30, 0.72);
+	--ios-glass-line: rgba(255, 255, 255, 0.2);
+	--ios-menu: rgba(30, 30, 32, 0.97);
+	--ios-sheet: rgba(34, 40, 37, 0.98);
+	--ios-sheet-sec: #8e9a93;
+	--ios-chip: rgba(0, 0, 0, 0.3);
+	--ios-chip-line: rgba(255, 255, 255, 0.15);
+	--ios-ppl: #3d4440;
+	--ios-ppl-l: #4a524d;
+	--ios-act: rgba(255, 255, 255, 0.1);
+	--ios-list: rgba(255, 255, 255, 0.09);
+	--ios-add: #4f8ef7;
+	--ios-x-bg: #636366;
+	--ios-x-fg: #2c2c2e;
+	--ios-url: #6e6e73;
+	--ios-tog-off: #39393d;
+	--ios-kb: #1b1b1d;
+	--ios-key: #3a3a3c;
+	--ios-key2: #2a2a2c;
+	--ios-key-down: #7a7a7f;
+	--ios-keygo-down: #5aa9ff;
+	--ios-wall-0: #4a4844;
+	--ios-wall-1: #2e2d2b;
+	--ios-wall-2: #3c3b38;
+	--ios-widget: rgba(20, 20, 20, 0.55);
+	--ios-app: rgba(25, 25, 25, 0.75);
+	--ios-app-l: rgba(255, 255, 255, 0.35);
+	--ios-hs-text: #fff;
+	--ios-pill: rgba(0, 0, 0, 0.15);
+	--ios-pill-line: rgba(255, 255, 255, 0.3);
+	--ios-dock: rgba(255, 255, 255, 0.12);
+	--ios-dock-line: rgba(255, 255, 255, 0.2);
+	--ios-status: #fff;
+	--ios-status-dim: rgba(255, 255, 255, 0.4);
+	--ios-status-on: #000;
+	/* The site's screen: its nav band takes the light's tint, as the real one does */
+	--ins-nav-0: #1f2723;
+	--ins-nav-1: #2b4537;
+	--ins-nav-2: #26392e;
+	--ins-nav-line: rgba(255, 255, 255, 0.12);
+	--ins-finger: #61ffad;
+	--ins-show-dark: inline;        /* which logo files the site's screen shows */
+	--ins-show-light: none;
 	--ios-font: -apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
 	--ins-card: color-mix(in srgb, var(--text-primary) 5%, transparent);
 	max-width: 960px;
@@ -252,15 +310,78 @@
 
 /* ── Inside the drawing ── */
 .install-phone svg text { font-family: var(--ios-font); }
-.install-phone .i-glass { fill: rgba(28, 28, 30, 0.72); stroke: rgba(255, 255, 255, 0.2); stroke-width: 1; }
-.install-phone .i-ic { fill: none; stroke: #fff; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.install-phone .i-key { fill: #3a3a3c; }
-.install-phone .i-key2 { fill: #2a2a2c; }
+.install-phone .i-glass { fill: var(--ios-glass); stroke: var(--ios-glass-line); stroke-width: 1; }
+.install-phone .i-ic { fill: none; stroke: var(--ios-text); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.install-phone .i-key { fill: var(--ios-key); }
+.install-phone .i-key2 { fill: var(--ios-key2); }
 .install-phone .i-keygo { fill: var(--ios-blue); }
 .install-phone .i-key.i-down,
-.install-phone .i-key2.i-down { fill: #7a7a7f; }
-.install-phone .i-keygo.i-down { fill: #5aa9ff; }
-.install-phone .i-keyl { fill: #fff; font-size: 21px; text-anchor: middle; }
-.install-phone .i-ph { fill: #48484a; }
-.install-phone .i-lbl { fill: #fff; font-size: 12.5px; text-anchor: middle; }
-.install-phone .i-row { fill: #fff; font-size: 15.5px; }
+.install-phone .i-key2.i-down { fill: var(--ios-key-down); }
+.install-phone .i-keygo.i-down { fill: var(--ios-keygo-down); }
+.install-phone .i-keyl { fill: var(--ios-text); font-size: 21px; text-anchor: middle; }
+.install-phone .i-ph { fill: var(--ios-ph); }
+.install-phone .i-lbl { fill: var(--ios-text); font-size: 12.5px; text-anchor: middle; }
+.install-phone .i-row { fill: var(--ios-text); font-size: 15.5px; }
+
+/* The light theme: iOS in light mode, and the site's light screen */
+[data-theme="light"] .install {
+	--ios-bg: #f2f2f7;
+	--ios-fill: #ffffff;
+	--ios-sec: #8e8e93;
+	--ios-blue: #007aff;
+	--ios-green: #34c759;
+	--ios-text: #000;
+	--ios-ph: #d1d1d6;
+	--ios-ph2: #e5e5ea;
+	--ios-bar: #f9f9f9;
+	--ios-type-bg: #fff;
+	--ios-line-10: rgba(0, 0, 0, 0.1);
+	--ios-line-12: rgba(0, 0, 0, 0.12);
+	--ios-line-14: rgba(0, 0, 0, 0.12);
+	--ios-line-20: rgba(0, 0, 0, 0.15);
+	--ios-line-25: rgba(0, 0, 0, 0.15);
+	--ios-clear-bg: #c7c7cc;
+	--ios-clear-x: #fff;
+	--ios-glass: rgba(255, 255, 255, 0.78);
+	--ios-glass-line: rgba(0, 0, 0, 0.08);
+	--ios-menu: rgba(249, 249, 249, 0.97);
+	--ios-sheet: rgba(242, 242, 247, 0.98);
+	--ios-sheet-sec: #8e8e93;
+	--ios-chip: rgba(0, 0, 0, 0.06);
+	--ios-chip-line: rgba(0, 0, 0, 0.1);
+	--ios-ppl: #d1d1d6;
+	--ios-ppl-l: #c7c7cc;
+	--ios-act: #fff;
+	--ios-list: #fff;
+	--ios-add: #007aff;
+	--ios-x-bg: #c7c7cc;
+	--ios-x-fg: #fff;
+	--ios-url: #8e8e93;
+	--ios-tog-off: #e9e9eb;
+	--ios-kb: #d1d3d9;
+	--ios-key: #fff;
+	--ios-key2: #abb0ba;
+	--ios-key-down: #c4c7ce;
+	--ios-keygo-down: #4da3ff;
+	--ios-wall-0: #d9d4cb;
+	--ios-wall-1: #efebe4;
+	--ios-wall-2: #e2ddd4;
+	--ios-widget: rgba(255, 255, 255, 0.55);
+	--ios-app: rgba(255, 255, 255, 0.75);
+	--ios-app-l: rgba(0, 0, 0, 0.25);
+	--ios-hs-text: #000;
+	--ios-pill: rgba(255, 255, 255, 0.4);
+	--ios-pill-line: rgba(0, 0, 0, 0.12);
+	--ios-dock: rgba(255, 255, 255, 0.45);
+	--ios-dock-line: rgba(0, 0, 0, 0.08);
+	--ios-status: #000;
+	--ios-status-dim: rgba(0, 0, 0, 0.35);
+	--ios-status-on: #fff;
+	--ins-nav-0: color-mix(in srgb, var(--color-primary) 6%, var(--bg-base));
+	--ins-nav-1: color-mix(in srgb, var(--color-primary) 18%, var(--bg-base));
+	--ins-nav-2: color-mix(in srgb, var(--color-primary) 13%, var(--bg-base));
+	--ins-nav-line: color-mix(in srgb, var(--text-primary) 12%, transparent);
+	--ins-finger: var(--color-primary);
+	--ins-show-dark: none;
+	--ins-show-light: inline;
+}

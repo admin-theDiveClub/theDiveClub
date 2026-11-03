@@ -14,6 +14,8 @@ permalink: /leagues/fixtures/index.html
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="theme-color" content="#202020">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<!-- The light theme's bar for the moment this page shows (prefs.js does it on every other page; #f4e8d2 is the light --bg-base) -->
+	<script>try { if (localStorage.getItem('tdc.theme') === 'light') { document.querySelector('meta[name="theme-color"]').content = '#f4e8d2'; document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content = 'default'; } } catch (e) {}</script>
 	<title>Fixtures — The Dive Club</title>
 	<script>
 		(() => {

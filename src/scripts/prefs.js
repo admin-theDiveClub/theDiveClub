@@ -38,7 +38,20 @@ var TDCPrefs = (function () {
 		}
 	}
 
-	function applyTheme(light) { root.setAttribute('data-theme', light ? 'light' : ''); }
+	// The phone's bar follows the theme too (UV, 3 Nov). theme-color takes the
+	// theme's own --bg-base: Android Chrome and Safari repaint their bar at once.
+	// An installed iPhone app draws the page under the bar, and its white text
+	// cannot be read on cream, so the light theme asks for dark text ('default');
+	// iOS reads that when the app opens, which is why it is set here, before the
+	// first paint. The styles are loaded by now: a script waits for them.
+	var themeColor = document.querySelector('meta[name="theme-color"]');
+	var iosBar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+	function applyTheme(light) {
+		root.setAttribute('data-theme', light ? 'light' : '');
+		var bg = getComputedStyle(root).getPropertyValue('--bg-base').trim();
+		if (themeColor && bg) themeColor.setAttribute('content', bg);
+		if (iosBar) iosBar.setAttribute('content', light ? 'default' : 'black-translucent');
+	}
 	function applyMotion(m) {
 		if (m === 'reduce' || m === 'full') root.dataset.motion = m;
 		else delete root.dataset.motion;
