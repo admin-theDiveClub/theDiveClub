@@ -193,6 +193,15 @@
   --logo-grad-mid: 0;
   --logo-grad-end: 0;
   --logo-grad-offset: 0.60562778;
+
+  /* The dive (_includes/dive.svg, scripts/dive.js; on /sandbox/dive/ only so
+     far): the loader drawn from icon-primary.svg, so these are its colours. */
+  --dive-ring: #61ffad;
+  --dive-stairs: #f4e8d2;
+  --dive-suit: #61ffad;
+  --dive-skin: #f4e8d2;
+  --dive-shadow-alpha: 0.32;
+  --dive-blur-alpha: 0.64;
 }
 
 [data-theme="light"] {
@@ -239,4 +248,11 @@
   --logo-grad-mid: 0;
   --logo-grad-end: 0;
   --logo-grad-offset: 0.60562778;
+
+  /* The dive: logo-mark-light.svg's colours. Its diver keeps a navy suit and
+     cream skin, which the --logo-* pair would swap (UV, 3 Nov: match the file). */
+  --dive-ring: #f4e8d2;
+  --dive-stairs: #20333b;
+  --dive-suit: #20333b;
+  --dive-skin: #f4e8d2;
 }

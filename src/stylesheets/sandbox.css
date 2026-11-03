@@ -644,3 +644,40 @@
 .ap-fxhl { fill: var(--text-primary); }
 .ap-fxdark { fill: color-mix(in srgb, var(--bg-base) 25%, black); }
 .ap-fxl { fill: none; stroke: var(--color-primary); stroke-linecap: round; stroke-linejoin: round; }
+
+/* ─── The dive (/sandbox/dive/) ───
+   The overlay-sized stage and the nav-sized icon, both _includes/dive.svg run
+   by scripts/dive.js. The stage stands in for the screen the overlay will
+   cover; the icon is the nav logo's size. Colours are the --dive-* tokens. */
+.dive-controls {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-4);
+}
+.dive-controls .btn { width: auto; margin-bottom: 0; }
+.dive-icon {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	margin: 0;
+}
+.dive-icon svg.dive {
+	display: block;
+	width: var(--nav-logo-height);
+	height: var(--nav-logo-height);
+}
+.dive-stage {
+	margin-top: var(--space-4);
+	/* What is left of a phone screen under the heading and the button. */
+	height: clamp(320px, calc(100dvh - 20rem), 760px);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-md);
+	overflow: hidden;
+}
+.dive-stage svg.dive {
+	display: block;
+	width: 100%;
+	height: 100%;
+}

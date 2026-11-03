@@ -1213,3 +1213,17 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* `layout.html` carries `og:` and `twitter:` tags from each page's title and description, with the one share picture. `prefs.js` sets `theme-color` to the theme's `--bg-base` and asks an installed iPhone app for dark status-bar text in the light theme. The manifest stays #202020 (fixed at install). The drawing's colours are tokens in `install.css`, with light-mode values; seven stay fixed, the same in both (`docs/systems/foundations.md`). This replaces the 3 Nov build's choice to keep the drawn iPhone dark in either theme, which was Claude's.
 *Unconfirmed:* whether iOS honours the status-bar style set by script before the first paint; only an iPhone can show it (`docs/STATUS.md` §1, 4a).
 *Touches:* `_includes/layout.html`, `scripts/prefs.js`, the three forwarding pages under `/leagues/`, `_includes/install/safari.svg`, `stylesheets/install.css`
+
+## 2026-11-03 — The dive: the loader, at rest the logo
+
+*Decided by UV:* the email GIF's diver, redrawn as an SVG (approved at https://claude.ai/artifact/FABxymhx8RrGu1Q7ifLy5J), becomes the loading overlay, and the nav icon's loader under reduced motion in place of the dots. "The logo is static until loading happens. That's when she dives and the animation starts looping during loading." Her timing stays the GIF's, with a top speed. In the light theme she takes `logo-mark-light.svg`'s colours (navy suit, cream skin), not the `--logo-*` pair, which would swap them.
+*So:* `_includes/dive.svg` + `scripts/dive.js`, on `/sandbox/dive/` only for now; wiring it into the loader and the nav is the next job.
+*Claude's, for UV to confirm:* when loading ends she goes through, falls in once more and stops in the logo pose (no pause, no easing); she vanishes at the hole's near edge, not below the ring as in the GIF; a fall is never shorter than the box (she always enters from above).
+*Touches:* `_includes/dive.svg`, `scripts/dive.js`, `scripts/sandbox-dive.js`, `sandbox/dive/index.html`, `sandbox/index.html`, `stylesheets/sandbox.css`, `stylesheets/variables.css`
+
+## 2026-11-03 — The portal rim is shaded; the icons follow
+
+*Decided by UV:* the logo mark's portal rim gets the same black gradient as the wordmark (`gra_m_all`), in `icon-primary.svg`, `logo-mark-dark.svg` and `logo-mark-light.svg`, and the change goes everywhere the mark appears.
+*So:* pages that show the SVG files needed nothing. `dive.svg` was rebuilt from the new file, and its build script kept as `tools/dive-svg/build.js` so the next change is one command. The app icons, favicons and `icon-primary.png` were re-rendered from the new `icon-primary.svg` by Claude, at their old sizes and framing (headless Chrome; rendering the old SVG the same way reproduced the old icons to within 146 pixels in four million). An installed app keeps its old home-screen icon until it is added again.
+*Not yet:* the email GIF keeps the old rim; rebuilding it is its own job (`docs/BACKLOG.md`, item 3).
+*Touches:* the three logo SVGs, `_includes/dive.svg`, `tools/dive-svg/`, `resources/icons/*`, `favicon.ico`, `branding/icon-primary.png`

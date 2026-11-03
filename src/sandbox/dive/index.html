@@ -1,0 +1,35 @@
+---
+layout: layout.html
+title: Dive Sandbox
+description: "A scratch page for the dive, the diver falling through the hole. Not part of the product."
+extraStyles:
+  - /stylesheets/sandbox.css
+extraScripts:
+  - /scripts/dive.js
+  - /scripts/sandbox-dive.js
+---
+{% comment %}
+	The dive's sandbox (3 Nov): the email GIF's diver as an inline SVG
+	(_includes/dive.svg, scripts/dive.js), meant for the loading overlay and,
+	under reduced motion, the nav icon in place of the dots. Nothing is wired
+	into the site yet. At rest she is the logo; "Start loading" sets her
+	diving until "Stop loading". Both copies run together.
+{% endcomment %}
+
+<div class="tdc-card wide sandbox dive-sandbox">
+	<h1>Dive</h1>
+	<p class="muted">At rest she is the logo. While something loads she dives through the hole, again and again, a second apart. When it is done she falls in once more and stays. Not linked from the nav.</p>
+
+	<div class="dive-controls">
+		<button type="button" class="btn btn-primary" id="dive-load">Start loading</button>
+		<figure class="dive-icon">
+			{% include "dive.svg" %}
+			<figcaption class="muted">Nav icon size</figcaption>
+		</figure>
+	</div>
+	<div class="status" id="dive-status" role="status"></div>
+
+	<div class="dive-stage" id="dive-stage">
+		{% include "dive.svg" %}
+	</div>
+</div>
