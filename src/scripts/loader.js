@@ -74,10 +74,12 @@ const TDCLoader = (() => {
 		svg.removeAttribute('role');
 		svg.removeAttribute('aria-label');
 		stage.append(svg);
-		// The wordmark's width follows the portal's (UV, 3 Nov: fitted to the
-		// screen it was far too big), times --loader-wordmark.
-		const onLayout = ({ portal }) => box.style.setProperty('--loader-wordmark-width', `${portal}px`);
-		return TDCDive.attach(svg, { frame: 'fit', onLayout });
+		// The scene (portal, ladder and diver) takes the screen's width over
+		// the golden ratio (UV, 3 Nov: padding at the sides), within the
+		// dive's own height and size limits; the wordmark is as wide as the
+		// scene, times --loader-wordmark.
+		const onLayout = ({ scene }) => box.style.setProperty('--loader-wordmark-width', `${scene}px`);
+		return TDCDive.attach(svg, { frame: 'fit', across: 1 / 1.618, onLayout });
 	})();
 	const say = () => document.dispatchEvent(new CustomEvent('tdc-loader', { detail: { up } }));
 

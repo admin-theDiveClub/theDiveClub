@@ -127,7 +127,7 @@
   --live-fade: 0.5s;              /* text a re-read changed: its old value fading out, then the new in (TDC.liveFade) */
   --loader-fade: 0.5s;            /* the loading screen fading out once the page is ready */
   --loader-blur: 24px;            /* the loading screen is see-through: how strongly it blurs the page under it (29 Oct) */
-  --loader-wordmark: 1;           /* the loading screen's wordmark: its width as a multiple of the portal's (3 Nov) */
+  --loader-wordmark: 1;           /* the loading screen's wordmark: its width as a multiple of the scene's (portal, ladder and diver; 3 Nov) */
   --group-dots-size: 1.6rem;      /* a folding group loading: the ring its dots go round, at the right of its heading (29 Oct) */
   --group-dots-stroke: 2.5px;     /* and the dots' size on it */
   /* The match page's score cards (match.css; docs/design/match-score-input.md) */

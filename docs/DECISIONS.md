@@ -1247,3 +1247,16 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* "The breathing ring shouldn't be on the overlay loader." The diver alone is the loading screen, in both motion modes (it had been kept under reduced motion, beside her).
 *So:* the ring's element, its CSS, its serve in `loader.js` and its tokens `--loader-size` / `--loader-stroke` (with their main-sandbox entries) are gone. A tapped control still breathes under reduced motion.
 *Touches:* `_includes/layout.html`, `scripts/loader.js`, `stylesheets/loader.css`, `stylesheets/variables.css`, `scripts/sandbox.js`, `scripts/dots.js` (a comment)
+
+## 2026-11-03 — The match info goes to the idle dot; the break buttons are quarter circles
+
+*Decided by UV:* the frame and win condition leave the cream ring in the break ring's hole for the yellow pill's empty end, where the idle dot was, in grey, its ring with it; the idle pool shrinks the words into the dot, plays, gathers back and grows them again; the end being covered gets the new words while hidden, never faded. The break buttons become quarter circles, now the middle is free. Every button's words as big as fits, the break buttons' and the special wins' alike. While nobody is known to break, both ends show only the grey dot and a call's dots run round the yellow pill.
+*Claude's, for UV to confirm:* with breaks not recorded the grey info ring sits in the middle and the pool plays there (UV: "apply as you see fit"); "as big as fits" is one size per group (the four break words, the three special wins), not each word its own maximum.
+*So:* `docs/systems/matches.md`, "The info rings and the quarter circles". The special wins' bands thicken with their words, so the scores have a little less room.
+*Touches:* `match/index.html`, `scripts/match.js`, `stylesheets/match.css`
+
+## 2026-11-03 — The loading screen's scene is the screen's width over the golden ratio
+
+*Decided by UV:* the scene was a bit too big; side padding, with the wordmark, the diver and the portal each the screen's width ÷ 1.618.
+*So:* the dive's new `across` option (1 / 1.618 on the loading screen) sizes the portal, ladder and diver together, still within the dive's height limit and its largest size (360px diver), so a PC keeps the scene at 300px; the wordmark takes the scene's width (`onLayout` now reports it), times `--loader-wordmark` (1). At 420 wide both are 256px, where the scene was 300 and the wordmark 272.
+*Touches:* `scripts/dive.js`, `scripts/loader.js`, `stylesheets/loader.css`, `stylesheets/variables.css` (a comment)

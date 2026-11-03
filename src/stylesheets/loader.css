@@ -30,7 +30,8 @@
 
 /* The dive (UV, 3 Nov): the wordmark centred on the screen behind the diver,
    who falls the screen's length into the portal at its foot (scripts/dive.js,
-   frame 'fit'). Its width is the portal's on screen (loader.js sets
+   frame 'fit', the screen's width over the golden ratio). Its width is the
+   scene's (portal, ladder and diver) on screen (loader.js sets
    --loader-wordmark-width from the dive's layout) times --loader-wordmark,
    so it keeps its size beside the diver and portal at any screen; never
    wider than the screen less a margin. Not shown until the dive has laid

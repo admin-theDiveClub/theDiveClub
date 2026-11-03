@@ -64,13 +64,10 @@ extraScripts:
 <div class="match-page" id="match-page">
 
 	<div class="mv-stage" id="mv-stage">
-		{% comment %}The yellow toggle's pill (UV, 2 Nov), while breaks are recorded: two rings long, the break ring and the cream ring sliding in it to the breaker's end (match.js, placeKnob). First, so its outer glow lies behind the scores.{% endcomment %}
-		<div class="mv-yellow" aria-hidden="true">
+		{% comment %}The yellow toggle's pill (UV, 2 Nov), while breaks are recorded: two rings long, the break ring sliding in it to the breaker's end (match.js, placeKnob). First, so its outer glow lies behind the scores.{% endcomment %}
+		<div class="mv-yellow" id="mv-yellow" aria-hidden="true">
 			<div class="mv-yellow-halo" data-for="home"></div>
 			<div class="mv-yellow-halo" data-for="away"></div>
-			{% comment %}The idle dots (UV, 2 Nov): a faint grey dot at each end's centre; at the empty one the page's dots play pool now and then (match.js, the idle dots).{% endcomment %}
-			<div class="mv-idle" data-for="home"></div>
-			<div class="mv-idle" data-for="away"></div>
 		</div>
 
 		{% comment %}The centre line inside the green pill (UV, 2 Nov): green with the pill's glow, on the side that is not breaking, both sides when nobody is; behind the scores.{% endcomment %}
@@ -94,13 +91,12 @@ extraScripts:
 		{% comment %}The green pill round the scores and the rings (UV, 2 Nov): the special wins and the more button fill its round ends, drawn by match.js in the break ring's box. Its line, glow and shadows are match.css's.{% endcomment %}
 		<div class="mv-pill" id="mv-pill" aria-hidden="true"></div>
 
-		{% comment %}The cream ring, the dots' ring, round its icon: the frame in play above, the win condition below.{% endcomment %}
-		<div class="mv-light" id="mv-light">
-			<span class="mv-frame" id="mv-frame" data-live="frame"></span>
-			<span class="mv-target" id="mv-target"></span>
-		</div>
+		{% comment %}The info rings (UV, 3 Nov), grey, the dots' ring: the frame in play above, the win condition below. One at each end of the yellow pill, where the idle dot was, shown at the end the break ring is not at; one in the middle while breaks are not recorded. Each holds its idle box, where the page's dots play pool now and then (match.js, the idle dots).{% endcomment %}
+		<div class="mv-info" data-for="home"><div class="mv-info-face"><span class="mv-frame"></span><span class="mv-target"></span></div><div class="mv-info-idle"></div></div>
+		<div class="mv-info" data-for="away"><div class="mv-info-face"><span class="mv-frame"></span><span class="mv-target"></span></div><div class="mv-info-idle"></div></div>
+		<div class="mv-info" data-for="middle"><div class="mv-info-face"><span class="mv-frame"></span><span class="mv-target"></span></div><div class="mv-info-idle"></div></div>
 
-		{% comment %}The break event: a yellow ring round the cream one, four quadrants built by match.js from TDCMatchDef.BREAK_OUTCOME; the special wins and the more button beside it.{% endcomment %}
+		{% comment %}The break event: a yellow ring of four quarter circles, built by match.js from TDCMatchDef.BREAK_OUTCOME; the special wins and the more button beside it.{% endcomment %}
 		<div class="mv-break" id="mv-break"></div>
 
 		<!-- Covers the stage when something has to be answered first: the lag,

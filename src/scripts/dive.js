@@ -25,8 +25,11 @@
 //   topSpeed  L/s (the GIF peaks at 2.5)
 //   pause     ms between drops
 //   maxDiver  px, the tallest she is drawn with frame 'fit'
-//   onLayout  called after each layout with { portal }: the portal's width
-//             on screen, px (the loading screen sizes its wordmark by it)
+//   across    with frame 'fit', the share of the box's width the scene (the
+//             portal, ladder and diver) may take; unset, the width less 32px
+//   onLayout  called after each layout with { portal, scene }: the portal's
+//             and the whole scene's width on screen, px (the loading screen
+//             sizes its wordmark by the scene)
 
 const TDCDive = (() => {
 	const AREA = 'Dive';
@@ -89,6 +92,7 @@ const TDCDive = (() => {
 			diver.removeAttribute('transform');
 			const b = base.getBBox(), d = diver.getBBox();
 			if (keep) diver.setAttribute('transform', keep);
+			const x0 = Math.min(b.x, d.x), x1 = Math.max(b.x + b.width, d.x + d.width);
 			let s, tx, ty, top;
 			if (opts.frame === 'logo') {
 				svg.setAttribute('viewBox', `0 0 ${LOGO_BOX} ${LOGO_BOX}`);
@@ -98,10 +102,10 @@ const TDCDive = (() => {
 			} else {
 				const W = box.width, H = box.height;
 				svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-				const x0 = Math.min(b.x, d.x), x1 = Math.max(b.x + b.width, d.x + d.width);
 				const y1 = b.y + b.height;
 				const bottom = Math.max(24, H * 0.06);
-				s = Math.min((W - 32) / (x1 - x0), (H - bottom - 8) / (y1 - d.y), opts.maxDiver / d.height);
+				const room = opts.across ? W * opts.across : W - 32;
+				s = Math.min(room / (x1 - x0), (H - bottom - 8) / (y1 - d.y), opts.maxDiver / d.height);
 				tx = W / 2 - s * ((x0 + x1) / 2 + off.e);
 				ty = H - bottom - s * (y1 + off.f);
 				scene.setAttribute('transform', `translate(${tx} ${ty}) scale(${s})`);
@@ -112,7 +116,7 @@ const TDCDive = (() => {
 			geo.fit = Math.max(0, (d.y + d.height - top) / d.height); // from just above the top edge
 			geo.through = (HOLE_LIP - d.y) / d.height;            // logo pose until her toes pass the lip
 			const unit = opts.frame === 'logo' ? Math.min(box.width, box.height) / LOGO_BOX : s;
-			if (opts.onLayout) opts.onLayout({ portal: unit * HOLE_W });
+			if (opts.onLayout) opts.onLayout({ portal: unit * HOLE_W, scene: unit * (x1 - x0) });
 			return true;
 		}
 

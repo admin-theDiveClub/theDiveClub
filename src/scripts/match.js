@@ -90,7 +90,7 @@
 		stage: el('mv-stage'), p0: el('mv-p0'), p1: el('mv-p1'),
 		scoreHome: el('mv-score-home'), scoreAway: el('mv-score-away'),
 		whoHome: el('mv-who-home'), whoAway: el('mv-who-away'),
-		ring: el('mv-light'), frame: el('mv-frame'), target: el('mv-target'), breakRing: el('mv-break'), pill: el('mv-pill'), breakerGlows: document.querySelectorAll('.mv-breaker-glow'),
+		yellow: el('mv-yellow'), infos: [...document.querySelectorAll('.mv-info')], breakRing: el('mv-break'), pill: el('mv-pill'), breakerGlows: document.querySelectorAll('.mv-breaker-glow'),
 		stageNote: el('stage-note'),
 		overlay: el('overlay'), overlayQ: el('overlay-q'), overlayRow: el('overlay-row'), overlayHint: el('overlay-hint'),
 		stageStatus: el('stage-status'),
@@ -797,18 +797,20 @@
 	}
 
 	// ─── The break event (UV, 30 Oct) ─────────────────────────────────
-	// A yellow ring inside the cream one, split like an X into a button per
+	// A yellow ring, split like an X into a button per
 	// break event (TDCMatchDef.BREAK_OUTCOME, so the names are defined once):
 	// In at the top, Dry at the bottom, Scratch left and Foul right. The
 	// chosen one is filled. As on /match/, nothing is chosen at first and a
 	// choice can be changed, never cleared. A tap is match.js's setOutcome
 	// (breakTap, step 2): it starts the frame and ends racking, and is saved
-	// with the frame. Drawn in a 100 box: each quadrant an annular sector, its
-	// straight edges BREAK_RING.gap from the X's lines on both sides, so the
-	// gap between two quadrants is even from the hole to the rim. The words
-	// run along the rim (UV, 30 Oct), so the quadrants can be a narrow band and
-	// the hole large. Dry's arc runs the other way round, so it reads upright;
-	// Scratch reads upwards and Foul downwards, their tops to the rim.
+	// with the frame. Drawn in a 100 box: each quadrant a quarter circle (UV,
+	// 3 Nov: the info left the hole, so they meet in the middle and are
+	// easier to tap when small), its straight edges BREAK_RING.gap from the
+	// X's lines on both sides, so the gap between two quadrants is even from
+	// the middle to the rim. The words run along the rim (UV, 30 Oct), as big
+	// as fits (UV, 3 Nov; breakWords). Dry's arc runs the other way round, so
+	// it reads upright; Scratch reads upwards and Foul downwards, their tops
+	// to the rim.
 	//
 	// Each word's capitals are centred in the band (UV, 30 Oct: the padding
 	// was uneven): the word stands on its baseline, which is CAP / 2 of its
@@ -820,18 +822,69 @@
 	// their size off the middle, outwards on three and inwards on Dry.
 	const SVG_NS = 'http://www.w3.org/2000/svg';
 	const BREAK_AT = { in: -90, foul: 0, dry: 90, scratch: 180 };   // each quadrant's middle, degrees clockwise from the right
-	const BREAK_RING = { outer: 48, inner: 35, gap: 2.5 };
+	const BREAK_RING = { outer: 48, gap: 2.5 };
 	const CAP = 1.05;
 
 	const DEG = 180 / Math.PI;
 	const at = (r, a) => [50 + r * Math.cos(a / DEG), 50 + r * Math.sin(a / DEG)].map((n) => n.toFixed(2)).join(' ');
 	const norm = (a) => ((a + 540) % 360) - 180;   // an angle in degrees, brought into -180 to 180
 
+	// A quarter: the rim's arc, then in to where its two straight edges meet,
+	// gap from both of the X's lines, so on its middle gap × √2 out
 	function sector(mid) {
-		const { outer, inner, gap } = BREAK_RING;
-		const oa = Math.asin(gap / outer) * DEG, ia = Math.asin(gap / inner) * DEG;
+		const { outer, gap } = BREAK_RING;
+		const oa = Math.asin(gap / outer) * DEG;
 		return `M ${at(outer, mid - 45 + oa)} A ${outer} ${outer} 0 0 1 ${at(outer, mid + 45 - oa)}`
-			+ ` L ${at(inner, mid + 45 - ia)} A ${inner} ${inner} 0 0 0 ${at(inner, mid - 45 + ia)} Z`;
+			+ ` L ${at(gap * Math.SQRT2, mid)} Z`;
+	}
+
+	// A word's width in the display face for each unit of its size, for the
+	// words' fit (breakWords, cornerBand): measured on the stage, and again
+	// once the fonts are in (buildBreak). Nothing is kept while the stage is
+	// not laid out (it measures 0), so a rough width stands in.
+	const widths = new Map();
+	let measurer = null;
+	function wordWidth(label) {
+		if (widths.has(label)) return widths.get(label);
+		if (!measurer) {
+			measurer = document.createElementNS(SVG_NS, 'svg');
+			measurer.setAttribute('aria-hidden', 'true');
+			measurer.style.cssText = 'position: absolute; width: 0; height: 0; overflow: hidden;';
+			els.stage.append(measurer);
+		}
+		const text = document.createElementNS(SVG_NS, 'text');
+		text.setAttribute('class', 'mv-measure');
+		text.style.fontSize = '100px';
+		text.textContent = label;
+		measurer.append(text);
+		const w = text.getComputedTextLength() / 100;
+		text.remove();
+		if (!(w > 0)) return 0.7 * label.length;
+		widths.set(label, w);
+		return w;
+	}
+
+	// The break words' size and the radius their capitals are centred on (UV,
+	// 3 Nov: as big as fits the buttons): one size for all four (Claude), the
+	// biggest at which the longest still fits its quarter, the special wins'
+	// padding (0.46 of a capital) from the rim and from the straight edges.
+	// The width is checked at the capitals' inner edge, where the quarter is
+	// narrowest and where the words that read outwards stand.
+	function breakWords() {
+		const { outer, gap } = BREAK_RING;
+		const longest = Math.max(...Object.values(TDCMatchDef.BREAK_OUTCOME).map(wordWidth));
+		const place = (word) => {
+			const cap = CAP * word, pad = cap * 0.46;
+			return { pad, middle: outer - pad - cap / 2, inner: outer - pad - cap };
+		};
+		const fits = (word) => {
+			const { pad, inner } = place(word);
+			if (inner <= gap + pad) return false;
+			return longest * word <= 2 * (Math.PI / 4 - Math.asin((gap + pad) / inner)) * inner;
+		};
+		let lo = 0, hi = outer;
+		for (let k = 0; k < 24; k++) { const m = (lo + hi) / 2; if (fits(m)) lo = m; else hi = m; }
+		return { word: lo, middle: place(lo).middle };
 	}
 
 	// The arc a word stands on, centred on the angle mid and reaching half
@@ -839,10 +892,10 @@
 	// clockwise (its top outwards), except in the lower half, where clockwise
 	// would point its top down and out (a special win at 150° read nearly
 	// upside down); exactly sideways (0°, 180°: Foul, Scratch) stays
-	// clockwise. size: the words' size in the box (--mv-word). The break
-	// words' middle is their band's. o: the circle's centre, the ring's
-	// unless given (a special win's is its end of the green pill's).
-	function wordArc(mid, size, half = 40, middle = (BREAK_RING.outer + BREAK_RING.inner) / 2, o = [50, 50]) {
+	// clockwise. size: the words' size in the box. The break words' middle
+	// is breakWords'. o: the circle's centre, the ring's unless given (a
+	// special win's is its end of the green pill's).
+	function wordArc(mid, size, half, middle, o = [50, 50]) {
 		const lift = CAP * size / 2;
 		const on = (r, a) => [o[0] + r * Math.cos(a / DEG), o[1] + r * Math.sin(a / DEG)].map((n) => n.toFixed(2)).join(' ');
 		if (mid > 0 && mid < 180) {
@@ -864,7 +917,8 @@
 	// filling the round ends): a band round the corner's circle, two
 	// quadrants' gaps inside the pill's line (as the special wins lay round
 	// the ring), as thick as its word needs (a capital and the break words'
-	// padding either side, 0.46 of a capital), round at both ends, reaching
+	// padding either side, 0.46 of a capital; the word as big as fits, UV
+	// 3 Nov, cornerBand), round at both ends, reaching
 	// round the corner short of its straight edges. Its word runs along its
 	// middle. Drawn in the break ring's 100 box from where the pill (#mv-pill,
 	// sized by match.css) lies against it, so drawn again when the stage
@@ -874,9 +928,7 @@
 	// by TDCMatchDef.RESULT_SHORT; the fourth button is the more pop-up, which
 	// holds the walkovers.
 	const WIN_SLOTS = [['break_and_finish', 'reverse_break_and_finish'], ['golden_break', 'more']];   // each slot: [the breaker's end, the other end]
-	// a word's size as a share of the corner's radius (UV, 2 Nov: sized to the
-	// button; about 15px on a phone held upright)
-	const WIN = { word: 0.16 };
+	const WIN_WORDS = ['break_and_finish', 'reverse_break_and_finish', 'golden_break'];
 	const landscape = matchMedia('(orientation: landscape)');
 
 	// Where the green pill lies, in the break ring's box: its centre, half its
@@ -899,10 +951,28 @@
 
 	// A corner's band for a corner of radius rad (in the box): its outer and
 	// inner radius, the radius its word is centred on, and its word's size.
-	// fitScores keeps the digits clear of the inner one.
+	// fitScores keeps the digits clear of the inner one. The word is as big
+	// as fits (UV, 3 Nov; it was 0.16 of the radius): one size for all three
+	// (Claude), the biggest at which the longest, a padding clear of each end,
+	// fits along the band (winBand's reach) at its capitals' inner edge. The
+	// band thickens with it, so the scores' room shrinks.
 	function cornerBand(rad) {
-		const ro = rad - 2 * BREAK_RING.gap, word = ro * WIN.word, cap = CAP * word, pad = cap * 0.46, h = cap + 2 * pad;
-		return { ro, ri: ro - h, rm: ro - h / 2, h, word };
+		const ro = rad - 2 * BREAK_RING.gap;
+		const longest = Math.max(...WIN_WORDS.map((v) => wordWidth(TDCMatchDef.RESULT_SHORT[v] || v)));
+		const band = (word) => {
+			const cap = CAP * word, pad = cap * 0.46, h = cap + 2 * pad;
+			return { ro, ri: ro - h, rm: ro - h / 2, h, word, cap, pad };
+		};
+		const fits = (word) => {
+			const { ri, rm, h, cap, pad } = band(word);
+			if (ri <= 0) return false;
+			const half = Math.PI / 4 - (h / 2 + BREAK_RING.gap) / rm;
+			return longest * word <= 2 * half * (rm - cap / 2) - 2 * pad;
+		};
+		let lo = 0, hi = Math.max(0, ro);
+		for (let k = 0; k < 24; k++) { const m = (lo + hi) / 2; if (fits(m)) lo = m; else hi = m; }
+		const { ri, rm, h } = band(lo);
+		return { ro, ri, rm, h, word: lo };
 	}
 
 	// One button: the band about (ox, oy), centred on the angle mid (degrees,
@@ -1093,16 +1163,24 @@
 		wins.setAttribute('role', 'radiogroup');
 		wins.setAttribute('aria-label', 'Special wins');
 		svg.append(defs, ring, wins);
-		const size = px('--mv-word');
-		if (!(size > 0)) TDC.error(AREA, 'the button words have no size (--mv-word in match.css), so they cannot be placed', null, els.stageStatus);
-		const word = size > 0 ? size : 0;
 		for (const [value, label] of Object.entries(TDCMatchDef.BREAK_OUTCOME)) {
 			if (!(value in BREAK_AT)) {
 				TDC.error(AREA, `the break ring has no place for "${value}"`, null, els.stageStatus);
 				continue;
 			}
-			ring.append(choice('mv-break-q', value, label, sector(BREAK_AT[value]), 'mv-break-arc-' + value, wordArc(BREAK_AT[value], word), defs));
+			ring.append(choice('mv-break-q', value, label, sector(BREAK_AT[value]), 'mv-break-arc-' + value, '', defs));
 		}
+		// The break words as big as fits (breakWords): each word's size and
+		// its arc, by the rim
+		const fitBreakWords = () => {
+			const { word, middle } = breakWords();
+			for (const g of ring.querySelectorAll('.mv-break-q')) {
+				const value = g.dataset.value;
+				defs.querySelector('#mv-break-arc-' + value).setAttribute('d', wordArc(BREAK_AT[value], word, 44, middle));
+				g.querySelector('text').style.fontSize = word.toFixed(2) + 'px';
+			}
+		};
+		fitBreakWords();
 		const glow = buildGlow(), inset = buildInset();
 		let buttons = [];
 
@@ -1178,7 +1256,7 @@
 				const label = TDCMatchDef.RESULT_SHORT[b.value];
 				if (!label) TDC.error(AREA, `no short name for the special win "${b.value}"`, null, els.stageStatus);
 				const g = choice('mv-win-q', b.value, label || b.value, b.d, 'mv-win-arc-' + b.value, wordArc(b.mid, b.word, b.half, b.wordR, b.o), winDefs);
-				g.querySelector('text').style.fontSize = b.word.toFixed(2) + 'px';   // sized to the button (WIN.word), not the break words' --mv-word
+				g.querySelector('text').style.fontSize = b.word.toFixed(2) + 'px';   // as big as fits the band (cornerBand)
 				g.setAttribute('aria-label', TDCMatchDef.RESULT_EVENT[b.value] || label);
 				return g;
 			}));
@@ -1198,6 +1276,14 @@
 		paintWins();
 		repaintWins = paintWins;
 		landscape.addEventListener('change', paintWins);
+		// The words measured again in the display face once it is in, and
+		// everything sized from them drawn again
+		document.fonts.ready.then(() => {
+			widths.clear();
+			fitBreakWords();
+			paintWins();
+			fitScores();
+		});
 
 		svg.addEventListener('click', (e) => {
 			const q = e.target.closest('.mv-break-q, .mv-win-q');
@@ -1213,11 +1299,6 @@
 			q.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 		});
 		els.breakRing.append(glow.svg, svg, inset.svg);
-		// For the cream ring that sits in the hole (match.css, .mv-light): the
-		// hole's share of the ring's box, and how far apart two quadrants'
-		// edges are, as a share of it
-		els.stage.style.setProperty('--mv-break-hole', String(BREAK_RING.inner * 2 / 100));
-		els.stage.style.setProperty('--mv-break-gap', String(BREAK_RING.gap * 2 / 100));
 		// the ring's outside, as a share of its box: the yellow pill's glow stops there
 		els.stage.style.setProperty('--mv-break-rim', String(BREAK_RING.outer * 2 / 100));
 		// and how far the rings slide either way from the middle, in the box: the
@@ -1265,26 +1346,61 @@
 	buildScoreFx();
 	followScores();
 
-	// ─── The ring's icon (UV, 30 Oct) ─────────────────────────────────
-	// Inside the cream ring, the old page's frame line in two parts: above,
-	// the frame in play and the most frames the match can take where there
-	// is a most (race to 5: 9, as 5 + 4 decides it; best of n and n fixed
-	// frames: n; timed and free play: none), or Final once it is decided
-	// (matchOver, as /match/ reckons it); below, the win condition as /match/
-	// words it (free play alone, the rest with their number).
+	// ─── The info (UV, 30 Oct; out of the break ring 3 Nov) ───────────
+	// In the grey info rings (match.css, .mv-info), the old page's frame line
+	// in two parts: above, the frame in play and the most frames the match
+	// can take where there is a most (race to 5: 9, as 5 + 4 decides it; best
+	// of n and n fixed frames: n; timed and free play: none), or Final once
+	// it is decided (matchOver, as /match/ reckons it); below, the win
+	// condition as /match/ words it (free play alone, the rest with their
+	// number). Worked out here and written by paintInfo once the toggle's
+	// next place is known (paintBreaker), never faded (UV, 3 Nov): the end
+	// the break ring is about to slide over keeps what it shows until it is
+	// under the ring, and is written then, so the ring it uncovers already
+	// holds the new words.
+	let infoWords = null;
 	function paintRingIcon() {
 		const rules = MATCH.rules;
 		const type = rules.win_condition_type, t = Number(rules.win_condition_target);
 		const most = !(t > 0) ? null : type === 'race_to' ? 2 * t - 1 : (type === 'best_of' || type === 'fixed_frames') ? t : null;
-		els.frame.textContent = matchOver() ? 'Final' : `Frame ${MATCH.frames.length + 1}${most ? '/' + most : ''}`;
 		const wc = WIN_CONDITION[type];
 		if (!wc) TDC.error(AREA, `unknown win condition "${type}"`, null, els.stageStatus);
-		els.target.textContent = type === 'free_play' ? wc : `${wc || 'TDC (Error)'} ${rules.win_condition_target}`;
+		infoWords = [
+			matchOver() ? 'Final' : `Frame ${MATCH.frames.length + 1}${most ? '/' + most : ''}`,
+			type === 'free_play' ? wc : `${wc || 'TDC (Error)'} ${rules.win_condition_target}`
+		];
 	}
+	function paintInfo() {
+		if (!infoWords) return;
+		const shown = ringEl();
+		for (const box of els.infos) {
+			box.setAttribute('aria-hidden', String(box !== shown));
+			const end = box.dataset.for;
+			if (end === knobWant && (end !== knobSide || knobSliding)) continue;   // about to be covered: written once it is
+			box.querySelectorAll('.mv-frame, .mv-target').forEach((node, i) => {
+				if (node.textContent !== infoWords[i]) node.textContent = infoWords[i];
+			});
+		}
+	}
+
+	// The ring the dots use for every call (UV, 3 Nov: the info ring, wherever
+	// it is): the middle one while breaks are not recorded; while they are,
+	// the one at the end the break ring is not at; and while nobody is known
+	// to break (the break ring in the middle, the ends showing only their
+	// grey dots), the yellow pill, the dots on a circle along its line round
+	// the break ring (UV, 3 Nov: "saves on yellow").
+	function ringEl() {
+		if (!els.stage.hasAttribute('data-breaks')) return els.infos.find((b) => b.dataset.for === 'middle');
+		if (!knobSide) return els.yellow;
+		return els.infos.find((b) => b.dataset.for === (knobSide === 'home' ? 'away' : 'home'));
+	}
+	const ringsBusy = () => [els.yellow, ...els.infos].some((r) => r.dataset.dots === 'busy');
+	// A CSS time (0.3s, 300ms) in ms
+	const timeMs = (s) => (parseFloat(s) || 0) * (/ms\s*$/.test(s) ? 1 : 1000);
 
 	// ─── The yellow toggle (UV, 2 Nov) ────────────────────────────────
 	// While breaks are recorded, a yellow pill two rings long runs round the
-	// break ring, and the break ring and the cream ring move in it as one, as
+	// break ring, and the break ring moves in it, as
 	// the team card's switches move: to the breaker's end, the middle while
 	// nobody is known. The special wins swap ends with it, and the breaker's
 	// yellow glow inside the green pill goes to that half (match.css,
@@ -1292,29 +1408,50 @@
 	// done: while the ring's dots run (a frame saving, another phone's frame
 	// being read) it waits, and slides as they come back, as a switch's knob
 	// does; a break tap sends nothing and moves nothing. Drawn where it
-	// stands, without sliding, the first time (the page opening).
-	let knobWant = null, knobDrawn = false;
+	// stands, without sliding, the first time (the page opening). Its side is
+	// also data-knob on the stage, unset while nobody is known to break (the
+	// info rings shrunk to their dots, match.css). Once a slide is over the
+	// end it covered gets the new words (paintInfo).
+	let knobWant = null, knobDrawn = false, knobSliding = false, slideTimer = null;
 	function paintBreaker(side) {
 		knobWant = MATCH && MATCH.rules.track_breaks ? side || null : null;
 		els.stage.toggleAttribute('data-breaks', shownByRules('in'));
+		paintInfo();
 		if (!knobDrawn) { placeKnob(); return; }
 		// A frame is drawn before its save is asked for, so the ring is not
 		// busy yet: asked again once this task is done (measured: it slid
 		// 20ms after the tap, while the save's dots ran)
-		setTimeout(() => { if (els.ring.dataset.dots !== 'busy') placeKnob(); }, 0);
+		setTimeout(() => { if (!ringsBusy()) placeKnob(); }, 0);
 	}
 	function placeKnob() {
 		if (knobSide === knobWant && knobDrawn) return;
 		knobSide = knobWant;
 		if (!knobDrawn) els.stage.classList.add('mv-knob-still');
 		els.stage.style.setProperty('--mv-knob', knobSide === 'home' ? '-1' : knobSide === 'away' ? '1' : '0');
+		if (knobSide) els.stage.dataset.knob = knobSide;
+		else delete els.stage.dataset.knob;
 		if (!knobDrawn) {
 			knobDrawn = true;
 			requestAnimationFrame(() => requestAnimationFrame(() => els.stage.classList.remove('mv-knob-still')));
+		} else {
+			// Written once the slide is over and the covered ring has faded out
+			// altogether (the dots' reveal can slow its fade: dots.css)
+			knobSliding = true;
+			clearTimeout(slideTimer);
+			const covered = () => {
+				const box = els.infos.find((b) => b.dataset.for === knobSide);
+				if (box && +getComputedStyle(box).opacity > 0) { slideTimer = setTimeout(covered, 100); return; }
+				knobSliding = false;
+				paintInfo();
+			};
+			slideTimer = setTimeout(covered, timeMs(getComputedStyle(els.stage).getPropertyValue('--control-motion')));
 		}
+		paintInfo();
 		if (knobSide !== winsBreaker && repaintWins) repaintWins();
 	}
-	new MutationObserver(() => { if (els.ring.dataset.dots !== 'busy' && knobDrawn) placeKnob(); }).observe(els.ring, { attributes: true, attributeFilter: ['data-dots'] });
+	for (const ring of [els.yellow, ...els.infos]) {
+		new MutationObserver(() => { if (!ringsBusy() && knobDrawn) placeKnob(); }).observe(ring, { attributes: true, attributeFilter: ['data-dots'] });
+	}
 
 	// ─── The stage's buttons ──────────────────────────────────────────
 	// The four special wins keep their places (the stage keeps its shape),
@@ -4408,7 +4545,9 @@
 	})(), 'Match');
 
 	// ─── The dots, always on the ring (UV, 30 Oct) ─────────────────────
-	// Every network call on this page is shown by the dots on the cream ring,
+	// Every network call on this page is shown by the dots on the info ring
+	// (ringEl: grey, where the idle dot was, since 3 Nov; the cream ring in
+	// the break ring's hole before),
 	// never by the dots flying to whatever was tapped: they come to the ring
 	// and wait on its line, sized by its stroke (line: the ring is its own
 	// border), while it dims, words and all (dots.css, the busy look), then
@@ -4424,8 +4563,8 @@
 	//   stage away (the ring has no size then): each control there keeps its
 	//   own dots, as on every other page.
 	const serveAt = TDCDots.serve;
-	const ringShown = () => !els.matchPage.hidden && els.ring.offsetWidth > 0;
-	const onRing = (promise) => serveAt(els.ring, promise, { line: true, status: els.stageStatus });
+	const ringShown = () => !els.matchPage.hidden && ringEl().offsetWidth > 0;
+	const onRing = (promise) => serveAt(ringEl(), promise, { line: true, status: els.stageStatus });
 	TDCDots.serve = (el, promise, opts = {}) => {
 		if (TDCLoader.up || !ringShown() || (el && el.closest && el.closest('.tdc-loader'))) return serveAt(el, promise, opts);
 		onRing(promise);
@@ -4437,71 +4576,89 @@
 		if (!TDCLoader.up && ringShown()) { idleCancel(); onRing(TDCNet.quiet()); }
 	});
 
-	// ─── The idle dots (UV, 2 Nov) ─────────────────────────────────────
-	// While breaks are recorded and somebody is breaking, the yellow pill's
-	// empty end (the one the rings are not at) holds a faint grey dot
-	// (match.css, .mv-idle), and the page's one set of dots plays there
-	// between saves: still for IDLE_REST, then the grey dot shrinks into
-	// the dots (from 'centre'), they play the pool move (the two balls on a
-	// tilted table) for IDLE_PLAY, cut off if it has not finished, and they
-	// gather back into it (end 'gather'), and round again. Never on both
-	// at once (UV): a save takes them to the cream ring mid-cycle, and once
-	// it is back they come back here (the ring revealing). If the toggle
-	// moved, they fly to the new empty end and play at once; if not, they
-	// fly back and gather into its dot (UV), then rest. Not with less motion
-	// (dots.js's own reading of it), behind the loading screen, or once the
-	// stage is put away.
+	// ─── The idle dots (UV, 2 Nov; in the info ring since 3 Nov) ──────
+	// Between saves the page's one set of dots plays in the info ring the
+	// dots use (ringEl; not the yellow pill, while nobody is known to break):
+	// still for IDLE_REST, then the ring and its words shrink into a grey dot
+	// (data-shape, match.css), the dot shrinks into the dots as they open
+	// out of it (its idle box, from 'centre'), they play the pool move (the
+	// two balls on a tilted table) for IDLE_PLAY, cut off if it has not
+	// finished, they gather back into the dot (end 'gather'), and the dot
+	// grows back into the ring and its words (UV, 3 Nov); then round again.
+	// Never two things at once (UV): a save takes the dots to the ring
+	// itself mid-cycle, the words growing back under them. When a save is
+	// back and the break ring is sliding over the ring it ran on, the dots
+	// fly to the ring it uncovers, which already shows the new words, and
+	// race that. Not with less motion (dots.js's own reading of it), behind
+	// the loading screen, or once the stage is put away.
 	// Nor once nobody has touched the page for IDLE_SLEEP (UV, 3 Nov:
 	// battery): the round due then is not played, and nothing runs until the
 	// next touch, key or scroll, or the page being shown again, which starts
 	// the rest afresh.
 	const IDLE_REST = 10000, IDLE_PLAY = 5000;   // the rest 10 s since UV's second look (2 Nov; it was 5)
 	const IDLE_SLEEP = 120000;
-	const idleBoxes = [...document.querySelectorAll('.mv-idle')];
-	let idleTimer = null, idleEnd = null, idleKnob = null;
+	const rings = [els.yellow, ...els.infos];
+	const idleBoxes = els.infos.map((b) => b.querySelector('.mv-info-idle'));
+	let idleTimer = null, idleEnd = null, idleInfo = null;
 	let idleTouched = performance.now(), idleAsleep = false;
-	const idleBox = () => idleBoxes.find((b) => b.dataset.for === (knobSide === 'home' ? 'away' : 'home'));
-	const idleOn = () => !!knobSide && els.stage.hasAttribute('data-breaks') && !TDCLoader.up && ringShown() && !TDCDots.state.reduced;
-	const idleBusy = () => !!idleEnd || idleBoxes.some((b) => b.dataset.dots) || !!els.ring.dataset.dots;
+	const idleOn = () => ringEl() !== els.yellow && !TDCLoader.up && ringShown() && !TDCDots.state.reduced;
+	const idleBusy = () => !!idleEnd || !!idleInfo || idleBoxes.some((b) => b.dataset.dots) || rings.some((r) => r.dataset.dots);
+	// The ring and its words grow back out of the dot
+	function growBack() {
+		if (!idleInfo) return;
+		delete idleInfo.dataset.shape;
+		idleInfo = null;
+	}
 	function idleCancel() {
 		clearTimeout(idleTimer);
 		idleTimer = null;
 		if (idleEnd) { const end = idleEnd; idleEnd = null; end(); }
+		growBack();
 	}
 	function idleRest() {
 		clearTimeout(idleTimer);
 		idleTimer = setTimeout(() => { idleTimer = null; idlePlay(); }, IDLE_REST);
 	}
-	// The pool, at the empty end, for IDLE_PLAY; from 'centre' when the dots
-	// are hidden, else they fly there from the ring as usual
-	function idlePlay(fromRing = false) {
+	// The ring shrinks into its dot, and once it has (--mv-info-shrink) the
+	// pool plays there for IDLE_PLAY
+	function idlePlay() {
 		if (!idleOn()) return;
-		if (!fromRing && performance.now() - idleTouched >= IDLE_SLEEP) { idleAsleep = true; return; }
-		if (!fromRing && idleBusy()) { idleRest(); return; }
-		const box = idleBox();
-		let end;
-		const play = new Promise((resolve) => { end = resolve; });
-		idleEnd = end;
-		idleKnob = knobSide;
-		idleTimer = setTimeout(() => { idleTimer = null; if (idleEnd === end) { idleEnd = null; end(); } }, IDLE_PLAY);
-		serveAt(box, play, { move: 'pool', from: 'centre', end: 'gather', line: true, timeout: IDLE_PLAY * 4, status: els.stageStatus });
+		if (performance.now() - idleTouched >= IDLE_SLEEP) { idleAsleep = true; return; }
+		if (idleBusy()) { idleRest(); return; }
+		const info = ringEl(), box = info.querySelector('.mv-info-idle');
+		idleInfo = info;
+		info.dataset.shape = 'dot';
+		idleTimer = setTimeout(() => {
+			let end;
+			const play = new Promise((resolve) => { end = resolve; });
+			idleEnd = end;
+			idleTimer = setTimeout(() => { idleTimer = null; if (idleEnd === end) { idleEnd = null; end(); } }, IDLE_PLAY);
+			serveAt(box, play, { move: 'pool', from: 'centre', end: 'gather', line: true, timeout: IDLE_PLAY * 4, status: els.stageStatus });
+		}, timeMs(getComputedStyle(info).getPropertyValue('--mv-info-shrink')));
 	}
-	// A save is back and its dots race the ring (the toggle has moved by
-	// now, placeKnob): they leave it for the empty end
-	function idleBack() {
-		if (!idleOn()) return;
-		idleCancel();
-		if (knobSide !== idleKnob) { idlePlay(true); return; }
-		serveAt(idleBox(), Promise.resolve(), { end: 'gather', line: true, status: els.stageStatus });
+	// A call is back and its dots race the ring it ran on; if the break ring
+	// is now sliding over that ring (placeKnob), they go to the one it
+	// uncovers instead
+	function idleBack(ring) {
+		const now = ringEl();
+		if (ring === now || ring.dataset.dots !== 'revealing' || !ringShown()) return;
+		serveAt(now, Promise.resolve(), { line: true, status: els.stageStatus });
 	}
-	new MutationObserver(() => {
-		if (els.ring.dataset.dots === 'revealing') setTimeout(idleBack, 0);   // after placeKnob has read the same change
-	}).observe(els.ring, { attributes: true, attributeFilter: ['data-dots'] });
-	// Once the dots have gathered into a dot and it is back (dots.js takes
-	// data-dots off), the rest begins
+	// Once a call's dots are done, or the pool's have gathered into the dot
+	// and it is back (dots.js takes data-dots off), the ring grows back and
+	// the rest begins
+	for (const ring of rings) {
+		new MutationObserver(() => {
+			if (ring.dataset.dots === 'revealing') setTimeout(() => idleBack(ring), 0);   // after placeKnob has read the same change
+			else if (!ring.dataset.dots && !idleEnd && !idleTimer && !idleInfo) idleRest();
+		}).observe(ring, { attributes: true, attributeFilter: ['data-dots'] });
+	}
 	for (const box of idleBoxes) {
-		new MutationObserver(() => { if (!box.dataset.dots && !idleEnd && !idleTimer) idleRest(); })
-			.observe(box, { attributes: true, attributeFilter: ['data-dots'] });
+		new MutationObserver(() => {
+			if (box.dataset.dots || idleEnd) return;
+			if (idleInfo === box.parentElement) growBack();
+			if (!idleTimer) idleRest();
+		}).observe(box, { attributes: true, attributeFilter: ['data-dots'] });
 	}
 	function idleWake() {
 		idleTouched = performance.now();
@@ -4515,7 +4672,6 @@
 	const idleStart = setInterval(() => {
 		if (TDCLoader.up || !knobDrawn) return;
 		clearInterval(idleStart);
-		idleKnob = knobSide;
 		idleRest();
 	}, 250);
 })();

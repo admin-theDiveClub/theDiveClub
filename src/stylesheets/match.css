@@ -44,11 +44,13 @@
    strips, 60% down (UV, 30 Oct), not the stage's middle; both ways they
    keep clear of the home bar (--mv-centre-y). */
 /* Its other values:
-   --mv-word is the break words' size in the break ring's 100 box, and
+   --mv-word was the break words' size in the break ring's 100 box, and
    --mv-word-stem a Rushford Clean stem's width for its size (0.23: an H or
    L drawn at 200px has 46px stems, measured 30 Oct with size-adjust in
-   play; a different display face needs it measured again). The cream ring's
-   line is that stem at that size. */
+   play; a different display face needs it measured again). The info
+   rings' line is that stem at that size. Since 3 Nov the break words and
+   the special wins' words are as big as fits their buttons (UV; match.js,
+   breakWords, cornerBand), so --mv-word sizes only that line. */
 @property --mv-knob { syntax: '<number>'; inherits: true; initial-value: 0; }
 .mv-stage.mv-knob-still { transition: none; }   /* the page opening: drawn where it stands */
 .mv-stage {
@@ -566,115 +568,101 @@
 	.mv-yellow-halo[data-for="away"] { top: var(--mv-y-out); left: calc(var(--mv-y-long) / 2 - var(--match-break-stroke)); }
 	.mv-yellow-halo[data-for="away"]::before { top: var(--mv-halo); left: calc(0px - var(--mv-y-long) / 2); }
 }
-/* The idle dots (UV, 2 Nov): at each end's centre a grey dot (--text-muted),
-   as the three-way switch's stops (status.css, .tdc-tri-stops) but bigger
-   than their 4px, hidden at the end the rings stand at (--mv-knob), as the
-   switch hides the stop under its knob. Each is the dots' target for the
-   idle pool (match.js): a box the ring's size, its border as wide as the
-   cream ring's line and see-through, so the dots run on a ring that is
-   never drawn and are as big as the ring's own; its colour is theirs.
-   While the dots are out the grey dot shrinks into them (data-dots, set
-   by dots.js), and grows back as they gather into it. */
-.mv-idle {
-	position: absolute;
-	left: 50%;
-	top: calc(50% - var(--mv-centre) * var(--mv-knob-reach) / 100);
-	width: calc(var(--mv-centre) * var(--mv-break-rim, 0.96));
-	aspect-ratio: 1;
-	translate: -50% -50%;
-	box-sizing: border-box;
-	border: calc(var(--mv-centre) / 100 * var(--mv-word) * var(--mv-word-stem)) solid transparent;
-	border-radius: var(--radius-round);
-	color: var(--text-muted);   /* the dots' colour here: grey, as the dot, and cream on the info ring (UV, 2 Nov); they blend between the two as they fly */
-	pointer-events: none;
-	opacity: calc(1 + min(0, var(--mv-knob)));
-}
-.mv-idle[data-for="away"] {
-	top: calc(50% + var(--mv-centre) * var(--mv-knob-reach) / 100);
-	opacity: calc(1 - max(0, var(--mv-knob)));
-}
-.mv-idle::after {
-	content: "";
-	position: absolute;
-	left: 50%;
-	top: 50%;
-	width: calc(var(--mv-centre) * 0.08);   /* bigger than the switch's 4px (UV, 2 Nov): about 9px on a phone held upright, 11px sideways */
-	aspect-ratio: 1;
-	translate: -50% -50%;
-	border-radius: var(--radius-round);
-	background: var(--text-muted);
-	transition: scale var(--dots-reveal) ease;
-}
-.mv-idle[data-dots="busy"]::after { scale: 0; transition: scale var(--dots-dim) ease; }
 .mv-knob-part { transform: translate(0, calc(var(--mv-knob) * var(--mv-knob-reach) * 1px)); }
 @media (orientation: landscape) {
 	.mv-yellow { width: calc(var(--mv-yellow-half) * 2); height: calc(var(--mv-centre) * var(--mv-knob-reach) / 50); }
 	.mv-yellow::before { --mv-hole-at: calc(50% + var(--mv-knob-shift)) 50%; }
 	.mv-knob-part { transform: translate(calc(var(--mv-knob) * var(--mv-knob-reach) * 1px), 0); }
-	.mv-stage .mv-light { translate: calc(-50% + var(--mv-knob-shift)) -50%; }   /* .mv-stage: its own rule comes later */
-	.mv-idle { top: 50%; left: calc(50% - var(--mv-centre) * var(--mv-knob-reach) / 100); }
-	.mv-idle[data-for="away"] { top: 50%; left: calc(50% + var(--mv-centre) * var(--mv-knob-reach) / 100); }
 }
 
-/* ── The light (UV, 30 Oct) ───────────────────────────────────────
-   A cream ring in the middle of the screen, inside the break event's hole
-   (UV, 30 Oct: it was a third of the screen's height, the size the break
-   ring then took). Its line is as thick as the break words' letter strokes
-   (UV, 30 Oct): --mv-word-stem of the words' size, which is --mv-word in
-   the break ring's 100 box, --mv-centre across. The space between it
-   and the yellow line is the space between two quadrants (UV, 30 Oct): both
-   from match.js's drawing, the hole's share of the box (--mv-break-hole)
-   and two quadrants' edges apart (--mv-break-gap), so the visible gap is
-   that less one yellow line. So its outside radius is the hole's inner edge
-   (hole / 2 less half a yellow line) less that gap, and across:
-   box × (hole − 2 × gap) + one yellow line. The cream is the dark theme's
-   text colour (there is no cream token of its own since 22 Oct). */
-.mv-light {
+/* ── The info rings (UV, 3 Nov) ───────────────────────────────────
+   The frame in play and the win condition in a grey ring (--text-muted,
+   the idle dot's grey; it was the cream ring in the break ring's hole,
+   UV 30 Oct), where the idle dot was: one at the centre of each end of
+   the yellow pill, hidden at the end the break ring stands at (--mv-knob),
+   as the three-way switch hides the stop under its knob; one in the middle
+   of the stage while breaks are not recorded (Claude, UV's "as you see
+   fit"). While breaks are recorded and nobody is known to break (the
+   break ring in the middle, no end free: data-knob unset, match.js
+   placeKnob) both ends show the grey dot only (UV, 3 Nov).
+   Its size is the break ring's (UV, 3 Nov: it was the cream ring's, 0.6
+   of the box plus a yellow line): the rim (--mv-break-rim of the box) and
+   one yellow line, so it fills its end as the break ring does when it
+   stands there. Its words are a share of that size (--mv-info-size). Its
+   line is as thick as the break words' letter strokes were (UV, 30 Oct):
+   the stem of --mv-word in the 100 box.
+   The box is the dots' ring for every call (match.js, ringEl): its border
+   is the line they run on, see-through, so the dots' busy look (dots.css,
+   which hides a target's border and dims it) leaves the face's ring to
+   this file. The face (ring, divider and words) shrinks into the grey dot
+   for the idle pool (data-shape="dot") and grows back after it. */
+.mv-info {
+	--mv-info-line: calc(var(--mv-centre) / 100 * var(--mv-word) * var(--mv-word-stem));
+	--mv-info-shrink: var(--control-motion);
+	--mv-info-size: calc(var(--mv-centre) * var(--mv-break-rim, 0.96) + var(--match-break-stroke));
+	--mv-icon-text: calc(var(--mv-info-size) * 0.108);
+	--mv-end: calc(var(--mv-centre) * var(--mv-knob-reach) / 100);   /* an end's centre from the middle */
 	position: absolute;
 	left: 50%;
 	top: var(--mv-centre-y);
-	height: calc(var(--mv-centre) * (var(--mv-break-hole) - 2 * var(--mv-break-gap)) + var(--match-break-stroke));
+	height: var(--mv-info-size);
 	aspect-ratio: 1;
-	translate: -50% calc(-50% + var(--mv-knob-shift));   /* with the yellow toggle (UV, 2 Nov) */
+	translate: -50% -50%;
 	box-sizing: border-box;
-	border: calc(var(--mv-centre) / 100 * var(--mv-word) * var(--mv-word-stem)) solid var(--text-primary);
+	border: var(--mv-info-line) solid transparent;
 	border-radius: var(--radius-round);
-	/* Shadows inside and out, both cast by the light (UV, 30 Oct: as the
-	   break buttons'): outside, the score digits' (--match-mark-shadow);
-	   inside the hole, the halves' inset shadow (--page-inset-*). Box
-	   shadows rather than a drop-shadow(), which would have shadowed the
-	   inside one too. While the dots run the ring dims whole (dots.css), so
-	   its shadows fade with it. */
+	color: var(--text-muted);   /* the dots' colour on it: grey, as the ring (dots.js reads a see-through border's colour from the text) */
+	pointer-events: none;
+}
+.mv-info[data-for="home"] { top: calc(var(--mv-centre-y) - var(--mv-end)); opacity: calc(1 + min(0, var(--mv-knob))); }
+.mv-info[data-for="away"] { top: calc(var(--mv-centre-y) + var(--mv-end)); opacity: calc(1 - max(0, var(--mv-knob))); }
+.mv-stage:not([data-breaks]) .mv-info:not([data-for="middle"]),
+.mv-stage[data-breaks] .mv-info[data-for="middle"] { display: none; }
+@media (orientation: landscape) {
+	.mv-info[data-for="home"] { top: var(--mv-centre-y); left: calc(50% - var(--mv-end)); }
+	.mv-info[data-for="away"] { top: var(--mv-centre-y); left: calc(50% + var(--mv-end)); }
+}
+/* The face: the ring drawn over the box's see-through border. Shadows
+   inside and out, both cast by the light (UV, 30 Oct: as the break
+   buttons'): outside, the score digits' (--match-mark-shadow); inside, the
+   halves' inset shadow (--page-inset-*). Two halves, the frame in play in
+   the top one and the win condition in the bottom, each against a short
+   divider across the middle. */
+.mv-info-face {
+	position: absolute;
+	inset: calc(0px - var(--mv-info-line));
+	box-sizing: border-box;
+	border: var(--mv-info-line) solid currentColor;
+	border-radius: inherit;
 	box-shadow: var(--match-mark-shadow),
 		inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
-	pointer-events: none;
-	/* Its icon (UV, 30 Oct): two halves, the frame in play in the top one and
-	   the win condition in the bottom, each against a short divider across
-	   the middle; the rest of the hole see-through. */
-	--mv-icon-text: calc(var(--mv-centre) * 0.065);
-	--mv-icon-line: calc(var(--mv-centre) / 100 * var(--mv-word) * var(--mv-word-stem));
 	display: grid;
 	grid-template-rows: 1fr 1fr;
 	justify-items: center;
+	transition: scale var(--mv-info-shrink) ease, opacity var(--mv-info-shrink) ease, border-color var(--dots-reveal) ease;
 }
-/* The divider: as thin as the ring's line, across the middle of the hole,
-   casting the score digits' shadow. */
-.mv-light::before {
+/* The divider: as thin as the ring's line, across the middle, casting the
+   score digits' shadow. */
+.mv-info-face::before {
 	content: "";
 	position: absolute;
 	left: 50%;
 	top: 50%;
 	width: 60%;
-	height: var(--mv-icon-line);
+	height: var(--mv-info-line);
 	translate: -50% -50%;
 	border-radius: var(--radius-pill);
-	background: var(--text-primary);
+	background: currentColor;
 	box-shadow: var(--match-mark-shadow);
 }
 /* The words in the display face, trimmed to their capitals, a word's height
    clear of the divider, casting the score digits' shadow. Their size is a
-   share of the ring's box (0.065; UV, 30 Oct: at 0.085 they crowded the
-   ring): about 14px upright, 10px sideways, every corner inside the hole. */
+   share of the ring (0.108 of --mv-info-size, the share they had of the
+   cream ring; UV, 30 Oct: bigger crowded it): 12px upright, 14.5px
+   sideways at 420 and 844 wide since the ring took the break ring's size
+   (3 Nov; they were about 7px and 9px). Never faded when they change
+   (UV, 3 Nov): an end's words are written while the break ring covers
+   it (match.js, paintInfo). */
 .mv-frame,
 .mv-target {
 	font-family: var(--font-display);
@@ -682,23 +670,57 @@
 	line-height: 1;
 	text-box: trim-both cap alphabetic;
 	white-space: nowrap;
-	color: var(--text-primary);
 	text-shadow: var(--match-mark-shadow);
 }
-/* While the dots run on the ring its icon fades out altogether (UV, 30 Oct),
-   in the dots' dim time, and back in their reveal time as they race it. */
-.mv-light[data-dots="busy"] :is(.mv-frame, .mv-target),
-.mv-light[data-dots="busy"]::before { opacity: 0; transition: opacity var(--dots-dim) ease; }
-.mv-light[data-dots="revealing"] :is(.mv-frame, .mv-target),
-.mv-light[data-dots="revealing"]::before { transition: opacity var(--dots-reveal) ease; }
 .mv-frame { align-self: end; margin-bottom: calc(var(--mv-icon-text) * 0.7); }
 .mv-target { align-self: start; margin-top: calc(var(--mv-icon-text) * 0.7); }
+/* While a call's dots run on the ring, its line goes and its words and
+   divider fade out altogether (UV, 30 Oct), in the dots' dim time, and come
+   back in their reveal time as they race it. */
+.mv-info[data-dots="busy"] .mv-info-face {
+	border-color: transparent;
+	transition: scale var(--mv-info-shrink) ease, opacity var(--mv-info-shrink) ease, border-color var(--dots-dim) ease;
+}
+.mv-info[data-dots="busy"] .mv-info-face > *,
+.mv-info[data-dots="busy"] .mv-info-face::before { opacity: 0; transition: opacity var(--dots-dim) ease; }
+.mv-info[data-dots="revealing"] .mv-info-face > *,
+.mv-info[data-dots="revealing"] .mv-info-face::before { transition: opacity var(--dots-reveal) ease; }
+/* The idle box: the idle pool's target (match.js, the idle dots), over the
+   ring, its border as wide as the ring's line and see-through, so the dots
+   run where the ring was. Its grey dot (bigger than the switch's 4px, UV
+   2 Nov: about 9px on a phone held upright, 11px sideways) shows while the
+   face is shrunk into it, and itself shrinks into the dots while they are
+   out (data-dots, set by dots.js), growing back as they gather into it. */
+.mv-info-idle {
+	position: absolute;
+	inset: calc(0px - var(--mv-info-line));
+	box-sizing: border-box;
+	border: var(--mv-info-line) solid transparent;
+	border-radius: inherit;
+}
+.mv-info-idle::after {
+	content: "";
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: calc(var(--mv-centre) * 0.08);
+	aspect-ratio: 1;
+	translate: -50% -50%;
+	border-radius: var(--radius-round);
+	background: currentColor;
+	scale: 0;
+	transition: scale var(--mv-info-shrink) ease;
+}
+:is(.mv-info[data-shape="dot"], .mv-stage[data-breaks]:not([data-knob]) .mv-info) .mv-info-face { scale: 0.1; opacity: 0; }
+:is(.mv-info[data-shape="dot"], .mv-stage[data-breaks]:not([data-knob]) .mv-info) .mv-info-idle::after { scale: 1; }
+:is(.mv-info[data-shape="dot"], .mv-stage[data-breaks]:not([data-knob]) .mv-info) .mv-info-idle[data-dots="busy"]::after { scale: 0; transition: scale var(--dots-dim) ease; }
 
 /* ── The break event (UV, 30 Oct) ─────────────────────────────────
    A yellow ring (--mv-centre across; UV, 30 Oct: in place of the cream
-   ring, which now sits in its hole), split
+   ring, which sat in its hole until 3 Nov), split
    like an X into four buttons: In at the top, Dry at the bottom, Scratch
-   and Foul either side. Drawn by match.js in a 100 box; the outline is
+   and Foul either side; quarter circles meeting in the middle since the
+   info left the hole (UV, 3 Nov: easier to tap when small). Drawn by match.js in a 100 box; the outline is
    --match-break-stroke whatever the ring's size (non-scaling), the words
    scale with it. Outlined in the break yellow; the chosen one filled, its
    word dark, as the old page's yellow pill (controls.css, data-tone
@@ -757,9 +779,10 @@
 	transition: fill var(--control-reveal) ease;
 }
 /* The word stands on its arc (match.js, wordArc, which places the arc so
-   the capitals are centred in the break buttons' band, and on the special
-   wins' inner curve with the same padding). --mv-word (6.5) is in the 100
-   box: the word scales with the ring. */
+   the capitals are centred in their band by the rim, and on the special
+   wins' inner curve with the same padding). Its size, in the 100 box, is
+   set on each by match.js (breakWords, cornerBand: as big as fits, UV
+   3 Nov), so the word scales with the ring; --mv-word is the fallback. */
 :is(.mv-break-q, .mv-win-q) text {
 	fill: var(--q);
 	font-family: var(--font-display);
@@ -773,6 +796,8 @@
 :is(.mv-break-q, .mv-win-q):focus-visible path { fill: color-mix(in srgb, var(--q) 18%, transparent); }
 :is(.mv-break-q, .mv-win-q).is-on path { fill: var(--q); }
 :is(.mv-break-q, .mv-win-q).is-on text { fill: var(--color-on-primary); }
+/* A word measured for its width in the same face (match.js, wordWidth) */
+.mv-measure { font-family: var(--font-display); visibility: hidden; }
 /* The more button's three dots, in its colour (match.js, moreButton) */
 .mv-more-dot { fill: var(--q); }
 
