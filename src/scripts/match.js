@@ -1555,18 +1555,25 @@
 	}
 
 	function paintTimes() {
+		// Four times a second, so only what has changed is written: an unchanged
+		// readout written again still costs a style pass (3 Nov: battery)
 		const set = (key, text, cls) => {
 			const v = liveVals[key];
 			if (!v) return;
-			v.textContent = text;
-			if (cls !== undefined) v.parentElement.className = 'time-readout' + (cls ? ' ' + cls : '');
+			if (v.textContent !== text) v.textContent = text;
+			if (cls === undefined) return;
+			const name = 'time-readout' + (cls ? ' ' + cls : '');
+			if (v.parentElement.className !== name) v.parentElement.className = name;
 		};
 
 		set('rack', mmss(timerSeconds(rackTimer)), timerRunning(rackTimer) ? 'live' : '');
 		set('frame', frameStartedAt === null ? '—' : mmss(timerSeconds(frameTimer)),
 			frameStartedAt !== null && timerRunning(frameTimer) ? 'live' : '');
 		set('match', mmss(timerSeconds(matchTimer)), timerRunning(matchTimer) ? 'live' : '');
-		if (liveMatchClock) liveMatchClock.textContent = dur(matchSoFar());
+		if (liveMatchClock) {
+			const so = dur(matchSoFar());
+			if (liveMatchClock.textContent !== so) liveMatchClock.textContent = so;
+		}
 
 		if (MATCH.rules.shot_clock_enabled) {
 			const onClock = clock.side && (clock.running || clock.expired);
@@ -4444,9 +4451,15 @@
 	// fly back and gather into its dot (UV), then rest. Not with less motion
 	// (dots.js's own reading of it), behind the loading screen, or once the
 	// stage is put away.
+	// Nor once nobody has touched the page for IDLE_SLEEP (UV, 3 Nov:
+	// battery): the round due then is not played, and nothing runs until the
+	// next touch, key or scroll, or the page being shown again, which starts
+	// the rest afresh.
 	const IDLE_REST = 10000, IDLE_PLAY = 5000;   // the rest 10 s since UV's second look (2 Nov; it was 5)
+	const IDLE_SLEEP = 120000;
 	const idleBoxes = [...document.querySelectorAll('.mv-idle')];
 	let idleTimer = null, idleEnd = null, idleKnob = null;
+	let idleTouched = performance.now(), idleAsleep = false;
 	const idleBox = () => idleBoxes.find((b) => b.dataset.for === (knobSide === 'home' ? 'away' : 'home'));
 	const idleOn = () => !!knobSide && els.stage.hasAttribute('data-breaks') && !TDCLoader.up && ringShown() && !TDCDots.state.reduced;
 	const idleBusy = () => !!idleEnd || idleBoxes.some((b) => b.dataset.dots) || !!els.ring.dataset.dots;
@@ -4463,6 +4476,7 @@
 	// are hidden, else they fly there from the ring as usual
 	function idlePlay(fromRing = false) {
 		if (!idleOn()) return;
+		if (!fromRing && performance.now() - idleTouched >= IDLE_SLEEP) { idleAsleep = true; return; }
 		if (!fromRing && idleBusy()) { idleRest(); return; }
 		const box = idleBox();
 		let end;
@@ -4489,6 +4503,13 @@
 		new MutationObserver(() => { if (!box.dataset.dots && !idleEnd && !idleTimer) idleRest(); })
 			.observe(box, { attributes: true, attributeFilter: ['data-dots'] });
 	}
+	function idleWake() {
+		idleTouched = performance.now();
+		if (idleAsleep) { idleAsleep = false; idleRest(); }
+	}
+	for (const type of ['pointerdown', 'keydown', 'wheel']) window.addEventListener(type, idleWake, { passive: true, capture: true });
+	document.addEventListener('scroll', idleWake, { passive: true, capture: true });
+	document.addEventListener('visibilitychange', () => { if (!document.hidden) idleWake(); });
 	// The first round once the page is in (the loading screen has no event
 	// for it, so it is looked for four times a second until then)
 	const idleStart = setInterval(() => {

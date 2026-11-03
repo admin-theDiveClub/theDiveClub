@@ -1823,9 +1823,11 @@
 	}
 
 	// Coming back to the page, or back online, is when a missed event is
-	// caught up. Both re-read rather than trusting the socket.
+	// caught up. Both re-read rather than trusting the socket. Hidden, the
+	// socket is let go (3 Nov: battery) and taken up again when shown.
 	document.addEventListener('visibilitychange', () => {
-		if (document.visibilityState !== 'visible') return;
+		if (document.visibilityState !== 'visible') { stopLiveUpdates(); return; }
+		startLiveUpdates();
 		onLiveChange();
 	});
 	window.addEventListener('online', onLiveChange);

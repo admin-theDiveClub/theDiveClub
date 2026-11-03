@@ -11,6 +11,13 @@
 // data-motion is what dots.js and page-light.js read. Everything else that
 // moves still follows the device's setting alone.
 //
+// Saving power (UV, 3 Nov): with no choice made on the toggle, less motion is
+// put on while the phone asks for data saving, or runs on SAVE_LEVEL or less
+// of its battery and is not charging (Claude's threshold, near where Android's
+// own battery saver comes on), and taken off again when that ends. Android
+// Chrome tells pages both; Safari tells them neither, so an iPhone is never
+// caught by it. A choice on the toggle always wins.
+//
 // Loaded in <head>, after the stylesheets and before page-light.js.
 // Needs: nothing.
 var TDCPrefs = (function () {
@@ -19,6 +26,8 @@ var TDCPrefs = (function () {
 	var THEME = 'tdc.theme';      // 'light' or 'dark'
 	var MOTION = 'tdc.motion';    // 'reduce' or 'full'
 	var device = window.matchMedia('(prefers-reduced-motion: reduce)');
+	var SAVE_LEVEL = 0.2;
+	var saving = false;
 
 	function read(key) {
 		try { return localStorage.getItem(key); } catch (e) { return null; }   // a private window: the defaults
@@ -35,8 +44,32 @@ var TDCPrefs = (function () {
 		else delete root.dataset.motion;
 	}
 
+	// The toggle's choice if there is one, else less motion while saving power
+	function settleMotion() {
+		var m = read(MOTION);
+		applyMotion(m === 'reduce' || m === 'full' ? m : (saving ? 'reduce' : null));
+	}
+
 	applyTheme(read(THEME) === 'light');
-	applyMotion(read(MOTION));
+
+	var net = navigator.connection;
+	var battery = null;
+	function checkSaving() {
+		saving = !!(net && net.saveData) || !!(battery && !battery.charging && battery.level <= SAVE_LEVEL);
+		settleMotion();
+	}
+	if (net && net.addEventListener) net.addEventListener('change', checkSaving);
+	if (navigator.getBattery) {
+		navigator.getBattery().then(function (b) {
+			battery = b;
+			b.addEventListener('levelchange', checkSaving);
+			b.addEventListener('chargingchange', checkSaving);
+			checkSaving();
+		}, function (e) {
+			console.warn('[Prefs] The battery could not be read; motion follows the device and the toggle.', e);
+		});
+	}
+	checkSaving();
 
 	return {
 		get light() { return root.getAttribute('data-theme') === 'light'; },

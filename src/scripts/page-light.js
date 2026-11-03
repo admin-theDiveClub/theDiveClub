@@ -23,18 +23,28 @@
 //
 // Loaded in <head>, after the stylesheets, so the first paint already has the
 // light where it is. Its place is kept for the session (sessionStorage), so
-// moving between pages carries on the drift rather than jumping. Written at
-// most every STEP ms: it moves a few pixels a second, and every write
-// repaints the background and the blurred surfaces over it. With reduced
-// motion the light rests at the centre: the device's setting, unless the
-// profile menu's toggle has put its own on <html> (data-motion, prefs.js).
+// moving between pages carries on the drift rather than jumping. Written
+// every STEP ms, by a timer rather than on every frame (3 Nov: battery), so
+// nothing runs between writes: it moves a few pixels a second, and every
+// write repaints the background and the blurred surfaces over it. With
+// reduced motion the light rests at the centre: the device's setting, unless
+// the profile menu's toggle or the phone saving power has put its own on
+// <html> (data-motion, prefs.js).
+//
+// It also rests where it is once nobody has touched the page for REST ms
+// (UV, 3 Nov: a phone left open on the table at the bar redrew the screen 15
+// times a second for nothing), and drifts on from there at the next touch,
+// key, scroll or wheel, or when the page is shown again. Nothing runs while
+// the page is hidden.
 (function () {
 	'use strict';
 	var STEP = 66;
+	var REST = 30000;
 	var KEY = 'tdc.light';
 	var root = document.documentElement;
 	var calm = window.matchMedia('(prefers-reduced-motion: reduce)');
 	var cfg, from, to, done, dur, last = 0, running = false;
+	var timer = null, touched = performance.now(), resting = false;
 
 	function read() {
 		var cs = getComputedStyle(root);
@@ -96,14 +106,17 @@
 		return !!box && !box.hidden;
 	}
 
-	function tick(now) {
-		if (!running) return;
-		requestAnimationFrame(tick);
+	function tick() {
+		timer = null;
+		if (!running || document.hidden) return;
+		var now = performance.now();
+		// Nobody has touched the page for REST: no timer until somebody does
+		if (now - touched >= REST) { resting = true; return; }
+		timer = setTimeout(tick, STEP);
 		// Held, it carries on from where it was once let go
 		if (hold()) { last = now; return; }
-		// Time counts only while the page is shown, a frame at most STEP*2, so
+		// Time counts only while the page is shown, a step at most STEP*2, so
 		// a page brought back from the background carries on where it was
-		if (now - last < STEP) return;
 		done += Math.min(now - last, STEP * 2);
 		last = now;
 		if (done >= dur) {
@@ -116,15 +129,25 @@
 		put(at());
 	}
 
+	// The timer, if it should be running and is not
+	function go() {
+		if (!running || timer || resting || document.hidden) return;
+		last = performance.now();
+		timer = setTimeout(tick, STEP);
+	}
+
 	function start() {
 		if (running) return;
 		running = true;
-		last = performance.now();
-		requestAnimationFrame(tick);
+		touched = performance.now();
+		resting = false;
+		go();
 	}
 
 	function still() {
 		running = false;
+		clearTimeout(timer);
+		timer = null;
 		read();
 		put({ x: 0, y: 0 });
 	}
@@ -150,6 +173,21 @@
 		}
 	});
 	window.addEventListener('resize', function () { if (!running) put({ x: 0, y: 0 }); });
+
+	// Somebody is there: the rest starts again, and a resting light drifts on
+	function wake() {
+		touched = performance.now();
+		if (resting) { resting = false; go(); }
+	}
+	['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(function (type) {
+		window.addEventListener(type, wake, { passive: true, capture: true });
+	});
+	document.addEventListener('scroll', wake, { passive: true, capture: true });
+	document.addEventListener('visibilitychange', function () {
+		if (document.hidden) { clearTimeout(timer); timer = null; return; }
+		wake();
+		go();
+	});
 
 	// data-motion="reduce" or "full" overrides the device, as in dots.js
 	function isCalm() {

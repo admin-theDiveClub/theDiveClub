@@ -500,8 +500,12 @@ TDCLeagueNav.panel('standings', () => {
 		liveChannel = null;
 	}
 
+	// Hidden, the socket is let go (3 Nov: battery) and taken up again when
+	// shown; the catch-up read covers the gap.
 	document.addEventListener('visibilitychange', () => {
-		if (document.visibilityState === 'visible') onLive(null);
+		if (document.visibilityState !== 'visible') { stopLive(); return; }
+		if (live && data) watchLive(data.watch_match_ids || []);
+		onLive(null);
 	});
 	window.addEventListener('online', () => onLive(null));
 

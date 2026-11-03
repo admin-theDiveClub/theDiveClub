@@ -375,9 +375,11 @@ TDCLeagueNav.panel('fixtures', () => {
 	}
 
 	// Always, not only while something is watched: a match started elsewhere
-	// is only found by reading again.
+	// is only found by reading again. Hidden, the socket is let go (3 Nov:
+	// battery) and taken up again when shown; the read covers the gap.
 	document.addEventListener('visibilitychange', () => {
-		if (document.visibilityState === 'visible' && seasonId) onLive(null);
+		if (document.visibilityState !== 'visible') { stopLive(); return; }
+		if (seasonId) { watchLive(); onLive(null); }
 	});
 	window.addEventListener('online', () => { if (seasonId) onLive(null); });
 

@@ -1674,8 +1674,24 @@
 			loadAll();
 		}, 500);
 	}
+	// Hidden, the socket is let go (3 Nov: battery) and taken up again when
+	// shown; the read on being shown covers the gap.
+	let liveChannel = null;
 	function startLive() {
-		supabaseClient.channel('card:' + matchId)
+		subscribeLive();
+		document.addEventListener('visibilitychange', () => {
+			if (document.visibilityState !== 'visible') {
+				if (liveChannel) { supabaseClient.removeChannel(liveChannel); liveChannel = null; }
+				return;
+			}
+			subscribeLive();
+			onLive();
+		});
+		window.addEventListener('online', onLive);
+	}
+	function subscribeLive() {
+		if (liveChannel) return;
+		liveChannel = supabaseClient.channel('card:' + matchId)
 			.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tbl_matches', filter: 'id=eq.' + matchId }, onLive)
 			.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tbl_match_events', filter: 'match_id=eq.' + matchId }, onLive)
 			.subscribe((status) => {
@@ -1686,8 +1702,6 @@
 					console.error('[' + AREA + '] live updates are not running (' + status + ').');
 				}
 			});
-		document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') onLive(); });
-		window.addEventListener('online', onLive);
 	}
 
 	// ─── Start ───

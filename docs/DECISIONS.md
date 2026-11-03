@@ -1170,3 +1170,11 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* the light theme's `--text-muted` becomes a real grey, site-wide: first the dark theme's #808080, then #a3a3a3, set by UV in the file the same day. It had been #20333b, the same as `--text-primary`, so every muted element in light mode (muted text, disabled buttons, the match page's idle dots) drew as the main text colour.
 *Rejected:* a token for the idle dots alone; a warm grey (#8a8178).
 *Touches:* `variables.css` (UV may still retune it on `/sandbox/`)
+
+## 2026-11-03 — The site saves battery: the light rests, the idle dots sleep, less motion while the phone saves power
+
+*Decided by UV:* the drifting light rests where it is after 30 s without a touch and drifts on at the next; the match stage's idle dots stop after 2 minutes without a touch and start again on the next; less motion goes on by itself while an Android phone saves data or is low on battery; and the three changes nobody sees (the light on a timer rather than every frame, the match clock writing only what changed, live sockets let go while a page is hidden).
+*Claude's, for UV to judge:* "low battery" is 20% or less and not charging; a choice on the profile menu's toggle always wins over the battery; a touch means a tap, key, scroll or wheel, and the page being shown again counts as one; the idle dots wake into the usual 10 s rest rather than playing at once; the match page keeps its live socket while hidden (its re-read is skipped mid-frame, so letting go could miss a frame scored elsewhere).
+*Why:* measured idle in headless Chrome, the light alone kept a page at 3.7% CPU and 14 restyles a second on a fast laptop, several times that on a phone, for as long as a page stayed open on the table.
+*Rejected:* lowering the light's write rate (it would step visibly); a lighter light on phones only.
+*Touches:* `page-light.js`, `prefs.js`, `match.js` (`paintTimes`, the idle controller), `league-fixtures.js`, `league-standings.js`, `league-card.js`, `tournament-bracket.js`, `docs/ui.md`, `docs/systems/matches.md`, `docs/STATUS.md`
