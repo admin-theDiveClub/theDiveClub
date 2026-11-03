@@ -1152,6 +1152,13 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* a phone held sideways is unchanged (the pill was already as tall as the space; its corners meet); upright the scores roughly double; a wide screen sideways gets a taller pill.
 *Touches:* `match.css`, `match.js` (`pillBox`, `winButtons`, `fitScores`), `docs/systems/matches.md`
 
+## 2026-11-02 — The special wins become pills bent round the corners
+
+*Decided by UV:* each special win and the more button is a pill only as tall as its word, bent to the green pill's corner radius, tucked into the corner; where that frees space the scores grow into it, as decided before (only if they fit there bigger).
+*Claude's, for UV to judge:* the word's size and padding (the break words' proportion); the pill reaching round the corner short of its straight edges by its round end and a gap; the digits centred in the span left between the bands and the rings, not in the whole box (centred in the whole box they ran into the bands on a phone held sideways).
+*Replaces:* the same day's quarter circles.
+*Touches:* `match.js` (`cornerBand`, `winBand`, `winButtons`, `fitScores`), `docs/systems/matches.md`
+
 ## 2026-11-02 — Only the pill wins a frame; a green centre line; the left player mirrored
 
 *Decided by UV:* only the space inside the green pill is the plain-win button (the names no longer are); the centre line inside the green pill is green with the pill's glow, on the side that is not breaking when breaks are recorded, both sides otherwise; sideways, the left player's picture on the right and the names right-aligned.

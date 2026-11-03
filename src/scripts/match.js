@@ -595,20 +595,48 @@
 		const digits = Math.max(...nodes.map((n) => n.textContent.length), 1);
 		const wide = landscape.matches;
 		const fit = (W, H) => Math.max(0, Math.min((W - 2 * m) / (0.65 * digits), (H - 2 * m) / (1.1 * stretch)));
+		// Since the special wins became thin bands round the corners (UV, 2 Nov),
+		// the whole box is free but for them: the digits, centred in it, as big
+		// as keeps them clear of the box's edges (--space-3) and of each band's
+		// inside (the corner's circle less the band, cornerBand, less --space-3).
+		const br = els.breakRing.getBoundingClientRect(), u = br.width / 100;
+		const inner = u > 0 ? cornerBand(rad / u).ri * u - m : 0;
 		const each = nodes.map((node) => {
 			const box = node.ownerSVGElement.getBoundingClientRect();
 			const along = wide ? box.width : box.height, across = wide ? box.height : box.width;
-			const corner = Math.max(0, rad - line), gap = across - 2 * rad;
+			const corner = Math.max(0, rad - line);
 			const beside = wide ? fit(along - corner, across) : fit(across, along - corner);
-			const all = gap > 0 ? (wide ? fit(along, gap) : fit(gap, along)) : 0;
-			return { node, corner, beside, all };
+			// e: from the pill's end along the box; a: across it, from the pill's
+			// outer edge. For a size, the nearest the digits' end-side edge may
+			// come to the pill's end (their corners inside the bands' insides, or
+			// past the corners' centres), and so the span they can sit in, out to
+			// the rings: null if they do not fit at all.
+			const ce = rad - line;
+			const span = (size) => {
+				const w = 0.65 * digits * size, h = 1.1 * stretch * size;
+				const hE = (wide ? w : h) / 2, hA = (wide ? h : w) / 2, aC = across / 2;
+				if (aC - hA < line + m || aC + hA > across - line - m) return null;
+				let from = m;
+				for (const a of [aC - hA, aC + hA]) {
+					if (!(a < rad || a > across - rad)) continue;
+					const da = a - (a < across / 2 ? rad : across - rad);
+					from = Math.max(from, da * da < inner * inner ? ce - Math.sqrt(inner * inner - da * da) : ce);
+				}
+				return from + 2 * hE <= along - m ? { from, to: along - m } : null;
+			};
+			let lo = 0, hi = Math.max(along, across);
+			for (let k = 0; k < 24; k++) { const mid = (lo + hi) / 2; if (span(mid)) lo = mid; else hi = mid; }
+			return { node, corner, beside, all: lo, along, span };
 		});
 		if (each.some((e) => !(e.beside > 0))) return;   // not laid out yet: the CSS's own fit meanwhile
 		const size = Math.min(...each.map((e) => Math.max(e.beside, e.all)));
 		each.forEach((e, i) => {
-			// Beside the rings, the middle of that part is half a corner nearer them
-			// (home's rings are below it upright and right of it sideways)
-			const shift = size > e.beside + 0.5 ? 0 : (i === 0 ? 1 : -1) * e.corner / 2;
+			// Centred in the span the digits can sit in at that size, between the
+			// bands and the rings (from the pill's end along the box); else beside
+			// the rings, half a corner nearer them. Home's end is above it upright
+			// and left of it sideways, so its distances run down or right.
+			const sp = e.span(size), sign = i === 0 ? 1 : -1;
+			const shift = sp ? sign * ((sp.from + sp.to) / 2 - e.along / 2) : sign * e.corner / 2;
 			const set = (name, value) => { if (e.node.style.getPropertyValue(name) !== value) e.node.style.setProperty(name, value); };
 			set('--mv-score-size', size.toFixed(2) + 'px');
 			set('--mv-score-dx', (wide ? shift : 0).toFixed(2) + 'px');
@@ -825,29 +853,30 @@
 		return `M ${on(r, mid - half)} A ${r} ${r} 0 0 1 ${on(r, mid + half)}`;
 	}
 
-	// ─── The special wins (UV, 2 Nov: in the green pill's round ends) ──
+	// ─── The special wins (UV, 2 Nov: in the green pill's corners) ────
 	// Four buttons in the break buttons' style, in green: Break & finish and
 	// Golden break at the breaker's end of the green pill, Reverse B&F and the
 	// more button at the other (UV, 30 Oct), so they swap ends when the break
-	// passes. They fill the pill's two round ends as quarter circles (UV,
-	// 2 Nov; until then they sat two a slot round the break ring). In an end
-	// the first is the top one sideways and the left one upright (Claude).
-	// Each quarter lies two quadrants' gaps inside the pill's line (as the
-	// special wins lay round the ring), split from its partner along the
-	// pill's axis by the quadrants' gap and from the scores by the line
-	// through its end's centre, its corners rounded (WIN.corner). Its word
-	// runs along its round outer edge (UV, 2 Nov), padded from it as the break
-	// words are from theirs. Drawn in the break ring's 100 box from where the
-	// pill (#mv-pill, sized by match.css) lies against it, so drawn again when
-	// the stage resizes, the phone turns or the breaker changes. A tap records
-	// the frame (specialWin); which are offered follows the rules
-	// (paintButtons). The wins are named by TDCMatchDef.RESULT_SHORT; the
-	// fourth button is the more pop-up, which holds the walkovers.
+	// passes. In an end the first is the top one sideways and the left one
+	// upright (Claude). Each is a pill bent round one of the green pill's
+	// rounded corners (UV, 2 Nov: "a horizontal pill with text inside, then
+	// bend the pill into the corner radius"; first they were quarter circles
+	// filling the round ends): a band round the corner's circle, two
+	// quadrants' gaps inside the pill's line (as the special wins lay round
+	// the ring), as thick as its word needs (a capital and the break words'
+	// padding either side, 0.46 of a capital), round at both ends, reaching
+	// round the corner short of its straight edges. Its word runs along its
+	// middle. Drawn in the break ring's 100 box from where the pill (#mv-pill,
+	// sized by match.css) lies against it, so drawn again when the stage
+	// resizes, the phone turns or the breaker changes. The corners they leave
+	// free are the scores' (fitScores). A tap records the frame (specialWin);
+	// which are offered follows the rules (paintButtons). The wins are named
+	// by TDCMatchDef.RESULT_SHORT; the fourth button is the more pop-up, which
+	// holds the walkovers.
 	const WIN_SLOTS = [['break_and_finish', 'reverse_break_and_finish'], ['golden_break', 'more']];   // each slot: [the breaker's end, the other end]
-	// a button's corners' radius, and its word's size as a share of its radius
-	// (UV, 2 Nov: sized to the button; the break words' size was about 7px in
-	// the round ends of a phone held upright, now about 15px)
-	const WIN = { corner: 4, word: 0.16 };
+	// a word's size as a share of the corner's radius (UV, 2 Nov: sized to the
+	// button; about 15px on a phone held upright)
+	const WIN = { word: 0.16 };
 	const landscape = matchMedia('(orientation: landscape)');
 
 	// Where the green pill lies, in the break ring's box: its centre, half its
@@ -868,72 +897,54 @@
 		};
 	}
 
-	// One quarter circle of radius R, drawn about its end's centre with its
-	// round edge to the left and above the pill's axis (mirrored below it when
-	// s is -1),
-	// then turned rot degrees and moved to (ox, oy). Its outline is points
-	// along each edge and corner, so no arc's sweep has to survive the turn.
-	// wordR: the radius its word is centred on.
-	function winQuarter(R, s, rot, ox, oy, wordR) {
-		const g = BREAK_RING.gap, c = WIN.corner;
-		const a = rot / DEG;
-		const place = (x, y) => [ox + x * Math.cos(a) - y * s * Math.sin(a), oy + x * Math.sin(a) + y * s * Math.cos(a)];
+	// A corner's band for a corner of radius rad (in the box): its outer and
+	// inner radius, the radius its word is centred on, and its word's size.
+	// fitScores keeps the digits clear of the inner one.
+	function cornerBand(rad) {
+		const ro = rad - 2 * BREAK_RING.gap, word = ro * WIN.word, cap = CAP * word, pad = cap * 0.46, h = cap + 2 * pad;
+		return { ro, ri: ro - h, rm: ro - h / 2, h, word };
+	}
+
+	// One button: the band about (ox, oy), centred on the angle mid (degrees,
+	// clockwise from the right) and reaching round the corner's quarter, short
+	// of its straight edges by its round end and a quadrants' gap. Its
+	// outline is points along each edge, so no arc's sweep has to be right.
+	function winBand(band, ox, oy, mid) {
+		const { ro, ri, rm, h } = band;
+		const half = 45 - ((h / 2 + BREAK_RING.gap) / rm) * DEG, a1 = mid - half, a2 = mid + half;
 		const pts = [];
-		const arc = (cx, cy, r, from, to, n) => {
-			for (let i = 0; i <= n; i++) {
-				const t = (from + (to - from) * i / n) / DEG;
-				pts.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]);
-			}
-		};
-		// The corner where the two straight edges meet, then the corners where
-		// each meets the round edge: circles of radius c touching the edge and,
-		// from inside, the circle of radius R
-		const off = Math.sqrt((R - c) ** 2 - (g + c) ** 2);
-		const along = [-off, -g - c], across = [-g - c, -off];
-		const aAt = Math.atan2(along[1], along[0]) * DEG + 360, bAt = Math.atan2(across[1], across[0]) * DEG + 360;
-		arc(-g - c, -g - c, c, 0, 90, 6);
-		arc(along[0], along[1], c, 90, aAt, 6);
-		arc(0, 0, R, aAt, bAt, 40);
-		arc(across[0], across[1], c, bAt, 360, 6);
-		const d = 'M ' + pts.map((p) => place(...p).map((n) => n.toFixed(2)).join(' ')).join(' L ') + ' Z';
-		const centre = place(-R / 2, -R / 2);
-		const [wx, wy] = place(-wordR * Math.SQRT1_2, -wordR * Math.SQRT1_2);
-		return { d, mid: norm(Math.atan2(wy - oy, wx - ox) * DEG), half: 34, wordR, o: [ox, oy], centre };
+		const at2 = (cx, cy, r, ang) => [cx + r * Math.cos(ang / DEG), cy + r * Math.sin(ang / DEG)];
+		const arc = (cx, cy, r, from, to, n) => { for (let i = 0; i <= n; i++) pts.push(at2(cx, cy, r, from + (to - from) * i / n)); };
+		const [c2x, c2y] = at2(ox, oy, rm, a2), [c1x, c1y] = at2(ox, oy, rm, a1);
+		arc(ox, oy, ro, a1, a2, 32);                  // the outer edge, clockwise
+		arc(c2x, c2y, h / 2, a2, a2 + 180, 10);      // round at the far end
+		arc(ox, oy, ri, a2, a1, 32);                  // the inner edge, back
+		arc(c1x, c1y, h / 2, a1 + 180, a1 + 360, 10); // round at the near end
+		const d = 'M ' + pts.map((p) => p.map((n) => n.toFixed(2)).join(' ')).join(' L ') + ' Z';
+		return { d, mid: norm(mid), half, wordR: rm, o: [ox, oy], centre: at2(ox, oy, rm, mid) };
 	}
 
 	// breakSide: who is breaking; home's end is the left one sideways and the
 	// top one upright. With nobody breaking they sit as for home. Each button
-	// carries its word's size (word, in the box), padded from the round edge
-	// in the break words' proportion (their padding is 0.46 of a capital).
-	// Since UV's second look (2 Nov) the pill is a rectangle with rounded
-	// corners, as thick as the space allows, its corners the old round ends'
-	// radius (rad): each button is a quarter of its corner's circle, tucked
-	// into it, so where the pill is thicker than two corners a gap opens
-	// between an end's two buttons (the score's, fitScores). As thick as two
-	// corners (a phone held sideways), they meet as they did.
+	// carries its word's size (word, in the box).
 	function winButtons(breakSide) {
 		const box = pillBox();
 		if (!box) return [];
-		const R = box.rad - 2 * BREAK_RING.gap;
-		const word = R * WIN.word, cap = CAP * word, pad = cap * 0.46;
-		const wordR = R - pad - cap / 2;
+		const band = cornerBand(box.rad);
 		const out = [];
 		[-1, 1].forEach((dir, end) => {
 			const reach = dir * (box.half - box.rad), across = box.thick - box.rad;
-			// the round edge outwards: left or right sideways, up or down upright
-			const rot = box.wide ? (dir < 0 ? 0 : 180) : (dir < 0 ? 90 : -90), a = rot / DEG;
 			const pair = [-1, 1].map((side) => {
-				// this corner's centre, and which way round the quarter is drawn so
-				// its round edge also faces out across the pill (towards side)
+				// this corner's centre, and the angle midway round it: out along the
+				// pill (dir) and out across it (side)
 				const ox = box.cx + (box.wide ? reach : side * across), oy = box.cy + (box.wide ? side * across : reach);
-				const out2 = box.wide ? [0, side] : [side, 0];
-				const s = Math.sign(Math.sin(a) * out2[0] - Math.cos(a) * out2[1]) || 1;
-				return winQuarter(R, s, rot, ox, oy, wordR);
+				const mid = box.wide ? Math.atan2(side, dir) * DEG : Math.atan2(dir, side) * DEG;
+				return winBand(band, ox, oy, mid);
 			});
 			pair.sort((p, q) => (box.wide ? p.centre[1] - q.centre[1] : p.centre[0] - q.centre[0]));
 			const breakerEnd = (breakSide === 'away') === (end === 1);
 			const values = WIN_SLOTS.map((slot) => slot[breakerEnd ? 0 : 1]);
-			pair.forEach((q, j) => out.push(Object.assign({ value: values[j], word }, q)));
+			pair.forEach((q, j) => out.push(Object.assign({ value: values[j], word: band.word }, q)));
 		});
 		return out;
 	}
