@@ -1,8 +1,8 @@
 # Dive SVG
 
-Builds `src/_includes/dive.svg`, the dive loader's drawing, from the logo file `src/resources/branding/icon-primary.svg`.
+Builds `src/_includes/dive.svg`, the dive loader's drawing, from the logo file `src/resources/branding/icon-primary.svg`; and `src/resources/branding/wordmark-dark.svg` / `wordmark-light.svg`, the loading screen's wordmark, from `logo-primary-dark.svg` / `-light.svg` (their portal, ladder and diver dropped, DIVE's gradient clipped to the letters, the view cropped to the texts by `WORDMARK_BOX`, measured in a browser: measure again if the texts move).
 
-**Run it whenever the logo file changes:**
+**Run it whenever a logo file changes:**
 
 ```
 node tools/dive-svg/build.js

@@ -28,6 +28,32 @@
 	to { opacity: 0; visibility: hidden; }
 }
 
+/* The dive (UV, 3 Nov): the wordmark centred on the screen behind the diver,
+   who falls the screen's length into the portal at its foot (scripts/dive.js,
+   frame 'fit'). Its width is the portal's on screen (loader.js sets
+   --loader-wordmark-width from the dive's layout) times --loader-wordmark,
+   so it keeps its size beside the diver and portal at any screen; never
+   wider than the screen less a margin. Not shown until the dive has laid
+   out (no width before). */
+.tdc-loader-wordmark {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	width: calc(var(--loader-wordmark-width, 0px) * var(--loader-wordmark));
+	max-width: calc(100% - 2 * var(--space-4));
+	height: auto;
+}
+.tdc-loader-dive {
+	position: absolute;
+	inset: 0;
+}
+.tdc-loader-dive svg.dive {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
 /* The site icon exactly where the nav's sits (nav.css .nav-logo), so the
    fade leaves the real one in the same spot. */
 .tdc-loader-icon {
@@ -39,8 +65,10 @@
 	width: auto;
 }
 
-/* The ring the dots serve, in the middle of the screen. Never seen itself:
-   its border is transparent, and only its width counts (the dots' size on
+/* The ring in the middle of the screen. Since the dive (3 Nov) it is served
+   only under reduced motion, where it breathes beside the diver (UV: kept
+   for now, may go later); with full motion the diver alone is the loader.
+   Its border is transparent, and only its width counts (the dots' size on
    it); the dots take their colour from its text colour: the site's green
    (UV, 29 Oct). */
 .tdc-loader-ring {

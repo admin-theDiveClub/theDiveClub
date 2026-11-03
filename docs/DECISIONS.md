@@ -1227,3 +1227,17 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* pages that show the SVG files needed nothing. `dive.svg` was rebuilt from the new file, and its build script kept as `tools/dive-svg/build.js` so the next change is one command. The app icons, favicons and `icon-primary.png` were re-rendered from the new `icon-primary.svg` by Claude, at their old sizes and framing (headless Chrome; rendering the old SVG the same way reproduced the old icons to within 146 pixels in four million). An installed app keeps its old home-screen icon until it is added again.
 *Not yet:* the email GIF keeps the old rim; rebuilding it is its own job (`docs/BACKLOG.md`, item 3).
 *Touches:* the three logo SVGs, `_includes/dive.svg`, `tools/dive-svg/`, `resources/icons/*`, `favicon.ico`, `branding/icon-primary.png`
+
+## 2026-11-03 — The dive wired in: the loading screen everywhere, the nav's icon under reduced motion
+
+*Decided by UV:* the diver replaces the loading screen's dots "everywhere, all the time", falling the full length of the screen into the portal at its foot, with **the wordmark behind, centred on the screen and scaled to fit** ("on strange phones which are long, the wordmark will be smaller than the diver and portal relatively"). **The dots stay on buttons and network calls.** With reduced motion "she is the reduced motion mode": the screen still dives, the ring breathes beside her (kept for now, may go), and wherever the dots would be out (a tap's save, a section loading) the nav's icon dives and loops instead; the tapped control keeps its breathing. **No delay between drops** in any of them: the next starts the moment she is through the hole.
+*So:* the drawing once per page in a `<template>`, cloned by `loader.js` (frame `fit`) and `nav.js` (frame `logo`, in place of the `<img>`, which stay hidden as the fallback); `dots.js` says when, under reduced motion, anything is waiting (`TDCDots.waiting`, `tdc-dots-waiting`), and `loader.js` when the screen goes up or down (`tdc-loader`). A wordmark-only drawing (`wordmark-dark.svg` / `-light.svg`) made by the dive's build script from the full logo, never retyped.
+*Example:* with less motion on, tick Paid on tournament manage: the box breathes; after 150 ms the nav's diver drops through the hole, again and again; the save is back, she goes through once more, falls in and rests.
+*Claude's, for UV to confirm:* the screen fades as soon as the page is ready, without waiting for her to land (she finishes during the fade); both the screen's and the nav's diver wait 150 ms (the dots' `GRACE`) before diving, so an instant page or call shows her still; the wordmark's margin is 16px each side.
+*Touches:* `_includes/layout.html`, `scripts/loader.js`, `stylesheets/loader.css`, `scripts/dots.js`, `scripts/nav.js`, `stylesheets/nav.css`, `scripts/dive.js` (`pause` 0), `sandbox/dive/index.html`, `tools/dive-svg/`, `resources/branding/wordmark-*.svg`
+
+## 2026-11-03 — The loading screen's wordmark is as wide as the portal
+
+*Decided by UV:* fitted to the screen the wordmark was "way too big on some screens and too striking"; it stays centred, its width proportional to the portal and diver.
+*So:* its width is the portal's on screen times `--loader-wordmark` (1 for now), reported by `dive.js` after each layout (`onLayout`); never wider than the screen less 16px a side. At 420 wide it is 272px, the portal's width, where it was 388.
+*Touches:* `scripts/dive.js`, `scripts/loader.js`, `stylesheets/loader.css`, `stylesheets/variables.css`

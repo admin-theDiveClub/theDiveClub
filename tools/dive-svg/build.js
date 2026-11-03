@@ -94,3 +94,50 @@ const out = `<!-- The dive (3 Nov): the email GIF's diver as an inline SVG, for 
 `;
 fs.writeFileSync(path.join(ROOT, 'src/_includes/dive.svg'), out.replace(/\r?\n/g, '\r\n'));
 console.log(out.length, 'chars;', (out.match(/<path/g) || []).length, 'paths;', (out.match(/var\(--dive/g) || []).length, 'colour hooks;', (out.match(/\sid="/g) || []).length, 'ids');
+
+// The wordmark (3 Nov): the loading screen's, behind the falling diver. The
+// full logo (logo-primary-dark / -light.svg) without its scene: the portal,
+// the ladder and the diver go; the two texts and DIVE's gradient (gra_m_all)
+// stay. Cropped to the texts (WORDMARK_BOX, measured in a browser from the
+// texts' box plus their blurred shadow; measure again if the texts move).
+// Measured 3 Nov in headless Chrome: the scene group's box 23.7, 49.1,
+// 494.1 × 413.7, the same in both files; 10 more each side for the blur
+// (stdDeviation 3.4, three of them).
+const WORDMARK_BOX = '13.6 39.1 514.1 433.7';
+function drop(str, label) {
+	const k = str.indexOf('inkscape:label="' + label + '"');
+	if (k < 0) throw new Error('wordmark: no ' + label);
+	const i = str.lastIndexOf('<', k);
+	const re = /<(\/?)([\w:]+)[^>]*?(\/?)>/g;
+	re.lastIndex = i;
+	let depth = 0, m;
+	while ((m = re.exec(str))) {
+		if (m[1] === '/') depth--;
+		else if (m[3] !== '/') depth++;
+		if (depth === 0) return str.slice(0, i) + str.slice(re.lastIndex);
+	}
+	throw new Error('wordmark: no close for ' + label);
+}
+for (const theme of ['dark', 'light']) {
+	let w = fs.readFileSync(path.join(ROOT, `src/resources/branding/logo-primary-${theme}.svg`), 'utf8');
+	for (const label of ['TEXT_DIVE', 'TEXT_THE_CLUB', 'gra_m_all']) {
+		if (!w.includes('inkscape:label="' + label + '"')) throw new Error('wordmark: no ' + label + ' in the ' + theme + ' logo');
+	}
+	for (const label of ['PORTAL', 'STAIRS', 'DIVER']) w = drop(w, label);
+	// gra_m_all is one path for DIVE's gradient and the portal rim's shading:
+	// clipped to the letters, in its own coordinates (measured 3 Nov: the
+	// letters end at y -18, the rim's arc begins at 38).
+	const g = w.indexOf('inkscape:label="gra_m_all"');
+	const gStart = w.lastIndexOf('<path', g);
+	if (gStart < 0 || w.slice(gStart, g).includes('>')) throw new Error('wordmark: gra_m_all is not a path in the ' + theme + ' logo');
+	w = w.slice(0, gStart) + '<path clip-path="url(#wordmark-letters)"' + w.slice(gStart + 5);
+	if (!w.includes('</defs>')) throw new Error('wordmark: no defs in the ' + theme + ' logo');
+	w = w.replace('</defs>', '<clipPath id="wordmark-letters" clipPathUnits="userSpaceOnUse"><rect x="-1000" y="-1000" width="3000" height="1010"/></clipPath></defs>');
+	const head = w.match(/<svg[\s\S]*?>/)[0];
+	const fixed = head.replace(/\s+width="[^"]*"/, '').replace(/\s+height="[^"]*"/, '').replace(/\s+viewBox="[^"]*"/, ` viewBox="${WORDMARK_BOX}"`);
+	if (!/viewBox=/.test(fixed)) throw new Error('wordmark: no viewBox in the ' + theme + ' logo');
+	w = w.replace(head, fixed);
+	w = w.replace(/<svg/, `<!-- The wordmark, made by tools/dive-svg/build.js from logo-primary-${theme}.svg. Do not edit: rebuild. -->\n<svg`);
+	fs.writeFileSync(path.join(ROOT, `src/resources/branding/wordmark-${theme}.svg`), w.replace(/\r?\n/g, '\r\n'));
+	console.log(`wordmark-${theme}.svg:`, w.length, 'chars');
+}

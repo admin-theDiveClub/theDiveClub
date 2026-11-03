@@ -28,20 +28,28 @@
 // one), and the pictures on the page loaded; again until nothing new is held;
 // then two frames, so what was drawn is painted behind the screen.
 //
-// The dots come only after GRACE, as for the dots' own page-load queue, so a
-// page that is instant shows the icon and fades. Otherwise they serve a ring
-// in the middle of the screen (a fake ring: invisible, its border's width is
-// the dots' size) until the page is ready, then race it and fade as the screen
-// does: the ring comes back over --loader-fade, and the dots fade only once it
-// is back. With reduced motion there are no dots and the ring breathes
-// (dots.css's calm pulse) until the screen fades.
+// The dive (UV, 3 Nov, replacing Loader A's dots): the wordmark behind, and
+// the diver (scripts/dive.js, cloned from the layout's #tdc-dive-art) falling
+// the screen's length into the portal at its foot. She starts only after
+// GRACE, as for the dots' own page-load queue, so a page that is instant
+// shows her still and fades. When the page is ready she is stopped (through
+// once more, then the logo pose) as the screen fades; the fade does not wait
+// for her. In both motion modes: she is the loader.
+//
+// With reduced motion the ring in the middle is also served, as before: no
+// dots, so it breathes (dots.css's calm pulse) until the screen fades (UV:
+// kept for now). With full motion the ring is not served at all.
+//
+// The screen going up and down is said on the document as 'tdc-loader'
+// ({ detail: { up } }), for the nav's diver (nav.js).
 //
 // Never silent (CLAUDE.md): a page still not ready after HANG is shown as it
 // stands, and the line at the foot of the screen says what it was waiting
 // for. If this script never runs at all, loader.css drops the screen after
 // 30 s, so a broken script cannot lock the page.
 //
-// Needs: tdc.js (TDC.error), supabaseClient.js (TDCNet); dots.js for the dots.
+// Needs: tdc.js (TDC.error), supabaseClient.js (TDCNet), dive.js; dots.js for
+// the ring under reduced motion.
 
 const TDCLoader = (() => {
 	const AREA = 'Loader';
@@ -58,6 +66,26 @@ const TDCLoader = (() => {
 	let stage = 'the page';    // what it is waiting on, for the hang message
 	let shown = null;          // resolves when the screen starts to fade
 	let hideTimer = 0;         // hides the faded screen; stopped if it comes back
+
+	// The diver: a copy of the layout's drawing, in the screen's stage.
+	const dive = (() => {
+		const stage = box && box.querySelector('.tdc-loader-dive');
+		const art = document.getElementById('tdc-dive-art');
+		if (!stage) return null;
+		if (!art || typeof TDCDive === 'undefined') {
+			console.error(`[${AREA}] the dive (dive.js, #tdc-dive-art) is not on this page, so the loading screen has no diver.`);
+			return null;
+		}
+		const svg = art.content.querySelector('svg.dive').cloneNode(true);
+		svg.removeAttribute('role');
+		svg.removeAttribute('aria-label');
+		stage.append(svg);
+		// The wordmark's width follows the portal's (UV, 3 Nov: fitted to the
+		// screen it was far too big), times --loader-wordmark.
+		const onLayout = ({ portal }) => box.style.setProperty('--loader-wordmark-width', `${portal}px`);
+		return TDCDive.attach(svg, { frame: 'fit', onLayout });
+	})();
+	const say = () => document.dispatchEvent(new CustomEvent('tdc-loader', { detail: { up } }));
 
 	function hold(promise, label) {
 		if (!box) return promise;
@@ -116,6 +144,8 @@ const TDCLoader = (() => {
 		box.dataset.state = 'leaving';
 		box.setAttribute('aria-busy', 'false');
 		shown();
+		if (dive) dive.stop();
+		say();
 		// Hidden, not removed, once it has faded: the dots may still be racing
 		// its ring, and a target that leaves the page before they are done
 		// reads to them as a failure (dots.js, gone). It also comes back.
@@ -134,6 +164,7 @@ const TDCLoader = (() => {
 		box.setAttribute('aria-busy', 'true');
 		void box.offsetWidth;   // the opacity lands before the transition is back
 		box.style.transition = '';
+		say();
 		cycle();
 	}
 	function fadeMs() {
@@ -178,15 +209,17 @@ const TDCLoader = (() => {
 			hide();
 		});
 
-		// The dots, once the page has not been instant. The ring's call is the
-		// screen going.
+		// The diver, once the page has not been instant; with reduced motion
+		// the ring breathes too. The ring's call is the screen going.
 		setTimeout(() => {
-			if (!up || !ring) return;
+			if (!up) return;
+			if (dive) dive.start();
+			if (!ring) return;
 			if (typeof TDCDots === 'undefined') {
-				console.error(`[${AREA}] dots.js is not on this page, so the loader has no dots.`);
+				console.error(`[${AREA}] dots.js is not on this page, so the loader's ring cannot breathe.`);
 				return;
 			}
-			TDCDots.serve(ring, gone, { trace: 'none', timeout: HANG + 1000 });
+			if (TDCDots.state.reduced) TDCDots.serve(ring, gone, { trace: 'none', timeout: HANG + 1000 });
 		}, GRACE);
 	}
 

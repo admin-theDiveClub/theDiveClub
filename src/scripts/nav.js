@@ -40,6 +40,45 @@
 
 	let loggedIn = false;
 
+	// ─── The diver (UV, 3 Nov) ────────────────────────────────────────
+	// The logo is the dive's drawing (scripts/dive.js, cloned from the
+	// layout's #tdc-dive-art), which at rest is the logo exactly; the two
+	// <img> stay in the HTML and are hidden once it is in. With reduced
+	// motion she is the loader in place of the dots: while anything the dots
+	// would be out for is waiting (dots.js, 'tdc-dots-waiting'), she dives,
+	// drop after drop; when it is all back she falls in once more and rests.
+	// Not while the loading screen is up (its own diver is in front), and not
+	// for a wait shorter than GRACE, as for the dots. With full motion she
+	// never dives: the dots do that job.
+	(() => {
+		const GRACE = 150;   // ms, as dots.js and loader.js
+		const logo = document.querySelector('.nav-logo');
+		const art = document.getElementById('tdc-dive-art');
+		if (!logo) return;
+		if (!art || typeof TDCDive === 'undefined') {
+			console.error(`[${AREA}] the dive (dive.js, #tdc-dive-art) is not on this page, so the nav's icon cannot dive.`);
+			return;
+		}
+		const svg = art.content.querySelector('svg.dive').cloneNode(true);
+		svg.classList.add('nav-dive');
+		logo.append(svg);
+		const dive = TDCDive.attach(svg, { frame: 'logo' });
+		if (!dive) { svg.remove(); return; }
+		for (const img of logo.querySelectorAll('img')) img.hidden = true;
+
+		let timer = 0;
+		function update() {
+			const want = typeof TDCDots !== 'undefined' && TDCDots.waiting
+				&& !(typeof TDCLoader !== 'undefined' && TDCLoader.up);
+			if (!want) { clearTimeout(timer); timer = 0; dive.stop(); return; }
+			if (dive.loading || timer) return;
+			timer = setTimeout(() => { timer = 0; if (TDCDots.waiting && !TDCLoader.up) dive.start(); }, GRACE);
+		}
+		document.addEventListener('tdc-dots-waiting', update);
+		document.addEventListener('tdc-loader', update);
+		update();
+	})();
+
 	// ─── Ring icons (UV, 24 Oct) ──────────────────────────────────────
 	// Every button on the bar is a ring icon (ring-status.js, UV's design):
 	// each draws itself in as the page opens, and the menu turns into a cross

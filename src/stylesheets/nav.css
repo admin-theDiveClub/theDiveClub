@@ -100,6 +100,13 @@
 	height: var(--nav-logo-height);
 	width: auto;
 }
+/* The dive's drawing in its place (nav.js, 3 Nov): the logo's square, so
+   nothing moves when it replaces the <img>. */
+.nav-logo svg.nav-dive {
+	display: block;
+	height: var(--nav-logo-height);
+	width: var(--nav-logo-height);
+}
 
 
 /* The signed-in player's picture, shown in place of the ring, the same size. */

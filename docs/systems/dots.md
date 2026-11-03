@@ -17,7 +17,7 @@ Four dots, **one set for the whole page**, that show that something is happening
 | `scripts/ring-status.js` | The ring icons, with no dots of their own since step 7 |
 | `scripts/tdc.js` (`TDC.writer`), `scripts/tdc-controls.js`, `scripts/nav.js`, `scripts/league-fixtures.js` | Where the site hands its calls to the dots (§7) |
 | `variables.css` `--dots-*` | Every size and time (§5) |
-| `scripts/loader.js` + `stylesheets/loader.css` | The loading screen, whose dots are these (§9, 29 Oct) |
+| `scripts/loader.js` + `stylesheets/loader.css` | The loading screen (§9, 29 Oct); since 3 Nov the dive, its ring served only under reduced motion (§9a) |
 | `sandbox/dots/index.html` + `scripts/sandbox-dots.js` | `/sandbox/dots/`: real components that pretend to call the network. Styles at the end of `sandbox.css` |
 
 ## 3. How it works
@@ -362,7 +362,26 @@ UV, said many times: no "Loading…", "Saving…", "Checking…", "Reading…" a
 
 Checked at 420px on the stand-in: every page opened with nothing reading "Loading" or "Reading" as the screen went and no script error; sign-in pressed with a 1.5 s call: the dots on the button, no status text, the failure then shown as "TDC (Error): …"; a team opened on the Season tab: the dots on it, empty inside, then its players.
 
+## 9a. The dive on the site (3 Nov, UV's item 12)
+
+**The loading screen is the dive, in both motion modes; the dots stay on every button and call; with reduced motion the nav's icon dives in place of the dots.** UV, 3 Nov: "Replace the overlay loader with the diver everywhere, all the time"; "she is the reduced motion mode". The engine is `scripts/dive.js` (file map, the dive entry).
+
+| | What |
+|---|---|
+| The drawing | Once per page, in `<template id="tdc-dive-art">` (`layout.html`). The screen and the nav each clone it, so a page carries the 27 KB once and every copy starts from rest |
+| The screen | Back to front: the wordmark (`wordmark-dark.svg` / `-light.svg`, made by `tools/dive-svg/build.js` from the full logo without its scene) **centred on the screen, as wide as the portal** (UV, 3 Nov, after seeing it fitted to the screen: "way too big on some screens and too striking"): `dive.js` reports the portal's width after each layout (`onLayout`), `loader.js` sets it as `--loader-wordmark-width`, times `--loader-wordmark` (1); never wider than the screen less 16px a side. Measured 272px wide beside a 272px portal at 420 × 860, 360 × 900 and 1440 × 900; the diver's stage over the whole screen (`frame: 'fit'`: the portal at the foot, she falls the screen's length); the still icon at the nav's spot, as before |
+| When she dives | `loader.js`: after `GRACE` (150 ms), as the dots did, so an instant page shows her still; `stop()` when the page is ready, as the screen fades. **The fade does not wait for her** (Claude's, for UV to confirm): she goes through and falls in once more during the fade |
+| No pause | UV, 3 Nov: the next drop starts the moment she is through the hole (`pause: 0`, the dive's default, so the sandbox too) |
+| The ring | Served only under reduced motion, where it breathes beside the diver (UV: kept for now, may go). With full motion nothing serves it: no dots on the screen |
+| The nav's icon | `nav.js` puts a clone (`frame: 'logo'`, measured identical to the `<img>`: 184, 7, 46 × 46 at 420 with a scrollbar) in place of the two `<img>`, which stay in the HTML hidden. **Reduced motion only:** while `TDCDots.waiting` (below) and the screen is not up, after `GRACE`, she dives drop after drop; when all is back she goes through, falls in once more and rests. With full motion she never dives |
+| `TDCDots.waiting` | New in `dots.js`: with reduced motion, true while any record (a tap, something loading) has its call out, the screen's ring not counted. Said on the document as `tdc-dots-waiting` when it changes (`sayWaiting()`: on a serve, a call settling, a target gone, motion switched). The calm pulse on the tapped control stays (UV) |
+| `tdc-loader` | New in `loader.js`: the screen going up or down, said on the document, so the nav's diver waits for it |
+
+**Checked 3 Nov** on a local build, headless Chrome at 420 × 860 and 1440 × 900, dark and light, signed out (no database): the screen's diver falls from above the top to the portal and the next drop starts at once (her top 794 → −339 between two 50 ms samples); the wordmark 388 × 828 at 420 (fitted), its rim arc clipped off; the nav: full motion, a call out, no dive; reduced motion, at rest for the first 60 ms, then diving, the tapped button breathing (`data-dots-calm`); the call back, through, in once more, rest; an instant call, no dive. `/sandbox/dive/` works with `dive.js` now from the layout. **Not checked:** a phone, a real slow page, the light theme's nav diver.
+
 ## 9. The loading screen (29 Oct, UV's items 10 and 11)
+
+> **Since 3 Nov the screen is the dive (§9a)**: the dots no longer serve its ring with full motion. The rest of this section (holds, ready, the hang, `raise()`) is unchanged.
 
 UV: a loading screen on every page, gone only once the page has fully loaded, its data included; **Loader A**: the dots big in the middle of the screen, and the site icon exactly where the nav bar's sits, so the fade leaves the real one in the same spot. ~~The screen is opaque~~ **Since UV's second look (29 Oct) it is see-through with a strong blur** (`--loader-blur`, 24px): the page is there underneath, out of focus, and comes sharp as the screen fades.
 

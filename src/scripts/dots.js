@@ -1072,6 +1072,22 @@ const TDCDots = (() => {
 	}
 	let calm = reduced();
 
+	// With reduced motion the nav's diver stands in for the dots (UV, 3 Nov;
+	// nav.js): whether anything the dots would be out for is still waiting
+	// on its call (a tap, or something loading) is said on the document as
+	// 'tdc-dots-waiting' ({ detail: { waiting } }) whenever it changes. The
+	// loading screen's own ring is not counted: the screen has its diver.
+	let waitingNow = false;
+	function sayWaiting() {
+		let w = false;
+		if (calm) for (const t of records.values()) {
+			if (!t.settled && !(t.el.closest && t.el.closest('.tdc-loader'))) { w = true; break; }
+		}
+		if (w === waitingNow) return;
+		waitingNow = w;
+		document.dispatchEvent(new CustomEvent('tdc-dots-waiting', { detail: { waiting: w } }));
+	}
+
 	// ─── Failures (spec §14) ───
 	// Never silent: to the console with [Dots] and onto the page as
 	// "TDC (Error): …", on the target's own status line if the page gave one
@@ -1357,6 +1373,7 @@ const TDCDots = (() => {
 		if (t.lines) t.lines.remove();
 		clearLook(t.el);
 		if (t.settled) t.restored = true;   // mid-trace: its result is already in
+		sayWaiting();
 	}
 	function sweep() {
 		for (const t of [...records.values()]) if (!present(t)) gone(t);
@@ -2197,6 +2214,7 @@ const TDCDots = (() => {
 		// result was saved, and the page reports its own error (UV, 26 Oct),
 		// so the dots only log it.
 		t.pending++;
+		sayWaiting();
 		const limit = opts.timeout > 0 ? opts.timeout : HANG;
 		let over = false;
 		const finish = () => {
@@ -2206,6 +2224,7 @@ const TDCDots = (() => {
 			if (t !== cur && t.load && covered()) underScreen(t);
 			else if (t !== cur) restore(t);   // abandoned: it comes back without the dots
 			else wake();
+			sayWaiting();
 		};
 		const timer = setTimeout(() => {
 			if (over) return;
@@ -2523,6 +2542,7 @@ const TDCDots = (() => {
 		const now = reduced();
 		if (now === calm) return;
 		calm = now;
+		sayWaiting();
 		for (const t of records.values()) {
 			if (t.load || t.settled) continue;
 			if (calm) { t.el.dataset.dotsCalm = ''; continue; }
@@ -2623,6 +2643,9 @@ const TDCDots = (() => {
 		// page-light.js holds the light meanwhile (UV, 30 Oct), so its repaints
 		// never take frames from the dots.
 		get playing() { return running; },
+		// With reduced motion, true while anything the dots would be out for
+		// is waiting on its call ('tdc-dots-waiting'; the nav's diver).
+		get waiting() { return waitingNow; },
 		// The waiting move (solo or group) to play on repeat, or null for random.
 		force(name) {
 			if (name !== null && !SOLO[name] && !GROUP[name]) { fail(null, `there is no move called "${name}".`); return; }

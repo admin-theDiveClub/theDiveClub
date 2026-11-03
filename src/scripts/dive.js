@@ -1,7 +1,7 @@
 // The dive (UV, 3 Nov): the email GIF's diver, drawn inline from the logo
 // (_includes/dive.svg), as a loader. At rest she is the logo, perfectly still.
 // start(): she dives through the hole, and while loading goes on she falls in
-// from the top and through again, a pause between drops as in the GIF.
+// from the top and through again, straight away (UV, 3 Nov; the GIF pauses).
 // stop(): once she is through, she falls in one last time and stays in the
 // logo pose.
 //
@@ -25,6 +25,8 @@
 //   topSpeed  L/s (the GIF peaks at 2.5)
 //   pause     ms between drops
 //   maxDiver  px, the tallest she is drawn with frame 'fit'
+//   onLayout  called after each layout with { portal }: the portal's width
+//             on screen, px (the loading screen sizes its wordmark by it)
 
 const TDCDive = (() => {
 	const AREA = 'Dive';
@@ -32,7 +34,9 @@ const TDCDive = (() => {
 	const ACC = 0.742;  // L/s²
 	const HOLE_LIP = 434.80405 + 39.531925; // the hole's near edge, in the logo's units
 	const LOGO_BOX = 541.86666;              // the logo file's viewBox
-	const DEFAULTS = { frame: 'fit', fall: 'screen', distance: 0, time: 0, topSpeed: 3, pause: 1000, maxDiver: 360 };
+	const HOLE_W = 2 * 126.47324;            // the portal's width, in the logo's units
+	// pause 0 (UV, 3 Nov): the next drop starts the moment she is through.
+	const DEFAULTS = { frame: 'fit', fall: 'screen', distance: 0, time: 0, topSpeed: 3, pause: 0, maxDiver: 360 };
 	let copies = 0;
 
 	// Distance covered after t seconds, and time to cover d, with the speed limit.
@@ -107,6 +111,8 @@ const TDCDive = (() => {
 			geo.len = d.height;                                   // one diver length, logo units
 			geo.fit = Math.max(0, (d.y + d.height - top) / d.height); // from just above the top edge
 			geo.through = (HOLE_LIP - d.y) / d.height;            // logo pose until her toes pass the lip
+			const unit = opts.frame === 'logo' ? Math.min(box.width, box.height) / LOGO_BOX : s;
+			if (opts.onLayout) opts.onLayout({ portal: unit * HOLE_W });
 			return true;
 		}
 
@@ -141,7 +147,8 @@ const TDCDive = (() => {
 				if (!loading && plan.cameIn && t >= plan.tHole) return rest();
 				if (t >= plan.tEnd) {
 					place(plan.fallL + geo.through + 1);
-					if (loading) timer = setTimeout(() => drop(false), opts.pause);
+					if (loading && opts.pause > 0) timer = setTimeout(() => drop(false), opts.pause);
+					else if (loading) drop(false);
 					else drop(false); // loading is over: no pause, straight back to the logo pose
 					return;
 				}
