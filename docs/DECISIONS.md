@@ -1439,3 +1439,17 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to judge:* "opened" read as a match made on the fixture and not finished or abandoned (`scheduled` or `in_progress`), "set" as the team's side locked; "next" as earliest by date, then round and position, including one whose date has passed but is still open; the line under the words ("v Bravo · Wed 12 Nov", the score on a result) on Go to last result too; a captain with neither gets no button; a player who is not captain keeps My next match and its old rule, with the line added; the ring at the right of the heading beside the + / –; the indent to the team's name. The ring is one shared script for both pages (`team-ask.js`).
 *So:* `docs/systems/leagues.md`, "Set my lineup says which match" and "The ring on the season page too".
 *Touches:* `scripts/team-ask.js` (new), `scripts/league-join.js`, `scripts/league-season.js`, `leagues/join/index.html`, `leagues/season/index.html`, `stylesheets/league.css`, `stylesheets/league-join.css`
+
+## 2026-11-05 — The poster in the site's look, showing everything set and nothing unset
+
+*Decided by UV:* the tournament poster redone in the site's theme, the league join page its inspiration; as much information as possible, but only settings and information the director specified. In answer to Claude's questions: an entry fee of 0 is left out (no "Free entry"); a rule is shown when it is switched on or has a value, as on the join page (the defaults cannot be told from a choice); the poster's snapshot gains the third-place playoff, the rules set for a round and who runs the tournament (a migration).
+*Claude's, for UV to judge:* the officials' display names, roles and picture paths in the public snapshot (no ids; the picture bucket is already public); Record who breaks and Break & finish needs the breaker added to the player-facing rules, since the break settings depend on them; Round by round showing only what differs from the tournament's rules, an off switch included; a bye drawn as the player going through; the default entry mode shown ("Added by whoever runs it"); the page borrowing `league.css` and `league-join.css` rather than copying their styles.
+*So:* `docs/systems/tournaments.md`, "The poster redesigned, and what it holds".
+*Touches:* migration `20261105160712_poster_more.sql`, `supabase/tests/055_poster_more.test.sql` (new), `tournaments/poster/index.html`, `scripts/tournament-poster.js`, `stylesheets/poster.css`
+
+## 2026-11-05 — A tournament's card opens the poster until it starts, then the draw
+
+*Decided by UV:* while a tournament has not started, clicking on it always opens the poster; once it has started, straight to the draw. In answer to Claude's questions: the director's card too (Entrants is reached from the poster's foot); a player who cannot open the poster (not shared) is sent to the draw instead, with a small migration so the list knows.
+*Claude's, for UV to judge:* "not started" as Draft or Open, so Cancelled opens the draw; a director whose tournament has no poster at all also gets the draw (no longer Entrants).
+*So:* `docs/systems/tournaments.md`, "A tournament's card opens the poster before the start, the draw after".
+*Touches:* migration `20261105162834_tournament_link_poster.sql`, `supabase/tests/056_tournament_link_poster.test.sql` (new), `scripts/tournaments.js`

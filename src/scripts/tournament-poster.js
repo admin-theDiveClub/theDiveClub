@@ -16,6 +16,10 @@
 // Entry is the exception: those buttons need an account, so they come from
 // tdc_my_entry and only appear once there is a session.
 //
+// Drawn in the league join page's look (UV, 5 Nov): as much as the snapshot
+// holds, and nothing the director left unset. No date, no venue, no limit, a
+// fee of 0, a switch that is off: each is left out rather than said.
+//
 // Needs: tdc.js, match-settings.js.
 
 (() => {
@@ -25,11 +29,15 @@
 	const el = (id) => document.getElementById(id);
 	const els = {
 		nothing: el('nothing'), poster: el('poster'),
-		name: el('p-name'), meta: el('p-meta'), badges: el('p-badges'),
-		private: el('p-private'), counts: el('p-counts'), rules: el('p-rules'),
-		namesBox: el('p-names-box'), names: el('p-names'),
+		hero: el('p-hero'), pic: el('p-pic'), name: el('p-name'), meta: el('p-meta'),
+		statusBadge: el('p-status'), facts: el('p-facts'),
+		private: el('p-private'), numbers: el('p-numbers'),
+		rulesBox: el('p-rules-box'), rules: el('p-rules'),
+		roundsBox: el('p-rounds-box'), rounds: el('p-rounds'),
+		namesBox: el('p-names-box'), names: el('p-names'), namesCount: el('p-names-count'),
 		drawBox: el('p-draw-box'), draw: el('p-draw'),
-		entry: el('p-entry'), entryState: el('p-entry-state'),
+		officialsBox: el('p-officials-box'), officials: el('p-officials'),
+		entry: el('p-entry'), entryState: el('p-entry-state'), entryDetail: el('p-entry-detail'),
 		entryActions: el('p-entry-actions'), entryStatus: el('p-entry-status'),
 		text: el('p-text'), copy: el('p-copy'), generated: el('p-generated'),
 		links: el('p-links'), status: el('page-status')
@@ -56,9 +64,11 @@
 		complete: 'Finished',
 		cancelled: 'Cancelled'
 	};
-	const STATUS_CLASS = {
-		draft: 'pending', open: 'needs-you', in_progress: 'live',
-		complete: 'verified', cancelled: 'pending'
+	// How a player gets in, in the words the join page uses for a league.
+	const ENTRY = {
+		td_only: 'Added by whoever runs it',
+		interested: 'Put your name down',
+		self_confirm: 'Join straight away'
 	};
 
 	const node = (tag, cls, text) => {
@@ -67,6 +77,47 @@
 		if (text !== undefined) n.textContent = text;
 		return n;
 	};
+	const plural = (n, one, many) => (n === 1 ? '1 ' + one : (n || 0) + ' ' + (many || one + 's'));
+
+	// The trophy in the banner's ring: a tournament has no picture of its own.
+	const TROPHY = 'M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z';
+	function trophy() {
+		const NS = 'http://www.w3.org/2000/svg';
+		const svg = document.createElementNS(NS, 'svg');
+		svg.setAttribute('viewBox', '0 0 24 24');
+		svg.setAttribute('aria-hidden', 'true');
+		const path = document.createElementNS(NS, 'path');
+		path.setAttribute('d', TROPHY);
+		path.setAttribute('fill', 'currentColor');
+		svg.append(path);
+		return svg;
+	}
+
+	// A picture, or initials. The snapshot holds no player ids, so nothing
+	// here opens a profile.
+	function face(name, path) {
+		const box = node('span', 'person-pic');
+		const url = path ? TDC.pictureUrl('player-avatars', path) : null;
+		if (url) {
+			const img = document.createElement('img');
+			img.src = url;
+			img.alt = '';
+			img.loading = 'lazy';
+			box.append(img);
+		} else {
+			box.textContent = (name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+		}
+		return box;
+	}
+
+	function person(name, path, sub) {
+		const p = node('span', 'person');
+		const names = node('span', 'person-names');
+		names.append(node('span', 'person-name', name));
+		if (sub) names.append(node('span', 'person-sub', sub));
+		p.append(face(name, path), names);
+		return p;
+	}
 
 	// ─── State ───
 	let snap = null;
@@ -87,6 +138,18 @@
 			weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
 			hour: '2-digit', minute: '2-digit'
 		});
+	}
+
+	// The banner's Date and Time, said apart.
+	function dayOf(iso) {
+		const d = new Date(iso);
+		if (isNaN(d)) { TDC.error(AREA, 'unreadable start date in the snapshot: ' + iso); return ''; }
+		return d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+	}
+	function timeOf(iso) {
+		const d = new Date(iso);
+		if (isNaN(d)) return '';
+		return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 	}
 
 	function generatedWhen(iso) {
@@ -132,44 +195,107 @@
 		return String(value);
 	}
 
-	// The race target reads as part of the win condition rather than as a
-	// number on its own: "Race to 5", not "Win condition: Race to / Target: 5".
+	// A rule's row on the page: the label without its unit, the value with it
+	// ("Match clock" · "45 minutes"), as the league join page words them. The
+	// race target is said with the win condition: "Race to 5".
+	function ruleRow(def, rules) {
+		const v = rules[def.key];
+		let value;
+		if (def.key === 'win_condition_type') {
+			const name = ruleText('win_condition_type', v);
+			value = v === 'free_play' || !rules.win_condition_target ? name : name + ' ' + rules.win_condition_target;
+		} else if (def.type === 'bool') {
+			value = v ? 'Yes' : 'No';
+		} else if (def.type === 'int') {
+			const unit = /\((\w+)\)$/.exec(def.label);
+			value = !v ? 'None'
+				: /_seconds$/.test(def.key) ? v + ' s'
+				: unit ? v + ' ' + (v === 1 ? unit[1].replace(/s$/, '') : unit[1])
+				: String(v);
+		} else {
+			value = ruleText(def.key, v);
+		}
+		return [def.label.replace(/\s*\(\w+\)$/, ''), value];
+	}
+
+	// A box per settings group, as on the join page. Only what is set (UV,
+	// 5 Nov): a switch that is off and a number at 0 are left out, and so is
+	// anything a switch makes irrelevant. The snapshot holds only the
+	// player-facing keys, so a `when` that asks about another key is answered
+	// from the defaults; a poster from before version 2 has no Record who
+	// breaks, and its break settings are shown as they always were.
+	const withDefaults = (rules) => Object.assign({}, D.DEFAULT_RULES, { track_breaks: true }, rules);
+
+	function ruleBox(title, rows) {
+		const box = node('section', 'lj-rule-box');
+		box.append(node('h3', 'lj-rule-title', title));
+		const dl = node('dl', 'lj-rule-list');
+		for (const [k, v] of rows) {
+			const row = node('div', 'lj-rule');
+			row.append(node('dt', null, k), node('dd', null, v));
+			dl.append(row);
+		}
+		box.append(dl);
+		return box;
+	}
+
 	function renderRules(rules) {
-		els.rules.replaceChildren();
-		if (!rules) return;
-
-		const shown = Object.keys(rules);
-		const pairs = [];
-
-		if (rules.discipline !== undefined) {
-			pairs.push(['Game', ruleText('discipline', rules.discipline)]);
+		rules = rules || {};
+		// A key with no definition is a setting added to the server list and
+		// not to TDCMatchDef. Said out loud rather than dropped silently.
+		for (const key of Object.keys(rules)) {
+			if (!DEF_BY_KEY.has(key)) TDC.error(AREA, 'the poster carries a setting this page has no label for: ' + key);
 		}
-
-		if (rules.win_condition_type !== undefined) {
-			let v = ruleText('win_condition_type', rules.win_condition_type);
-			if (rules.win_condition_target) v += ' ' + rules.win_condition_target;
-			pairs.push(['Matches', v]);
-		}
-
-		for (const key of shown) {
-			if (['discipline', 'win_condition_type', 'win_condition_target'].includes(key)) continue;
-			const def = DEF_BY_KEY.get(key);
-			// A key with no definition is a setting added to the server list and
-			// not to TDCMatchDef. Said out loud rather than dropped silently.
-			if (!def) {
-				TDC.error(AREA, 'the poster carries a setting this page has no label for: ' + key);
-				continue;
+		const whole = withDefaults(rules);
+		const boxes = [];
+		for (const group of D.GROUPS) {
+			const rows = [];
+			for (const def of D.SETTINGS) {
+				if (def.group !== group || def.scope !== 'rules') continue;
+				if (def.key === 'win_condition_target') continue;   // said with the win condition
+				const v = rules[def.key];
+				if (v === undefined || v === null || v === false || v === 0) continue;
+				if (def.when && !def.when(whole)) continue;
+				rows.push(ruleRow(def, rules));
 			}
-			// A switch that is off is not worth a line on a poster — "Golden
-			// break: No" is noise. The ones that are on are the interesting
-			// facts, and the numbers always matter.
-			if (rules[key] === false) continue;
-			pairs.push([def.label, ruleText(key, rules[key])]);
+			if (rows.length) boxes.push(ruleBox(group, rows));
 		}
+		els.rulesBox.hidden = !boxes.length;
+		els.rules.replaceChildren(...boxes);
+	}
 
-		for (const [label, value] of pairs) {
-			els.rules.append(node('dt', null, label), node('dd', null, value));
+	// The rounds with rules of their own: a box each, holding only what
+	// differs from the tournament's rules, an off switch included ("Golden
+	// break · No"), since there it is the news.
+	function roundRules(s) {
+		const base = s.rules || {};
+		const out = [];
+		for (const rr of s.round_rules || []) {
+			const rules = rr.rules || {};
+			const whole = withDefaults(rules);
+			const rows = [];
+			for (const def of D.SETTINGS) {
+				if (def.scope !== 'rules' || def.key === 'win_condition_target') continue;
+				if (rules[def.key] === undefined) continue;
+				const differs = JSON.stringify(rules[def.key]) !== JSON.stringify(base[def.key])
+					|| (def.key === 'win_condition_type' && rules.win_condition_target !== base.win_condition_target);
+				if (!differs) continue;
+				if (def.when && !def.when(whole)) continue;
+				rows.push(ruleRow(def, rules));
+			}
+			if (!rows.length) continue;
+			const title = rr.bracket === 'third_place' ? 'Third place'
+				: rr.bracket === 'main' ? roundName(rr.round, s.rounds)
+				: 'Round ' + rr.round;
+			out.push({ title, rows });
 		}
+		return out;
+	}
+
+	function renderRoundRules(s) {
+		const boxes = roundRules(s).map((r) => ruleBox(r.title, r.rows));
+		els.roundsBox.hidden = !boxes.length;
+		els.rounds.replaceChildren(...boxes);
 	}
 
 	// ─────────────────────────────────────────────────────────────────
@@ -187,19 +313,32 @@
 		return 'Round ' + round;
 	}
 
+	// A match as a card set into the page, its state in the strip down the
+	// left as the league fixtures have it: yellow being played, green
+	// decided, grey not yet. A bye shows only the player going through, as
+	// the draw page does.
 	function fixtureLine(f) {
-		const box = node('div', 'poster-fixture');
+		const decided = !!f.winner;
+		const bye = decided && (!f.home || !f.away);
+		const box = node('div', 'poster-fixture'
+			+ (f.match_status === 'in_progress' ? ' is-live' : decided ? ' is-done' : ''));
+
+		if (bye) {
+			const row = node('div', 'poster-side');
+			row.append(face(f.winner, null), node('span', 'poster-side-name', f.winner));
+			box.append(row, node('div', 'poster-fixture-tag', 'Bye: through to the next round'));
+			return box;
+		}
 
 		const side = (name, frames, isWinner) => {
-			const row = node('div', 'poster-side' + (isWinner ? ' won' : ''));
-			row.append(node('span', 'poster-side-name', name || 'To be decided'));
+			const row = node('div', 'poster-side' + (isWinner ? ' won' : '') + (name ? '' : ' tbd'));
+			row.append(face(name || '', null), node('span', 'poster-side-name', name || 'To be decided'));
 			if (frames !== null && frames !== undefined) {
 				row.append(node('span', 'poster-side-score', String(frames)));
 			}
 			return row;
 		};
 
-		const decided = !!f.winner;
 		box.append(
 			side(f.home, f.home_frames, decided && f.winner === f.home),
 			side(f.away, f.away_frames, decided && f.winner === f.away)
@@ -226,22 +365,23 @@
 		const rest = draw.filter((f) => f.bracket !== 'main');
 		const last = main.length ? Math.max(...main.map((f) => f.round)) : 0;
 
+		const round = (title, list) => {
+			const col = node('section', 'poster-round');
+			col.append(node('h3', 'lj-rule-title', title));
+			const cards = node('div', 'poster-round-cards');
+			cards.append(...list.map(fixtureLine));
+			col.append(cards);
+			return col;
+		};
+
 		for (let r = 1; r <= last; r++) {
 			const inRound = main.filter((f) => f.round === r);
 			if (!inRound.length) continue;
-			const col = node('div', 'poster-round');
-			col.append(node('h3', null, roundName(r, last)));
-			col.append(...inRound.map(fixtureLine));
-			els.draw.append(col);
+			els.draw.append(round(roundName(r, last), inRound));
 		}
 
 		// Third place and anything else that is not the main bracket.
-		if (rest.length) {
-			const col = node('div', 'poster-round');
-			col.append(node('h3', null, 'Third place'));
-			col.append(...rest.map(fixtureLine));
-			els.draw.append(col);
-		}
+		if (rest.length) els.draw.append(round('Third place', rest));
 	}
 
 	// ─────────────────────────────────────────────────────────────────
@@ -266,7 +406,8 @@
 		lines.push(`A ${(FORMAT[s.format] || s.format).toLowerCase()} ${ruleText('discipline', s.rules.discipline)} tournament${where}.`);
 
 		if (s.starts_at) lines.push('Starts ' + startsAt(s.starts_at) + '.');
-		else lines.push('Date to be announced.');
+		if (s.sanctioned) lines.push('Ranked: results count towards the rankings.');
+		if (s.third_place) lines.push('The losing semi-finalists play for third place.');
 
 		lines.push('Status: ' + (STATUS[s.status] || s.status) + '.');
 		lines.push('');
@@ -289,7 +430,14 @@
 		if (r.referee_required) how.push('refereed');
 		if (how.length) { lines.push('Format: ' + how.join(', ') + '.'); lines.push(''); }
 
-		// Entry.
+		// A round with rules of its own, in the page's words.
+		const rounds = roundRules(s);
+		for (const r of rounds) {
+			lines.push(`${r.title}: ${r.rows.map(([k, v]) => k + ' ' + v).join(', ')}.`);
+		}
+		if (rounds.length) lines.push('');
+
+		// Entry. A fee of 0 is left out (UV, 5 Nov), as on the page.
 		const entry = [];
 		if (s.max_entrants) entry.push(`${s.max_entrants} places`);
 		if (s.entrants) {
@@ -297,8 +445,12 @@
 			if (s.entrants.interested) entry.push(`${s.entrants.interested} interested`);
 		}
 		if (s.entry_fee_credits > 0) entry.push(`${s.entry_fee_credits} credits to enter`);
-		else entry.push('free to enter');
 		if (entry.length) { lines.push('Entry: ' + entry.join(', ') + '.'); lines.push(''); }
+
+		if (s.officials && s.officials.length) {
+			lines.push('Run by: ' + s.officials.map((o) => `${o.name} (${o.role})`).join(', ') + '.');
+			lines.push('');
+		}
 
 		if (s.entrant_names && s.entrant_names.length) {
 			lines.push('Players: ' + s.entrant_names.join(', ') + '.');
@@ -322,7 +474,9 @@
 				const where2 = f.bracket === 'main' ? roundName(f.round, last) : 'Third place';
 				const home = f.home || 'TBD';
 				const away = f.away || 'TBD';
-				if (f.home_frames === null || f.home_frames === undefined) {
+				if (f.winner && (!f.home || !f.away)) {
+					lines.push(`  ${where2}: ${f.winner} (bye)`);
+				} else if (f.home_frames === null || f.home_frames === undefined) {
 					lines.push(`  ${where2}: ${home} : ${away}`);
 				} else {
 					lines.push(`  ${where2}: ${home} ${f.home_frames} — ${f.away_frames} ${away}`
@@ -362,7 +516,8 @@
 		if (!signedIn) {
 			if (snap.entry_mode === 'td_only') { els.entry.hidden = true; return; }
 			els.entry.hidden = false;
-			els.entryState.textContent = 'Sign in to enter this tournament.';
+			els.entryState.textContent = 'Fancy a game?';
+			els.entryDetail.textContent = 'Sign in to enter this tournament.';
 			els.entryActions.replaceChildren(link('Sign in', '/accounts/?next='
 				+ encodeURIComponent(location.pathname + location.search)));
 			return;
@@ -380,28 +535,33 @@
 		renderEntry(e);
 	}
 
+	// The stage's buttons, as on the league join page: green for the one the
+	// TD wants pressed, cream for the rest, red to withdraw.
 	function link(text, href) {
-		const a = node('a', 'btn btn-secondary btn-sm', text);
+		const a = node('a', 'lj-btn lj-btn-go', text);
 		a.href = href;
 		return a;
 	}
 
+	// A line in the stage's large type, and the detail under it.
 	const ENTERED = {
-		interested: 'You are down as interested. Whoever is running this will confirm entries.',
-		confirmed: 'You are confirmed for this tournament.',
-		withdrawn: 'You have withdrawn from this tournament.'
+		interested: ['Your name is down.', 'Whoever is running this will confirm entries.'],
+		confirmed: ['You are in.', 'You are confirmed for this tournament.'],
+		withdrawn: ['You withdrew.', 'You have withdrawn from this tournament.']
 	};
 
 	function renderEntry(e) {
 		els.entryActions.replaceChildren();
 
 		const inIt = e.status && e.status !== 'withdrawn';
-		els.entryState.textContent = e.status
-			? (ENTERED[e.status] || e.status)
-			: (e.why_not || 'You are not entered yet.');
+		const [line, detail] = e.status
+			? (ENTERED[e.status] || [e.status, ''])
+			: ['Fancy a game?', e.why_not || 'You are not entered yet.'];
+		els.entryState.textContent = line;
+		els.entryDetail.textContent = detail;
 
 		if (e.paid) {
-			els.entryState.textContent += ' Marked paid.';
+			els.entryDetail.textContent += ' Marked paid.';
 		}
 
 		// may_enter already accounts for the mode, the draw and the account, so
@@ -412,23 +572,23 @@
 		// mode that allows the stronger answer should not withhold the weaker
 		// one. The confirm button leads, as the one the TD wants pressed.
 		if (e.may_confirm && e.status !== 'confirmed') {
-			els.entryActions.append(button('Confirm my entry', 'btn-primary',
+			els.entryActions.append(button('Confirm my entry', 'lj-btn-go',
 				() => enter('confirmed')));
 		}
 
 		if (e.may_enter && !inIt) {
 			els.entryActions.append(button("I'm interested",
-				e.may_confirm ? 'btn-secondary' : 'btn-primary',
+				e.may_confirm ? '' : 'lj-btn-go',
 				() => enter('interested')));
 		}
 
 		if (inIt) {
-			els.entryActions.append(button('Withdraw', 'btn-danger', withdraw));
+			els.entryActions.append(button('Withdraw', 'poster-btn-stop', withdraw));
 		}
 	}
 
 	function button(text, cls, fn) {
-		const b = node('button', 'btn ' + cls + ' btn-sm', text);
+		const b = node('button', 'lj-btn ' + cls, text);
 		b.type = 'button';
 		b.addEventListener('click', fn);
 		return b;
@@ -458,48 +618,80 @@
 		}), () => 'Withdrawn.', { single: 'withdraw' });
 	}
 
+	// ─── The banner ───
+	// The trophy in a ring coloured by the status, the name, the format and
+	// the status; then the facts, each only if the director set it.
+	function renderBanner(s) {
+		els.hero.className = 'jumbo lj-hero poster-status-' + s.status;
+		els.pic.replaceChildren(trophy());
+		els.name.textContent = s.name;
+		els.meta.textContent = FORMAT[s.format] || s.format;
+		els.statusBadge.textContent = STATUS[s.status] || s.status;
+
+		const facts = [];
+		if (s.rules && s.rules.discipline) facts.push(['Game', ruleText('discipline', s.rules.discipline)]);
+		if (s.starts_at) {
+			facts.push(['Date', dayOf(s.starts_at)]);
+			facts.push(['Time', timeOf(s.starts_at)]);
+		}
+		if (s.venue_name) facts.push(['Venue', s.venue_name]);
+		if (s.entry_mode) facts.push(['Entries', ENTRY[s.entry_mode] || s.entry_mode]);
+		if (s.max_entrants) facts.push(['Places', String(s.max_entrants)]);
+		if (s.entry_fee_credits > 0) facts.push(['Entry fee', plural(s.entry_fee_credits, 'credit')]);
+		if (s.sanctioned) facts.push(['Ranked', 'Counts towards the rankings']);
+		if (s.third_place) facts.push(['Third place', 'Played off']);
+
+		els.facts.hidden = !facts.length;
+		els.facts.replaceChildren(...facts.map(([k, v]) => {
+			const row = node('div', 'jumbo-fact');
+			row.append(node('dt', null, k), node('dd', null, v));
+			return row;
+		}));
+	}
+
+	// ─── The numbers ───
+	// The stage's scores, set into the page. From the snapshot, so they are
+	// as of when it was generated, as the footnote says.
+	function renderNumbers(s) {
+		const c = s.entrants || {};
+		const tiles = [['Confirmed', c.confirmed || 0]];
+		if (c.interested) tiles.push(['Interested', c.interested]);
+		if (s.max_entrants) tiles.push(['Places left', Math.max(0, s.max_entrants - (c.total || 0))]);
+		if (s.rounds) tiles.push(['Rounds', s.rounds]);
+		const draw = (s.draw || []).filter((f) => f.home && f.away);
+		if (draw.length) {
+			tiles.push(['Matches', draw.length]);
+			tiles.push(['Decided', draw.filter((f) => f.winner).length]);
+		}
+		els.numbers.replaceChildren(...tiles.map(([label, value]) => {
+			const tile = node('div', 'lj-num');
+			tile.append(node('span', 'lj-num-value', String(value)), node('span', 'lj-num-label', label));
+			return tile;
+		}));
+	}
+
 	// ─── Rendering the whole thing ───
 	function render(row) {
 		snap = row.snapshot;
 
 		els.poster.hidden = false;
-		els.name.textContent = snap.name;
-
-		const bits = [FORMAT[snap.format] || snap.format, startsAt(snap.starts_at)];
-		if (snap.venue_name) bits.push(snap.venue_name);
-		els.meta.textContent = bits.join(' · ');
-
-		els.badges.replaceChildren(
-			node('span', 'badge ' + (STATUS_CLASS[snap.status] || ''),
-				STATUS[snap.status] || snap.status));
-		if (snap.sanctioned) {
-			els.badges.append(node('span', 'badge verified', 'Ranked'));
-		}
-		if (snap.entry_fee_credits > 0) {
-			els.badges.append(node('span', 'badge', snap.entry_fee_credits + ' credits'));
-		} else {
-			els.badges.append(node('span', 'badge', 'Free entry'));
-		}
+		renderBanner(snap);
+		renderNumbers(snap);
+		renderRules(snap.rules);
+		renderRoundRules(snap);
 
 		// Counts, not names — unless the TD included names.
-		els.counts.replaceChildren();
-		if (snap.entrants) {
-			const c = snap.entrants;
-			const parts = [`${c.confirmed} confirmed`];
-			if (c.interested) parts.push(`${c.interested} interested`);
-			if (snap.max_entrants) parts.push(`${snap.max_entrants} places`);
-			els.counts.textContent = parts.join(' · ');
-		}
-
-		renderRules(snap.rules);
-
-		els.namesBox.hidden = !snap.entrant_names || !snap.entrant_names.length;
-		if (snap.entrant_names) {
-			els.names.replaceChildren(...snap.entrant_names.map(
-				(n) => node('span', 'poster-name', n)));
-		}
+		const names = snap.entrant_names || [];
+		els.namesBox.hidden = !names.length;
+		els.namesCount.textContent = String(names.length);
+		els.names.replaceChildren(...names.map((n) => person(n, null)));
 
 		renderDraw(snap.draw);
+
+		// Who runs it: in the snapshot from version 2 (20261105160712).
+		const officials = snap.officials || [];
+		els.officialsBox.hidden = !officials.length;
+		els.officials.replaceChildren(...officials.map((o) => person(o.name, o.avatar_path, o.role)));
 
 		els.text.value = posterText(snap);
 

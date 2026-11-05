@@ -3,6 +3,8 @@ layout: layout.html
 title: Tournament
 description: "A tournament at The Dive Club: when, where, the format and how to enter."
 extraStyles:
+  - /stylesheets/league.css
+  - /stylesheets/league-join.css
   - /stylesheets/poster.css
 extraScripts:
   - /scripts/match-settings.js
@@ -20,10 +22,15 @@ extraScripts:
 	TDC.requireSession: everything above the entry buttons renders for a
 	stranger, and the buttons are what needs an account.
 
+	In the league join page's look (UV, 5 Nov), whose banner, stage panel,
+	numbers and rule boxes it borrows from league.css and league-join.css:
+	as much about the tournament as the snapshot holds, and nothing the
+	director left unset.
+
 	Reached as /tournaments/poster/?t=<tournament id>.
 {% endcomment %}
 
-<div class="tdc-card wide">
+<div class="tdc-card wide lj-page">
 	{% comment %}
 		Shown when there is nothing to show: no poster, or one the TD has not
 		shared. Deliberately the same message for both — saying which would
@@ -38,10 +45,17 @@ extraScripts:
 	</div>
 
 	<div id="poster" hidden>
-		<h1 id="p-name">Tournament</h1>
-		<p class="muted" id="p-meta"></p>
-
-		<div class="poster-badges" id="p-badges"></div>
+		<section class="jumbo lj-hero" id="p-hero">
+			<div class="lj-id">
+				<span class="lj-pic"><span class="lj-pic-inner" id="p-pic"></span></span>
+				<div class="lj-names">
+					<h1 id="p-name">Tournament</h1>
+					<p class="lj-season" id="p-meta"></p>
+					<span class="badge jumbo-status" id="p-status"></span>
+				</div>
+			</div>
+			<dl class="jumbo-facts" id="p-facts"></dl>
+		</section>
 
 		{% comment %}
 			The TD's own view of a poster they have not shared yet. A stranger
@@ -51,13 +65,33 @@ extraScripts:
 			<p><strong>Not shared.</strong> Only you can see this page. Share it from the Entrants tab to let anyone open it.</p>
 		</div>
 
-		<div class="poster-entrants" id="p-counts"></div>
+		{% comment %}
+			Entering. Driven by tdc_my_entry, which says whether the buttons
+			belong here at all and why not if they do not — so a signed-out
+			visitor is told to sign in, and somebody whose email is unconfirmed
+			is told that instead of being shown a button that refuses them.
+		{% endcomment %}
+		<section class="lj-stage" id="p-entry" aria-live="polite" hidden>
+			<h2 class="lj-where" id="p-entry-state"></h2>
+			<p class="lj-where-detail" id="p-entry-detail"></p>
+			<div class="lj-actions" id="p-entry-actions"></div>
+			<div class="status" id="p-entry-status"></div>
+		</section>
 
-		<h2>How it is played</h2>
-		<dl class="poster-rules" id="p-rules"></dl>
+		<section class="lj-numbers" id="p-numbers" aria-label="The tournament in numbers"></section>
+
+		<div id="p-rules-box" hidden>
+			<h2>How it is played</h2>
+			<div class="lj-rules" id="p-rules"></div>
+		</div>
+
+		<div id="p-rounds-box" hidden>
+			<h2>Round by round</h2>
+			<div class="lj-rules" id="p-rounds"></div>
+		</div>
 
 		<div id="p-names-box" hidden>
-			<h2>Who is in</h2>
+			<h2>Who is in <span class="badge" id="p-names-count"></span></h2>
 			<div class="poster-names" id="p-names"></div>
 		</div>
 
@@ -66,17 +100,9 @@ extraScripts:
 			<div class="poster-draw" id="p-draw"></div>
 		</div>
 
-		{% comment %}
-			Entering. Driven by tdc_my_entry, which says whether the buttons
-			belong here at all and why not if they do not — so a signed-out
-			visitor is told to sign in, and somebody whose email is unconfirmed
-			is told that instead of being shown a button that refuses them.
-		{% endcomment %}
-		<div class="panel" id="p-entry" hidden>
-			<h2>Entering</h2>
-			<p id="p-entry-state"></p>
-			<div class="btn-row" id="p-entry-actions"></div>
-			<div class="status" id="p-entry-status"></div>
+		<div id="p-officials-box" hidden>
+			<h2>Who runs it</h2>
+			<div class="lj-officials" id="p-officials"></div>
 		</div>
 
 		{% comment %}

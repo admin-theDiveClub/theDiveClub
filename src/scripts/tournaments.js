@@ -4,9 +4,9 @@
 // and the ones it is entered in, newest first, with the entrant count already
 // counted. Counting entrants here would be a request per tournament.
 //
-// A tournament you run opens its entrant list. One you are only entered in has
-// nowhere to go yet — the public bracket does not exist — so it is shown
-// without a link rather than linking somewhere that will refuse you.
+// A tournament not yet started opens its poster, whoever you are; one that has
+// started opens the draw (UV, 5 Nov). tdc_my_tournaments says whether you can
+// open the poster, and without one the card opens the draw.
 //
 // Open for entry (UV, 5 Nov) comes from tdc_open_tournaments: tournaments a
 // director made visible to public that this account could enter and has not.
@@ -80,16 +80,22 @@
 		return d.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
 	}
 
+	// Not started: the poster, for everybody (UV, 5 Nov). Started (running,
+	// finished or cancelled): the draw.
+	const NOT_STARTED = ['draft', 'open'];
+
 	function card(t) {
-		// Everyone gets somewhere to go. Running it takes you to the entrant
-		// list, which is where a tournament is run from; being in it takes you
-		// to the draw, which renders read-only for anyone who is not running
-		// it. This was a plain div for players until 20 Oct, written before
-		// the bracket page existed and left behind when it arrived.
+		// Everyone gets somewhere to go. This was a plain div for players
+		// until 20 Oct, written before the bracket page existed and left
+		// behind when it arrived.
 		const box = document.createElement('a');
 		box.className = 'match-card';
-		// The tournament's one page since 5 Nov: Entrants for whoever runs it.
-		box.href = '/tournaments/bracket/?t=' + encodeURIComponent(t.id) + (t.i_run_it ? '&tab=entrants' : '');
+		// Before the start, the poster (the director reaches Entrants from its
+		// foot); once started, the draw. A poster this account cannot open
+		// would say "Nothing here", so without one the draw it is.
+		box.href = NOT_STARTED.includes(t.status) && t.poster_open
+			? '/tournaments/poster/?t=' + encodeURIComponent(t.id)
+			: '/tournaments/bracket/?t=' + encodeURIComponent(t.id);
 
 		const top = el('div', 'match-top');
 		top.append(

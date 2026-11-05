@@ -5,6 +5,12 @@
  * That shapes it: the tournament's name is large, the facts are scannable, and
  * everything the club already knows about itself is stated rather than assumed.
  *
+ * In the league join page's look (UV, 5 Nov). Loaded after league.css and
+ * league-join.css, whose banner (.jumbo, .lj-hero), stage panel (.lj-stage,
+ * .lj-btn), numbers (.lj-num), rule boxes (.lj-rule-box) and people (.person)
+ * it uses. This file holds only what is the poster's own: the status colours,
+ * the red button, the entrants and the draw.
+ *
  * Rounds run down the page here rather than sideways as they do on the draw.
  * The draw is a working document read at the desk; this is read once, on a
  * phone, by somebody deciding whether to come.
@@ -12,118 +18,103 @@
  * Every value is a token. If something needs a colour or a radius that is not
  * in variables.css, the token is missing, not this file. */
 
-/* ── The heading block ─────────────────────────────────────────────── */
+/* ── The banner's colour, by the tournament's status ───────────────── */
 
-.poster-badges {
+.poster-status-draft       { --strip-color: var(--text-muted); }
+.poster-status-open        { --strip-color: var(--color-primary); }
+.poster-status-in_progress { --strip-color: var(--color-warning); }
+.poster-status-complete    { --strip-color: var(--text-muted); }
+.poster-status-cancelled   { --strip-color: var(--color-error); }
+
+.jumbo-facts[hidden] { display: none; }
+
+/* ── Withdraw: the stage's button in red ───────────────────────────── */
+
+.tdc-card .poster-btn-stop,
+.poster-btn-stop {
+	--q: var(--color-error);
+	--lj-glow: color-mix(in srgb, var(--color-error) 35%, transparent);
+}
+
+/* ── Who is in, and who runs it ────────────────────────────────────── */
+
+.poster-names,
+.lj-officials {
 	display: flex;
 	flex-wrap: wrap;
-	gap: var(--space-2);
+	gap: var(--space-2) var(--space-4);
+	justify-content: center;
 	margin-bottom: var(--space-4);
 }
 
-.poster-entrants {
-	font-family: var(--font-display);
-	font-size: 1.05rem;
-	color: var(--color-primary);
-	margin-bottom: var(--space-5);
-}
-
-.poster-entrants:empty {
-	display: none;
-}
-
-/* ── How it is played ──────────────────────────────────────────────── */
-
-/* A two-column list that collapses to one on a narrow screen. dt/dd rather
- * than a table: this is a set of labelled facts, not data to compare. */
-.poster-rules {
-	display: grid;
-	grid-template-columns: auto 1fr;
-	gap: var(--space-2) var(--space-4);
-	margin: 0 0 var(--space-5);
-}
-
-.poster-rules dt {
-	font-size: 0.8rem;
-	letter-spacing: 0.04em;
-	text-transform: uppercase;
-	color: var(--text-muted);
-	align-self: baseline;
-}
-
-.poster-rules dd {
-	margin: 0;
-	color: var(--text-primary);
-}
-
-/* ── Who is in ─────────────────────────────────────────────────────── */
-
-.poster-names {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--space-2);
-	margin-bottom: var(--space-5);
-}
-
-.poster-name {
-	padding: var(--space-1) var(--space-3);
-	border: 1px solid var(--border-color);
-	border-radius: var(--radius-pill);
-	background: var(--bg-surface);
-	font-size: 0.9rem;
-}
+/* Not links (the snapshot holds no player ids), so no glow on hover. */
+#poster .person:hover { box-shadow: none; }
 
 /* ── The draw ──────────────────────────────────────────────────────── */
 
 .poster-draw {
 	display: flex;
 	flex-direction: column;
-	gap: var(--space-5);
-	margin-bottom: var(--space-5);
+	gap: var(--space-4);
+	margin-bottom: var(--space-4);
 }
 
-.poster-round h3 {
-	margin: 0 0 var(--space-2);
-	font-size: 0.72rem;
-	font-weight: 700;
-	letter-spacing: 0.12em;
-	text-transform: uppercase;
-	color: var(--color-primary);
+.poster-round-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+	gap: var(--space-2);
 }
 
+/* A card set into the page, its state in the strip down the left. */
 .poster-fixture {
-	border: 1px solid var(--border-color);
+	--strip-color: var(--border-color);
+	position: relative;
+	padding: var(--space-2) var(--space-3);
+	border-left: var(--space-1) solid var(--strip-color);
 	border-radius: var(--radius-md);
 	background: var(--bg-surface);
-	padding: var(--space-2) var(--space-3);
-	margin-bottom: var(--space-2);
+	box-shadow: inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
 }
+.poster-fixture.is-live { --strip-color: var(--color-warning); }
+.poster-fixture.is-done { --strip-color: var(--color-primary); }
 
 .poster-side {
 	display: flex;
-	justify-content: space-between;
-	align-items: baseline;
-	gap: var(--space-3);
+	align-items: center;
+	gap: var(--space-2);
 	padding: var(--space-1) 0;
 }
+.poster-side .person-pic { width: 1.75rem; height: 1.75rem; font-size: 0.68rem; }
 
-/* The winner carries the weight, so a glance at a finished bracket reads as a
- * list of who went through rather than a grid of numbers to compare. */
-.poster-side.won .poster-side-name,
-.poster-side.won .poster-side-score {
-	font-weight: 700;
-	color: var(--color-primary);
+/* Nobody there yet: an empty dashed circle, as the draw page has. */
+.poster-side.tbd .person-pic {
+	color: transparent;
+	background: none;
+	border: 1px dashed var(--border-color);
+	box-sizing: border-box;
 }
+.poster-side.tbd .poster-side-name { color: var(--text-muted); }
 
 .poster-side-name {
+	flex: 1;
 	min-width: 0;
 	overflow-wrap: anywhere;
 }
 
 .poster-side-score {
-	font-family: var(--font-mono);
 	flex: 0 0 auto;
+	font-family: var(--font-display);
+	font-size: 1.4rem;
+	line-height: 1;
+	font-variant-numeric: tabular-nums;
+	text-shadow: var(--match-mark-shadow);
 }
+
+/* The winner carries the weight, so a glance at a finished bracket reads as a
+ * list of who went through rather than a grid of numbers to compare. */
+.poster-side.won .poster-side-name { font-weight: 700; color: var(--color-primary); }
+.poster-side.won .poster-side-score { color: var(--color-primary); }
+.poster-fixture.is-done .poster-side:not(.won) { opacity: 0.7; }
 
 .poster-fixture-tag {
 	margin-top: var(--space-1);
@@ -147,6 +138,10 @@
 /* The summary carries an h2 so the heading level is honest to a screen reader;
  * this stops it starting on its own line and keeps the disclosure marker
  * beside it. */
+#p-text-box {
+	margin-top: var(--space-5);
+}
+
 #p-text-box summary {
 	cursor: pointer;
 }
