@@ -1,0 +1,110 @@
+{% comment %}
+	The Settings tab of a tournament's one page (UV, 5 Nov; tournament-nav.js,
+	tournament-settings.js): every setting offered when the tournament was
+	created, in the create page's order, changeable afterwards as a league's
+	are. Also the third-place playoff, which was on the Draw tab, and the
+	entry settings, which were on Entrants: each setting in one place (UV).
+	The people running it only.
+
+	One Save for the lot, through tdc_update_tournament. A rule change
+	reaches every match nobody has started (no frame, no card event), as a
+	league's does; the page says how many took it and how many kept their
+	own. The format and the third-place playoff are fixed once there is a
+	draw (the database refuses both), so they are locked then, with the
+	reason.
+
+	Ids are prefixed ts-: the draw has t-progression and the like.
+{% endcomment %}
+
+<h1 id="ts-head">Settings</h1>
+<p class="muted" id="ts-meta"></p>
+<p>The rules below are frozen onto each match when it starts. Changing them reaches every match not started yet; a match with a frame in keeps the rules it began with.</p>
+
+<div class="field">
+	<label for="ts-name">Name</label>
+	<input type="text" id="ts-name" maxlength="120" autocomplete="off">
+	<div class="hint">Two characters or more.</div>
+</div>
+
+<div class="field">
+	<label for="ts-format">Format</label>
+	<select id="ts-format"></select>
+	<div class="hint" id="ts-format-hint"></div>
+</div>
+
+<div class="field">
+	<label for="ts-when">Starts</label>
+	<input type="datetime-local" id="ts-when">
+	<div class="hint">Leave blank if you have not set a date.</div>
+</div>
+
+<details class="set-group" id="ts-extras" data-group="ts-extras">
+	<summary>Entries and fee</summary>
+
+	<div class="field">
+		<label for="ts-max">Maximum entrants</label>
+		<input type="number" id="ts-max" inputmode="numeric" min="2" max="1024" placeholder="No limit">
+		<div class="hint">Leave blank for no limit. Withdrawn entrants do not take up a place.</div>
+	</div>
+
+	<div class="field">
+		<label for="ts-fee">Entry fee (credits)</label>
+		<input type="number" id="ts-fee" inputmode="numeric" min="0" value="0">
+		<div class="hint">0 is free to enter.</div>
+	</div>
+
+	<div class="field">
+		<label for="ts-progression">Moving between rounds</label>
+		<select id="ts-progression">
+			<option value="automatic">Winners advance automatically</option>
+			<option value="manual">I will move people myself</option>
+		</select>
+		<div class="hint">You can always move anybody by hand, in either setting.</div>
+	</div>
+
+	<div class="field">
+		<label for="ts-create-matches">Starting matches</label>
+		<select id="ts-create-matches">
+			<option value="automatic">Start as soon as both players are known</option>
+			<option value="manual">I will start each one when a table is free</option>
+		</select>
+		<div class="hint" id="ts-create-matches-hint"></div>
+	</div>
+
+	<div class="field">
+		<label for="ts-third-place">Third-place playoff</label>
+		<input type="checkbox" id="ts-third-place">
+		<div class="hint" id="ts-third-place-hint"></div>
+	</div>
+
+	<div class="field">
+		<label for="ts-entry-mode">Entries</label>
+		<select id="ts-entry-mode">
+			<option value="td_only">I add everybody myself</option>
+			<option value="interested">Anyone can mark themselves interested</option>
+			<option value="self_confirm">Anyone can confirm their own entry</option>
+		</select>
+		<div class="hint" id="ts-entry-mode-hint"></div>
+	</div>
+
+	<div class="field">
+		<label for="ts-paid-confirms">Paid also confirms</label>
+		<input type="checkbox" id="ts-paid-confirms">
+		<div class="hint">Ticking somebody as paid confirms them too. Leave this off if you confirm on something other than payment.</div>
+	</div>
+
+	<div class="field">
+		<label for="ts-listed">Visible to public</label>
+		<input type="checkbox" id="ts-listed">
+		<div class="hint" id="ts-listed-hint"></div>
+	</div>
+</details>
+
+<!-- The ruleset, built by tournament-settings.js from TDCMatchDef -->
+<div id="ts-main"></div>
+<div id="ts-rest"></div>
+
+<div class="btn-row">
+	<button type="button" class="btn btn-primary" id="ts-save" disabled>Save</button>
+</div>
+<div class="status" id="ts-status"></div>

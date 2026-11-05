@@ -198,6 +198,7 @@
 		els.chosenFull.textContent =
 			(opponent.full_name && opponent.full_name !== opponent.display_name) ? opponent.full_name : '';
 		els.chosenAvatar.textContent = (opponent.display_name || '?').trim().charAt(0).toUpperCase();
+		TDC.profilePic(els.chosenAvatar, opponent.id);   // opens their profile (UV, 5 Nov)
 		if (opponent.avatar_path) {
 			const { data } = supabaseClient.storage.from('player-avatars').getPublicUrl(opponent.avatar_path);
 			if (data) {

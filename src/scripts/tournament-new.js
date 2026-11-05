@@ -71,7 +71,7 @@
 	}
 
 	// ─── How people get in ───
-	// The same three sentences the entrants page shows, because it is the same
+	// The same three sentences the Settings tab shows, because it is the same
 	// setting and a TD should not have to work out that they match.
 	const ENTRY_HINT = {
 		td_only: 'Nobody can put themselves down. You search for them and add them.',
@@ -267,7 +267,7 @@
 
 		// Straight to the entrant list: a tournament with nobody in it is not
 		// finished being made.
-		location.href = '/tournaments/manage/?t=' + encodeURIComponent(data);
+		location.href = '/tournaments/bracket/?t=' + encodeURIComponent(data) + '&tab=entrants';
 	});
 
 	TDCLoader.hold((async () => {

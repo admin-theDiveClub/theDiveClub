@@ -12,9 +12,15 @@
 // Any signed-in player may read a draw. Only the people running it get the
 // controls, and that is settled before the first render rather than after.
 //
-// Needs: tdc.js.
+// Since 5 Nov (UV) the Draw tab of the tournament's one page
+// (tournament-nav.js; _includes/tournament/draw.html): started the first
+// time the tab opens, read again when it is shown again. The third-place
+// playoff and the two run settings (moving between rounds, starting
+// matches) moved to the Settings tab then (UV: each setting in one place).
+//
+// Needs: tdc.js, tournament-nav.js.
 
-(() => {
+TDCTournamentNav.panel('draw', () => {
 	const AREA = 'Draw';
 
 	const el = (id) => document.getElementById(id);
@@ -22,16 +28,13 @@
 		name: el('t-name'), meta: el('t-meta'),
 		setup: el('setup'), who: el('who'), whoHint: el('who-hint'),
 		sizeField: el('size-field'), drawSize: el('draw-size'),
-		settings: el('settings'), thirdPlaceHint: el('third-place-hint'),
-		thirdPlace: el('third-place'), generate: el('generate'),
+		running: el('running'), generate: el('generate'),
 		bracket: el('bracket'), actions: el('draw-actions'),
 		viewRow: el('view-row'), fullNames: el('full-names'),
 		fontSize: el('font-size'), zoom: el('zoom'), gapV: el('gap-v'), gapH: el('gap-h'),
 		resolve: el('resolve'), redraw: el('redraw'),
-		status: el('page-status'), entrantsLink: el('entrants-link'),
+		status: el('page-status'),
 		statusRow: el('status-row'), statusSelect: el('t-status'), statusHint: el('status-hint'),
-		runRow: el('run-row'), tProgression: el('t-progression'),
-		tCreateMatches: el('t-create-matches'), createMatchesHint: el('create-matches-hint'),
 		drift: el('drift'), driftIntro: el('drift-intro'),
 		driftList: el('drift-list'), driftApply: el('drift-apply'),
 		roundRules: el('round-rules'), roundRulesHead: el('round-rules-head'),
@@ -245,8 +248,10 @@
 		// beside it, so the name is safe whatever else the row grows.
 		// The picture inside the name's cell, first, so hiding pictures (the
 		// view row) takes it out with nothing left to close up.
+		// The picture opens the player's profile (UV, 5 Nov); the card round
+		// it still opens the match.
 		const nameCell = node('div', 'bracket-name-cell');
-		nameCell.append(avatar(pic, name));
+		nameCell.append(TDC.profilePic(avatar(pic, name), name && (which === 'home' ? f.home_player_id : f.away_player_id)));
 		const scoreCell = node('div', 'bracket-score-cell');
 
 		// What the slot says. Built first so the swap control can be labelled
@@ -959,25 +964,18 @@
 		// after that it is left as the director leaves it.
 		const drawn = !!fixtures.length;
 		els.setup.hidden = readOnly;
-		els.settings.hidden = readOnly;
+		els.running.hidden = readOnly;
 		if (drawn !== setupFor) { els.setup.open = !drawn; setupFor = drawn; }
 		els.generate.hidden = drawn;
 		els.redraw.hidden = !drawn;
 		els.populate.hidden = !drawn;
 		els.shuffle.hidden = !drawn;
-		els.thirdPlace.disabled = drawn;
-		els.thirdPlaceHint.textContent = drawn
-			? 'Fixed with the draw. Redraw keeps it as it is.'
-			: 'Decided now: it is generated with the draw.';
 		els.actions.hidden = !drawn || readOnly;
 		els.viewRow.hidden = !fixtures.length;
 		els.entrants.hidden = !fixtures.length || readOnly;
 		applyView();
 		// A read-only viewer's sides have no swap column (bracket.css).
 		els.bracket.classList.toggle('bracket-ro', readOnly);
-		// Re-asserted here because on first load loadTournament runs before
-		// loadDraw, so it decided on an empty fixture list.
-		if (tournament) renderRunSettings(tournament);
 
 		if (!fixtures.length) {
 			els.bracket.replaceChildren(node('div', 'empty', readOnly
@@ -1199,7 +1197,6 @@
 
 		tournament = data;
 		els.name.textContent = data.name;
-		renderRunSettings(data);
 
 		const bits = [FORMAT[data.format] || data.format];
 		if (data.starts_at) {
@@ -1212,8 +1209,6 @@
 		if (data.progression === 'manual') bits.push('Moved by hand');
 		if (data.create_matches === 'manual') bits.push('Matches started by hand');
 		els.meta.textContent = bits.join(' · ');
-
-		els.thirdPlace.checked = data.third_place;
 		return true;
 	}
 
@@ -1282,36 +1277,9 @@
 				: { p_tournament_id: tournamentId, p_status: v }));
 	});
 
-	// ─────────────────────────────────────────────────────────────────
-	// How the draw runs, while it is running
-	//
-	// progression and create_matches were settable only in the setup panel,
-	// which is hidden once a draw exists — so changing your mind mid-night
-	// meant clearing the draw. tdc_update_tournament has taken both since
-	// 20261019180000; nothing but the page was missing.
-	// ─────────────────────────────────────────────────────────────────
-
-	function renderRunSettings(t) {
-		// Always, for a director: since 5 Nov these two are asked only here,
-		// in Running the draw, before the draw is made as well as after (the
-		// generate group no longer repeats them).
-		els.runRow.hidden = readOnly;
-		els.tProgression.value = t.progression;
-		els.tCreateMatches.value = t.create_matches;
-		els.createMatchesHint.textContent = t.create_matches === 'manual'
-			// The thing UV hit: a player could not score because no match
-			// existed, and nothing on the page said so.
-			? 'Nobody can score a match until you press Start match on it.'
-			: 'A match starts on its own once both players are known.';
-	}
-
-	els.tProgression.addEventListener('change', () =>
-		write('Saving', () => supabaseClient.rpc('tdc_update_tournament', {
-			p_tournament_id: tournamentId, p_progression: els.tProgression.value })));
-
-	els.tCreateMatches.addEventListener('change', () =>
-		write('Saving', () => supabaseClient.rpc('tdc_update_tournament', {
-			p_tournament_id: tournamentId, p_create_matches: els.tCreateMatches.value })));
+	// How the draw runs (moving between rounds, starting matches) was set
+	// here, in Running the draw, until 5 Nov; it is on the Settings tab now
+	// (tournament-settings.js; UV: each setting in one place).
 
 
 	// ─────────────────────────────────────────────────────────────────
@@ -2223,9 +2191,9 @@
 			await resolve();
 			const ok = await loadDraw();
 			if (ok) {
-				// The tournament row too, not just the draw: the two run settings
-				// live on it, and a save that did not re-read would leave the
-				// selects showing what was asked for rather than what was stored.
+				// The tournament row too, not just the draw: the status lives on
+				// it, and a save that did not re-read would leave the select
+				// showing what was asked for rather than what was stored.
 				await loadTournament();
 				await loadStatus();
 				await checkDrift();
@@ -2288,17 +2256,9 @@
 		// Read before anything is awaited, as the press saw it.
 		const args = drawArgs();
 
-		// Third place is saved before generating, because the draw reads it.
-		// Doing it after would generate against the old one. Progression and
-		// starting matches save themselves as they change (Running the draw).
-		const saved = await write('Saving settings', () =>
-			supabaseClient.rpc('tdc_update_tournament', {
-				p_tournament_id: tournamentId,
-				p_third_place: els.thirdPlace.checked
-			}));
-		if (!saved) return;
-
-		await loadTournament();
+		// The third-place playoff is read by the draw from the tournament,
+		// as the Settings tab saved it (5 Nov; until then this saved the
+		// Draw's own switch first).
 		await write('Generating the draw', () =>
 			supabaseClient.rpc('tdc_generate_draw', args));
 	});
@@ -2605,8 +2565,6 @@
 			return;
 		}
 
-		els.entrantsLink.href = '/tournaments/manage/?t=' + encodeURIComponent(tournamentId);
-
 		if (!await loadTournament()) return;
 
 		// Settled before the first render, so the controls are never offered
@@ -2616,11 +2574,6 @@
 
 		const row = (mine || []).find((t) => t.id === tournamentId);
 		readOnly = !row || !row.i_run_it;
-
-		// The entrant list is the TD's view as of 21 Oct — it carries payment
-		// status and their private notes — so it would send a player straight
-		// back here. Hidden rather than left to bounce them.
-		if (readOnly) els.entrantsLink.hidden = true;
 
 		if (!await loadDraw()) return;
 		await loadStatus();
@@ -2641,4 +2594,15 @@
 			await describeField();
 		}
 	})(), 'Draw');
-})();
+
+	// Shown again as a tab (tournament-nav.js): read again in place, so a
+	// setting saved on the Settings tab, or an entrant added, shows here.
+	return {
+		refresh: () => (async () => {
+			if (!tournamentId || !await loadTournament()) return;
+			if (!await loadDraw()) return;
+			await loadStatus();
+			if (!readOnly) await describeField();
+		})().catch((err) => TDC.error(AREA, 'the draw could not be read again.', err, els.status))
+	};
+});

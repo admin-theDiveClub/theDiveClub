@@ -1,305 +1,41 @@
 ---
 layout: layout.html
 title: Draw
-description: "The draw for a tournament: who plays who, and who has gone through."
+description: "A tournament: the draw, and for whoever runs it, the entrants and the settings."
 extraStyles:
   - /stylesheets/league.css
   - /stylesheets/bracket.css
 extraScripts:
   - /scripts/match-settings.js
+  - /scripts/tournament-nav.js
   - /scripts/tournament-bracket.js
+  - /scripts/tournament-manage.js
+  - /scripts/tournament-settings.js
 ---
 {% comment %}
-	The bracket. Readable by any signed-in player, run by whoever runs the
-	tournament.
+	A tournament's one page (UV, 5 Nov): Draw, Entrants and Settings as tabs
+	that switch in place (tournament-nav.js), as a league season's are, at
+	/tournaments/bracket/?t=<tournament id>&tab=<entrants|settings>. Each
+	tab's panel is its own include in _includes/tournament/, the first two
+	written as the pages they used to be, and each panel's script starts the
+	first time its tab is opened. The Poster keeps its own address (anybody
+	can open it, signed in or not) and is a link at the end of the bar.
 
-	Everything comes from tdc_tournament_draw, which returns the whole bracket
-	with names, scores and card states in one call. tdc_resolve_draw is called
-	on load and after every write — it is idempotent, and it is what moves
-	people up as results come in.
-
-	Reached as /tournaments/bracket/?t=<tournament id>.
+	The old Entrants address forwards here: /tournaments/manage/.
 {% endcomment %}
 
 <div class="tdc-card wide">
-	<h1 id="t-name">Draw</h1>
-	<p class="muted" id="t-meta"></p>
+	<nav class="league-nav" id="tournament-nav" hidden></nav>
 
-	{% comment %}
-		Shown when the draw no longer matches its own results, which happens
-		when a score is corrected upstream. It carries the exact list of what
-		will change, because tdc_cascade_draw rehearses the whole thing before
-		anything is applied.
-	{% endcomment %}
-	<div class="panel" id="drift" hidden>
-		<h2>The draw has moved on</h2>
-		<p class="muted" id="drift-intro"></p>
-		<ul id="drift-list"></ul>
-		<div class="btn-row">
-			<button type="button" class="btn btn-primary btn-sm" id="drift-apply">Update the draw</button>
-		</div>
+	<div class="tournament-panel" data-tab="draw" data-title="Draw" hidden>
+{% include "tournament/draw.html" %}
 	</div>
 
-	{% comment %}
-		The rules for one round, opened from the heading above a column. Lives
-		outside the scrolling bracket on purpose: inside it, a panel this tall
-		would scroll sideways away from the person filling it in.
-	{% endcomment %}
-	<div class="panel" id="round-rules" hidden>
-		<h2 id="round-rules-head">Rules for this round</h2>
-		<p class="muted" id="round-rules-note"></p>
-
-		<div id="round-rules-main"></div>
-		<div id="round-rules-rest"></div>
-
-		<div class="field round-rules-scope">
-			<label for="round-rules-later">Apply to the later rounds too</label>
-			<input type="checkbox" id="round-rules-later">
-			<div class="hint">Every round above this one that is already drawn.</div>
-		</div>
-
-		<div class="btn-row">
-			<button type="button" class="btn btn-primary btn-sm" id="round-rules-save">Check and apply</button>
-			<button type="button" class="btn btn-danger btn-sm" id="round-rules-clear" hidden>Use the tournament's rules</button>
-			<button type="button" class="btn btn-secondary btn-sm" id="round-rules-cancel">Cancel</button>
-		</div>
-
-		<div class="status" id="round-rules-status"></div>
+	<div class="tournament-panel" data-tab="entrants" data-title="Entrants" hidden>
+{% include "tournament/entrants.html" %}
 	</div>
 
-	{% comment %}
-		How the draw is shown, for everybody once there is a draw (UV, 5 Nov),
-		each kept on this device. Full names as the standings have it: off
-		shows display names, and a player with no first or last name keeps
-		theirs.
-	{% endcomment %}
-	{% comment %}
-		The stage: the view row, the entrants and the draw together, which is
-		what the full-screen button puts on the whole screen (UV, 5 Nov).
-	{% endcomment %}
-	<div class="bracket-stage" id="stage">
-	<div class="bracket-view" id="view-row" hidden>
-		{% comment %}
-			Three buttons (UV, 5 Nov): fit makes the text as big as it can be
-			with every card on the screen, leaving the toggles as they are;
-			full screen shows the stage alone; reset puts the view back as it
-			first was.
-		{% endcomment %}
-		<div class="cp-views bracket-toggle" role="group" aria-label="Fit and full screen">
-			<button type="button" class="cp-view" id="fit" title="Fit every card on the screen" aria-label="Fit every card on the screen">
-				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7.5" y="7.5" width="9" height="9" rx="1"/><path d="M3 3l3.5 3.5M3 3h3M3 3v3M21 3l-3.5 3.5M21 3h-3M21 3v3M3 21l3.5-3.5M3 21h3M3 21v-3M21 21l-3.5-3.5M21 21h-3M21 21v-3"/></svg>
-			</button>
-			<button type="button" class="cp-view" id="full" aria-pressed="false" title="Full screen" aria-label="Full screen">
-				<svg class="full-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>
-				<svg class="full-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M20 15h-5v5M4 15h5v5"/></svg>
-			</button>
-			<button type="button" class="cp-view" id="reset-view" title="Reset the view" aria-label="Reset the view">
-				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4v4h4"/></svg>
-			</button>
-		</div>
-
-		{% comment %}
-			Icons only (UV, 5 Nov), each its own drawing, the words in the
-			title and for a screen reader. data-view-key names the setting,
-			data-view its value; tournament-bracket.js keeps them per device.
-		{% endcomment %}
-		<div class="cp-views bracket-toggle" role="group" aria-label="How the rounds are laid out">
-			<button type="button" class="cp-view" data-view-key="flow" data-view="linear" aria-pressed="true" title="Rounds in order, round 1 first" aria-label="Rounds in order, round 1 first">
-				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="5" height="4" rx="1"/><rect x="3" y="16" width="5" height="4" rx="1"/><rect x="16" y="10" width="5" height="4" rx="1"/><path d="M8 6h3v12H8M11 12h5"/></svg>
-			</button>
-			<button type="button" class="cp-view" data-view-key="flow" data-view="outside" aria-pressed="false" title="From the outside in, the final in the middle" aria-label="From the outside in, the final in the middle">
-				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="4" height="4" rx="1"/><rect x="2" y="16" width="4" height="4" rx="1"/><rect x="18" y="4" width="4" height="4" rx="1"/><rect x="18" y="16" width="4" height="4" rx="1"/><rect x="10" y="10" width="4" height="4" rx="1"/><path d="M6 6h2v12H6M8 12h2M18 6h-2v12h2M16 12h-2"/></svg>
-			</button>
-		</div>
-		<div class="cp-views bracket-toggle" role="group" aria-label="Which way the rounds run">
-			<button type="button" class="cp-view" data-view-key="rounds" data-view="columns" aria-pressed="true" title="Rounds side by side" aria-label="Rounds side by side">
-				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="4" height="16" rx="1"/><rect x="10" y="7" width="4" height="10" rx="1"/><rect x="17" y="10" width="4" height="4" rx="1"/></svg>
-			</button>
-			<button type="button" class="cp-view" data-view-key="rounds" data-view="rows" aria-pressed="false" title="Rounds one under another" aria-label="Rounds one under another">
-				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="4" rx="1"/><rect x="7" y="10" width="10" height="4" rx="1"/><rect x="10" y="17" width="4" height="4" rx="1"/></svg>
-			</button>
-		</div>
-		<div class="cp-views bracket-toggle" role="group" aria-label="Players on a card">
-			<button type="button" class="cp-view" data-view-key="card" data-view="stacked" aria-pressed="true" title="Players one above the other" aria-label="Players one above the other">
-				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 12h18M10 8h7M10 16h7"/><circle cx="6.8" cy="8" r="1.5"/><circle cx="6.8" cy="16" r="1.5"/></svg>
-			</button>
-			<button type="button" class="cp-view" data-view-key="card" data-view="across" aria-pressed="false" title="Players side by side" aria-label="Players side by side">
-				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16M5.5 15h4M14.5 15h4"/><circle cx="7.5" cy="10" r="1.6"/><circle cx="16.5" cy="10" r="1.6"/></svg>
-			</button>
-		</div>
-		<div class="cp-views bracket-toggle" role="group" aria-label="Players' pictures">
-			<button type="button" class="cp-view" data-view-key="pics" data-view="show" aria-pressed="true" title="Show players' pictures" aria-label="Show players' pictures">
-				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="9"/><path d="M7 18.2c1-2.4 2.8-3.6 5-3.6s4 1.2 5 3.6"/><circle cx="12" cy="10" r="2.8"/></svg>
-			</button>
-			<button type="button" class="cp-view" data-view-key="pics" data-view="hide" aria-pressed="false" title="Hide players' pictures" aria-label="Hide players' pictures">
-				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="9"/><path d="M7 18.2c1-2.4 2.8-3.6 5-3.6s4 1.2 5 3.6"/><circle cx="12" cy="10" r="2.8"/><path d="M4.5 4.5l15 15"/></svg>
-			</button>
-		</div>
-
-		{% comment %}
-			Steppers on their side (UV, 5 Nov: horizontal, the toggles'
-			height): the draw's text size and the whole draw's size in percent,
-			and the space between cards down and across the page in pixels.
-		{% endcomment %}
-		<div class="bracket-num">
-			<label for="font-size">Text</label>
-			<input type="number" id="font-size" min="50" max="300" step="1" value="100" inputmode="numeric" data-control="stepper" data-stepper="across" title="Text size, percent">
-		</div>
-		<div class="bracket-num">
-			<label for="zoom">Zoom</label>
-			<input type="number" id="zoom" min="25" max="300" step="1" value="100" inputmode="numeric" data-control="stepper" data-stepper="across" title="Zoom, percent">
-		</div>
-		<div class="bracket-num">
-			<label for="gap-v">Space down</label>
-			<input type="number" id="gap-v" min="0" max="64" step="1" value="8" inputmode="numeric" data-control="stepper" data-stepper="across" title="Space between cards down the page, pixels">
-		</div>
-		<div class="bracket-num">
-			<label for="gap-h">Space across</label>
-			<input type="number" id="gap-h" min="0" max="64" step="1" value="16" inputmode="numeric" data-control="stepper" data-stepper="across" title="Space between cards across the page, pixels">
-		</div>
-
-		<div class="field">
-			<label for="full-names">Full names</label>
-			<input type="checkbox" id="full-names">
-			<div class="hint">Off shows each player's display name.</div>
-		</div>
-	</div>
-
-	{% comment %}
-		Every entrant as a pill, for the director to drag onto a slot (UV,
-		5 Nov). A pill dropped on a slot puts that player in it; a player
-		dragged from one match onto a slot in another round sends that
-		match's winner there. Both ask first. Director only: the entrant list
-		is theirs.
-	{% endcomment %}
-	<div class="bracket-entrants" id="entrants" hidden>
-		<div class="bracket-entrants-row">
-			{% comment %}
-				The bin (UV, 5 Nov): a player dragged from a match and dropped
-				here is taken out of that match. Asks first, as every drop does.
-			{% endcomment %}
-			<div class="bracket-bin" id="entrant-bin" title="Drop a player here to take them out of their match" aria-label="Bin: drop a player here to take them out of their match">
-				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/></svg>
-			</div>
-			<div class="bracket-pills" id="entrant-pills"></div>
-		</div>
-		<div class="muted">Drag a player onto a slot to put them in it. Drag a player from one match onto a slot in another round to send that match's winner there, or onto the bin to take them out of their match. On a phone, hold a moment before dragging.</div>
-	</div>
-
-	<!-- The bracket itself, built by tournament-bracket.js -->
-	<div class="bracket-scroll">
-		<div class="bracket" id="bracket"></div>
-	</div>
-	</div>
-
-	{% comment %}
-		The director's two folding groups at the foot (UV, 5 Nov). First,
-		generating the draw: there whether or not a draw exists, open when
-		there is none. These settings are read when the draw is generated,
-		which is why they live here and not on the create page. Generate makes
-		the first draw; once there is one, Redraw makes it again (asking first
-		if matches are attached). Third place is fixed with the draw
-		(tdc_update_tournament refuses it once a draw exists), so it is locked
-		while there is one.
-	{% endcomment %}
-	<details class="set-group" id="setup" hidden>
-		<summary>Generate the draw</summary>
-
-		<div class="field">
-			<label for="who">Who goes in</label>
-			<select id="who">
-				<option value="confirmed">Confirmed entrants only</option>
-				<option value="all">Everyone who has not withdrawn</option>
-				<option value="none">No one</option>
-			</select>
-			<div class="hint" id="who-hint"></div>
-		</div>
-
-		{% comment %}
-			Only for No one: an empty draw has no field to be sized by, so the
-			TD says how many places the first round has. Starts at the
-			tournament's max entrants (UV, 5 Nov).
-		{% endcomment %}
-		<div class="field" id="size-field" hidden>
-			<label for="draw-size">Draw size</label>
-			<select id="draw-size">
-				<option value="4">4</option>
-				<option value="8">8</option>
-				<option value="16">16</option>
-				<option value="32">32</option>
-				<option value="64">64</option>
-			</select>
-			<div class="hint">The matches are made and wired round to round, with nobody in them. Tap a slot to put someone in.</div>
-		</div>
-
-		<div class="field">
-			<label for="third-place">Third-place playoff</label>
-			<input type="checkbox" id="third-place">
-			<div class="hint" id="third-place-hint">Decided now: it is generated with the draw.</div>
-		</div>
-
-		<div class="btn-row">
-			<button type="button" class="btn btn-primary btn-sm" id="generate">Generate the Draw</button>
-			<button type="button" class="btn btn-danger btn-sm" id="redraw" hidden>Redraw</button>
-			{% comment %}
-				Once there is a draw (UV, 5 Nov): fill the first round's open
-				slots (a bye's too) with who is not in the draw yet, at random,
-				from Who goes in; and shuffle every first-round player across its
-				matches. Both say what they will do and ask first.
-			{% endcomment %}
-			<button type="button" class="btn btn-secondary btn-sm" id="populate" hidden>Fill the first round</button>
-			<button type="button" class="btn btn-secondary btn-sm" id="shuffle" hidden>Shuffle the first round</button>
-		</div>
-	</details>
-
-	{% comment %}
-		Second, running it: how people move between rounds and when matches
-		start (asked once, here, before and after the draw is made), the
-		status, and Refresh. The status is derived from the tournament's own
-		facts, so it is right without anybody maintaining it — but a TD can
-		say otherwise, which is the only way to reach "cancelled" and the way
-		to close entries early. Setting it by hand makes it stick; the link
-		hands it back.
-	{% endcomment %}
-	<details class="set-group" id="settings" hidden>
-		<summary>Running the draw</summary>
-
-		<div id="run-row" hidden>
-			<div class="field">
-				<label for="t-progression">Moving between rounds</label>
-				<select id="t-progression">
-					<option value="automatic">Winners advance automatically</option>
-					<option value="manual">I will move people myself</option>
-				</select>
-				<div class="hint">You can always move anybody by hand, in either setting.</div>
-			</div>
-
-			<div class="field">
-				<label for="t-create-matches">Starting matches</label>
-				<select id="t-create-matches">
-					<option value="automatic">Start as soon as both players are known</option>
-					<option value="manual">I will start each one when a table is free</option>
-				</select>
-				<div class="hint" id="create-matches-hint"></div>
-			</div>
-		</div>
-
-		<div id="status-row" hidden>
-			<div class="field">
-				<label for="t-status">Status</label>
-				<select id="t-status"></select>
-				<div class="hint" id="status-hint"></div>
-			</div>
-		</div>
-
-		<div class="btn-row" id="draw-actions" hidden>
-			<button type="button" class="btn btn-secondary btn-sm" id="resolve">Refresh progress</button>
-		</div>
-	</details>
-
-	<div class="status" id="page-status"></div>
-
-	<div class="link-row">
-		<a href="#" id="entrants-link">Entrants</a>
+	<div class="tournament-panel" data-tab="settings" data-title="Tournament Settings" hidden>
+{% include "tournament/settings.html" %}
 	</div>
 </div>

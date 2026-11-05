@@ -1,184 +1,33 @@
 ---
-layout: layout.html
 title: Entrants
-description: "Add and manage the entrants in a tournament."
-extraScripts:
-  - /scripts/tournament-manage.js
+permalink: /tournaments/manage/index.html
 ---
 {% comment %}
-	The screen a tournament is run from. Search, add, mark paid, confirm,
-	seed, randomise.
-
-	Everything on it is one call each: tdc_tournament_entrants to read the
-	list, and tdc_add_entrant / tdc_set_entrant / tdc_remove_entrant /
-	tdc_set_seeds to change it. After every write the list is read again
-	rather than patched here, because the server owns the ordering.
-
-	Reached as /tournaments/manage/?t=<tournament id>.
+	Entrants is a tab of the tournament's one page since 5 Nov (UV). This
+	address is kept for links, bookmarks and notifications already sent, and
+	forwards to the tab with everything else in the address kept, as the old
+	league addresses do (leagues/manage/index.html).
 {% endcomment %}
-
-<div class="tdc-card wide">
-	<h1 id="t-name">Entrants</h1>
-	<p class="muted" id="t-meta"></p>
-
-	{% comment %}
-		How people get in. Three settings, which is the whole of the entry
-		design: who may put themselves down, and whether the TD's own criterion
-		for confirming somebody is payment.
-
-		These stay changeable for as long as the tournament is taking entries,
-		unlike the draw settings on the bracket page — a TD who opens entries
-		and then decides to close them early is an ordinary thing to do.
-	{% endcomment %}
-	<div class="panel" id="entry-settings" hidden>
-		<h2>How people get in</h2>
-
-		<div class="field">
-			<label for="entry-mode">Entries</label>
-			<select id="entry-mode">
-				<option value="td_only">I add everybody myself</option>
-				<option value="interested">Anyone can mark themselves interested</option>
-				<option value="self_confirm">Anyone can confirm their own entry</option>
-			</select>
-			<div class="hint" id="entry-mode-hint"></div>
-		</div>
-
-		<div class="field">
-			<label for="paid-confirms">Paid also confirms</label>
-			<input type="checkbox" id="paid-confirms">
-			<div class="hint">Ticking somebody as paid confirms them too. Leave this off if you confirm on something other than payment.</div>
-		</div>
-
-		<div class="field">
-			<label for="listed">Visible to public</label>
-			<input type="checkbox" id="listed">
-			<div class="hint" id="listed-hint"></div>
-		</div>
-
-		<div class="field">
-			<label for="entry-link">The link to share</label>
-			<input type="text" id="entry-link" readonly>
-			<div class="hint" id="entry-link-hint">Entering needs an account with a confirmed email address.</div>
-		</div>
-	</div>
-
-	{% comment %}
-		The poster. Nothing about a tournament is readable by anybody outside
-		the app until a poster is generated and shared — and the two are
-		separate acts, so a TD can build one, read the text out of it for a
-		designer, and never make it public.
-
-		What goes in is the TD's choice. The default is the tournament and the
-		entrant counts; names and the draw are opt-in, because the real entrant
-		list is the TD's.
-	{% endcomment %}
-	<div class="panel" id="poster-panel" hidden>
-		<h2>The poster</h2>
-		<p class="muted" id="poster-state">No poster yet.</p>
-
-		<div class="field">
-			<label for="poster-names">Include the entrants' names</label>
-			<input type="checkbox" id="poster-names">
-		</div>
-
-		<div class="field">
-			<label for="poster-draw">Include the draw and results</label>
-			<input type="checkbox" id="poster-draw">
-			<div class="hint">Results that have not been published are marked as not confirmed.</div>
-		</div>
-
-		<div class="btn-row">
-			<button type="button" class="btn btn-primary btn-sm" id="poster-build">Generate</button>
-			<button type="button" class="btn btn-secondary btn-sm" id="poster-share" hidden>Share it</button>
-			<button type="button" class="btn btn-danger btn-sm" id="poster-unshare" hidden>Stop sharing</button>
-			<a class="btn btn-secondary btn-sm" id="poster-open" href="#" hidden>Open it</a>
-		</div>
-
-		<div class="status" id="poster-status"></div>
-	</div>
-
-	<div class="field" id="search-field">
-		<label for="entrant-search">Add an entrant</label>
-		<input type="search" id="entrant-search" autocomplete="off" placeholder="Search by name">
-		<div class="hint">Two letters or more. Walk-ins are included.</div>
-	</div>
-
-	<div id="search-results"></div>
-
-	<h2>In this tournament <span class="badge" id="entrant-count" hidden></span></h2>
-
-	<div class="table-scroll">
-		<table class="tdc-table" id="entrant-table" hidden>
-			<thead>
-				<tr>
-					<th class="num">Seed</th>
-					<th>Player</th>
-					<th>Status</th>
-					<th>Paid</th>
-					<th>When</th>
-					<th></th>
-				</tr>
-			</thead>
-			<tbody id="entrant-rows"></tbody>
-		</table>
-	</div>
-
-	<div class="empty" id="entrant-empty" hidden>Nobody has entered yet. Search above to add the first player.</div>
-
-	{% comment %}
-		Seeding is one call for the whole field, not one per player: half a
-		re-seed is a draw nobody can read.
-	{% endcomment %}
-	<div class="btn-row" id="seed-actions" hidden>
-		<button type="button" class="btn btn-secondary btn-sm" id="seed-random">Randomise seeds</button>
-		<button type="button" class="btn btn-secondary btn-sm" id="seed-clear">Clear seeds</button>
-	</div>
-
-	{% comment %}
-		Who runs it. A tournament always has a director — whoever created it —
-		and may have referees and scorers. This matters more than it looks:
-		score_entry_mode can be set to 'referee' or 'scorer', and without a way
-		to appoint one the tournament would have nobody able to score it.
-
-		The role list comes from tbl_competition_role_types rather than being
-		written out here, because that table is a lookup with a rank for
-		exactly this reason — a new role should not need a page edit.
-	{% endcomment %}
-	<h2>Who runs it</h2>
-
-	<div id="official-add">
-		<div class="field">
-			<label for="official-role">Role</label>
-			<select id="official-role"></select>
-		</div>
-
-		<div class="field" id="official-field">
-			<label for="official-search">Add an official</label>
-			<input type="search" id="official-search" autocomplete="off" placeholder="Search by name">
-			<div class="hint">Two letters or more. They do not have to be entered in the tournament.</div>
-		</div>
-
-		<div id="official-results"></div>
-	</div>
-
-	<div class="table-scroll">
-		<table class="tdc-table" id="official-table" hidden>
-			<thead>
-				<tr>
-					<th>Person</th>
-					<th>Role</th>
-					<th></th>
-				</tr>
-			</thead>
-			<tbody id="official-rows"></tbody>
-		</table>
-	</div>
-
-	<div class="status" id="page-status"></div>
-
-	<div class="link-row">
-		<a href="#" id="draw-link">Draw</a>
-		&nbsp;·&nbsp;
-		<a href="/tournaments/">Back to tournaments</a>
-	</div>
-</div>
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#202020">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<!-- The light theme's bar for the moment this page shows (prefs.js does it on every other page; #f4e8d2 is the light --bg-base) -->
+	<script>try { if (localStorage.getItem('tdc.theme') === 'light') { document.querySelector('meta[name="theme-color"]').content = '#f4e8d2'; document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content = 'default'; } } catch (e) {}</script>
+	<title>Entrants — The Dive Club</title>
+	<script>
+		(() => {
+			const u = new URL('/tournaments/bracket/', location.origin);
+			new URLSearchParams(location.search).forEach((v, k) => u.searchParams.set(k, v));
+			u.searchParams.set('tab', 'entrants');
+			location.replace(u);
+		})();
+	</script>
+</head>
+<body>
+	<p><a href="/tournaments/">Entrants has moved to the tournament's page.</a></p>
+</body>
+</html>

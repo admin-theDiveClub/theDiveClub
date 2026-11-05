@@ -27,9 +27,10 @@
 // they are, and each of those panels refuses anybody else anyway.
 //
 // The tab the page opens on, and the bar itself, hold the loading screen
-// until they have read (loader.js, 29 Oct); a tab opened later brings the
-// screen back until it has (UV's second look, 29 Oct). A tab shown again is
-// already drawn and reads again in place, with no screen.
+// until they have read (loader.js, 29 Oct); a tab opened later gets a screen
+// over that tab alone until it has (UV, 5 Nov; from 29 Oct the page's whole
+// screen came back). A tab shown again is already drawn and reads again in
+// place, with no screen.
 //
 // Needs: tdc.js, supabaseClient.js; dots.js for the switch; loader.js.
 
@@ -108,6 +109,11 @@ const TDCLeagueNav = (() => {
 			}
 		} else {
 			started.add(key);
+			// Opened after the page has loaded: the screen over this tab
+			// alone (UV, 5 Nov), up before its script starts so the holds
+			// the script makes join it. Opened with the page, the page's own
+			// screen is up and covers it.
+			if (typeof TDCLoader !== 'undefined' && !TDCLoader.up) TDCLoader.cover(target, `the ${target.dataset.title || key} tab`);
 			const start = starts.get(key);
 			if (!start) {
 				TDC.error(AREA, `the "${key}" tab has no script.`, null, target.querySelector('.status'));
@@ -120,14 +126,15 @@ const TDCLeagueNav = (() => {
 		}
 		if (typeof TDCNet !== 'undefined' && TDCNet.started > before) call = TDCNet.quiet();
 		// A tab that reads holds the loading screen until it has read
-		// (loader.js), the one the page opens on and, since UV's second look
-		// (29 Oct), one opened later too: the screen comes back over it.
-		// Shown again, it is drawn already and reads in place: no screen.
+		// (loader.js): the page's, for the tab the page opens on; the tab's
+		// own cover, for one opened later (UV, 5 Nov; until then the page's
+		// screen came back over everything). Shown again, it is drawn
+		// already and reads in place: no screen.
 		if (call && first && typeof TDCLoader !== 'undefined') TDCLoader.hold(call, `the ${target.dataset.title || key} tab`);
 		// The dots trace the tab's pill while its load runs (at least
 		// DOTS_MIN, so a tab already open still gets them, UV 28 Oct), unless
-		// the loading screen came back for it: its own dots show that.
-		const covered = typeof TDCLoader !== 'undefined' && TDCLoader.up;
+		// a loading screen is over the tab: its diver shows that.
+		const covered = typeof TDCLoader !== 'undefined' && TDCLoader.covers(target);
 		if (tab && !covered && typeof TDCDots !== 'undefined') {
 			const least = new Promise((r) => setTimeout(r, DOTS_MIN));
 			TDCDots.serve(tab, call ? Promise.all([call, least]) : least, { trace: 'tab', status: target.querySelector('.status') });

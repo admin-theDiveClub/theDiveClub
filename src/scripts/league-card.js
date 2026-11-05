@@ -143,7 +143,7 @@
 		} else {
 			box.textContent = (name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 		}
-		return box;
+		return TDC.profilePic(box, playerId);   // opens their profile (UV, 5 Nov)
 	}
 
 	// A name with its picture beside it, everywhere a player is named.

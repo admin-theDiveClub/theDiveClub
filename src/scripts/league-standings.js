@@ -145,7 +145,7 @@ TDCLeagueNav.panel('standings', () => {
 			const rank = node('td', 'num sd-rank', rankText(r));
 			rank.dataset.live = key + ':' + r.player_id + ':rank';
 			const pic = node('td', 'sd-pic');
-			pic.append(avatar(r.avatar_path, r.name));
+			pic.append(TDC.profilePic(avatar(r.avatar_path, r.name), r.player_id));   // opens their profile (UV, 5 Nov)
 			const name = node('td', 'sd-name');
 			const a = node('a', null, r.name);
 			a.href = '/players/?p=' + encodeURIComponent(r.player_id);

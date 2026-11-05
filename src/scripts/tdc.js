@@ -327,6 +327,40 @@ const TDC = (() => {
 		return supabaseClient.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 	}
 
+	// ─── A player's picture opens their profile (UV, 5 Nov) ───
+	// Wherever a player's picture (or initials) is shown, a tap on it opens
+	// /players/?p=<id>. The picture is marked, not wrapped in a link: it often
+	// sits inside something tappable already (a draw card opening its match, a
+	// match row that is itself a link, a seat that opens a picker), and a link
+	// inside a link or a button is not allowed. One listener for the page, on
+	// the document's capture phase, takes the tap before anything round the
+	// picture hears it. Ctrl, Cmd or the middle button opens a new tab, as a
+	// link would. Returns the element.
+	function profilePic(el, playerId) {
+		if (!el || !playerId) return el;
+		el.classList.add('pic-link');
+		el.dataset.profile = playerId;
+		el.setAttribute('role', 'link');
+		el.tabIndex = 0;
+		if (!el.title) el.title = 'Open their profile';
+		return el;
+	}
+	const profileHref = (id) => '/players/?p=' + encodeURIComponent(id);
+	function openProfile(e) {
+		const pic = e.target.closest && e.target.closest('.pic-link[data-profile]');
+		if (!pic) return;
+		if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+		if (e.type === 'auxclick' && e.button !== 1) return;
+		e.preventDefault();
+		e.stopPropagation();
+		const href = profileHref(pic.dataset.profile);
+		if (e.ctrlKey || e.metaKey || e.type === 'auxclick') window.open(href, '_blank', 'noopener');
+		else location.href = href;
+	}
+	document.addEventListener('click', openProfile, true);
+	document.addEventListener('auxclick', openProfile, true);
+	document.addEventListener('keydown', openProfile, true);
+
 	// What goes inside a team's .team-pic: its own picture (team-pictures,
 	// tbl_teams.picture_path; 29 Oct), or the shield it had until it had one.
 	// Shared by the season, fixtures and card pages.
@@ -400,5 +434,5 @@ const TDC = (() => {
 	}
 
 	return { error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer,
-		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, teamPic, liveSnapshot, liveFade };
+		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, teamPic, liveSnapshot, liveFade };
 })();

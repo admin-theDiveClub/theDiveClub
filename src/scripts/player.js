@@ -341,7 +341,8 @@
 		const strip = node('span', 'pp-state fx-state-' + m.status);
 		strip.title = STATE[m.status] || m.status;
 		strip.append(node('span', 'pp-sr', strip.title));
-		const pic = m.team_match ? node('span', 'team-pic pp-row-pic') : avatar(m.opponent_avatar, m.opponent);
+		// The opponent's picture opens their profile, the row their match (UV, 5 Nov).
+		const pic = m.team_match ? node('span', 'team-pic pp-row-pic') : TDC.profilePic(avatar(m.opponent_avatar, m.opponent), m.opponent_player_id);
 		if (m.team_match) pic.append(TDC.teamPic(m.opponent_team_picture));
 		const names = node('span', 'pp-row-names');
 		names.append(node('span', 'pp-row-name', 'vs ' + m.opponent), node('span', 'muted pp-row-sub', kindLabel(m) + ' · ' + day(m.played_at)));
@@ -446,7 +447,7 @@
 			const names = node('div', 'pp-c-names');
 			names.append(node('span', 'pp-c-name', p.player.display_name));
 			if (p.player.full_name) names.append(node('span', 'pp-c-full', p.player.full_name));
-			person.append(avatar(p.player.avatar_path, p.player.display_name, 'pp-c-pic'), names);
+			person.append(TDC.profilePic(avatar(p.player.avatar_path, p.player.display_name, 'pp-c-pic'), p.player.player_id), names);
 			who.replaceChildren(person);
 		}
 	}
@@ -469,7 +470,7 @@
 	// ─── Head to head ───
 	function versusSide(p, label, me) {
 		const s = node('div', 'pp-vs-side');
-		s.append(avatar(p.avatar_path, p.display_name, 'pp-vs-pic' + (me ? ' pp-vs-pic-me' : '')), node('span', 'pp-vs-name', label));
+		s.append(TDC.profilePic(avatar(p.avatar_path, p.display_name, 'pp-vs-pic' + (me ? ' pp-vs-pic-me' : '')), p.player_id), node('span', 'pp-vs-name', label));
 		return s;
 	}
 

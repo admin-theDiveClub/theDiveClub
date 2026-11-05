@@ -1357,7 +1357,8 @@ const TDCDots = (() => {
 	// (UV, 29 Oct: the loader fades only once the page is populated). Faded,
 	// the fixtures planner was still coming in for a second after the screen
 	// had gone.
-	const covered = () => typeof TDCLoader !== 'undefined' && TDCLoader.up;
+	// A tab's own screen (loader.js cover(), 5 Nov) counts for what is under it.
+	const covered = (el) => typeof TDCLoader !== 'undefined' && TDCLoader.covers(el);
 	function underScreen(t) {
 		if (t.restored) return;
 		t.restored = true;
@@ -2221,7 +2222,7 @@ const TDCDots = (() => {
 			if (--t.pending) return;
 			t.settled = true;
 			if (!present(t)) gone(t);
-			if (t !== cur && t.load && covered()) underScreen(t);
+			if (t !== cur && t.load && covered(t.el)) underScreen(t);
 			else if (t !== cur) restore(t);   // abandoned: it comes back without the dots
 			else wake();
 			sayWaiting();
@@ -2270,6 +2271,7 @@ const TDCDots = (() => {
 		let best = null;
 		for (const t of records.values()) {
 			if (!t.load || t.settled || t.broken || t === cur || (grace && !late(t, now))) continue;
+			if (covered(t.el)) continue;   // under a tab's screen: its diver shows it
 			if (!best || best.el.compareDocumentPosition(t.el) & Node.DOCUMENT_POSITION_PRECEDING) best = t;
 		}
 		return best;

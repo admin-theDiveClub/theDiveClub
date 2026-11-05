@@ -4,6 +4,53 @@
 
 .match-page { width: 100%; }
 
+/* ── The tournament banner (UV, 5 Nov) ────────────────────────────
+   A match on a tournament's draw: a strip joined to the foot of the nav,
+   the nav's own surface and line, the trophy, the tournament, the round,
+   and a chevron saying a tap opens the draw. One line; a long name is cut
+   with an ellipsis before the round is. The stage gives up its height
+   (below), so it still fills the screen exactly. */
+.mv-banner {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	height: var(--match-banner-height);
+	padding: 0 max(var(--space-4), env(safe-area-inset-right, 0px)) 0 max(var(--space-4), env(safe-area-inset-left, 0px));
+	background: var(--bg-surface);
+	backdrop-filter: blur(var(--surface-blur));
+	-webkit-backdrop-filter: blur(var(--surface-blur));
+	border-bottom: 1px solid var(--border-color);
+	color: var(--text-primary);
+	text-decoration: none;
+	font-size: 0.9rem;
+	white-space: nowrap;
+}
+.mv-banner[hidden] { display: none; }
+.mv-banner svg {
+	flex: none;
+	width: 1.15rem;
+	height: 1.15rem;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: var(--icon-line);
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	vector-effect: non-scaling-stroke;
+}
+.mv-banner-icon { color: var(--color-primary); }
+.mv-banner-name {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	font-weight: 600;
+}
+.mv-banner-round { flex: none; color: var(--text-muted); }
+.mv-banner-round:not(:empty)::before { content: '·'; margin-right: var(--space-2); }
+.mv-banner-go { margin-left: auto; color: var(--text-muted); }
+.mv-banner:hover .mv-banner-name,
+.mv-banner:focus-visible .mv-banner-name { color: var(--color-primary); }
+.mv-banner:hover .mv-banner-go { color: var(--color-primary); }
+
 /* ── The stage (UV, 30 Oct) ───────────────────────────────────────
    The whole screen below the nav (--nav-total, the body's padding, notch
    included; UV, 30 Oct: the nav stays, as on every page), down to the
@@ -78,6 +125,8 @@
 	overflow: hidden;
 	container-type: size;
 }
+/* Under the tournament banner the stage is shorter by its height (UV, 5 Nov). */
+body:has(#mv-banner:not([hidden])) .mv-stage { height: calc(100dvh - var(--nav-total) - var(--match-banner-height)); }
 
 @media (orientation: landscape) {
 	.mv-stage {

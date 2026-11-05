@@ -88,8 +88,8 @@
 		// the bracket page existed and left behind when it arrived.
 		const box = document.createElement('a');
 		box.className = 'match-card';
-		box.href = (t.i_run_it ? '/tournaments/manage/?t=' : '/tournaments/bracket/?t=')
-			+ encodeURIComponent(t.id);
+		// The tournament's one page since 5 Nov: Entrants for whoever runs it.
+		box.href = '/tournaments/bracket/?t=' + encodeURIComponent(t.id) + (t.i_run_it ? '&tab=entrants' : '');
 
 		const top = el('div', 'match-top');
 		top.append(

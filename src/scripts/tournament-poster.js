@@ -513,7 +513,7 @@
 		// The TD gets the way back to running it. Nobody else does.
 		els.links.replaceChildren();
 		if (row.i_run_it) {
-			els.links.append(linkPlain('Entrants', '/tournaments/manage/?t=' + encodeURIComponent(tournamentId)));
+			els.links.append(linkPlain('Entrants', '/tournaments/bracket/?t=' + encodeURIComponent(tournamentId) + '&tab=entrants'));
 			els.links.append(document.createTextNode(' · '));
 			els.links.append(linkPlain('Draw', '/tournaments/bracket/?t=' + encodeURIComponent(tournamentId)));
 		}

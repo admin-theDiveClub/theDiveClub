@@ -13,9 +13,15 @@
 // what tdc_set_seeds takes, and it is the only way the result cannot come out
 // with two number fours in it.
 //
-// Needs: tdc.js.
+// Since 5 Nov (UV) the Entrants tab of the tournament's one page
+// (tournament-nav.js; _includes/tournament/entrants.html), the old address
+// forwarding there. Who may enter, Paid also confirms and Visible to public
+// moved to the Settings tab then (UV: each setting in one place); the link
+// to share stays here, beside the poster it opens.
+//
+// Needs: tdc.js, tournament-nav.js.
 
-(() => {
+TDCTournamentNav.panel('entrants', () => {
 	const AREA = 'Entrants';
 
 	const FORMAT = {
@@ -28,22 +34,20 @@
 
 	const el = (id) => document.getElementById(id);
 	const els = {
-		name: el('t-name'), meta: el('t-meta'),
+		name: el('en-name'), meta: el('en-meta'),
 		search: el('entrant-search'), results: el('search-results'),
 		table: el('entrant-table'), rows: el('entrant-rows'),
 		count: el('entrant-count'), empty: el('entrant-empty'),
 		seedActions: el('seed-actions'),
 		seedRandom: el('seed-random'), seedClear: el('seed-clear'),
-		entrySettings: el('entry-settings'), entryMode: el('entry-mode'),
-		entryModeHint: el('entry-mode-hint'), paidConfirms: el('paid-confirms'),
-		listed: el('listed'), listedHint: el('listed-hint'),
+		entrySettings: el('entry-settings'),
 		entryLink: el('entry-link'), entryLinkHint: el('entry-link-hint'),
 		posterPanel: el('poster-panel'), posterState: el('poster-state'),
 		posterNames: el('poster-names'), posterDraw: el('poster-draw'),
 		posterBuild: el('poster-build'), posterShare: el('poster-share'),
 		posterUnshare: el('poster-unshare'), posterOpen: el('poster-open'),
 		posterStatus: el('poster-status'),
-		status: el('page-status'), drawLink: el('draw-link'),
+		status: el('en-status'),
 		officialAdd: el('official-add'), officialSearch: el('official-search'),
 		officialRole: el('official-role'), officialResults: el('official-results'),
 		officialTable: el('official-table'), officialRows: el('official-rows')
@@ -226,34 +230,13 @@
 	// ─────────────────────────────────────────────────────────────────
 	// How people get in
 	//
-	// Both settings go through tdc_update_tournament, the one function that
-	// changes a tournament, rather than writing the columns from here.
+	// The link to share. Who may enter, Paid also confirms and Visible to
+	// public were set here until 5 Nov; they are on the Settings tab now
+	// (tournament-settings.js; UV: each setting in one place).
 	// ─────────────────────────────────────────────────────────────────
 
-	const ENTRY_HINT = {
-		td_only: 'Nobody can put themselves down. Search above to add them.',
-		interested: 'Players can mark themselves interested. You confirm them, on whatever basis you use.',
-		self_confirm: 'Players can confirm their own entry. Right for a free tournament, or one paid for at the desk.'
-	};
-
-	function renderEntrySettings(t) {
+	function renderEntrySettings() {
 		els.entrySettings.hidden = readOnly;
-		els.entryMode.value = t.entry_mode;
-		els.entryMode.disabled = readOnly;
-		els.entryModeHint.textContent = ENTRY_HINT[t.entry_mode] || '';
-		els.paidConfirms.checked = !!t.paid_confirms;
-		els.paidConfirms.disabled = readOnly;
-
-		// Visible to public. Listed only while players can enter themselves
-		// (tdc_open_tournaments), so the hint says when the switch is on and
-		// nobody can see it.
-		els.listed.checked = !!t.is_listed;
-		els.listed.disabled = readOnly;
-		els.listedHint.textContent = !t.is_listed
-			? 'Signed-in players can find it under Open for entry on Tournaments, while they can enter themselves. Turning it on shares the poster.'
-			: t.entry_mode === 'td_only'
-				? 'On, but players will not see it while you add everybody yourself.'
-				: 'Players can find it under Open for entry on Tournaments until the draw is made. Stopping sharing the poster turns this off.';
 
 		// The poster, which is the one page meant to be opened by somebody who
 		// is not signed in. It shows nothing until a poster has been generated
@@ -264,33 +247,6 @@
 
 	const posterUrl = () => location.origin
 		+ '/tournaments/poster/?t=' + encodeURIComponent(tournamentId);
-
-	// Changing a setting re-reads the tournament rather than trusting the
-	// control, for the same reason the entrant list does.
-	// Queued with every other save on the page, never refused (TDC.writer).
-	const entryWriter = TDC.writer({
-		area: AREA, status: els.status,
-		reload: async () => {
-			const t = await loadTournament();
-			if (t) renderEntrySettings(t);
-			// Visible on shares the poster, so its panel is read again too.
-			await loadPoster();
-			return !!t;
-		}
-	});
-	function saveEntrySetting(what, args) {
-		return entryWriter.write(what, () => supabaseClient.rpc('tdc_update_tournament',
-			Object.assign({ p_tournament_id: tournamentId }, args)));
-	}
-
-	els.entryMode.addEventListener('change', () =>
-		saveEntrySetting('Saving', { p_entry_mode: els.entryMode.value }));
-
-	els.paidConfirms.addEventListener('change', () =>
-		saveEntrySetting('Saving', { p_paid_confirms: els.paidConfirms.checked }));
-
-	els.listed.addEventListener('change', () =>
-		saveEntrySetting('Saving', { p_is_listed: els.listed.checked }));
 
 	els.entryLink.addEventListener('focus', () => els.entryLink.select());
 
@@ -359,12 +315,11 @@
 
 	const posterWriter = TDC.writer({
 		area: AREA, status: els.posterStatus,
-		// Stopping sharing turns Visible to public off, so the switch is read
-		// again with the poster.
+		// Stopping sharing turns Visible to public off; the Settings tab
+		// reads it again when it is shown.
 		reload: async () => {
 			await loadPoster();
-			const t = await loadTournament();
-			if (t) renderEntrySettings(t);
+			await loadTournament();
 			return true;
 		}
 	});
@@ -712,8 +667,6 @@
 			return;
 		}
 
-		els.drawLink.href = '/tournaments/bracket/?t=' + encodeURIComponent(tournamentId);
-
 		const tournament = await loadTournament();
 		if (!tournament) return;
 
@@ -734,18 +687,17 @@
 		// carries payment status and the TD's private notes, so a player now
 		// gets an empty list — which would read as "nobody has entered yet".
 		//
-		// Sending them to the draw instead, which is the page for somebody who
+		// Sending them to the draw instead, which is the tab for somebody who
 		// is in the tournament rather than running it. A player only lands here
-		// from an old link or a typed address; the tournament list has pointed
-		// them at the draw since 20 Oct.
+		// from an old link or a typed address: the bar offers them no Entrants
+		// tab (tournament-nav.js).
 		if (!mayRun) {
 			readOnly = true;
-			TDC.status(els.status, 'Taking you to the draw — the entrant list is for whoever is running this.', '');
-			location.replace('/tournaments/bracket/?t=' + encodeURIComponent(tournamentId));
+			TDCTournamentNav.open('draw');
 			return;
 		}
 
-		renderEntrySettings(tournament);
+		renderEntrySettings();
 		await loadPoster();
 
 		if (!await loadEntrants()) return;
@@ -754,4 +706,17 @@
 
 		els.search.focus();
 	})(), 'Entrants');
-})();
+
+	// Shown again as a tab (tournament-nav.js): read again in place.
+	return {
+		refresh: () => {
+			if (readOnly || !tournamentId) return;
+			(async () => {
+				await loadTournament();
+				await loadPoster();
+				await loadEntrants();
+				await loadOfficials();
+			})().catch((err) => TDC.error(AREA, 'the entrants could not be read again.', err, els.status));
+		}
+	};
+});

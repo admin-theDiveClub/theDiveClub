@@ -21,6 +21,15 @@
 //     showing a page for a moment on the way
 //   TDCLoader.up  true while the screen is up. The dots' page-load queue
 //     waits while it is (dots.js): its targets are under the screen
+//   TDCLoader.cover(host, label)
+//     a screen over one part of the page only (UV, 5 Nov): a tab opened after
+//     the page has loaded. The same look, blur and the dive, sized to the
+//     host, the diver in the part of it on the screen. Any hold made while it
+//     is up, and the page's screen is not, joins it rather than bringing the
+//     page's screen back; it goes when they have all settled, as the page's
+//     does. With the page's screen up there is nothing to cover: it is held
+//   TDCLoader.covers(el)  true while el is under a screen, the page's or a
+//     cover's (dots.js: what is under one is shown, not faded in)
 //
 // Ready means, in this order: the page's own load (styles, scripts, the icon),
 // its fonts, every hold settled, the network quiet (TDCNet: catches the nav's
@@ -57,6 +66,7 @@ const TDCLoader = (() => {
 	if (box) box.dataset.state = 'up';   // the CSS fallback timer stops
 
 	const holds = new Set();   // { promise, label } still out
+	const covers = [];         // the tab covers up (cover()), the newest last
 	let up = !!box, away = false;
 	let stage = 'the page';    // what it is waiting on, for the hang message
 	let hideTimer = 0;         // hides the faded screen; stopped if it comes back
@@ -85,6 +95,9 @@ const TDCLoader = (() => {
 
 	function hold(promise, label) {
 		if (!box) return promise;
+		// A tab's cover is up and the page's is not: it waits for this too.
+		const local = !up && covers.length ? covers[covers.length - 1] : null;
+		if (local) { local.hold(promise, label); return promise; }
 		if (!up) raise();
 		const h = { promise: Promise.resolve(promise), label: label || 'the page' };
 		holds.add(h);
@@ -209,9 +222,149 @@ const TDCLoader = (() => {
 
 	if (box) cycle();
 
+	// ─── A screen over one part of the page (UV, 5 Nov) ───
+	// A tab opened after the page has loaded: the screen over that tab only,
+	// the rest of the page (the nav, the tab bar) left as it is. The same
+	// parts as the page's screen, built into the host: the box over the whole
+	// host, and inside it a view that stays on the screen (sticky under the
+	// nav) as tall as the part of the host that fits, with the wordmark and
+	// the diver in it. The host keeps some height while covered, so a tab
+	// that has drawn nothing yet still has room for the screen.
+	function cover(host, label) {
+		if (!box || !host) return;
+		if (up) return;   // the page's screen is over everything already
+		if (covers.some((c) => c.host === host)) return;
+
+		const el = document.createElement('div');
+		el.className = 'tdc-loader tdc-loader-cover';
+		el.dataset.state = 'up';
+		el.setAttribute('role', 'status');
+		el.setAttribute('aria-label', 'Loading');
+		el.setAttribute('aria-busy', 'true');
+		const view = document.createElement('div');
+		view.className = 'tdc-loader-view';
+		for (const img of box.querySelectorAll('.tdc-loader-wordmark')) view.append(img.cloneNode(true));
+		const stage = document.createElement('div');
+		stage.className = 'tdc-loader-dive';
+		stage.setAttribute('aria-hidden', 'true');
+		view.append(stage);
+		el.append(view);
+		host.classList.add('tdc-covered');
+		host.append(el);
+
+		// The view: the part of the host on the screen, under the nav. Kept
+		// there as the page scrolls or resizes; the dive lays itself out
+		// again when its box changes (dive.js).
+		// The nav's foot where it is now (it hides as the page scrolls).
+		const navTotal = () => {
+			const nav = document.querySelector('nav.site-nav');
+			return nav ? Math.max(0, nav.getBoundingClientRect().bottom) : 0;
+		};
+		let placing = 0;
+		const place = () => {
+			placing = 0;
+			const r = host.getBoundingClientRect();
+			const top = Math.max(r.top, navTotal());
+			const bottom = Math.min(r.bottom, innerHeight);
+			view.style.top = `${Math.max(0, top - r.top)}px`;
+			view.style.height = `${Math.max(0, bottom - top)}px`;
+		};
+		const replace = () => { if (!placing) placing = requestAnimationFrame(place); };
+		place();
+		addEventListener('scroll', replace, { passive: true });
+		addEventListener('resize', replace);
+		const watchHost = new ResizeObserver(replace);
+		watchHost.observe(host);
+
+		let diver = null;
+		const art = document.getElementById('tdc-dive-art');
+		if (art && typeof TDCDive !== 'undefined') {
+			const svg = art.content.querySelector('svg.dive').cloneNode(true);
+			svg.removeAttribute('role');
+			svg.removeAttribute('aria-label');
+			stage.append(svg);
+			const onLayout = ({ scene }) => el.style.setProperty('--loader-wordmark-width', `${scene}px`);
+			diver = TDCDive.attach(svg, { frame: 'fit', across: 1 / 1.618, onLayout });
+		} else {
+			console.error(`[${AREA}] the dive (dive.js, #tdc-dive-art) is not on this page, so the tab's loading screen has no diver.`);
+		}
+
+		const mine = new Set();
+		const c = {
+			host,
+			hold(promise, what) {
+				const h = { promise: Promise.resolve(promise), label: what || label || 'the tab' };
+				mine.add(h);
+				h.promise.then(() => mine.delete(h), (err) => {
+					mine.delete(h);
+					fail(`${h.label} could not finish loading, so it is shown as it stands.`, err);
+				});
+			}
+		};
+		covers.push(c);
+
+		let gone = false;
+		const finish = () => {
+			if (gone) return;
+			gone = true;
+			const at = covers.indexOf(c);
+			if (at >= 0) covers.splice(at, 1);
+			el.dataset.state = 'leaving';
+			el.setAttribute('aria-busy', 'false');
+			if (diver) diver.stop();
+			setTimeout(() => {
+				removeEventListener('scroll', replace);
+				removeEventListener('resize', replace);
+				watchHost.disconnect();
+				cancelAnimationFrame(placing);
+				if (diver) diver.destroy();
+				el.remove();
+				if (!covers.some((o) => o.host === host)) host.classList.remove('tdc-covered');
+			}, fadeMs() + 50);
+		};
+		const hang = setTimeout(() => {
+			if (gone) return;
+			const still = [...new Set([...mine].map((h) => h.label))].join(', ') || label || 'the tab';
+			fail(`${label || 'the tab'} was still loading after ${HANG / 1000} s (waiting for ${still}), so it is shown as it stands.`);
+			finish();
+		}, HANG);
+
+		// Ready as the page is: every hold settled, the network quiet, the
+		// host's pictures in; again until nothing new is held; two frames.
+		// One frame first, so the tab's start (run straight after this) has
+		// made its holds.
+		const pics = () => Promise.all([...host.querySelectorAll('img')]
+			.filter((i) => !i.complete && i.loading !== 'lazy')
+			.map((i) => new Promise((r) => {
+				i.addEventListener('load', r, { once: true });
+				i.addEventListener('error', r, { once: true });
+			})));
+		(async () => {
+			await frame();
+			for (;;) {
+				while (mine.size) await Promise.allSettled([...mine].map((h) => h.promise));
+				if (typeof TDCNet !== 'undefined' && TDCNet.quiet) await TDCNet.quiet();
+				await pics();
+				if (!mine.size) break;
+			}
+			await frame();
+			await frame();
+		})().then(() => { clearTimeout(hang); finish(); }, (err) => {
+			clearTimeout(hang);
+			fail(`could not tell when ${label || 'the tab'} was ready, so it is shown as it stands.`, err);
+			finish();
+		});
+
+		setTimeout(() => { if (!gone && diver) diver.start(); }, GRACE);
+	}
+
+	const covers_ = (el) => up || (!!el && covers.some((c) => c.host.contains(el)));
+
 	return {
 		hold,
 		leaving,
+		cover,
+		covers: covers_,
 		get up() { return up; }
 	};
 })();

@@ -55,6 +55,32 @@
 	height: 100%;
 }
 
+/* A screen over one tab only (loader.js cover(), UV 5 Nov): a tab opened
+   after the page has loaded. The page's look, over the host alone, under the
+   nav (100) and above anything the tab raises (its sticky headings). Its view
+   is the part of the host on the screen under the nav, kept there by
+   loader.js as the page scrolls (top and height), so the diver falls in the
+   part you can see. The
+   host keeps some height while covered: a tab that has drawn nothing yet
+   would otherwise leave no room for it. */
+.tdc-covered {
+	position: relative;
+	min-height: min(60dvh, 30rem);
+}
+.tdc-loader-cover {
+	position: absolute;
+	z-index: 50;
+	animation: none;
+}
+.tdc-loader-view {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	height: 100%;
+	overflow: hidden;
+}
+
 /* The site icon exactly where the nav's sits (nav.css .nav-logo), so the
    fade leaves the real one in the same spot. */
 .tdc-loader-icon {

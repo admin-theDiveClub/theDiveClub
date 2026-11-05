@@ -1385,3 +1385,31 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to judge:* a bye's empty slot counts as available (filling it ends the bye); a walkover, withdrawal or decision in the first round blocks the shuffle; No one in Who goes in fills from the confirmed; the deleted matches recorded in `tbl_deleted_matches`.
 *So:* `docs/systems/tournaments.md`, "Filling and shuffling the first round".
 *Touches:* migration `20261105115859_populate_and_shuffle_draw.sql`, `supabase/tests/051_populate_shuffle_draw.test.sql` (new), `tournaments/bracket/index.html`, `scripts/tournament-bracket.js`
+
+## 2026-11-05 — A tab's loading screen covers that tab only
+
+*Decided by UV:* when switching tabs, the loading screen shows only over the tab that is loading; the page's screen is still there when the page first loads; the same look (the blur, the wordmark, the diver into the portal), sized to the tab, the diver in the part of the tab on the screen. Every tabbed page: today the league season page, and the tournament page once it has tabs.
+*Claude's, for UV to judge:* any hold made while a tab's cover is up joins the cover; a tab that has drawn nothing yet is given a least height (60% of the screen, at most 30rem) so the cover has room; the tab's pill keeps the button's own busy look but gets no traced dots while its tab is covered; the profile page's tabs are unchanged (they read nothing when switched).
+*So:* `docs/systems/dots.md` §9, "A screen over one tab".
+*Touches:* `scripts/loader.js`, `stylesheets/loader.css`, `scripts/dots.js`, `scripts/league-nav.js`
+
+## 2026-11-05 — A player's picture opens their profile, everywhere
+
+*Decided by UV:* wherever a player's profile picture is shown, it opens their profile; the match stage's pictures too; on the draw, a picture on a card opens the profile and the director's entrant pills stay drag-only.
+*Claude's, for UV to judge:* the picture is marked and one capture listener takes the tap (not a link wrapped round it), so it works inside a card, a row link or a seat; initials count as a picture; left alone: your own nav picture, the profile's big photo, the More pop-up's walkover boxes, the season page's people (already a link); the green glow on hover; the draw's player ids added to `tdc_tournament_draw` rather than read from the entrant table.
+*So:* `docs/ui.md` §2, "A player's picture opens their profile"; `docs/systems/tournaments.md`, "A picture on the draw opens the player's profile".
+*Touches:* migration `20261105125434_draw_player_ids.sql`, `supabase/tests/052_draw_player_ids.test.sql` (new), `scripts/tdc.js`, `stylesheets/forms.css`, `scripts/league-card.js`, `scripts/league-standings.js`, `scripts/player.js`, `scripts/tournament-bracket.js`, `scripts/match.js`, `scripts/match-new.js`
+
+## 2026-11-05 — The match page says when a match is part of a tournament
+
+*Decided by UV:* a banner attached to the foot of the nav bar, the stage adjusted to fit the page again; it reads the tournament's name and the round ("Quarter-finals · Match 2"), and a tap opens the draw.
+*Claude's, for UV to judge:* the trophy icon and chevron; the banner's height (2.5rem) and the nav's surface and line; the banner over the result view too; the settings panel's context line following it (it said "Social match" for every match); the round named by a copy of the draw's naming rather than a shared file (no change to the draw page).
+*So:* `docs/systems/matches.md`, the match page, "The tournament banner".
+*Touches:* `match/index.html`, `scripts/match.js`, `stylesheets/match.css`, `stylesheets/variables.css`
+
+## 2026-11-05 — A tournament's pages are tabs, with a Settings tab
+
+*Decided by UV:* the tournament pages become tabs like a league's: Draw · Entrants · Settings on `/tournaments/bracket/`, the old Entrants address forwarding; the Poster stays its own page, a link in the bar; the settings available when creating a tournament are on a Settings tab, and the copies on Draw and Entrants come off so each setting is in one place; a rule changed there reaches every match not yet started, like leagues (a migration).
+*Claude's, for UV to judge:* the third-place playoff moved to Settings with them (it is generated with the draw, so it locks once there is one); one Save for the whole tab rather than each setting saving as it changes; the ruleset sent only when it changed; "not yet started" meaning no frame and no card event (the league's rule), so a match a director re-ruled by hand on the match page, with no frame yet, follows a later tournament rule change; Entrants keeping the link to share with a line pointing to Settings; a player's bar showing Draw alone (and the Poster once shared); a sibling of `league-nav.js` rather than one shared tab script (no change to the league pages).
+*So:* `docs/systems/tournaments.md`, "The tournament's pages as tabs, and its Settings tab".
+*Touches:* migration `20261105130239_tournament_settings.sql`, `supabase/tests/053_tournament_settings.test.sql` (new), `tournaments/bracket/index.html`, `tournaments/manage/index.html`, `_includes/tournament/{draw,entrants,settings}.html` (new), `scripts/tournament-nav.js` (new), `scripts/tournament-settings.js` (new), `scripts/tournament-bracket.js`, `scripts/tournament-manage.js`, `scripts/tournament-new.js`, `scripts/tournament-poster.js`, `scripts/tournaments.js`, `tournaments/poster/index.html`

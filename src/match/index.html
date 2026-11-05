@@ -33,6 +33,19 @@ extraScripts:
 {% endcomment %}
 
 {% comment %}
+	The tournament banner (UV, 5 Nov): a match on a tournament's draw says
+	which tournament and round, joined to the foot of the nav; a tap opens the
+	draw. Above both the stage and the result view. The stage gives up its
+	height (match.css). Hidden for any other match.
+{% endcomment %}
+<a class="mv-banner" id="mv-banner" href="/tournaments/" hidden>
+	<svg class="mv-banner-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5v1a3 3 0 0 0 3 3M16 6h3v1a3 3 0 0 1-3 3M12 13v4M9 20h6M10 17h4"/></svg>
+	<span class="mv-banner-name" id="mv-banner-name"></span>
+	<span class="mv-banner-round" id="mv-banner-round"></span>
+	<svg class="mv-banner-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+</a>
+
+{% comment %}
 	Once both players have agreed the card there is nothing left to score, so
 	the scoring surface is put away and the match is shown as a result. Same
 	address — a link to a match should keep working after it is finished.

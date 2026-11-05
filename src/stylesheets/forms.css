@@ -993,3 +993,14 @@ button.league-nav-item:focus-visible { background: var(--hover-wash); outline: n
 .jumbo-pic,
 .team-pic,
 .sb-mock-avatar { box-shadow: var(--shadow-pic); }
+
+/* ── A player's picture opens their profile (UV, 5 Nov) ──────────────
+   Marked by TDC.profilePic (tdc.js), which also takes the tap. The pointer
+   says it can be tapped; hovering or focusing it adds the green glow round
+   its circle, as anything else you open glows. */
+.pic-link { cursor: pointer; }
+.pic-link:hover,
+.pic-link:focus-visible {
+	box-shadow: var(--shadow-pic), var(--glow-primary);
+	outline: none;
+}

@@ -102,6 +102,7 @@
 		scrim: el('panel-scrim'),
 		panel: el('settings-panel'), panelClose: el('panel-close'),
 		contextLine: el('context-line'), badgeRow: el('badge-row'), panelNote: el('panel-note'),
+		banner: el('mv-banner'), bannerName: el('mv-banner-name'), bannerRound: el('mv-banner-round'),
 		changeNote: el('change-note'),
 		when: el('match-when'),
 		setGroups: el('set-groups'),
@@ -1581,6 +1582,10 @@
 			whoDrawn = who;
 			paintWho(els.whoHome, player(MATCH.home.players[0]));
 			paintWho(els.whoAway, player(MATCH.away.players[0]));
+			// On the stage a picture opens the player's profile (UV, 5 Nov);
+			// the More pop-up's walkover boxes are buttons and keep theirs.
+			TDC.profilePic(els.whoHome.querySelector('.mv-pic'), MATCH.home.players[0]);
+			TDC.profilePic(els.whoAway.querySelector('.mv-pic'), MATCH.away.players[0]);
 			placeWho();   // sized to the new names (fitWho)
 		}
 		const winnable = !matchOver() && canEdit && !resultDisabled('win');
@@ -2701,6 +2706,7 @@
 
 	function renderPanel() {
 		const c = MATCH.context;
+		renderBanner();
 		els.contextLine.textContent = c.kind === 'social'
 			? 'Social match · not part of a league or tournament'
 			: [c.name, c.season, c.round].filter(Boolean).join(' · ');
@@ -3241,6 +3247,70 @@
 
 	const msOrNull = (t) => (t ? Date.parse(t) : null);
 
+	// ─── The tournament a match is part of (UV, 5 Nov) ───
+	// Its fixture on a draw names the tournament and the round, said as the
+	// draw says it (tournament-bracket.js, roundNames and fixtureName: keep
+	// the two in step): walking down from the last main round, one match is
+	// the Final, two the Semi-finals, four the Quarter-finals, then Last 16,
+	// Last 32 and on; once the halving breaks, "Round n". Read once per match
+	// (a match does not change tournament) rather than on every re-read after
+	// a write. A failed read says so and the match opens as social, and is
+	// tried again on the next re-read.
+	const SOCIAL = { kind: 'social', name: null, season: null, round: null };
+	let contextOf = null;   // { id, context }
+	async function matchContext(id) {
+		if (contextOf && contextOf.id === id) return contextOf.context;
+		const { data: f, error } = await supabaseClient
+			.from('tbl_tournament_fixtures')
+			.select('tournament_id, bracket, round, position, tbl_tournaments(name)')
+			.eq('match_id', id)
+			.maybeSingle();
+		if (error) { TDC.showSupabaseError(AREA, error, els.stageStatus); return SOCIAL; }
+		if (!f) { contextOf = { id, context: SOCIAL }; return SOCIAL; }
+
+		let round = null;
+		if (f.bracket === 'third_place') round = 'Third place';
+		else if (f.bracket !== 'main') round = f.bracket.replace(/_/g, ' ') + ' · Match ' + f.position;
+		else {
+			const { data: main, error: mainError } = await supabaseClient
+				.from('tbl_tournament_fixtures')
+				.select('round')
+				.eq('tournament_id', f.tournament_id)
+				.eq('bracket', 'main');
+			if (mainError) { TDC.showSupabaseError(AREA, mainError, els.stageStatus); return SOCIAL; }
+			const LADDER = { 1: 'Final', 2: 'Semi-finals', 4: 'Quarter-finals' };
+			const last = Math.max(...main.map((x) => x.round));
+			let name = null;
+			for (let r = last, expect = 1; r >= f.round; r--, expect *= 2) {
+				if (main.filter((x) => x.round === r).length !== expect) break;
+				if (r === f.round) name = { long: LADDER[expect] || 'Last ' + expect * 2, one: expect === 1 };
+			}
+			round = name && name.one ? name.long : (name ? name.long : 'Round ' + f.round) + ' · Match ' + f.position;
+		}
+		const context = {
+			kind: 'tournament',
+			name: f.tbl_tournaments ? f.tbl_tournaments.name : 'TDC (Error)',
+			season: null,
+			round,
+			tournamentId: f.tournament_id
+		};
+		contextOf = { id, context };
+		return context;
+	}
+
+	// The banner under the nav (UV, 5 Nov): a tournament match says which
+	// tournament and round it is, and a tap opens the draw. The stage gives
+	// up the banner's height so it still fits the screen (match.css).
+	function renderBanner() {
+		const c = MATCH && MATCH.context;
+		if (!c || c.kind !== 'tournament') { els.banner.hidden = true; return; }
+		els.banner.href = '/tournaments/bracket/?t=' + encodeURIComponent(c.tournamentId);
+		els.bannerName.textContent = c.name;
+		els.bannerRound.textContent = c.round || '';
+		els.banner.setAttribute('aria-label', [c.name, c.round, 'open the draw'].filter(Boolean).join(', '));
+		els.banner.hidden = false;
+	}
+
 	async function loadMatch(id) {
 		const { data: m, error } = await supabaseClient
 			.from('tbl_matches')
@@ -3330,9 +3400,11 @@
 			players,
 			match: {
 				id: m.id,
-				// There is no league or tournament layer yet, so every match in the
-				// database is a social one. This becomes a real lookup later.
-				context: { kind: 'social', name: null, season: null, round: null },
+				// The tournament it is part of, if any (UV, 5 Nov: the banner
+				// under the nav); otherwise social. Leagues are not looked up
+				// yet: a league night is a team match, which this page does
+				// not open.
+				context: await matchContext(m.id),
 				sanctioned: m.sanctioned,
 				venue,
 				// The tables table does not exist yet. Named plainly rather than
