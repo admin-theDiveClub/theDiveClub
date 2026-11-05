@@ -1419,3 +1419,9 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV (second look, same day):* the blurred cover over a tab hid what was under it rather than letting the content fade in after loading; on tabs, no blur, since nothing should show until loading has completed. Applies to every tabbed page (the league season and the tournament share the cover).
 *So:* while a tab is covered its content is invisible and only the wordmark and the diver show; when it is ready the content fades in as they fade out. The page's own loading screen is unchanged. `docs/systems/dots.md` §9, "A screen over one tab".
 *Touches:* `stylesheets/loader.css`, `scripts/loader.js`
+
+## 2026-11-05 — Every league, tournament, match and frame is cleared; testing starts again from nothing
+
+*Decided by UV:* no real match or frame has been recorded yet, so every league, tournament, match and frame goes, with the records that belong to them; also the deleted-match records and the test season (T_SeasonName). UV deletes the league and team pictures left in storage from the dashboard. STATUS §1's steps that name the cleared data are marked "recreate to retest".
+*Claude's, for UV to judge:* a migration rather than an SQL editor script (CLAUDE.md: writes to production go through migrations); `TRUNCATE` rather than `DELETE`, because the frame guards refuse deleting an agreed card's frames and the edit log would write a row for each one; no `CASCADE`, so a table missed from the list makes the whole statement refuse rather than empty something unseen; every notification goes (all 111 were about a match, tournament or league); players (the 19 dummies too), accounts, identifiers, credits, venues, push subscriptions, notification settings, the owner board and the role types are kept.
+*Touches:* migration `20261105133615_clear_test_competitions.sql`
