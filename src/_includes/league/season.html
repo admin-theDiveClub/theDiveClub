@@ -64,6 +64,20 @@
 		</section>
 
 		{% comment %}
+			Captains only (UV, 5 Nov). Players who asked on the join page to
+			join this captain's team: Take puts them on it (the same claim as
+			below), Decline turns them down.
+		{% endcomment %}
+		<section class="ls-pool" id="ask-panel" hidden>
+			<div class="ls-pool-head">
+				<h2>Asked to join</h2>
+				<span class="badge live" id="ask-count" hidden></span>
+			</div>
+			<p class="ls-pool-hint" id="ask-hint"></p>
+			<div class="ls-waiting" id="ask-list"></div>
+		</section>
+
+		{% comment %}
 			Captains only. Players who have confirmed and are on no team, ready to
 			be claimed. A player who has not confirmed is not offered: a team can
 			only take someone who has said they are playing.

@@ -17,6 +17,11 @@
 // for the director to confirm, and on "self_confirm" they are in straight
 // away. The function decides and says which, so this page never has to.
 //
+// And asking to join a team (UV, 5 Nov; 20261105153021): a player in the
+// league and on no team gets a ring on each team card, tdc_request_team to
+// ask, tdc_cancel_team_request to take it back. The team's captain takes
+// them, or declines, on the season page's Players tab.
+//
 // Needs: tdc.js, match-settings.js.
 
 (() => {
@@ -31,7 +36,8 @@
 		interestBtn: el('interest-btn'), seasonLink: el('season-link'),
 		numbers: el('l-numbers'), notesBox: el('notes-box'), notes: el('l-notes'),
 		rules: el('l-rules'), nights: el('l-nights'), nightCount: el('night-count'),
-		teams: el('l-teams'), teamCount: el('team-count'), officials: el('l-officials'),
+		teams: el('l-teams'), teamCount: el('team-count'), teamsHint: el('teams-hint'),
+		officials: el('l-officials'),
 		status: el('page-status')
 	};
 
@@ -50,6 +56,9 @@
 	let teamPictures = new Map();
 	let rosters = new Map();
 	let officials = [];
+	let myPlayerId = null;
+	let asked = new Set();      // the teams I have asked to join (tdc_team_join_requests)
+	const ringsDrawn = new Set(); // a team's ring draws its icon in once, not on every re-read
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -133,15 +142,16 @@
 			return false;
 		}
 
-		const [si, row, fx, tm, pics, off] = await Promise.all([
+		const [si, row, fx, tm, pics, off, req] = await Promise.all([
 			supabaseClient.rpc('tdc_league_season_info', { p_league_season_id: seasonId }),
 			supabaseClient.from('tbl_league_seasons').select('status, max_reserves, entry_mode, tbl_leagues(picture_path)').eq('id', seasonId).maybeSingle(),
 			supabaseClient.rpc('tdc_league_fixtures', { p_league_season_id: seasonId }),
 			supabaseClient.rpc('tdc_league_season_teams', { p_league_season_id: seasonId }),
 			supabaseClient.from('tbl_teams').select('id, picture_path').eq('league_season_id', seasonId),
-			supabaseClient.rpc('tdc_league_officials', { p_league_season_id: seasonId })
+			supabaseClient.rpc('tdc_league_officials', { p_league_season_id: seasonId }),
+			supabaseClient.rpc('tdc_team_join_requests', { p_league_season_id: seasonId })
 		]);
-		for (const r of [si, row, fx, tm, pics, off]) {
+		for (const r of [si, row, fx, tm, pics, off, req]) {
 			if (r.error) { TDC.showSupabaseError(AREA, r.error, els.status); return false; }
 		}
 		season = (si.data || [])[0] || null;
@@ -150,6 +160,7 @@
 		teams = tm.data || [];
 		teamPictures = new Map((pics.data || []).map((p) => [p.id, p.picture_path]));
 		officials = off.data || [];
+		asked = new Set((req.data || []).filter((r) => r.is_mine).map((r) => r.team_id));
 
 		// Every team's players, so a newcomer sees who they would be playing.
 		const lists = await Promise.all(teams.map((t) =>
@@ -431,22 +442,77 @@
 
 	// ─── The teams ───
 	// Each with its picture, captain, places taken and every player's face.
+	// The card opens the team on the season page (its name is the link,
+	// stretched over the card); the faces and the ring sit above that link.
+
+	// Whether I may ask to join a team (UV, 5 Nov): in the league, active,
+	// and on no team. The database says the same (tdc_request_team).
+	function onATeam() {
+		for (const roster of rosters.values()) {
+			if (roster.some((r) => r.player_id === myPlayerId && r.status !== 'withdrawn')) return true;
+		}
+		return false;
+	}
+	const mayAsk = () => !!myPlayerId && info.my_status === 'active' && !onATeam();
+
+	// The ring: a person with a plus to ask, a tick in a green ring once
+	// asked; tapped again, the request is taken back. A full team's ring is
+	// greyed unless already asked.
+	function askRing(t) {
+		const id = t.team_id;
+		const isAsked = asked.has(id);
+		const full = (t.active_players || 0) >= (t.team_limit || 0);
+		const b = node('button', 'lj-ask' + (isAsked ? ' is-asked' : ''));
+		b.type = 'button';
+		b.dataset.ask = id;
+		b.dataset.name = t.name;
+		b.dataset.asked = isAsked ? '1' : '0';
+		const label = isAsked ? 'Asked to join ' + t.name + '. Tap to take it back'
+			: full ? t.name + ' is full'
+			: 'Ask to join ' + t.name;
+		b.title = label;
+		b.setAttribute('aria-label', label);
+		b.disabled = full && !isAsked;
+		const icon = isAsked ? 'tick' : 'follow';
+		const face = node('span', 'tdc-ring');
+		face.innerHTML = TDCRing.svg();
+		b.append(face);
+		try {
+			const ring = new TDCRing.RingStatus(face, {
+				icons: [icon],
+				labels: { [icon]: label, empty: label },
+				initial: ringsDrawn.has(id + icon) ? icon : 'empty'
+			});
+			if (!ringsDrawn.has(id + icon)) { ringsDrawn.add(id + icon); ring.drawTo(icon); }
+		} catch (err) {
+			TDC.error(AREA, 'the ring to ask to join ' + t.name + ' could not be drawn.', err, els.status);
+		}
+		return b;
+	}
+
 	function renderTeams() {
 		els.teamCount.hidden = !teams.length;
 		els.teamCount.textContent = String(teams.length);
+		const ask = mayAsk();
+		els.teamsHint.hidden = !ask || !teams.length;
+		els.teamsHint.textContent = asked.size
+			? 'The captain of a team you asked decides. Tap its ring again to take it back.'
+			: 'You are on no team yet. Tap a team’s ring to ask to join it; its captain decides.';
 
 		if (!teams.length) {
 			els.teams.replaceChildren(node('div', 'empty', 'No teams yet. Whoever runs the league makes them.'));
 			return;
 		}
 		els.teams.replaceChildren(...teams.map((t) => {
-			const card = node('a', 'lj-team');
-			card.href = '/leagues/season/?s=' + encodeURIComponent(seasonId) + '&team=' + encodeURIComponent(t.team_id);
+			const card = node('div', 'lj-team');
+			if (asked.has(t.team_id)) card.classList.add('is-asked');
 			const head = node('span', 'lj-team-head');
 			const pic = node('span', 'team-pic');
 			pic.append(TDC.teamPic(teamPictures.get(t.team_id)));
 			const names = node('span', 'lj-team-names');
-			names.append(node('span', 'lj-team-name', t.name));
+			const link = node('a', 'lj-team-name', t.name);
+			link.href = '/leagues/season/?s=' + encodeURIComponent(seasonId) + '&team=' + encodeURIComponent(t.team_id);
+			names.append(link);
 			if ((t.captains || []).length) names.append(node('span', 'lj-team-sub', 'Captain: ' + t.captains.join(', ')));
 			head.append(pic, names);
 			const places = node('span', 'lj-team-places');
@@ -454,6 +520,7 @@
 				node('span', 'lj-team-places-of', 'of ' + (t.team_limit || 0)));
 			places.title = (t.active_players || 0) + ' of ' + (t.team_limit || 0) + ' places taken';
 			head.append(places);
+			if (ask) head.append(askRing(t));
 			card.append(head);
 
 			const roster = (rosters.get(t.team_id) || []).filter((r) => r.status !== 'withdrawn');
@@ -486,6 +553,25 @@
 		}), (data) => data === 'active' ? 'You are in.' : 'Your name is down.', { single: true });
 	});
 
+	// Asking to join a team, or taking it back: the dots on the ring, which
+	// they follow through the re-read to the ring drawn in its place.
+	els.teams.addEventListener('click', (e) => {
+		const b = e.target.closest('button[data-ask]');
+		if (!b || b.disabled) return;
+		const teamId = b.dataset.ask;
+		const name = b.dataset.name;
+		const ring = () => els.teams.querySelector('button[data-ask="' + teamId + '"]');
+		if (b.dataset.asked === '1') {
+			joinWriter.write('Taking back the request to ' + name, () => supabaseClient.rpc('tdc_cancel_team_request', {
+				p_team_id: teamId
+			}), () => 'Request to join ' + name + ' taken back.', { single: 'ask|' + teamId, dots: b, follow: ring });
+		} else {
+			joinWriter.write('Asking to join ' + name, () => supabaseClient.rpc('tdc_request_team', {
+				p_team_id: teamId
+			}), () => 'Asked to join ' + name + '. Its captain decides.', { single: 'ask|' + teamId, dots: b, follow: ring });
+		}
+	});
+
 	TDCLoader.hold((async () => {
 		const session = await TDC.requireSession(AREA);
 		if (!session) return;
@@ -494,6 +580,11 @@
 			TDC.error(AREA, 'no league in the address. Check the link you were sent.', null, els.status);
 			return;
 		}
+		// Which faces on the teams are mine, so the rings show only to a
+		// player on no team.
+		const me = await TDC.getMyPlayer(AREA, session.user.id, els.status);
+		if (!me) return;
+		myPlayerId = me.id;
 		await load();
 	})(), 'Join a league');
 })();

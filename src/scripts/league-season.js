@@ -13,6 +13,8 @@
 //     can say they are not playing after all.
 //   • The league. Teams with their rosters (each player's picture, name and
 //     a link to their profile, still to be built), and who runs it.
+//   • Asked to join (UV, 5 Nov), if you captain a team: players who asked on
+//     the join page to join it. Take is the same claim as below; Decline.
 //   • Your team, if you captain one. Claim a player who has confirmed and is on
 //     no team, release one, name another captain, rename the team.
 //
@@ -38,6 +40,7 @@ TDCLeagueNav.panel('season', () => {
 		jumbo: el('jumbo'), jumboPic: el('jumbo-pic'), jumboStatus: el('jumbo-status'), jumboFacts: el('jumbo-facts'),
 		stats: el('stats'),
 		poolPanel: el('pool-panel'), poolHint: el('pool-hint'), poolList: el('pool-list'),
+		askPanel: el('ask-panel'), askCount: el('ask-count'), askHint: el('ask-hint'), askList: el('ask-list'),
 		teamCount: el('team-count'), teamList: el('team-list'), teamEmpty: el('team-empty'),
 		officialList: el('official-list'),
 		status: el('page-status'),
@@ -62,6 +65,7 @@ TDCLeagueNav.panel('season', () => {
 	const openTeams = new Set();
 	let officials = [];
 	let pool = [];
+	let requests = [];          // players asking to join a team I captain (tdc_team_join_requests)
 	let fixtures = [];
 	let seasonRow = null;       // status, reserves, entries: the season's own row
 	let readiness = null;       // only for the people running it and its captains
@@ -500,6 +504,83 @@ TDCLeagueNav.panel('season', () => {
 		}));
 	});
 
+	// ─── Asked to join (UV, 5 Nov) ───
+	// Players who asked on the join page to join my team. The function gives
+	// a captain only their own team's (the director every team's, but they
+	// have Run it). Take is the claim above; Decline turns them down.
+	async function loadRequests() {
+		if (!controlsTeam()) {
+			requests = [];
+			renderRequests();
+			return true;
+		}
+		const { data, error } = await supabaseClient.rpc('tdc_team_join_requests', {
+			p_league_season_id: seasonId
+		});
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
+		requests = (data || []).filter((r) => r.team_id === mine.my_team_id);
+		renderRequests();
+		return true;
+	}
+
+	// How long ago, in words a card can hold.
+	function ago(ts) {
+		const mins = Math.max(0, Math.round((Date.now() - new Date(ts).getTime()) / 60000));
+		if (mins < 1) return 'just now';
+		if (mins < 60) return mins + ' min ago';
+		const hours = Math.round(mins / 60);
+		if (hours < 24) return plural(hours, 'hour') + ' ago';
+		return plural(Math.round(hours / 24), 'day') + ' ago';
+	}
+
+	function renderRequests() {
+		els.askPanel.hidden = !controlsTeam() || !requests.length;
+		if (els.askPanel.hidden) return;
+
+		const full = isFull(myTeam());
+		els.askCount.hidden = false;
+		els.askCount.textContent = String(requests.length);
+		els.askHint.classList.toggle('is-full', full);
+		els.askHint.textContent = full
+			? mine.my_team_name + ' is full. Mark somebody away to take another.'
+			: 'They asked to join ' + mine.my_team_name + '. Taking one puts them on it.';
+
+		els.askList.replaceChildren(...requests.map((r) => {
+			const card = node('div', 'ls-wait ls-ask');
+			const actions = node('div', 'ls-ask-actions');
+			const take = node('button', 'ls-btn ls-btn-go ls-btn-sm', 'Take');
+			take.type = 'button';
+			take.dataset.action = 'take';
+			take.dataset.player = r.player_id;
+			take.dataset.name = r.display_name;
+			take.disabled = full;
+			const decline = node('button', 'ls-btn ls-btn-sm', 'Decline');
+			decline.type = 'button';
+			decline.dataset.action = 'decline';
+			decline.dataset.player = r.player_id;
+			decline.dataset.name = r.display_name;
+			actions.append(take, decline);
+			card.append(personLink(r.player_id, r.display_name, r.avatar_path, 'Asked ' + ago(r.created_at)), actions);
+			return card;
+		}));
+	}
+
+	els.askList.addEventListener('click', (e) => {
+		const button = e.target.closest('button[data-action]');
+		if (!button || !mine || !mine.my_team_id) return;
+		const name = button.dataset.name;
+		if (button.dataset.action === 'take') {
+			write('Taking ' + name, () => supabaseClient.rpc('tdc_team_claim_player', {
+				p_team_id: mine.my_team_id, p_player_id: button.dataset.player
+			}), () => name + ' is on ' + mine.my_team_name + '.');
+		} else if (button.dataset.action === 'decline') {
+			if (!confirm('Turn down ' + name + '?\n\nTheir request to join ' + mine.my_team_name + ' goes. They can ask again.')) return;
+			write('Declining ' + name, () => supabaseClient.rpc('tdc_decline_team_request', {
+				p_team_id: mine.my_team_id, p_player_id: button.dataset.player
+			}), () => 'Request from ' + name + ' declined.');
+		}
+	});
+
 	// ─── Teams ───
 	async function loadTeams() {
 		const { data, error } = await supabaseClient.rpc('tdc_league_season_teams', {
@@ -824,13 +905,15 @@ TDCLeagueNav.panel('season', () => {
 	}
 
 	function renderViews() {
-		const players = !els.mePanel.hidden || !els.poolPanel.hidden;
+		const players = !els.mePanel.hidden || !els.poolPanel.hidden || !els.askPanel.hidden;
 		els.views.hidden = !players;
 		if (!viewsDrawn) {
 			viewsDrawn = true;
 			const mustConfirm = mine && mine.my_status === 'active' && !mine.confirmed_at;
+			// A captain's "asked to join" notice links here with &view=players.
+			const askedFor = new URLSearchParams(location.search).get('view') === 'players';
 			if (cameForTeam) view = 'teams';
-			else if (mustConfirm) view = 'players';
+			else if (mustConfirm || askedFor) view = 'players';
 		}
 		showView(view, false);
 	}
@@ -854,6 +937,7 @@ TDCLeagueNav.panel('season', () => {
 		results.push(await loadTeams());
 		renderMine();
 		results.push(await loadPool());
+		results.push(await loadRequests());
 		renderViews();
 		results.push(await loadReadiness());
 		results.push(await loadOfficials());

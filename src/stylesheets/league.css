@@ -1002,6 +1002,10 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 }
 .ls-wait .person { min-width: 0; }
 .ls-wait .ls-btn { flex: none; }
+/* A request to join (UV, 5 Nov): Take and Decline side by side, dropping
+ * under the name when the card is narrow. */
+.ls-ask { flex-wrap: wrap; row-gap: var(--space-2); }
+.ls-ask-actions { display: flex; gap: var(--space-2); margin-left: auto; }
 
 /* ── A league's own picture (24 Oct) ──
  * In the banner, a search tile and the settings page's preview: the round

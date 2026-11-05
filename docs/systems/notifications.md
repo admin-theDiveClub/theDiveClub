@@ -17,6 +17,11 @@
 - **An official changed your frame** — hooked into the existing `private.tdc_frame_edit_log` trigger. **Scoped to an editor who is not a player in the match.** The trigger fires on every frame write, so without that test a player scoring their own match would message their opponent once per frame. Verified: ordinary play produces zero notifications.
   - It **collapses** through `private.tdc_notify_collapsing` — an unseen one of the same kind about the same match is refreshed rather than joined by a second, so a TD correcting five frames leaves one notice showing the latest. Once seen, the next change starts a fresh one.
 
+### Asking to join a team (`20261105153021`)
+
+- **`team_join_request`** (category `league`): a player asked to join a team; every active captain of that team is told, linked to the season page's Players tab. Written by `tdc_request_team`, once per request (asking again writes nothing).
+- **`team_join_taken`**: a team the player asked took them; written by the trigger on the entrant's team, so a claim by the captain or a placing by the director both send it. Not sent to a player put on a team they never asked. See `docs/systems/leagues.md`, "Asking to join a team".
+
 ### Sending the push (`20261022120000`, `supabase/functions/notify-push`)
 
 - **A sweep, not a trigger.** The rows are written inside database functions and triggers, so the page that caused them does not know how many were written or to whom and cannot compose them. A trigger calling out over HTTP would need `pg_net`, and **the project has neither `pg_net` nor `pg_cron`** (checked 22 Oct). Turning them on is a decision of its own, and this design needs neither.
