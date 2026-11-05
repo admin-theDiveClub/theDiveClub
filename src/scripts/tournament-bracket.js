@@ -25,6 +25,8 @@
 		progression: el('progression'), createMatches: el('create-matches'),
 		thirdPlace: el('third-place'), generate: el('generate'),
 		bracket: el('bracket'), actions: el('draw-actions'),
+		viewRow: el('view-row'), fullNames: el('full-names'),
+		fontSize: el('font-size'), zoom: el('zoom'),
 		resolve: el('resolve'), redraw: el('redraw'),
 		status: el('page-status'), entrantsLink: el('entrants-link'),
 		statusRow: el('status-row'), statusSelect: el('t-status'), statusHint: el('status-hint'),
@@ -68,6 +70,47 @@
 	const AWARD = {
 		bye: 'Bye', walkover: 'Walkover', withdrawal: 'Withdrew', decision: 'Awarded'
 	};
+	// A fixture's state, as the strip down the left of its card, in the
+	// league fixtures' and the profile's colours (UV, 5 Nov; .fx-state-* in
+	// league.css). An award (walkover, withdrawal, decision) is settled, so
+	// it reads Finished; a bye has no strip, as a league bye has none.
+	const STATE = {
+		none: 'Not started', scheduled: 'Match made', in_progress: 'Playing',
+		complete: 'Finished', abandoned: 'Abandoned'
+	};
+	const stateOf = (f) => f.advance_reason === 'bye' ? 'bye'
+		: f.match_id ? f.match_status
+		: f.advanced_entrant_id ? 'complete' : 'none';
+	// Display name (the default) or full name, per device (UV, 5 Nov: the
+	// standings' Full names switch). A player with neither name keeps theirs.
+	const NAMES_KEY = 'tdc.draw.names';
+	let fullNames = false;
+	try { fullNames = localStorage.getItem(NAMES_KEY) === 'full'; } catch (err) { /* private window: display names */ }
+	els.fullNames.checked = fullNames;
+	const nameOf = (f, which) => which === 'home'
+		? (fullNames && f.home_full_name) || f.home_name
+		: (fullNames && f.away_full_name) || f.away_name;
+	// How the draw is laid out, per device (UV, 5 Nov). The toggles: flow,
+	// linear or from the outside in (the final in the middle); rounds, as
+	// columns (side by side) or rows (one under another); card, a card's
+	// players stacked or across (side by side, as a league fixture). And two
+	// percentages: font, the size of the draw's text (70–150), and zoom, the
+	// size of the whole draw (50–150), both in steps of 10.
+	const VIEW_KEY = 'tdc.draw.view';
+	const VIEW_DEFAULT = { flow: 'linear', rounds: 'columns', card: 'stacked', font: 100, zoom: 100 };
+	const RANGE = { font: [70, 150], zoom: [50, 150] };
+	let view = Object.assign({}, VIEW_DEFAULT);
+	try { Object.assign(view, JSON.parse(localStorage.getItem(VIEW_KEY) || '{}')); } catch (err) { /* private window or unreadable: the defaults */ }
+	for (const k of ['flow', 'rounds', 'card']) {
+		if (!els.viewRow.querySelector(`[data-view-key="${k}"][data-view="${view[k]}"]`)) view[k] = VIEW_DEFAULT[k];
+	}
+	// A percentage kept on its step and inside its range.
+	const pct = (k, v) => {
+		const n = Math.round(Number(v) / 10) * 10;
+		return Number.isFinite(n) ? Math.min(RANGE[k][1], Math.max(RANGE[k][0], n)) : VIEW_DEFAULT[k];
+	};
+	view.font = pct('font', view.font);
+	view.zoom = pct('zoom', view.zoom);
 	const STATUS = {
 		draft: 'Draft', open: 'Open for entries', in_progress: 'Running',
 		complete: 'Finished', cancelled: 'Cancelled'
@@ -136,8 +179,28 @@
 	}
 
 	// ─── A side of a fixture ───
+	// A player's picture, from the public player-avatars bucket, or their
+	// initials in a circle, as on the standings (UV, 5 Nov). A slot with
+	// nobody in it has an empty circle, so the names still line up.
+	function avatar(path, name) {
+		if (!name) return node('span', 'person-pic bracket-pic-empty');
+		const box = node('span', 'person-pic');
+		const url = TDC.pictureUrl('player-avatars', path);
+		if (url) {
+			const img = document.createElement('img');
+			img.src = url;
+			img.alt = '';
+			img.loading = 'lazy';
+			box.append(img);
+		} else {
+			box.textContent = name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+		}
+		return box;
+	}
+
 	function side(f, which) {
-		const name = which === 'home' ? f.home_name : f.away_name;
+		const name = nameOf(f, which);
+		const pic = which === 'home' ? f.home_avatar : f.away_avatar;
 		const seed = which === 'home' ? f.home_seed : f.away_seed;
 		const id = which === 'home' ? f.home_entrant_id : f.away_entrant_id;
 		const frames = which === 'home' ? f.home_frames : f.away_frames;
@@ -155,6 +218,8 @@
 		// player. A 1fr grid track cannot be squeezed to nothing by what sits
 		// beside it, so the name is safe whatever else the row grows.
 		const swapCell = node('div', 'bracket-swap-cell');
+		const picCell = node('div', 'bracket-pic-cell');
+		picCell.append(avatar(pic, name));
 		const nameCell = node('div', 'bracket-name-cell');
 		const scoreCell = node('div', 'bracket-score-cell');
 
@@ -174,10 +239,12 @@
 			label = (source === 'winner_of' ? 'Winner' : 'Loser') + ' of ' + from;
 			pending = true;
 		} else {
-			// Only a slot drawn as a bye says so. An empty one that is not a
-			// bye (an empty draw, or a slot emptied by hand) is waiting for
-			// the TD to put somebody in (UV, 5 Nov).
-			label = f.advance_reason === 'bye' ? 'Bye' : 'Open';
+			// An empty slot that is not a bye (an empty draw, or a slot
+			// emptied by hand) is waiting for the TD to put somebody in (UV,
+			// 5 Nov). A bye's empty slot says nothing: only the player going
+			// through is shown (UV, 5 Nov), and only a director, who can fill
+			// it, sees the slot at all (fixture).
+			label = f.advance_reason === 'bye' ? '' : 'Open';
 			pending = true;
 		}
 
@@ -226,7 +293,7 @@
 		// because a slot is what a source feeds — not the match.
 		row.dataset.side = which;
 
-		row.append(swapCell, nameCell, scoreCell);
+		row.append(swapCell, picCell, nameCell, scoreCell);
 		return row;
 	}
 
@@ -234,14 +301,56 @@
 	function fixture(f) {
 		const box = node('div', 'bracket-fixture');
 		box.dataset.fixture = f.fixture_id;
+
+		// The state as a strip down the left (UV, 5 Nov), as on the league
+		// fixtures and the profile.
+		const state = stateOf(f);
+		const strip = node('span', 'bracket-state fx-state-' + state);
+		if (state !== 'bye') {
+			strip.title = STATE[state] || state;
+			strip.append(node('span', 'visually-hidden', strip.title));
+		}
+		const body = node('div', 'bracket-body');
+		box.append(strip, body);
+
 		// UV, 21 Oct: "Instead of just showing 1-2 or 1-1 on matches in the
 		// tournament view, show Round 1 - Match 1". The short form was the
 		// schema's way of naming a fixture, not a person's.
-		box.append(node('div', 'bracket-no', fixtureName(f.bracket, f.round, f.position)));
-		box.append(side(f, 'home'), side(f, 'away'));
+		body.append(node('div', 'bracket-no', fixtureName(f.bracket, f.round, f.position)));
+
+		// A bye shows only the player going through (UV, 5 Nov). A director
+		// still gets the empty slot, its swap icon alone, because that is how
+		// a late arrival is put into it.
+		// The two sides in one box, a colon between them that shows only
+		// when they sit side by side (bracket.css, data-card="across").
+		const bye = f.advance_reason === 'bye';
+		const sides = node('div', 'bracket-sides' + (f.match_id ? ' scored' : ''));
+		for (const which of ['home', 'away']) {
+			const empty = !(which === 'home' ? f.home_entrant_id : f.away_entrant_id);
+			if (bye && empty && readOnly) continue;
+			if (which === 'away' && sides.childElementCount) sides.append(node('span', 'bracket-colon', ':'));
+			sides.append(side(f, which));
+		}
+		body.append(sides);
+
+		// The way into the match, for everybody: the card itself (UV, 5 Nov),
+		// anywhere on it but its buttons and names (openCard). It was an
+		// "Open match" button until then, and inside the TD's controls before
+		// 20 Oct, which left a player looking at their own final with no way
+		// to open it. The match page decides for itself what a visitor may do.
+		if (f.match_id) {
+			box.classList.add('bracket-link');
+			box.dataset.match = f.match_id;
+			box.tabIndex = 0;
+			box.setAttribute('role', 'link');
+			box.setAttribute('aria-label', 'Open the match: '
+				+ (nameOf(f, 'home') || '?') + ' ' + (f.home_frames ?? 0) + ' : '
+				+ (f.away_frames ?? 0) + ' ' + (nameOf(f, 'away') || '?'));
+		}
 
 		const tags = node('div', 'bracket-tags');
-		if (f.advance_reason) {
+		// A bye says nothing (UV, 5 Nov): the lone player is the whole story.
+		if (f.advance_reason && !bye) {
 			tags.append(node('span', 'badge pending', AWARD[f.advance_reason] || f.advance_reason));
 		} else if (f.match_id) {
 			const card = CARD[f.card_state];
@@ -259,27 +368,76 @@
 				tags.append(node('span', 'badge warn', 'Level, needs a tiebreak'));
 			}
 		}
-		if (tags.childElementCount) box.append(tags);
-
-		// The way into the match, for everybody. It was inside the TD's
-		// controls until 20 Oct, which meant a player looking at the draw
-		// could see their own final and had no way to open it — they had to
-		// go round through /matches/. The match page decides for itself what
-		// a visitor may do there.
-		if (f.match_id) {
-			const open = node('a', 'btn btn-secondary btn-sm', 'Open match');
-			open.href = '/match/?id=' + encodeURIComponent(f.match_id);
-			const row = node('div', 'bracket-actions');
-			row.append(open);
-			box.append(row);
-		}
+		if (tags.childElementCount) body.append(tags);
 
 		if (!readOnly) {
-			if (swapping && swapping.fixtureId === f.fixture_id) box.append(swapForm(f));
-			else if (entering === f.fixture_id) box.append(scoreForm(f));
-			else box.append(controls(f));
+			if (swapping && swapping.fixtureId === f.fixture_id) body.append(swapForm(f));
+			else if (entering === f.fixture_id) body.append(scoreForm(f));
+			else body.append(controls(f));
 		}
 		return box;
+	}
+
+	// A card with a match opens it (UV, 5 Nov): a click anywhere on it but
+	// its buttons, names and forms, or Enter while it has focus.
+	function openCard(e) {
+		if (e.target.closest('button, a, input, select, textarea, label, .bracket-entry')) return;
+		const box = e.target.closest('.bracket-fixture[data-match]');
+		if (!box) return;
+		location.href = '/match/?id=' + encodeURIComponent(box.dataset.match);
+	}
+	els.bracket.addEventListener('click', openCard);
+	els.bracket.addEventListener('keydown', (e) => {
+		if (e.key === 'Enter' && e.target.matches('.bracket-fixture[data-match]')) openCard(e);
+	});
+
+	els.fullNames.addEventListener('change', () => {
+		fullNames = els.fullNames.checked;
+		try { localStorage.setItem(NAMES_KEY, fullNames ? 'full' : 'display'); } catch (err) { /* kept for this visit only */ }
+		render();
+	});
+
+	// The view toggles: each press sets its key, is kept, and the bracket is
+	// drawn again, arrows included (they are measured from the new layout).
+	function applyView() {
+		for (const b of els.viewRow.querySelectorAll('[data-view-key]')) {
+			b.setAttribute('aria-pressed', String(view[b.dataset.viewKey] === b.dataset.view));
+		}
+		els.bracket.dataset.flow = view.flow;
+		els.bracket.dataset.rounds = view.rounds;
+		els.bracket.dataset.card = view.card;
+		applySizes();
+	}
+	// Font size and zoom change no markup, so they set two properties and
+	// the arrows are measured again; nothing is drawn afresh.
+	function applySizes() {
+		els.bracket.style.setProperty('--bracket-font', String(view.font / 100));
+		els.bracket.style.setProperty('--bracket-zoom', String(view.zoom / 100));
+		if (String(els.fontSize.value) !== String(view.font)) els.fontSize.value = view.font;
+		if (String(els.zoom.value) !== String(view.zoom)) els.zoom.value = view.zoom;
+	}
+	const keepView = () => {
+		try { localStorage.setItem(VIEW_KEY, JSON.stringify(view)); } catch (err) { /* kept for this visit only */ }
+	};
+	els.viewRow.addEventListener('click', (e) => {
+		const b = e.target.closest('[data-view-key]');
+		if (!b || view[b.dataset.viewKey] === b.dataset.view) return;
+		view[b.dataset.viewKey] = b.dataset.view;
+		keepView();
+		render();
+	});
+	for (const [input, k] of [[els.fontSize, 'font'], [els.zoom, 'zoom']]) {
+		const take = () => {
+			if (input.value === '') return;   // mid-typing
+			const v = pct(k, input.value);
+			if (v === view[k]) return;
+			view[k] = v;
+			keepView();
+			applySizes();
+			redrawArrowsSoon();
+		};
+		input.addEventListener('input', take);
+		input.addEventListener('change', () => { take(); applySizes(); });
 	}
 
 	// ─── What the TD can do to a fixture ───
@@ -601,6 +759,10 @@
 	function render() {
 		els.setup.hidden = !!fixtures.length || readOnly;
 		els.actions.hidden = !fixtures.length || readOnly;
+		els.viewRow.hidden = !fixtures.length;
+		applyView();
+		// A read-only viewer's sides have no swap column (bracket.css).
+		els.bracket.classList.toggle('bracket-ro', readOnly);
 		// Re-asserted here because on first load loadTournament runs before
 		// loadDraw, so it decided on an empty fixture list.
 		if (tournament) renderRunSettings(tournament);
@@ -616,19 +778,12 @@
 		const main = fixtures.filter((f) => f.bracket === 'main');
 		const lastRound = Math.max(...main.map((f) => f.round));
 		const names = roundNames(main, lastRound);
-		const columns = [];
+		const third = fixtures.filter((f) => f.bracket === 'third_place');
 
-		// 1..lastRound, not the rounds that happen to have fixtures.
-		// tdc_insert_round (20261022160000) renumbers and leaves a gap, and
-		// the gap *is* the empty round — there is no rounds table for it to be
-		// a row in. Skipping empty rounds here would make an inserted round
-		// invisible and the one after it look like it moved for no reason.
-		for (let r = 1; r <= lastRound; r++) {
-			const inRound = main.filter((f) => f.round === r);
-
-			// The border before this round, where a new one goes in.
-			if (!readOnly) columns.push(roundBorder(r));
-
+		// A round's column (a row when the rounds run downwards): its heading,
+		// then its cards in a box of their own, so the rows view can lay them
+		// across while the heading stays above.
+		function roundColumn(r, list, { addMatch, empty } = {}) {
 			const col = node('div', 'bracket-round');
 			col.dataset.round = String(r);
 			col.dataset.bracket = 'main';
@@ -637,21 +792,17 @@
 			if (!readOnly) head.append(roundRulesButton('main', r));
 			col.append(head);
 
-			if (inRound.length) col.append(...inRound.map(fixture));
-			else col.append(node('div', 'bracket-round-empty', 'Empty round'));
-
-			if (!readOnly) col.append(addMatchButton('main', r, inRound.length === 0));
-			columns.push(col);
+			const cards = node('div', 'bracket-round-cards');
+			if (list.length) cards.append(...list.map(fixture));
+			else if (empty) cards.append(node('div', 'bracket-round-empty', 'Empty round'));
+			if (addMatch && !readOnly) cards.append(addMatchButton('main', r, list.length === 0));
+			col.append(cards);
+			return col;
 		}
-
-		// A round on the end moves nothing, so it is offered as a plain add
-		// rather than an insert.
-		if (!readOnly) columns.push(addRoundColumn(lastRound + 1));
 
 		// Third place sits beside the final rather than after it, because that
 		// is where it is played.
-		const third = fixtures.filter((f) => f.bracket === 'third_place');
-		if (third.length) {
+		function thirdColumn() {
 			const col = node('div', 'bracket-round');
 			const tpHead = node('h2', 'bracket-round-name', 'Third place');
 			// Was rest[0] — an identifier that does not exist in this scope, so
@@ -660,20 +811,120 @@
 			// round-rules button and caught while building the arrows.
 			if (!readOnly) tpHead.append(roundRulesButton(third[0].bracket, third[0].round));
 			col.append(tpHead);
-			col.append(...third.map(fixture));
-			columns.push(col);
+			const cards = node('div', 'bracket-round-cards');
+			cards.append(...third.map(fixture));
+			col.append(cards);
+			return col;
 		}
+
+		const columns = [];
+		if (view.flow === 'outside') {
+			// From the outside in (UV, 5 Nov): each half of the draw at its
+			// own end, round 1 outermost, the final and third place in the
+			// middle. Which half a match is in follows where it leads (UV:
+			// "follow the arrows"), worked out in halves().
+			//
+			// Editing the draw's shape (a round put in, a match added) is
+			// offered on the left half only: an inserted round is one round,
+			// and two "+" for it would be two ways to say the same thing. A
+			// round on the end belongs to the linear view.
+			const half = halves(main, lastRound);
+			const on = (r, s) => main.filter((f) => f.round === r && half.get(f.fixture_id) === s);
+			for (let r = 1; r < lastRound; r++) {
+				const left = on(r, 'L');
+				const inRound = main.some((f) => f.round === r);
+				if (!readOnly) columns.push(roundBorder(r));
+				if (left.length || !inRound) columns.push(roundColumn(r, left, { addMatch: true, empty: true }));
+			}
+			if (!readOnly) columns.push(roundBorder(lastRound));
+			const mid = roundColumn(lastRound, on(lastRound, 'M'), { addMatch: true, empty: true });
+			if (third.length) {
+				// The playoff under the final, in the same middle column.
+				const tp = thirdColumn();
+				mid.append(...tp.children);
+			}
+			mid.classList.add('bracket-round-mid');
+			columns.push(mid);
+			for (let r = lastRound - 1; r >= 1; r--) {
+				const right = on(r, 'R');
+				if (right.length) columns.push(roundColumn(r, right));
+			}
+		} else {
+			// 1..lastRound, not the rounds that happen to have fixtures.
+			// tdc_insert_round (20261022160000) renumbers and leaves a gap,
+			// and the gap *is* the empty round — there is no rounds table for
+			// it to be a row in. Skipping empty rounds here would make an
+			// inserted round invisible and the one after it look like it
+			// moved for no reason.
+			for (let r = 1; r <= lastRound; r++) {
+				// The border before this round, where a new one goes in.
+				if (!readOnly) columns.push(roundBorder(r));
+				columns.push(roundColumn(r, main.filter((f) => f.round === r), { addMatch: true, empty: true }));
+			}
+
+			// A round on the end moves nothing, so it is offered as a plain
+			// add rather than an insert.
+			if (!readOnly) columns.push(addRoundColumn(lastRound + 1));
+
+			if (third.length) columns.push(thirdColumn());
+		}
+
+		// The rounds in a lane of their own, which is what the zoom scales;
+		// the arrows are drawn beside it on the bracket, in plain screen
+		// pixels, so nothing measured has to be divided by the zoom.
+		const lanes = node('div', 'bracket-lanes');
+		lanes.append(...columns);
 
 		// A score or a name a re-read changed (a frame scored elsewhere, a
 		// winner arriving in the next round) fades out and in (TDC.liveFade,
 		// UV 29 Oct); the first draw fades nothing.
 		const snap = bracketDrawn ? TDC.liveSnapshot(els.bracket) : null;
-		els.bracket.replaceChildren(...columns);
+		els.bracket.replaceChildren(lanes);
 		TDC.liveFade(els.bracket, snap);
 		bracketDrawn = true;
 		drawArrows();
 	}
 	let bracketDrawn = false;
+
+	// Which half of the draw each main-bracket match is in, for the outside
+	// in view: 'M' for the last round (the final), else 'L' or 'R' by where
+	// its winner goes (UV, 5 Nov: follow the arrows). A match feeding the
+	// final's home slot is on the left, its away slot on the right, and
+	// every match takes the half of the match it feeds. Only winner_of
+	// counts: loser_of feeds the third-place playoff, which sits in the
+	// middle anyway. A match that leads nowhere (a draw being edited) falls
+	// back to its place in its round, the first half on the left.
+	function halves(main, lastRound) {
+		const half = new Map();
+		const leads = new Map();
+		for (const f of fixtures) {
+			for (const which of ['home', 'away']) {
+				const src = which === 'home' ? f.home_source : f.away_source;
+				const from = which === 'home' ? f.home_feeder_id : f.away_feeder_id;
+				if (src === 'winner_of' && from) leads.set(from, { to: f, slot: which });
+			}
+		}
+		for (const f of main) if (f.round === lastRound) half.set(f.fixture_id, 'M');
+
+		const sideOf = (f, seen) => {
+			if (half.has(f.fixture_id)) return half.get(f.fixture_id);
+			if (seen.has(f.fixture_id)) return null;   // wired in a loop
+			seen.add(f.fixture_id);
+			const l = leads.get(f.fixture_id);
+			if (!l) return null;
+			const there = sideOf(l.to, seen);
+			const s = there === 'M' ? (l.slot === 'home' ? 'L' : 'R') : there;
+			if (s) half.set(f.fixture_id, s);
+			return s;
+		};
+		for (const f of main) sideOf(f, new Set());
+
+		for (let r = 1; r < lastRound; r++) {
+			const loose = main.filter((f) => f.round === r && !half.has(f.fixture_id));
+			loose.forEach((f, i) => half.set(f.fixture_id, i < Math.ceil(loose.length / 2) ? 'L' : 'R'));
+		}
+		return half;
+	}
 
 	// ─── Reading ───
 	async function loadTournament() {
@@ -1114,27 +1365,60 @@
 				if (!feeder) continue;
 
 				const from = els.bracket.querySelector(`[data-fixture="${feeder}"]`);
-				const to = els.bracket.querySelector(
-					`[data-fixture="${f.fixture_id}"] [data-side="${which}"]`);
-				if (!from || !to) continue;
+				const card = els.bracket.querySelector(`[data-fixture="${f.fixture_id}"]`);
+				const slot = card && card.querySelector(`[data-side="${which}"]`);
+				if (!from || !card) continue;
 
+				// Where the arrow leaves and arrives follows the view (UV,
+				// 5 Nov). The rounds run across (columns) or down (rows); the
+				// arrow leaves the middle of the feeder's edge that faces the
+				// card and arrives on the card's edge that faces the feeder,
+				// so from the outside in the right half's arrows run leftwards
+				// by themselves.
 				const a = from.getBoundingClientRect();
-				const b = to.getBoundingClientRect();
-				const x1 = a.right - host.left;
-				const y1 = a.top + a.height / 2 - host.top;
-				const x2 = b.left - host.left;
-				const y2 = b.top + b.height / 2 - host.top;
+				const b = card.getBoundingClientRect();
+				const s = slot ? slot.getBoundingClientRect() : b;
+				const across = view.rounds !== 'rows';
+				let x1, y1, x2, y2, dir;
+				if (across) {
+					dir = (b.left + b.right) / 2 >= (a.left + a.right) / 2 ? 1 : -1;
+					x1 = (dir > 0 ? a.right : a.left) - host.left;
+					y1 = a.top + a.height / 2 - host.top;
+					x2 = (dir > 0 ? b.left : b.right) - host.left;
+					// Arriving on a side edge: at its own player's row when the
+					// players are one above the other; side by side they share
+					// the edge, so home comes in at a third and away at two
+					// thirds (UV, 5 Nov).
+					y2 = (view.card === 'across' || !slot
+						? b.top + b.height * (which === 'home' ? 1 / 3 : 2 / 3)
+						: s.top + s.height / 2) - host.top;
+				} else {
+					dir = (b.top + b.bottom) / 2 >= (a.top + a.bottom) / 2 ? 1 : -1;
+					x1 = a.left + a.width / 2 - host.left;
+					y1 = (dir > 0 ? a.bottom : a.top) - host.top;
+					y2 = (dir > 0 ? b.top : b.bottom) - host.top;
+					// Arriving on the top or bottom edge: above its own player
+					// when they sit side by side; stacked they share the edge,
+					// so home at a third and away at two thirds, the same rule
+					// turned on its side.
+					x2 = (view.card === 'across' && slot
+						? s.left + s.width / 2
+						: b.left + b.width * (which === 'home' ? 1 / 3 : 2 / 3)) - host.left;
+				}
 
-				// An arrow that would run backwards means the TD has wired a
-				// round to one above it. Legal, and the draw honours it, but a
-				// curve drawn the usual way would read as pointing the wrong
-				// way, so it is not hidden — it is marked.
-				const back = x2 < x1;
+				// An arrow from a round at or above this one means the TD has
+				// wired a round to one above it. Legal, and the draw honours
+				// it, but it would read as pointing the wrong way, so it is
+				// not hidden — it is marked. Told by the rounds rather than by
+				// direction on the page, which the outside-in view reverses.
+				const feederRound = which === 'home' ? f.home_feeder_round : f.away_feeder_round;
+				const feederBracket = which === 'home' ? f.home_feeder_bracket : f.away_feeder_bracket;
+				const back = feederBracket === f.bracket && feederRound >= f.round;
 				const source = which === 'home' ? f.home_source : f.away_source;
 				const decided = !!(which === 'home' ? f.home_entrant_id : f.away_entrant_id);
 
 				const path = document.createElementNS(SVG_NS, 'path');
-				path.setAttribute('d', curve(x1, y1, x2, y2));
+				path.setAttribute('d', curve(x1, y1, x2, y2, across, dir));
 				path.setAttribute('class', 'bracket-arrow'
 					+ (source === 'loser_of' ? ' loser' : '')
 					+ (decided ? ' decided' : ' pending')
@@ -1167,12 +1451,18 @@
 		if (drawn) els.bracket.append(svg);
 	}
 
-	// A flat-ended S. Control points pushed out horizontally by half the gap,
-	// so the line leaves a fixture sideways and arrives sideways, which is
-	// what makes a bracket readable rather than a plate of spaghetti.
-	function curve(x1, y1, x2, y2) {
-		const dx = Math.max(18, Math.abs(x2 - x1) / 2);
-		return `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+	// A flat-ended S. Control points pushed out along the rounds' direction by
+	// half the gap, so the line leaves a fixture square to its edge and
+	// arrives square to the next, which is what makes a bracket readable
+	// rather than a plate of spaghetti. across: the rounds run sideways;
+	// dir: 1 when the arrow heads right (or down), -1 left (or up).
+	function curve(x1, y1, x2, y2, across = true, dir = 1) {
+		if (across) {
+			const dx = Math.max(18, Math.abs(x2 - x1) / 2) * dir;
+			return `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+		}
+		const dy = Math.max(18, Math.abs(y2 - y1) / 2) * dir;
+		return `M ${x1} ${y1} C ${x1} ${y1 + dy}, ${x2} ${y2 - dy}, ${x2} ${y2}`;
 	}
 
 	function arrowHead(id, cls) {

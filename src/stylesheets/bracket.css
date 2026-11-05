@@ -16,16 +16,33 @@
 	margin-bottom: var(--space-5);
 }
 
+/* The bracket holds the lane of rounds and, beside it, the arrows (drawn in
+ * plain screen pixels). The lane is what the view settings change (UV,
+ * 5 Nov): --bracket-zoom scales the whole of it, --bracket-font its text.
+ * Text and card widths inside are in em, so a card grows with its text;
+ * pictures stay in rem. --card-w is a card's width. */
 .bracket {
+	width: max-content;
+	min-width: 100%;
+	--card-w: 15em;
+}
+
+.bracket-lanes {
 	display: flex;
 	align-items: flex-start;
 	gap: var(--space-5);
-	min-width: min-content;
+	zoom: var(--bracket-zoom, 1);
+	font-size: calc(1rem * var(--bracket-font, 1));
 }
 
 .bracket-round {
 	flex: 0 0 auto;
-	width: 15rem;
+	width: var(--card-w);
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+}
+.bracket-round-cards {
 	display: flex;
 	flex-direction: column;
 	gap: var(--space-3);
@@ -33,7 +50,7 @@
 
 .bracket-round-name {
 	margin: 0 0 var(--space-1);
-	font-size: 0.72rem;
+	font-size: 0.72em;
 	font-weight: 700;
 	letter-spacing: 0.12em;
 	text-transform: uppercase;
@@ -42,18 +59,59 @@
 
 /* ── A fixture ─────────────────────────────────────────────────────── */
 
+/* Styled as a league fixture (UV, 5 Nov; .fx-* in league.css): a faint
+ * outline, the state as a lit strip down the left, a picture beside each
+ * name and the score as tall as the picture. Opaque, because the arrows run
+ * behind the cards. */
 .bracket-fixture {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
 	border: 1px solid var(--border-color);
 	border-radius: var(--radius-md);
 	background: var(--bg-surface);
-	padding: var(--space-2);
 	position: relative;
+	transition: border-color 0.15s;
+}
+.bracket-body {
+	min-width: 0;
+	padding: var(--space-2) var(--space-2) var(--space-2) 0;
+}
+
+/* The strip, drawn as the league fixtures draw theirs; its colour comes from
+ * .fx-state-<state> in league.css. */
+.bracket-state {
+	position: relative;
+	width: var(--space-1);
+	padding: 0 var(--space-2);
+}
+.bracket-state::before {
+	content: '';
+	position: absolute;
+	top: var(--space-2);
+	bottom: var(--space-2);
+	left: var(--space-2);
+	width: var(--space-1);
+	border-radius: var(--radius-pill);
+	background: var(--strip-color, transparent);
+	box-shadow: var(--strip-glow, none);
+}
+.bracket-state.fx-state-bye { --strip-color: transparent; }
+
+/* A card with a match opens it (UV, 5 Nov), lit as a finished league
+ * fixture is when pointed at: the outline in the brand colour, the inside
+ * washed. The wash is laid over the surface rather than replacing it, so
+ * the card stays opaque over the arrows. */
+.bracket-link { cursor: pointer; }
+.bracket-link:focus-visible { outline: none; }
+.bracket-link:is(:hover, :focus-visible) {
+	border-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
+	background: linear-gradient(var(--hover-wash), var(--hover-wash)), var(--bg-surface);
 }
 
 /* The fixture's number, small and out of the way. It is what "Winner of 2-1"
    on the next column refers to, so it has to be findable. */
 .bracket-no {
-	font-size: 0.62rem;
+	font-size: 0.62em;
 	letter-spacing: 0.1em;
 	color: var(--text-muted);
 	margin-bottom: var(--space-1);
@@ -69,10 +127,103 @@
  * what sits beside it, however the row grows later. */
 .bracket-side {
 	display: grid;
-	grid-template-columns: auto 1fr auto;
-	align-items: baseline;
+	/* swap, picture, name, score (the picture since 5 Nov). Named areas, so
+	   the side-by-side card below can reorder the same cells. */
+	grid-template-areas: "swap pic name score";
+	grid-template-columns: auto auto minmax(0, 1fr) auto;
+	align-items: center;
 	gap: var(--space-2);
 	padding: 0.3rem 0;
+}
+.bracket-swap-cell  { grid-area: swap; }
+.bracket-pic-cell   { grid-area: pic; }
+.bracket-name-cell  { grid-area: name; }
+.bracket-score-cell { grid-area: score; }
+/* A read-only viewer has no swap control, so no column for one. */
+.bracket-ro .bracket-side {
+	grid-template-areas: "pic name score";
+	grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+/* The colon between two players side by side; nothing when stacked. */
+.bracket-colon { display: none; }
+
+/* ── Side by side (UV, 5 Nov) ─────────────────────────────────────────
+ * As a league fixture: home facing the middle from the left, its score,
+ * a colon, the away score and away facing it from the right. Wider rounds,
+ * since two names share the width one had. */
+.bracket[data-card="across"] { --card-w: 23em; }
+.bracket[data-card="across"] .bracket-sides {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+	align-items: center;
+	gap: var(--space-2);
+}
+.bracket[data-card="across"] .bracket-side { padding: 0.3rem 0; }
+.bracket[data-card="across"] .bracket-side + .bracket-side,
+.bracket[data-card="across"] .bracket-sides > .bracket-side ~ .bracket-side { border-top: none; }
+.bracket[data-card="across"] .bracket-colon {
+	display: block;
+	color: var(--text-muted);
+	line-height: 1;
+}
+/* Between two scores the colon is their size, as on the fixtures. */
+.bracket[data-card="across"] .bracket-sides.scored .bracket-colon { font-size: 2em; }
+/* A bye's lone player takes the whole line, centred. */
+.bracket[data-card="across"] .bracket-sides > .bracket-side[data-side]:only-child {
+	grid-column: 1 / -1;
+	grid-template-columns: auto auto auto;
+	justify-content: center;
+}
+
+/* A director's swap icon sits under the picture rather than beside it:
+   beside it, half a card's width left a name one letter a line (measured
+   at 1440, 5 Nov). */
+.bracket[data-card="across"] .bracket-side[data-side="home"] {
+	grid-template-areas: "name pic score" "name swap score";
+	grid-template-columns: minmax(0, 1fr) auto auto;
+	row-gap: var(--space-1);
+}
+.bracket[data-card="across"] .bracket-side[data-side="away"] {
+	grid-template-areas: "score pic name" "score swap name";
+	grid-template-columns: auto auto minmax(0, 1fr);
+	row-gap: var(--space-1);
+}
+.bracket[data-card="across"] .bracket-swap-cell { justify-self: center; }
+.bracket[data-card="across"] .tdc-card .bracket-swap,
+.tdc-card .bracket[data-card="across"] .bracket-swap { margin: 0; }
+/* The seed stays against the name: the name keeps its own width, and the
+   seed only its own. */
+.bracket[data-card="across"] .bracket-name { flex: 0 1 auto; }
+.bracket[data-card="across"] .bracket-name.as-button { width: auto; }
+.bracket[data-card="across"] .bracket-seed { min-width: 0; }
+.bracket-ro[data-card="across"] .bracket-side[data-side="home"] {
+	grid-template-areas: "name pic score";
+	grid-template-columns: minmax(0, 1fr) auto auto;
+}
+.bracket-ro[data-card="across"] .bracket-side[data-side="away"] {
+	grid-template-areas: "score pic name";
+	grid-template-columns: auto auto minmax(0, 1fr);
+}
+/* Home's name sits against its picture, so it reads towards the middle. */
+.bracket[data-card="across"] .bracket-side[data-side="home"] .bracket-name-cell {
+	justify-content: flex-end;
+	text-align: right;
+}
+.bracket[data-card="across"] .bracket-side[data-side="home"] .bracket-name.as-button { text-align: right; }
+.bracket[data-card="across"] .bracket-side[data-side="away"] .bracket-score-cell { justify-self: start; }
+
+/* The picture at a league fixture's team-picture size. */
+.bracket-side .person-pic {
+	width: 2rem;
+	height: 2rem;
+	font-size: 0.7em;
+}
+/* Nobody in the slot yet: an empty circle, so the names line up. */
+.bracket-side .bracket-pic-empty {
+	background: none;
+	border: 1px dashed var(--border-color);
+	box-shadow: none;
 }
 
 /* Collapses to nothing for a read-only viewer, who gets no swap control, so
@@ -87,7 +238,9 @@
 }
 
 .bracket-score-cell { justify-self: end; }
-.bracket-side + .bracket-side {
+/* `~` since 5 Nov: the colon for the side-by-side card sits between the
+   two sides, so they are no longer adjacent. */
+.bracket-sides > .bracket-side ~ .bracket-side {
 	border-top: 1px solid var(--border-color);
 }
 
@@ -99,31 +252,40 @@
 .bracket-seed {
 	flex: 0 0 auto;
 	min-width: 1.4rem;
-	font-size: 0.68rem;
+	font-size: 0.68em;
 	font-variant-numeric: tabular-nums;
 	color: var(--text-muted);
 	text-align: right;
 }
 
+/* As a league fixture's name: weighted, and wrapping between words rather
+   than cut off, since a full name is longer than a display name. */
 .bracket-name {
 	flex: 1 1 auto;
 	min-width: 0;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-	font-size: 0.92rem;
+	overflow-wrap: break-word;
+	line-height: 1.25;
+	font-size: 0.92em;
+	font-weight: 600;
 }
 /* A slot nobody has reached yet. Said, not left blank: a draw sheet is
    readable before it is played, and that is most of what it is for. */
 .bracket-name.pending {
 	color: var(--text-muted);
 	font-style: italic;
+	font-weight: 400;
 }
 
+/* The score as tall as the picture, as a league fixture's is. */
 .bracket-frames {
 	flex: 0 0 auto;
+	display: block;
+	min-width: 1.2em;
+	font-size: 2em;
+	font-weight: 700;
+	line-height: 1;
+	text-align: center;
 	font-variant-numeric: tabular-nums;
-	font-size: 0.95rem;
 }
 
 .bracket-tags {
@@ -132,7 +294,7 @@
 	gap: var(--space-1);
 	margin-top: var(--space-2);
 }
-.bracket-tags .badge { font-size: 0.68rem; }
+.bracket-tags .badge { font-size: 0.68em; }
 /* Defined here rather than in forms.css: a disputed card is a bracket idea,
    and forms.css already carries .badge.disputed for the match list. */
 .bracket-tags .badge.disputed {
@@ -150,7 +312,7 @@
 	/* Three of these can sit in a 15rem column, so they shrink rather than
 	   wrapping one word per line. */
 	padding: 0.3rem 0.6rem;
-	font-size: 0.65rem;
+	font-size: 0.65em;
 	letter-spacing: 0.06em;
 }
 
@@ -159,8 +321,16 @@
    bracket read top to bottom is a list, and a list is not a bracket. They
    just get narrower so two are visible at once. */
 @media (max-width: 480px) {
-	.bracket-round { width: 12.5rem; }
-	.bracket { gap: var(--space-4); }
+	.bracket { --card-w: 12.5em; }
+	.bracket-lanes { gap: var(--space-4); }
+	/* A director's column also holds the swap icon, which left a short name
+	   one letter a line beside a 2rem score (measured at 420, 5 Nov). */
+	.bracket-side { gap: var(--space-1); }
+	.bracket-side .person-pic { width: 1.75rem; height: 1.75rem; font-size: 0.62em; }
+	.bracket-frames { font-size: 1.6em; }
+	.bracket-seed { min-width: 0; }
+	.bracket[data-card="across"] { --card-w: 18em; }
+	.bracket[data-card="across"] .bracket-sides.scored .bracket-colon { font-size: 1.6em; }
 }
 
 /* ── Printing ──────────────────────────────────────────────────────── */
@@ -242,12 +412,18 @@
    Deliberately small but not below the ~2.2rem a thumb needs: this is pressed
    at the desk, on a phone, usually in a hurry. The visible glyph is smaller
    than the target. */
-.bracket-swap {
+/* Scoped under .tdc-card (5 Nov): forms.css's `.tdc-card button` outranks a
+   single class, and was giving this its full-width pill padding, which
+   crushed the name beside it to a letter a line once the picture came in. */
+.tdc-card .bracket-swap {
 	flex: 0 0 auto;
 	width: 1.6rem;
 	height: 1.6rem;
 	margin: -0.3rem 0;
 	padding: 0;
+	letter-spacing: normal;
+	text-transform: none;
+	font-weight: 400;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -256,13 +432,13 @@
 	background: none;
 	color: var(--text-muted);
 	font-family: var(--font-body);
-	font-size: 0.8rem;
+	font-size: 0.8em;
 	line-height: 1;
 	cursor: pointer;
 }
 
-.bracket-swap:hover,
-.bracket-swap:focus-visible {
+.tdc-card .bracket-swap:hover,
+.tdc-card .bracket-swap:focus-visible {
 	border-color: var(--border-color);
 	background: var(--bg-base);
 	color: var(--color-primary);
@@ -271,7 +447,7 @@
 /* On a touch screen there is no hover to discover it with, so it stays
    faintly visible rather than appearing only once pressed. */
 @media (hover: none) {
-	.bracket-swap {
+	.tdc-card .bracket-swap {
 		border-color: var(--border-color);
 	}
 }
@@ -291,7 +467,13 @@
 	margin: 0 calc(var(--space-1) * -1);
 	color: inherit;
 	font: inherit;
-	font-size: 0.92rem;
+	font-size: 0.92em;
+	font-weight: 600;
+	/* Undoes the rest of `.tdc-card button`, which this outranks on the
+	   properties it sets and inherits on the ones it does not: the capitals
+	   and the spacing read every director's view of a name as a shout. */
+	letter-spacing: normal;
+	text-transform: none;
 	text-align: left;
 	cursor: pointer;
 	width: 100%;
@@ -313,7 +495,69 @@
 .bracket-name.as-button.pending {
 	color: var(--text-muted);
 	font-style: italic;
+	font-weight: 400;
 }
+
+/* -- How the draw is shown (UV, 5 Nov) --------------------------------
+ * Above the bracket, for everybody once there is a draw. */
+.bracket-view {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-3) var(--space-5);
+	margin-bottom: var(--space-4);
+}
+.bracket-view .field { margin: 0; }
+/* -- Rounds one under another (UV, 5 Nov) ----------------------------
+ * The lane runs downwards and each round is a row: its heading, then its
+ * cards side by side. The border where a round goes in becomes a strip
+ * between rows. The arrows leave a card's bottom and arrive at the next
+ * one's top (tournament-bracket.js). */
+.bracket[data-rounds="rows"] .bracket-lanes { flex-direction: column; }
+.bracket[data-rounds="rows"] .bracket-round { width: auto; }
+.bracket[data-rounds="rows"] .bracket-round-cards {
+	flex-direction: row;
+	align-items: flex-start;
+}
+.bracket[data-rounds="rows"] .bracket-fixture,
+.bracket[data-rounds="rows"] .bracket-round-empty {
+	flex: 0 0 auto;
+	width: var(--card-w);
+}
+.tdc-card .bracket[data-rounds="rows"] .bracket-add-match {
+	width: auto;
+	margin: 0;
+	align-self: center;
+}
+.bracket[data-rounds="rows"] .bracket-border {
+	width: auto;
+	height: 0.75rem;
+	padding: 0 0 0 2.2rem;
+	align-items: center;
+	justify-content: flex-start;
+	transition: height 0.12s ease;
+}
+.bracket[data-rounds="rows"] .bracket-border:hover,
+.bracket[data-rounds="rows"] .bracket-border:focus-within { width: auto; height: 2.25rem; }
+.bracket[data-rounds="rows"] .bracket-round-new { padding-top: 0; }
+/* From the outside in, the middle holds the final and third place. In
+   rows they sit side by side, each under its heading: stacked, the arrow
+   from the lower half's semi-final ran behind the third-place card to
+   reach the final (rendered, 5 Nov). */
+.bracket[data-rounds="rows"] .bracket-round-mid {
+	display: grid;
+	grid-auto-flow: column;
+	grid-template-rows: auto auto;
+	justify-content: start;
+	column-gap: var(--space-5);
+	row-gap: var(--space-3);
+}
+
+/* An icon toggle: the team card's pill (.cp-views, league.css) with the
+   icons alone, so each option is a square round its icon. */
+.bracket-view .cp-views { margin: 0; }
+.tdc-card .bracket-toggle button.cp-view { padding: var(--space-2); }
+.bracket-toggle .cp-view svg { width: 1.35rem; height: 1.35rem; }
 
 /* -- A round's own rules ------------------------------------------
  *
@@ -498,7 +742,7 @@
 	border: 1px dashed var(--border-color);
 	border-radius: var(--radius-md);
 	color: var(--text-muted);
-	font-size: 0.8rem;
+	font-size: 0.8em;
 	text-align: center;
 }
 

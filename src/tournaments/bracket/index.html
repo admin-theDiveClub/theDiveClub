@@ -3,6 +3,7 @@ layout: layout.html
 title: Draw
 description: "The draw for a tournament: who plays who, and who has gone through."
 extraStyles:
+  - /stylesheets/league.css
   - /stylesheets/bracket.css
 extraScripts:
   - /scripts/match-settings.js
@@ -148,6 +149,65 @@ extraScripts:
 		</div>
 
 		<div class="status" id="wiring-status"></div>
+	</div>
+
+	{% comment %}
+		How the draw is shown, for everybody once there is a draw (UV, 5 Nov),
+		each kept on this device. Full names as the standings have it: off
+		shows display names, and a player with no first or last name keeps
+		theirs.
+	{% endcomment %}
+	<div class="bracket-view" id="view-row" hidden>
+		{% comment %}
+			Icons only (UV, 5 Nov), each its own drawing, the words in the
+			title and for a screen reader. data-view-key names the setting,
+			data-view its value; tournament-bracket.js keeps them per device.
+		{% endcomment %}
+		<div class="cp-views bracket-toggle" role="group" aria-label="How the rounds are laid out">
+			<button type="button" class="cp-view" data-view-key="flow" data-view="linear" aria-pressed="true" title="Rounds in order, round 1 first" aria-label="Rounds in order, round 1 first">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="5" height="4" rx="1"/><rect x="3" y="16" width="5" height="4" rx="1"/><rect x="16" y="10" width="5" height="4" rx="1"/><path d="M8 6h3v12H8M11 12h5"/></svg>
+			</button>
+			<button type="button" class="cp-view" data-view-key="flow" data-view="outside" aria-pressed="false" title="From the outside in, the final in the middle" aria-label="From the outside in, the final in the middle">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="4" height="4" rx="1"/><rect x="2" y="16" width="4" height="4" rx="1"/><rect x="18" y="4" width="4" height="4" rx="1"/><rect x="18" y="16" width="4" height="4" rx="1"/><rect x="10" y="10" width="4" height="4" rx="1"/><path d="M6 6h2v12H6M8 12h2M18 6h-2v12h2M16 12h-2"/></svg>
+			</button>
+		</div>
+		<div class="cp-views bracket-toggle" role="group" aria-label="Which way the rounds run">
+			<button type="button" class="cp-view" data-view-key="rounds" data-view="columns" aria-pressed="true" title="Rounds side by side" aria-label="Rounds side by side">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="4" height="16" rx="1"/><rect x="10" y="7" width="4" height="10" rx="1"/><rect x="17" y="10" width="4" height="4" rx="1"/></svg>
+			</button>
+			<button type="button" class="cp-view" data-view-key="rounds" data-view="rows" aria-pressed="false" title="Rounds one under another" aria-label="Rounds one under another">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="4" rx="1"/><rect x="7" y="10" width="10" height="4" rx="1"/><rect x="10" y="17" width="4" height="4" rx="1"/></svg>
+			</button>
+		</div>
+		<div class="cp-views bracket-toggle" role="group" aria-label="Players on a card">
+			<button type="button" class="cp-view" data-view-key="card" data-view="stacked" aria-pressed="true" title="Players one above the other" aria-label="Players one above the other">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 12h18M10 8h7M10 16h7"/><circle cx="6.8" cy="8" r="1.5"/><circle cx="6.8" cy="16" r="1.5"/></svg>
+			</button>
+			<button type="button" class="cp-view" data-view-key="card" data-view="across" aria-pressed="false" title="Players side by side" aria-label="Players side by side">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16M5.5 15h4M14.5 15h4"/><circle cx="7.5" cy="10" r="1.6"/><circle cx="16.5" cy="10" r="1.6"/></svg>
+			</button>
+		</div>
+
+		{% comment %}
+			Steppers, as every number field on the site is: the draw's text
+			size and the whole draw's size, in percent (UV, 5 Nov).
+		{% endcomment %}
+		<div class="field">
+			<label for="font-size">Text size</label>
+			<input type="number" id="font-size" min="70" max="150" step="10" value="100" inputmode="numeric">
+			<div class="hint">Percent.</div>
+		</div>
+		<div class="field">
+			<label for="zoom">Zoom</label>
+			<input type="number" id="zoom" min="50" max="150" step="10" value="100" inputmode="numeric">
+			<div class="hint">Percent.</div>
+		</div>
+
+		<div class="field">
+			<label for="full-names">Full names</label>
+			<input type="checkbox" id="full-names">
+			<div class="hint">Off shows each player's display name.</div>
+		</div>
 	</div>
 
 	<!-- The bracket itself, built by tournament-bracket.js -->
