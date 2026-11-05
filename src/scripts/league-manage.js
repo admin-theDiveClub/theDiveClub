@@ -448,7 +448,32 @@ TDCLeagueNav.panel('manage', () => {
 		return tr;
 	}
 
+	// Changes while a save's re-read is out (UV, 5 Nov). Drawing the table
+	// again throws its controls away: a team picked during the re-read
+	// snapped back to the old one and an open dropdown shut, so a quick run
+	// of changes looked refused after the first. The table is not drawn while
+	// a newer change is waiting (its own re-read draws it, once the whole run
+	// has saved) or while a dropdown in it is open (drawn when it is left).
+	let rowsStale = false;
+	let rowsOpen = null;   // the team dropdown being opened, until it is chosen or left
+	function drawPlayersLater() {
+		return (writer && writer.pending > 0) || (rowsOpen && rowsOpen.isConnected);
+	}
+
+	els.rows.addEventListener('pointerdown', (e) => {
+		const select = e.target.closest('select[data-action]');
+		if (select) rowsOpen = select;
+	});
+	els.rows.addEventListener('focusout', (e) => {
+		if (e.target !== rowsOpen) return;
+		rowsOpen = null;
+		if (rowsStale && !drawPlayersLater()) renderPlayers();
+	});
+
 	function renderPlayers() {
+		if (drawPlayersLater()) { rowsStale = true; return; }
+		rowsStale = false;
+
 		// The table below the lists is about teams and payment, so it holds
 		// the people who are actually in the league. The rest are in the
 		// lists above, where the only question is which list they belong to.
@@ -486,26 +511,32 @@ TDCLeagueNav.panel('manage', () => {
 		const control = e.target.closest('[data-action]');
 		if (!control) return;
 		const id = control.dataset.entrant;
+		// Chosen: no longer being opened.
+		if (control === rowsOpen) rowsOpen = null;
+		// Taken now, not when the save's turn comes: the control may have
+		// been drawn again, or changed again, by then.
+		const value = control.value;
+		const checked = control.checked;
 
 		if (control.dataset.action === 'status') {
 			write('Saving', () => supabaseClient.rpc('tdc_set_league_entrant', {
-				p_entrant_id: id, p_status: control.value
+				p_entrant_id: id, p_status: value
 			}));
 		} else if (control.dataset.action === 'team') {
-			write('Saving', () => supabaseClient.rpc('tdc_set_league_entrant', control.value
-				? { p_entrant_id: id, p_team_id: control.value }
+			write('Saving', () => supabaseClient.rpc('tdc_set_league_entrant', value
+				? { p_entrant_id: id, p_team_id: value }
 				: { p_entrant_id: id, p_clear_team: true }));
 		} else if (control.dataset.action === 'captain') {
 			write('Saving', () => supabaseClient.rpc('tdc_set_league_entrant', {
-				p_entrant_id: id, p_is_captain: control.checked
+				p_entrant_id: id, p_is_captain: checked
 			}));
 		} else if (control.dataset.action === 'away') {
 			write('Saving', () => supabaseClient.rpc('tdc_set_league_entrant', {
-				p_entrant_id: id, p_status: control.checked ? 'inactive' : 'active'
+				p_entrant_id: id, p_status: checked ? 'inactive' : 'active'
 			}));
 		} else if (control.dataset.action === 'paid') {
 			write('Saving', () => supabaseClient.rpc('tdc_set_league_entrant', {
-				p_entrant_id: id, p_paid: control.checked
+				p_entrant_id: id, p_paid: checked
 			}));
 		}
 	});
@@ -722,9 +753,10 @@ TDCLeagueNav.panel('manage', () => {
 	// Adding a player writes a notification inside the database. It goes out
 	// once the burst is saved rather than at the next page load. Not awaited:
 	// the person is waiting on the list, not on somebody else's phone buzzing.
-	const { write } = TDC.writer({
+	const writer = TDC.writer({
 		area: AREA, status: els.status, reload: loadAll, after: () => TDC.flushPushes()
 	});
+	const { write } = writer;
 
 	// ─── Start ───
 	TDCLoader.hold((async () => {

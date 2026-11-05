@@ -5,7 +5,8 @@
 // row and its rules; then its numbers so far, counted from the fixtures and
 // teams.
 //
-// Then three jobs:
+// Then two tabs (UV, 5 Nov): Teams, and Players (your place and, for a
+// captain, who is waiting for a team); Who runs it below both. Three jobs:
 //   • Your place. Somebody who has been added to a league has to confirm that
 //     they are playing; nobody can do it for them and the league cannot begin
 //     until every active player has. This is where they do it, and where they
@@ -31,7 +32,9 @@ TDCLeagueNav.panel('season', () => {
 	const els = {
 		name: el('l-name'), meta: el('l-meta'),
 		mePanel: el('me-panel'), meLine: el('me-line'), meDetail: el('me-detail'),
-		meConfirm: el('me-confirm'), meWithdraw: el('me-withdraw'), meAway: el('me-away'),
+		meConfirm: el('me-confirm'), meWithdraw: el('me-withdraw'), meAway: el('me-away'), mePic: el('me-pic'),
+		views: el('ls-views'), teamsView: el('ls-teams'), playersView: el('ls-players'),
+		poolPlaces: el('pool-places'),
 		jumbo: el('jumbo'), jumboPic: el('jumbo-pic'), jumboStatus: el('jumbo-status'), jumboFacts: el('jumbo-facts'),
 		stats: el('stats'),
 		poolPanel: el('pool-panel'), poolHint: el('pool-hint'), poolList: el('pool-list'),
@@ -66,6 +69,7 @@ TDCLeagueNav.panel('season', () => {
 	// and brought into view once, on the first draw.
 	let focusTeam = new URLSearchParams(location.search).get('team');
 	if (focusTeam) openTeams.add(focusTeam);
+	const cameForTeam = !!focusTeam;   // the Teams tab first, whatever else
 	// The same from the Fixtures tab once this tab has started (29 Oct): the
 	// team is opened and brought into view in place. Not drawn yet, the
 	// address carries it to the first draw.
@@ -73,6 +77,7 @@ TDCLeagueNav.panel('season', () => {
 		const box = e.detail && document.getElementById('team-' + e.detail);
 		if (!box) return;
 		focusTeam = null;
+		showView('teams', true);
 		box.open = true;
 		box.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	});
@@ -183,7 +188,6 @@ TDCLeagueNav.panel('season', () => {
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 
 		mine = (data || []).find((l) => l.league_season_id === seasonId) || null;
-		renderMine();
 		return true;
 	}
 
@@ -214,6 +218,13 @@ TDCLeagueNav.panel('season', () => {
 		els.meConfirm.hidden = true;
 		els.meWithdraw.hidden = true;
 		els.meAway.hidden = true;
+
+		// The stage's green line, greyed for someone not playing just now
+		// (withdrawn, inactive or away); their team's picture above the line
+		// once they are on one.
+		els.mePanel.dataset.tone = mine.my_status === 'withdrawn' || mine.my_status === 'inactive' ? 'off' : '';
+		els.mePic.hidden = !mine.my_team_id;
+		if (mine.my_team_id) els.mePic.replaceChildren(TDC.teamPic(teamPictures.get(mine.my_team_id)));
 
 		if (mine.my_status === 'withdrawn') {
 			els.meLine.textContent = 'You withdrew from this league.';
@@ -450,33 +461,34 @@ TDCLeagueNav.panel('season', () => {
 		els.poolPanel.hidden = !controlsTeam();
 		if (els.poolPanel.hidden) return;
 
-		// Said before they try, not only after the database refuses.
+		// Said before they try, not only after the database refuses. The
+		// places taken as a badge by the heading, yellow once full.
 		const t = myTeam();
 		const full = isFull(t);
+		els.poolPlaces.hidden = !t;
+		if (t) {
+			els.poolPlaces.textContent = t.active_players + ' of ' + t.team_limit + ' places';
+			els.poolPlaces.className = 'badge ls-places ' + (full ? 'warn' : 'live');
+		}
+		els.poolHint.classList.toggle('is-full', full);
 		els.poolHint.textContent = full
-			? mine.my_team_name + ' is full: ' + t.active_players + ' of ' + t.team_limit
-				+ ' active players. Mark somebody away to claim another.'
+			? mine.my_team_name + ' is full. Mark somebody away to claim another.'
 			: pool.length
-				? 'These players are in the league and on no team. Claiming one puts them on ' + mine.my_team_name
-					+ (t ? ' (' + t.active_players + ' of ' + t.team_limit + ' places taken).' : '.')
+				? 'In the league and on no team. Claiming one puts them on ' + mine.my_team_name + '.'
 				: 'Nobody is waiting. A player appears here once they are in the league and on no team.';
 
+		// A card each, set into the page: their picture (or initials) and name,
+		// linked to their profile, and Claim.
 		els.poolList.replaceChildren(...pool.map((p) => {
-			const row = node('div', 'list-row');
-			const main = node('div', 'list-row-main');
-			main.append(node('span', null, p.display_name));
-
-			const actions = node('div', 'list-row-actions');
-			const claim = node('button', 'btn btn-primary btn-sm', 'Claim');
+			const card = node('div', 'ls-wait');
+			const claim = node('button', 'ls-btn ls-btn-go ls-btn-sm', 'Claim');
 			claim.type = 'button';
 			claim.dataset.player = p.player_id;
 			claim.dataset.action = 'claim';
 			claim.dataset.name = p.display_name;
 			claim.disabled = full;
-			actions.append(claim);
-
-			row.append(main, actions);
-			return row;
+			card.append(personLink(p.player_id, p.display_name, p.avatar_path), claim);
+			return card;
 		}));
 	}
 
@@ -781,15 +793,68 @@ TDCLeagueNav.panel('season', () => {
 		return true;
 	}
 
+	// ─── Teams · Players ───
+	// Two tabs under the numbers (UV, 5 Nov), the standings' pill. Players
+	// holds your place and, for a captain, who is waiting for a team; with
+	// neither (somebody who only runs it) there is no pill, only the teams.
+	// The choice is kept per device. Somebody who still has to say they are
+	// playing lands on Players, where the button is: the notification that
+	// they were added sends them here for it.
+	const VIEW_KEY = 'tdc.league-season.view';
+	let view = 'teams';
+	try { if (localStorage.getItem(VIEW_KEY) === 'players') view = 'players'; } catch (err) { /* private window: the default */ }
+	let viewsDrawn = false;
+
+	function fadeIn(box) {
+		if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		const s = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--control-reveal')) || 0.35;
+		box.animate([{ opacity: 0 }, { opacity: 1 }], { duration: s * 1000, easing: 'ease-out' });
+	}
+
+	function showView(next, fade) {
+		if (next === 'players' && els.views.hidden) next = 'teams';
+		const changed = next !== view;
+		view = next;
+		for (const b of els.views.querySelectorAll('[data-ls-view]')) {
+			b.setAttribute('aria-pressed', b.dataset.lsView === view ? 'true' : 'false');
+		}
+		els.teamsView.hidden = view !== 'teams';
+		els.playersView.hidden = view !== 'players';
+		if (fade && changed) fadeIn(view === 'teams' ? els.teamsView : els.playersView);
+	}
+
+	function renderViews() {
+		const players = !els.mePanel.hidden || !els.poolPanel.hidden;
+		els.views.hidden = !players;
+		if (!viewsDrawn) {
+			viewsDrawn = true;
+			const mustConfirm = mine && mine.my_status === 'active' && !mine.confirmed_at;
+			if (cameForTeam) view = 'teams';
+			else if (mustConfirm) view = 'players';
+		}
+		showView(view, false);
+	}
+
+	els.views.addEventListener('click', (e) => {
+		const b = e.target.closest('[data-ls-view]');
+		if (!b || b.dataset.lsView === view) return;
+		showView(b.dataset.lsView, true);
+		try { localStorage.setItem(VIEW_KEY, view); } catch (err) { /* kept for this visit only */ }
+	});
+
 	// ─── Reading everything ───
 	// My row first: what the rest shows depends on whether I captain a team.
+	// The tabs are settled before the teams are drawn, so a team named in the
+	// address is opened on the tab it is on.
 	async function loadAll() {
 		const results = [];
 		results.push(await loadMine());
 		results.push(await loadSeasonRow());
 		results.push(await loadFixtures());
 		results.push(await loadTeams());
+		renderMine();
 		results.push(await loadPool());
+		renderViews();
 		results.push(await loadReadiness());
 		results.push(await loadOfficials());
 		loadMyNext();

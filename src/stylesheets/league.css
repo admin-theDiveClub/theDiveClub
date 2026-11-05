@@ -862,6 +862,147 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 .person-name { font-weight: 600; overflow-wrap: break-word; }
 .person-sub { font-size: 0.78rem; color: var(--text-muted); }
 
+/* ── Teams · Players (UV, 5 Nov) ──
+ * The two tabs under the numbers are the standings' pill (.cp-views), the
+ * teams' count in the Teams option. Players is your place and, for a
+ * captain, who is waiting for a team, both in the join page's stage
+ * language (league-join.css): a green line as heavy as the stage pill's with
+ * its inner glow, surfaces set into the page by the drifting light's inside
+ * shadow, words and buttons in the display face. */
+.ls-views { margin-bottom: var(--space-4); }
+.ls-view-count { margin-left: var(--space-1); opacity: 0.7; font-variant-numeric: tabular-nums; }
+
+.ls-stage {
+	--q: var(--color-primary);
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--space-2);
+	margin: 0 0 var(--space-5);
+	padding: var(--space-5) var(--space-4);
+	border: var(--match-break-stroke) solid var(--q);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--match-mark-shadow);
+	text-align: center;
+}
+.ls-stage[hidden] { display: none; }
+/* Withdrawn, inactive or away: the line greyed, no glow. */
+.ls-stage[data-tone="off"] { --q: var(--text-muted); }
+.ls-stage::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	box-shadow: inset 0 0 var(--match-glow-size) var(--match-win-glow-colour),
+		inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
+	pointer-events: none;
+}
+.ls-stage[data-tone="off"]::before {
+	box-shadow: inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
+}
+.ls-eyebrow {
+	font-size: 0.66rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--q);
+}
+.ls-stage-pic { width: 3.5rem; height: 3.5rem; }
+.ls-stage-pic[hidden] { display: none; }
+.tdc-card .ls-where {
+	margin: 0;
+	font-family: var(--font-display);
+	font-weight: 400;
+	font-size: 1.9rem;
+	line-height: 1.1;
+	text-transform: none;
+	letter-spacing: normal;
+	text-wrap: balance;
+	overflow-wrap: break-word;
+	text-shadow: var(--match-mark-shadow);
+}
+.tdc-card .ls-where-detail { margin: 0; color: var(--text-muted); max-width: 32rem; }
+.tdc-card .ls-where-detail:empty { display: none; }
+.ls-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); margin-top: var(--space-2); }
+.ls-actions:not(:has(> :not([hidden]))) { display: none; }
+
+/* The stage buttons' look: an outlined pill with its inner glow, green for
+ * the way forward, cream for the rest. */
+.tdc-card .ls-btn,
+.ls-btn {
+	--q: var(--text-primary);
+	--ls-glow: color-mix(in srgb, var(--text-primary) 25%, transparent);
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: auto;
+	min-height: 3.25rem;
+	margin: 0;
+	padding: var(--space-2) var(--space-5);
+	border: var(--match-break-stroke) solid var(--q);
+	border-radius: var(--radius-pill);
+	background: transparent;
+	color: var(--q);
+	font-family: var(--font-display);
+	font-size: 1.35rem;
+	font-weight: 400;
+	letter-spacing: normal;
+	text-transform: none;
+	text-decoration: none;
+	text-align: center;
+	text-wrap: balance;
+	line-height: 1.1;   /* a long label wraps on a phone without its lines crowding the line */
+	text-shadow: var(--match-mark-shadow);
+	box-shadow: var(--match-mark-shadow),
+		inset 0 0 var(--match-glow-size) var(--ls-glow),
+		inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
+	transition: background var(--control-reveal) ease;
+	cursor: pointer;
+}
+.ls-btn[hidden] { display: none; }
+.tdc-card .ls-btn-go,
+.ls-btn-go {
+	--q: var(--color-primary);
+	--ls-glow: var(--match-win-glow-colour);
+}
+.tdc-card .ls-btn-sm,
+.ls-btn-sm { min-height: 2.5rem; padding: var(--space-1) var(--space-4); font-size: 1.1rem; }
+.ls-btn:not(:disabled):hover,
+.ls-btn:not(:disabled):focus-visible {
+	background: color-mix(in srgb, var(--q) 18%, transparent);
+	outline: none;
+}
+.ls-btn:disabled { opacity: 0.4; box-shadow: none; cursor: default; }
+
+/* Waiting for a team: the heading with the places taken beside it, then a
+ * card each, set into the page, as many to a row as fit. */
+.ls-pool { margin-bottom: var(--space-5); }
+.ls-pool[hidden] { display: none; }
+.ls-pool-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.tdc-card .ls-pool-head h2 { margin: 0; }
+.tdc-card .ls-pool-hint { margin: var(--space-2) 0 var(--space-3); color: var(--text-muted); }
+.tdc-card .ls-pool-hint.is-full { color: var(--color-warning); }
+.ls-waiting {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+	gap: var(--space-2);
+}
+.ls-wait {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-3);
+	min-width: 0;
+	padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
+	border-radius: var(--radius-md);
+	background: var(--bg-surface);
+	box-shadow: inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
+}
+.ls-wait .person { min-width: 0; }
+.ls-wait .ls-btn { flex: none; }
+
 /* ── A league's own picture (24 Oct) ──
  * In the banner, a search tile and the settings page's preview: the round
  * frame clips it, the picture fills it. Without one, the trophy. */

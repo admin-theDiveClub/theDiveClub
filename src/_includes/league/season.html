@@ -3,8 +3,9 @@
 
 	At the top, the league itself (UV, 24 Oct): a banner with its picture,
 	name, status and everything about how it is played, then its numbers so
-	far. Then the player's own place, the teams (each player with their
-	picture and a link to their profile) and who runs it.
+	far. Then two tabs (UV, 5 Nov): Teams (each player with their picture
+	and a link to their profile) and Players (the player's own place, and
+	for a captain who is waiting for a team). Who runs it below both.
 
 	A league player has to confirm their own place before the league can begin;
 	that button lives here, and the notification they get when they are added
@@ -28,32 +29,54 @@
 
 	<section class="league-stats" id="stats" aria-label="The league so far"></section>
 
-	<div class="panel" id="me-panel" hidden>
-		<h2>Your place</h2>
-		<p id="me-line"></p>
-		<p class="muted" id="me-detail"></p>
-		<div class="btn-row">
-			<a class="btn btn-primary btn-sm" id="me-card" href="#" hidden>My next match</a>
-			<button type="button" class="btn btn-primary btn-sm" id="me-confirm" hidden>Confirm that I am playing</button>
-			<button type="button" class="btn btn-secondary btn-sm" id="me-withdraw" hidden>I am not playing</button>
-			<button type="button" class="btn btn-secondary btn-sm" id="me-away" hidden>I am away for a while</button>
-		</div>
-	</div>
-
 	{% comment %}
-		Captains only. Players who have confirmed and are on no team, ready to
-		be claimed. A player who has not confirmed is not offered: a team can
-		only take someone who has said they are playing.
+		Two tabs under the numbers (UV, 5 Nov): Teams, and Players (your own
+		place, and for a captain the players waiting for a team). The pill is
+		shown only when Players has something in it; otherwise the teams alone.
+		Who runs it stays below both.
 	{% endcomment %}
-	<div class="panel" id="pool-panel" hidden>
-		<h2>Waiting for a team</h2>
-		<p class="muted" id="pool-hint"></p>
-		<div id="pool-list"></div>
+	<div class="cp-views ls-views" id="ls-views" role="group" aria-label="Teams or players" hidden>
+		<button type="button" class="cp-view" data-ls-view="teams" aria-pressed="true">Teams <span class="ls-view-count" id="team-count" hidden></span></button>
+		<button type="button" class="cp-view" data-ls-view="players" aria-pressed="false">Players</button>
 	</div>
 
-	<h2>Teams <span class="badge" id="team-count" hidden></span></h2>
-	<div class="team-boxes" id="team-list"></div>
-	<div class="empty" id="team-empty" hidden>No teams yet. Whoever runs the league makes them.</div>
+	<div id="ls-teams">
+		<div class="team-boxes" id="team-list"></div>
+		<div class="empty" id="team-empty" hidden>No teams yet. Whoever runs the league makes them.</div>
+	</div>
+
+	<div id="ls-players" hidden>
+		{% comment %}
+			Your place: the join page's stage panel (UV, 5 Nov: prettier), the
+			green line greyed for someone withdrawn or inactive.
+		{% endcomment %}
+		<section class="ls-stage" id="me-panel" aria-live="polite" hidden>
+			<span class="ls-eyebrow">Your place</span>
+			<span class="team-pic ls-stage-pic" id="me-pic" hidden></span>
+			<h2 class="ls-where" id="me-line"></h2>
+			<p class="ls-where-detail" id="me-detail"></p>
+			<div class="ls-actions">
+				<a class="ls-btn ls-btn-go" id="me-card" href="#" hidden>My next match</a>
+				<button type="button" class="ls-btn ls-btn-go" id="me-confirm" hidden>Confirm that I am playing</button>
+				<button type="button" class="ls-btn" id="me-away" hidden>I am away for a while</button>
+				<button type="button" class="ls-btn" id="me-withdraw" hidden>I am not playing</button>
+			</div>
+		</section>
+
+		{% comment %}
+			Captains only. Players who have confirmed and are on no team, ready to
+			be claimed. A player who has not confirmed is not offered: a team can
+			only take someone who has said they are playing.
+		{% endcomment %}
+		<section class="ls-pool" id="pool-panel" hidden>
+			<div class="ls-pool-head">
+				<h2>Waiting for a team</h2>
+				<span class="badge ls-places" id="pool-places" hidden></span>
+			</div>
+			<p class="ls-pool-hint" id="pool-hint"></p>
+			<div class="ls-waiting" id="pool-list"></div>
+		</section>
+	</div>
 
 	<h2>Who runs it</h2>
 	<div id="official-list"></div>
