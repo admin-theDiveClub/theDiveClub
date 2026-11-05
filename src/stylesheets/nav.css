@@ -80,9 +80,6 @@
 .nav-profile:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 .tdc-ring.nav-ring { width: var(--nav-ring-size); height: var(--nav-ring-size); }
 .tdc-ring.nav-ring[hidden] { display: none; }
-/* Lighter lines than a control's: the icons are small, and the default
-   weight closes the gaps in the menu's lines and fills the bell in. */
-.tdc-ring.nav-ring .mark { stroke-width: 7; }
 /* The live text each ring keeps for a screen reader (the menu's rings too:
    the menu is not inside the bar). */
 .site-nav .sr,

@@ -347,7 +347,8 @@ const TDC = (() => {
 		shield.setAttribute('d', 'M12 3l7 3v5c0 4.5-3 8-7 10c-4-2-7-5.5-7-10V6z');
 		shield.setAttribute('fill', 'none');
 		shield.setAttribute('stroke', 'currentColor');
-		shield.setAttribute('stroke-width', '2');
+		shield.style.strokeWidth = 'var(--icon-line)';   // as a ring's line, at any size (UV, 5 Nov)
+		shield.setAttribute('vector-effect', 'non-scaling-stroke');
 		shield.setAttribute('stroke-linejoin', 'round');
 		svg.append(shield);
 		return svg;

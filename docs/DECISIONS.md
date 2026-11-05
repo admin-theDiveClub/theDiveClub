@@ -1275,3 +1275,32 @@ These predate the log. They are recorded here because every one of them is a dec
 *Noted:* STATUS §0 says D1 (one profile, an environment per sport) should be settled before the player page. UV set the multi-sport option aside for this build.
 *So:* `docs/systems/players.md`.
 *Touches:* migration `20261105044302_player_profile.sql`, `supabase/tests/045_player_profile.test.sql`, `players/index.html`, `scripts/player.js` (new), `stylesheets/player.css` (new)
+
+## 2026-11-05 — The player page's hero: picture and names either side of the centre line; the large picture
+
+*Decided by UV:* the picture right-aligned to the centre line, the display name and full name left-aligned to it; a tap on the picture shows it large, in the green ring with the glow, closed by any interaction, animated both ways (players use it to identify each other, so it matters); the chips under the names move to About.
+*Claude's recommendations, UV said "implement" without picking:* a player with no photo gets no large picture (initials identify nobody); of the chips only the discipline is new to About, as a Plays row, since Verified, Home venue and Since were already rows.
+*Claude's, found while building, for UV to judge:* a display name keeps 2.75rem where it fits and shrinks only until its longest word fits its half, wrapping between words, never inside one (the half is 172px on a 420 phone, narrower than "Shadow" at full size); the large picture is at most 36rem, so a 512px picture is never shown blown up; with less motion it fades instead of growing.
+*So:* `docs/systems/players.md`, "The hero" and "The large picture".
+*Touches:* `players/index.html`, `scripts/player.js`, `stylesheets/player.css`
+
+## 2026-11-05 — The player page's buttons as ring icons; Compare as a third tab
+
+*Decided by UV:* no Back button or "Player" title; Share and More grouped with Challenge and Follow, all four as ring icons; Challenge's icon is the break icon from the league scorecard (the spotted cue ball), in a green ring, the other three cream; Compare with me becomes a tab beside Profile and Head to head, the old Head to head split in two: Head to head keeps your meetings, Compare takes Side by side.
+*Claude's, for UV to judge:* the new icons' drawings (Follow: the person with a small plus; Share: an arrow up out of an open box; More: three dots), added to the site's ring set so any page can use them; the tab named "Compare"; the rings 3rem, with no word under them (each named by its tooltip); on your own profile only Share and More.
+*So:* `docs/systems/players.md`, "The buttons and the tabs"; `docs/ui.md`, "Buttons as ring icons".
+*Touches:* `players/index.html`, `scripts/player.js`, `stylesheets/player.css`, `scripts/ring-status.js`
+
+## 2026-11-05 — No bold icons, site-wide; the player Profile tab's second pass
+
+*Decided by UV:* every icon's line is as heavy as the ring it sits in, site-wide; icons drawn as dots or spots stay solid; icons with no ring are thinned to the same weight. On the player page's Profile tab (Compare later): the names bottom-aligned; Form is the last 10 frames across all matches, showing where they broke; the stats as four equal boxes in a row, wrapping where they don't fit: Frames (win %, green; P · W · L), Matches (win %, green; P · W · L), B&F (count, yellow; GB · rB&F), Conversion (win % on their own break, cream; Lags · FW); the per-night chart becomes the frame difference, negatives under the base line, the last 15 nights, its heading changed; On the break removed.
+*Claude's, for UV to judge:* "the ring's weight" for an icon with no ring is a standard ring's line (5% of `--ring-size`, 1.8px) at any size; an icon in a bordered circle (the slide's knob, the verified tick) takes that border's 2px; Matches adds "· D n" only when there is a draw, or P would not add up; a night that came out even is a short grey stub on the line; the boxes wrap at 9rem (2 × 2 on a phone, 4 across on a PC).
+*So:* `docs/ui.md`, "No bold icons"; `docs/systems/players.md`, "The Profile tab, second pass".
+*Touches:* `stylesheets/status.css`, `nav.css`, `controls.css`, `league.css`, `footer.css`, `variables.css` (`--icon-line`, `--chevron-stroke`), `scripts/ring-status.js`, `tdc.js`, `league-season.js`, `players/index.html`, `scripts/player.js`, `stylesheets/player.css`
+
+## 2026-11-05 — The player page's match lists: every state, a page at a time
+
+*Decided by UV:* Leagues & teams becomes **Teams** (the list as it was), at the top of the Profile tab; a new **Competitions** section with **Leagues** and **Tournaments**, 4 matches a page; Recent matches 5 a page, its look kept; a page number at the right of each list's heading; each match with the fixtures' state strip; the lists show matches in every state (a migration), while the stats still count finished matches only; a league night shows once the player is in their team's lineup; Last match frames removed; Honours removed until built, kept as a to-do (`docs/BACKLOG.md` §2 item 9).
+*Claude's, for UV to judge:* before the lineups lock, the night is found through its **squad** (who is available, open to read), not the order, which is a blind exchange until both sides lock and would tell an opponent who is playing; after the lock the frames carry it, as before. The page number is the site's stepper on its side; the strip's colours are exactly the fixtures' (so not started is plain green and finished is lit green); a match with no frames shows "–" for its score; Competitions sits where Leagues & teams was.
+*So:* `docs/systems/players.md`, "The Profile tab, third pass" and "Every state, counted or not".
+*Touches:* migration `20261105064410_player_profile_every_state.sql`, `supabase/tests/045_player_profile.test.sql`, `046_player_profile_every_state.test.sql` (new), `players/index.html`, `scripts/player.js`, `stylesheets/player.css`, `docs/BACKLOG.md`

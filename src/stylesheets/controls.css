@@ -259,10 +259,11 @@
 	height: 100%;
 	fill: none;
 	stroke: currentColor;
-	stroke-width: 2;
+	stroke-width: var(--icon-line);
 	stroke-linecap: round;
 	stroke-linejoin: round;
 }
+.tdc-date-tools > button svg * { vector-effect: non-scaling-stroke; }
 .tdc-date-tools > button:hover { color: var(--color-primary); }
 .tdc-date-tools > .tdc-date-clear.is-empty { visibility: hidden; }
 
@@ -472,7 +473,9 @@
 	background: var(--bg-base);
 	color: var(--color-error);
 }
-.tdc-slide-knob svg { width: 75%; height: 75%; stroke-width: 9; }
+/* The arrow as heavy as the knob's own ring (UV, 5 Nov: no bold icons). */
+.tdc-slide-knob svg { width: 75%; height: 75%; stroke-width: var(--control-border); }
+.tdc-slide-knob svg * { vector-effect: non-scaling-stroke; }
 
 .tdc-slide > input[type="range"] {
 	position: absolute;

@@ -23,9 +23,10 @@
 //
 // Adding an icon: an entry in ICONS, a 100x100 box inside the ring (r = 40),
 // at most 4 strokes, each drawn start to finish, outlines not fills. The dots
-// trace the strokes in their own order. An icon may give widths: one stroke
-// width per stroke, in the 100 box, where the default (10, status.css) is too
-// heavy (the cue ball's spots). A stroke may hold several subpaths (spots).
+// trace the strokes in their own order. A line is as heavy as the ring (5 in
+// the 100 box, status.css; UV, 5 Nov). An icon may give widths, one per
+// stroke, only for marks that are dots or spots and must stay solid (the
+// cue ball's spots, the three dots). A stroke may hold several subpaths.
 //
 // Needs: nothing. Loaded on every page by layout.html, before tdc-controls.js.
 
@@ -86,21 +87,20 @@ const TDCRing = (() => {
 			'M50 41A9 9 0 1 1 50 59A9 9 0 1 1 50 41',
 			'M31 38L31 62M69 38L69 62'] },
 		// Added 29 Oct for the team card's W (UV): a win that was a break &
-		// finish or a golden break, the letters in place of the tick. Thinner
-		// than the tick, so two letters fit in a small knob.
-		bf: { label: 'Break & finish', widths: [6, 6, 6, 6], strokes: [
+		// finish or a golden break, the letters in place of the tick.
+		bf: { label: 'Break & finish', strokes: [
 			'M31 37L31 63',
 			'M31 37L38 37A6.5 6.5 0 0 1 38 50L31 50M38 50A6.5 6.5 0 0 1 38 63L31 63',
 			'M57 63L57 37L69 37',
 			'M57 50L66 50'] },
 		// A reverse break & finish (UV, 29 Oct): won by the side that lost
 		// the lag, a small r before the BF.
-		rbf: { label: 'Reverse break & finish', widths: [6, 6, 6, 6], strokes: [
+		rbf: { label: 'Reverse break & finish', strokes: [
 			'M25 47L25 63M25 53C27 48 31 46 34 47',
 			'M39 37L39 63',
 			'M39 37L45 37A6.5 6.5 0 0 1 45 50L39 50M45 50A6.5 6.5 0 0 1 45 63L39 63',
 			'M58 63L58 37L70 37M58 50L67 50'] },
-		gb: { label: 'Golden break', widths: [6, 6, 6], strokes: [
+		gb: { label: 'Golden break', strokes: [
 			'M45 43.7A8 13 0 1 0 45 56.3L45 51L39 51',
 			'M56 37L56 63',
 			'M56 37L63 37A6.5 6.5 0 0 1 63 50L56 50M63 50A6.5 6.5 0 0 1 63 63L56 63'] },
@@ -113,7 +113,19 @@ const TDCRing = (() => {
 			'M50 20A30 30 0 1 1 50 80A30 30 0 1 1 50 20',
 			'M47.3 43.1A1.6 1.4 -33.7 1 1 44.7 44.9A1.6 1.4 -33.7 1 1 47.3 43.1',
 			'M64.2 40.4A1.8 0.8 49.8 1 1 61.8 37.6A1.8 0.8 49.8 1 1 64.2 40.4M33.4 54.3A1.8 0.8 -110.6 1 1 34.6 57.7A1.8 0.8 -110.6 1 1 33.4 54.3M53.2 64.6A1.9 1.1 160.3 1 1 56.8 63.4A1.9 1.1 160.3 1 1 53.2 64.6M68.6 56.6A1.7 0.3 104.7 1 1 69.4 53.4A1.7 0.3 104.7 1 1 68.6 56.6',
-			'M40.8 30.9A2.1 0.4 -31.4 1 1 37.2 33.1A2.1 0.4 -31.4 1 1 40.8 30.9M45 71.7A2 0.3 -172.2 1 1 49 72.3A2 0.3 -172.2 1 1 45 71.7'] }
+			'M40.8 30.9A2.1 0.4 -31.4 1 1 37.2 33.1A2.1 0.4 -31.4 1 1 40.8 30.9M45 71.7A2 0.3 -172.2 1 1 49 72.3A2 0.3 -172.2 1 1 45 71.7'] },
+		// Added 5 Nov for the player page's buttons (UV): follow (the person,
+		// moved left, with a small plus), share (an arrow up out of an open
+		// box) and more (three dots, each its own stroke).
+		follow: { label: 'Follow', strokes: [
+			'M44 33A8 8 0 1 1 44 49A8 8 0 1 1 44 33',
+			'M28 68C28 58 35 54 44 54C53 54 60 58 60 68',
+			'M67 37L67 51M60 44L74 44'] },
+		share: { label: 'Share', strokes: ['M50 58L50 29', 'M40 39L50 29L60 39', 'M37 49L37 68L63 68L63 49'] },
+		more: { label: 'More', widths: [8, 8, 8], strokes: [
+			'M33 46A4 4 0 1 1 33 54A4 4 0 1 1 33 46',
+			'M50 46A4 4 0 1 1 50 54A4 4 0 1 1 50 46',
+			'M67 46A4 4 0 1 1 67 54A4 4 0 1 1 67 46'] }
 	};
 	const NAMES = Object.keys(ICONS);
 

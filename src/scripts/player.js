@@ -1,22 +1,27 @@
 // A player's profile (/players/?p=<player id>, UV's combined design, 5 Nov).
 //
-// The hero (picture, names, chips, Challenge, Follow, Compare with me), then a
-// toggle between two tabs:
-//   • Profile: form, stats over a period, frames won per night, on the break,
-//     leagues and teams with the team's place, recent matches and the last
-//     match's frames, honours, about.
-//   • Head to head: you against them. Only frames the two of you played
-//     against each other count (tdc_head_to_head); side by side compares
-//     both players' all-time stats.
+// The hero (picture left of the centre line, names right; a tap on a photo
+// shows it large; Challenge, Follow, Share and More as ring icons), then a
+// toggle between three tabs:
+//   • Profile: teams with each team's place, form (the last 10 frames),
+//     stats over a period, the frame difference per night, competitions
+//     (league and tournament matches) and recent matches a page at a time,
+//     about.
+//   • Head to head: your meetings. Only frames the two of you played against
+//     each other count (tdc_head_to_head).
+//   • Compare: side by side, both players' all-time stats.
 // Your own profile has no toggle and no buttons for others.
 //
 // Every number is counted here from what tdc_player_profile returns (frames
-// are the only record): only finished matches and their finished frames. A
-// team night is the player's match too, won if their side won it (UV, 5 Nov).
-// "Lags won" is frames broken, as the standings count it.
+// are the only record): only finished matches and their finished frames. The
+// match lists show every match in any state, with its state strip (UV, 5 Nov;
+// migration 20261105064410). A team night is the player's match too, won if
+// their side won it (UV, 5 Nov). "Lags" is frames broken, as the standings
+// count it.
 //
-// Challenge, Follow, the rematch, Home venue, More and trophies have nothing
-// behind them yet (UV, 5 Nov: shown, a tap says so).
+// Challenge, Follow, the rematch, Home venue and More have nothing behind
+// them yet (UV, 5 Nov: shown, a tap says so). Honours are off the page until
+// they are built (UV, 5 Nov).
 //
 // Needs: tdc.js, match-settings.js (TDCMatchDef), league-standings-def.js
 // (TDCStandings, for a team's place).
@@ -26,13 +31,12 @@
 	const el = (id) => document.getElementById(id);
 	const els = {
 		status: el('pp-status'), body: el('pp-body'),
-		pic: el('pp-pic'), verified: el('pp-verified'), name: el('pp-name'), full: el('pp-full'), chips: el('pp-chips'),
-		others: el('pp-others'), compare: el('pp-compare'), views: el('pp-views'),
-		profile: el('pp-tab-profile'), h2h: el('pp-tab-h2h'),
+		pic: el('pp-pic'), verified: el('pp-verified'), name: el('pp-name'), full: el('pp-full'),
+		actions: el('pp-actions'), views: el('pp-views'),
+		profile: el('pp-tab-profile'), h2h: el('pp-tab-h2h'), cmpTab: el('pp-tab-cmp'),
 		form: el('pp-form'), period: el('pp-period'), grid: el('pp-grid'),
-		bars: el('pp-bars'), barLabels: el('pp-bar-labels'), brk: el('pp-break'),
-		teams: el('pp-teams'), recent: el('pp-recent'), last: el('pp-last'),
-		honours: el('pp-honours'), aboutTitle: el('pp-about-title'), about: el('pp-about'),
+		bars: el('pp-bars'), barLabels: el('pp-bar-labels'),
+		teams: el('pp-teams'), aboutTitle: el('pp-about-title'), about: el('pp-about'),
 		vs: el('pp-vs'), split: el('pp-split'), vsLine: el('pp-vs-line'),
 		meeting: el('pp-meeting'), cmp: el('pp-cmp'), meetings: el('pp-meetings')
 	};
@@ -43,7 +47,6 @@
 	let mine = null;     // and of the person looking, for side by side
 	let h2h = null;      // tdc_head_to_head
 	let days = 0;        // the period: 0 all time, else the last n days
-	let recentAll = false;
 	let meetingsAll = false;
 
 	// ─── Small helpers ───
@@ -52,17 +55,6 @@
 		if (cls) n.className = cls;
 		if (text !== undefined && text !== null) n.textContent = text;
 		return n;
-	}
-	const NS = 'http://www.w3.org/2000/svg';
-	function svg(d, filled) {
-		const s = document.createElementNS(NS, 'svg');
-		s.setAttribute('viewBox', '0 0 24 24');
-		s.setAttribute('aria-hidden', 'true');
-		const p = document.createElementNS(NS, 'path');
-		p.setAttribute('d', d);
-		if (filled) p.setAttribute('fill', 'currentColor');
-		s.append(p);
-		return s;
 	}
 	const initials = (name) => (name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 	// A player's picture (player-avatars) or their initials.
@@ -102,16 +94,17 @@
 	}
 
 	// ─── Counting ───
-	// The player's matches and frames inside the period.
+	// The player's finished matches and their frames inside the period: the
+	// lists show every state, but only a finished match is counted.
 	function inPeriod(p) {
 		const since = days ? Date.now() - days * 86400000 : 0;
-		const matches = p.matches.filter((m) => !since || new Date(m.played_at).getTime() >= since);
+		const matches = p.matches.filter((m) => m.status === 'complete' && (!since || new Date(m.played_at).getTime() >= since));
 		const ids = new Set(matches.map((m) => m.match_id));
 		return { matches, frames: p.frames.filter((f) => ids.has(f.match_id)) };
 	}
 
 	function count(p, all) {
-		const { matches, frames } = all ? { matches: p.matches, frames: p.frames } : inPeriod(p);
+		const { matches, frames } = all ? { matches: p.matches.filter((m) => m.status === 'complete'), frames: p.frames } : inPeriod(p);
 		const won = frames.filter((f) => f.won);
 		const broke = frames.filter((f) => f.broke === true);
 		const offBreak = frames.filter((f) => f.broke === false);
@@ -130,13 +123,11 @@
 			frames: frames.length,
 			fw: won.length,
 			bf: won.filter((f) => f.result_event === 'break_and_finish').length,
+			rbf: won.filter((f) => f.result_event === 'reverse_break_and_finish').length,
 			gb: gb.length,
-			gbLast: gb.length ? gb.map((f) => f.at).sort().pop() : null,
 			broke: broke.length,
 			breakKnown: broke.length + offBreak.length,
 			wonOnBreak: broke.filter((f) => f.won).length,
-			wonOffBreak: offBreak.filter((f) => f.won).length,
-			offBreak: offBreak.length,
 			best,
 			current: run
 		};
@@ -148,26 +139,39 @@
 		els.pic.replaceChildren(avatar(p.avatar_path, p.display_name, 'pp-pic-inner'));
 		els.verified.hidden = !p.verified;
 		els.name.textContent = p.display_name;
+		fitName();
 		els.full.textContent = p.full_name || '';
 		els.full.hidden = !p.full_name;
 		document.title = p.display_name + ' — The Dive Club';
 
-		const chips = [];
-		if (p.verified) chips.push(node('span', 'pp-chip pp-chip-on', 'Verified'));
-		const venue = node('button', 'pp-chip', 'Home venue');
-		venue.type = 'button';
-		venue.dataset.unbuilt = 'Home venue';
-		chips.push(venue);
-		const d = discipline();
-		if (d) chips.push(node('span', 'pp-chip', d));
-		chips.push(node('span', 'pp-chip', 'Since ' + monthYear(p.since)));
-		els.chips.replaceChildren(...chips);
+		// Only a photo can be shown large: initials help nobody recognise anyone.
+		const photo = !!TDC.pictureUrl('player-avatars', p.avatar_path);
+		els.pic.classList.toggle('pp-pic-zoomable', photo);
+		if (photo) {
+			els.pic.setAttribute('role', 'button');
+			els.pic.tabIndex = 0;
+			els.pic.setAttribute('aria-label', 'Show ' + p.display_name + '\'s picture large');
+		}
 
 		const other = !p.is_me;
-		els.others.hidden = !other;
+		for (const b of els.actions.querySelectorAll('[data-others]')) b.hidden = !other;
 		els.views.hidden = !other;
 		els.aboutTitle.textContent = 'About ' + p.display_name;
 	}
+
+	// The display name in its half of the hero: wrapped between words, never
+	// inside one, so its size comes down only as far as the longest word needs.
+	function fitName() {
+		const h = els.name;
+		h.style.fontSize = '';
+		const room = h.clientWidth;
+		if (room && h.scrollWidth > room) {
+			const size = parseFloat(getComputedStyle(h).fontSize);
+			h.style.fontSize = Math.floor(size * room / h.scrollWidth) + 'px';
+		}
+	}
+	document.fonts.ready.then(() => { if (them) fitName(); });
+	addEventListener('resize', () => { if (them) fitName(); });
 
 	// The discipline they play most, from their matches, else their leagues.
 	function discipline() {
@@ -179,85 +183,83 @@
 	}
 
 	// ─── Profile ───
+	// Form: their last 10 frames across every finished match, newest right
+	// (UV, 5 Nov), each won or lost, with a yellow ring where they broke.
 	function renderForm() {
-		const last = them.matches.slice(0, 10).reverse();
-		if (!last.length) { els.form.replaceChildren(node('span', 'muted', 'No finished matches yet.')); return; }
-		els.form.replaceChildren(...last.map((m) => resultDot(result(m), result(m) + ' ' + m.mine + '–' + m.theirs + ' v ' + m.opponent + ', ' + day(m.played_at))));
+		const byMatch = new Map(them.matches.map((m) => [m.match_id, m]));
+		const last = them.frames.slice()
+			.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : a.frame_no - b.frame_no))
+			.slice(-10);
+		if (!last.length) { els.form.replaceChildren(node('span', 'muted', 'No finished frames yet.')); return; }
+		els.form.replaceChildren(...last.map((f) => {
+			const m = byMatch.get(f.match_id);
+			const d = resultDot(f.won ? 'W' : 'L');
+			if (f.broke) d.classList.add('pp-dot-broke');
+			d.title = (f.won ? 'Won' : 'Lost') + (f.broke ? ', broke' : '') + (m ? ' · v ' + m.opponent + ', ' + day(m.played_at) : '');
+			return d;
+		}));
 	}
 
-	function cell(label, big, sub, tone, wide) {
-		const c = node('div', 'pp-cell' + (wide ? ' pp-cell-wide' : ''));
+	function cell(label, big, sub, tone) {
+		const c = node('div', 'pp-cell');
 		c.append(node('span', 'pp-lbl', label), node('span', 'pp-big' + (tone ? ' pp-' + tone : ''), big), node('span', 'muted pp-cell-sub', sub));
 		return c;
 	}
 
+	// Four boxes (UV, 5 Nov). Conversion: frames won on their own break, of
+	// the frames they broke ("Lags", as the standings count lags won).
 	function renderStats() {
 		const s = count(them);
 		els.grid.replaceChildren(
-			cell('Matches', String(s.matches), s.mw + ' W · ' + s.ml + ' L' + (s.md ? ' · ' + s.md + ' D' : '')),
-			cell('Frames played', String(s.frames), s.fw + ' W · ' + (s.frames - s.fw) + ' L'),
-			cell('Frame win', pct(s.fw, s.frames), s.fw + ' of ' + s.frames, 'primary'),
-			cell('Break & finish', String(s.bf), s.bf && s.broke ? '1 in ' + Math.round(s.broke / s.bf) + ' breaks' : s.broke + ' breaks', 'warning'),
-			cell('Golden breaks', String(s.gb), s.gbLast ? 'Last: ' + day(s.gbLast) : 'None yet'),
-			cell('Lags won', pct(s.broke, s.breakKnown), s.broke + ' of ' + s.breakKnown + ' frames'),
-			cell('Best streak', String(s.best), 'Current: ' + s.current, null, true)
+			cell('Frames', pct(s.fw, s.frames), 'P ' + s.frames + ' · W ' + s.fw + ' · L ' + (s.frames - s.fw), 'primary'),
+			cell('Matches', pct(s.mw, s.matches), 'P ' + s.matches + ' · W ' + s.mw + ' · L ' + s.ml + (s.md ? ' · D ' + s.md : ''), 'primary'),
+			cell('B&F', String(s.bf), 'GB ' + s.gb + ' · rB&F ' + s.rbf, 'warning'),
+			cell('Conversion', pct(s.wonOnBreak, s.broke), 'Lags ' + s.broke + ' · FW ' + s.wonOnBreak)
 		);
 	}
 
+	// Frames won minus frames lost on each of the last 15 nights in the
+	// period (UV, 5 Nov): green above the line, grey below it, a stub on it
+	// for a night that came out even.
 	function renderBars() {
 		const { frames } = inPeriod(them);
 		const nights = new Map();
 		for (const f of frames.slice().reverse()) {
 			const k = dayKey(f.at);
-			if (!nights.has(k)) nights.set(k, { at: f.at, won: 0, played: 0 });
+			if (!nights.has(k)) nights.set(k, { at: f.at, won: 0, lost: 0 });
 			const n = nights.get(k);
-			n.played++;
-			if (f.won) n.won++;
+			if (f.won) n.won++; else n.lost++;
 		}
-		const list = [...nights.values()].slice(-12);
+		const list = [...nights.values()].slice(-15);
 		if (!list.length) {
 			els.bars.replaceChildren(node('span', 'muted pp-empty', 'No frames in this period.'));
 			els.barLabels.replaceChildren();
 			return;
 		}
-		const max = Math.max(1, ...list.map((n) => n.won));
+		const up = Math.max(0, ...list.map((n) => n.won - n.lost));
+		const down = Math.max(0, ...list.map((n) => n.lost - n.won));
+		const upShare = up + down ? (up / (up + down)) * 100 : 50;   // where the base line sits
 		let month = '';
 		const labels = [];
-		els.bars.replaceChildren(...list.map((n) => {
-			const b = node('span', 'pp-bar' + (n.won < n.played - n.won ? ' pp-bar-lost' : ''));
-			b.style.height = Math.max(4, (n.won / max) * 100) + '%';
-			b.title = day(n.at) + ': ' + n.won + ' of ' + n.played + ' frames won';
+		const line = node('span', 'pp-baseline');
+		line.style.top = upShare + '%';
+		els.bars.replaceChildren(line, ...list.map((n) => {
+			const diff = n.won - n.lost;
+			const col = node('span', 'pp-night');
+			col.title = day(n.at) + ': won ' + n.won + ', lost ' + n.lost + ' (' + (diff > 0 ? '+' : '') + diff + ')';
+			const top = node('span', 'pp-night-up'), bottom = node('span', 'pp-night-down');
+			top.style.height = upShare + '%';
+			bottom.style.height = (100 - upShare) + '%';
+			const b = node('span', 'pp-bar' + (diff < 0 ? ' pp-bar-lost' : diff === 0 ? ' pp-bar-even' : ''));
+			if (diff) b.style.height = (Math.abs(diff) / (diff > 0 ? up : down)) * 100 + '%';
+			(diff < 0 ? bottom : top).append(b);
+			col.append(top, bottom);
 			const m = new Date(n.at).toLocaleDateString('en-ZA', { month: 'short' });
 			labels.push(node('span', null, m !== month ? m : ''));
 			month = m;
-			return b;
+			return col;
 		}));
 		els.barLabels.replaceChildren(...labels);
-	}
-
-	function meter(label, value, ofWhat, tone) {
-		const row = node('div', 'pp-meter');
-		const top = node('div', 'pp-meter-top');
-		top.append(node('span', null, label), node('span', 'pp-meter-val' + (tone ? ' pp-' + tone : ''), pct(value, ofWhat)));
-		const track = node('div', 'pp-track');
-		const fill = node('div', 'pp-fill' + (tone ? ' pp-fill-' + tone : ''));
-		fill.style.width = (ofWhat ? (value / ofWhat) * 100 : 0) + '%';
-		track.append(fill);
-		row.append(top, track);
-		return row;
-	}
-
-	function renderBreak() {
-		const s = count(them);
-		if (!s.breakKnown) {
-			els.brk.replaceChildren(node('p', 'muted pp-empty', 'No frames with the break recorded in this period.'));
-			return;
-		}
-		els.brk.replaceChildren(
-			meter('Frames won on own break', s.wonOnBreak, s.broke, 'primary'),
-			meter('Frames won off opponent\'s break', s.wonOffBreak, s.offBreak),
-			meter('Break & finish rate', s.bf, s.broke, 'warning')
-		);
 	}
 
 	// Each team's place in its season, by the league's own ranking columns
@@ -302,81 +304,60 @@
 		}));
 	}
 
+	// A match's state, as the league fixtures' strip names it (UV, 5 Nov):
+	// colours from league.css (.fx-state-*).
+	const STATE = { scheduled: 'Not started', in_progress: 'Playing', complete: 'Finished', abandoned: 'Abandoned' };
+
 	function matchRow(m) {
 		const row = node('a', 'pp-row');
 		row.href = matchHref(m);
+		const strip = node('span', 'pp-state fx-state-' + m.status);
+		strip.title = STATE[m.status] || m.status;
+		strip.append(node('span', 'pp-sr', strip.title));
 		const pic = m.team_match ? node('span', 'team-pic pp-row-pic') : avatar(m.opponent_avatar, m.opponent);
 		if (m.team_match) pic.append(TDC.teamPic(m.opponent_team_picture));
 		const names = node('span', 'pp-row-names');
 		names.append(node('span', 'pp-row-name', 'vs ' + m.opponent), node('span', 'muted pp-row-sub', kindLabel(m) + ' · ' + day(m.played_at)));
+		// The score once a frame is in; the win or loss only once finished.
 		const score = node('span', 'pp-score');
-		const a = node('span', m.mine > m.theirs ? 'pp-primary' : null, String(m.mine));
-		const b = node('span', m.theirs > m.mine ? null : 'muted', String(m.theirs));
-		score.append(a, document.createTextNode('–'), b);
-		row.append(pic, names, score, resultDot(result(m)));
+		if (m.status !== 'complete' && !m.mine && !m.theirs) score.append(node('span', 'muted', '–'));
+		else {
+			const a = node('span', m.mine > m.theirs ? 'pp-primary' : null, String(m.mine));
+			const b = node('span', m.theirs > m.mine ? null : 'muted', String(m.theirs));
+			score.append(a, document.createTextNode('–'), b);
+		}
+		const end = m.status === 'complete' ? resultDot(result(m)) : node('span', 'pp-dot');
+		row.append(strip, pic, names, score, end);
 		return row;
 	}
 
-	function renderRecent() {
-		const list = them.matches;
-		if (!list.length) {
-			els.recent.replaceChildren(node('p', 'muted pp-empty', 'No finished matches yet.'));
-			els.last.replaceChildren();
-			return;
-		}
-		const shown = recentAll ? list : list.slice(0, 3);
-		const rows = shown.map(matchRow);
-		if (list.length > 3) {
-			const more = node('button', 'pp-link', recentAll ? 'Show fewer' : 'See all ' + list.length);
-			more.type = 'button';
-			more.addEventListener('click', () => { recentAll = !recentAll; renderRecent(); });
-			rows.push(more);
-		}
-		els.recent.replaceChildren(...rows);
-
-		// The last match, frame by frame: their own frames in it.
-		const m = list[0];
-		const frames = them.frames.filter((f) => f.match_id === m.match_id).sort((x, y) => x.frame_no - y.frame_no);
-		const head = node('p', 'muted pp-sub', 'vs ' + m.opponent + ' · ' + kindLabel(m) + ' · ' + day(m.played_at) + ' · ' + { W: 'won', L: 'lost', D: 'drawn' }[result(m)] + ' ' + m.mine + '–' + m.theirs);
-		const grid = node('div', 'pp-frames');
-		for (const f of frames) {
-			const c = node('span', 'pp-frame');
-			const d = node('span', 'pp-mark' + (f.won ? ' pp-mark-won' : '') + (f.broke ? ' pp-mark-broke' : ''));
-			d.title = 'Frame ' + f.frame_no + ': ' + (f.won ? 'won' : 'lost') + (f.broke ? ', broke' : '') +
-				(f.won && f.result_event && f.result_event !== 'win' ? ' (' + (TDCMatchDef.RESULT_EVENT[f.result_event] || f.result_event) + ')' : '');
-			c.append(node('span', 'muted pp-frame-no', String(f.frame_no)), d);
-			grid.append(c);
-		}
-		const key = node('p', 'muted pp-key');
-		key.append(node('span', null, '● green: frame won'), node('span', 'pp-warning', '○ yellow ring: broke'));
-		const open = node('a', 'pp-link', 'Open match');
-		open.href = matchHref(m);
-		els.last.replaceChildren(head, grid, key, open);
+	// A list a page at a time, its page number the stepper on its side in the
+	// heading (UV, 5 Nov): leagues and tournaments 4 a page, recent matches 5.
+	const LISTS = {
+		league: { per: 4, box: el('pp-league'), page: el('pp-page-league'), of: (ms) => ms.filter((m) => m.kind === 'league'), none: 'No league matches yet.' },
+		tournament: { per: 4, box: el('pp-tournament'), page: el('pp-page-tournament'), of: (ms) => ms.filter((m) => m.kind === 'tournament'), none: 'No tournament matches yet.' },
+		recent: { per: 5, box: el('pp-recent'), page: el('pp-page-recent'), of: (ms) => ms, none: 'No matches yet.' }
+	};
+	function renderList(key) {
+		const l = LISTS[key];
+		const list = l.of(them.matches);
+		const pages = Math.max(1, Math.ceil(list.length / l.per));
+		l.page.max = String(pages);
+		l.page.disabled = pages < 2;
+		const at = Math.min(pages, Math.max(1, Math.round(l.page.valueAsNumber) || 1));
+		if (l.page.valueAsNumber !== at) l.page.value = String(at);
+		const shown = list.slice((at - 1) * l.per, at * l.per);
+		l.box.replaceChildren(...(shown.length ? shown.map(matchRow) : [node('p', 'muted pp-empty', l.none)]));
 	}
-
-	function honour(icon, title, sub, unbuilt) {
-		const t = node(unbuilt ? 'button' : 'div', 'pp-honour');
-		if (unbuilt) { t.type = 'button'; t.dataset.unbuilt = unbuilt; }
-		const ic = node('span', 'pp-honour-icon');
-		ic.append(icon);
-		t.append(ic, node('span', 'pp-honour-title', title), node('span', 'muted pp-honour-sub', sub));
-		return t;
-	}
-
-	function renderHonours() {
-		const s = count(them, true);
-		const tiles = [honour(svg('M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3M12 14v4M8 20h8'), 'Trophies', 'Not built yet', 'Trophies')];
-		if (s.gb) tiles.push(honour(svg('M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16zM12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6z'), 'Golden break', '×' + s.gb));
-		if (s.bf) tiles.push(honour(svg('M4 18l5-6 4 3 7-9'), 'Break & finish', '×' + s.bf));
-		if (s.best) tiles.push(honour(svg('M13 3L5 14h6l-1 7 8-11h-6z'), 'Win streak', 'Best ' + s.best));
-		els.honours.replaceChildren(...tiles);
-	}
+	for (const key of Object.keys(LISTS)) LISTS[key].page.addEventListener('change', () => { if (them) renderList(key); });
 
 	function renderAbout() {
 		const p = them.player;
 		const rows = [];
 		const add = (label, value) => { rows.push(node('dt', 'muted', label)); const dd = node('dd'); dd.append(value); rows.push(dd); };
 		add('Full name', document.createTextNode(p.full_name || 'Not given'));
+		const d = discipline();
+		if (d) add('Plays', document.createTextNode(d));
 		const venue = node('button', 'pp-link', 'Not built yet');
 		venue.type = 'button';
 		venue.dataset.unbuilt = 'Home venue';
@@ -400,9 +381,7 @@
 		renderForm();
 		renderStats();
 		renderBars();
-		renderBreak();
-		renderRecent();
-		renderHonours();
+		for (const key of Object.keys(LISTS)) renderList(key);
 		renderAbout();
 	}
 
@@ -511,23 +490,22 @@
 
 	// ─── The tabs and the period ───
 	const pause = () => new Promise((r) => setTimeout(r, 200));
+	// profile, h2h or cmp; only profile on your own page. &tab= keeps it on reload.
 	function showTab(tab, btn) {
-		const h = tab === 'h2h' && them && !them.player.is_me;
-		for (const b of els.views.querySelectorAll('[data-tab]')) b.setAttribute('aria-pressed', String((b.dataset.tab === 'h2h') === h));
-		els.profile.hidden = h;
-		els.h2h.hidden = !h;
+		const other = them && !them.player.is_me;
+		const t = other && (tab === 'h2h' || tab === 'cmp') ? tab : 'profile';
+		for (const b of els.views.querySelectorAll('[data-tab]')) b.setAttribute('aria-pressed', String(b.dataset.tab === t));
+		els.profile.hidden = t !== 'profile';
+		els.h2h.hidden = t !== 'h2h';
+		els.cmpTab.hidden = t !== 'cmp';
 		const url = new URL(location.href);
-		if (h) url.searchParams.set('tab', 'h2h'); else url.searchParams.delete('tab');
+		if (t === 'profile') url.searchParams.delete('tab'); else url.searchParams.set('tab', t);
 		history.replaceState(null, '', url);
 		if (btn) TDC.busy(btn, pause(), els.status);
 	}
 	els.views.addEventListener('click', (e) => {
 		const b = e.target.closest('[data-tab]');
 		if (b) showTab(b.dataset.tab, b);
-	});
-	els.compare.addEventListener('click', () => {
-		showTab('h2h', els.compare);
-		els.views.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	});
 	els.period.addEventListener('click', (e) => {
 		const b = e.target.closest('[data-days]');
@@ -536,8 +514,80 @@
 		for (const x of els.period.querySelectorAll('[data-days]')) x.setAttribute('aria-pressed', String(x === b));
 		renderStats();
 		renderBars();
-		renderBreak();
 		TDC.busy(b, pause(), els.status);
+	});
+
+	// ─── The large picture ───
+	// Players use it to recognise each other (UV, 5 Nov). A tap on the hero's
+	// photo grows it into the middle of the screen in its green ring and glow;
+	// any tap, key, scroll or swipe shrinks it back into the hero. With less
+	// motion it fades in and out instead (data-motion, as dots.js reads it).
+	const lessMotion = matchMedia('(prefers-reduced-motion: reduce)');
+	function reduced() {
+		const m = document.documentElement.dataset.motion;
+		return m === 'reduce' ? true : m === 'full' ? false : lessMotion.matches;
+	}
+	const ZOOM_MS = 350;
+	const ZOOM_CLOSERS = ['pointerdown', 'wheel', 'touchmove', 'keydown', 'scroll'];
+	let zoom = null;
+
+	// The hero picture's place as a transform on the large one.
+	function fromHero(ring) {
+		const a = els.pic.getBoundingClientRect(), b = ring.getBoundingClientRect();
+		const dx = (a.left + a.width / 2) - (b.left + b.width / 2);
+		const dy = (a.top + a.height / 2) - (b.top + b.height / 2);
+		return 'translate(' + dx + 'px, ' + dy + 'px) scale(' + (a.width / b.width) + ')';
+	}
+
+	function openZoom() {
+		const url = them && TDC.pictureUrl('player-avatars', them.player.avatar_path);
+		if (!url || zoom) return;
+		const box = node('div', 'pp-zoom');
+		box.setAttribute('role', 'dialog');
+		box.setAttribute('aria-label', them.player.display_name + '\'s picture');
+		const shade = node('div', 'pp-zoom-shade');
+		const ring = node('div', 'pp-zoom-pic');
+		const inner = node('div', 'pp-zoom-inner');
+		const img = document.createElement('img');
+		img.src = url;
+		img.alt = them.player.display_name;
+		inner.append(img);
+		ring.append(inner);
+		box.append(shade, ring);
+		document.body.append(box);
+
+		const opts = { duration: ZOOM_MS, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' };
+		shade.animate([{ opacity: 0 }, { opacity: 1 }], opts);
+		if (reduced()) ring.animate([{ opacity: 0 }, { opacity: 1 }], opts);
+		else ring.animate([{ transform: fromHero(ring) }, { transform: 'none' }], opts);
+		els.pic.classList.add('pp-pic-away');
+		zoom = { box, shade, ring };
+		// After this event has finished, so the tap or key that opened it does not close it.
+		setTimeout(() => { if (zoom) for (const t of ZOOM_CLOSERS) window.addEventListener(t, closeZoom, { capture: true, passive: true }); }, 0);
+	}
+
+	function closeZoom() {
+		if (!zoom || zoom.closing) return;
+		zoom.closing = true;
+		for (const t of ZOOM_CLOSERS) window.removeEventListener(t, closeZoom, { capture: true });
+		const { box, shade, ring } = zoom;
+		const opts = { duration: ZOOM_MS, easing: 'cubic-bezier(0.4, 0, 0.6, 1)', fill: 'forwards' };
+		shade.animate([{ opacity: 1 }, { opacity: 0 }], opts);
+		const done = reduced()
+			? ring.animate([{ opacity: 1 }, { opacity: 0 }], opts)
+			: ring.animate([{ transform: 'none' }, { transform: fromHero(ring) }], opts);
+		done.finished.then(() => {
+			box.remove();
+			els.pic.classList.remove('pp-pic-away');
+			zoom = null;
+		});
+	}
+
+	els.pic.addEventListener('click', openZoom);
+	els.pic.addEventListener('keydown', (e) => {
+		if (e.key !== 'Enter' && e.key !== ' ') return;
+		e.preventDefault();
+		openZoom();
 	});
 
 	// ─── Not built yet, and the bar ───
@@ -550,9 +600,29 @@
 		const note = (box && box.querySelector('[data-note]')) || els.status;
 		TDC.status(note, b.dataset.unbuilt + ' is not built yet.', '');
 	});
-	el('pp-back').addEventListener('click', () => {
-		if (history.length > 1) history.back(); else location.href = '/leagues/';
-	});
+	// The hero's buttons: each a ring icon (ring-status.js) that draws itself
+	// in once the page is shown, as the fixtures page's buttons do.
+	function wakeIcons() {
+		for (const b of els.actions.querySelectorAll('.pp-icon:not([hidden])')) {
+			if (b.tdcRing) continue;
+			const icon = b.dataset.icon;
+			const face = node('span', 'tdc-ring');
+			face.innerHTML = TDCRing.svg();
+			b.append(face);
+			try {
+				b.tdcRing = new TDCRing.RingStatus(face, {
+					icons: [icon],
+					labels: { [icon]: b.getAttribute('aria-label'), empty: b.getAttribute('aria-label') },
+					initial: 'empty'
+				});
+			} catch (err) {
+				TDC.error(AREA, 'an icon could not be drawn: ' + icon, err, els.status);
+				continue;
+			}
+			b.tdcRing.drawTo(icon);
+		}
+	}
+
 	el('pp-share').addEventListener('click', async () => {
 		const url = location.origin + '/players/?p=' + encodeURIComponent(playerId);
 		const title = (them ? them.player.display_name : 'A player') + ' — The Dive Club';
@@ -571,6 +641,12 @@
 		if (r.error) { TDC.showSupabaseError(AREA, r.error, els.status); return false; }
 		if (!r.data || (what === 'profile' && (!r.data.player || !Array.isArray(r.data.matches)))) {
 			TDC.error(AREA, 'the ' + what + ' came back in a shape this page does not know.', r.data, els.status);
+			return false;
+		}
+		// Each match's state arrives with migration 20261105064410; without it
+		// every list and count would be empty, so say so.
+		if (what === 'profile' && r.data.matches.some((m) => !m.status)) {
+			TDC.error(AREA, 'the matches came without their state. Push migration 20261105064410.', null, els.status);
 			return false;
 		}
 		return true;
@@ -604,8 +680,10 @@
 		renderProfile();
 		renderH2H();
 		renderTeams(null);
-		showTab(params.get('tab') === 'h2h' ? 'h2h' : 'profile');
+		showTab(params.get('tab'));
 		els.body.hidden = false;
+		fitName();   // measured once it is shown
+		wakeIcons();
 		renderTeams(await teamPlaces());
 	})(), 'The player');
 })();

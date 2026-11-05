@@ -1186,9 +1186,10 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 	flex: none;
 	fill: none;
 	stroke: currentColor;
-	stroke-width: 1.8;
+	stroke-width: var(--icon-line);
 	stroke-linejoin: round;
 }
+.cp-view svg * { vector-effect: non-scaling-stroke; }
 .cp-view svg circle { fill: currentColor; stroke: none; }
 
 /* Head to head: a table per team, side by side when both fit, one under

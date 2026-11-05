@@ -128,7 +128,8 @@ TDCLeagueNav.panel('season', () => {
 		else {
 			path.setAttribute('fill', 'none');
 			path.setAttribute('stroke', 'currentColor');
-			path.setAttribute('stroke-width', '2');
+			path.style.strokeWidth = 'var(--icon-line)';   // as a ring's line, at any size (UV, 5 Nov)
+			path.setAttribute('vector-effect', 'non-scaling-stroke');
 			path.setAttribute('stroke-linejoin', 'round');
 		}
 		svg.append(path);

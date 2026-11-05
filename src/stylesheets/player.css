@@ -7,11 +7,8 @@
 
 /* ── Buttons: none of the card's button look (.tdc-card button stretches and
  * capitalises), only their own ── */
-.tdc-card .pp-ring,
 .tdc-card .pp-btn,
-.tdc-card .pp-chip,
-.tdc-card .pp-link,
-.tdc-card .pp-honour {
+.tdc-card .pp-link {
 	width: auto;
 	margin: 0;
 	font-family: inherit;
@@ -21,28 +18,23 @@
 	cursor: pointer;
 }
 
-/* Back · Player · Share · More */
-.pp-topbar { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
-.pp-topbar-title { flex: 1; font-weight: 700; }
-.tdc-card .pp-ring {
-	flex: none;
-	display: grid;
-	place-items: center;
-	width: 2.75rem;
-	height: 2.75rem;
-	padding: 0;
-	border: var(--control-border) solid var(--text-primary);
-	border-radius: var(--radius-round);
-	background: transparent;
-	color: var(--text-primary);
-}
-.pp-ring svg { width: 1.25rem; height: 1.25rem; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-.pp-ring circle { fill: currentColor; stroke: none; }
-.tdc-card .pp-ring:hover,
-.tdc-card .pp-ring:focus-visible { background: var(--hover-wash); outline: none; }
-
 /* ── The hero ── */
 .pp-hero { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); text-align: center; }
+/* The picture against the centre line on its left, the names against it on
+ * its right (UV, 5 Nov). A long display name wraps within its half. */
+.pp-id {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	align-items: center;
+	column-gap: var(--space-4);
+	width: 100%;
+}
+.pp-id .pp-pic-wrap { justify-self: end; }
+/* The names stand on the picture's foot (UV, 5 Nov). */
+.pp-names { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; align-self: end; }
+/* Against the line, over forms.css's centred page heading and its line. */
+.tdc-card .pp-names h1,
+.tdc-card .pp-names h1 + p { text-align: left; }
 .pp-pic-wrap { position: relative; }
 .pp-pic {
 	width: 8.25rem;
@@ -81,27 +73,88 @@
 	background: var(--bg-base);
 }
 .pp-verified[hidden] { display: none; }
-.pp-verified svg { width: 1rem; height: 1rem; fill: none; stroke: var(--color-primary); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-.tdc-card .pp-hero h1 { margin: var(--space-2) 0 0; font-family: var(--font-display); font-weight: 400; font-size: 2.75rem; line-height: 1; }
+/* Icon lines as heavy as their ring (UV, 5 Nov): the tick's ring is the badge's border. */
+.pp-verified svg { width: 1rem; height: 1rem; fill: none; stroke: var(--color-primary); stroke-width: var(--control-border); stroke-linecap: round; stroke-linejoin: round; }
+.pp-verified svg * { vector-effect: non-scaling-stroke; }
+.tdc-card .pp-hero h1 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 2.75rem; line-height: 1; overflow-wrap: normal; }
 .pp-full { margin: 0; }
 .pp-full[hidden] { display: none; }
 
-.pp-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); margin-top: var(--space-1); }
-.tdc-card .pp-chip {
-	padding: var(--space-1) var(--space-3);
-	border: 1px solid var(--border-color);
-	border-radius: var(--radius-pill);
-	background: transparent;
-	color: var(--text-primary);
-	font-size: 0.82rem;
-	font-weight: 400;
+/* ── The large picture (player.js, openZoom) ──
+ * The hero's ring and glow at up to 512px, the size pictures are stored at.
+ * The ring's padding and the dark edge inside it keep the hero's proportions,
+ * so the picture grows from the hero without its ring changing weight. */
+.pp-pic-zoomable { cursor: zoom-in; }
+.pp-pic-zoomable:focus-visible { outline: var(--control-border) solid var(--text-primary); outline-offset: 3px; }
+.pp-pic.pp-pic-away { visibility: hidden; }
+.pp-zoom {
+	--zoom-size: min(80vmin, 36rem);   /* 36rem: a 512px picture inside the ring */
+	position: fixed;
+	inset: 0;
+	z-index: 500;
+	display: grid;
+	place-items: center;
+	cursor: zoom-out;
 }
-span.pp-chip { cursor: default; }
-.tdc-card .pp-chip-on { border-color: transparent; background: color-mix(in srgb, var(--color-primary) 14%, transparent); color: var(--color-primary); }
+.pp-zoom-shade {
+	position: absolute;
+	inset: 0;
+	background: color-mix(in srgb, var(--bg-base) 75%, transparent);
+	-webkit-backdrop-filter: blur(var(--loader-blur));
+	backdrop-filter: blur(var(--loader-blur));
+}
+.pp-zoom-pic {
+	position: relative;
+	width: var(--zoom-size);
+	height: var(--zoom-size);
+	padding: calc(var(--zoom-size) * 0.03);
+	border-radius: var(--radius-round);
+	background: conic-gradient(var(--color-primary), color-mix(in srgb, var(--color-primary) 15%, transparent), var(--color-primary));
+	box-shadow: 0 0 calc(var(--zoom-size) * 0.2) color-mix(in srgb, var(--color-primary) 40%, transparent);
+	box-sizing: border-box;
+	will-change: transform;
+}
+.pp-zoom-inner {
+	width: 100%;
+	height: 100%;
+	border: calc(var(--zoom-size) * 0.023) solid var(--bg-base);
+	border-radius: var(--radius-round);
+	box-sizing: border-box;
+	overflow: hidden;
+	background: var(--bg-surface);
+}
+.pp-zoom-inner img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
-#pp-others { display: flex; flex-direction: column; gap: var(--space-3); width: 100%; margin-top: var(--space-4); }
-#pp-others[hidden] { display: none; }
-.pp-actions { display: flex; gap: var(--space-3); }
+/* Challenge · Follow · Share · More: ring icons (ring-status.js, status.css),
+ * each named by its title and label (UV, 5 Nov). Challenge's ring is green,
+ * the others cream; on your own profile only Share and More. */
+.pp-actions { display: flex; justify-content: center; gap: var(--space-4); margin-top: var(--space-4); }
+.tdc-card button.pp-icon {
+	flex: none;
+	width: 3rem;
+	height: 3rem;
+	padding: 0;
+	margin: 0;
+	border: none;
+	border-radius: var(--radius-round);
+	background: transparent;
+	cursor: pointer;
+	transition: box-shadow 0.15s ease;
+	-webkit-tap-highlight-color: transparent;
+}
+.tdc-card button.pp-icon[hidden] { display: none; }
+.tdc-card button.pp-icon:hover,
+.tdc-card button.pp-icon:focus-visible { box-shadow: var(--glow-primary); outline: none; }
+.pp-icon-primary .tdc-ring .ring { stroke: var(--color-primary); }
+.tdc-card button.pp-icon-primary { box-shadow: 0 0 14px color-mix(in srgb, var(--color-primary) 35%, transparent); }
+.pp-icon .sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
 .tdc-card .pp-btn {
 	flex: 1;
 	min-height: 3rem;
@@ -114,7 +167,6 @@ span.pp-chip { cursor: default; }
 	font-weight: 700;
 }
 .tdc-card .pp-btn-primary { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-on-primary); }
-.tdc-card .pp-btn-quiet { min-height: 2.75rem; border: 1px solid var(--border-color); font-size: 0.95rem; }
 .tdc-card .pp-btn:hover,
 .tdc-card .pp-btn:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 .pp-hero [data-note],
@@ -162,45 +214,44 @@ span.pp-chip { cursor: default; }
 .pp-dot-w { background: var(--color-primary); box-shadow: 0 0 8px color-mix(in srgb, var(--color-primary) 55%, transparent); }
 .pp-dot-l { border: 2px solid var(--border-color); }
 .pp-dot-d { border: 2px solid var(--color-primary); background: linear-gradient(90deg, var(--color-primary) 50%, transparent 50%); }
+/* Form: a frame they broke wears a yellow ring, a gap from the dot. */
+.pp-dot-broke { box-shadow: 0 0 0 3px var(--bg-base), 0 0 0 5px var(--color-warning); }
+.pp-dot-w.pp-dot-broke { box-shadow: 0 0 0 3px var(--bg-base), 0 0 0 5px var(--color-warning), 0 0 12px color-mix(in srgb, var(--color-primary) 55%, transparent); }
 
-/* Stats */
+/* Stats: equal boxes in one row, as many rows as they need (UV, 5 Nov) */
 .pp-period { margin: var(--space-3) auto 0; }
-.pp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
+.pp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
 .pp-cell {
 	display: flex;
 	flex-direction: column;
-	gap: var(--space-1);
+	gap: var(--space-2);
 	padding: var(--space-4);
 	border-radius: var(--radius-md);
 	box-shadow: var(--shadow-sunken);
 }
-.pp-cell-wide { grid-column: span 2; }
-.pp-lbl { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
-.pp-big { font-family: var(--font-display); font-size: 2.4rem; line-height: 1; }
-.pp-cell-sub { font-size: 0.82rem; }
+.pp-lbl { font-size: 0.72rem; line-height: 1; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.pp-big { font-family: var(--font-display); font-size: 2.4rem; line-height: 0.9; }
+.pp-cell-sub { font-size: 0.82rem; line-height: 1.3; }
 
-/* Frames won per night */
+/* The frame difference per night: each night a column, its bar above the
+ * base line for a night won on frames, below it for one lost; the line sits
+ * where the tallest of each side puts it. */
 .pp-bars {
+	position: relative;
 	display: flex;
-	align-items: flex-end;
 	gap: var(--space-1);
 	height: 8.75rem;
 	margin-top: var(--space-4);
-	border-bottom: 1px solid var(--border-color);
 }
+.pp-baseline { position: absolute; left: 0; right: 0; border-top: 1px solid var(--border-color); }
+.pp-night { flex: 1; display: flex; flex-direction: column; height: 100%; }
+.pp-night-up { display: flex; align-items: flex-end; }
+.pp-night-down { display: flex; align-items: flex-start; }
 .pp-bar { flex: 1; border-radius: var(--radius-sm) var(--radius-sm) 0 0; background: var(--color-primary); opacity: 0.85; }
-.pp-bar-lost { background: var(--border-color); }
+.pp-bar-lost { border-radius: 0 0 var(--radius-sm) var(--radius-sm); background: var(--border-color); }
+.pp-bar-even { height: 2px; border-radius: 0; background: var(--text-muted); }
 .pp-bar-labels { display: flex; gap: var(--space-1); margin-top: var(--space-1); font-size: 0.72rem; }
 .pp-bar-labels span { flex: 1; overflow: visible; white-space: nowrap; }
-
-/* On the break */
-.pp-meters { display: flex; flex-direction: column; gap: var(--space-4); margin-top: var(--space-3); }
-.pp-meter-top { display: flex; justify-content: space-between; gap: var(--space-3); font-size: 0.9rem; }
-.pp-meter-val { font-weight: 700; }
-.pp-track { height: 0.5rem; margin-top: var(--space-2); border-radius: var(--radius-pill); background: var(--hover-wash); overflow: hidden; }
-.pp-fill { height: 100%; border-radius: var(--radius-pill); background: var(--text-primary); }
-.pp-fill-primary { background: var(--color-primary); }
-.pp-fill-warning { background: var(--color-warning); }
 
 /* Leagues & teams */
 .pp-list { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3); }
@@ -257,46 +308,38 @@ span.pp-chip { cursor: default; }
 .pp-person-pic img { width: 100%; height: 100%; object-fit: cover; }
 .pp-score { font-family: var(--font-display); font-size: 1.4rem; white-space: nowrap; }
 .pp-score .muted { font-size: inherit; }
-
-/* The last match's frames */
-.pp-frames {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(1.75rem, 1fr));
-	gap: var(--space-2);
-	margin-top: var(--space-3);
-	padding: var(--space-3);
-	border-radius: var(--radius-md);
-	box-shadow: var(--shadow-sunken);
+/* A match's state: a strip down the row's left, the fixtures' colours
+ * (league.css .fx-state-*), its name for a screen reader and on hover. */
+.pp-state {
+	flex: none;
+	align-self: stretch;
+	width: var(--space-1);
+	border-radius: var(--radius-pill);
+	background: var(--strip-color, transparent);
+	box-shadow: var(--strip-glow, none);
 }
-.pp-frame { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
-.pp-frame-no { font-size: 0.7rem; }
-.pp-mark { width: 0.75rem; height: 0.75rem; border: 2px solid var(--border-color); border-radius: var(--radius-round); box-sizing: border-box; }
-.pp-mark-won { border-color: var(--color-primary); background: var(--color-primary); }
-.pp-mark-broke { box-shadow: 0 0 0 3px var(--bg-base), 0 0 0 5px var(--color-warning); }
+.pp-sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
 .pp-key { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-4); margin: var(--space-2) 0 0; font-size: 0.75rem; }
 
-/* Honours */
-.pp-honours { display: flex; gap: var(--space-3); margin-top: var(--space-3); overflow-x: auto; scrollbar-width: none; }
-.tdc-card .pp-honour {
-	flex: none;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: var(--space-1);
-	width: 6.9rem;
-	padding: var(--space-4) var(--space-2);
-	border: 0;
-	border-radius: var(--radius-md);
-	background: transparent;
-	color: var(--text-primary);
-	box-shadow: var(--shadow-sunken);
-	text-align: center;
-}
-div.pp-honour { cursor: default; }
-.pp-honour-icon svg { width: 1.75rem; height: 1.75rem; fill: none; stroke: var(--color-primary); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.pp-honour:first-child .pp-honour-icon svg { stroke: var(--color-warning); }
-.pp-honour-title { font-size: 0.82rem; font-weight: 700; }
-.pp-honour-sub { font-size: 0.75rem; }
+/* A list's heading with its page number on the right (UV, 5 Nov): the
+ * heading stays centred, as every heading on the page, the stepper on its
+ * side in the right-hand column. */
+.pp-head { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; column-gap: var(--space-3); }
+.pp-head > :first-child { grid-column: 2; }
+.pp-head > .tdc-stepper,
+.pp-head > input { grid-column: 3; justify-self: end; }
+.tdc-card .pp-head h2 { margin: 0; }
+.tdc-card .pp-head .pp-h3 { margin: 0; }
+.pp-head + div { margin-top: var(--space-2); }
+.pp-section .pp-head:not(:first-of-type) { margin-top: var(--space-5); }
+.pp-section h2 + .pp-head { margin-top: var(--space-3); }
 
 /* About */
 .pp-about { display: grid; grid-template-columns: auto 1fr; margin: var(--space-2) 0 0; font-size: 0.9rem; }

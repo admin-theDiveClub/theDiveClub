@@ -91,7 +91,7 @@
   --control-line: var(--text-primary);
   --control-border: 2px;          /* the pill's outline */
   --chevron-size: 1.5rem;         /* a chevron's width */
-  --chevron-stroke: 2.5;          /* a chevron's line weight */
+  --chevron-stroke: 1.8;          /* a chevron's line weight: as a ring's line (5 Nov) */
   --stepper-width: 3.5rem;        /* a number stepper */
   --stepper-number: 1.75rem;      /* the number in it */
   --stepper-across-number: 1rem;  /* the number in a stepper on its side (a fixture's tables) */
@@ -107,6 +107,7 @@
   /* The ring and the switch (status.css), and every icon drawing itself */
   --ring-size: 2.25rem;           /* a ring: a tick against a person or a thing */
   --ring-size-table: 1.75rem;     /* the same in a table row */
+  --icon-line: calc(var(--ring-size) * 0.05);  /* an icon with no ring: its lines as heavy as a ring's (UV, 5 Nov), at any size (non-scaling-stroke) */
   --switch-height: 2.25rem;       /* a switch: a setting */
   --switch-width: 4.2rem;
   --nav-ring-size: 2.4rem;        /* the ring icons on the nav bar: menu, reload, bell, account */

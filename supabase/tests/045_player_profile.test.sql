@@ -1,7 +1,8 @@
 -- A player's profile and head to head (migration 20261105044302, UV 5 Nov).
 --
 --   signed in only; an unknown player is refused
---   only finished matches count, and only their finished frames
+--   only finished matches count, and only their finished frames (every
+--     match is listed with its status since 20261105064410: see 046)
 --   a singles match: the score, each frame won and broke, the special win
 --   a team night is the player's match too, scored as their side's frames,
 --     while their own frames are only the ones they played
@@ -43,11 +44,15 @@ select public.tdc_record_frame(:'m2', 1, '{"winner_side": "away", "result_event"
 
 select tests.sign_in(:'carol');
 select public.tdc_player_profile(:'pbo') as bob_prof \gset
-select is(jsonb_array_length(:'bob_prof'::jsonb -> 'matches'), 1, 'only the finished match counts');
-select is((:'bob_prof'::jsonb -> 'matches' -> 0 ->> 'mine')::int, 1, 'Bob''s side won one frame');
-select is((:'bob_prof'::jsonb -> 'matches' -> 0 ->> 'theirs')::int, 2, 'and lost two');
-select is(:'bob_prof'::jsonb -> 'matches' -> 0 ->> 'opponent', 'Prof Alice', 'the opponent is Alice');
-select is(:'bob_prof'::jsonb -> 'matches' -> 0 ->> 'kind', 'social', 'a match outside a competition is social');
+-- Since 20261105064410 every match is listed with its status (046); only
+-- the finished one is counted.
+select x as bob_m1 from jsonb_array_elements(:'bob_prof'::jsonb -> 'matches') x where x ->> 'status' = 'complete' \gset
+select is((select count(*)::int from jsonb_array_elements(:'bob_prof'::jsonb -> 'matches') x where x ->> 'status' = 'complete'), 1,
+	'only the finished match counts');
+select is((:'bob_m1'::jsonb ->> 'mine')::int, 1, 'Bob''s side won one frame');
+select is((:'bob_m1'::jsonb ->> 'theirs')::int, 2, 'and lost two');
+select is(:'bob_m1'::jsonb ->> 'opponent', 'Prof Alice', 'the opponent is Alice');
+select is(:'bob_m1'::jsonb ->> 'kind', 'social', 'a match outside a competition is social');
 select is(jsonb_array_length(:'bob_prof'::jsonb -> 'frames'), 3, 'the in-progress match''s frame is not counted');
 select is(:'bob_prof'::jsonb -> 'player' ->> 'is_me', 'false', 'Carol is not Bob');
 select is(:'bob_prof'::jsonb -> 'player' ->> 'verified', 'false', 'Bob has no verified identifier');
