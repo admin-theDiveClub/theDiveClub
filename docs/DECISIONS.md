@@ -1378,3 +1378,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to judge:* caps of 300% for both, floors of 50% text and 25% zoom; Fit holding zoom at 100% and searching the text size, the spacing growing with it; arrows scaled by text size times zoom; pictures and the card's buttons growing with the text too; the bar showing near the top (64px) and hiding after 3 seconds or a 200px scroll down; the entrants hidden in full screen; Reset leaving Full names alone.
 *So:* `docs/systems/tournaments.md`, "The draw page redesigned", sixth pass.
 *Touches:* `tournaments/bracket/index.html`, `scripts/tournament-bracket.js`, `stylesheets/bracket.css`
+
+## 2026-11-05 — Filling and shuffling the draw's first round
+
+*Decided by UV:* in Generate the draw, a button to fill the first round's available slots and a button to shuffle every first-round player across its matches; filling in random order; a shuffle deletes first-round matches with no frames and is refused once any has a frame.
+*Claude's, for UV to judge:* a bye's empty slot counts as available (filling it ends the bye); a walkover, withdrawal or decision in the first round blocks the shuffle; No one in Who goes in fills from the confirmed; the deleted matches recorded in `tbl_deleted_matches`.
+*So:* `docs/systems/tournaments.md`, "Filling and shuffling the first round".
+*Touches:* migration `20261105115859_populate_and_shuffle_draw.sql`, `supabase/tests/051_populate_shuffle_draw.test.sql` (new), `tournaments/bracket/index.html`, `scripts/tournament-bracket.js`

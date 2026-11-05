@@ -241,6 +241,14 @@ extraScripts:
 		<div class="btn-row">
 			<button type="button" class="btn btn-primary btn-sm" id="generate">Generate the Draw</button>
 			<button type="button" class="btn btn-danger btn-sm" id="redraw" hidden>Redraw</button>
+			{% comment %}
+				Once there is a draw (UV, 5 Nov): fill the first round's open
+				slots (a bye's too) with who is not in the draw yet, at random,
+				from Who goes in; and shuffle every first-round player across its
+				matches. Both say what they will do and ask first.
+			{% endcomment %}
+			<button type="button" class="btn btn-secondary btn-sm" id="populate" hidden>Fill the first round</button>
+			<button type="button" class="btn btn-secondary btn-sm" id="shuffle" hidden>Shuffle the first round</button>
 		</div>
 	</details>
 

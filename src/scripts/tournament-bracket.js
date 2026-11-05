@@ -40,7 +40,8 @@
 		roundRulesSave: el('round-rules-save'), roundRulesClear: el('round-rules-clear'),
 		roundRulesCancel: el('round-rules-cancel'), roundRulesStatus: el('round-rules-status'),
 		entrants: el('entrants'), entrantPills: el('entrant-pills'),
-		stage: el('stage'), fit: el('fit'), full: el('full'), resetView: el('reset-view')
+		stage: el('stage'), fit: el('fit'), full: el('full'), resetView: el('reset-view'),
+		populate: el('populate'), shuffle: el('shuffle')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -962,6 +963,8 @@
 		if (drawn !== setupFor) { els.setup.open = !drawn; setupFor = drawn; }
 		els.generate.hidden = drawn;
 		els.redraw.hidden = !drawn;
+		els.populate.hidden = !drawn;
+		els.shuffle.hidden = !drawn;
 		els.thirdPlace.disabled = drawn;
 		els.thirdPlaceHint.textContent = drawn
 			? 'Fixed with the draw. Redraw keeps it as it is.'
@@ -2301,6 +2304,55 @@
 	});
 
 	els.resolve.addEventListener('click', () => write('Refreshing', async () => ({ error: null })));
+
+	// Filling and shuffling the first round (UV, 5 Nov). Each asks the
+	// database first (its rehearsal does the whole thing and rolls back), so
+	// the question carries the real numbers, then does it.
+	const many = (n, one, more) => n + ' ' + (n === 1 ? one : more);
+	els.populate.addEventListener('click', async () => {
+		TDC.status(els.status, '', '');
+		// Who goes in decides who is offered; No one has nobody to offer,
+		// so it fills from the confirmed.
+		const args = { p_tournament_id: tournamentId, p_confirmed_only: els.who.value !== 'all' };
+		const tried = await TDC.busy(els.populate, rehearse('populate', () => supabaseClient.rpc('tdc_populate_draw', args)), els.status);
+		if (!tried) return;
+		const { data, error } = tried;
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+		if (!data.placed) {
+			TDC.status(els.status, data.open_slots
+				? 'Everybody who can go in is in the draw already.'
+				: 'The first round has no open slot.', '');
+			return;
+		}
+		const lines = [many(data.placed, 'player goes', 'players go') + ' into the first round, at random.'];
+		if (data.byes_cleared) lines.push(many(data.byes_cleared, 'bye is', 'byes are') + ' filled, so nobody goes through on a bye there.');
+		const still = data.open_slots - data.placed;
+		if (still > 0) lines.push(many(still, 'slot stays', 'slots stay') + ' open.');
+		if (data.left_over > 0) lines.push(many(data.left_over, 'player does', 'players do') + ' not fit and stay out.');
+		lines.push('', 'Go ahead?');
+		if (!confirm(lines.join('\n'))) return;
+		await write('Filling the draw', () =>
+			supabaseClient.rpc('tdc_populate_draw', Object.assign({}, args, { p_apply: true })));
+	});
+
+	els.shuffle.addEventListener('click', async () => {
+		TDC.status(els.status, '', '');
+		const args = { p_tournament_id: tournamentId };
+		const tried = await TDC.busy(els.shuffle, rehearse('shuffle', () => supabaseClient.rpc('tdc_shuffle_draw', args)), els.status);
+		if (!tried) return;
+		const { data, error } = tried;
+		// A refusal (a frame played, an award) is the database's own sentence.
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+		const lines = ['The ' + data.shuffled + ' players in the first round are dealt again at random.'];
+		if (data.matches_removed) {
+			lines.push(many(data.matches_removed, 'match has', 'matches have')
+				+ ' not been played yet and will be deleted; the new pairs\' matches start in their place.');
+		}
+		lines.push('', 'Go ahead?');
+		if (!confirm(lines.join('\n'))) return;
+		await write('Shuffling the draw', () =>
+			supabaseClient.rpc('tdc_shuffle_draw', Object.assign({}, args, { p_apply: true })));
+	});
 
 	// Redrawing a started tournament is the TD's call. The database refuses it
 	// once with a message naming how many matches are attached; that message
