@@ -21,6 +21,7 @@
 	const els = {
 		name: el('t-name'), meta: el('t-meta'),
 		setup: el('setup'), who: el('who'), whoHint: el('who-hint'),
+		sizeField: el('size-field'), drawSize: el('draw-size'),
 		progression: el('progression'), createMatches: el('create-matches'),
 		thirdPlace: el('third-place'), generate: el('generate'),
 		bracket: el('bracket'), actions: el('draw-actions'),
@@ -173,7 +174,10 @@
 			label = (source === 'winner_of' ? 'Winner' : 'Loser') + ' of ' + from;
 			pending = true;
 		} else {
-			label = 'Bye';
+			// Only a slot drawn as a bye says so. An empty one that is not a
+			// bye (an empty draw, or a slot emptied by hand) is waiting for
+			// the TD to put somebody in (UV, 5 Nov).
+			label = f.advance_reason === 'bye' ? 'Bye' : 'Open';
 			pending = true;
 		}
 
@@ -675,7 +679,7 @@
 	async function loadTournament() {
 		const { data, error } = await supabaseClient
 			.from('tbl_tournaments')
-			.select('id, name, format, status, starts_at, third_place, progression, create_matches, rules')   // rules: the round panel starts from the tournament's own ruleset
+			.select('id, name, format, status, starts_at, third_place, progression, create_matches, rules, max_entrants')   // rules: the round panel starts from the tournament's own ruleset; max_entrants: where an empty draw's size starts
 			.eq('id', tournamentId)
 			.maybeSingle();
 
@@ -1559,11 +1563,34 @@
 		const confirmed = live.filter((e) => e.status === 'confirmed');
 		els.whoHint.textContent =
 			`${confirmed.length} confirmed, ${live.length - confirmed.length} interested.`;
+
+		// An empty draw's size starts at the smallest place that holds the
+		// tournament's max entrants, or everybody signed up when it has none.
+		const want = (tournament && tournament.max_entrants) || live.length;
+		const sizes = [...els.drawSize.options].map((o) => Number(o.value));
+		els.drawSize.value = String(sizes.find((s) => s >= want) || sizes[sizes.length - 1]);
+	}
+
+	els.who.addEventListener('change', () => {
+		els.sizeField.hidden = els.who.value !== 'none';
+	});
+
+	// What Who goes in sends to tdc_generate_draw, shared by Generate and
+	// Redraw so the two cannot disagree.
+	function drawArgs() {
+		const empty = els.who.value === 'none';
+		return {
+			p_tournament_id: tournamentId,
+			p_confirmed_only: els.who.value === 'confirmed',
+			p_empty: empty,
+			p_size: empty ? Number(els.drawSize.value) : null
+		};
 	}
 
 	// ─── Generating ───
 	els.generate.addEventListener('click', async () => {
-		const confirmedOnly = els.who.value === 'confirmed';
+		// Read before anything is awaited, as the press saw it.
+		const args = drawArgs();
 
 		// The three settings are saved before generating, because the draw
 		// reads them. Doing it after would generate against the old ones.
@@ -1578,10 +1605,7 @@
 
 		await loadTournament();
 		await write('Generating the draw', () =>
-			supabaseClient.rpc('tdc_generate_draw', {
-				p_tournament_id: tournamentId,
-				p_confirmed_only: confirmedOnly
-			}));
+			supabaseClient.rpc('tdc_generate_draw', args));
 	});
 
 	els.resolve.addEventListener('click', () => write('Refreshing', async () => ({ error: null })));
@@ -1591,12 +1615,11 @@
 	// is what the person is asked to confirm, so the warning they read is the
 	// real one rather than a guess written here.
 	els.redraw.addEventListener('click', async () => {
-		const confirmedOnly = els.who.value === 'confirmed';
+		const args = drawArgs();
 
 		TDC.status(els.status, '', '');
 		const tried = await TDC.busy(els.redraw, rehearse('redraw', () => supabaseClient.rpc('tdc_generate_draw', {
-			p_tournament_id: tournamentId,
-			p_confirmed_only: confirmedOnly,
+			...args,
 			p_replace: true
 		})), els.status);
 		if (!tried) return;
@@ -1621,8 +1644,7 @@
 
 		await write('Redrawing', () =>
 			supabaseClient.rpc('tdc_generate_draw', {
-				p_tournament_id: tournamentId,
-				p_confirmed_only: confirmedOnly,
+				...args,
 				p_replace: true,
 				p_detach_matches: true
 			}));

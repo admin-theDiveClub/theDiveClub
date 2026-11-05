@@ -38,8 +38,26 @@ extraScripts:
 				<select id="who">
 					<option value="confirmed">Confirmed entrants only</option>
 					<option value="all">Everyone who has not withdrawn</option>
+					<option value="none">No one</option>
 				</select>
 				<div class="hint" id="who-hint"></div>
+			</div>
+
+			{% comment %}
+				Only for No one: an empty draw has no field to be sized by, so
+				the TD says how many places the first round has. Starts at the
+				tournament's max entrants (UV, 5 Nov).
+			{% endcomment %}
+			<div class="field" id="size-field" hidden>
+				<label for="draw-size">Draw size</label>
+				<select id="draw-size">
+					<option value="4">4</option>
+					<option value="8">8</option>
+					<option value="16">16</option>
+					<option value="32">32</option>
+					<option value="64">64</option>
+				</select>
+				<div class="hint">The matches are made and wired round to round, with nobody in them. Tap a slot to put someone in.</div>
 			</div>
 
 			<div class="field">

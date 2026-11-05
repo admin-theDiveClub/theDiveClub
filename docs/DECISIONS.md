@@ -1319,3 +1319,11 @@ These predate the log. They are recorded here because every one of them is a dec
 *Rejected:* listing every tournament whose poster is shared (no switch); showing the list to signed-out visitors, which would need a live read open to `anon` that the poster's snapshot design avoids.
 *So:* `docs/systems/tournaments.md`, "Open for entry, and Visible to public".
 *Touches:* migration `20261105084149_tournament_listed.sql`, `supabase/tests/047_open_tournaments.test.sql` (new), `tournaments/index.html`, `scripts/tournaments.js`, `tournaments/new/index.html`, `scripts/tournament-new.js`, `tournaments/manage/index.html`, `scripts/tournament-manage.js`
+
+## 2026-11-05 — An empty draw: "No one" in Who goes in
+
+*Decided by UV:* the draw page's Who goes in gets a third choice, **No one**: the matches are made and wired round to round but not filled. An empty draw's size is a **Draw size picker (4, 8, 16, 32, 64) starting at the tournament's max entrants**. An empty slot that is not a bye reads **"Open"**.
+*Claude's, for UV to judge:* the seeds are left alone by an empty draw; with no max entrants the size starts at everybody signed up (64 at most); a slot the director empties by hand now reads "Open" too, where it used to say "Bye"; the database accepts any power of two from 2 to 1024, the picker offering five.
+*Rejected:* always sizing an empty draw by max entrants with no picker (refused when a tournament has none); sizing it by the number signed up so far.
+*So:* `docs/systems/tournaments.md`, "An empty draw".
+*Touches:* migration `20261105093205_empty_draw.sql`, `supabase/tests/048_empty_draw.test.sql` (new), `tournaments/bracket/index.html`, `scripts/tournament-bracket.js`
