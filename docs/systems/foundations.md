@@ -16,7 +16,7 @@
   - ⚠ `private.tdc_merge_players` must be updated whenever a new table references `tbl_players`, so nothing is left on the deleted record. Migration `20261014170000` brought it up to date (redeem codes, matches, frames, frame participants) and carries a query that lists every foreign key to `tbl_players` — run it rather than trusting a list. ~~Its body is untested~~ — **tested since 24 Oct** (`supabase/tests/028_merge_players.test.sql`), on the local copy, through `tdc_staff_link_account` as `/staff/link/` calls it; the local copy is what makes deleting an account-linked record safe to try.
   - **Squads, lineups and notification settings (migration `20261024090641`, audit A5).** `tbl_league_match_squad` (cascade), `tbl_league_match_order` (set null) and `tbl_notification_prefs` (cascade) were not moved, so a claim took a league player out of tonight's squad, emptied their lineup position and turned their notifications back on. The settings had been left out on purpose, on the grounds that the walk-in has none; but the settings that matter are the account's, on the record being deleted. All three move now. **On a clash the account's row stands and the walk-in's goes** (UV, 24 Oct): the account's setting for a category wins; in any match where the account is in the squad or lineup, the walk-in's squad row is deleted and its positions emptied, matched on the match rather than the side so one person never ends up in one team's lineup and the other's squad. A walk-in cannot reach those tables through any function, so a clash means a direct write. On 24 Oct the foreign-key query gave the same 22 references on local and production; every one is handled, and no uuid column names a player without a foreign key.
   - **The 23rd, `tbl_matches.referee_player_id` (migration `20261024162559`, 24 Oct):** a match's own referee, set null on delete, moved with the other match columns inside the unlock. No new guard: a player may referee their own match, so a merge that makes the referee one of the players is allowed. Covered by `031_match_referee`.
-  - Seed data: venue The Dive Club (`the-dive-club`); `admin@thediveclub.org` is owner, `yuvannaidoo@gmail.com` is staff.
+  - Seed data: venue The Dive Club (`the-dive-club`); `admin@thediveclub.org` is owner, `yuvannaidoo@gmail.com` is staff. Two more venues since 5 Nov, with no owner or staff ("Venues" below).
   - **Still to do:**
     - Audit log: record who linked, verified or revoked what (staff can link any walk-in to any account; there is no log yet).
     - Push leftovers: iPhone login persistence check, Android testing, and the real "score changed" trigger + deep link once match tables exist.
@@ -46,6 +46,28 @@
   - **Venue-scoped via `venue_id`:** Commerce (closed-loop credits, working name "Cuedits"), Venue Ops (bookings, stock, table scheduling).
   - **Cross-cutting:** Platform (audit log, roles).
 - Commerce and Ranking never share tables. `player_id` on a transaction is nullable (cash sales with no linked member are valid).
+
+## Venues (migration `20261105200430`, 5 Nov; step 1 of 3: the database only, no page reads it yet)
+
+**A competition has two kinds of venue, kept apart on purpose.**
+
+| | Belongs to | Played at |
+|---|---|---|
+| Held in | `venue_id` on `tbl_leagues`, `tbl_tournaments` | `tbl_league_season_venues`, `tbl_tournament_venues`, `tbl_league_fixtures.venue_id` |
+| Gives | Its staff run it; its credits settle there | Nothing: words on a page |
+| Who chooses | League: the venue's owner or admin. Tournament: owner, admin or staff | Whoever runs the competition, any active venue, no approval |
+| Changes | Fixed at creation | Any time |
+
+- **`tbl_matches.venue_id` is a rights column.** A match copies what its competition belongs to, and `private.tdc_can_edit_match` lets that venue's staff edit the card. A played-at venue must never be written there, or a barman at a club hosting one night could change a league's scores.
+- **Played-at is per season**, so a league moving club does not rewrite its old seasons. `tdc_create_league_season` copies the last season's list, less any venue since closed. `tdc_set_league_season_venues` and `tdc_set_tournament_venues` take the whole list in order; empty clears it. A venue that closed while on a list may stay on it.
+- **A fixture** may name its own venue (`p_venue_id`, `p_clear_venue` on `tdc_set_league_fixture`; `p_venue_id` on `tdc_add_league_fixture`). `tdc_league_fixtures` returns `venue_id`, `venue_name` and `venue_inherited`: its own, else the season's when the season has exactly one. A blank fixture in a season at several returns none, so the page lists the season's rather than sending a player to the wrong club.
+- **Details on `tbl_venues`:** description, address, area, city, maps_url, picture_path, table_count, table_note, phone, whatsapp, email, website_url, instagram_url, facebook_url, hours_note. Links must be https, which keeps a `javascript:` address off public pages.
+- **Hours are `tbl_venue_hours`:** one row each time the venue opens (`day_of_week` 1 is Monday, 7 Sunday; `opens_at`, `closes_at`). No row is closed. A closing time earlier than the opening time is the next morning. **No function writes these**: UV types them in the dashboard's Table Editor.
+- **Reading:** `tdc_venues()` (the active list) and `tdc_venue(id)` (one venue with its hours) are the only way in for someone signed out; `tbl_venues` is not granted to `anon`. Display details only.
+- **Editing:** `tdc_update_venue` (the venue's owner or admin; the whole form at once, so a blank clears) and `tdc_set_venue_picture`. Name, slug, timezone, currency and active are not editable there. **New venues come through a migration.** Nobody can edit a venue with no owner or tie a competition to it, but anyone may list it as played at.
+- **Picture:** the public `venue-pictures` bucket, `<venue id>/<random>.webp`, built as `team-pictures` is.
+- **Not settled by this:** travelling-league fees (`STATUS.md` §5). A league with no owning venue still has nowhere for fees to go.
+- **Seeded:** The Dive Club (address from the footer, the rest to come), Billiard Café (Rivonia) and Billiard Café (Randpark Ridge) from the Google Maps listings UV sent. Postcodes are not held.
 
 ## The install tutorial (`/install/`, 3 Nov)
 
