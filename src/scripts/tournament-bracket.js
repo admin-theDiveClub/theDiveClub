@@ -76,8 +76,11 @@
 		none: 'Not started', scheduled: 'Match made', in_progress: 'Playing',
 		complete: 'Finished', abandoned: 'Abandoned'
 	};
+	// A match with frames in it is being played even before its status says
+	// so (UV, 5 Nov: every match being played is yellow).
 	const stateOf = (f) => f.advance_reason === 'bye' ? 'bye'
-		: f.match_id ? f.match_status
+		: f.match_id
+			? (f.match_status === 'scheduled' && (f.home_frames || f.away_frames) ? 'in_progress' : f.match_status)
 		: f.advanced_entrant_id ? 'complete' : 'none';
 	// Display name (the default) or full name, per device (UV, 5 Nov: the
 	// standings' Full names switch). A player with neither name keeps theirs.
@@ -91,15 +94,16 @@
 	// How the draw is laid out, per device (UV, 5 Nov). The toggles: flow,
 	// linear or from the outside in (the final in the middle); rounds, as
 	// columns (side by side) or rows (one under another); card, a card's
-	// players stacked or across (side by side, as a league fixture). And two
+	// players stacked or across (side by side, as a league fixture); pics,
+	// players' pictures shown or hidden. And two
 	// percentages: font, the size of the draw's text (70–150), and zoom, the
 	// size of the whole draw (50–150), both in steps of 10.
 	const VIEW_KEY = 'tdc.draw.view';
-	const VIEW_DEFAULT = { flow: 'linear', rounds: 'columns', card: 'stacked', font: 100, zoom: 100 };
+	const VIEW_DEFAULT = { flow: 'linear', rounds: 'columns', card: 'stacked', pics: 'show', font: 100, zoom: 100 };
 	const RANGE = { font: [70, 150], zoom: [50, 150] };
 	let view = Object.assign({}, VIEW_DEFAULT);
 	try { Object.assign(view, JSON.parse(localStorage.getItem(VIEW_KEY) || '{}')); } catch (err) { /* private window or unreadable: the defaults */ }
-	for (const k of ['flow', 'rounds', 'card']) {
+	for (const k of ['flow', 'rounds', 'card', 'pics']) {
 		if (!els.viewRow.querySelector(`[data-view-key="${k}"][data-view="${view[k]}"]`)) view[k] = VIEW_DEFAULT[k];
 	}
 	// A percentage kept on its step and inside its range.
@@ -199,7 +203,6 @@
 	function side(f, which) {
 		const name = nameOf(f, which);
 		const pic = which === 'home' ? f.home_avatar : f.away_avatar;
-		const seed = which === 'home' ? f.home_seed : f.away_seed;
 		const id = which === 'home' ? f.home_entrant_id : f.away_entrant_id;
 		const frames = which === 'home' ? f.home_frames : f.away_frames;
 		const source = which === 'home' ? f.home_source : f.away_source;
@@ -216,9 +219,10 @@
 		// player. A 1fr grid track cannot be squeezed to nothing by what sits
 		// beside it, so the name is safe whatever else the row grows.
 		const swapCell = node('div', 'bracket-swap-cell');
-		const picCell = node('div', 'bracket-pic-cell');
-		picCell.append(avatar(pic, name));
+		// The picture inside the name's cell, first, so hiding pictures (the
+		// view row) takes it out with nothing left to close up.
 		const nameCell = node('div', 'bracket-name-cell');
+		nameCell.append(avatar(pic, name));
 		const scoreCell = node('div', 'bracket-score-cell');
 
 		// What the slot says. Built first so the swap control can be labelled
@@ -246,7 +250,7 @@
 			pending = true;
 		}
 
-		if (name && seed != null) nameCell.append(node('span', 'bracket-seed', String(seed)));
+		// No seed number beside the name (UV, 5 Nov).
 
 		// UV, 21 Oct: "keep that swap button as a small icon before each name
 		// and allow clicking directly on the name to change players". So the
@@ -294,7 +298,7 @@
 		// another round, it sends this match's winner there (dragging, below).
 		if (!readOnly) row.dataset.drag = 'slot';
 
-		row.append(swapCell, picCell, nameCell, scoreCell);
+		row.append(swapCell, nameCell, scoreCell);
 		return row;
 	}
 
@@ -303,14 +307,28 @@
 		const box = node('div', 'bracket-fixture');
 		box.dataset.fixture = f.fixture_id;
 
-		// The state as a strip down the left (UV, 5 Nov), as on the league
-		// fixtures and the profile.
+		// The state as a strip (UV, 5 Nov), as on the league fixtures and the
+		// profile: down the left of a stacked card, along the top or bottom of
+		// a side-by-side one (bracket.css). A finished match with a winner is
+		// split in two, a part per player: green for the winner, grey for the
+		// loser (UV, 5 Nov), each beside its player.
 		const state = stateOf(f);
-		const strip = node('span', 'bracket-state fx-state-' + state);
-		if (state !== 'bye') {
+		const bye = f.advance_reason === 'bye';
+		const strip = node('span', 'bracket-state');
+		const winner = f.winner_entrant_id || f.advanced_entrant_id;
+		if (state === 'complete' && winner && !bye) {
+			strip.classList.add('split');
+			for (const which of ['home', 'away']) {
+				const id = which === 'home' ? f.home_entrant_id : f.away_entrant_id;
+				strip.append(node('span', 'bracket-seg fx-state-' + (id && id === winner ? 'complete' : 'none')));
+			}
+			const won = nameOf(f, winner === f.home_entrant_id ? 'home' : 'away');
+			strip.title = 'Finished' + (won ? ': ' + won + ' won' : '');
+		} else if (!bye) {
+			strip.append(node('span', 'bracket-seg fx-state-' + state));
 			strip.title = STATE[state] || state;
-			strip.append(node('span', 'visually-hidden', strip.title));
 		}
+		if (strip.title) strip.append(node('span', 'visually-hidden', strip.title));
 		const body = node('div', 'bracket-body');
 		box.append(strip, body);
 
@@ -324,7 +342,6 @@
 		// a late arrival is put into it.
 		// The two sides in one box, a colon between them that shows only
 		// when they sit side by side (bracket.css, data-card="across").
-		const bye = f.advance_reason === 'bye';
 		const sides = node('div', 'bracket-sides' + (f.match_id ? ' scored' : ''));
 		for (const which of ['home', 'away']) {
 			const empty = !(which === 'home' ? f.home_entrant_id : f.away_entrant_id);
@@ -408,6 +425,7 @@
 		els.bracket.dataset.flow = view.flow;
 		els.bracket.dataset.rounds = view.rounds;
 		els.bracket.dataset.card = view.card;
+		els.bracket.dataset.pics = view.pics;
 		applySizes();
 	}
 	// Font size and zoom change no markup, so they set two properties and
@@ -798,8 +816,10 @@
 			const cards = node('div', 'bracket-round-cards');
 			if (list.length) cards.append(...list.map(fixture));
 			else if (empty) cards.append(node('div', 'bracket-round-empty', 'Empty round'));
-			if (addMatch && !readOnly) cards.append(addMatchButton('main', r, list.length === 0));
 			col.append(cards);
+			// After the cards, not among them, so the cards alone are spread
+			// and centred in their round (bracket.css).
+			if (addMatch && !readOnly) col.append(addMatchButton('main', r, list.length === 0));
 			return col;
 		}
 
@@ -840,17 +860,20 @@
 				if (left.length || !inRound) columns.push(roundColumn(r, left, { addMatch: true, empty: true }));
 			}
 			if (!readOnly) columns.push(roundBorder(lastRound));
-			const mid = roundColumn(lastRound, on(lastRound, 'M'), { addMatch: true, empty: true });
-			if (third.length) {
-				// The playoff under the final, in the same middle column.
-				const tp = thirdColumn();
-				mid.append(...tp.children);
-			}
-			mid.classList.add('bracket-round-mid');
+			// The final and, under it (beside it in rows), the playoff, each a
+			// round of its own inside the middle.
+			const mid = node('div', 'bracket-round-mid');
+			mid.append(roundColumn(lastRound, on(lastRound, 'M'), { addMatch: true, empty: true }));
+			if (third.length) mid.append(thirdColumn());
 			columns.push(mid);
 			for (let r = lastRound - 1; r >= 1; r--) {
 				const right = on(r, 'R');
-				if (right.length) columns.push(roundColumn(r, right));
+				if (!right.length) continue;
+				const col = roundColumn(r, right);
+				// The right half's arrows come in from the far side, so a side
+				// by side card's strip there sits on the other edge (bracket.css).
+				for (const c of col.querySelectorAll('.bracket-fixture')) c.dataset.half = 'R';
+				columns.push(col);
 			}
 		} else {
 			// 1..lastRound, not the rounds that happen to have fixtures.
@@ -1382,11 +1405,18 @@
 				const b = card.getBoundingClientRect();
 				const s = slot ? slot.getBoundingClientRect() : b;
 				const across = view.rounds !== 'rows';
+				// Out of a side-by-side card, an arrow leaves on the side of
+				// the slot it feeds (UV, 5 Nov): at a third of the edge for a
+				// home slot and two thirds for an away one, as arrows arrive,
+				// so two arrows out of the same wide card do not start from
+				// one point and cross. A stacked card's arrows leave from the
+				// middle of its edge, as before.
+				const out = view.card === 'across' ? (which === 'home' ? 1 / 3 : 2 / 3) : 1 / 2;
 				let x1, y1, x2, y2, dir;
 				if (across) {
 					dir = (b.left + b.right) / 2 >= (a.left + a.right) / 2 ? 1 : -1;
 					x1 = (dir > 0 ? a.right : a.left) - host.left;
-					y1 = a.top + a.height / 2 - host.top;
+					y1 = a.top + a.height * out - host.top;
 					x2 = (dir > 0 ? b.left : b.right) - host.left;
 					// Arriving on a side edge: at its own player's row when the
 					// players are one above the other; side by side they share
@@ -1397,7 +1427,7 @@
 						: s.top + s.height / 2) - host.top;
 				} else {
 					dir = (b.top + b.bottom) / 2 >= (a.top + a.bottom) / 2 ? 1 : -1;
-					x1 = a.left + a.width / 2 - host.left;
+					x1 = a.left + a.width * out - host.left;
 					y1 = (dir > 0 ? a.bottom : a.top) - host.top;
 					y2 = (dir > 0 ? b.top : b.bottom) - host.top;
 					// Arriving on the top or bottom edge: above its own player
