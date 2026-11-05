@@ -394,21 +394,155 @@
 .pp-strip-frame { flex: 1; height: 0.375rem; border-radius: var(--radius-sm); background: var(--text-primary); }
 .pp-strip-mine { background: var(--color-primary); }
 
-.pp-cmp { display: flex; flex-direction: column; gap: var(--space-4); margin-top: var(--space-4); }
-.pp-cmp-row {
-	display: grid;
-	grid-template-columns: 3rem minmax(0, 1fr) 6.5rem minmax(0, 1fr) 3rem;
-	align-items: center;
-	gap: var(--space-2);
-	font-size: 0.9rem;
+/* ── Compare (UV, 5 Nov) ──
+ * The two profiles side by side, you on the left. The halves are the match
+ * stage's (match.css .mv-side::before): each set in with the page's inner
+ * shadow, cast by the light, so the centre line is where the two meet. Edge
+ * to edge of the card (its 1.25rem sides taken back), so each half has room. */
+.pp-c { position: relative; margin: var(--space-5) -1.25rem 0; }
+.pp-c[hidden] { display: none; }
+.pp-c-who::before,
+.pp-c-body::before,
+.pp-c-body::after {
+	content: "";
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	box-shadow: inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
+	pointer-events: none;
+	z-index: 0;   /* under the halves' contents, which are lifted to 1 */
 }
-.pp-cmp-bar { display: flex; height: 0.5rem; }
-.pp-cmp-left { justify-content: flex-end; }
-.pp-cmp-fill { height: 100%; }
-.pp-cmp-left .pp-cmp-fill { border-radius: var(--radius-pill) 0 0 var(--radius-pill); background: var(--color-primary); }
-.pp-cmp-right .pp-cmp-fill { border-radius: 0 var(--radius-pill) var(--radius-pill) 0; background: var(--text-primary); }
-.pp-cmp-label { font-size: 0.8rem; text-align: center; }
-.pp-cmp-them { text-align: right; }
+.pp-c-who::before { left: 0; right: 0; }
+.pp-c-person,
+.pp-c-body > * { position: relative; z-index: 1; }
+.pp-c-body::before { left: 0; width: 50%; }
+.pp-c-body::after { right: 0; width: 50%; }
+
+/* Each player's picture and names head their half and stay at the top as
+ * the page scrolls (UV, 5 Nov): just under the nav while it shows, at the
+ * very top once it has slid away (nav.js, .is-hidden). Opaque, to cover what
+ * scrolls beneath; its own halves' shadows carry the line through it. */
+.pp-c-head {
+	position: sticky;
+	top: 0;
+	z-index: 3;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	background: var(--bg-base);
+	transition: top var(--nav-slide, 0.3s) ease;
+}
+body:has(.site-nav:not(.is-hidden)) .pp-c-head { top: var(--nav-total); }
+@media (prefers-reduced-motion: reduce) { .pp-c-head { transition: none; } }
+.pp-c-who { position: relative; display: flex; align-items: center; min-width: 0; height: 4.5rem; padding: 0 var(--space-3); box-sizing: border-box; }
+.pp-c-who[data-side="mine"] { justify-content: flex-end; }
+
+/* The stage's person (match.css .mv-person, sideways): the picture, then
+ * the display name (0.6 of its height) over the full name (0.385), shadows
+ * cast by the light. Yours mirrored, both pictures facing the line. */
+.pp-c-person {
+	--c-who-h: 2.75rem;
+	display: flex;
+	align-items: center;
+	gap: calc(var(--c-who-h) * 0.25);
+	height: var(--c-who-h);
+	min-width: 0;
+	max-width: 100%;
+}
+.pp-c-who[data-side="mine"] .pp-c-person { flex-direction: row-reverse; }
+.pp-c-who[data-side="mine"] .pp-c-names { text-align: right; }
+.pp-c-pic {
+	flex: none;
+	display: grid;
+	place-items: center;
+	width: var(--c-who-h);
+	height: var(--c-who-h);
+	border-radius: var(--radius-round);
+	overflow: hidden;
+	background: var(--hover-wash);
+	color: var(--color-primary);
+	font-size: calc(var(--c-who-h) * 0.36);
+	font-weight: 700;
+	box-shadow: var(--match-mark-shadow);
+}
+.pp-c-pic img { width: 100%; height: 100%; object-fit: cover; }
+.pp-c-names {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: calc(var(--c-who-h) * 0.1);
+	min-width: 0;
+	filter: drop-shadow(var(--match-mark-shadow));
+}
+.pp-c-name,
+.pp-c-full {
+	overflow-x: clip;
+	overflow-y: visible;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	line-height: 1;
+	text-box: trim-both cap alphabetic;
+}
+.pp-c-name { font-family: var(--font-display); font-size: calc(var(--c-who-h) * 0.6); color: var(--text-primary); }
+.pp-c-full { font-size: calc(var(--c-who-h) * 0.385); color: var(--text-muted); }
+
+/* Each section: its heading across both halves, then yours and theirs. */
+.pp-c-body {
+	position: relative;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	align-items: start;
+	padding-bottom: var(--space-6);
+}
+.pp-c-body > [data-side] { min-width: 0; padding: 0 var(--space-3); }
+.pp-c-body > .pp-c-h,
+.pp-c-body > .pp-c-wide { grid-column: 1 / -1; }
+/* A half's stat boxes: one column on a phone, two by two once there is room. */
+.pp-c-body .pp-grid { grid-template-columns: repeat(auto-fit, minmax(max(9rem, 40%), 1fr)); }
+.tdc-card .pp-c-h { margin: var(--space-6) 0 var(--space-2); font-family: var(--font-display); font-weight: 400; font-size: 1.4rem; color: var(--color-primary); }
+.pp-c-body > .pp-c-h:first-child { margin-top: var(--space-5); }
+.pp-c-body > .pp-period { margin: var(--space-2) auto var(--space-3); }
+
+/* Form down the page, newest at the foot (UV, 5 Nov). */
+.pp-form.pp-form-down { flex-direction: column; justify-content: flex-start; gap: var(--space-3); width: max-content; margin: var(--space-3) auto 0; padding: var(--space-4) var(--space-3); }
+
+/* The frame difference down the page (UV, 5 Nov): a night a row, the month
+ * beside the first night of it, the line upright, won to its right. */
+.pp-down-bars { display: flex; gap: var(--space-2); margin-top: var(--space-3); }
+.pp-down-bars .pp-bar-labels { flex-direction: column; flex: none; width: 2rem; margin-top: 0; }
+.pp-down-bars .pp-bar-labels span { flex: 0 0 0.75rem; line-height: 0.75rem; }
+.pp-bars.is-down { flex: 1; flex-direction: column; height: auto; margin-top: 0; }
+.pp-bars.is-down .pp-baseline { top: 0; bottom: 0; right: auto; border-top: 0; border-left: 1px solid var(--border-color); }
+.pp-bars.is-down .pp-night { flex: 0 0 0.75rem; flex-direction: row; height: 0.75rem; }
+.pp-bars.is-down .pp-night-up { justify-content: flex-start; align-items: stretch; }
+.pp-bars.is-down .pp-night-down { justify-content: flex-end; align-items: stretch; }
+.pp-bars.is-down .pp-bar { flex: none; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.pp-bars.is-down .pp-bar-lost { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+.pp-bars.is-down .pp-bar-even { width: 2px; height: auto; }
+
+/* In a half the lists are tighter (the layout's doing, UV to judge): no
+ * picture and no win or loss dot on a row, a smaller score, and a list's
+ * page number under its heading rather than beside it. */
+.pp-c-body .pp-row > .pp-person-pic,
+.pp-c-body .pp-row > .pp-row-pic,
+.pp-c-body .pp-row > .pp-dot,
+.pp-c-body .pp-team-pic { display: none; }
+.pp-c-body .pp-row { gap: var(--space-2); }
+.pp-c-body .pp-score { font-size: 1.15rem; }
+.pp-c-body .pp-team { gap: var(--space-2); padding: var(--space-2) var(--space-3); }
+.pp-c-body .pp-head { grid-template-columns: minmax(0, 1fr); justify-items: center; row-gap: var(--space-2); }
+.pp-c-body .pp-head > :first-child,
+.pp-c-body .pp-head > .tdc-stepper,
+.pp-c-body .pp-head > input { grid-column: 1; justify-self: center; }
+.pp-c-body > .pp-c-next { margin-top: var(--space-5); }
+.pp-c-body .pp-head-solo { margin-top: var(--space-1); }
+
+/* About: one table, its headings in the middle, every cell centred (UV, 5 Nov). */
+.pp-c-about { width: 100%; margin-top: var(--space-2); border-collapse: collapse; font-size: 0.9rem; }
+.pp-c-about td,
+.pp-c-about th { padding: var(--space-3) var(--space-2); border-bottom: 1px solid var(--border-color); text-align: center; overflow-wrap: anywhere; }
+.pp-c-about th { width: 7rem; font-size: 0.82rem; font-weight: 400; }
+.pp-c-about a { color: var(--color-primary); }
+.tdc-card .pp-c-about .pp-link { display: inline; margin: 0; padding: 0; }
 
 #pp-meetings { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); }
 .pp-meet {

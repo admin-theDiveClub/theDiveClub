@@ -9,8 +9,15 @@
 //     about.
 //   • Head to head: your meetings. Only frames the two of you played against
 //     each other count (tdc_head_to_head).
-//   • Compare: side by side, both players' all-time stats.
+//   • Compare: both profiles side by side, you on the left, either side of a
+//     centre line, each half headed by its player's picture and names, which
+//     stay at the top as the page scrolls (UV, 5 Nov).
 // Your own profile has no toggle and no buttons for others.
+//
+// Each Profile section is drawn by one function for a "view": a player and
+// the boxes to draw into (data-part). The Profile tab is one view, the
+// player shown; Compare is two, you and them, so both sides are the Profile
+// tab's own drawing, laid down the page where Compare asks (vertical).
 //
 // Every number is counted here from what tdc_player_profile returns (frames
 // are the only record): only finished matches and their finished frames. The
@@ -34,11 +41,9 @@
 		pic: el('pp-pic'), verified: el('pp-verified'), name: el('pp-name'), full: el('pp-full'),
 		actions: el('pp-actions'), views: el('pp-views'),
 		profile: el('pp-tab-profile'), h2h: el('pp-tab-h2h'), cmpTab: el('pp-tab-cmp'),
-		form: el('pp-form'), period: el('pp-period'), grid: el('pp-grid'),
-		bars: el('pp-bars'), barLabels: el('pp-bar-labels'),
-		teams: el('pp-teams'), aboutTitle: el('pp-about-title'), about: el('pp-about'),
+		aboutTitle: el('pp-about-title'), about: el('pp-about'), cAbout: el('pp-c-about'),
 		vs: el('pp-vs'), split: el('pp-split'), vsLine: el('pp-vs-line'),
-		meeting: el('pp-meeting'), cmp: el('pp-cmp'), meetings: el('pp-meetings')
+		meeting: el('pp-meeting'), meetings: el('pp-meetings')
 	};
 
 	const params = new URLSearchParams(location.search);
@@ -103,8 +108,8 @@
 		return { matches, frames: p.frames.filter((f) => ids.has(f.match_id)) };
 	}
 
-	function count(p, all) {
-		const { matches, frames } = all ? { matches: p.matches.filter((m) => m.status === 'complete'), frames: p.frames } : inPeriod(p);
+	function count(p) {
+		const { matches, frames } = inPeriod(p);
 		const won = frames.filter((f) => f.won);
 		const broke = frames.filter((f) => f.broke === true);
 		const offBreak = frames.filter((f) => f.broke === false);
@@ -174,24 +179,37 @@
 	addEventListener('resize', () => { if (them) fitName(); });
 
 	// The discipline they play most, from their matches, else their leagues.
-	function discipline() {
+	function discipline(p) {
 		const n = {};
-		for (const m of them.matches) if (m.discipline) n[m.discipline] = (n[m.discipline] || 0) + 1;
-		for (const t of them.teams) if (t.discipline && !them.matches.length) n[t.discipline] = (n[t.discipline] || 0) + 1;
+		for (const m of p.matches) if (m.discipline) n[m.discipline] = (n[m.discipline] || 0) + 1;
+		for (const t of p.teams) if (t.discipline && !p.matches.length) n[t.discipline] = (n[t.discipline] || 0) + 1;
 		const top = Object.keys(n).sort((a, b) => n[b] - n[a])[0];
 		return top ? (TDCMatchDef.DISCIPLINE[top] || top) : null;
 	}
 
+	// ─── The views ───
+	// A view: the player (p), their boxes by data-part, and whether Compare
+	// lays it down the page (vertical). side picks one half of Compare.
+	function view(root, p, side) {
+		const part = side
+			? (name) => root.querySelector(`[data-side="${side}"][data-part="${name}"], [data-side="${side}"] [data-part="${name}"]`)
+			: (name) => root.querySelector(`[data-part="${name}"]`);
+		return { p, part, side, vertical: !!side };
+	}
+	let views = [];   // the Profile tab's, then Compare's two once there is a "you"
+
 	// ─── Profile ───
 	// Form: their last 10 frames across every finished match, newest right
-	// (UV, 5 Nov), each won or lost, with a yellow ring where they broke.
-	function renderForm() {
-		const byMatch = new Map(them.matches.map((m) => [m.match_id, m]));
-		const last = them.frames.slice()
+	// (UV, 5 Nov), each won or lost, with a yellow ring where they broke. On
+	// Compare the dots run down the page, newest at the foot (UV, 5 Nov).
+	function renderForm(v) {
+		const box = v.part('form');
+		const byMatch = new Map(v.p.matches.map((m) => [m.match_id, m]));
+		const last = v.p.frames.slice()
 			.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : a.frame_no - b.frame_no))
 			.slice(-10);
-		if (!last.length) { els.form.replaceChildren(node('span', 'muted', 'No finished frames yet.')); return; }
-		els.form.replaceChildren(...last.map((f) => {
+		if (!last.length) { box.replaceChildren(node('span', 'muted', 'No finished frames yet.')); return; }
+		box.replaceChildren(...last.map((f) => {
 			const m = byMatch.get(f.match_id);
 			const d = resultDot(f.won ? 'W' : 'L');
 			if (f.broke) d.classList.add('pp-dot-broke');
@@ -208,9 +226,9 @@
 
 	// Four boxes (UV, 5 Nov). Conversion: frames won on their own break, of
 	// the frames they broke ("Lags", as the standings count lags won).
-	function renderStats() {
-		const s = count(them);
-		els.grid.replaceChildren(
+	function renderStats(v) {
+		const s = count(v.p);
+		v.part('grid').replaceChildren(
 			cell('Frames', pct(s.fw, s.frames), 'P ' + s.frames + ' · W ' + s.fw + ' · L ' + (s.frames - s.fw), 'primary'),
 			cell('Matches', pct(s.mw, s.matches), 'P ' + s.matches + ' · W ' + s.mw + ' · L ' + s.ml + (s.md ? ' · D ' + s.md : ''), 'primary'),
 			cell('B&F', String(s.bf), 'GB ' + s.gb + ' · rB&F ' + s.rbf, 'warning'),
@@ -220,9 +238,13 @@
 
 	// Frames won minus frames lost on each of the last 15 nights in the
 	// period (UV, 5 Nov): green above the line, grey below it, a stub on it
-	// for a night that came out even.
-	function renderBars() {
-		const { frames } = inPeriod(them);
+	// for a night that came out even. On Compare the graph runs down the page
+	// (UV, 5 Nov): a night a row, newest at the foot, the line upright, green
+	// to its right and grey to its left.
+	function renderBars(v) {
+		const bars = v.part('bars'), barLabels = v.part('barLabels');
+		bars.classList.toggle('is-down', v.vertical);
+		const { frames } = inPeriod(v.p);
 		const nights = new Map();
 		for (const f of frames.slice().reverse()) {
 			const k = dayKey(f.at);
@@ -232,41 +254,45 @@
 		}
 		const list = [...nights.values()].slice(-15);
 		if (!list.length) {
-			els.bars.replaceChildren(node('span', 'muted pp-empty', 'No frames in this period.'));
-			els.barLabels.replaceChildren();
+			bars.replaceChildren(node('span', 'muted pp-empty', 'No frames in this period.'));
+			barLabels.replaceChildren();
 			return;
 		}
 		const up = Math.max(0, ...list.map((n) => n.won - n.lost));
 		const down = Math.max(0, ...list.map((n) => n.lost - n.won));
 		const upShare = up + down ? (up / (up + down)) * 100 : 50;   // where the base line sits
+		// Along the night's own length: height in the graph, width down the page.
+		const size = v.vertical ? 'width' : 'height';
 		let month = '';
 		const labels = [];
 		const line = node('span', 'pp-baseline');
-		line.style.top = upShare + '%';
-		els.bars.replaceChildren(line, ...list.map((n) => {
+		if (v.vertical) line.style.left = (100 - upShare) + '%'; else line.style.top = upShare + '%';
+		bars.replaceChildren(line, ...list.map((n) => {
 			const diff = n.won - n.lost;
 			const col = node('span', 'pp-night');
 			col.title = day(n.at) + ': won ' + n.won + ', lost ' + n.lost + ' (' + (diff > 0 ? '+' : '') + diff + ')';
 			const top = node('span', 'pp-night-up'), bottom = node('span', 'pp-night-down');
-			top.style.height = upShare + '%';
-			bottom.style.height = (100 - upShare) + '%';
+			top.style[size] = upShare + '%';
+			bottom.style[size] = (100 - upShare) + '%';
 			const b = node('span', 'pp-bar' + (diff < 0 ? ' pp-bar-lost' : diff === 0 ? ' pp-bar-even' : ''));
-			if (diff) b.style.height = (Math.abs(diff) / (diff > 0 ? up : down)) * 100 + '%';
+			if (diff) b.style[size] = (Math.abs(diff) / (diff > 0 ? up : down)) * 100 + '%';
 			(diff < 0 ? bottom : top).append(b);
-			col.append(top, bottom);
+			// Down the page the lost side is on the left.
+			if (v.vertical) col.append(bottom, top); else col.append(top, bottom);
 			const m = new Date(n.at).toLocaleDateString('en-ZA', { month: 'short' });
 			labels.push(node('span', null, m !== month ? m : ''));
 			month = m;
 			return col;
 		}));
-		els.barLabels.replaceChildren(...labels);
+		barLabels.replaceChildren(...labels);
 	}
 
 	// Each team's place in its season, by the league's own ranking columns
 	// (TDCStandings, as the Standings tab ranks them). null where it cannot
 	// be ranked; '' where it could not be read (said on the status line).
 	async function teamPlaces() {
-		const seasons = [...new Set(them.teams.filter((t) => t.team_id).map((t) => t.league_season_id))];
+		const teams = them.teams.concat(mine ? mine.teams : []);   // both sides of Compare
+		const seasons = [...new Set(teams.filter((t) => t.team_id).map((t) => t.league_season_id))];
 		const places = {};
 		await Promise.all(seasons.map(async (sid) => {
 			const [st, cols] = await Promise.all([
@@ -285,9 +311,10 @@
 		return places;
 	}
 
-	function renderTeams(places) {
-		if (!them.teams.length) { els.teams.replaceChildren(node('p', 'muted pp-empty', 'Not in a league yet.')); return; }
-		els.teams.replaceChildren(...them.teams.map((t) => {
+	function renderTeams(v, places) {
+		const box = v.part('teams');
+		if (!v.p.teams.length) { box.replaceChildren(node('p', 'muted pp-empty', 'Not in a league yet.')); return; }
+		box.replaceChildren(...v.p.teams.map((t) => {
 			const a = node('a', 'pp-team');
 			a.href = '/leagues/season/?s=' + encodeURIComponent(t.league_season_id) + (t.team_id ? '&team=' + encodeURIComponent(t.team_id) : '');
 			const pic = node('span', 'team-pic pp-team-pic');
@@ -334,35 +361,39 @@
 	// A list a page at a time, its page number the stepper on its side in the
 	// heading (UV, 5 Nov): leagues and tournaments 4 a page, recent matches 5.
 	const LISTS = {
-		league: { per: 4, box: el('pp-league'), page: el('pp-page-league'), of: (ms) => ms.filter((m) => m.kind === 'league'), none: 'No league matches yet.' },
-		tournament: { per: 4, box: el('pp-tournament'), page: el('pp-page-tournament'), of: (ms) => ms.filter((m) => m.kind === 'tournament'), none: 'No tournament matches yet.' },
-		recent: { per: 5, box: el('pp-recent'), page: el('pp-page-recent'), of: (ms) => ms, none: 'No matches yet.' }
+		league: { per: 4, of: (ms) => ms.filter((m) => m.kind === 'league'), none: 'No league matches yet.' },
+		tournament: { per: 4, of: (ms) => ms.filter((m) => m.kind === 'tournament'), none: 'No tournament matches yet.' },
+		recent: { per: 5, of: (ms) => ms, none: 'No matches yet.' }
 	};
-	function renderList(key) {
-		const l = LISTS[key];
-		const list = l.of(them.matches);
+	function renderList(v, key) {
+		const l = LISTS[key], page = v.part('page-' + key), box = v.part(key);
+		const list = l.of(v.p.matches);
 		const pages = Math.max(1, Math.ceil(list.length / l.per));
-		l.page.max = String(pages);
-		l.page.disabled = pages < 2;
-		const at = Math.min(pages, Math.max(1, Math.round(l.page.valueAsNumber) || 1));
-		if (l.page.valueAsNumber !== at) l.page.value = String(at);
+		page.max = String(pages);
+		page.disabled = pages < 2;
+		const at = Math.min(pages, Math.max(1, Math.round(page.valueAsNumber) || 1));
+		if (page.valueAsNumber !== at) page.value = String(at);
 		const shown = list.slice((at - 1) * l.per, at * l.per);
-		l.box.replaceChildren(...(shown.length ? shown.map(matchRow) : [node('p', 'muted pp-empty', l.none)]));
+		box.replaceChildren(...(shown.length ? shown.map(matchRow) : [node('p', 'muted pp-empty', l.none)]));
 	}
-	for (const key of Object.keys(LISTS)) LISTS[key].page.addEventListener('change', () => { if (them) renderList(key); });
+	// Each view's page numbers turn their own list's pages.
+	function listenPages(v) {
+		for (const key of Object.keys(LISTS)) v.part('page-' + key).addEventListener('change', () => renderList(v, key));
+	}
 
-	function renderAbout() {
-		const p = them.player;
+	// About as label and value pairs: a list on the Profile tab, one table
+	// on Compare (UV, 5 Nov).
+	function aboutRows(p) {
 		const rows = [];
-		const add = (label, value) => { rows.push(node('dt', 'muted', label)); const dd = node('dd'); dd.append(value); rows.push(dd); };
-		add('Full name', document.createTextNode(p.full_name || 'Not given'));
-		const d = discipline();
-		if (d) add('Plays', document.createTextNode(d));
+		const add = (label, value) => rows.push([label, value]);
+		add('Full name', document.createTextNode(p.player.full_name || 'Not given'));
+		const d = discipline(p);
+		add('Plays', document.createTextNode(d || '–'));
 		const venue = node('button', 'pp-link', 'Not built yet');
 		venue.type = 'button';
 		venue.dataset.unbuilt = 'Home venue';
 		add('Home venue', venue);
-		const teams = them.teams.filter((t) => t.team_id);
+		const teams = p.teams.filter((t) => t.team_id);
 		const tl = node('span');
 		if (!teams.length) tl.textContent = 'None';
 		teams.forEach((t, i) => {
@@ -372,17 +403,67 @@
 			tl.append(a);
 		});
 		add('Teams', tl);
-		add('Status', node('span', p.verified ? 'pp-primary' : 'muted', p.verified ? 'ID verified' : 'Not verified'));
-		add('Member since', document.createTextNode(monthYear(p.since)));
+		add('Status', node('span', p.player.verified ? 'pp-primary' : 'muted', p.player.verified ? 'ID verified' : 'Not verified'));
+		add('Member since', document.createTextNode(monthYear(p.player.since)));
+		return rows;
+	}
+
+	function renderAbout() {
+		const rows = [];
+		for (const [label, value] of aboutRows(them)) {
+			// The Profile tab leaves out Plays when nothing says what they play, as before.
+			if (label === 'Plays' && !discipline(them)) continue;
+			rows.push(node('dt', 'muted', label));
+			const dd = node('dd');
+			dd.append(value);
+			rows.push(dd);
+		}
 		els.about.replaceChildren(...rows);
 	}
 
+	// Compare's About: one table, yours on the left, theirs on the right, the
+	// headings in the middle, every cell centred (UV, 5 Nov).
+	function renderCompareAbout() {
+		const a = aboutRows(mine), b = aboutRows(them);
+		els.cAbout.replaceChildren(...a.map(([label, value], i) => {
+			const tr = node('tr');
+			const left = node('td'), mid = node('th', 'muted'), right = node('td');
+			left.append(value);
+			mid.textContent = label;
+			mid.scope = 'row';
+			right.append(b[i][1]);
+			tr.append(left, mid, right);
+			return tr;
+		}));
+	}
+
+	// Compare's heads: each half's picture and names, the match stage's way
+	// (match.css .mv-person): yours mirrored, so both pictures face the line.
+	function renderCompareHeads() {
+		for (const [side, p] of [['mine', mine], ['them', them]]) {
+			const who = document.querySelector(`.pp-c-who[data-side="${side}"]`);
+			const person = node('div', 'pp-c-person');
+			const names = node('div', 'pp-c-names');
+			names.append(node('span', 'pp-c-name', p.player.display_name));
+			if (p.player.full_name) names.append(node('span', 'pp-c-full', p.player.full_name));
+			person.append(avatar(p.player.avatar_path, p.player.display_name, 'pp-c-pic'), names);
+			who.replaceChildren(person);
+		}
+	}
+
+	// Everything that hangs on the period, in every view.
+	function renderPeriod() {
+		for (const v of views) { renderStats(v); renderBars(v); }
+	}
+
 	function renderProfile() {
-		renderForm();
-		renderStats();
-		renderBars();
-		for (const key of Object.keys(LISTS)) renderList(key);
+		for (const v of views) {
+			renderForm(v);
+			for (const key of Object.keys(LISTS)) renderList(v, key);
+		}
+		renderPeriod();
 		renderAbout();
+		if (mine) { renderCompareHeads(); renderCompareAbout(); }
 	}
 
 	// ─── Head to head ───
@@ -445,28 +526,6 @@
 			els.meeting.replaceChildren(head, line, strip, node('p', 'muted pp-key', 'Frame by frame · green is yours'), open);
 		}
 
-		// Side by side, all time.
-		const x = count(mine, true), y = count(them, true);
-		const rows = [
-			['Frame win', x.frames ? x.fw / x.frames : 0, y.frames ? y.fw / y.frames : 0, pct(x.fw, x.frames), pct(y.fw, y.frames)],
-			['Break & finish', x.bf, y.bf],
-			['Lags won', x.breakKnown ? x.broke / x.breakKnown : 0, y.breakKnown ? y.broke / y.breakKnown : 0, pct(x.broke, x.breakKnown), pct(y.broke, y.breakKnown)],
-			['Best streak', x.best, y.best],
-			['Matches', x.matches, y.matches]
-		];
-		els.cmp.replaceChildren(...rows.map(([label, a1, b1, as, bs]) => {
-			const top = Math.max(a1, b1) || 1;
-			const r = node('div', 'pp-cmp-row');
-			const lt = node('span', 'pp-cmp-bar pp-cmp-left'), rt = node('span', 'pp-cmp-bar pp-cmp-right');
-			const lw = node('span', 'pp-cmp-fill'), rw = node('span', 'pp-cmp-fill');
-			lw.style.width = (a1 / top) * 100 + '%';
-			rw.style.width = (b1 / top) * 100 + '%';
-			lt.append(lw);
-			rt.append(rw);
-			r.append(node('b', 'pp-primary', as || String(a1)), lt, node('span', 'muted pp-cmp-label', label), rt, node('b', 'pp-cmp-them', bs || String(b1)));
-			return r;
-		}));
-
 		// Every meeting.
 		const list = meetingsAll ? ms : ms.slice(0, 3);
 		const rowsM = list.map((m) => {
@@ -507,13 +566,14 @@
 		const b = e.target.closest('[data-tab]');
 		if (b) showTab(b.dataset.tab, b);
 	});
-	els.period.addEventListener('click', (e) => {
-		const b = e.target.closest('[data-days]');
-		if (!b) return;
+	// One period for the whole page: the Profile tab's switch and Compare's
+	// (one for both sides, UV 5 Nov) stay in step.
+	document.addEventListener('click', (e) => {
+		const b = e.target.closest('.pp-period [data-days]');
+		if (!b || !them) return;
 		days = Number(b.dataset.days);
-		for (const x of els.period.querySelectorAll('[data-days]')) x.setAttribute('aria-pressed', String(x === b));
-		renderStats();
-		renderBars();
+		for (const x of document.querySelectorAll('.pp-period [data-days]')) x.setAttribute('aria-pressed', String(x.dataset.days === b.dataset.days));
+		renderPeriod();
 		TDC.busy(b, pause(), els.status);
 	});
 
@@ -596,7 +656,7 @@
 	document.addEventListener('click', (e) => {
 		const b = e.target.closest('[data-unbuilt]');
 		if (!b) return;
-		const box = b.closest('.pp-section, .pp-hero');
+		const box = b.closest('.pp-section, .pp-hero, .pp-c-body');
 		const note = (box && box.querySelector('[data-note]')) || els.status;
 		TDC.status(note, b.dataset.unbuilt + ' is not built yet.', '');
 	});
@@ -676,14 +736,19 @@
 			h2h = hh.data;
 		}
 
+		views = [view(els.profile, them)];
+		if (mine) views.push(view(els.cmpTab, mine, 'mine'), view(els.cmpTab, them, 'them'));
+		views.forEach(listenPages);
+
 		renderHero();
 		renderProfile();
 		renderH2H();
-		renderTeams(null);
+		for (const v of views) renderTeams(v, null);
 		showTab(params.get('tab'));
 		els.body.hidden = false;
 		fitName();   // measured once it is shown
 		wakeIcons();
-		renderTeams(await teamPlaces());
+		const places = await teamPlaces();
+		for (const v of views) renderTeams(v, places);
 	})(), 'The player');
 })();
