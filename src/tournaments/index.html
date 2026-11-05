@@ -1,25 +1,36 @@
 ---
 layout: layout.html
 title: Tournaments
-description: "Tournaments you run or are entered in."
+description: "Tournaments you run or are entered in, and ones open for entry."
 extraScripts:
   - /scripts/tournaments.js
 ---
 {% comment %}
 	The way into a tournament, in the same shape as /matches/.
 
-	Everything comes from one call to tdc_my_tournaments, which returns the
+	Your own come from one call to tdc_my_tournaments, which returns the
 	ones this account runs and the ones it is entered in, with the entrant
-	count counted rather than stored.
+	count counted rather than stored. Open for entry comes from
+	tdc_open_tournaments: the ones a director made visible to public that
+	this account could enter and has not (UV, 5 Nov).
 {% endcomment %}
 
 <div class="tdc-card">
 	<h1>Tournaments</h1>
-	<p class="muted" id="intro">Tournaments you run or are entered in.</p>
 
 	<a href="/tournaments/new/" class="btn-primary btn-link" id="new-tournament">Create a Tournament</a>
 
-	<div id="tournament-list"></div>
+	<div class="section">
+		<h2>Your Tournaments</h2>
+		<p class="muted" id="intro">Tournaments you run or are entered in.</p>
+		<div id="tournament-list"></div>
+	</div>
+
+	<div class="section">
+		<h2>Open for entry</h2>
+		<p class="muted" id="open-intro">Tournaments you can enter.</p>
+		<div id="open-list"></div>
+	</div>
 
 	<div class="status" id="list-status"></div>
 </div>

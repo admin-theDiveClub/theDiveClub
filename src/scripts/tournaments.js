@@ -8,6 +8,11 @@
 // nowhere to go yet — the public bracket does not exist — so it is shown
 // without a link rather than linking somewhere that will refuse you.
 //
+// Open for entry (UV, 5 Nov) comes from tdc_open_tournaments: tournaments a
+// director made visible to public that this account could enter and has not.
+// Each opens its poster, which is where entering happens; making one visible
+// shares its poster, so the link always has something behind it.
+//
 // Needs: tdc.js.
 
 (() => {
@@ -16,7 +21,9 @@
 	const els = {
 		list: document.getElementById('tournament-list'),
 		status: document.getElementById('list-status'),
-		intro: document.getElementById('intro')
+		intro: document.getElementById('intro'),
+		openList: document.getElementById('open-list'),
+		openIntro: document.getElementById('open-intro')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -108,24 +115,72 @@
 		return box;
 	}
 
+	// How you get in, in the words of the poster's leading button.
+	const ENTRY = {
+		interested: "I'm interested",
+		self_confirm: 'Confirm my entry'
+	};
+
+	function openCard(t) {
+		const box = document.createElement('a');
+		box.className = 'match-card';
+		box.href = '/tournaments/poster/?t=' + encodeURIComponent(t.id);
+
+		const full = t.max_entrants != null && t.entrants >= t.max_entrants;
+		const count = t.max_entrants != null
+			? t.entrants + ' of ' + t.max_entrants
+			: String(t.entrants);
+
+		const top = el('div', 'match-top');
+		top.append(
+			el('span', 'match-opponent', t.name),
+			el('span', 'match-score', count)
+		);
+
+		const bits = [when(t.starts_at), FORMAT[t.format] || t.format];
+		if (t.venue_name) bits.push(t.venue_name);
+		bits.push(t.entrants === 1 ? '1 entrant' : t.entrants + ' entrants');
+
+		// A full one stays listed and says so; the poster refuses the entry.
+		const tags = el('div', 'match-tags');
+		tags.append(full
+			? el('span', 'badge pending', 'Full')
+			: el('span', 'badge needs-you', ENTRY[t.entry_mode] || t.entry_mode));
+
+		box.append(top, el('div', 'match-meta', bits.join(' · ')), tags);
+		return box;
+	}
+
 	TDCLoader.hold((async () => {
 		const session = await TDC.requireSession(AREA);
 		if (!session) return;   // requireSession has already sent them to log in
 
-		const { data, error } = await supabaseClient.rpc('tdc_my_tournaments', { p_limit: 50 });
+		const [mine, open] = await Promise.all([
+			supabaseClient.rpc('tdc_my_tournaments', { p_limit: 50 }),
+			supabaseClient.rpc('tdc_open_tournaments', { p_limit: 50 })
+		]);
 
-		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+		if (mine.error) { TDC.showSupabaseError(AREA, mine.error, els.status); return; }
+		if (open.error) { TDC.showSupabaseError(AREA, open.error, els.status); return; }
 
-		if (!data || !data.length) {
-			els.intro.textContent = 'You are not in a tournament yet.';
-			TDC.status(els.status,
-				'Create one above, or ask whoever is running yours to add you.', '');
-			return;
+		const data = mine.data || [];
+		if (!data.length) {
+			els.intro.textContent = 'You are not in a tournament yet. Create one above, or enter one below.';
+		} else {
+			els.list.replaceChildren(...data.map(card));
+			els.intro.textContent = data.length === 1
+				? 'One tournament.'
+				: `${data.length} tournaments, newest first.`;
 		}
 
-		els.list.replaceChildren(...data.map(card));
-		els.intro.textContent = data.length === 1
-			? 'One tournament.'
-			: `${data.length} tournaments, newest first.`;
+		const opens = open.data || [];
+		if (!opens.length) {
+			els.openIntro.textContent = 'No tournaments are open for entry right now.';
+		} else {
+			els.openList.replaceChildren(...opens.map(openCard));
+			els.openIntro.textContent = opens.length === 1
+				? 'One tournament you can enter.'
+				: `${opens.length} tournaments you can enter, soonest first.`;
+		}
 	})(), 'Tournaments');
 })();

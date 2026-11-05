@@ -36,6 +36,7 @@
 		seedRandom: el('seed-random'), seedClear: el('seed-clear'),
 		entrySettings: el('entry-settings'), entryMode: el('entry-mode'),
 		entryModeHint: el('entry-mode-hint'), paidConfirms: el('paid-confirms'),
+		listed: el('listed'), listedHint: el('listed-hint'),
 		entryLink: el('entry-link'), entryLinkHint: el('entry-link-hint'),
 		posterPanel: el('poster-panel'), posterState: el('poster-state'),
 		posterNames: el('poster-names'), posterDraw: el('poster-draw'),
@@ -75,7 +76,7 @@
 	async function loadTournament() {
 		const { data, error } = await supabaseClient
 			.from('tbl_tournaments')
-			.select('id, name, format, status, starts_at, max_entrants, entry_fee_credits, entry_mode, paid_confirms')
+			.select('id, name, format, status, starts_at, max_entrants, entry_fee_credits, entry_mode, paid_confirms, is_listed')
 			.eq('id', tournamentId)
 			.maybeSingle();
 
@@ -243,6 +244,17 @@
 		els.paidConfirms.checked = !!t.paid_confirms;
 		els.paidConfirms.disabled = readOnly;
 
+		// Visible to public. Listed only while players can enter themselves
+		// (tdc_open_tournaments), so the hint says when the switch is on and
+		// nobody can see it.
+		els.listed.checked = !!t.is_listed;
+		els.listed.disabled = readOnly;
+		els.listedHint.textContent = !t.is_listed
+			? 'Signed-in players can find it under Open for entry on Tournaments, while they can enter themselves. Turning it on shares the poster.'
+			: t.entry_mode === 'td_only'
+				? 'On, but players will not see it while you add everybody yourself.'
+				: 'Players can find it under Open for entry on Tournaments until the draw is made. Stopping sharing the poster turns this off.';
+
 		// The poster, which is the one page meant to be opened by somebody who
 		// is not signed in. It shows nothing until a poster has been generated
 		// and shared, which is what the panel below is for — so the hint says
@@ -261,6 +273,8 @@
 		reload: async () => {
 			const t = await loadTournament();
 			if (t) renderEntrySettings(t);
+			// Visible on shares the poster, so its panel is read again too.
+			await loadPoster();
 			return !!t;
 		}
 	});
@@ -274,6 +288,9 @@
 
 	els.paidConfirms.addEventListener('change', () =>
 		saveEntrySetting('Saving', { p_paid_confirms: els.paidConfirms.checked }));
+
+	els.listed.addEventListener('change', () =>
+		saveEntrySetting('Saving', { p_is_listed: els.listed.checked }));
 
 	els.entryLink.addEventListener('focus', () => els.entryLink.select());
 
@@ -342,7 +359,14 @@
 
 	const posterWriter = TDC.writer({
 		area: AREA, status: els.posterStatus,
-		reload: async () => { await loadPoster(); return true; }
+		// Stopping sharing turns Visible to public off, so the switch is read
+		// again with the poster.
+		reload: async () => {
+			await loadPoster();
+			const t = await loadTournament();
+			if (t) renderEntrySettings(t);
+			return true;
+		}
 	});
 	function poster(what, args) {
 		return posterWriter.write(what, () => supabaseClient.rpc(args.fn,

@@ -90,6 +90,7 @@ Call the `tdc_` functions as the user who would call them from the website, neve
 | `033_league_roster_pictures.test.sql` | A team's roster and the league's officials carry each player's `avatar_path`; the officials still read as before |
 | `034_league_pictures.test.sql` | A league's picture: its director uploads into the league's folder of `league-pictures` and sets it (getting back the one replaced), a path outside the folder is refused, clearing it; a stranger can neither set it nor upload |
 | `044_match_break_in_play.test.sql` | The break event in play (`tdc_set_break_in_play`): either player saves and changes it, stored with its frame and card version, `card_version` unmoved and a submission standing; a stranger, anon, a frame not in play (`TDC01`), a non-event, a direct table write and a settled card refused; saving or removing a frame leaving it behind the card's version |
+| `047_open_tournaments.test.sql` | Visible to public (off by default; on shares the poster, at creation and afterwards, keeping the poster's own choices; stop sharing turns it off; off leaves the poster) and `tdc_open_tournaments`: a player finds a listed Draft or Open one, not once entered; never td_only, Draft set by hand, or a drawn one; not the director's own; anon refused |
 
 **A league needs a team size since `20261023213048`**, and `tests.rules()` carries `team_size: 0` (it is `DEFAULT_RULES`, for matches). A test that makes a league passes `tests.rules('{"team_size": 5}')` or similar.
 

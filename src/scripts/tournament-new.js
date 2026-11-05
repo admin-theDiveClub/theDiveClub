@@ -38,7 +38,7 @@
 		name: el('t-name'), format: el('t-format'), formatHint: el('format-hint'),
 		when: el('t-when'), max: el('t-max'), fee: el('t-fee'),
 		entryMode: el('t-entry-mode'), entryModeHint: el('entry-mode-hint'),
-		paidConfirms: el('t-paid-confirms'),
+		paidConfirms: el('t-paid-confirms'), listed: el('t-listed'),
 		progression: el('t-progression'), createMatches: el('t-create-matches'),
 		main: el('settings-main'), rest: el('settings-rest'),
 		create: el('create-btn'), status: el('create-status')
@@ -248,6 +248,8 @@
 			p_entry_fee_credits: fee,
 			p_entry_mode: els.entryMode.value,
 			p_paid_confirms: els.paidConfirms.checked,
+			// On shares the poster too, in the same call (UV, 5 Nov).
+			p_is_listed: els.listed.checked,
 			p_progression: els.progression.value,
 			p_create_matches: els.createMatches.value
 		}), els.status);

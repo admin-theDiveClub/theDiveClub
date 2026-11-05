@@ -1311,3 +1311,11 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to judge:* the centre line is the two halves' inner shadows meeting, as on the stage, not a drawn line; section headings run across both halves; in a half the match and team rows drop their pictures and the win or loss dot, scores smaller; a list's page number sits under its heading; the stat boxes one column per half on a phone, two by two on a PC; down the page the frame difference has won to the right of the line, newest night at the foot; Leagues and Tournaments are separate rows so their headings line up.
 *So:* `docs/systems/players.md`, "The Compare tab".
 *Touches:* `players/index.html`, `scripts/player.js`, `stylesheets/player.css`
+
+## 2026-11-05 — Tournaments open for entry, found without a link
+
+*Decided by UV:* players can find open tournaments on `/tournaments/` without being sent a link; the tournament's creator marks it **visible to public** (a switch, not every shareable tournament); only signed-in players see the list; **switching Visible on also shares the poster**, since entering happens on the poster.
+*Claude's, for UV to judge:* stopping sharing the poster turns Visible off, and Visible off leaves the poster shared; Visible on with no poster builds one with names and draw left out; Draft counts as open for entry unless set by hand (a tournament reads Draft until its first entry); a full tournament stays listed, marked Full; ones you run or have any entry in (withdrawn too) are not repeated under Open for entry; the badge uses the poster's button words.
+*Rejected:* listing every tournament whose poster is shared (no switch); showing the list to signed-out visitors, which would need a live read open to `anon` that the poster's snapshot design avoids.
+*So:* `docs/systems/tournaments.md`, "Open for entry, and Visible to public".
+*Touches:* migration `20261105084149_tournament_listed.sql`, `supabase/tests/047_open_tournaments.test.sql` (new), `tournaments/index.html`, `scripts/tournaments.js`, `tournaments/new/index.html`, `scripts/tournament-new.js`, `tournaments/manage/index.html`, `scripts/tournament-manage.js`
