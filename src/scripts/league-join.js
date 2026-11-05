@@ -58,7 +58,6 @@
 	let officials = [];
 	let myPlayerId = null;
 	let asked = new Set();      // the teams I have asked to join (tdc_team_join_requests)
-	const ringsDrawn = new Set(); // a team's ring draws its icon in once, not on every re-read
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -455,41 +454,6 @@
 	}
 	const mayAsk = () => !!myPlayerId && info.my_status === 'active' && !onATeam();
 
-	// The ring: a person with a plus to ask, a tick in a green ring once
-	// asked; tapped again, the request is taken back. A full team's ring is
-	// greyed unless already asked.
-	function askRing(t) {
-		const id = t.team_id;
-		const isAsked = asked.has(id);
-		const full = (t.active_players || 0) >= (t.team_limit || 0);
-		const b = node('button', 'lj-ask' + (isAsked ? ' is-asked' : ''));
-		b.type = 'button';
-		b.dataset.ask = id;
-		b.dataset.name = t.name;
-		b.dataset.asked = isAsked ? '1' : '0';
-		const label = isAsked ? 'Asked to join ' + t.name + '. Tap to take it back'
-			: full ? t.name + ' is full'
-			: 'Ask to join ' + t.name;
-		b.title = label;
-		b.setAttribute('aria-label', label);
-		b.disabled = full && !isAsked;
-		const icon = isAsked ? 'tick' : 'follow';
-		const face = node('span', 'tdc-ring');
-		face.innerHTML = TDCRing.svg();
-		b.append(face);
-		try {
-			const ring = new TDCRing.RingStatus(face, {
-				icons: [icon],
-				labels: { [icon]: label, empty: label },
-				initial: ringsDrawn.has(id + icon) ? icon : 'empty'
-			});
-			if (!ringsDrawn.has(id + icon)) { ringsDrawn.add(id + icon); ring.drawTo(icon); }
-		} catch (err) {
-			TDC.error(AREA, 'the ring to ask to join ' + t.name + ' could not be drawn.', err, els.status);
-		}
-		return b;
-	}
-
 	function renderTeams() {
 		els.teamCount.hidden = !teams.length;
 		els.teamCount.textContent = String(teams.length);
@@ -520,7 +484,7 @@
 				node('span', 'lj-team-places-of', 'of ' + (t.team_limit || 0)));
 			places.title = (t.active_players || 0) + ' of ' + (t.team_limit || 0) + ' places taken';
 			head.append(places);
-			if (ask) head.append(askRing(t));
+			if (ask) head.append(TDCTeamAsk.ring(t, asked.has(t.team_id), AREA, els.status));
 			card.append(head);
 
 			const roster = (rosters.get(t.team_id) || []).filter((r) => r.status !== 'withdrawn');

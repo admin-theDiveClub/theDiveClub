@@ -816,6 +816,10 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 .team-box-name { font-size: 1.05rem; font-weight: 700; overflow-wrap: break-word; }
 .team-box-sub { font-size: 0.78rem; color: var(--text-muted); }
 .team-box > :not(summary) { margin-inline: var(--space-3); }
+/* A team's players start under its name, not its shield (UV, 5 Nov: indent
+ * them so an open list reads as the team's): the heading's padding, the
+ * shield and the gap after it. */
+.team-box > :not(summary) { margin-left: calc(var(--space-3) + 2.75rem + var(--space-3)); }
 .team-box > :last-child:not(summary) { margin-bottom: var(--space-3); }
 /* Opening a team fades its players in (UV, 24 Oct: fade what changes). */
 .team-box[open] > :not(summary) { animation: team-in var(--control-reveal) ease; }
@@ -975,6 +979,17 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 	outline: none;
 }
 .ls-btn:disabled { opacity: 0.4; box-shadow: none; cursor: default; }
+/* Set my lineup / Go to last result say which match under the words (UV,
+ * 5 Nov): the other team, the date, a result's score, in the body face. */
+.ls-btn.ls-btn-two { flex-direction: column; gap: var(--space-1); padding-block: var(--space-2); }
+.ls-btn-sub {
+	font-family: var(--font-body);
+	font-size: 0.8rem;
+	font-weight: 600;
+	line-height: 1.2;
+	text-shadow: none;
+	opacity: 0.85;
+}
 
 /* Waiting for a team: the heading with the places taken beside it, then a
  * card each, set into the page, as many to a row as fit. */
@@ -1006,6 +1021,40 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
  * under the name when the card is narrow. */
 .ls-ask { flex-wrap: wrap; row-gap: var(--space-2); }
 .ls-ask-actions { display: flex; gap: var(--space-2); margin-left: auto; }
+/* Asking to join a team (UV, 5 Nov; scripts/team-ask.js), on the join page's
+ * team cards and the season page's team headings: a ring with an icon, the
+ * profile page's ring buttons' size; a person with a plus to ask, a tick in
+ * a green ring and glow once asked. A full team's is greyed. */
+.tdc-card button.team-ask {
+	flex: none;
+	width: 2.75rem;
+	height: 2.75rem;
+	padding: 0;
+	margin: 0;
+	border: none;
+	border-radius: var(--radius-round);
+	background: transparent;
+	cursor: pointer;
+	transition: box-shadow 0.15s ease;
+	-webkit-tap-highlight-color: transparent;
+}
+.tdc-card button.team-ask:not(:disabled):hover,
+.tdc-card button.team-ask:focus-visible { box-shadow: var(--glow-primary); outline: none; }
+.tdc-card button.team-ask:disabled { opacity: 0.35; cursor: default; }
+/* The ring's live text is for a screen reader only (as on the profile's). */
+.team-ask .sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
+.team-ask.is-asked .tdc-ring .ring { stroke: var(--color-primary); }
+.tdc-card button.team-ask.is-asked { box-shadow: 0 0 14px color-mix(in srgb, var(--color-primary) 35%, transparent); }
+/* In a season page team's heading: at the right, beside the + / –. */
+.team-box > summary .team-ask { margin-left: auto; }
+.team-box > summary:has(.team-ask)::after { margin-left: 0; }
 
 /* ── A league's own picture (24 Oct) ──
  * In the banner, a search tile and the settings page's preview: the round

@@ -66,6 +66,8 @@ TDCLeagueNav.panel('season', () => {
 	let officials = [];
 	let pool = [];
 	let requests = [];          // players asking to join a team I captain (tdc_team_join_requests)
+	let asked = new Set();      // the teams I have asked to join, when I am on none
+	let requestsRead = false;   // the rings wait for the requests, so they never draw empty then ticked
 	let fixtures = [];
 	let seasonRow = null;       // status, reserves, entries: the season's own row
 	let readiness = null;       // only for the people running it and its captains
@@ -197,18 +199,63 @@ TDCLeagueNav.panel('season', () => {
 
 	// The next match this person's team is in, so a captain lands on the card
 	// rather than hunting through the fixture list for it.
-	function loadMyNext() {
+	//
+	// For a captain (UV, 5 Nov): the earliest match that has been opened (a
+	// match made on the fixture, not finished or abandoned) where our side's
+	// lineup is not locked yet, "Set my lineup"; with none, "Go to last
+	// result", the latest finished one; with neither, no button. Locks are in
+	// tbl_league_match_sides, which any signed-in player may read. Under the
+	// words, which match it is (UV): the other team and the date, and the
+	// score on a result.
+	async function loadMyNext() {
 		els.meCard.hidden = true;
-		if (!mine || !mine.my_team_id) return;
+		if (!mine || !mine.my_team_id) return true;
 
 		const ours = fixtures.filter((f) =>
 			f.match_id && (f.home_team_id === mine.my_team_id || f.away_team_id === mine.my_team_id));
-		if (!ours.length) return;
+		if (!ours.length) return true;
 
-		// The first one not yet finished, or the most recent if they all are.
-		const next = ours.find((f) => f.match_status !== 'complete' && f.match_status !== 'reopened') || ours[ours.length - 1];
-		els.meCard.href = '/leagues/card/?m=' + encodeURIComponent(next.match_id);
-		els.meCard.textContent = mine.i_captain ? 'Set my lineup' : 'My next match';
+		const at = (f) => (f.scheduled_at ? new Date(f.scheduled_at).getTime() : Infinity);
+		const inOrder = [...ours].sort((a, b) => at(a) - at(b) || a.round - b.round || a.position - b.position);
+		const finished = (f) => f.match_status === 'complete' || f.match_status === 'reopened';
+		const opened = (f) => f.match_status === 'scheduled' || f.match_status === 'in_progress';
+		const side = (f) => (f.home_team_id === mine.my_team_id ? 'home' : 'away');
+
+		if (!mine.i_captain) {
+			// A player: the first one not yet finished, or the most recent if
+			// they all are (as before).
+			showMyCard(ours.find((f) => !finished(f)) || ours[ours.length - 1], 'My next match', false);
+			return true;
+		}
+
+		const open = inOrder.filter(opened);
+		let locked = new Set();
+		if (open.length) {
+			const { data, error } = await supabaseClient.from('tbl_league_match_sides')
+				.select('match_id, side').in('match_id', open.map((f) => f.match_id)).not('locked_at', 'is', null);
+			if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
+			locked = new Set((data || []).map((r) => r.match_id + '|' + r.side));
+		}
+		const next = open.find((f) => !locked.has(f.match_id + '|' + side(f)));
+		if (next) { showMyCard(next, 'Set my lineup', false); return true; }
+
+		const last = inOrder.filter(finished).pop();
+		if (last) showMyCard(last, 'Go to last result', true);
+		return true;
+	}
+
+	function showMyCard(f, label, score) {
+		const home = f.home_team_id === mine.my_team_id;
+		const bits = ['v ' + (home ? f.away_name : f.home_name)];
+		if (f.scheduled_at) bits.push(new Date(f.scheduled_at).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' }));
+		if (score) {
+			const us = (home ? f.home_frames : f.away_frames) || 0;
+			const them = (home ? f.away_frames : f.home_frames) || 0;
+			bits.push(us + '–' + them);
+		}
+		els.meCard.href = '/leagues/card/?m=' + encodeURIComponent(f.match_id);
+		els.meCard.replaceChildren(node('span', 'ls-btn-main', label), node('span', 'ls-btn-sub', bits.join(' · ')));
+		els.meCard.classList.add('ls-btn-two');
 		els.meCard.hidden = false;
 	}
 
@@ -508,9 +555,13 @@ TDCLeagueNav.panel('season', () => {
 	// Players who asked on the join page to join my team. The function gives
 	// a captain only their own team's (the director every team's, but they
 	// have Run it). Take is the claim above; Decline turns them down.
+	// The same read gives a player on no team their own requests, for the
+	// rings on the Teams tab (UV, 5 Nov).
 	async function loadRequests() {
-		if (!controlsTeam()) {
+		if (!controlsTeam() && !mayAsk()) {
 			requests = [];
+			asked = new Set();
+			requestsRead = true;
 			renderRequests();
 			return true;
 		}
@@ -518,10 +569,19 @@ TDCLeagueNav.panel('season', () => {
 			p_league_season_id: seasonId
 		});
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
-		requests = (data || []).filter((r) => r.team_id === mine.my_team_id);
+		requests = controlsTeam() ? (data || []).filter((r) => r.team_id === mine.my_team_id) : [];
+		asked = new Set((data || []).filter((r) => r.is_mine).map((r) => r.team_id));
 		renderRequests();
+		// The teams are drawn before the requests are in (loadAll): draw them
+		// again with their rings as the requests now stand.
+		requestsRead = true;
+		if (mayAsk()) renderTeams();
 		return true;
 	}
+
+	// Whether I may ask to join a team: in the league, active, on no team.
+	// The database says the same (tdc_request_team).
+	const mayAsk = () => !!(mine && mine.my_status === 'active' && !mine.my_team_id);
 
 	// How long ago, in words a card can hold.
 	function ago(ts) {
@@ -681,6 +741,8 @@ TDCLeagueNav.panel('season', () => {
 		if ((t.captains || []).length) names.append(node('span', 'team-box-sub', 'Captain: ' + t.captains.join(', ')));
 		head.append(pic, names);
 		if (mine && mine.my_team_id === t.team_id) head.append(node('span', 'badge live', 'Your team'));
+		// The ring to ask to join, for a player on no team (UV, 5 Nov).
+		if (requestsRead && mayAsk()) head.append(TDCTeamAsk.ring(t, asked.has(t.team_id), AREA, els.status));
 		box.append(head);
 
 		// Not read yet: nothing in it; opening it reads, with the dots (below).
@@ -767,6 +829,27 @@ TDCLeagueNav.panel('season', () => {
 			if (box) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
 		}
 	}
+
+	// Asking to join a team, or taking it back: the ring sits in the team's
+	// heading, so its tap must not also open or close the team.
+	els.teamList.addEventListener('click', (e) => {
+		const b = e.target.closest('button[data-ask]');
+		if (!b) return;
+		e.preventDefault();
+		if (b.disabled) return;
+		const teamId = b.dataset.ask;
+		const name = b.dataset.name;
+		const ring = () => els.teamList.querySelector('button[data-ask="' + teamId + '"]');
+		if (b.dataset.asked === '1') {
+			write('Taking back the request to ' + name, () => supabaseClient.rpc('tdc_cancel_team_request', {
+				p_team_id: teamId
+			}), () => 'Request to join ' + name + ' taken back.', { single: 'ask|' + teamId, dots: b, follow: ring });
+		} else {
+			write('Asking to join ' + name, () => supabaseClient.rpc('tdc_request_team', {
+				p_team_id: teamId
+			}), () => 'Asked to join ' + name + '. Its captain decides.', { single: 'ask|' + teamId, dots: b, follow: ring });
+		}
+	});
 
 	els.teamList.addEventListener('click', (e) => {
 		const button = e.target.closest('button[data-action]');
@@ -941,7 +1024,7 @@ TDCLeagueNav.panel('season', () => {
 		renderViews();
 		results.push(await loadReadiness());
 		results.push(await loadOfficials());
-		loadMyNext();
+		results.push(await loadMyNext());
 		renderBanner();
 		renderStats();
 		return results.every(Boolean);

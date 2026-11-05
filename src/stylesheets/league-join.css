@@ -293,38 +293,7 @@
 .lj-team-name::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
 .lj-team-name:focus-visible { outline: none; }
 .lj-team-faces,
-.lj-ask { position: relative; z-index: 1; }
-
-/* Asking to join (UV, 5 Nov): a ring with an icon, the profile page's ring
- * buttons' size; a person with a plus to ask, a tick in a green ring and
- * glow once asked. A full team's is greyed. */
-.tdc-card button.lj-ask {
-	flex: none;
-	width: 2.75rem;
-	height: 2.75rem;
-	padding: 0;
-	margin: 0;
-	border: none;
-	border-radius: var(--radius-round);
-	background: transparent;
-	cursor: pointer;
-	transition: box-shadow 0.15s ease;
-	-webkit-tap-highlight-color: transparent;
-}
-.tdc-card button.lj-ask:not(:disabled):hover,
-.tdc-card button.lj-ask:focus-visible { box-shadow: var(--glow-primary); outline: none; }
-.tdc-card button.lj-ask:disabled { opacity: 0.35; cursor: default; }
-/* The ring's live text is for a screen reader only (as on the profile's). */
-.lj-ask .sr {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	overflow: hidden;
-	clip: rect(0 0 0 0);
-	white-space: nowrap;
-}
-.lj-ask.is-asked .tdc-ring .ring { stroke: var(--color-primary); }
-.tdc-card button.lj-ask.is-asked { box-shadow: 0 0 14px color-mix(in srgb, var(--color-primary) 35%, transparent); }
+.lj-team .team-ask { position: relative; z-index: 1; }
 .lj-team.is-asked { outline: 1px solid color-mix(in srgb, var(--color-primary) 55%, transparent); }
 .lj-team-sub { font-size: 0.78rem; color: var(--text-muted); }
 .lj-team-places { display: flex; flex-direction: column; align-items: center; line-height: 1; }
