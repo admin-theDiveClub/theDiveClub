@@ -22,11 +22,11 @@
 		name: el('t-name'), meta: el('t-meta'),
 		setup: el('setup'), who: el('who'), whoHint: el('who-hint'),
 		sizeField: el('size-field'), drawSize: el('draw-size'),
-		progression: el('progression'), createMatches: el('create-matches'),
+		settings: el('settings'), thirdPlaceHint: el('third-place-hint'),
 		thirdPlace: el('third-place'), generate: el('generate'),
 		bracket: el('bracket'), actions: el('draw-actions'),
 		viewRow: el('view-row'), fullNames: el('full-names'),
-		fontSize: el('font-size'), zoom: el('zoom'),
+		fontSize: el('font-size'), zoom: el('zoom'), gapV: el('gap-v'), gapH: el('gap-h'),
 		resolve: el('resolve'), redraw: el('redraw'),
 		status: el('page-status'), entrantsLink: el('entrants-link'),
 		statusRow: el('status-row'), statusSelect: el('t-status'), statusHint: el('status-hint'),
@@ -39,7 +39,8 @@
 		roundRulesRest: el('round-rules-rest'), roundRulesLater: el('round-rules-later'),
 		roundRulesSave: el('round-rules-save'), roundRulesClear: el('round-rules-clear'),
 		roundRulesCancel: el('round-rules-cancel'), roundRulesStatus: el('round-rules-status'),
-		entrants: el('entrants'), entrantPills: el('entrant-pills')
+		entrants: el('entrants'), entrantPills: el('entrant-pills'),
+		stage: el('stage'), fit: el('fit'), full: el('full'), resetView: el('reset-view')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -59,7 +60,8 @@
 	// What a card state means to somebody reading a bracket, which is not the
 	// same as what it means on the match page.
 	const CARD = {
-		in_progress: { label: 'Playing', cls: 'live' },
+		// Playing is said by the yellow strip alone (UV, 5 Nov), not a badge.
+		in_progress: { label: '', cls: '' },
 		awaiting:    { label: 'Not agreed yet', cls: 'warn' },
 		disputed:    { label: 'Disputed', cls: 'disputed' },
 		agreed:      { label: '', cls: '' },
@@ -76,11 +78,12 @@
 		none: 'Not started', scheduled: 'Match made', in_progress: 'Playing',
 		complete: 'Finished', abandoned: 'Abandoned'
 	};
-	// A match with frames in it is being played even before its status says
-	// so (UV, 5 Nov: every match being played is yellow).
+	// Every match that exists and is not over is active, and yellow (UV,
+	// 5 Nov, said twice): a match is made when its table is called, so a
+	// made match is a match being played. Green is for finished only.
 	const stateOf = (f) => f.advance_reason === 'bye' ? 'bye'
 		: f.match_id
-			? (f.match_status === 'scheduled' && (f.home_frames || f.away_frames) ? 'in_progress' : f.match_status)
+			? (f.match_status === 'complete' || f.match_status === 'abandoned' ? f.match_status : 'in_progress')
 		: f.advanced_entrant_id ? 'complete' : 'none';
 	// Display name (the default) or full name, per device (UV, 5 Nov: the
 	// standings' Full names switch). A player with neither name keeps theirs.
@@ -95,24 +98,26 @@
 	// linear or from the outside in (the final in the middle); rounds, as
 	// columns (side by side) or rows (one under another); card, a card's
 	// players stacked or across (side by side, as a league fixture); pics,
-	// players' pictures shown or hidden. And two
-	// percentages: font, the size of the draw's text (70–150), and zoom, the
-	// size of the whole draw (50–150), both in steps of 10.
+	// players' pictures shown or hidden. And four numbers: font, the size of
+	// the draw's text (50–300%), and zoom, the size of the whole draw
+	// (25–300%), any whole number (UV, 5 Nov: so a view can be made to fit
+	// any screen); gapV and gapH, the space between cards down and across
+	// the page (0–64px; UV, 5 Nov).
 	const VIEW_KEY = 'tdc.draw.view';
-	const VIEW_DEFAULT = { flow: 'linear', rounds: 'columns', card: 'stacked', pics: 'show', font: 100, zoom: 100 };
-	const RANGE = { font: [70, 150], zoom: [50, 150] };
+	const VIEW_DEFAULT = { flow: 'linear', rounds: 'columns', card: 'stacked', pics: 'show', font: 100, zoom: 100, gapV: 8, gapH: 16 };
+	const RANGE = { font: [50, 300, 1], zoom: [25, 300, 1], gapV: [0, 64, 1], gapH: [0, 64, 1] };
 	let view = Object.assign({}, VIEW_DEFAULT);
 	try { Object.assign(view, JSON.parse(localStorage.getItem(VIEW_KEY) || '{}')); } catch (err) { /* private window or unreadable: the defaults */ }
 	for (const k of ['flow', 'rounds', 'card', 'pics']) {
 		if (!els.viewRow.querySelector(`[data-view-key="${k}"][data-view="${view[k]}"]`)) view[k] = VIEW_DEFAULT[k];
 	}
-	// A percentage kept on its step and inside its range.
+	// A number kept on its step and inside its range.
 	const pct = (k, v) => {
-		const n = Math.round(Number(v) / 10) * 10;
-		return Number.isFinite(n) ? Math.min(RANGE[k][1], Math.max(RANGE[k][0], n)) : VIEW_DEFAULT[k];
+		const [lo, hi, step] = RANGE[k];
+		const n = Math.round(Number(v) / step) * step;
+		return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : VIEW_DEFAULT[k];
 	};
-	view.font = pct('font', view.font);
-	view.zoom = pct('zoom', view.zoom);
+	for (const k of Object.keys(RANGE)) view[k] = pct(k, view[k]);
 	const STATUS = {
 		draft: 'Draft', open: 'Open for entries', in_progress: 'Running',
 		complete: 'Finished', cancelled: 'Cancelled'
@@ -152,32 +157,51 @@
 	//
 	// Walking down from the last round, a round is the Final if it holds one
 	// match, the semis if the round above was the final and it holds two, and
-	// so on. The moment the halving breaks — a prelim, an odd field, a match
-	// added by hand — naming stops and everything below is "Round n", which
-	// is both true and the thing a TD would say out loud.
+	// so on: the quarter-finals, then Last 16, Last 32 and on by the number of
+	// players left (UV, 5 Nov). The moment the halving breaks — a prelim, an
+	// odd field, a match added by hand — naming stops and everything below is
+	// "Round n", which is both true and the thing a TD would say out loud.
+	const LADDER = { 1: 'Final', 2: 'Semi-finals', 4: 'Quarter-finals' };
+	const SHORT = { 1: 'Final', 2: 'SF', 4: 'QF' };
 	function roundNames(main, lastRound) {
 		const names = new Map();
-		const LADDER = { 1: 'Final', 2: 'Semi-finals', 4: 'Quarter-finals' };
 		let expect = 1;
 
 		for (let r = lastRound; r >= 1; r--) {
 			const count = main.filter((f) => f.round === r).length;
-			if (count !== expect || !LADDER[expect]) break;
-			names.set(r, LADDER[expect]);
+			if (count !== expect) break;
+			names.set(r, { long: LADDER[expect] || 'Last ' + expect * 2, short: SHORT[expect] || 'L' + expect * 2, one: expect === 1 });
 			expect *= 2;
 		}
 		return names;
 	}
+	// The draw's round names as last drawn (render), so a card, a slot, a
+	// warning and a heading all say the same name for a round (UV, 5 Nov).
+	let roundLabels = new Map();
 
-	// How a fixture is named to a person. "Round 1 · Match 1", not "1-1" —
-	// the short form is the schema's way of identifying a fixture, and it was
-	// leaking into everything a TD reads. Said in one place so the bracket,
-	// the swap warning and the drift list cannot drift apart.
+	// How a fixture is named to a person: its round as the heading names it,
+	// then which match ("Quarter-finals · Match 2"; the Final and the playoff
+	// alone, being one match). Not "1-1" — the short form is the schema's way
+	// of identifying a fixture, and it was leaking into everything a TD
+	// reads. Said in one place so the bracket, the swap warning and the drift
+	// list cannot drift apart.
 	function fixtureName(bracket, round, position) {
+		if (bracket === 'third_place') return 'Third place';
 		if (bracket && bracket !== 'main') {
 			return bracket.replace(/_/g, ' ') + ' · Match ' + position;
 		}
-		return `Round ${round} · Match ${position}`;
+		const n = roundLabels.get(round);
+		if (n && n.one) return n.long;
+		return (n ? n.long : 'Round ' + round) + ' · Match ' + position;
+	}
+	// The short form, for a slot that says where its player comes from
+	// ("Winner of QF 2"), inside a narrow card.
+	function fixtureShort(bracket, round, position) {
+		if (bracket === 'third_place') return 'Third place';
+		if (bracket && bracket !== 'main') return fixtureName(bracket, round, position);
+		const n = roundLabels.get(round);
+		if (n && n.one) return n.short;
+		return n ? n.short + ' ' + position : `R${round} · M${position}`;
 	}
 
 	// ─── A side of a fixture ───
@@ -212,13 +236,12 @@
 		const row = node('div', 'bracket-side');
 		if (f.winner_entrant_id && id && f.winner_entrant_id === id) row.classList.add('won');
 
-		// The row is a grid of three fixed tracks — swap, name, score — rather
+		// The row is a grid of fixed tracks — the player, the score — rather
 		// than a flex line. 21 Oct: as a flex line the name was a shrinkable
-		// item sharing space with the button, and on UV's screen it collapsed
+		// item sharing space with a button, and on UV's screen it collapsed
 		// to 0 x 20 and vanished, with the frame count left looking like the
 		// player. A 1fr grid track cannot be squeezed to nothing by what sits
 		// beside it, so the name is safe whatever else the row grows.
-		const swapCell = node('div', 'bracket-swap-cell');
 		// The picture inside the name's cell, first, so hiding pictures (the
 		// view row) takes it out with nothing left to close up.
 		const nameCell = node('div', 'bracket-name-cell');
@@ -234,10 +257,11 @@
 			// Say where the player will come from rather than leaving a blank
 			// line: a bracket is readable before it is played, and that is
 			// most of what a draw sheet is for.
-			// Short form here on purpose: this sits inside a 15rem column and
-			// the fixture's own heading above already spells the long form
-			// out, so "Winner of R1 · M1" is unambiguous and fits.
-			const from = feederRound != null ? `R${feederRound} · M${feederPos}` : '?';
+			// Short form here on purpose: this sits inside a narrow card, and
+			// the round's own heading spells the long form out, so "Winner of
+			// QF 2" (or "R1 · M2" for an unnamed round) is unambiguous and fits.
+			const feederBracket = which === 'home' ? f.home_feeder_bracket : f.away_feeder_bracket;
+			const from = feederRound != null ? fixtureShort(feederBracket, feederRound, feederPos) : '?';
 			label = (source === 'winner_of' ? 'Winner' : 'Loser') + ' of ' + from;
 			pending = true;
 		} else {
@@ -252,36 +276,14 @@
 
 		// No seed number beside the name (UV, 5 Nov).
 
-		// UV, 21 Oct: "keep that swap button as a small icon before each name
-		// and allow clicking directly on the name to change players". So the
-		// name itself is the control for a TD, and a plain span for everybody
-		// else — a read-only viewer must not be given a dead button.
-		// The name and the frames fade when a re-read changes them (render).
+		// The name as plain text, for a director too: who is in a slot is
+		// changed by dragging (a pill onto it, or the player onto the bin), so
+		// the swap icon and the name-as-button went (UV, 5 Nov). The name
+		// and the frames fade when a re-read changes them (render).
 		const slotKey = f.fixture_id + '|' + which;
-		if (readOnly) {
-			const shown = node('span', 'bracket-name' + (pending ? ' pending' : ''), label);
-			shown.dataset.live = 'bn|' + slotKey;
-			nameCell.append(shown);
-		} else {
-			const nameBtn = node('button', 'bracket-name as-button' + (pending ? ' pending' : ''), label);
-			nameBtn.dataset.live = 'bn|' + slotKey;
-			nameBtn.type = 'button';
-			nameBtn.dataset.act = 'swap';
-			nameBtn.dataset.fixture = f.fixture_id;
-			nameBtn.dataset.side = which;
-			nameBtn.title = 'Change who is in this slot';
-			nameCell.append(nameBtn);
-
-			const icon = node('button', 'bracket-swap', '⇄');
-			icon.type = 'button';
-			icon.dataset.act = 'swap';
-			icon.dataset.fixture = f.fixture_id;
-			icon.dataset.side = which;
-			icon.title = 'Change who is in this slot';
-			icon.setAttribute('aria-label',
-				'Change ' + (name || 'the ' + which + ' slot') + ' in this fixture');
-			swapCell.append(icon);
-		}
+		const shown = node('span', 'bracket-name' + (pending ? ' pending' : ''), label);
+		shown.dataset.live = 'bn|' + slotKey;
+		nameCell.append(shown);
 
 		// A score only means something once there is a match behind it.
 		if (f.match_id) {
@@ -298,7 +300,7 @@
 		// another round, it sends this match's winner there (dragging, below).
 		if (!readOnly) row.dataset.drag = 'slot';
 
-		row.append(swapCell, nameCell, scoreCell);
+		row.append(nameCell, scoreCell);
 		return row;
 	}
 
@@ -336,6 +338,23 @@
 		// tournament view, show Round 1 - Match 1". The short form was the
 		// schema's way of naming a fixture, not a person's.
 		body.append(node('div', 'bracket-no', fixtureName(f.bracket, f.round, f.position)));
+		// For a director, a red cross in a ring on every card's top right
+		// corner, over its edge rather than inside it (UV, 5 Nov): take the
+		// match out of the draw. It checks first (removeFixture), and the
+		// database still refuses a match that has been started (its frames
+		// were really played) or one a later slot is wired to.
+		if (!readOnly) {
+			const x = node('button', 'fx-icon bracket-remove');
+			x.type = 'button';
+			x.dataset.act = 'remove-fixture';
+			x.dataset.fixture = f.fixture_id;
+			x.title = 'Take ' + fixtureName(f.bracket, f.round, f.position) + ' out of the draw';
+			x.setAttribute('aria-label', x.title);
+			const face = node('span', 'tdc-ring');
+			face.innerHTML = TDCRing.svg();
+			x.append(face);
+			box.append(x);
+		}
 
 		// A bye shows only the player going through (UV, 5 Nov). A director
 		// still gets the empty slot, its swap icon alone, because that is how
@@ -428,13 +447,21 @@
 		els.bracket.dataset.pics = view.pics;
 		applySizes();
 	}
-	// Font size and zoom change no markup, so they set two properties and
-	// the arrows are measured again; nothing is drawn afresh.
+	// The numbers change no markup, so they set properties on the bracket
+	// and the arrows are measured again; nothing is drawn afresh.
+	const SIZE_INPUTS = [[els.fontSize, 'font'], [els.zoom, 'zoom'], [els.gapV, 'gapV'], [els.gapH, 'gapH']];
 	function applySizes() {
 		els.bracket.style.setProperty('--bracket-font', String(view.font / 100));
 		els.bracket.style.setProperty('--bracket-zoom', String(view.zoom / 100));
-		if (String(els.fontSize.value) !== String(view.font)) els.fontSize.value = view.font;
-		if (String(els.zoom.value) !== String(view.zoom)) els.zoom.value = view.zoom;
+		els.bracket.style.setProperty('--gap-v', view.gapV + 'px');
+		els.bracket.style.setProperty('--gap-h', view.gapH + 'px');
+		// The arrows' lines and heads grow with the text (UV, 5 Nov), as the
+		// text is drawn: its size times the zoom (the arrows are outside the
+		// zoomed lane, so the zoom is not applied to them otherwise).
+		els.bracket.style.setProperty('--arrow-scale', String(view.font / 100 * view.zoom / 100));
+		for (const [input, k] of SIZE_INPUTS) {
+			if (String(input.value) !== String(view[k])) input.value = view[k];
+		}
 	}
 	const keepView = () => {
 		try { localStorage.setItem(VIEW_KEY, JSON.stringify(view)); } catch (err) { /* kept for this visit only */ }
@@ -446,7 +473,7 @@
 		keepView();
 		render();
 	});
-	for (const [input, k] of [[els.fontSize, 'font'], [els.zoom, 'zoom']]) {
+	for (const [input, k] of SIZE_INPUTS) {
 		const take = () => {
 			if (input.value === '') return;   // mid-typing
 			const v = pct(k, input.value);
@@ -459,6 +486,159 @@
 		input.addEventListener('input', take);
 		input.addEventListener('change', () => { take(); applySizes(); });
 	}
+
+	// ─── Fit, and full screen (UV, 5 Nov) ───
+	// Fit keeps the toggles and makes the text as big as it can be with
+	// every card still on the screen (UV, 5 Nov: how a director puts the
+	// draw on a big screen without touching a setting). The zoom goes back to
+	// 100% and the text size is found by halving the range until it fits,
+	// any whole number from 50% to 300%; the spacing grows with it, so the
+	// draw keeps its proportions. Only if even 50% text is too big does the
+	// zoom come down. It measures the draw itself: the cards, headings and
+	// buttons, not the lane, which is as wide as the page.
+	function fitAll() {
+		const lanes = els.bracket.querySelector('.bracket-lanes');
+		if (!lanes) return;
+		const sc = els.bracket.parentElement;
+		const full = isFull();
+		const room = {
+			w: (full ? els.stage.clientWidth - 32 : sc.clientWidth) - 8,
+			// The screen's height, less the stage's own padding when full
+			// (the bar there hides itself, so it takes no room).
+			h: (full ? els.stage.clientHeight - 32 : innerHeight) - 24
+		};
+		const measure = () => {
+			const z = view.zoom / 100;
+			let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+			for (const e of lanes.querySelectorAll('.bracket-fixture, .bracket-round-name, .bracket-round-empty, .bracket-round-tools, .bracket-border, .bracket-round-new')) {
+				const rc = e.getBoundingClientRect();
+				if (!rc.width && !rc.height) continue;
+				l = Math.min(l, rc.left); t = Math.min(t, rc.top);
+				r = Math.max(r, rc.right); b = Math.max(b, rc.bottom);
+			}
+			return { w: (r - l) / z, h: (b - t) / z };
+		};
+		const clampGap = (k, v) => Math.max(RANGE[k][0], Math.min(RANGE[k][1], Math.round(v)));
+		const at = (font) => {
+			view.font = font;
+			view.gapV = clampGap('gapV', 6 * font / 100);
+			view.gapH = clampGap('gapH', 14 * font / 100);
+			applySizes();
+			return measure();
+		};
+		const fits = (n) => n.w > 0 && n.h > 0 && n.w <= room.w && n.h <= room.h;
+		view.zoom = 100;
+		const [lo0, hi0] = RANGE.font;
+		const small = at(lo0);
+		if (!(small.w > 0 && small.h > 0)) return;
+		if (fits(small)) {
+			let lo = lo0, hi = hi0 + 1;
+			while (hi - lo > 1) {
+				const mid = Math.floor((lo + hi) / 2);
+				if (fits(at(mid))) lo = mid; else hi = mid;
+			}
+			at(lo);
+		} else {
+			// The smallest text still too big: the zoom takes the rest.
+			const z = Math.min(room.w / small.w, room.h / small.h);
+			view.zoom = Math.max(RANGE.zoom[0], Math.floor(z * 100));
+		}
+		keepView();
+		applySizes();
+		drawArrows();
+		// What was fitted is what is seen: in full screen the draw is centred
+		// in the stage already; otherwise its top goes to the top of the page.
+		if (!full) window.scrollTo({ top: sc.getBoundingClientRect().top + scrollY - 8 });
+	}
+	els.fit.addEventListener('click', fitAll);
+
+	// Reset (UV, 5 Nov): every view setting back to how the page first
+	// shows the draw, toggles and numbers alike. Full names is its own
+	// switch and is left alone.
+	els.resetView.addEventListener('click', () => {
+		view = Object.assign({}, VIEW_DEFAULT);
+		keepView();
+		render();
+	});
+
+	// Full screen: the stage alone on the screen. Where the browser has no
+	// full screen for a page element (an iPhone), the stage covers the page
+	// instead; Escape or the button again brings it back.
+	const canFull = !!(els.stage.requestFullscreen || els.stage.webkitRequestFullscreen);
+	const isFull = () => !!(document.fullscreenElement || document.webkitFullscreenElement)
+		|| els.stage.classList.contains('is-full');
+	function showFull() {
+		const on = isFull();
+		els.full.setAttribute('aria-pressed', String(on));
+		els.full.title = on ? 'Leave full screen' : 'Full screen';
+		els.full.setAttribute('aria-label', els.full.title);
+		document.documentElement.classList.toggle('bracket-full', els.stage.classList.contains('is-full'));
+		if (on) showBar();
+		else { clearTimeout(barTimer); els.viewRow.classList.remove('is-hidden'); }
+		redrawArrowsSoon();
+	}
+
+	// In full screen the view row is a bar along the top that hides itself
+	// (UV, 5 Nov: like the nav bar). It shows on going full screen, when the
+	// pointer or a finger comes near the top, on a long scroll up (200px, as
+	// the nav) or on tabbing into it; it hides on a long scroll down, or
+	// after 3 seconds with nobody over it, since a fitted draw never
+	// scrolls.
+	const BAR_NEAR = 64, BAR_MS = 3000, BAR_SCROLL = 200;
+	let barTimer = 0;
+	function showBar() {
+		els.viewRow.classList.remove('is-hidden');
+		clearTimeout(barTimer);
+		barTimer = setTimeout(hideBar, BAR_MS);
+	}
+	function hideBar() {
+		if (!isFull()) return;
+		// Kept while the pointer is over it, or a keyboard is in it. Not for
+		// focus left behind by a click (Fit keeps its focus), or the bar
+		// would never go.
+		if (els.viewRow.matches(':hover, :has(:focus-visible)')) { barTimer = setTimeout(hideBar, BAR_MS); return; }
+		els.viewRow.classList.add('is-hidden');
+	}
+	els.stage.addEventListener('mousemove', (e) => { if (isFull() && e.clientY < BAR_NEAR) showBar(); });
+	els.stage.addEventListener('touchstart', (e) => {
+		if (isFull() && e.touches[0] && e.touches[0].clientY < BAR_NEAR) showBar();
+	}, { passive: true });
+	els.viewRow.addEventListener('focusin', () => { if (isFull()) showBar(); });
+	let barY = 0, barUp = 0, barDown = 0;
+	els.stage.addEventListener('scroll', () => {
+		if (!isFull()) return;
+		const y = Math.max(0, els.stage.scrollTop);
+		const dy = y - barY;
+		barY = y;
+		if (y <= 4) { barUp = 0; barDown = 0; showBar(); return; }
+		if (dy > 0) { barUp = 0; barDown += dy; if (barDown >= BAR_SCROLL) { clearTimeout(barTimer); els.viewRow.classList.add('is-hidden'); } }
+		else if (dy < 0) { barDown = 0; barUp -= dy; if (barUp >= BAR_SCROLL) showBar(); }
+	}, { passive: true });
+	els.full.addEventListener('click', async () => {
+		if (isFull()) {
+			if (els.stage.classList.contains('is-full')) els.stage.classList.remove('is-full');
+			else (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+		} else if (canFull) {
+			try {
+				await (els.stage.requestFullscreen || els.stage.webkitRequestFullscreen).call(els.stage);
+			} catch (err) {
+				// Refused (a permission, an iframe): cover the page instead.
+				console.error('[Draw] full screen was refused, covering the page instead:', err);
+				els.stage.classList.add('is-full');
+			}
+		} else {
+			els.stage.classList.add('is-full');
+		}
+		showFull();
+	});
+	document.addEventListener('fullscreenchange', showFull);
+	document.addEventListener('webkitfullscreenchange', showFull);
+	document.addEventListener('keydown', (e) => {
+		if (e.key === 'Escape' && els.stage.classList.contains('is-full') && !drag) {
+			els.stage.classList.remove('is-full');
+			showFull();
+		}
+	});
 
 	// ─── What the TD can do to a fixture ───
 	function controls(f) {
@@ -486,14 +666,10 @@
 			row.append(action('start', f.fixture_id, 'Start match', 'btn-secondary'));
 		}
 
-		// The undo for adding a match. Only while nothing has been played: a
-		// fixture with a match has settled sides, and the function refuses
-		// either way — offering a button that always refuses is worse than
-		// not offering it. Where its slots come from is changed by dragging
-		// (UV, 5 Nov), which replaced the Wiring button here.
-		if (!f.match_id) {
-			row.append(action('remove-fixture', f.fixture_id, 'Remove', 'btn-danger'));
-		}
+		// Taking a match out of the draw is the red cross on the card's
+		// heading line since 5 Nov (UV), on every card; it was a Remove button
+		// here, offered only before a match existed. Where a match's slots
+		// come from is changed by dragging (UV, 5 Nov).
 
 		// A walkover is the common one at a club night: somebody did not turn
 		// up and the other player goes through without playing.
@@ -777,8 +953,20 @@
 
 	// ─── The whole bracket ───
 	function render() {
-		els.setup.hidden = !!fixtures.length || readOnly;
-		els.actions.hidden = !fixtures.length || readOnly;
+		// The director's two groups at the foot, always (UV, 5 Nov). Generate
+		// opens by itself while there is no draw, and folds when one appears;
+		// after that it is left as the director leaves it.
+		const drawn = !!fixtures.length;
+		els.setup.hidden = readOnly;
+		els.settings.hidden = readOnly;
+		if (drawn !== setupFor) { els.setup.open = !drawn; setupFor = drawn; }
+		els.generate.hidden = drawn;
+		els.redraw.hidden = !drawn;
+		els.thirdPlace.disabled = drawn;
+		els.thirdPlaceHint.textContent = drawn
+			? 'Fixed with the draw. Redraw keeps it as it is.'
+			: 'Decided now: it is generated with the draw.';
+		els.actions.hidden = !drawn || readOnly;
 		els.viewRow.hidden = !fixtures.length;
 		els.entrants.hidden = !fixtures.length || readOnly;
 		applyView();
@@ -789,16 +977,18 @@
 		if (tournament) renderRunSettings(tournament);
 
 		if (!fixtures.length) {
-			els.bracket.replaceChildren();
-			if (readOnly) {
-				els.bracket.append(node('div', 'empty', 'The draw for this tournament has not been made yet.'));
-			}
+			els.bracket.replaceChildren(node('div', 'empty', readOnly
+				? 'The draw for this tournament has not been made yet.'
+				: 'No draw yet. Set it up under Generate the draw, below.'));
 			return;
 		}
 
 		const main = fixtures.filter((f) => f.bracket === 'main');
 		const lastRound = Math.max(...main.map((f) => f.round));
 		const names = roundNames(main, lastRound);
+		// Kept for fixtureName, before any card is drawn, so the cards'
+		// names are the headings' names.
+		roundLabels = names;
 		const third = fixtures.filter((f) => f.bracket === 'third_place');
 
 		// A round's column (a row when the rounds run downwards): its heading,
@@ -809,17 +999,18 @@
 			col.dataset.round = String(r);
 			col.dataset.bracket = 'main';
 
-			const head = node('h2', 'bracket-round-name', names.get(r) || 'Round ' + r);
-			if (!readOnly) head.append(roundRulesButton('main', r));
+			const head = node('h2', 'bracket-round-name', names.has(r) ? names.get(r).long : 'Round ' + r);
 			col.append(head);
+			// Under the round's heading, the director's two buttons for the
+			// round (UV, 5 Nov): + Match and its rules, alike, turned with the
+			// heading in rows. Not among the cards, so the cards alone are
+			// spread and centred in their round (bracket.css).
+			if (!readOnly) col.append(roundTools(roundRulesButton('main', r), addMatch && addMatchButton('main', r, list.length === 0)));
 
 			const cards = node('div', 'bracket-round-cards');
 			if (list.length) cards.append(...list.map(fixture));
 			else if (empty) cards.append(node('div', 'bracket-round-empty', 'Empty round'));
-			col.append(cards);
-			// After the cards, not among them, so the cards alone are spread
-			// and centred in their round (bracket.css).
-			if (addMatch && !readOnly) col.append(addMatchButton('main', r, list.length === 0));
+			col.append(cards, mirrorOf(head));
 			return col;
 		}
 
@@ -832,12 +1023,29 @@
 			// a TD opening a bracket with a third-place playoff got a
 			// ReferenceError and no bracket at all. Introduced 22 Oct with the
 			// round-rules button and caught while building the arrows.
-			if (!readOnly) tpHead.append(roundRulesButton(third[0].bracket, third[0].round));
 			col.append(tpHead);
+			if (!readOnly) col.append(roundTools(roundRulesButton(third[0].bracket, third[0].round)));
 			const cards = node('div', 'bracket-round-cards');
 			cards.append(...third.map(fixture));
-			col.append(cards);
+			col.append(cards, mirrorOf(tpHead));
 			return col;
+		}
+
+		function roundTools(...buttons) {
+			const row = node('div', 'bracket-round-tools');
+			row.append(...buttons.filter(Boolean));
+			return row;
+		}
+
+		// In rows a round's name runs up its left side and down its right
+		// (UV, 5 Nov); this is the right-hand one, the words alone (its
+		// buttons are on the left). Hidden in columns (bracket.css), and
+		// from a screen reader always: the left one says it.
+		function mirrorOf(head) {
+			// An h2 like the left one, so it takes the same heading face.
+			const m = node('h2', 'bracket-round-name is-mirror', head.firstChild ? head.firstChild.textContent : '');
+			m.setAttribute('aria-hidden', 'true');
+			return m;
 		}
 
 		const columns = [];
@@ -908,9 +1116,29 @@
 		els.bracket.replaceChildren(lanes);
 		TDC.liveFade(els.bracket, snap);
 		bracketDrawn = true;
+		wakeCrosses();
 		drawArrows();
 	}
 	let bracketDrawn = false;
+	let setupFor = null;   // whether there was a draw when Generate was last opened or folded
+
+	// The red crosses' rings, made once each card is on the page. Shown at
+	// once rather than drawn in: the page is drawn again after every write,
+	// and a dozen crosses redrawing themselves each time is noise.
+	function wakeCrosses() {
+		for (const b of els.bracket.querySelectorAll('.bracket-remove:not([data-awake])')) {
+			b.dataset.awake = 'yes';
+			try {
+				b.tdcRing = new TDCRing.RingStatus(b.querySelector('.tdc-ring'), {
+					icons: ['cross'],
+					labels: { cross: b.title, empty: b.title, loading: 'Working' },
+					initial: 'cross'
+				});
+			} catch (err) {
+				TDC.error(AREA, 'a red cross could not be drawn', err);
+			}
+		}
+	}
 
 	// Which half of the draw each main-bracket match is in, for the outside
 	// in view: 'M' for the last round (the final), else 'L' or 'R' by where
@@ -982,8 +1210,6 @@
 		if (data.create_matches === 'manual') bits.push('Matches started by hand');
 		els.meta.textContent = bits.join(' · ');
 
-		els.progression.value = data.progression;
-		els.createMatches.value = data.create_matches;
 		els.thirdPlace.checked = data.third_place;
 		return true;
 	}
@@ -1063,10 +1289,10 @@
 	// ─────────────────────────────────────────────────────────────────
 
 	function renderRunSettings(t) {
-		// Only once there is a draw: before that the setup panel above asks
-		// the same two questions, and two copies on one screen is a way to
-		// set one and wonder why the other disagrees.
-		els.runRow.hidden = readOnly || !fixtures.length;
+		// Always, for a director: since 5 Nov these two are asked only here,
+		// in Running the draw, before the draw is made as well as after (the
+		// generate group no longer repeats them).
+		els.runRow.hidden = readOnly;
 		els.tProgression.value = t.progression;
 		els.tCreateMatches.value = t.create_matches;
 		els.createMatchesHint.textContent = t.create_matches === 'manual'
@@ -1126,7 +1352,9 @@
 	function roundRulesButton(bracket, round) {
 		const own = roundRules.get(roundKey(bracket, round));
 
-		const b = node('button', 'bracket-round-rules' + (own ? ' differs' : ''));
+		// A button like + Match, beside it under the round's heading (UV,
+		// 5 Nov); it was a small badge inside the heading.
+		const b = node('button', 'btn btn-secondary btn-sm bracket-tool bracket-round-rules' + (own ? ' differs' : ''));
 		b.type = 'button';
 		b.dataset.act = 'round-rules';
 		b.dataset.bracket = bracket;
@@ -1405,13 +1633,13 @@
 				const b = card.getBoundingClientRect();
 				const s = slot ? slot.getBoundingClientRect() : b;
 				const across = view.rounds !== 'rows';
-				// Out of a side-by-side card, an arrow leaves on the side of
-				// the slot it feeds (UV, 5 Nov): at a third of the edge for a
-				// home slot and two thirds for an away one, as arrows arrive,
-				// so two arrows out of the same wide card do not start from
-				// one point and cross. A stacked card's arrows leave from the
-				// middle of its edge, as before.
-				const out = view.card === 'across' ? (which === 'home' ? 1 / 3 : 2 / 3) : 1 / 2;
+				// An arrow leaves on the side of the slot it feeds (UV, 5 Nov,
+				// for every view the card allows it in): a third of the way
+				// along the exit edge for a home slot, two thirds for an away
+				// one, as arrows arrive. So the winner and the loser of a
+				// semi-final, or two arrows out of one wide card, never start
+				// from one point and cross.
+				const out = which === 'home' ? 1 / 3 : 2 / 3;
 				let x1, y1, x2, y2, dir;
 				if (across) {
 					dir = (b.left + b.right) / 2 >= (a.left + a.right) / 2 ? 1 : -1;
@@ -1548,7 +1776,7 @@
 	}
 
 	function addMatchButton(bracket, round, empty) {
-		const b = node('button', 'btn btn-secondary btn-sm bracket-add-match',
+		const b = node('button', 'btn btn-secondary btn-sm bracket-tool bracket-add-match',
 			empty ? '+ First match' : '+ Match');
 		b.type = 'button';
 		b.dataset.act = 'add-match';
@@ -1642,7 +1870,10 @@
 		if (!f) return null;
 		const which = src.dataset.side;
 		return {
-			kind: 'slot', fixture: f, el: src,
+			kind: 'slot', fixture: f, el: src, side: which,
+			// Whoever is in the slot now, for the bin: dropping them there
+			// takes them out of this match.
+			entrantId: which === 'home' ? f.home_entrant_id : f.away_entrant_id,
 			label: nameOf(f, which) || 'Winner of ' + fixtureName(f.bracket, f.round, f.position),
 			pic: which === 'home' ? f.home_avatar : f.away_avatar
 		};
@@ -1653,6 +1884,10 @@
 	// round, is not a progression, so neither is a target.
 	function slotAt(x, y) {
 		const hit = document.elementFromPoint(x, y);
+		// The bin by the entrants (UV, 5 Nov): a player dragged from a match
+		// onto it is taken out of that match. Only a slot with somebody in it.
+		const bin = hit && hit.closest('#entrant-bin');
+		if (bin) return drag.kind === 'slot' && drag.entrantId ? { row: bin, bin: true } : null;
 		const row = hit && hit.closest('#bracket .bracket-side[data-side]');
 		const box = row && row.closest('.bracket-fixture');
 		const f = box && fixtures.find((x2) => x2.fixture_id === box.dataset.fixture);
@@ -1731,6 +1966,9 @@
 		// The press that ended a drag is not also a click on what it ended on.
 		swallowClick = Date.now();
 		if (!drop || !d.target) return;
+		// Into the bin: the slot it came from is emptied, through the same
+		// rehearsal, reason and warning as putting somebody in.
+		if (d.target.bin) { dropEntrant(d.fixture, d.side, null, d.target.row); return; }
 		const { f, side: which, row } = d.target;
 		if (d.kind === 'entrant') dropEntrant(f, which, d.entrantId, row);
 		else dropWire(f, which, d.fixture, row);
@@ -2047,14 +2285,13 @@
 		// Read before anything is awaited, as the press saw it.
 		const args = drawArgs();
 
-		// The three settings are saved before generating, because the draw
-		// reads them. Doing it after would generate against the old ones.
+		// Third place is saved before generating, because the draw reads it.
+		// Doing it after would generate against the old one. Progression and
+		// starting matches save themselves as they change (Running the draw).
 		const saved = await write('Saving settings', () =>
 			supabaseClient.rpc('tdc_update_tournament', {
 				p_tournament_id: tournamentId,
-				p_third_place: els.thirdPlace.checked,
-				p_progression: els.progression.value,
-				p_create_matches: els.createMatches.value
+				p_third_place: els.thirdPlace.checked
 			}));
 		if (!saved) return;
 
@@ -2346,9 +2583,10 @@
 				await resolve();
 				await loadDraw();
 				await checkDrift();
-			} else {
-				await describeField();
 			}
+			// Generate the draw is there with a draw too (UV, 5 Nov), so its
+			// count of who would go in is always wanted.
+			await describeField();
 		}
 	})(), 'Draw');
 })();

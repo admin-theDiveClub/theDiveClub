@@ -1350,3 +1350,31 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to judge:* "the correct side" read as the side of the slot the arrow feeds (a third of the exit edge for home, two thirds for away), as arrows arrive; the side-by-side strip along the top, and along the bottom only for the right half from the outside in with rounds in rows (where its arrows come in from below); "being played" as any match with frames in, whatever its status says; the pictures toggle as a fourth icon pill; centring as spreading a round's cards evenly (`space-around`), which also lines a round up with the pairs feeding it.
 *So:* `docs/systems/tournaments.md`, "The draw page redesigned", second pass.
 *Touches:* `tournaments/bracket/index.html`, `scripts/tournament-bracket.js`, `stylesheets/bracket.css`
+
+## 2026-11-05 — The draw page, third pass
+
+*Decided by UV:* arrows always leave a card from the correct side where the view and card allow; cards as small as possible (no wide gap between name and score); no Playing badge, the yellow status only; text size and zoom as horizontal steppers the toggles' size; steppers for the vertical and horizontal space between cards; a red cross in a ring on every card for the director to delete the match, on the card's top right corner over its edge; the director's settings at the foot in a folding group; generating the draw always available to the director, a folding group above the status and progression settings.
+*Claude's, for UV to judge:* "the correct side" as the side of the slot fed, in every view (a third / two thirds along the exit edge); the cross runs the existing removal, so a match that has been started is refused (its frames were really played) and one still wired to a later slot is named, not removed; progression and match starting asked only in Running the draw (Generate saves only third place, locked once a draw exists); Generate open by itself only while there is no draw; spacing 0–64px in steps of 4, defaults 8 down and 16 across.
+*So:* `docs/systems/tournaments.md`, "The draw page redesigned", third pass.
+*Touches:* `tournaments/bracket/index.html`, `scripts/tournament-bracket.js`, `stylesheets/bracket.css`
+
+## 2026-11-05 — The draw page, fourth pass
+
+*Decided by UV:* a button to fit every card on the screen by adjusting sizes, spacing and zoom while keeping the toggles; a button for full screen; no "change who is in this slot" button on the cards (players are changed by dragging); in rows, the round headings as vertical text on either side of each round; a bin in the entrants section to drag a player from a match onto, to take them out of it; active matches yellow.
+*Claude's, for UV to judge:* Fit tightens spacing to 4 down and 8 across, keeps the text at 100% unless even 50% zoom will not fit, and grows a small draw up to 150%; full screen is the view row, the entrants and the draw together, and covers the page where the browser cannot (an iPhone); names became plain text for a director too, so a tap opens the match; "active" read as every match that exists and is not finished or abandoned; dropping on the bin goes through the same check, reason and warning as any drop.
+*So:* `docs/systems/tournaments.md`, "The draw page redesigned", fourth pass.
+*Touches:* `tournaments/bracket/index.html`, `scripts/tournament-bracket.js`, `stylesheets/bracket.css`
+
+## 2026-11-05 — The draw page, fifth pass
+
+*Decided by UV:* + Match attached to each round's heading, below it; the + to add a round always visible, between the round names; a card's round name the same as its heading's; rounds named Last 16, Last 32 and on.
+*Claude's, for UV to judge:* the Final and the third-place playoff named alone on their cards ("Final", not "Final · Match 1"); slots' short form "Winner of QF 2", "Loser of SF 1", "Winner of L16 3" ("R1 · M2" for an unnamed round); in rows, + Match under the left-hand name and the + between rows at the left; the round heading a fixed 2rem line, which also dropped a 2rem margin the site's heading style had been adding above it.
+*So:* `docs/systems/tournaments.md`, "The draw page redesigned", fifth pass.
+*Touches:* `scripts/tournament-bracket.js`, `stylesheets/bracket.css`
+
+## 2026-11-05 — The draw page, sixth pass
+
+*Decided by UV:* text size and zoom any value, with a larger cap; + Match in the same orientation as the round heading, below it; in full screen, the settings as an auto-hiding bar like the nav bar and the draw centred both ways; the rules badge as a button like + Match; the arrows' heads and lines sized by the text; Fit making the text as big as possible; a Reset view button.
+*Claude's, for UV to judge:* caps of 300% for both, floors of 50% text and 25% zoom; Fit holding zoom at 100% and searching the text size, the spacing growing with it; arrows scaled by text size times zoom; pictures and the card's buttons growing with the text too; the bar showing near the top (64px) and hiding after 3 seconds or a 200px scroll down; the entrants hidden in full screen; Reset leaving Full names alone.
+*So:* `docs/systems/tournaments.md`, "The draw page redesigned", sixth pass.
+*Touches:* `tournaments/bracket/index.html`, `scripts/tournament-bracket.js`, `stylesheets/bracket.css`

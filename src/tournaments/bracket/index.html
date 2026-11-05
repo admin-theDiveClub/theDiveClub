@@ -26,69 +26,6 @@ extraScripts:
 	<p class="muted" id="t-meta"></p>
 
 	{% comment %}
-		Shown only when there is no draw yet. These settings are read when the
-		draw is generated, which is why they live here and not on the create
-		page: this is the last moment they mean anything.
-	{% endcomment %}
-	<div id="setup" hidden>
-		<div class="empty">No draw yet. Set it up below, then generate.</div>
-
-		<div class="panel">
-			<div class="field">
-				<label for="who">Who goes in</label>
-				<select id="who">
-					<option value="confirmed">Confirmed entrants only</option>
-					<option value="all">Everyone who has not withdrawn</option>
-					<option value="none">No one</option>
-				</select>
-				<div class="hint" id="who-hint"></div>
-			</div>
-
-			{% comment %}
-				Only for No one: an empty draw has no field to be sized by, so
-				the TD says how many places the first round has. Starts at the
-				tournament's max entrants (UV, 5 Nov).
-			{% endcomment %}
-			<div class="field" id="size-field" hidden>
-				<label for="draw-size">Draw size</label>
-				<select id="draw-size">
-					<option value="4">4</option>
-					<option value="8">8</option>
-					<option value="16">16</option>
-					<option value="32">32</option>
-					<option value="64">64</option>
-				</select>
-				<div class="hint">The matches are made and wired round to round, with nobody in them. Tap a slot to put someone in.</div>
-			</div>
-
-			<div class="field">
-				<label for="progression">Moving between rounds</label>
-				<select id="progression">
-					<option value="automatic">Winners advance automatically</option>
-					<option value="manual">I will move people myself</option>
-				</select>
-				<div class="hint">You can always move anybody by hand, in either setting.</div>
-			</div>
-
-			<div class="field">
-				<label for="create-matches">Starting matches</label>
-				<select id="create-matches">
-					<option value="automatic">Start as soon as both players are known</option>
-					<option value="manual">I will start each one when a table is free</option>
-				</select>
-			</div>
-
-			<div class="field">
-				<label for="third-place">Third-place playoff</label>
-				<input type="checkbox" id="third-place">
-				<div class="hint">Decided now: it is generated with the draw.</div>
-			</div>
-		</div>
-
-		<button type="button" class="btn-primary" id="generate">Generate the Draw</button>
-	</div>
-
-	{% comment %}
 		Shown when the draw no longer matches its own results, which happens
 		when a score is corrected upstream. It carries the exact list of what
 		will change, because tdc_cascade_draw rehearses the whole thing before
@@ -136,7 +73,31 @@ extraScripts:
 		shows display names, and a player with no first or last name keeps
 		theirs.
 	{% endcomment %}
+	{% comment %}
+		The stage: the view row, the entrants and the draw together, which is
+		what the full-screen button puts on the whole screen (UV, 5 Nov).
+	{% endcomment %}
+	<div class="bracket-stage" id="stage">
 	<div class="bracket-view" id="view-row" hidden>
+		{% comment %}
+			Three buttons (UV, 5 Nov): fit makes the text as big as it can be
+			with every card on the screen, leaving the toggles as they are;
+			full screen shows the stage alone; reset puts the view back as it
+			first was.
+		{% endcomment %}
+		<div class="cp-views bracket-toggle" role="group" aria-label="Fit and full screen">
+			<button type="button" class="cp-view" id="fit" title="Fit every card on the screen" aria-label="Fit every card on the screen">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7.5" y="7.5" width="9" height="9" rx="1"/><path d="M3 3l3.5 3.5M3 3h3M3 3v3M21 3l-3.5 3.5M21 3h-3M21 3v3M3 21l3.5-3.5M3 21h3M3 21v-3M21 21l-3.5-3.5M21 21h-3M21 21v-3"/></svg>
+			</button>
+			<button type="button" class="cp-view" id="full" aria-pressed="false" title="Full screen" aria-label="Full screen">
+				<svg class="full-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>
+				<svg class="full-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M20 15h-5v5M4 15h5v5"/></svg>
+			</button>
+			<button type="button" class="cp-view" id="reset-view" title="Reset the view" aria-label="Reset the view">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4v4h4"/></svg>
+			</button>
+		</div>
+
 		{% comment %}
 			Icons only (UV, 5 Nov), each its own drawing, the words in the
 			title and for a screen reader. data-view-key names the setting,
@@ -176,18 +137,25 @@ extraScripts:
 		</div>
 
 		{% comment %}
-			Steppers, as every number field on the site is: the draw's text
-			size and the whole draw's size, in percent (UV, 5 Nov).
+			Steppers on their side (UV, 5 Nov: horizontal, the toggles'
+			height): the draw's text size and the whole draw's size in percent,
+			and the space between cards down and across the page in pixels.
 		{% endcomment %}
-		<div class="field">
-			<label for="font-size">Text size</label>
-			<input type="number" id="font-size" min="70" max="150" step="10" value="100" inputmode="numeric">
-			<div class="hint">Percent.</div>
+		<div class="bracket-num">
+			<label for="font-size">Text</label>
+			<input type="number" id="font-size" min="50" max="300" step="1" value="100" inputmode="numeric" data-control="stepper" data-stepper="across" title="Text size, percent">
 		</div>
-		<div class="field">
+		<div class="bracket-num">
 			<label for="zoom">Zoom</label>
-			<input type="number" id="zoom" min="50" max="150" step="10" value="100" inputmode="numeric">
-			<div class="hint">Percent.</div>
+			<input type="number" id="zoom" min="25" max="300" step="1" value="100" inputmode="numeric" data-control="stepper" data-stepper="across" title="Zoom, percent">
+		</div>
+		<div class="bracket-num">
+			<label for="gap-v">Space down</label>
+			<input type="number" id="gap-v" min="0" max="64" step="1" value="8" inputmode="numeric" data-control="stepper" data-stepper="across" title="Space between cards down the page, pixels">
+		</div>
+		<div class="bracket-num">
+			<label for="gap-h">Space across</label>
+			<input type="number" id="gap-h" min="0" max="64" step="1" value="16" inputmode="numeric" data-control="stepper" data-stepper="across" title="Space between cards across the page, pixels">
 		</div>
 
 		<div class="field">
@@ -205,60 +173,121 @@ extraScripts:
 		is theirs.
 	{% endcomment %}
 	<div class="bracket-entrants" id="entrants" hidden>
-		<div class="bracket-pills" id="entrant-pills"></div>
-		<div class="muted">Drag a player onto a slot to put them in it. Drag a player from one match onto a slot in another round to send that match's winner there. On a phone, hold a moment before dragging.</div>
+		<div class="bracket-entrants-row">
+			{% comment %}
+				The bin (UV, 5 Nov): a player dragged from a match and dropped
+				here is taken out of that match. Asks first, as every drop does.
+			{% endcomment %}
+			<div class="bracket-bin" id="entrant-bin" title="Drop a player here to take them out of their match" aria-label="Bin: drop a player here to take them out of their match">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/></svg>
+			</div>
+			<div class="bracket-pills" id="entrant-pills"></div>
+		</div>
+		<div class="muted">Drag a player onto a slot to put them in it. Drag a player from one match onto a slot in another round to send that match's winner there, or onto the bin to take them out of their match. On a phone, hold a moment before dragging.</div>
 	</div>
 
 	<!-- The bracket itself, built by tournament-bracket.js -->
 	<div class="bracket-scroll">
 		<div class="bracket" id="bracket"></div>
 	</div>
+	</div>
 
 	{% comment %}
-		The status. Derived from the tournament's own facts, so it is right
-		without anybody maintaining it — but a TD can say otherwise, which is
-		the only way to reach "cancelled" and the way to close entries early.
-		Setting it by hand makes it stick; the link hands it back.
+		The director's two folding groups at the foot (UV, 5 Nov). First,
+		generating the draw: there whether or not a draw exists, open when
+		there is none. These settings are read when the draw is generated,
+		which is why they live here and not on the create page. Generate makes
+		the first draw; once there is one, Redraw makes it again (asking first
+		if matches are attached). Third place is fixed with the draw
+		(tdc_update_tournament refuses it once a draw exists), so it is locked
+		while there is one.
 	{% endcomment %}
+	<details class="set-group" id="setup" hidden>
+		<summary>Generate the draw</summary>
+
+		<div class="field">
+			<label for="who">Who goes in</label>
+			<select id="who">
+				<option value="confirmed">Confirmed entrants only</option>
+				<option value="all">Everyone who has not withdrawn</option>
+				<option value="none">No one</option>
+			</select>
+			<div class="hint" id="who-hint"></div>
+		</div>
+
+		{% comment %}
+			Only for No one: an empty draw has no field to be sized by, so the
+			TD says how many places the first round has. Starts at the
+			tournament's max entrants (UV, 5 Nov).
+		{% endcomment %}
+		<div class="field" id="size-field" hidden>
+			<label for="draw-size">Draw size</label>
+			<select id="draw-size">
+				<option value="4">4</option>
+				<option value="8">8</option>
+				<option value="16">16</option>
+				<option value="32">32</option>
+				<option value="64">64</option>
+			</select>
+			<div class="hint">The matches are made and wired round to round, with nobody in them. Tap a slot to put someone in.</div>
+		</div>
+
+		<div class="field">
+			<label for="third-place">Third-place playoff</label>
+			<input type="checkbox" id="third-place">
+			<div class="hint" id="third-place-hint">Decided now: it is generated with the draw.</div>
+		</div>
+
+		<div class="btn-row">
+			<button type="button" class="btn btn-primary btn-sm" id="generate">Generate the Draw</button>
+			<button type="button" class="btn btn-danger btn-sm" id="redraw" hidden>Redraw</button>
+		</div>
+	</details>
+
 	{% comment %}
-		How the draw runs, changeable while it runs. These were only ever
-		settable in the setup panel above, which disappears the moment a draw
-		exists — so a TD who wanted to stop automatic progression halfway
-		through a night had to clear the draw. They live here too now, and
-		take effect on the next resolve.
+		Second, running it: how people move between rounds and when matches
+		start (asked once, here, before and after the draw is made), the
+		status, and Refresh. The status is derived from the tournament's own
+		facts, so it is right without anybody maintaining it — but a TD can
+		say otherwise, which is the only way to reach "cancelled" and the way
+		to close entries early. Setting it by hand makes it stick; the link
+		hands it back.
 	{% endcomment %}
-	<div class="toolbar" id="run-row" hidden>
-		<div class="field">
-			<label for="t-progression">Moving between rounds</label>
-			<select id="t-progression">
-				<option value="automatic">Winners advance automatically</option>
-				<option value="manual">I will move people myself</option>
-			</select>
-			<div class="hint">You can always move anybody by hand, in either setting.</div>
+	<details class="set-group" id="settings" hidden>
+		<summary>Running the draw</summary>
+
+		<div id="run-row" hidden>
+			<div class="field">
+				<label for="t-progression">Moving between rounds</label>
+				<select id="t-progression">
+					<option value="automatic">Winners advance automatically</option>
+					<option value="manual">I will move people myself</option>
+				</select>
+				<div class="hint">You can always move anybody by hand, in either setting.</div>
+			</div>
+
+			<div class="field">
+				<label for="t-create-matches">Starting matches</label>
+				<select id="t-create-matches">
+					<option value="automatic">Start as soon as both players are known</option>
+					<option value="manual">I will start each one when a table is free</option>
+				</select>
+				<div class="hint" id="create-matches-hint"></div>
+			</div>
 		</div>
 
-		<div class="field">
-			<label for="t-create-matches">Starting matches</label>
-			<select id="t-create-matches">
-				<option value="automatic">Start as soon as both players are known</option>
-				<option value="manual">I will start each one when a table is free</option>
-			</select>
-			<div class="hint" id="create-matches-hint"></div>
+		<div id="status-row" hidden>
+			<div class="field">
+				<label for="t-status">Status</label>
+				<select id="t-status"></select>
+				<div class="hint" id="status-hint"></div>
+			</div>
 		</div>
-	</div>
 
-	<div class="toolbar" id="status-row" hidden>
-		<div class="field">
-			<label for="t-status">Status</label>
-			<select id="t-status"></select>
-			<div class="hint" id="status-hint"></div>
+		<div class="btn-row" id="draw-actions" hidden>
+			<button type="button" class="btn btn-secondary btn-sm" id="resolve">Refresh progress</button>
 		</div>
-	</div>
-
-	<div class="btn-row" id="draw-actions" hidden>
-		<button type="button" class="btn btn-secondary btn-sm" id="resolve">Refresh progress</button>
-		<button type="button" class="btn btn-danger btn-sm" id="redraw">Redraw</button>
-	</div>
+	</details>
 
 	<div class="status" id="page-status"></div>
 
