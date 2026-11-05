@@ -3,7 +3,7 @@
 -- condition to 0, by the director, and they go into the slot.
 begin;
 \ir _helpers.psql
-select plan(13);
+select plan(15);
 
 select tests.create_user('Move Dee') as dee \gset
 select tests.create_user('Move P1') as p1 \gset
@@ -53,6 +53,8 @@ select is((select reason from public.tbl_match_result_override where match_id = 
 select is((select case when :'fin_side' = 'home' then home_entrant_id else away_entrant_id end from public.tbl_tournament_fixtures where id = :'fin'),
 	:'sf1_home'::uuid, 'the player is in the final, though players are moved on by hand');
 select is((select count(*)::integer from public.tbl_frames where match_id = :'sf1_match'), 0, 'no frame is invented');
+select is((select status from public.tbl_matches where id = :'sf1_match'), 'complete', 'the match is complete');
+select isnt((select ended_at from public.tbl_matches where id = :'sf1_match'), null, 'with its end time');
 
 -- Played: rewire only, and why.
 select tests.sign_in((select user_id from public.tbl_players p join public.tbl_tournament_entrants e on e.player_id = p.id where e.id = :'sf2_home'));

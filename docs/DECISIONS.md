@@ -1460,3 +1460,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to judge:* one database function doing the rewire, the match, the score and the placing together (rehearsed first, so nothing is half done) rather than three calls from the page; the player placed in the slot even where players are moved on by hand; a bye or walkover, an empty dragged slot and an opponent not yet known also rewire only; the match made for the score notifies both players a moment before it is scored.
 *So:* `docs/systems/tournaments.md`, "Dragging players onto the draw".
 *Touches:* migration `20261105164508_move_through_on_the_draw.sql`, `supabase/tests/057_move_through.test.sql` (new), `scripts/tournament-bracket.js`
+
+## 2026-11-05 — The draw is live for changes to the draw; a moved-through match is complete
+
+*Decided by UV:* the draw page must receive live updates for players moved between rounds; and a match scored by dragging a player through is set to complete.
+*Claude's, for UV to judge:* the draw's fixtures and the director's scores published for live updates (readable by any signed-in user already, so nothing new is shared), the page always watching its tournament's fixtures even with no match started; a moved-through match completed the way approving a result does (status and end time), with no card event written, so the card's own buttons (Lock it, Send back, Use the frames) still show for it.
+*So:* `docs/systems/tournaments.md`, "Dragging players onto the draw".
+*Touches:* migrations `20261105165641_realtime_draw.sql`, `20261105165954_move_through_completes.sql`, `supabase/tests/057_move_through.test.sql`, `scripts/tournament-bracket.js`

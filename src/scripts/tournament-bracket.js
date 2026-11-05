@@ -2514,15 +2514,27 @@ TDCTournamentNav.panel('draw', () => {
 		}, 400);
 	}
 
+	// The draw's own rows (20261105165641): a player placed, moved or taken
+	// out, a slot rewired, a match added. Always watched, matches or not,
+	// since a draw nobody has started yet is where most of that happens.
+	// A removed fixture sends only its id, which no filter can match, so
+	// deletions are heard unfiltered and kept if the fixture was on this draw.
+	function onDrawChange(payload) {
+		if (payload && payload.eventType === 'DELETE') {
+			const id = payload.old && payload.old.id;
+			if (!id || !fixtures.some((f) => f.fixture_id === id)) return;
+		}
+		onLiveChange(null);
+	}
+
 	function startLiveUpdates() {
 		const ids = liveMatchIds();
 		const key = ids.slice().sort().join(',');
-		if (key === liveKey) return;      // nothing has changed about who to watch
+		if (liveChannel && key === liveKey) return;      // nothing has changed about who to watch
 
 		stopLiveUpdates();
 		liveKey = key;
 		liveSet = new Set(ids);
-		if (!ids.length) return;
 
 		// A server-side filter is the right thing and keeps the socket quiet,
 		// but the first round of a 64 draw is 32 ids in one filter string.
@@ -2535,11 +2547,37 @@ TDCTournamentNav.panel('draw', () => {
 		liveChannel = supabaseClient
 			.channel('draw:' + tournamentId)
 			.on('postgres_changes',
-				Object.assign({ event: 'UPDATE', schema: 'public', table: 'tbl_matches' }, matchFilter),
-				onLiveChange)
+				{ event: 'INSERT', schema: 'public', table: 'tbl_tournament_fixtures', filter: 'tournament_id=eq.' + tournamentId },
+				onDrawChange)
 			.on('postgres_changes',
-				Object.assign({ event: 'INSERT', schema: 'public', table: 'tbl_match_events' }, eventFilter),
-				onLiveChange)
+				{ event: 'UPDATE', schema: 'public', table: 'tbl_tournament_fixtures', filter: 'tournament_id=eq.' + tournamentId },
+				onDrawChange)
+			.on('postgres_changes',
+				{ event: 'DELETE', schema: 'public', table: 'tbl_tournament_fixtures' },
+				onDrawChange);
+		if (ids.length) {
+			liveChannel
+				.on('postgres_changes',
+					Object.assign({ event: 'UPDATE', schema: 'public', table: 'tbl_matches' }, matchFilter),
+					onLiveChange)
+				.on('postgres_changes',
+					Object.assign({ event: 'INSERT', schema: 'public', table: 'tbl_match_events' }, eventFilter),
+					onLiveChange)
+				// A score the director sets (Change score, moving a player
+				// through) is its own row, not the match's. Taking it away
+				// (Use the frames) is a delete: heard unfiltered, kept if
+				// the match is on this draw.
+				.on('postgres_changes',
+					Object.assign({ event: 'INSERT', schema: 'public', table: 'tbl_match_result_override' }, eventFilter),
+					onLiveChange)
+				.on('postgres_changes',
+					Object.assign({ event: 'UPDATE', schema: 'public', table: 'tbl_match_result_override' }, eventFilter),
+					onLiveChange)
+				.on('postgres_changes',
+					{ event: 'DELETE', schema: 'public', table: 'tbl_match_result_override' },
+					(payload) => { if (payload.old && liveSet.has(payload.old.match_id)) onLiveChange(null); });
+		}
+		liveChannel
 			.subscribe((status) => {
 				if (status === 'SUBSCRIBED') return;
 				// Not fatal: the draw still works, it just stops being live
