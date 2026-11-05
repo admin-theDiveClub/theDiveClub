@@ -86,6 +86,7 @@
 	let info = null;           // the league season: league name, season name, rules
 	let seasonRow = null;      // the season's reserves
 	let fixture = null;        // the fixture this match is on: round, tables
+	let venues = [];           // where it is played: the fixture's own, or the season's
 	let lineupState = null;
 	let lineup = [];
 	let squad = [];
@@ -205,10 +206,11 @@
 	// For the banner and the signature form only: a failure here is reported
 	// and the card still loads, because none of it is needed to score.
 	async function loadContext() {
-		const [season, row, fx] = await Promise.all([
+		const [season, row, fx, places] = await Promise.all([
 			supabaseClient.rpc('tdc_league_season_info', { p_league_season_id: match.league_season_id }),
 			supabaseClient.from('tbl_league_seasons').select('max_reserves').eq('id', match.league_season_id).maybeSingle(),
-			supabaseClient.from('tbl_league_fixtures').select('round, table_numbers').eq('match_id', matchId).maybeSingle()
+			supabaseClient.from('tbl_league_fixtures').select('round, table_numbers').eq('match_id', matchId).maybeSingle(),
+			supabaseClient.rpc('tdc_match_venue_list', { p_match_id: matchId })
 		]);
 		if (season.error) TDC.showSupabaseError(AREA, season.error, els.status);
 		else info = (season.data || [])[0] || null;
@@ -216,6 +218,8 @@
 		else seasonRow = row.data;
 		if (fx.error) TDC.showSupabaseError(AREA, fx.error, els.status);
 		else fixture = fx.data;
+		if (places.error) TDC.showSupabaseError(AREA, places.error, els.status);
+		else venues = places.data || [];
 	}
 
 	// ─── The rosters behind the squad picker ───
@@ -385,6 +389,7 @@
 		if (fixture && fixture.table_numbers && fixture.table_numbers.length) {
 			facts.push([fixture.table_numbers.length === 1 ? 'Table' : 'Tables', fixture.table_numbers.join(', ')]);
 		}
+		const venuesAt = facts.length;
 		const size = teamSize();
 		if (size) facts.push(['Players', size + ' a side']);
 		if (seasonRow) facts.push(['Reserves', seasonRow.max_reserves ? 'Up to ' + seasonRow.max_reserves + ' a team' : 'None']);
@@ -401,6 +406,8 @@
 			row.append(node('dt', null, k), node('dd', null, v));
 			return row;
 		}));
+		const place = TDC.venueFact(venues);
+		if (place) els.facts.insertBefore(place, els.facts.children[venuesAt] || null);
 	}
 
 	function stateDetail(locked, both) {
@@ -1266,7 +1273,9 @@
 	function renderSignatures(both) {
 		if (els.signPanel.hidden) return;   // renderSummary decides
 
-		els.sfLeague.textContent = info ? info.league_name + (info.name ? ' · ' + info.name : '') : '';
+		els.sfLeague.textContent = info
+			? [info.league_name, info.name, TDC.venueNames(venues)].filter(Boolean).join(' · ')
+			: '';
 		els.sfDate.textContent = match.scheduled_at
 			? new Date(match.scheduled_at).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 			: 'No date set';

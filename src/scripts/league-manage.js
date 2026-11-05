@@ -96,8 +96,7 @@ TDCLeagueNav.panel('manage', () => {
 		const bits = [];
 		if (info.starts_on) bits.push('From ' + day(info.starts_on));
 		if (info.ends_on) bits.push('to ' + day(info.ends_on));
-		if (info.venue_name) bits.push(info.venue_name);
-		els.meta.textContent = bits.join(' · ');
+		TDC.venueHeading(els.meta, bits.join(' · '), info.venues);
 		return info;
 	}
 

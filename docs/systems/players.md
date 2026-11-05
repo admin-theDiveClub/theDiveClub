@@ -55,6 +55,8 @@ Both security definer, signed in only, read only; the page never reads `tbl_play
 - **`tdc_player_profile(player)`** returns `player` (display and full name, picture, since, `verified`: an identifier with an active verification at any venue, only the yes or no; `is_me`), `matches` (every match they played a frame in, newest first, its kind and competition, the opponent, and the score counted from the frames), `frames` (their own frames in those matches: `won`, `broke`, null where breaks were not tracked, `result_event`) and `teams` (every league season they are entered in).
 - **`tdc_head_to_head(player)`**: the caller against that player. Only frames the two played on opposite sides count; a meeting is a match holding at least one, won by whoever won more of them. Against yourself it returns `same: true` and no meetings.
 
+- **Venues (5 Nov):** a team and a match each carry `venues`, shown after the league and date on its row. Head to head does not.
+
 ### How it counts (why it is shaped this way)
 
 - **Frames are the only record:** the functions return matches and frames; `player.js` counts every number, so the period filter is the page's alone (on `played_at`, as `/matches/` dates a match).

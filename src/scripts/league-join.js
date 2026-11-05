@@ -225,19 +225,8 @@
 			return row;
 		}));
 
-		// The venue, linked to its page (still to be built: /venues/ says so).
-		const row = node('div', 'jumbo-fact');
-		row.append(node('dt', null, 'Venue'));
-		const dd = node('dd');
-		if (season && season.venue_id) {
-			const a = node('a', null, info.venue_name || 'The venue');
-			a.href = '/venues/?v=' + encodeURIComponent(season.venue_id);
-			dd.append(a);
-		} else {
-			dd.textContent = 'Not tied to a venue';
-		}
-		row.append(dd);
-		els.facts.append(row);
+		const venues = TDC.venueFact(season && season.venues);
+		if (venues) els.facts.append(venues);
 	}
 
 	function nextNight() {

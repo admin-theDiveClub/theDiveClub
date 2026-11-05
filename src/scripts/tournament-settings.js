@@ -205,7 +205,7 @@ TDCTournamentNav.panel('settings', () => {
 	}
 
 	async function load() {
-		const [t, f] = await Promise.all([
+		const [t, f, places] = await Promise.all([
 			supabaseClient
 				.from('tbl_tournaments')
 				.select('id, name, format, starts_at, max_entrants, entry_fee_credits, progression, create_matches, third_place, entry_mode, paid_confirms, is_listed, rules')
@@ -214,10 +214,12 @@ TDCTournamentNav.panel('settings', () => {
 			supabaseClient
 				.from('tbl_tournament_fixtures')
 				.select('id', { count: 'exact', head: true })
-				.eq('tournament_id', tournamentId)
+				.eq('tournament_id', tournamentId),
+			supabaseClient.rpc('tdc_tournament_venue_list', { p_tournament_id: tournamentId })
 		]);
 		if (t.error) { TDC.showSupabaseError(AREA, t.error, els.status); return false; }
 		if (f.error) { TDC.showSupabaseError(AREA, f.error, els.status); return false; }
+		if (places.error) { TDC.showSupabaseError(AREA, places.error, els.status); return false; }
 		if (!t.data) {
 			TDC.error(AREA, 'no tournament with that id. Check the link.', { tournamentId }, els.status);
 			return false;
@@ -225,7 +227,7 @@ TDCTournamentNav.panel('settings', () => {
 
 		saved = t.data;
 		drawn = (f.count || 0) > 0;
-		els.meta.textContent = saved.name;
+		TDC.venueHeading(els.meta, saved.name, places.data);
 		els.name.value = saved.name;
 		els.format.value = saved.format;
 		els.format.disabled = drawn;

@@ -77,8 +77,8 @@
 <!-- The profile menu (UV, 31 Oct): slides in from the right, the whole screen
      under the bar on a phone. Outside the bar, as the menu is, so its blur
      reaches the page. Three parts: the player banner (a tap anywhere on it
-     opens the profile), the middle, set into the screen (empty: what goes in
-     it is still to be discussed, STATUS), and the toggles on a flat bar. -->
+     opens the profile), the middle, set into the screen, and the toggles on a
+     flat bar. -->
 <aside class="nav-account" id="nav-account" aria-label="Your profile menu">
 	<a href="/accounts/profile/" class="nav-account-banner">
 		<span class="nav-account-pic" id="nav-account-pic" aria-hidden="true"></span>
@@ -88,7 +88,11 @@
 		</span>
 	</a>
 
-	<div class="nav-account-middle"></div>
+	<!-- The middle: what you're in, one tap from each (nav.js, tdc_my_active). -->
+	<div class="nav-account-middle">
+		<span class="nav-account-dots" id="nav-account-dots" aria-hidden="true"></span>
+		<div id="nav-account-list"></div>
+	</div>
 
 	<!-- Icons only (UV): each side of a toggle has its own icon, and the
 	     aria-label says what it is. Made into switches by tdc-controls.js. -->

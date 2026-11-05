@@ -104,7 +104,7 @@
 		);
 
 		const bits = [when(t.starts_at), FORMAT[t.format] || t.format];
-		if (t.venue_name) bits.push(t.venue_name);
+		if (t.venues.length) bits.push(TDC.venueNames(t.venues));
 		bits.push(t.entrants === 1 ? '1 entrant' : t.entrants + ' entrants');
 
 		const tags = el('div', 'match-tags');
@@ -144,7 +144,7 @@
 		);
 
 		const bits = [when(t.starts_at), FORMAT[t.format] || t.format];
-		if (t.venue_name) bits.push(t.venue_name);
+		if (t.venues.length) bits.push(TDC.venueNames(t.venues));
 		bits.push(t.entrants === 1 ? '1 entrant' : t.entrants + ' entrants');
 
 		// A full one stays listed and says so; the poster refuses the entry.

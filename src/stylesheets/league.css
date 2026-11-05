@@ -755,6 +755,7 @@ a.fx-team:focus-visible { box-shadow: var(--glow-primary); outline: none; }
 	color: var(--color-primary);
 }
 .jumbo-fact dd { margin: var(--space-1) 0 0; overflow-wrap: break-word; }
+.jumbo-venue { display: block; }
 
 @media (max-width: 30rem) {
 	.jumbo { padding: var(--space-4); gap: var(--space-3) var(--space-4); }

@@ -34,7 +34,7 @@ TDCLeagueNav.panel('standings', () => {
 
 	const el = (id) => document.getElementById(id);
 	const els = {
-		title: el('sd-title'), meta: el('sd-meta'), views: el('sd-views'), live: el('sd-live'), fullNames: el('sd-full-names'),
+		title: el('sd-title'), venues: el('sd-venues'), meta: el('sd-meta'), views: el('sd-views'), live: el('sd-live'), fullNames: el('sd-full-names'),
 		player: el('sd-player'), team: el('sd-team'), status: el('sd-status')
 	};
 
@@ -443,6 +443,7 @@ TDCLeagueNav.panel('standings', () => {
 		data = st.data;
 		columns = cols.data || [];
 		els.title.textContent = info.league_name + ' — Standings';
+		TDC.venueHeading(els.venues, '', info.venues);
 		render(first);
 		if (live) watchLive(data.watch_match_ids || []); else stopLive();
 		return true;

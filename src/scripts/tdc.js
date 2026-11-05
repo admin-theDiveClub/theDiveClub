@@ -361,6 +361,54 @@ const TDC = (() => {
 	document.addEventListener('auxclick', openProfile, true);
 	document.addEventListener('keydown', openProfile, true);
 
+	// The venues a competition or match is played at, as every read gives them:
+	// [{ id, name }] in the director's order (migration 20261105203829; UV, 5 Nov:
+	// every name, and a name opens the venue's page). On a card that is itself a
+	// link only the words can go, since a link cannot hold a link.
+	function venueNames(list) {
+		return (list || []).map((v) => v.name).join(', ');
+	}
+
+	function venueLink(v) {
+		const a = document.createElement('a');
+		a.href = '/venues/?v=' + encodeURIComponent(v.id);
+		a.textContent = v.name;
+		return a;
+	}
+
+	// A heading's line under its title: what it already says, then the venues on
+	// a line of their own. With neither, the line is hidden.
+	function venueHeading(el, text, list) {
+		const venues = list || [];
+		el.replaceChildren();
+		if (text) el.append(text);
+		if (text && venues.length) el.append(document.createElement('br'));
+		venues.forEach((v, i) => {
+			if (i) el.append(', ');
+			el.append(venueLink(v));
+		});
+		el.hidden = !text && !venues.length;
+	}
+
+	// A banner's fact (.jumbo-fact): every venue on a line of its own. With none,
+	// null: the row is left out (UV, 5 Nov).
+	function venueFact(list) {
+		const venues = list || [];
+		if (!venues.length) return null;
+		const row = document.createElement('div');
+		row.className = 'jumbo-fact';
+		const dt = document.createElement('dt');
+		dt.textContent = venues.length === 1 ? 'Venue' : 'Venues';
+		const dd = document.createElement('dd');
+		for (const v of venues) {
+			const line = venueLink(v);
+			line.className = 'jumbo-venue';
+			dd.append(line);
+		}
+		row.append(dt, dd);
+		return row;
+	}
+
 	// What goes inside a team's .team-pic: its own picture (team-pictures,
 	// tbl_teams.picture_path; 29 Oct), or the shield it had until it had one.
 	// Shared by the season, fixtures and card pages.
@@ -434,5 +482,5 @@ const TDC = (() => {
 	}
 
 	return { error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer,
-		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, teamPic, liveSnapshot, liveFade };
-})();
+		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, teamPic, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade };
+})();

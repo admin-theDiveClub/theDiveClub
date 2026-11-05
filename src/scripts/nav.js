@@ -167,6 +167,155 @@
 		account.classList.toggle('open', open);
 		profileBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
 		if (open && menu.classList.contains('open')) setMenu(false);
+		if (open) loadActive();
+	}
+
+	// --- The profile menu's middle: what you're in (UV, 5 Nov) ---
+	// Matches, leagues and tournaments that are still going, each row one tap
+	// from opening it, to the same place its full list goes. Read every time
+	// the menu opens, and only then: most pages never need it. What is on
+	// screen stays until the new read arrives, so reopening never flickers.
+	const accountList = document.getElementById('nav-account-list');
+	const accountDots = document.getElementById('nav-account-dots');
+	const ACTIVE_ROWS = 5;   // Each section's most; All › has the rest.
+	let activeRead = 0;      // Only the latest read draws.
+
+	// The words only, for a nav that does not load match-settings.js.
+	const WIN_SAID = { race_to: 'Race to', best_of: 'Best of', fixed_frames: 'Fixed frames', timed: 'Timed' };
+	const LEAGUE_SAID = { taking_entries: 'Taking entries', running: 'Running', on_break: 'On break' };
+	const LEAGUE_STRIP = { taking_entries: 'is-go', running: 'is-on', on_break: 'is-rest' };
+	const TOURNAMENT_SAID = { draft: 'Draft', open: 'Open for entries', in_progress: 'Running' };
+	const TOURNAMENT_STRIP = { draft: '', open: 'is-go', in_progress: 'is-live' };
+
+	function menuEl(tag, cls, text) {
+		const e = document.createElement(tag);
+		if (cls) e.className = cls;
+		if (text != null) e.textContent = text;
+		return e;
+	}
+
+	function menuWhen(iso) {
+		if (!iso) return '';
+		const d = new Date(iso);
+		const midnight = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+		const days = Math.round((midnight(d) - midnight(new Date())) / 86400000);
+		const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+		if (days === 0) return 'Today ' + time;
+		if (days === 1) return 'Tomorrow ' + time;
+		if (days === -1) return 'Yesterday ' + time;
+		if (days > 1 && days < 7) return d.toLocaleDateString([], { weekday: 'short' }) + ' ' + time;
+		return d.toLocaleDateString([], { day: 'numeric', month: 'short' });
+	}
+
+	function menuRow(href, strip, name, line, right) {
+		const a = menuEl('a', 'nav-account-row' + (strip ? ' ' + strip : ''));
+		a.href = href;
+		a.append(menuEl('span', 'nav-account-row-name', name));
+		if (right) a.append(right);
+		a.append(menuEl('span', 'nav-account-row-line', line.filter(Boolean).join(' · ')));
+		return a;
+	}
+
+	function menuBadge(text) {
+		return menuEl('span', 'nav-account-row-right badge needs-you', text);
+	}
+
+	function activeMatch(m) {
+		// As /matches/: a team night opens the team card.
+		const href = m.team_match
+			? '/leagues/card/?m=' + encodeURIComponent(m.id)
+			: '/match/?id=' + encodeURIComponent(m.id);
+		const playing = m.status === 'in_progress';
+		const line = [];
+		if (m.refereeing) line.push('Referee');
+		if (m.set_lineup) line.push('Set your lineup');
+		else if (m.team_match) line.push('League night');
+		else if (m.card_state === 'awaiting' && !m.needs_me) line.push('Waiting on them');
+		else if (m.card_state === 'disputed') line.push('Disputed');
+		else line.push(playing ? 'Playing' : 'Not started');
+		if (playing && !m.team_match && WIN_SAID[m.win_condition] && m.target) {
+			line.push(WIN_SAID[m.win_condition] + ' ' + m.target);
+		} else if (m.win_condition === 'free_play' && playing) {
+			line.push('Free play');
+		} else {
+			line.push(menuWhen(m.played_at));
+		}
+		const scored = m.my_frames + m.their_frames > 0;
+		const right = m.needs_me ? menuBadge('Needs you')
+			: scored ? menuEl('span', 'nav-account-row-right', m.my_frames + '–' + m.their_frames)
+			: null;
+		return menuRow(href, playing ? 'is-live' : 'is-go', m.refereeing ? m.opponent : 'vs ' + m.opponent, line, right);
+	}
+
+	function activeLeague(l) {
+		// As /leagues/: whoever runs it lands on Run it.
+		const href = '/leagues/season/?s=' + encodeURIComponent(l.league_season_id) + (l.i_run_it ? '&tab=manage' : '');
+		const inIt = l.my_status === 'active';
+		return menuRow(href, LEAGUE_STRIP[l.status], l.league_name, [
+			LEAGUE_SAID[l.status] || l.status,
+			l.my_team_name,
+			l.i_captain && inIt ? 'Captain' : '',
+			l.my_status === 'inactive' ? 'Inactive' : '',
+			l.i_run_it ? 'You run this' : ''
+		], inIt && !l.confirmed_at ? menuBadge('Confirm your place') : null);
+	}
+
+	function activeTournament(t) {
+		// As /tournaments/: the poster until the start, then the draw.
+		const href = t.status !== 'in_progress' && t.poster_open
+			? '/tournaments/poster/?t=' + encodeURIComponent(t.id)
+			: '/tournaments/bracket/?t=' + encodeURIComponent(t.id);
+		return menuRow(href, TOURNAMENT_STRIP[t.status], t.name, [
+			TOURNAMENT_SAID[t.status] || t.status,
+			menuWhen(t.starts_at),
+			t.i_run_it ? 'You run this' : ''
+		]);
+	}
+
+	// A section with nothing in it is not shown.
+	function activeSection(title, allHref, rows, draw) {
+		if (!rows.length) return null;
+		const box = menuEl('section', 'nav-account-section');
+		const head = menuEl('a', 'nav-account-head', title);
+		head.href = allHref;
+		head.append(menuEl('span', '', 'All ›'));
+		box.append(head, ...rows.slice(0, ACTIVE_ROWS).map(draw));
+		return box;
+	}
+
+	function drawActive(data) {
+		const sections = [
+			activeSection('Matches', '/matches/', data.matches || [], activeMatch),
+			activeSection('Leagues', '/leagues/', data.leagues || [], activeLeague),
+			activeSection('Tournaments', '/tournaments/', data.tournaments || [], activeTournament)
+		].filter(Boolean);
+		if (sections.length) {
+			accountList.replaceChildren(...sections);
+			return;
+		}
+		const box = menuEl('section', 'nav-account-section');
+		box.append(
+			menuRow('/matches/new/', '', 'Start a match', []),
+			menuRow('/leagues/', '', 'Find a league', []),
+			menuRow('/tournaments/', '', 'Find a tournament', []));
+		accountList.replaceChildren(menuEl('p', 'nav-account-empty', 'You are not in anything right now.'), box);
+	}
+
+	async function loadActive() {
+		if (!accountList) return;
+		const read = ++activeRead;
+		const work = supabaseClient.rpc('tdc_my_active');
+		const { data, error } = await TDC.busy(accountDots, work);
+		if (read !== activeRead) return;
+		if (error) {
+			const note = menuEl('div', 'nav-account-note');
+			const said = menuEl('p');
+			note.append(said);
+			accountList.replaceChildren(note);
+			TDC.showSupabaseError(AREA, error, said);
+			return;
+		}
+		drawActive(data || {});
 	}
 
 	// --- Profile icon: the profile menu when logged in, login page when not ---

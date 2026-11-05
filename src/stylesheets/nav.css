@@ -285,14 +285,106 @@ body {
 }
 .nav-account-full[hidden] { display: none; }
 
-/* The middle, set into the screen. Empty for now: what goes in it (quick
-   links, business tools, the sports profiles) is still to be discussed. */
+/* The middle, set into the screen: what you're in (nav.js, tdc_my_active). */
 .nav-account-middle {
+	position: relative;
 	flex: 1 1 auto;
 	min-height: 0;
 	overflow-y: auto;
 	box-shadow: var(--shadow-sunken);
+	padding-bottom: var(--space-3);
 }
+/* Where the dots run while it reads: a small spot of their own, since round
+   the whole panel they would be specks. As .group-dots (dots.css). */
+.nav-account-dots {
+	position: absolute;
+	top: var(--space-2);
+	left: 50%;
+	width: var(--group-dots-size);
+	height: var(--group-dots-size);
+	transform: translateX(-50%);
+	box-sizing: border-box;
+	border: var(--group-dots-stroke) solid transparent;
+	border-radius: var(--radius-round);
+	color: var(--color-primary);
+	pointer-events: none;
+}
+.nav-account-section { padding: var(--space-3) var(--space-4) 0; }
+.nav-account-head {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	margin-bottom: var(--space-2);
+	color: var(--text-primary);
+	font-weight: 600;
+	text-decoration: none;
+}
+.nav-account-head span {
+	color: var(--text-muted);
+	font-size: 0.8rem;
+	font-weight: 400;
+}
+.nav-account-head:hover span,
+.nav-account-head:focus-visible span { color: var(--color-primary); }
+/* A row: the state strip down the left, as a league fixture has it, the name,
+   the line under it, and at the right a score or a badge. */
+.nav-account-row {
+	--strip-color: var(--border-color);
+	position: relative;
+	display: grid;
+	grid-template-columns: 1fr auto;
+	align-items: center;
+	column-gap: var(--space-3);
+	margin-bottom: 0.4rem;
+	padding: 0.5rem 0.75rem 0.5rem 1rem;
+	overflow: hidden;
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-md);
+	/* Solid: the panel is see-through, and the page behind it shows through a
+	   row's small grey line otherwise. */
+	background: var(--bg-base);
+	color: var(--text-primary);
+	text-decoration: none;
+	-webkit-tap-highlight-color: transparent;
+}
+.nav-account-row:hover,
+.nav-account-row:focus-visible { background: var(--hover-wash); outline: none; }
+.nav-account-row::before {
+	content: "";
+	position: absolute;
+	inset: 0 auto 0 0;
+	width: 5px;
+	background: var(--strip-color);
+}
+.nav-account-row.is-go { --strip-color: var(--color-primary); }
+.nav-account-row.is-on { --strip-color: var(--color-success); }
+.nav-account-row.is-rest { --strip-color: var(--color-warning); }
+.nav-account-row.is-live { --strip-color: var(--color-warning); }
+.nav-account-row.is-live::before { box-shadow: 0 0 8px var(--color-warning); }
+.nav-account-row-name { min-width: 0; overflow-wrap: anywhere; }
+.nav-account-row-line {
+	grid-column: 1;
+	margin-top: 0.1rem;
+	color: var(--text-muted);
+	font-size: 0.8rem;
+	overflow-wrap: anywhere;
+}
+.nav-account-row-right {
+	grid-column: 2;
+	grid-row: 1 / span 2;
+	font-size: 1.25rem;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+.nav-account-row-right.badge { font-size: 0.75rem; font-weight: 400; }
+.nav-account-empty {
+	margin: 0;
+	padding: var(--space-5) var(--space-4) var(--space-3);
+	color: var(--text-muted);
+	text-align: center;
+}
+.nav-account-note { padding: var(--space-4); }
+.nav-account-note p { margin: 0; }
 
 /* The toggles: icons only, on a flat bar, clear of an iPhone's home bar. */
 .nav-account-foot {

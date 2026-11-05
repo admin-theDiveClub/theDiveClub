@@ -402,7 +402,11 @@
 		lines.push(s.name);
 		lines.push('');
 
-		const where = s.venue_name ? ' at ' + s.venue_name : '';
+		// "at A", "at A and B", "at A, B and C".
+		const names = (s.venues || []).map((v) => v.name);
+		const where = names.length
+			? ' at ' + (names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] : names[0])
+			: '';
 		lines.push(`A ${(FORMAT[s.format] || s.format).toLowerCase()} ${ruleText('discipline', s.rules.discipline)} tournament${where}.`);
 
 		if (s.starts_at) lines.push('Starts ' + startsAt(s.starts_at) + '.');
@@ -634,19 +638,21 @@
 			facts.push(['Date', dayOf(s.starts_at)]);
 			facts.push(['Time', timeOf(s.starts_at)]);
 		}
-		if (s.venue_name) facts.push(['Venue', s.venue_name]);
+		const venuesAt = facts.length;
 		if (s.entry_mode) facts.push(['Entries', ENTRY[s.entry_mode] || s.entry_mode]);
 		if (s.max_entrants) facts.push(['Places', String(s.max_entrants)]);
 		if (s.entry_fee_credits > 0) facts.push(['Entry fee', plural(s.entry_fee_credits, 'credit')]);
 		if (s.sanctioned) facts.push(['Ranked', 'Counts towards the rankings']);
 		if (s.third_place) facts.push(['Third place', 'Played off']);
 
-		els.facts.hidden = !facts.length;
+		const venues = TDC.venueFact(s.venues);
+		els.facts.hidden = !facts.length && !venues;
 		els.facts.replaceChildren(...facts.map(([k, v]) => {
 			const row = node('div', 'jumbo-fact');
 			row.append(node('dt', null, k), node('dd', null, v));
 			return row;
 		}));
+		if (venues) els.facts.insertBefore(venues, els.facts.children[venuesAt] || null);
 	}
 
 	// ─── The numbers ───

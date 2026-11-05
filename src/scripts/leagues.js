@@ -93,7 +93,7 @@
 		if (l.season_name && l.season_name !== l.name) bits.push(l.season_name);
 		if (l.discipline) bits.push(disciplineSaid(l.discipline));
 		if (l.team_size) bits.push('Teams of ' + l.team_size);
-		if (l.venue_name) bits.push(l.venue_name);
+		if (l.venues.length) bits.push(TDC.venueNames(l.venues));
 
 		const main = el('div', 'row-table-main');
 		main.append(el('h3', null, l.league_name), el('div', 'row-table-meta', bits.join(' · ')));
@@ -172,16 +172,16 @@
 		pic.append(leagueIcon(l.league_season_id));
 		box.append(pic, el('div', 'league-tile-name', l.league_name));
 
-		// Three short lines: the format, when and where, and where it stands.
+		// Short lines: the format, when, where, and where it stands.
 		const format = [disciplineSaid(l.discipline)];
 		if (l.team_size === 1) format.push('Singles');
 		else if (l.team_size) format.push('Teams of ' + l.team_size);
 		const when = [l.season_name];
 		if (l.starts_on) when.push('From ' + day(l.starts_on));
-		if (l.venue_name) when.push(l.venue_name);
 		const stands = [statusSaid(l.status), l.players === 1 ? '1 player' : l.players + ' players'];
-		for (const line of [format, when, stands]) {
-			box.append(el('div', 'league-tile-meta', line.filter(Boolean).join(' · ')));
+		for (const line of [format, when, [TDC.venueNames(l.venues)], stands]) {
+			const text = line.filter(Boolean).join(' · ');
+			if (text) box.append(el('div', 'league-tile-meta', text));
 		}
 
 		if (l.my_status) box.append(el('span', 'badge pending', STATUS_SAID[l.my_status] || l.my_status));

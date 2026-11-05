@@ -1208,7 +1208,11 @@ TDCTournamentNav.panel('draw', () => {
 		}
 		if (data.progression === 'manual') bits.push('Moved by hand');
 		if (data.create_matches === 'manual') bits.push('Matches started by hand');
-		els.meta.textContent = bits.join(' · ');
+
+		// Where it is played. A failure is said and the draw still shows.
+		const places = await supabaseClient.rpc('tdc_tournament_venue_list', { p_tournament_id: tournamentId });
+		if (places.error) TDC.showSupabaseError(AREA, places.error, els.status);
+		TDC.venueHeading(els.meta, bits.join(' · '), places.data);
 		return true;
 	}
 

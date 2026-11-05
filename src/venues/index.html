@@ -1,18 +1,66 @@
 ---
 layout: layout.html
 title: Venue
-description: "A venue's own page."
+description: "A pool venue: where it is, its tables and hours, and its leagues and tournaments."
+extraStyles:
+  - /stylesheets/league.css
+  - /stylesheets/league-join.css
+  - /stylesheets/venue.css
+extraScripts:
+  - /scripts/match-settings.js
+  - /scripts/venue.js
 ---
 {% comment %}
-	A venue's profile page, reached as /venues/?v=<venue id> from a league's
-	banner. Not built yet (UV, 24 Oct: "still to be built", docs/STATUS.md §4);
-	this page says so rather than the link landing on nothing.
+	A venue's page (UV, 5 Nov), reached as /venues/?v=<venue id> from every place
+	a venue is named. It renders without a session, as the poster does, because
+	the poster links here.
+
+	Reads tdc_venue and tdc_venue_competitions, both open to anybody: display
+	details only, and only the leagues and tournaments their directors have made
+	public. Only what the venue has filled in is shown.
 {% endcomment %}
 
-<div class="tdc-card">
-	<h1>Venue</h1>
-	<p>Venue pages are not built yet. They will show where the venue is, its tables, and its leagues and tournaments.</p>
-	<div class="link-row">
-		<a href="/leagues/">Back to leagues</a>
+<div class="tdc-card wide lj-page">
+	<div id="nothing" hidden>
+		<h1>Nothing here</h1>
+		<p class="muted">This venue is not on the platform, or the link is wrong.</p>
+		<div class="link-row">
+			<a href="/leagues/">Leagues</a>
+			<a href="/tournaments/">Tournaments</a>
+		</div>
 	</div>
+
+	<div id="venue" hidden>
+		<section class="jumbo lj-hero" id="v-hero">
+			<div class="lj-id">
+				<span class="lj-pic"><span class="lj-pic-inner" id="v-pic"></span></span>
+				<div class="lj-names">
+					<h1 id="v-name">Venue</h1>
+					<p class="lj-season" id="v-place"></p>
+				</div>
+			</div>
+			<dl class="jumbo-facts" id="v-facts"></dl>
+		</section>
+
+		<div class="venue-links" id="v-links" hidden></div>
+
+		<div class="lj-notes-box" id="v-about-box" hidden>
+			<h2>About</h2>
+			<p class="lj-notes" id="v-about"></p>
+		</div>
+
+		<div id="v-hours-box" hidden>
+			<h2>Hours</h2>
+			<dl class="venue-hours" id="v-hours"></dl>
+			<p class="muted" id="v-hours-note" hidden></p>
+		</div>
+
+		<h2>Leagues</h2>
+		<div id="v-leagues"></div>
+
+		<h2>Tournaments</h2>
+		<div id="v-tournaments"></div>
+	</div>
+
+	<div class="status" id="page-status"></div>
 </div>

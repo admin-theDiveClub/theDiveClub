@@ -2709,7 +2709,7 @@
 		renderBanner();
 		els.contextLine.textContent = c.kind === 'social'
 			? 'Social match · not part of a league or tournament'
-			: [c.name, c.season, c.round].filter(Boolean).join(' · ');
+			: [c.name, c.season, c.round, TDC.venueNames(MATCH.venues)].filter(Boolean).join(' · ');
 
 		els.badgeRow.replaceChildren(
 			badge(DISCIPLINE[MATCH.rules.discipline] || 'TDC (Error)'),
@@ -3258,6 +3258,7 @@
 	// tried again on the next re-read.
 	const SOCIAL = { kind: 'social', name: null, season: null, round: null };
 	let contextOf = null;   // { id, context }
+	let venuesOf = null;    // { id, venues }
 	async function matchContext(id) {
 		if (contextOf && contextOf.id === id) return contextOf.context;
 		const { data: f, error } = await supabaseClient
@@ -3306,15 +3307,18 @@
 		if (!c || c.kind !== 'tournament') { els.banner.hidden = true; return; }
 		els.banner.href = '/tournaments/bracket/?t=' + encodeURIComponent(c.tournamentId);
 		els.bannerName.textContent = c.name;
-		els.bannerRound.textContent = c.round || '';
-		els.banner.setAttribute('aria-label', [c.name, c.round, 'open the draw'].filter(Boolean).join(', '));
+		// Several venues are counted: naming the first, for one match, could send
+		// somebody to the wrong club (UV, 5 Nov).
+		const where = MATCH.venues.length > 1 ? MATCH.venues.length + ' venues' : TDC.venueNames(MATCH.venues);
+		els.bannerRound.textContent = [c.round, where].filter(Boolean).join(' · ');
+		els.banner.setAttribute('aria-label', [c.name, c.round, where, 'open the draw'].filter(Boolean).join(', '));
 		els.banner.hidden = false;
 	}
 
 	async function loadMatch(id) {
 		const { data: m, error } = await supabaseClient
 			.from('tbl_matches')
-			.select('id, venue_id, scheduled_at, first_break_side, sanctioned, rules, status, card_version,'
+			.select('id, scheduled_at, first_break_side, sanctioned, rules, status, card_version,'
 				+ ' home_side_kind, home_player_id, away_side_kind, away_player_id, referee_player_id,'
 				+ ' break_in_play, break_in_play_frame_no, break_in_play_card_version')
 			.eq('id', id)
@@ -3381,18 +3385,15 @@
 		]);
 		if (!players) return null;
 
-		let venue = null;
-		if (m.venue_id) {
-			const { data: v, error: venueError } = await supabaseClient
-				.from('tbl_venues').select('name').eq('id', m.venue_id).maybeSingle();
-			if (venueError) {
-				TDC.error(AREA, 'could not read the venue for this match.', venueError);
-			} else if (!v) {
-				TDC.error(AREA, 'the match points at a venue that could not be read: ' + m.venue_id);
-			} else {
-				venue = v.name;
-			}
+		// Where it is played, read once a match. Never m.venue_id alone: that says
+		// whose staff may edit the card, not where the tables are.
+		if (!venuesOf || venuesOf.id !== id) {
+			const { data: places, error: placesError } = await supabaseClient
+				.rpc('tdc_match_venue_list', { p_match_id: id });
+			if (placesError) TDC.error(AREA, 'could not read the venue for this match.', placesError);
+			else venuesOf = { id, venues: places || [] };
 		}
+		const venues = venuesOf && venuesOf.id === id ? venuesOf.venues : [];
 
 		const nameOf = (pid) => (players[pid] ? players[pid].display_name : 'TDC (Error)');
 
@@ -3406,7 +3407,7 @@
 				// not open.
 				context: await matchContext(m.id),
 				sanctioned: m.sanctioned,
-				venue,
+				venues,
 				// The tables table does not exist yet. Named plainly rather than
 				// invented, so nobody reads it as a real table number.
 				tables: ['Table not set'],
@@ -3520,7 +3521,7 @@
 			? WIN_CONDITION.free_play
 			: (WIN_CONDITION[MATCH.rules.win_condition_type] || 'TDC (Error)') + ' ' + MATCH.rules.win_condition_target));
 		facts.push(factRow('Frames played', String(MATCH.frames.length)));
-		if (MATCH.venue) facts.push(factRow('Venue', MATCH.venue));
+		if (MATCH.venues.length) facts.push(factRow(MATCH.venues.length === 1 ? 'Venue' : 'Venues', TDC.venueNames(MATCH.venues)));
 		if (MATCH.rules.track_breaks) {
 			const bf = MATCH.frames.filter((f) => f.result_event === 'break_and_finish'
 				|| f.result_event === 'golden_break').length;

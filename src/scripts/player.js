@@ -321,7 +321,7 @@
 			pic.append(TDC.teamPic(t.team_picture));
 			const names = node('span', 'pp-team-names');
 			names.append(node('span', 'pp-team-name', t.team_name || 'No team yet'),
-				node('span', 'muted pp-team-sub', t.league_name + ' · ' + t.season_name));
+				node('span', 'muted pp-team-sub', [t.league_name, t.season_name, TDC.venueNames(t.venues)].filter(Boolean).join(' · ')));
 			const right = node('span', 'pp-team-right');
 			const place = places && t.team_id ? places[t.team_id] : null;
 			right.append(node('span', 'pp-team-place' + (place === 1 || place === 2 ? ' pp-primary' : ''), place ? ordinal(place) : '–'),
@@ -345,7 +345,7 @@
 		const pic = m.team_match ? node('span', 'team-pic pp-row-pic') : TDC.profilePic(avatar(m.opponent_avatar, m.opponent), m.opponent_player_id);
 		if (m.team_match) pic.append(TDC.teamPic(m.opponent_team_picture));
 		const names = node('span', 'pp-row-names');
-		names.append(node('span', 'pp-row-name', 'vs ' + m.opponent), node('span', 'muted pp-row-sub', kindLabel(m) + ' · ' + day(m.played_at)));
+		names.append(node('span', 'pp-row-name', 'vs ' + m.opponent), node('span', 'muted pp-row-sub', [kindLabel(m), day(m.played_at), TDC.venueNames(m.venues)].filter(Boolean).join(' · ')));
 		// The score once a frame is in; the win or loss only once finished.
 		const score = node('span', 'pp-score');
 		if (m.status !== 'complete' && !m.mine && !m.theirs) score.append(node('span', 'muted', '–'));

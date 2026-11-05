@@ -1,0 +1,18 @@
+/* A venue's page (/venues/, scripts/venue.js; UV, 5 Nov). Loaded after league.css
+ * and league-join.css, whose banner, ring and notes it uses. Tokens only. */
+
+.venue-links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+	margin-top: var(--space-4);
+}
+
+.venue-hours {
+	display: grid;
+	grid-template-columns: max-content minmax(0, 1fr);
+	gap: var(--space-1) var(--space-4);
+	margin: 0 0 var(--space-2);
+}
+.venue-hours dt { color: var(--text-muted); }
+.venue-hours dd { margin: 0; }

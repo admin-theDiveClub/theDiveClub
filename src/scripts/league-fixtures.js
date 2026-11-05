@@ -193,7 +193,7 @@ TDCLeagueNav.panel('fixtures', () => {
 		}
 
 		els.name.textContent = info.league_name + ' — ' + info.name;
-		els.meta.textContent = info.venue_name || '';
+		TDC.venueHeading(els.meta, '', info.venues);
 		iRunIt = !!info.i_run_it;
 
 		els.generatePanel.hidden = !iRunIt;

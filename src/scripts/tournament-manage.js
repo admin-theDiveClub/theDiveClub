@@ -103,7 +103,11 @@ TDCTournamentNav.panel('entrants', () => {
 		}
 		if (data.max_entrants) bits.push('Max ' + data.max_entrants);
 		if (data.entry_fee_credits > 0) bits.push(data.entry_fee_credits + ' credits to enter');
-		els.meta.textContent = bits.join(' · ');
+
+		// Where it is played. A failure is said and the list still shows.
+		const places = await supabaseClient.rpc('tdc_tournament_venue_list', { p_tournament_id: tournamentId });
+		if (places.error) TDC.showSupabaseError(AREA, places.error, els.status);
+		TDC.venueHeading(els.meta, bits.join(' · '), places.data);
 
 		return data;
 	}
