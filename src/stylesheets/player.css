@@ -254,6 +254,25 @@
 .pp-bar-labels span { flex: 1; overflow: visible; white-space: nowrap; }
 
 /* Leagues & teams */
+/* The player search, /players/ with nobody in the address. The dots have a
+   small spot of their own (as .group-dots, dots.css): on the field they would
+   dim it under the person's typing. */
+.pp-find-field { position: relative; }
+.pp-find-dots {
+	position: absolute;
+	right: 2rem;
+	top: 50%;
+	width: var(--group-dots-size);
+	height: var(--group-dots-size);
+	transform: translateY(-50%);
+	box-sizing: border-box;
+	border: var(--group-dots-stroke) solid transparent;
+	border-radius: var(--radius-round);
+	color: var(--color-primary);
+	pointer-events: none;
+}
+.pp-find-results { margin-top: var(--space-2); }
+
 .pp-list { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3); }
 .pp-team {
 	display: flex;

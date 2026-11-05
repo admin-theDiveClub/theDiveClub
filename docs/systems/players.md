@@ -11,7 +11,7 @@ Built from UV's combined design (artboard D, "Player Profile Designs" canvas on 
 | Part | What | From |
 |---|---|---|
 | Hero | Picture in a green ring with the verified tick, left of the centre line; display name and full name right of it. A tap on a photo shows it large (below) | `player` |
-| Buttons | Ring icons in one row: Challenge (the cue ball, green ring) and Follow (not built), Share (the phone's share sheet, else copies the link), More (not built) | |
+| Buttons | Ring icons in one row: Challenge (the cue ball, green ring; not built), Follow (below), Share (the phone's share sheet, else copies the link), More (not built) | `tdc_i_follow` |
 | Toggle | Profile · Head to head · Compare; `&tab=h2h` or `&tab=cmp` in the address keeps it on reload | |
 | Profile | Form (their last 10 frames, a yellow ring where they broke), Stats with a period (All time · Last 90 days · Last 30 days) in four boxes, the frame difference per night (last 15 nights in the period), leagues and teams with the team's place, recent matches (3, then See all), the last match's frames, honours, about | `matches`, `frames`, `teams` |
 | Head to head | Your meetings: you v them in meetings won, the split bar, frames and the current streak; the last meeting frame by frame; every meeting (3, then All); Challenge to a rematch (not built) | `tdc_head_to_head` |
@@ -46,7 +46,21 @@ Built from UV's combined design (artboard D, "Player Profile Designs" canvas on 
 
 **Your own profile** has no toggle and none of the buttons meant for somebody else. Account settings stay on `/accounts/profile/`.
 
-**Not built yet** (UV, 5 Nov: shown, a tap says so): Challenge, Follow, the rematch, Home venue (About's row), More. Each is a control with `data-unbuilt="<name>"`; a tap writes "<name> is not built yet." on its section's note line (`[data-note]`), or the page's status line.
+**Not built yet** (UV, 5 Nov: shown, a tap says so): Challenge, the rematch, Home venue (About's row), More. Each is a control with `data-unbuilt="<name>"`; a tap writes "<name> is not built yet." on its section's note line (`[data-note]`), or the page's status line.
+
+### Follow (UV, 5 Nov; migration `20261105205913`, test `061_player_follows`)
+
+**One-way, no approval, and private** (UV): a tap follows, a second tap stops, and only you can see who you follow. No follower lists, no counts, no notification. Private can be opened up later; once people have seen who follows whom it cannot be taken back.
+
+The button is the person with a plus, turning to a green tick once you follow. Its label names the player. After each write the page re-reads `tdc_i_follow` and redraws the icon only if it changed. It does not show on your own profile.
+
+**Why it is shaped this way.** `tbl_player_follows` has no grants and no policies: nothing can read it directly, and `tdc_i_follow(player)` answers only for the person asking, so no call can say who follows somebody. `tdc_set_follow(player, follow)` is the one write; saying what is already so is not an error, so two phones end in the same place. Anybody with a player record can be followed, a walk-in too, since their followers then move with them. `private.tdc_merge_players` carries both directions: nothing is left on the signup record, each person follows once, and the two records following each other is removed rather than becoming somebody following themselves.
+
+**Where managing it could go (suggested, not built; UV said not yet):** a Following tab on `/players/` beside the search, with the people you follow and a tap to stop. It would stay private, a list only of your own.
+
+### The player search (`/players/` with nobody in the address, UV 5 Nov)
+
+Players in the left menu. Type two letters: each result is a link to that player's profile and does nothing else. It reuses `tdc_search_opponents`: everyone with an account but you, by display, first or last name, 20 at most. Walk-ins are not found, and "Nobody by that name" says so. Signed in only, as the profile is. The dots run on a small spot of their own at the field's right, because on the field they would dim it under the person's typing.
 
 ### The two functions
 

@@ -283,14 +283,77 @@
 		return box;
 	}
 
-	function drawActive(data) {
+	// The people lists (UV, 5 Nov): opponents, worked out from the frames by
+	// tdc_my_people. Each row opens their profile; a green tick says you follow
+	// them, which only you can see.
+	function menuDay(iso) {
+		if (!iso) return '';
+		const d = new Date(iso);
+		const midnight = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+		const days = Math.round((midnight(new Date()) - midnight(d)) / 86400000);
+		if (days === 0) return 'Today';
+		if (days === 1) return 'Yesterday';
+		if (days > 1 && days < 7) return d.toLocaleDateString([], { weekday: 'short' });
+		return d.toLocaleDateString([], { day: 'numeric', month: 'short' });
+	}
+
+	function personPic(p) {
+		const box = menuEl('span', 'nav-account-person-pic');
+		const url = avatarUrlFor(p.avatar_path);
+		if (url) {
+			const img = menuEl('img');
+			img.alt = '';
+			img.loading = 'lazy';
+			img.onerror = () => {
+				console.error('[' + AREA + '] a picture in the profile menu could not be loaded, using the initials.', url);
+				img.remove();
+				box.textContent = menuInitials(p.display_name);
+			};
+			img.src = url;
+			box.append(img);
+		} else {
+			box.textContent = menuInitials(p.display_name);
+		}
+		return box;
+	}
+
+	const menuInitials = (name) => (name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+
+	function personRow(p, right) {
+		const a = menuEl('a', 'nav-account-person');
+		a.href = '/players/?p=' + encodeURIComponent(p.player_id);
+		const name = menuEl('span', 'nav-account-person-name', p.display_name);
+		a.append(personPic(p), name);
+		if (p.i_follow) {
+			const tick = menuEl('span', 'nav-account-person-follow');
+			tick.title = 'You follow them';
+			tick.innerHTML = '<svg viewBox="0 0 24 24" role="img" aria-label="You follow them"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+			name.append(tick);
+		}
+		a.append(menuEl('span', 'nav-account-person-right', right));
+		return a;
+	}
+
+	// Headed by words alone: there is no full list of them to go to.
+	function peopleSection(title, rows, draw) {
+		if (!rows.length) return null;
+		const box = menuEl('section', 'nav-account-section');
+		box.append(menuEl('div', 'nav-account-head', title), ...rows.map(draw));
+		return box;
+	}
+
+	function drawActive(data, people) {
+		const peopleSections = [
+			peopleSection('Played recently', people.recent || [], (p) => personRow(p, menuDay(p.last_at))),
+			peopleSection('Play most often', people.often || [], (p) => personRow(p, p.frames === 1 ? '1 frame' : p.frames + ' frames'))
+		].filter(Boolean);
 		const sections = [
 			activeSection('Matches', '/matches/', data.matches || [], activeMatch),
 			activeSection('Leagues', '/leagues/', data.leagues || [], activeLeague),
 			activeSection('Tournaments', '/tournaments/', data.tournaments || [], activeTournament)
 		].filter(Boolean);
 		if (sections.length) {
-			accountList.replaceChildren(...sections);
+			accountList.replaceChildren(...peopleSections, ...sections);
 			return;
 		}
 		const box = menuEl('section', 'nav-account-section');
@@ -298,15 +361,16 @@
 			menuRow('/matches/new/', '', 'Start a match', []),
 			menuRow('/leagues/', '', 'Find a league', []),
 			menuRow('/tournaments/', '', 'Find a tournament', []));
-		accountList.replaceChildren(menuEl('p', 'nav-account-empty', 'You are not in anything right now.'), box);
+		accountList.replaceChildren(...peopleSections, menuEl('p', 'nav-account-empty', 'You are not in anything right now.'), box);
 	}
 
 	async function loadActive() {
 		if (!accountList) return;
 		const read = ++activeRead;
-		const work = supabaseClient.rpc('tdc_my_active');
-		const { data, error } = await TDC.busy(accountDots, work);
+		const work = Promise.all([supabaseClient.rpc('tdc_my_active'), supabaseClient.rpc('tdc_my_people')]);
+		const [active, people] = await TDC.busy(accountDots, work);
 		if (read !== activeRead) return;
+		const error = active.error || people.error;
 		if (error) {
 			const note = menuEl('div', 'nav-account-note');
 			const said = menuEl('p');
@@ -315,7 +379,7 @@
 			TDC.showSupabaseError(AREA, error, said);
 			return;
 		}
-		drawActive(data || {});
+		drawActive(active.data || {}, people.data || {});
 	}
 
 	// --- Profile icon: the profile menu when logged in, login page when not ---

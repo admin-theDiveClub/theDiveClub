@@ -1504,3 +1504,28 @@ These predate the log. They are recorded here because every one of them is a dec
 *Rejected:* "The Dive Club +2" on cards (Claude's recommendation; UV chose every name). The maps link instead of a venue page (Claude's recommendation; UV chose the page). Showing a played-at venue by writing it to `tbl_matches.venue_id`: that column gives staff rights.
 *So:* `docs/systems/foundations.md`, "Where a venue is shown". D1 (STATUS §0) was to come before the venue page; UV asked for the page now, so D1 may reshape it.
 *Touches:* migration `20261105203829_venues_shown.sql`, `supabase/tests/059_venues_shown.test.sql` (new), `venues/index.html`, `scripts/venue.js` and `stylesheets/venue.css` (new), `scripts/tdc.js`, `leagues.js`, `league-season.js`, `league-join.js`, `league-fixtures.js`, `league-manage.js`, `league-standings.js`, `league-card.js`, `tournaments.js`, `tournament-bracket.js`, `tournament-manage.js`, `tournament-settings.js`, `tournament-poster.js`, `match.js`, `player.js`, `match/index.html`, `_includes/league/standings.html`, `match.css`, `league.css`
+
+## 2026-11-05 — Follow is one-way and private; the player search is /players/
+
+*Decided by UV:* one-way with no approval; only you can see who you follow, with no follower lists or counts; nobody is told; the search lives at `/players/`, linked as Players in the left menu, and each result only links to the profile; no page for managing follows yet.
+*Why:* a request and answer flow needs somewhere to manage it, which UV did not want yet. Private can be opened up later, but once people have seen who follows whom it cannot be taken back (Claude's reasoning for recommending it).
+*Claude's, for UV to judge:* the green tick once you follow; anybody with a player record can be followed, a walk-in too; the search reusing `tdc_search_opponents`, so it finds account holders and never you; Players last in the left menu.
+*Rejected:* mutual follows; counts on a profile; follower lists; a notification; extending `tdc_player_profile` for the state (a small function of its own keeps "who follows this player" out of anything other people can call).
+*So:* `docs/systems/players.md`, "Follow" and "The player search".
+*Touches:* migration `20261105205913_player_follows.sql` (with `private.tdc_merge_players`), `supabase/tests/061_player_follows.test.sql` (new), `players/index.html`, `scripts/player.js`, `stylesheets/player.css`, `_data/navLinks.json`
+
+## 2026-11-05 — The profile menu's people lists
+
+*Decided by UV:* two lists, players I've played recently and players I play most often, worked out from frames and never stored, marking the ones I follow, each linking to the profile; opponents only, across every finished frame; most often counted in frames, showing the number; above Matches, five people each.
+*Why:* frames are the only record, and a league night's frames are the fair measure: one night against somebody can be several frames but is only one match.
+*Claude's, for UV to judge:* a walkover does not count, since nobody played it; a frame counts by its own state, so a match still being played counts from its first finished frame, and so do finished frames of a match later abandoned; no All › on these lists, since there is no full list to open.
+*Rejected:* teammates on the lists; counting by matches; the lists below Tournaments (Claude's recommendation; UV chose above Matches).
+*So:* `docs/ui.md`, "The profile menu".
+*Touches:* migration `20261105211524_my_people.sql`, `supabase/tests/062_my_people.test.sql` (new), `scripts/nav.js`, `stylesheets/nav.css`
+
+## 2026-11-05 — The profile menu is solid on a phone
+
+*Decided by UV:* solid on a phone, answering the question open since 31 Oct.
+*Why:* it fills the screen there, and on the home page the logo showing through the blur made a green tick over its green hard to see.
+*Claude's, for UV to judge:* above phone width, where the panel is 320px beside the page, it keeps the see-through blurred surface.
+*Touches:* `stylesheets/nav.css`

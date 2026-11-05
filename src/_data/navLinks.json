@@ -14,5 +14,9 @@
   {
     "label": "Leagues",
     "url": "/leagues/"
+  },
+  {
+    "label": "Players",
+    "url": "/players/"
   }
 ]

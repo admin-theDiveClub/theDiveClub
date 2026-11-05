@@ -43,7 +43,9 @@
 		profile: el('pp-tab-profile'), h2h: el('pp-tab-h2h'), cmpTab: el('pp-tab-cmp'),
 		aboutTitle: el('pp-about-title'), about: el('pp-about'), cAbout: el('pp-c-about'),
 		vs: el('pp-vs'), split: el('pp-split'), vsLine: el('pp-vs-line'),
-		meeting: el('pp-meeting'), meetings: el('pp-meetings')
+		meeting: el('pp-meeting'), meetings: el('pp-meetings'),
+		follow: el('pp-follow'), find: el('pp-find'), findInput: el('pp-find-input'),
+		findNote: el('pp-find-note'), findResults: el('pp-find-results')
 	};
 
 	const params = new URLSearchParams(location.search);
@@ -53,6 +55,7 @@
 	let h2h = null;      // tdc_head_to_head
 	let days = 0;        // the period: 0 all time, else the last n days
 	let meetingsAll = false;
+	let iFollow = false; // tdc_i_follow: private to the person looking (UV, 5 Nov)
 
 	// ─── Small helpers ───
 	function node(tag, cls, text) {
@@ -684,6 +687,76 @@
 		}
 	}
 
+	// ─── Follow (UV, 5 Nov) ───
+	// One-way and private: a tap does it, the ring shows a tick in green once
+	// you follow, and nobody else can see it (migration player_follows). The
+	// page re-reads after every write; the icon redraws only if it changed.
+	function drawFollow() {
+		const name = them.player.display_name;
+		const label = iFollow ? 'Following ' + name + '. Tap to stop' : 'Follow ' + name;
+		const b = els.follow;
+		b.title = label;
+		b.setAttribute('aria-label', label);
+		b.setAttribute('aria-pressed', String(iFollow));
+		b.classList.toggle('pp-icon-primary', iFollow);
+		b.dataset.icon = iFollow ? 'tick' : 'follow';
+		b.replaceChildren();
+		b.tdcRing = null;
+		wakeIcons();
+	}
+
+	async function readFollow() {
+		const { data, error } = await supabaseClient.rpc('tdc_i_follow', { p_player_id: playerId });
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
+		if (data !== iFollow) {
+			iFollow = data;
+			drawFollow();
+		}
+		return true;
+	}
+
+	const followWriter = TDC.writer({ area: AREA, status: els.status, reload: readFollow });
+	els.follow.addEventListener('click', () => {
+		const follow = !iFollow;
+		followWriter.write(follow ? 'Following' : 'Stopping', () => supabaseClient.rpc('tdc_set_follow', {
+			p_player_id: playerId,
+			p_follow: follow
+		}), () => '', { single: 'follow', dots: els.follow });
+	});
+
+	// ─── Finding a player (UV, 5 Nov) ───
+	// /players/ with nobody in the address. Each result only links to the
+	// profile. tdc_search_opponents already answers this: everyone with an
+	// account but you, at least two letters typed.
+	let findRun = 0;
+	async function findPlayers(term) {
+		const run = ++findRun;
+		TDC.status(els.findNote, '', '');
+		if (term.trim().length < 2) { els.findResults.replaceChildren(); return; }
+
+		const { data, error } = await TDC.busy(el('pp-find-dots'), supabaseClient.rpc('tdc_search_opponents', { p_query: term, p_limit: 20 }));
+		if (run !== findRun) return;   // a later keystroke has overtaken this one
+		if (error) { TDC.showSupabaseError(AREA, error, els.findNote); return; }
+
+		if (!data.length) TDC.status(els.findNote, 'Nobody by that name. Only players with an account can be found.', '');
+		els.findResults.replaceChildren(...data.map((p) => {
+			const row = node('a', 'pp-row');
+			row.href = '/players/?p=' + encodeURIComponent(p.id);
+			const names = node('span', 'pp-row-names');
+			names.append(node('span', 'pp-row-name', p.display_name));
+			if (p.full_name) names.append(node('span', 'muted pp-row-sub', p.full_name));
+			row.append(avatar(p.avatar_path, p.display_name, 'pp-row-pic'), names);
+			return row;
+		}));
+	}
+
+	let findTimer = null;
+	els.findInput.addEventListener('input', () => {
+		clearTimeout(findTimer);
+		const term = els.findInput.value;
+		findTimer = setTimeout(() => findPlayers(term), 250);
+	});
+
 	el('pp-share').addEventListener('click', async () => {
 		const url = location.origin + '/players/?p=' + encodeURIComponent(playerId);
 		const title = (them ? them.player.display_name : 'A player') + ' — The Dive Club';
@@ -717,7 +790,8 @@
 		const session = await TDC.requireSession(AREA);
 		if (!session) return;
 		if (!playerId) {
-			TDC.error(AREA, 'no player in the address. Open this page from a player\'s name.', null, els.status);
+			document.title = 'Players — The Dive Club';
+			els.find.hidden = false;
 			return;
 		}
 
@@ -728,13 +802,17 @@
 		if (!them.player.is_me) {
 			const me = await TDC.getMyPlayer(AREA, session.user.id, els.status);
 			if (!me) return;
-			const [mp, hh] = await Promise.all([
+			const [mp, hh, fw] = await Promise.all([
 				supabaseClient.rpc('tdc_player_profile', { p_player_id: me.id }),
-				supabaseClient.rpc('tdc_head_to_head', { p_player_id: playerId })
+				supabaseClient.rpc('tdc_head_to_head', { p_player_id: playerId }),
+				supabaseClient.rpc('tdc_i_follow', { p_player_id: playerId })
 			]);
 			if (!check(mp, 'profile') || !check(hh, 'head to head')) return;
 			mine = mp.data;
 			h2h = hh.data;
+			// Not through check(): false is a good answer here.
+			if (fw.error) { TDC.showSupabaseError(AREA, fw.error, els.status); return; }
+			iFollow = fw.data;
 		}
 
 		views = [view(els.profile, them)];
@@ -748,7 +826,7 @@
 		showTab(params.get('tab'));
 		els.body.hidden = false;
 		fitName();   // measured once it is shown
-		wakeIcons();
+		if (them.player.is_me) wakeIcons(); else drawFollow();
 		const places = await teamPlaces();
 		for (const v of views) renderTeams(v, places);
 	})(), 'The player');

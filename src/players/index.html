@@ -21,14 +21,28 @@ extraScripts:
 
 	Every number is counted by scripts/player.js from tdc_player_profile and
 	tdc_head_to_head (migration 20261105044302). Signed in only (UV, 5 Nov).
-	Challenge, Follow, the rematch, Home venue and More have nothing behind
-	them yet: a tap says so (UV, 5 Nov). The hero's chips moved to About the
-	same day (UV). Honours are off the page until they are built (UV, 5 Nov;
+	Challenge, the rematch, Home venue and More have nothing behind them yet:
+	a tap says so (UV, 5 Nov). The hero's chips moved to About the same day
+	(UV). Honours are off the page until they are built (UV, 5 Nov;
 	docs/BACKLOG.md).
+
+	With no player in the address, /players/ is the player search, linked as
+	Players in the left menu (UV, 5 Nov): each result links to the profile.
 {% endcomment %}
 
 <div class="tdc-card player-page">
 	<p id="pp-status" class="status" role="status"></p>
+
+	<section id="pp-find" hidden>
+		<h1>Players</h1>
+		<label for="pp-find-input" class="pp-sr">Search for a player</label>
+		<div class="pp-find-field">
+			<input type="search" id="pp-find-input" autocomplete="off" placeholder="Search by name">
+			<span class="pp-find-dots" id="pp-find-dots" aria-hidden="true"></span>
+		</div>
+		<p id="pp-find-note" class="status" role="status"></p>
+		<div id="pp-find-results" class="pp-find-results"></div>
+	</section>
 
 	<div id="pp-body" hidden>
 		<header class="pp-hero">
@@ -48,7 +62,7 @@ extraScripts:
 			     data-others: only on somebody else's profile. -->
 			<div class="pp-actions" id="pp-actions">
 				<button type="button" class="pp-icon pp-icon-primary" data-icon="cue" data-others data-unbuilt="Challenge" title="Challenge" aria-label="Challenge"></button>
-				<button type="button" class="pp-icon" data-icon="follow" data-others data-unbuilt="Follow" title="Follow" aria-label="Follow"></button>
+				<button type="button" class="pp-icon" id="pp-follow" data-icon="follow" data-others title="Follow" aria-label="Follow" aria-pressed="false"></button>
 				<button type="button" class="pp-icon" id="pp-share" data-icon="share" title="Share profile" aria-label="Share profile"></button>
 				<button type="button" class="pp-icon" data-icon="more" data-unbuilt="More options" title="More options" aria-label="More options"></button>
 			</div>

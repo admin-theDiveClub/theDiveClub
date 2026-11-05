@@ -229,7 +229,15 @@ body {
 /* Its slide out finishes before it is hidden. */
 .nav-account:not(.open) { transition: transform 0.25s ease, visibility 0s linear 0.25s; }
 @media (max-width: 40rem) {
-	.nav-account { width: 100%; border-left: none; }
+	/* Solid on a phone (UV, 5 Nov): it fills the screen, and the page showing
+	   through made a green tick over the logo's green hard to see. */
+	.nav-account {
+		width: 100%;
+		border-left: none;
+		background: var(--bg-base);
+		backdrop-filter: none;
+		-webkit-backdrop-filter: none;
+	}
 }
 
 /* The player banner: picture, display name, full name. The whole of it is
@@ -377,6 +385,39 @@ body {
 	font-variant-numeric: tabular-nums;
 }
 .nav-account-row-right.badge { font-size: 0.75rem; font-weight: 400; }
+/* The people lists: a picture, the name, a green tick if you follow them, and
+   when or how many at the right. Lighter than a row: nothing here is going on. */
+.nav-account-person {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	padding: 0.3rem 0;
+	color: var(--text-primary);
+	text-decoration: none;
+	-webkit-tap-highlight-color: transparent;
+}
+.nav-account-person:hover,
+.nav-account-person:focus-visible { background: var(--hover-wash); outline: none; }
+.nav-account-person-pic {
+	flex: none;
+	width: 2rem;
+	height: 2rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	border-radius: var(--radius-round);
+	border: 1px solid var(--border-color);
+	background: var(--bg-base);
+	color: var(--text-muted);
+	font-size: 0.75rem;
+	font-weight: 600;
+}
+.nav-account-person-pic img { width: 100%; height: 100%; object-fit: cover; }
+.nav-account-person-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.nav-account-person-follow { display: inline-block; width: 1em; height: 1em; margin-left: 0.3em; vertical-align: -0.1em; }
+.nav-account-person-follow svg { display: block; width: 100%; height: 100%; fill: none; stroke: var(--color-primary); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.nav-account-person-right { flex: none; color: var(--text-muted); font-size: 0.8rem; }
 .nav-account-empty {
 	margin: 0;
 	padding: var(--space-5) var(--space-4) var(--space-3);
