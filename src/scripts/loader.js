@@ -23,8 +23,9 @@
 //     waits while it is (dots.js): its targets are under the screen
 //   TDCLoader.cover(host, label)
 //     a screen over one part of the page only (UV, 5 Nov): a tab opened after
-//     the page has loaded. The same look, blur and the dive, sized to the
-//     host, the diver in the part of it on the screen. Any hold made while it
+//     the page has loaded. The wordmark and the dive, sized to the host, the
+//     diver in the part of it on the screen; no blur: the host's content is
+//     invisible until it is ready, then fades in. Any hold made while it
 //     is up, and the page's screen is not, joins it rather than bringing the
 //     page's screen back; it goes when they have all settled, as the page's
 //     does. With the page's screen up there is nothing to cover: it is held
@@ -224,8 +225,10 @@ const TDCLoader = (() => {
 
 	// ─── A screen over one part of the page (UV, 5 Nov) ───
 	// A tab opened after the page has loaded: the screen over that tab only,
-	// the rest of the page (the nav, the tab bar) left as it is. The same
-	// parts as the page's screen, built into the host: the box over the whole
+	// the rest of the page (the nav, the tab bar) left as it is. No blur (UV,
+	// 5 Nov, second look): the tab's content is invisible until it has
+	// loaded, then fades in (loader.css). The
+	// same parts as the page's screen, built into the host: the box over the whole
 	// host, and inside it a view that stays on the screen (sticky under the
 	// nav) as tall as the part of the host that fits, with the wordmark and
 	// the diver in it. The host keeps some height while covered, so a tab
@@ -312,6 +315,9 @@ const TDCLoader = (() => {
 			el.dataset.state = 'leaving';
 			el.setAttribute('aria-busy', 'false');
 			if (diver) diver.stop();
+			// The tab's content, invisible while covered, fades in as the
+			// wordmark and diver fade out (loader.css, UV 5 Nov).
+			host.classList.add('tdc-revealed');
 			setTimeout(() => {
 				removeEventListener('scroll', replace);
 				removeEventListener('resize', replace);
@@ -319,7 +325,7 @@ const TDCLoader = (() => {
 				cancelAnimationFrame(placing);
 				if (diver) diver.destroy();
 				el.remove();
-				if (!covers.some((o) => o.host === host)) host.classList.remove('tdc-covered');
+				if (!covers.some((o) => o.host === host)) host.classList.remove('tdc-covered', 'tdc-revealed');
 			}, fadeMs() + 50);
 		};
 		const hang = setTimeout(() => {

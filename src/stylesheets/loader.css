@@ -56,21 +56,31 @@
 }
 
 /* A screen over one tab only (loader.js cover(), UV 5 Nov): a tab opened
-   after the page has loaded. The page's look, over the host alone, under the
-   nav (100) and above anything the tab raises (its sticky headings). Its view
-   is the part of the host on the screen under the nav, kept there by
-   loader.js as the page scrolls (top and height), so the diver falls in the
-   part you can see. The
-   host keeps some height while covered: a tab that has drawn nothing yet
-   would otherwise leave no room for it. */
+   after the page has loaded. Over the host alone, under the nav (100) and
+   above anything the tab raises (its sticky headings). Its view is the part
+   of the host on the screen under the nav, kept there by loader.js as the
+   page scrolls (top and height), so the diver falls in the part you can see.
+   The host keeps some height while covered: a tab that has drawn nothing
+   yet would otherwise leave no room for it.
+   No blur (UV, 5 Nov, second look: nothing of a tab shows until it has
+   loaded): the tab's own content is invisible while covered, only the
+   wordmark and the diver show, and once it is ready the content fades in
+   (.tdc-revealed) as the wordmark and diver fade out, over --loader-fade. */
 .tdc-covered {
 	position: relative;
 	min-height: min(60dvh, 30rem);
+}
+.tdc-covered > :not(.tdc-loader-cover) { opacity: 0; }   /* at once, not faded out */
+.tdc-covered.tdc-revealed > :not(.tdc-loader-cover) {
+	opacity: 1;
+	transition: opacity var(--loader-fade) ease;
 }
 .tdc-loader-cover {
 	position: absolute;
 	z-index: 50;
 	animation: none;
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
 }
 .tdc-loader-view {
 	position: absolute;
