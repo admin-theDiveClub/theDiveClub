@@ -65,6 +65,7 @@ Business to-dos (the club itself, not the code) live on the owner board at `/sta
 | `docs/systems/tournaments.md` | Draws, progression, the bracket, overrides, officials, publishing, entry, the poster, round rules, editing a draw |
 | `docs/systems/leagues.md` | Leagues, seasons, teams, entrants, fixtures, lineups, the captain's scorecard, entry |
 | `docs/systems/notifications.md` | The notification record, the push sweep, the tray |
+| `docs/systems/players.md` | The player profile page and head to head, and how its numbers are counted |
 | `docs/systems/project-board.md` | The owner board |
 | `docs/systems/dots.md` | The dots: the site's loading and feedback motion (in progress) |
 | `docs/systems/tests.md` | The local Supabase copy, how it is kept identical to production, and how to write and run tests |

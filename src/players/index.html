@@ -1,19 +1,139 @@
 ---
 layout: layout.html
 title: Player
-description: "A player's own page."
+description: "A player's profile: form, stats, leagues and teams, and how you match up."
+extraStyles:
+  - /stylesheets/league.css
+  - /stylesheets/player.css
+extraScripts:
+  - /scripts/match-settings.js
+  - /scripts/league-standings-def.js
+  - /scripts/player.js
 ---
 {% comment %}
 	A player's profile page, reached as /players/?p=<player id> from a name on
-	a league's season page. Not built yet (UV, 24 Oct: "still to be made",
-	docs/STATUS.md §4); this page says so rather than the link landing on
-	nothing. Your own account is /accounts/profile/.
+	a league's season page or its standings. Built 5 Nov from UV's combined
+	design (artboard D on the "Player Profile Designs" canvas): the hero, then
+	a toggle between the player's Profile and Head to head (you against them).
+	Your own profile shows no toggle; your account settings stay on
+	/accounts/profile/.
+
+	Every number is counted by scripts/player.js from tdc_player_profile and
+	tdc_head_to_head (migration 20261105044302). Signed in only (UV, 5 Nov).
+	Challenge, Follow, the rematch, Home venue, More and trophies have nothing
+	behind them yet: a tap says so (UV, 5 Nov).
 {% endcomment %}
 
-<div class="tdc-card">
-	<h1>Player</h1>
-	<p>Player pages are not built yet. They will show a player's picture, their teams and leagues, and how they have played.</p>
-	<div class="link-row">
-		<a href="/leagues/">Back to leagues</a>
+<div class="tdc-card player-page">
+	<div class="pp-topbar">
+		<button type="button" class="pp-ring" id="pp-back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+		<span class="pp-topbar-title">Player</span>
+		<button type="button" class="pp-ring" id="pp-share" aria-label="Share profile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 13v6h14v-6"/></svg></button>
+		<button type="button" class="pp-ring" data-unbuilt="More options" aria-label="More options"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>
+	</div>
+	<p id="pp-status" class="status" role="status"></p>
+
+	<div id="pp-body" hidden>
+		<header class="pp-hero">
+			<div class="pp-pic-wrap">
+				<div class="pp-pic" id="pp-pic"></div>
+				<span class="pp-verified" id="pp-verified" title="ID verified" hidden><svg viewBox="0 0 24 24" role="img" aria-label="ID verified"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+			</div>
+			<h1 id="pp-name"></h1>
+			<p class="muted pp-full" id="pp-full"></p>
+			<div class="pp-chips" id="pp-chips"></div>
+			<div id="pp-others">
+				<div class="pp-actions">
+					<button type="button" class="pp-btn pp-btn-primary" data-unbuilt="Challenge">Challenge</button>
+					<button type="button" class="pp-btn" data-unbuilt="Follow">Follow</button>
+				</div>
+				<button type="button" class="pp-btn pp-btn-quiet" id="pp-compare">Compare with me</button>
+			</div>
+			<p class="status" data-note role="status"></p>
+		</header>
+
+		<div class="cp-views pp-views" id="pp-views" role="group" aria-label="Show">
+			<button type="button" class="cp-view" data-tab="profile" aria-pressed="true">Profile</button>
+			<button type="button" class="cp-view" data-tab="h2h" aria-pressed="false">Head to head</button>
+		</div>
+
+		<div id="pp-tab-profile">
+			<section class="pp-section">
+				<h2>Form</h2>
+				<p class="muted pp-sub">Last 10 matches · newest right</p>
+				<div class="pp-form" id="pp-form"></div>
+			</section>
+
+			<section class="pp-section">
+				<h2>Stats</h2>
+				<div class="cp-views pp-period" id="pp-period" role="group" aria-label="Period">
+					<button type="button" class="cp-view" data-days="0" aria-pressed="true">All time</button>
+					<button type="button" class="cp-view" data-days="90" aria-pressed="false">Last 90 days</button>
+					<button type="button" class="cp-view" data-days="30" aria-pressed="false">Last 30 days</button>
+				</div>
+				<div class="pp-grid" id="pp-grid"></div>
+			</section>
+
+			<section class="pp-section">
+				<h2>Frames won per night</h2>
+				<p class="muted pp-sub">Last 12 nights in the period · grey: more lost than won</p>
+				<div class="pp-bars" id="pp-bars"></div>
+				<div class="pp-bar-labels muted" id="pp-bar-labels"></div>
+			</section>
+
+			<section class="pp-section">
+				<h2>On the break</h2>
+				<div class="pp-meters" id="pp-break"></div>
+			</section>
+
+			<section class="pp-section">
+				<h2>Leagues &amp; teams</h2>
+				<div class="pp-list" id="pp-teams"></div>
+			</section>
+
+			<section class="pp-section">
+				<h2>Recent matches</h2>
+				<div id="pp-recent"></div>
+				<h3 class="pp-h3">Last match frames</h3>
+				<div id="pp-last"></div>
+			</section>
+
+			<section class="pp-section">
+				<h2>Honours</h2>
+				<div class="pp-honours" id="pp-honours"></div>
+				<p class="status" data-note role="status"></p>
+			</section>
+
+			<section class="pp-section">
+				<h2 id="pp-about-title">About</h2>
+				<dl class="pp-about" id="pp-about"></dl>
+				<p class="status" data-note role="status"></p>
+			</section>
+		</div>
+
+		<div id="pp-tab-h2h" hidden>
+			<section class="pp-section pp-versus">
+				<div class="pp-vs" id="pp-vs"></div>
+				<div class="pp-split" id="pp-split"></div>
+				<p class="pp-vs-line" id="pp-vs-line"></p>
+			</section>
+
+			<section class="pp-section">
+				<div class="pp-panel" id="pp-meeting"></div>
+			</section>
+
+			<section class="pp-section">
+				<h2>Side by side</h2>
+				<p class="muted pp-sub">All time</p>
+				<div class="pp-cmp" id="pp-cmp"></div>
+			</section>
+
+			<section class="pp-section">
+				<h2>Every meeting</h2>
+				<div id="pp-meetings"></div>
+				<button type="button" class="pp-btn pp-btn-primary pp-rematch" data-unbuilt="Challenge to a rematch">Challenge to a rematch</button>
+				<p class="status" data-note role="status"></p>
+			</section>
+		</div>
 	</div>
 </div>

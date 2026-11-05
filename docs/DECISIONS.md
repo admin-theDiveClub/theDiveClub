@@ -1267,3 +1267,11 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to confirm:* Instagram, Facebook, TikTok and WhatsApp as the four socials; links cream with a half-strength green underline, plain information muted; About and Contact kept although they have no pages yet; the tagline wording; the match page without the footer.
 *So:* `docs/ui.md`, "The footer".
 *Touches:* `_includes/footer.html` (new), `stylesheets/footer.css` (new), `_includes/layout.html`, `match/index.html`
+
+## 2026-11-05 — The player profile page, from the combined design
+
+*Decided by UV:* the three profile designs combined into one (artboard D, every element kept, the sport selector left out), then built on `/players/` with a toggle below Compare with me between the player's profile and head to head. Four answers before building: Follow, Challenge, the rematch, Honours' trophies and Home venue are shown though nothing is behind them, and a tap says "not built yet"; a team league night counts as a match the player played a frame in, won if their side won; the period is All time · Last 90 days · Last 30 days ("this season" has no single meaning across leagues); signed in only.
+*Claude's, for UV to judge:* only finished matches and their finished frames count (a match in progress, or a league night not yet signed by both, adds nothing); head to head counts only the frames the two played against each other, a meeting won by whoever won more of them; "Lags won" is frames broken, as the standings count it; honours shows the golden breaks, break and finishes and best win streak that can be counted today, beside a Trophies tile not built; a bar under the nav with Back, Share (works) and More (not built); the team's place ranked with that league's own standings columns; your own profile shows no toggle and no buttons for others.
+*Noted:* STATUS §0 says D1 (one profile, an environment per sport) should be settled before the player page. UV set the multi-sport option aside for this build.
+*So:* `docs/systems/players.md`.
+*Touches:* migration `20261105044302_player_profile.sql`, `supabase/tests/045_player_profile.test.sql`, `players/index.html`, `scripts/player.js` (new), `stylesheets/player.css` (new)
