@@ -1,0 +1,296 @@
+/* The page a league director shares (/leagues/join/, scripts/league-join.js;
+ * UV, 5 Nov: as much about the league as there is, in the site's look, the
+ * match stage and the league scorecard its inspiration). Loaded after
+ * league.css, whose .jumbo banner, .jumbo-facts, .team-pic and .person it
+ * uses. Tokens only.
+ *
+ * The stage's language, off the stage: a green line as heavy as the pill's
+ * (--match-break-stroke) with its inner glow; panels set into the page with
+ * the halves' inside shadow, cast by the drifting light (--page-shadow-x/y,
+ * page-light.js); numbers in the display face with the scores' drop shadow
+ * (--match-mark-shadow). */
+
+.lj-page { padding-top: var(--space-4); }
+.lj-page .muted { color: var(--text-muted); }
+
+/* A surface set into the page, as the stage's halves are. */
+.lj-set-in,
+.lj-num,
+.lj-rule-box,
+.lj-night,
+.lj-team,
+.lj-notes {
+	position: relative;
+	border-radius: var(--radius-md);
+	background: var(--bg-surface);
+	box-shadow: inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
+}
+
+/* ── The banner: the scorecard's, the picture and names as the profile's
+ * hero (the picture against the centre line, the names against it) ── */
+.lj-hero { grid-template-columns: minmax(0, 1fr); }
+.lj-id {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	align-items: center;
+	column-gap: var(--space-4);
+}
+.lj-pic {
+	display: block;
+	width: 6.5rem;
+	height: 6.5rem;
+	padding: var(--space-1);
+	border-radius: var(--radius-round);
+	background: conic-gradient(var(--strip-color, var(--color-primary)), color-mix(in srgb, var(--strip-color, var(--color-primary)) 15%, transparent), var(--strip-color, var(--color-primary)));
+	box-shadow: 0 0 28px color-mix(in srgb, var(--strip-color, var(--color-primary)) 35%, transparent);
+	box-sizing: border-box;
+}
+.lj-pic-inner {
+	display: grid;
+	place-items: center;
+	width: 100%;
+	height: 100%;
+	border: 3px solid var(--bg-base);
+	border-radius: var(--radius-round);
+	box-sizing: border-box;
+	overflow: hidden;
+	background: var(--bg-surface);
+	color: var(--color-primary);
+}
+.lj-pic-inner svg { width: 55%; height: 55%; }
+.lj-pic-inner img { width: 100%; height: 100%; object-fit: cover; }
+.lj-names { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); min-width: 0; }
+.lj-names .jumbo-status { font-family: var(--font-body); }
+.tdc-card .lj-names h1 {
+	margin: 0;
+	font-family: var(--font-display);
+	font-weight: 400;
+	font-size: clamp(1.5rem, 7vw, 2.5rem);   /* the screen's width, not a breakpoint: a long word must fit beside the picture */
+	line-height: 1.05;
+	text-align: left;
+	overflow-wrap: break-word;
+	text-wrap: balance;
+	text-shadow: var(--match-mark-shadow);
+}
+.tdc-card .lj-season { margin: 0; color: var(--text-muted); text-align: left; }
+
+@media (max-width: 30rem) {
+	.lj-pic { width: 5rem; height: 5rem; }
+	.lj-hero .jumbo-facts { grid-template-columns: repeat(auto-fill, minmax(min(100%, 8.5rem), 1fr)); }
+}
+
+/* ── Where I stand: the stage's green pill, its line, inner glow and the
+ * halves' inside shadow, with the button in the stage buttons' look ── */
+.lj-stage {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--space-2);
+	margin: 0 0 var(--space-5);
+	padding: var(--space-5) var(--space-4);
+	border: var(--match-break-stroke) solid var(--color-primary);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--match-mark-shadow);
+	text-align: center;
+}
+.lj-stage::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	box-shadow: inset 0 0 var(--match-glow-size) var(--match-win-glow-colour),
+		inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
+	pointer-events: none;
+}
+.tdc-card .lj-where {
+	margin: 0;
+	font-family: var(--font-display);
+	font-weight: 400;
+	font-size: 1.9rem;
+	line-height: 1.1;
+	text-transform: none;
+	letter-spacing: normal;
+	text-shadow: var(--match-mark-shadow);
+}
+.tdc-card .lj-where-detail { margin: 0; color: var(--text-muted); max-width: 32rem; }
+.tdc-card .lj-where-detail:empty { display: none; }
+.lj-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); margin-top: var(--space-2); }
+.lj-actions:not(:has(> :not([hidden]))) { display: none; }
+
+.tdc-card .lj-btn,
+.lj-btn {
+	--q: var(--text-primary);
+	--lj-glow: color-mix(in srgb, var(--text-primary) 25%, transparent);
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: auto;
+	min-height: 3.25rem;
+	margin: 0;
+	padding: var(--space-2) var(--space-5);
+	border: var(--match-break-stroke) solid var(--q);
+	border-radius: var(--radius-pill);
+	background: transparent;
+	color: var(--q);
+	font-family: var(--font-display);
+	font-size: 1.35rem;
+	font-weight: 400;
+	letter-spacing: normal;
+	text-transform: none;
+	text-decoration: none;
+	line-height: 1;
+	text-shadow: var(--match-mark-shadow);
+	box-shadow: var(--match-mark-shadow),
+		inset 0 0 var(--match-glow-size) var(--lj-glow),
+		inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
+	transition: background var(--control-reveal) ease;
+	cursor: pointer;
+}
+.lj-btn[hidden] { display: none; }
+.tdc-card .lj-btn-go,
+.lj-btn-go {
+	--q: var(--color-primary);
+	--lj-glow: var(--match-win-glow-colour);
+}
+.lj-btn:not(:disabled):hover,
+.lj-btn:not(:disabled):focus-visible {
+	background: color-mix(in srgb, var(--q) 18%, transparent);
+	outline: none;
+}
+
+/* ── The numbers: the stage's scores, each set into the page ── */
+.lj-numbers {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 6rem), 1fr));
+	gap: var(--space-2);
+	margin-bottom: var(--space-4);
+}
+.lj-num {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-1);
+	padding: var(--space-3) var(--space-2);
+	text-align: center;
+}
+.lj-num-value {
+	font-family: var(--font-display);
+	font-size: 2.25rem;
+	line-height: 1;
+	font-variant-numeric: tabular-nums;
+	color: var(--color-primary);
+	text-shadow: var(--match-mark-shadow);
+}
+.lj-num-label { font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.04em; }
+
+/* ── From whoever runs it ── */
+.tdc-card .lj-notes {
+	margin: 0;
+	padding: var(--space-4);
+	white-space: pre-line;
+	overflow-wrap: break-word;
+	border-left: var(--match-break-stroke) solid var(--color-primary);
+}
+
+/* ── How it is played: a box per group, label and value rows ── */
+.lj-rules {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+	gap: var(--space-3);
+	align-items: start;
+}
+.lj-rule-box { padding: var(--space-3) var(--space-4) var(--space-2); }
+.tdc-card .lj-rule-title {
+	margin: 0 0 var(--space-2);
+	font-size: 0.66rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--color-primary);
+}
+.lj-rule-list { margin: 0; }
+.lj-rule {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--space-3);
+	padding: var(--space-2) 0;
+	border-top: 1px solid var(--border-color);
+}
+.lj-rule:first-child { border-top: none; }
+.lj-rule dt { color: var(--text-muted); font-size: 0.85rem; min-width: 0; }
+.lj-rule dd { margin: 0; text-align: right; font-weight: 600; min-width: 0; overflow-wrap: break-word; }
+
+/* ── The nights: a strip down the left in the state's colour, as the
+ * fixtures and the scorecard have ── */
+.lj-nights { display: flex; flex-direction: column; gap: var(--space-2); }
+.lj-night {
+	--strip-color: var(--border-color);
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	padding: var(--space-2) var(--space-3);
+	border-left: var(--space-1) solid var(--strip-color);
+}
+.lj-night.is-next { --strip-color: var(--color-primary); }
+.lj-night.is-live { --strip-color: var(--color-warning); }
+.lj-night.is-done { --strip-color: var(--text-muted); }
+.lj-night-n {
+	flex: 0 0 2rem;
+	font-family: var(--font-display);
+	font-size: 1.4rem;
+	text-align: center;
+	color: var(--strip-color);
+	text-shadow: var(--match-mark-shadow);
+}
+.lj-night.is-done .lj-night-n,
+.lj-night:not(.is-next):not(.is-live):not(.is-done) .lj-night-n { color: var(--text-muted); }
+.lj-night-main { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.lj-night-day { font-weight: 600; }
+.lj-night-sub { font-size: 0.78rem; color: var(--text-muted); }
+.lj-night-state { font-size: 0.78rem; font-weight: 700; color: var(--strip-color); white-space: nowrap; }
+.lj-night.is-next .lj-night-state { color: var(--color-primary); }
+.lj-night:not(.is-next):not(.is-live):not(.is-done) .lj-night-state { color: var(--text-muted); }
+
+/* ── The teams: a card each, opening the team on the season page ── */
+.lj-teams {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+	gap: var(--space-3);
+}
+.lj-team {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+	padding: var(--space-3);
+	color: inherit;
+	text-decoration: none;
+	transition: box-shadow 0.15s;
+}
+.lj-team:hover,
+.lj-team:focus-visible {
+	box-shadow: var(--glow-primary),
+		inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
+	outline: none;
+}
+.lj-team-head { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+.lj-team-head .team-pic { width: 3rem; height: 3rem; }
+.lj-team-names { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.lj-team-name { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.1; overflow-wrap: break-word; }
+.lj-team-sub { font-size: 0.78rem; color: var(--text-muted); }
+.lj-team-places { display: flex; flex-direction: column; align-items: center; line-height: 1; }
+.lj-team-places-n {
+	font-family: var(--font-display);
+	font-size: 1.6rem;
+	color: var(--color-primary);
+	text-shadow: var(--match-mark-shadow);
+}
+.lj-team-places-of { font-size: 0.7rem; color: var(--text-muted); }
+.lj-team-faces { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.lj-team-faces .person-pic { width: 2rem; height: 2rem; font-size: 0.7rem; }
+
+/* ── Who runs it ── */
+.lj-officials { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); justify-content: center; }

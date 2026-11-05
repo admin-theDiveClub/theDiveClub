@@ -4,7 +4,9 @@ title: Join a League
 description: "What this league is, and how to put your name down."
 extraStyles:
   - /stylesheets/league.css
+  - /stylesheets/league-join.css
 extraScripts:
+  - /scripts/match-settings.js
   - /scripts/league-join.js
 ---
 {% comment %}
@@ -17,21 +19,55 @@ extraScripts:
 	league player has to be able to confirm their own place and a walk-in
 	cannot.
 
+	Everything there is to know about the league, before deciding (UV, 5 Nov):
+	the banner in the scorecard's look, the button on a panel in the match
+	stage's (the green pill's line, glow and light-cast shadows), the numbers
+	as the stage's scores, then every rule, the nights, the teams with their
+	players, and who runs it. Every read is one the season page already makes.
+
 	Reached as /leagues/join/?s=<league season id>.
 {% endcomment %}
 
-<div class="tdc-card">
-	<h1 id="l-name">League</h1>
-	<p class="muted" id="l-meta"></p>
-
-	<div class="panel" id="where-panel">
-		<h2 id="where-line"></h2>
-		<p class="muted" id="where-detail"></p>
-		<div class="btn-row">
-			<button type="button" class="btn btn-primary btn-sm" id="interest-btn" hidden>Put my name down</button>
-			<a class="btn btn-secondary btn-sm" id="season-link" href="#" hidden>Open the league</a>
+<div class="tdc-card wide lj-page">
+	<section class="jumbo lj-hero" id="jumbo">
+		<div class="lj-id">
+			<span class="lj-pic"><span class="lj-pic-inner" id="l-pic"></span></span>
+			<div class="lj-names">
+				<span class="badge jumbo-status" id="l-status" hidden></span>
+				<h1 id="l-name">League</h1>
+				<p class="lj-season" id="l-meta"></p>
+			</div>
 		</div>
+		<dl class="jumbo-facts" id="l-facts"></dl>
+	</section>
+
+	<section class="lj-stage" id="where-panel" aria-live="polite">
+		<h2 class="lj-where" id="where-line"></h2>
+		<p class="lj-where-detail" id="where-detail"></p>
+		<div class="lj-actions">
+			<button type="button" class="lj-btn lj-btn-go" id="interest-btn" hidden>Put my name down</button>
+			<a class="lj-btn" id="season-link" href="#" hidden>Open the league</a>
+		</div>
+	</section>
+
+	<section class="lj-numbers" id="l-numbers" aria-label="The league in numbers"></section>
+
+	<div class="lj-notes-box" id="notes-box" hidden>
+		<h2>From whoever runs it</h2>
+		<p class="lj-notes" id="l-notes"></p>
 	</div>
+
+	<h2>How it is played</h2>
+	<div class="lj-rules" id="l-rules"></div>
+
+	<h2>Nights <span class="badge" id="night-count" hidden></span></h2>
+	<div class="lj-nights" id="l-nights"></div>
+
+	<h2>Teams <span class="badge" id="team-count" hidden></span></h2>
+	<div class="lj-teams" id="l-teams"></div>
+
+	<h2>Who runs it</h2>
+	<div class="lj-officials" id="l-officials"></div>
 
 	<div class="status" id="page-status"></div>
 
