@@ -1336,3 +1336,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Rejected:* splitting rounds by position for outside to inside; ring icon buttons for the director now; a separate icon toggle for names.
 *So:* `docs/systems/tournaments.md`, "The draw page redesigned".
 *Touches:* migration `20261105095518_draw_pictures_full_names.sql`, `supabase/tests/049_draw_pictures_full_names.test.sql` (new), `tournaments/bracket/index.html`, `scripts/tournament-bracket.js`, `stylesheets/bracket.css`
+
+## 2026-11-05 — Players dragged onto the draw; the Wiring panel goes
+
+*Decided by UV:* every entrant as a pill (picture left, name inside, only as wide as the name) in a row under the draw's view toggles, each draggable; a pill dropped on a card's slot changes the player; a player dragged from one round to another changes the progression wiring, replacing the Wiring panel; the confirmation comes up by itself on the drop, with no panel and no button. This reverses Claude's 21 Oct "a picker, not drag-and-drop" (accepted by UV then).
+*Claude's, for UV to judge:* the pills are the director's alone (the entrant list is theirs) and leave out withdrawn entrants; on a phone a drag starts after holding 0.35 s, so a swipe still scrolls; a slot dropped on its own round is ignored; a drop into the third-place playoff wires the loser, anywhere else the winner; an empty or "Winner of …" slot can be dragged too (it stands for whoever comes out of its match); the picker on a name stays, for a keyboard and a one-handed tap; the arrows are no longer clickable; a line under the pills says how to drag. **Lost with the panel:** un-feeding an empty slot (pointing it at nothing).
+*So:* `docs/systems/tournaments.md`, "Dragging players onto the draw".
+*Touches:* migration `20261105102452_entrants_pictures.sql`, `supabase/tests/050_entrants_pictures.test.sql` (new), `tournaments/bracket/index.html`, `scripts/tournament-bracket.js`, `stylesheets/bracket.css`

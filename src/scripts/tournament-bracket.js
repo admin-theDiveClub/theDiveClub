@@ -39,9 +39,7 @@
 		roundRulesRest: el('round-rules-rest'), roundRulesLater: el('round-rules-later'),
 		roundRulesSave: el('round-rules-save'), roundRulesClear: el('round-rules-clear'),
 		roundRulesCancel: el('round-rules-cancel'), roundRulesStatus: el('round-rules-status'),
-		wiring: el('wiring'), wiringHead: el('wiring-head'), wiringNote: el('wiring-note'),
-		wiringBody: el('wiring-body'), wiringSave: el('wiring-save'),
-		wiringCancel: el('wiring-cancel'), wiringStatus: el('wiring-status')
+		entrants: el('entrants'), entrantPills: el('entrant-pills')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -292,6 +290,9 @@
 		// progression overlay anchors to these rather than to the fixture box,
 		// because a slot is what a source feeds — not the match.
 		row.dataset.side = which;
+		// For a director, a slot is also something to drag: onto a slot in
+		// another round, it sends this match's winner there (dragging, below).
+		if (!readOnly) row.dataset.drag = 'slot';
 
 		row.append(swapCell, picCell, nameCell, scoreCell);
 		return row;
@@ -395,6 +396,7 @@
 		fullNames = els.fullNames.checked;
 		try { localStorage.setItem(NAMES_KEY, fullNames ? 'full' : 'display'); } catch (err) { /* kept for this visit only */ }
 		render();
+		renderEntrants();
 	});
 
 	// The view toggles: each press sets its key, is kept, and the bracket is
@@ -466,12 +468,12 @@
 			row.append(action('start', f.fixture_id, 'Start match', 'btn-secondary'));
 		}
 
-		// Where the two slots come from, and the undo for adding a match.
-		// Both only while nothing has been played: a fixture with a match has
-		// settled sides, and the functions refuse either way — offering a
-		// button that always refuses is worse than not offering it.
+		// The undo for adding a match. Only while nothing has been played: a
+		// fixture with a match has settled sides, and the function refuses
+		// either way — offering a button that always refuses is worse than
+		// not offering it. Where its slots come from is changed by dragging
+		// (UV, 5 Nov), which replaced the Wiring button here.
 		if (!f.match_id) {
-			row.append(action('wiring', f.fixture_id, 'Wiring', 'btn-secondary'));
 			row.append(action('remove-fixture', f.fixture_id, 'Remove', 'btn-danger'));
 		}
 
@@ -760,6 +762,7 @@
 		els.setup.hidden = !!fixtures.length || readOnly;
 		els.actions.hidden = !fixtures.length || readOnly;
 		els.viewRow.hidden = !fixtures.length;
+		els.entrants.hidden = !fixtures.length || readOnly;
 		applyView();
 		// A read-only viewer's sides have no swap column (bracket.css).
 		els.bracket.classList.toggle('bracket-ro', readOnly);
@@ -1426,21 +1429,16 @@
 				path.setAttribute('marker-end',
 					'url(#' + (decided ? 'tdc-arrow' : 'tdc-arrow-dim') + ')');
 
-				// Clickable, because the arrow is the most direct way to say
-				// "this, change where it comes from". pointer-events is off on
-				// the svg and back on for the paths, so the arrows never eat a
-				// click meant for a fixture underneath.
+				// Says where it comes from when pointed at. Clicking one opened
+				// the Wiring panel until 5 Nov; the wiring is now changed by
+				// dragging a player onto a slot (UV).
 				if (!readOnly) {
-					path.dataset.act = 'wiring';
-					path.dataset.fixture = f.fixture_id;
-					path.style.cursor = 'pointer';
 					const title = document.createElementNS(SVG_NS, 'title');
 					title.textContent = (source === 'loser_of' ? 'Loser' : 'Winner')
 						+ ' of ' + fixtureName(
 							which === 'home' ? f.home_feeder_bracket : f.away_feeder_bracket,
 							which === 'home' ? f.home_feeder_round : f.away_feeder_round,
-							which === 'home' ? f.home_feeder_position : f.away_feeder_position)
-						+ ' — click to change';
+							which === 'home' ? f.home_feeder_position : f.away_feeder_position);
 					path.append(title);
 				}
 				svg.append(path);
@@ -1531,187 +1529,324 @@
 
 
 	// ─────────────────────────────────────────────────────────────────
-	// Where a slot comes from
+	// The entrants, and dragging a player onto a slot
 	//
-	// Opened by clicking an arrow, or by the Wiring button on a fixture. One
-	// panel for both slots of a fixture rather than a control per slot: UV,
-	// 21 Oct, had the swap button covering the names, and a third control in
-	// each row would be the same mistake again.
+	// UV, 5 Nov: every entrant as a pill above the draw, dragged onto a slot
+	// to put that player in it; and a player dragged from one match onto a
+	// slot in another round to rewire the draw, so that slot is fed by the
+	// dragged player's match. This replaced the Wiring panel (a select per
+	// slot and a Check button, opened from an arrow or a fixture's Wiring
+	// button). Either drop asks at once, from the database's rehearsal, as
+	// the picker and the panel did: what the director agrees to is what
+	// will happen.
+	//
+	// A mouse or pen uses pointer events: a press that moves a few pixels is
+	// a drag. A finger uses touch events, because a finger on the bracket is
+	// usually scrolling it: a drag starts only after a short hold without
+	// moving, and from then on the page is kept from scrolling under it.
+	// Near an edge of the bracket or the screen, the page scrolls itself, so
+	// a pill can reach the last round.
 	// ─────────────────────────────────────────────────────────────────
 
-	let wiring = null;          // the fixture id whose wiring is open
-	let wiringCandidates = [];
+	let entrants = [];
 
-	async function openWiring(fixtureId) {
-		wiring = fixtureId;
-		wiringCandidates = [];
-		renderWiring();
-		els.wiring.hidden = false;
-		els.wiring.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-
-		const { data, error } = await supabaseClient.rpc('tdc_fixture_source_candidates', {
-			p_fixture_id: fixtureId
+	// The entrant list is the director's (tdc_tournament_entrants is gated),
+	// which is why the pills are theirs alone.
+	async function loadEntrants() {
+		if (readOnly) { entrants = []; return; }
+		const { data, error } = await supabaseClient.rpc('tdc_tournament_entrants', {
+			p_tournament_id: tournamentId
 		});
-		if (error) { TDC.showSupabaseError(AREA, error, els.wiringStatus); return; }
-		// Still the same fixture? The TD may have closed it or opened another
-		// while this was in flight.
-		if (wiring !== fixtureId) return;
-		wiringCandidates = data || [];
-		renderWiring();
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+		// A withdrawn entrant is out of the draw, so not offered for it. The
+		// picker still offers them, to undo a withdrawal entered by mistake.
+		entrants = (data || []).filter((e) => e.status !== 'withdrawn');
+		renderEntrants();
 	}
 
-	function closeWiring() {
-		wiring = null;
-		wiringCandidates = [];
-		els.wiring.hidden = true;
-		TDC.status(els.wiringStatus, '', '');
+	// Follows the Full names switch, as the cards do.
+	const entrantName = (e) =>
+		(fullNames && [e.first_name, e.last_name].filter(Boolean).join(' ')) || e.display_name;
+
+	// A pill only as wide as its name: the picture on the left, the name in it.
+	function pill(pic, name) {
+		const p = node('div', 'bracket-pill');
+		p.append(avatar(pic, name), node('span', 'bracket-pill-name', name));
+		return p;
 	}
 
-	function renderWiring() {
-		if (!wiring) return;
-		const f = fixtures.find((x) => x.fixture_id === wiring);
-		if (!f) { closeWiring(); return; }
-
-		els.wiringHead.textContent = 'Where ' + fixtureName(f.bracket, f.round, f.position)
-			+ ' comes from';
-		els.wiringNote.textContent = f.match_id
-			? 'This match has started, so its sides are settled. Detach the match to change the wiring.'
-			: 'Pointing a slot at a match empties it, so the winner can move in when that match is decided.';
-
-		els.wiringBody.replaceChildren(
-			wiringRow(f, 'home'),
-			wiringRow(f, 'away'));
+	function renderEntrants() {
+		els.entrantPills.replaceChildren(...entrants.map((e) => {
+			const name = entrantName(e);
+			const p = pill(e.avatar_path, name);
+			p.dataset.drag = 'entrant';
+			p.dataset.entrant = e.entrant_id;
+			p.title = e.status === 'confirmed' ? name : name + ' (' + e.status + ')';
+			return p;
+		}));
 	}
 
-	function wiringRow(f, which) {
-		const row = node('div', 'field');
-		const id = 'wiring-' + which;
+	let drag = null;    // the drag under way
+	let press = null;   // a mouse press on something draggable, not yet moved far enough
+	let hold = null;    // a finger on something draggable, not yet held long enough
+	let swallowClick = 0;
 
-		const label = node('label', '', which === 'home' ? 'Top slot' : 'Bottom slot');
-		label.htmlFor = id;
+	const DRAG_MOVE = 6;     // px a mouse moves before a press is a drag
+	const HOLD_MS = 350;     // how long a finger holds before it drags
+	const HOLD_SLOP = 10;    // px a finger may wander while holding; further is a scroll
+	const EDGE = 48;         // px from an edge where the page scrolls itself
+	const EDGE_STEP = 14;    // px it scrolls a frame
 
-		const pick = node('select');
-		pick.id = id;
-		pick.dataset.side = which;
-		pick.disabled = !!f.match_id;
-
-		const source = which === 'home' ? f.home_source : f.away_source;
-		const feeder = which === 'home' ? f.home_feeder_id : f.away_feeder_id;
-		const entrant = which === 'home' ? f.home_entrant_id : f.away_entrant_id;
-
-		pick.append(new Option('Nobody — leave it empty', '', false,
-			!source));
-
-		// Whoever is in it now, kept as an option so choosing something else
-		// and changing your mind does not need the entrant picker.
-		if (entrant) {
-			const name = which === 'home' ? f.home_name : f.away_name;
-			pick.append(new Option(name + ' (placed by hand)', 'entrant:' + entrant,
-				false, source === 'entrant'));
+	// What is being picked up: an entrant from the pills, or a slot of a
+	// match (standing for whoever comes out of that match).
+	function dragSource(target) {
+		if (readOnly || !target || !target.closest) return null;
+		const src = target.closest('[data-drag]');
+		if (!src) return null;
+		if (src.dataset.drag === 'entrant') {
+			const e = entrants.find((x) => x.entrant_id === src.dataset.entrant);
+			return e && { kind: 'entrant', entrantId: e.entrant_id, label: entrantName(e), pic: e.avatar_path, el: src };
 		}
+		const box = src.closest('.bracket-fixture');
+		const f = box && fixtures.find((x) => x.fixture_id === box.dataset.fixture);
+		if (!f) return null;
+		const which = src.dataset.side;
+		return {
+			kind: 'slot', fixture: f, el: src,
+			label: nameOf(f, which) || 'Winner of ' + fixtureName(f.bracket, f.round, f.position),
+			pic: which === 'home' ? f.home_avatar : f.away_avatar
+		};
+	}
 
-		for (const c of wiringCandidates) {
-			for (const kind of ['winner_of', 'loser_of']) {
-				const value = kind + ':' + c.fixture_id;
-				const text = (kind === 'winner_of' ? 'Winner of ' : 'Loser of ')
-					+ fixtureName(c.bracket, c.round, c.position)
-					+ (c.decided ? ' (decided)' : '');
-				pick.append(new Option(text, value, false,
-					source === kind && feeder === c.fixture_id));
+	// The slot under the pointer, if it is somewhere this drag may land. A
+	// slot dragged onto its own match, or onto another match of its own
+	// round, is not a progression, so neither is a target.
+	function slotAt(x, y) {
+		const hit = document.elementFromPoint(x, y);
+		const row = hit && hit.closest('#bracket .bracket-side[data-side]');
+		const box = row && row.closest('.bracket-fixture');
+		const f = box && fixtures.find((x2) => x2.fixture_id === box.dataset.fixture);
+		if (!f) return null;
+		if (drag.kind === 'slot') {
+			const from = drag.fixture;
+			if (f.fixture_id === from.fixture_id) return null;
+			if (f.bracket === from.bracket && f.round === from.round) return null;
+		}
+		return { row, f, side: row.dataset.side };
+	}
+
+	function beginDrag(src, x, y, touch) {
+		const ghost = pill(src.pic, src.label);
+		ghost.classList.add('bracket-ghost');
+		document.body.append(ghost);
+		drag = Object.assign(src, { ghost, touch, x, y, target: null, frame: 0 });
+		src.el.classList.add('drag-source');
+		document.documentElement.classList.add('bracket-dragging');
+		const sel = window.getSelection && window.getSelection();
+		if (sel) sel.removeAllRanges();
+		moveDrag(x, y);
+		drag.frame = requestAnimationFrame(edgeScroll);
+	}
+
+	function moveDrag(x, y) {
+		drag.x = x;
+		drag.y = y;
+		// Above the finger, where it can be seen; beside a mouse pointer.
+		const g = drag.ghost;
+		const gx = drag.touch ? x - g.offsetWidth / 2 : x + 12;
+		const gy = drag.touch ? y - g.offsetHeight - 28 : y + 12;
+		g.style.transform = `translate(${gx}px, ${gy}px)`;
+
+		const t = slotAt(x, y);
+		if ((t && t.row) === (drag.target && drag.target.row)) return;
+		if (drag.target) drag.target.row.classList.remove('drop-target');
+		drag.target = t;
+		if (t) t.row.classList.add('drop-target');
+	}
+
+	// Near an edge, the bracket scrolls sideways and the page up or down,
+	// and the slot under the pointer is found again.
+	function edgeScroll() {
+		if (!drag) return;
+		const { x, y } = drag;
+		const sc = els.bracket.parentElement;
+		const r = sc.getBoundingClientRect();
+		let moved = false;
+		if (y >= r.top && y <= r.bottom) {
+			if (x < r.left + EDGE && sc.scrollLeft > 0) {
+				sc.scrollLeft -= EDGE_STEP; moved = true;
+			} else if (x > r.right - EDGE && sc.scrollLeft < sc.scrollWidth - sc.clientWidth) {
+				sc.scrollLeft += EDGE_STEP; moved = true;
 			}
 		}
-
-		const hint = node('div', 'hint');
-		hint.textContent = feeder
-			? 'Currently fed by a match.'
-			: (entrant ? 'Currently a player put here by hand.' : 'Currently empty.');
-
-		row.append(label, pick, hint);
-		return row;
+		const maxY = document.documentElement.scrollHeight - innerHeight;
+		if (y < EDGE && scrollY > 0) {
+			window.scrollBy(0, -EDGE_STEP); moved = true;
+		} else if (y > innerHeight - EDGE && scrollY < maxY) {
+			window.scrollBy(0, EDGE_STEP); moved = true;
+		}
+		if (moved) moveDrag(x, y);
+		drag.frame = requestAnimationFrame(edgeScroll);
 	}
 
-	els.wiringSave.addEventListener('click', async () => {
-		if (!wiring) return;
-		const f = fixtures.find((x) => x.fixture_id === wiring);
-		if (!f) { closeWiring(); return; }
+	function endDrag(drop) {
+		if (!drag) return;
+		const d = drag;
+		drag = null;
+		cancelAnimationFrame(d.frame);
+		d.ghost.remove();
+		d.el.classList.remove('drag-source');
+		if (d.target) d.target.row.classList.remove('drop-target');
+		document.documentElement.classList.remove('bracket-dragging');
+		// The press that ended a drag is not also a click on what it ended on.
+		swallowClick = Date.now();
+		if (!drop || !d.target) return;
+		const { f, side: which, row } = d.target;
+		if (d.kind === 'entrant') dropEntrant(f, which, d.entrantId, row);
+		else dropWire(f, which, d.fixture, row);
+	}
 
-		// One slot at a time, and only the ones that changed. Two calls would
-		// be two rehearsals and two confirmations for one intention, so the
-		// unchanged slot is left alone.
-		const wanted = [];
-		for (const which of ['home', 'away']) {
-			const pick = els.wiring.querySelector(`[data-side="${which}"]`);
-			if (!pick) continue;
-			const [kind, ref] = (pick.value || ':').split(':');
-			const source = which === 'home' ? f.home_source : f.away_source;
-			const current = which === 'home'
-				? (f.home_feeder_id || f.home_entrant_id)
-				: (f.away_feeder_id || f.away_entrant_id);
-			if ((kind || null) === (source || null) && (ref || null) === (current || null)) continue;
-			wanted.push({ side: which, kind: kind || null, ref: ref || null });
+	// A mouse or pen.
+	document.addEventListener('pointerdown', (e) => {
+		if (e.pointerType === 'touch' || e.button !== 0) return;
+		const src = dragSource(e.target);
+		press = src ? { src, x: e.clientX, y: e.clientY } : null;
+	});
+	document.addEventListener('pointermove', (e) => {
+		if (e.pointerType === 'touch') return;
+		if (drag) { moveDrag(e.clientX, e.clientY); return; }
+		if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > DRAG_MOVE) {
+			const src = press.src;
+			press = null;
+			beginDrag(src, e.clientX, e.clientY, false);
 		}
-
-		if (!wanted.length) {
-			TDC.status(els.wiringStatus, 'Nothing changed.', '');
-			return;
-		}
-
-		TDC.status(els.wiringStatus, '', '');
-
-		// Rehearse every change first, so the TD confirms once against the
-		// whole thing rather than being asked twice halfway through.
-		const fixtureId = wiring;
-		const answers = await TDC.busy(els.wiringSave, rehearse('wiring', async () => {
-			const got = [];
-			for (const w of wanted) {
-				const r = await supabaseClient.rpc('tdc_set_fixture_source', {
-					p_fixture_id: fixtureId,
-					p_side: w.side,
-					p_source_type: w.kind,
-					p_source_ref: w.ref
-				});
-				got.push(r);
-				if (r.error) break;
-			}
-			return got;
-		}), els.wiringStatus);
-		if (!answers) return;
-		const lines = [];
-		for (const [i, w] of wanted.entries()) {
-			if (!answers[i]) break;
-			const { data, error } = answers[i];
-			if (error) { TDC.showSupabaseError(AREA, error, els.wiringStatus); return; }
-			if (data && data.note) continue;
-			lines.push(`${w.side === 'home' ? 'Top' : 'Bottom'} slot: ${data.from} → ${data.to}`
-				+ (data.displaces ? `\n  turns ${data.displaces} out of it` : '')
-				+ (data.award_cleared && data.award_cleared.entrant
-					? `\n  clears the bye that sent ${data.award_cleared.entrant} through` : ''));
-		}
-
-		if (!lines.length) { TDC.status(els.wiringStatus, 'Nothing changed.', ''); return; }
-		if (!confirm(lines.join('\n\n') + '\n\nGo ahead?')) {
-			TDC.status(els.wiringStatus, '', '');
-			return;
-		}
-
-		const todo = wanted.slice();
-		closeWiring();
-		await write('Rewiring', async () => {
-			for (const w of todo) {
-				const r = await supabaseClient.rpc('tdc_set_fixture_source', {
-					p_fixture_id: f.fixture_id,
-					p_side: w.side,
-					p_source_type: w.kind,
-					p_source_ref: w.ref,
-					p_apply: true
-				});
-				if (r.error) return r;
-			}
-			return { error: null };
-		});
+	});
+	document.addEventListener('pointerup', (e) => {
+		if (e.pointerType === 'touch') return;
+		press = null;
+		endDrag(true);
+	});
+	document.addEventListener('pointercancel', (e) => {
+		if (e.pointerType === 'touch') return;
+		press = null;
+		endDrag(false);
+	});
+	document.addEventListener('keydown', (e) => { if (e.key === 'Escape') endDrag(false); });
+	document.addEventListener('click', (e) => {
+		if (Date.now() - swallowClick > 400) return;
+		swallowClick = 0;
+		e.preventDefault();
+		e.stopPropagation();
+	}, true);
+	// The browser's own drag of a picture or a link would take over.
+	document.addEventListener('dragstart', (e) => {
+		if (e.target.closest && e.target.closest('[data-drag]')) e.preventDefault();
 	});
 
-	els.wiringCancel.addEventListener('click', closeWiring);
+	// A finger. Listened for on the pills and the bracket only, so the rest
+	// of the page scrolls as it always has; touchmove is not passive, so a
+	// drag can stop the page scrolling under it.
+	function cancelHold() {
+		if (!hold) return;
+		clearTimeout(hold.timer);
+		hold = null;
+	}
+	for (const area of [els.entrantPills, els.bracket]) {
+		area.addEventListener('touchstart', (e) => {
+			cancelHold();
+			if (e.touches.length !== 1) { endDrag(false); return; }
+			const src = dragSource(e.target);
+			if (!src) return;
+			const t = e.touches[0];
+			hold = { x: t.clientX, y: t.clientY };
+			hold.timer = setTimeout(() => {
+				const h = hold;
+				hold = null;
+				if (h) beginDrag(src, h.x, h.y, true);
+			}, HOLD_MS);
+		}, { passive: true });
+		area.addEventListener('touchmove', (e) => {
+			const t = e.touches[0];
+			if (drag) { e.preventDefault(); moveDrag(t.clientX, t.clientY); return; }
+			if (hold && Math.hypot(t.clientX - hold.x, t.clientY - hold.y) > HOLD_SLOP) cancelHold();
+		}, { passive: false });
+		area.addEventListener('touchend', (e) => {
+			cancelHold();
+			if (!drag) return;
+			e.preventDefault();   // no click on what the finger let go over
+			endDrag(true);
+		}, { passive: false });
+		area.addEventListener('touchcancel', () => { cancelHold(); endDrag(false); });
+	}
+	// A long press would otherwise open the phone's menu for a picture.
+	document.addEventListener('contextmenu', (e) => { if (drag || hold) e.preventDefault(); });
+
+	// An entrant dropped on a slot: that player goes in it. The same
+	// rehearsal and warning as the picker (tdc_swap_fixture_player). Once
+	// frames have been played the database wants a reason, so it is asked
+	// for and the rehearsal run again.
+	async function dropEntrant(f, which, entrantId, row) {
+		TDC.status(els.status, '', '');
+		const args = { p_fixture_id: f.fixture_id, p_side: which, p_entrant_id: entrantId, p_reason: null };
+		const check = () => TDC.busy(row,
+			rehearse('drop', () => supabaseClient.rpc('tdc_swap_fixture_player', args)), els.status);
+
+		let checked = await check();
+		if (!checked) return;
+		if (checked.error && /Say why the player is changing/.test(checked.error.message || '')) {
+			const why = prompt(checked.error.message);
+			if (why === null) return;
+			args.p_reason = why.trim() || null;
+			checked = await check();
+			if (!checked) return;
+		}
+		const { data, error } = checked;
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+		// Nothing to do, said rather than confirmed and applied as a no-op.
+		if (data && data.note) { TDC.status(els.status, data.note, ''); return; }
+
+		if (!confirm(swapWarning(data))) return;
+		// The dots on the slot dropped on: a drop presses no button for the
+		// writer to find them a place on.
+		await drawWriter.write('Changing the player', () =>
+			supabaseClient.rpc('tdc_swap_fixture_player', Object.assign({}, args, { p_apply: true })),
+			null, { dots: row, leaves: true });
+	}
+
+	// A slot of one match dropped on a slot in another round: that slot is
+	// fed from the dragged match (tdc_set_fixture_source), its winner, or
+	// its loser where the slot is in the third-place playoff. Pointing a
+	// slot at a match empties it, so the winner can move in once decided;
+	// the rehearsal says who that turns out.
+	async function dropWire(f, which, from, row) {
+		TDC.status(els.status, '', '');
+		const args = {
+			p_fixture_id: f.fixture_id,
+			p_side: which,
+			p_source_type: f.bracket === 'third_place' ? 'loser_of' : 'winner_of',
+			p_source_ref: from.fixture_id
+		};
+		const checked = await TDC.busy(row,
+			rehearse('drop', () => supabaseClient.rpc('tdc_set_fixture_source', args)), els.status);
+		if (!checked) return;
+		const { data, error } = checked;
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+		if (data && data.note) { TDC.status(els.status, data.note, ''); return; }
+
+		const lines = [fixtureName(f.bracket, f.round, f.position)
+			+ (which === 'home' ? ', top slot: ' : ', bottom slot: ')
+			+ `${data.from} → ${data.to}`];
+		if (data.displaces) lines.push(`Turns ${data.displaces} out of it.`);
+		if (data.award_cleared && data.award_cleared.entrant) {
+			lines.push(`Clears the bye that sent ${data.award_cleared.entrant} through.`);
+		}
+		lines.push('', 'Go ahead?');
+		if (!confirm(lines.join('\n'))) return;
+
+		await drawWriter.write('Rewiring', () =>
+			supabaseClient.rpc('tdc_set_fixture_source', Object.assign({}, args, { p_apply: true })),
+			null, { dots: row, leaves: true });
+	}
 
 	// Both of these rehearse, so the TD is told what moves before it moves.
 	// Renumbering is the one operation here that touches rounds a TD is not
@@ -1974,11 +2109,6 @@
 			return;
 		}
 
-		if (button.dataset.act === 'wiring') {
-			openWiring(id);
-			return;
-		}
-
 		if (button.dataset.act === 'add-match') {
 			write('Adding the match', () =>
 				supabaseClient.rpc('tdc_add_fixture', {
@@ -2082,9 +2212,10 @@
 		// Several frames land in a burst while somebody clears a rack, and a
 		// typed-in score must not be thrown away under the TD's hands. Nor a
 		// half-made swap: the picker holds a chosen name and a typed reason.
+		// Nor a drag: redrawing would take the slot from under the finger.
 		clearTimeout(liveTimer);
 		liveTimer = setTimeout(() => {
-			if (drawWriter.pending || checking.size || entering || swapping || editingRound || wiring) return;
+			if (drawWriter.pending || checking.size || entering || swapping || editingRound || drag || hold) return;
 			loadDraw().then(() => { if (!readOnly) checkDrift(); });
 		}, 400);
 	}
@@ -2176,6 +2307,9 @@
 		await loadStatus();
 
 		if (!readOnly) {
+			// The pills, read once: dragging changes the draw, not who entered.
+			// Read with no draw too, so they are there once one is generated.
+			await loadEntrants();
 			// Catches up anything decided on somebody else's phone. Only worth
 			// a second read when there was actually a draw to resolve.
 			if (fixtures.length) {

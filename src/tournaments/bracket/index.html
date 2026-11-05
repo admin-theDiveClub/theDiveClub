@@ -131,27 +131,6 @@ extraScripts:
 	</div>
 
 	{% comment %}
-		Where a fixture's two slots come from. Opened by clicking an arrow or
-		the Wiring button on a match. One panel for both slots rather than a
-		control in each row: a third control per row is what covered the names
-		on 21 Oct. Outside the scrolling bracket for the same reason the round
-		rules are.
-	{% endcomment %}
-	<div class="panel" id="wiring" hidden>
-		<h2 id="wiring-head">Where this match comes from</h2>
-		<p class="muted" id="wiring-note"></p>
-
-		<div id="wiring-body"></div>
-
-		<div class="btn-row">
-			<button type="button" class="btn btn-primary btn-sm" id="wiring-save">Check and apply</button>
-			<button type="button" class="btn btn-secondary btn-sm" id="wiring-cancel">Cancel</button>
-		</div>
-
-		<div class="status" id="wiring-status"></div>
-	</div>
-
-	{% comment %}
 		How the draw is shown, for everybody once there is a draw (UV, 5 Nov),
 		each kept on this device. Full names as the standings have it: off
 		shows display names, and a player with no first or last name keeps
@@ -208,6 +187,18 @@ extraScripts:
 			<input type="checkbox" id="full-names">
 			<div class="hint">Off shows each player's display name.</div>
 		</div>
+	</div>
+
+	{% comment %}
+		Every entrant as a pill, for the director to drag onto a slot (UV,
+		5 Nov). A pill dropped on a slot puts that player in it; a player
+		dragged from one match onto a slot in another round sends that
+		match's winner there. Both ask first. Director only: the entrant list
+		is theirs.
+	{% endcomment %}
+	<div class="bracket-entrants" id="entrants" hidden>
+		<div class="bracket-pills" id="entrant-pills"></div>
+		<div class="muted">Drag a player onto a slot to put them in it. Drag a player from one match onto a slot in another round to send that match's winner there. On a phone, hold a moment before dragging.</div>
 	</div>
 
 	<!-- The bracket itself, built by tournament-bracket.js -->

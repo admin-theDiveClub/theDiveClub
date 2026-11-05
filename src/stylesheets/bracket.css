@@ -508,6 +508,70 @@
 	margin-bottom: var(--space-4);
 }
 .bracket-view .field { margin: 0; }
+/* -- The entrants, to drag onto the draw (UV, 5 Nov) ------------------
+ * Under the view row, director only. Each entrant a pill only as wide as
+ * its name, the picture on the left; they wrap rather than scroll, so a
+ * finger on one is never also scrolling the row. */
+.bracket-entrants { margin-bottom: var(--space-4); }
+.bracket-pills {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+	margin-bottom: var(--space-2);
+}
+.bracket-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	padding: 0.2rem 0.75rem 0.2rem 0.2rem;
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-pill);
+	background: var(--bg-surface);
+	font-size: 0.85rem;
+	font-weight: 600;
+	white-space: nowrap;
+	cursor: grab;
+}
+.bracket-pill:hover { border-color: color-mix(in srgb, var(--color-primary) 55%, transparent); }
+.bracket-pill .person-pic {
+	width: 1.6rem;
+	height: 1.6rem;
+	font-size: 0.6rem;
+}
+
+/* Something a director can pick up: a pill, or a slot on a card. A long
+   press must not select its text or open the phone's menu for a picture. */
+.bracket-pill,
+.bracket:not(.bracket-ro) .bracket-side {
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
+}
+.bracket-pill img,
+.bracket-side img { -webkit-user-drag: none; }
+
+/* While dragging: the pill under the pointer, what it was picked up from
+   faded, and the slot it would land in outlined in the brand colour. */
+.bracket-ghost {
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: 1000;
+	pointer-events: none;
+	border-color: var(--color-primary);
+	box-shadow: var(--shadow-panel);
+	cursor: grabbing;
+}
+.bracket-dragging,
+.bracket-dragging * { cursor: grabbing !important; }
+.drag-source { opacity: 0.45; }
+.bracket-side.drop-target {
+	outline: 2px solid var(--color-primary);
+	outline-offset: 1px;
+	border-radius: var(--radius-sm);
+	background: var(--hover-wash);
+}
+
 /* -- Rounds one under another (UV, 5 Nov) ----------------------------
  * The lane runs downwards and each round is a row: its heading, then its
  * cards side by side. The border where a round goes in becomes a strip
