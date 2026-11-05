@@ -1942,7 +1942,7 @@ TDCTournamentNav.panel('draw', () => {
 		if (d.target.bin) { dropEntrant(d.fixture, d.side, null, d.target.row); return; }
 		const { f, side: which, row } = d.target;
 		if (d.kind === 'entrant') dropEntrant(f, which, d.entrantId, row);
-		else dropWire(f, which, d.fixture, row);
+		else dropWire(f, which, d.fixture, d.side, row);
 	}
 
 	// A mouse or pen.
@@ -2053,37 +2053,52 @@ TDCTournamentNav.panel('draw', () => {
 	}
 
 	// A slot of one match dropped on a slot in another round: that slot is
-	// fed from the dragged match (tdc_set_fixture_source), its winner, or
-	// its loser where the slot is in the third-place playoff. Pointing a
-	// slot at a match empties it, so the winner can move in once decided;
-	// the rehearsal says who that turns out.
-	async function dropWire(f, which, from, row) {
+	// fed from the dragged match, its winner, or its loser where the slot is
+	// in the third-place playoff. And the player dragged goes through (UV,
+	// 5 Nov): the match they left is scored to them by the director at the
+	// win condition to 0, and they move into the slot (tdc_move_through).
+	// Where it cannot be scored (played, settled, third place, no opponent
+	// yet) it is a rewire only, and the confirm says why.
+	async function dropWire(f, which, from, fromSide, row) {
 		TDC.status(els.status, '', '');
 		const args = {
 			p_fixture_id: f.fixture_id,
 			p_side: which,
-			p_source_type: f.bracket === 'third_place' ? 'loser_of' : 'winner_of',
-			p_source_ref: from.fixture_id
+			p_from_fixture_id: from.fixture_id,
+			p_from_side: fromSide
 		};
 		const checked = await TDC.busy(row,
-			rehearse('drop', () => supabaseClient.rpc('tdc_set_fixture_source', args)), els.status);
+			rehearse('drop', () => supabaseClient.rpc('tdc_move_through', args)), els.status);
 		if (!checked) return;
 		const { data, error } = checked;
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
-		if (data && data.note) { TDC.status(els.status, data.note, ''); return; }
+		if (data && data.note) {
+			TDC.status(els.status, [data.note, data.not_scored].filter(Boolean).join(' '), '');
+			return;
+		}
 
-		const lines = [fixtureName(f.bracket, f.round, f.position)
-			+ (which === 'home' ? ', top slot: ' : ', bottom slot: ')
-			+ `${data.from} → ${data.to}`];
-		if (data.displaces) lines.push(`Turns ${data.displaces} out of it.`);
-		if (data.award_cleared && data.award_cleared.entrant) {
-			lines.push(`Clears the bye that sent ${data.award_cleared.entrant} through.`);
+		const lines = [];
+		if (data.rewired) {
+			lines.push(fixtureName(f.bracket, f.round, f.position)
+				+ (which === 'home' ? ', top slot: ' : ', bottom slot: ')
+				+ `${data.from} → ${data.to}`);
+			if (data.displaces) lines.push(`Turns ${data.displaces} out of it.`);
+			if (data.award_cleared && data.award_cleared.entrant) {
+				lines.push(`Clears the bye that sent ${data.award_cleared.entrant} through.`);
+			}
+		}
+		if (data.scored) {
+			const s = data.scored;
+			lines.push(`${fixtureName(s.bracket, s.round, s.position)} scored ${s.score} to ${s.winner} over ${s.loser}, by the director ("Moved through on the draw").`,
+				`${s.winner} goes into ${fixtureName(f.bracket, f.round, f.position)}.`);
+		} else if (data.not_scored) {
+			lines.push('Rewired only: ' + data.not_scored);
 		}
 		lines.push('', 'Go ahead?');
 		if (!confirm(lines.join('\n'))) return;
 
-		await drawWriter.write('Rewiring', () =>
-			supabaseClient.rpc('tdc_set_fixture_source', Object.assign({}, args, { p_apply: true })),
+		await drawWriter.write(data.scored ? 'Moving through' : 'Rewiring', () =>
+			supabaseClient.rpc('tdc_move_through', Object.assign({}, args, { p_apply: true })),
 			null, { dots: row, leaves: true });
 	}
 

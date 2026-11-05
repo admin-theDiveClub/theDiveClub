@@ -1453,3 +1453,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to judge:* "not started" as Draft or Open, so Cancelled opens the draw; a director whose tournament has no poster at all also gets the draw (no longer Entrants).
 *So:* `docs/systems/tournaments.md`, "A tournament's card opens the poster before the start, the draw after".
 *Touches:* migration `20261105162834_tournament_link_poster.sql`, `supabase/tests/056_tournament_link_poster.test.sql` (new), `scripts/tournaments.js`
+
+## 2026-11-05 — A player dragged into a later round goes through, scored to 0 by the director
+
+*Decided by UV:* dragging a player from one round to another on the draw rewires and also moves that player into the next round, the match they left scored at the win condition to 0 (race to 5: 5-0). In answer to Claude's questions: a match with frames or a result is rewired only and the page says so (its score is set from the card as now); the reason on the record is written automatically, "Moved through on the draw"; best of N gives just over half to 0 (best of 9: 5-0), fixed frames, timed and free play 1-0; a drag onto the third-place playoff is rewired only, since it takes the loser.
+*Claude's, for UV to judge:* one database function doing the rewire, the match, the score and the placing together (rehearsed first, so nothing is half done) rather than three calls from the page; the player placed in the slot even where players are moved on by hand; a bye or walkover, an empty dragged slot and an opponent not yet known also rewire only; the match made for the score notifies both players a moment before it is scored.
+*So:* `docs/systems/tournaments.md`, "Dragging players onto the draw".
+*Touches:* migration `20261105164508_move_through_on_the_draw.sql`, `supabase/tests/057_move_through.test.sql` (new), `scripts/tournament-bracket.js`
