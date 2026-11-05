@@ -56,7 +56,7 @@ The button is the person with a plus, turning to a green tick once you follow. I
 
 **Why it is shaped this way.** `tbl_player_follows` has no grants and no policies: nothing can read it directly, and `tdc_i_follow(player)` answers only for the person asking, so no call can say who follows somebody. `tdc_set_follow(player, follow)` is the one write; saying what is already so is not an error, so two phones end in the same place. Anybody with a player record can be followed, a walk-in too, since their followers then move with them. `private.tdc_merge_players` carries both directions: nothing is left on the signup record, each person follows once, and the two records following each other is removed rather than becoming somebody following themselves.
 
-**Where managing it could go (suggested, not built; UV said not yet):** a Following tab on `/players/` beside the search, with the people you follow and a tap to stop. It would stay private, a list only of your own.
+**The list of whom you follow (UV, 5 Nov; migration `20261105212922`, test `063_my_follows`).** On `/players/`, under the search: each player by name, a link to their profile, with a green tick beside it that stops following them. `tdc_my_follows` returns only the list of the person asking, so follows stay private. Stopping is `tdc_set_follow`, then the list is read again and a line says "You no longer follow Shadow." There is no confirm (UV, 5 Nov): one tap, since following them again takes only a search and a tap.
 
 ### The player search (`/players/` with nobody in the address, UV 5 Nov)
 

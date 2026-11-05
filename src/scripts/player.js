@@ -45,7 +45,8 @@
 		vs: el('pp-vs'), split: el('pp-split'), vsLine: el('pp-vs-line'),
 		meeting: el('pp-meeting'), meetings: el('pp-meetings'),
 		follow: el('pp-follow'), find: el('pp-find'), findInput: el('pp-find-input'),
-		findNote: el('pp-find-note'), findResults: el('pp-find-results')
+		findNote: el('pp-find-note'), findResults: el('pp-find-results'),
+		following: el('pp-following'), followingNote: el('pp-following-note')
 	};
 
 	const params = new URLSearchParams(location.search);
@@ -750,6 +751,57 @@
 		}));
 	}
 
+	// ─── Whom you follow (UV, 5 Nov) ───
+	// Under the search: each player links to their profile, and the green tick
+	// stops following them. The list is read again after each stop.
+	function followingRow(p) {
+		const row = node('div', 'pp-following-row');
+		const link = node('a', 'pp-row');
+		link.href = '/players/?p=' + encodeURIComponent(p.player_id);
+		const names = node('span', 'pp-row-names');
+		names.append(node('span', 'pp-row-name', p.display_name));
+		if (p.full_name) names.append(node('span', 'muted pp-row-sub', p.full_name));
+		link.append(avatar(p.avatar_path, p.display_name, 'pp-row-pic'), names);
+
+		const label = 'Following ' + p.display_name + '. Tap to stop';
+		const stop = node('button', 'pp-icon pp-icon-primary');
+		stop.type = 'button';
+		stop.dataset.stop = p.player_id;
+		stop.dataset.name = p.display_name;
+		stop.title = label;
+		stop.setAttribute('aria-label', label);
+		const face = node('span', 'tdc-ring');
+		face.innerHTML = TDCRing.svg();
+		stop.append(face);
+		try {
+			new TDCRing.RingStatus(face, { icons: ['tick'], labels: { tick: label, empty: label }, initial: 'tick' });
+		} catch (err) {
+			TDC.error(AREA, 'an icon could not be drawn: tick', err, els.followingNote);
+		}
+		row.append(link, stop);
+		return row;
+	}
+
+	async function loadFollowing() {
+		const { data, error } = await supabaseClient.rpc('tdc_my_follows');
+		if (error) { TDC.showSupabaseError(AREA, error, els.followingNote); return false; }
+		els.following.replaceChildren(...(data.length
+			? data.map(followingRow)
+			: [node('p', 'muted pp-following-empty', 'You are not following anybody yet. Find a player above, then tap Follow on their profile.')]));
+		return true;
+	}
+
+	const stopWriter = TDC.writer({ area: AREA, status: els.followingNote, reload: loadFollowing });
+	els.following.addEventListener('click', (e) => {
+		const b = e.target.closest('button[data-stop]');
+		if (!b) return;
+		const name = b.dataset.name;
+		stopWriter.write('Stopping', () => supabaseClient.rpc('tdc_set_follow', {
+			p_player_id: b.dataset.stop,
+			p_follow: false
+		}), () => 'You no longer follow ' + name + '.', { single: 'stop|' + b.dataset.stop, dots: b, leaves: true });
+	});
+
 	let findTimer = null;
 	els.findInput.addEventListener('input', () => {
 		clearTimeout(findTimer);
@@ -792,6 +844,7 @@
 		if (!playerId) {
 			document.title = 'Players — The Dive Club';
 			els.find.hidden = false;
+			await loadFollowing();
 			return;
 		}
 

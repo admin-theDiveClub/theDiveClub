@@ -272,6 +272,15 @@
 	pointer-events: none;
 }
 .pp-find-results { margin-top: var(--space-2); }
+/* Whom you follow: the row is the link, the ring beside it stops following. */
+.pp-following-row {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	border-bottom: 1px solid var(--border-color);
+}
+.pp-following-row .pp-row { flex: 1; min-width: 0; border-bottom: none; }
+.pp-following-empty { text-align: center; }
 
 .pp-list { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3); }
 .pp-team {

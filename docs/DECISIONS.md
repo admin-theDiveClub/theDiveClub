@@ -1529,3 +1529,18 @@ These predate the log. They are recorded here because every one of them is a dec
 *Why:* it fills the screen there, and on the home page the logo showing through the blur made a green tick over its green hard to see.
 *Claude's, for UV to judge:* above phone width, where the panel is 320px beside the page, it keeps the see-through blurred surface.
 *Touches:* `stylesheets/nav.css`
+
+## 2026-11-05 — The players page lists whom you follow
+
+*Decided by UV:* `/players/` shows all the players you follow, so you can stop following them. This replaces the same day's "no page for managing follows yet".
+*Claude's, for UV to judge:* the list sits under the search and always shows; a green tick on each row stops following, with no confirm, since following again is two taps from the search; each name links to the profile.
+*Why it stays private:* `tdc_my_follows` only ever returns the list of the person asking, so nothing can say who follows anybody.
+*So:* `docs/systems/players.md`, "Follow".
+*Touches:* migration `20261105212922_my_follows.sql`, `supabase/tests/063_my_follows.test.sql` (new), `players/index.html`, `scripts/player.js`, `stylesheets/player.css`
+
+## 2026-11-05 — Stopping following takes one tap
+
+*Decided by UV:* no confirm before stopping following on `/players/`, settling what the entry above left to judge.
+*Why (Claude's reasoning):* a follow is cheap to redo, and nobody is told either way.
+*Rejected:* asking first; keeping the row until a reload so a second tap restores it.
+*Touches:* nothing in the code; it was built this way.
