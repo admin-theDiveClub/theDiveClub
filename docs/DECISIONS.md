@@ -1476,3 +1476,12 @@ These predate the log. They are recorded here because every one of them is a dec
 *Rejected:* a platform admin (UV: no exception). Renaming the existing `venue_id` columns (Claude's: many working functions for no gain).
 *So:* `docs/systems/foundations.md`, "Venues". STATUS §5's travelling-league fee question stays open.
 *Touches:* migration `20261105200430_venues_details_and_places.sql`, `supabase/tests/058_venues.test.sql` (new)
+
+## 2026-11-05 — Choosing where a competition is played: a search box and pills
+
+*Decided by UV:* venues are chosen in a search box that adds each one as a pill, and the field always shows.
+*Why (Claude's reasoning):* more than one venue is allowed, and the list will grow as clubs join.
+*Claude's, for UV to judge:* the picker sets the played-at list only, not the venue a competition belongs to, because that list is the one that takes several venues and it needs no role at a venue. UV also chose "a line saying they run no venues" for someone with nothing to choose, answering a question Claude wrote before step 1 was read; under step 1 anyone running a competition may list any open venue, so that person does not exist. The line says "No venues are open yet" only when no venue is open at all. Also: results appear once something is typed; pills in the order added; a closed venue on a list keeps an unnamed pill.
+*Rejected:* a ticked list (Claude's recommendation; UV chose the search).
+*So:* `docs/systems/foundations.md`, "Venues".
+*Touches:* `scripts/venue-picker.js` (new), `scripts/tournament-new.js`, `scripts/tournament-settings.js`, `scripts/league-new.js`, `scripts/league-settings.js`, `stylesheets/forms.css`, both create pages, both Settings includes

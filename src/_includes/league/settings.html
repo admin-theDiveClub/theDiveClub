@@ -77,6 +77,17 @@
 	</div>
 
 	{% comment %}
+		Where this season is played (UV, 5 Nov; venue-picker.js): saved with
+		Save, through tdc_set_league_season_venues, only when it changed. Gives
+		a venue's staff nothing.
+	{% endcomment %}
+	<div class="field">
+		<label for="st-venues-search">Venues</label>
+		<div id="st-venues"></div>
+		<div class="hint">This season only. Where it is played: as many as you like, or none. Listing a venue gives its staff no say in the league. A new season starts with the same ones.</div>
+	</div>
+
+	{% comment %}
 		The season's reserves beside the league's team size (UV, 24 Oct): a
 		team holds the two added together. league-settings.js draws the team
 		size in front of the reserves once the rules are read.

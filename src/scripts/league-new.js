@@ -25,7 +25,7 @@
 		title: el('page-title'), intro: el('page-intro'),
 		leaguePart: el('league-part'), rulesPart: el('rules-part'),
 		name: el('l-name'), seasonName: el('s-name'),
-		start: el('s-start'), end: el('s-end'), reserves: el('s-reserves'),
+		start: el('s-start'), end: el('s-end'), venues: el('s-venues'), reserves: el('s-reserves'),
 		sizeRow: el('size-row'), reservesField: el('reserves-field'),
 		main: el('settings-main'), rest: el('settings-rest'),
 		create: el('create-btn'), status: el('create-status')
@@ -43,6 +43,7 @@
 	// Every one of them is still a control below.
 	const rules = Object.assign({}, D.LEAGUE_DEFAULT_RULES || D.DEFAULT_RULES);
 	const openGroups = new Set();
+	const venues = TDCVenuePicker.create(els.venues, AREA, els.status);
 	let leagueId = new URLSearchParams(location.search).get('l');   // set once the league exists
 
 	const node = (tag, cls, text) => {
@@ -147,6 +148,16 @@
 		return true;
 	}
 
+	// A new season starts from the last one's venues, as
+	// tdc_create_league_season copies them: the same order, none closed.
+	async function loadLastVenues() {
+		const { data, error } = await supabaseClient
+			.from('tbl_league_seasons').select('id').eq('league_id', leagueId)
+			.order('created_at', { ascending: false }).limit(1).maybeSingle();
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
+		return data ? venues.load('season', data.id, { openOnly: true }) : venues.load();
+	}
+
 	// ─── Reading the fields ───
 	// Blank is a real answer for a date; an unreadable one is not. A date input
 	// gives "" or "YYYY-MM-DD" and nothing else, so this only has to tell the
@@ -238,6 +249,19 @@
 			return;
 		}
 
+		// Where it is played is its own call. The season exists by now, so the
+		// button stays off: pressing it again would refuse or make another.
+		if (venues.changed()) {
+			const placed = await venues.save('season', season.data);
+			if (placed.error) {
+				TDC.showSupabaseError(AREA, placed.error, els.status);
+				const fix = node('a', null, 'Add its venues on Settings.');
+				fix.href = '/leagues/season/?s=' + encodeURIComponent(season.data) + '&tab=settings';
+				els.status.append(' The season itself was created. ', fix);
+				return;
+			}
+		}
+
 		// Straight to the season's page: a league with nobody in it is not
 		// finished being made.
 		location.href = '/leagues/season/?s=' + encodeURIComponent(season.data) + '&tab=manage';
@@ -249,11 +273,13 @@
 
 		if (leagueId) {
 			if (!await showSeasonOnly()) return;
+			if (!await loadLastVenues()) { els.create.disabled = true; return; }
 			els.seasonName.focus();
 			return;
 		}
 
 		renderSettings();
+		if (!await venues.load()) { els.create.disabled = true; return; }
 		els.name.focus();
 	})(), 'New league');
 })();

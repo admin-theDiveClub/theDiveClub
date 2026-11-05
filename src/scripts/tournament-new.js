@@ -36,7 +36,7 @@
 	const el = (id) => document.getElementById(id);
 	const els = {
 		name: el('t-name'), format: el('t-format'), formatHint: el('format-hint'),
-		when: el('t-when'), max: el('t-max'), fee: el('t-fee'),
+		when: el('t-when'), venues: el('t-venues'), max: el('t-max'), fee: el('t-fee'),
 		entryMode: el('t-entry-mode'), entryModeHint: el('entry-mode-hint'),
 		paidConfirms: el('t-paid-confirms'), listed: el('t-listed'),
 		progression: el('t-progression'), createMatches: el('t-create-matches'),
@@ -53,6 +53,7 @@
 	// ─── State ───
 	const rules = Object.assign({}, D.DEFAULT_RULES);
 	const openGroups = new Set();   // which collapsed groups the person has opened
+	const venues = TDCVenuePicker.create(els.venues, AREA, els.status);
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -265,6 +266,19 @@
 			return;
 		}
 
+		// Where it is played is its own call. The tournament exists by now, so the
+		// button stays off: pressing it again would make a second one.
+		if (venues.changed()) {
+			const placed = await TDC.busy(els.create, venues.save('tournament', data), els.status);
+			if (placed.error) {
+				TDC.showSupabaseError(AREA, placed.error, els.status);
+				const fix = node('a', null, 'Add its venues on Settings.');
+				fix.href = '/tournaments/bracket/?t=' + encodeURIComponent(data) + '&tab=settings';
+				els.status.append(' The tournament itself was created. ', fix);
+				return;
+			}
+		}
+
 		// Straight to the entrant list: a tournament with nobody in it is not
 		// finished being made.
 		location.href = '/tournaments/bracket/?t=' + encodeURIComponent(data) + '&tab=entrants';
@@ -276,6 +290,7 @@
 
 		showFormatHint();
 		renderSettings();
+		if (!await venues.load()) { els.create.disabled = true; return; }
 		els.name.focus();
 	})(), 'New tournament');
 })();

@@ -18,7 +18,10 @@
 // listened for on this tab only, since the Draw tab's round panel builds the
 // same controls.
 //
-// Needs: tdc.js, match-settings.js, tournament-nav.js.
+// The venues it is played at (venue-picker.js) are saved after that, with their
+// own call and only when they changed.
+//
+// Needs: tdc.js, match-settings.js, tournament-nav.js, venue-picker.js.
 
 TDCTournamentNav.panel('settings', () => {
 	const AREA = 'Tournament settings';
@@ -48,7 +51,7 @@ TDCTournamentNav.panel('settings', () => {
 		root: document.querySelector('.tournament-panel[data-tab="settings"]'),
 		head: el('ts-head'), meta: el('ts-meta'),
 		name: el('ts-name'), format: el('ts-format'), formatHint: el('ts-format-hint'),
-		when: el('ts-when'), max: el('ts-max'), fee: el('ts-fee'),
+		when: el('ts-when'), venues: el('ts-venues'), max: el('ts-max'), fee: el('ts-fee'),
 		progression: el('ts-progression'), createMatches: el('ts-create-matches'),
 		createMatchesHint: el('ts-create-matches-hint'),
 		thirdPlace: el('ts-third-place'), thirdPlaceHint: el('ts-third-place-hint'),
@@ -73,6 +76,7 @@ TDCTournamentNav.panel('settings', () => {
 	let rulesWas = '';     // as read, to send it only when it changed
 	let mayRun = false;
 	const openGroups = new Set();
+	const venues = TDCVenuePicker.create(els.venues, AREA, els.status);
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -236,6 +240,8 @@ TDCTournamentNav.panel('settings', () => {
 		els.paidConfirms.checked = !!saved.paid_confirms;
 		els.listed.checked = !!saved.is_listed;
 
+		if (!await venues.load('tournament', tournamentId)) return false;
+
 		rules = upgrade(saved.rules);
 		rulesWas = JSON.stringify(rules);
 		renderSettings();
@@ -327,7 +333,15 @@ TDCTournamentNav.panel('settings', () => {
 		TDC.status(els.status, '', '');
 		const { data, error } = await supabaseClient.rpc('tdc_update_tournament', args);
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); await load(); return; }
+		// Where it is played is its own call, sent only when it changed. A
+		// refusal here leaves the rest saved, and says so.
+		const placed = venues.changed() ? await venues.save('tournament', tournamentId) : {};
 		if (!await load()) return;
+		if (placed.error) {
+			TDC.showSupabaseError(AREA, placed.error, els.status);
+			els.status.textContent += ' Everything else was saved; its venues were not.';
+			return;
+		}
 		TDC.status(els.status, savedText(data), 'success');
 	})(), els.status));
 
@@ -357,7 +371,7 @@ TDCTournamentNav.panel('settings', () => {
 	return {
 		refresh: () => {
 			if (!mayRun || !saved) return;
-			if (JSON.stringify(rules) !== rulesWas || els.name.value.trim() !== saved.name) return;
+			if (JSON.stringify(rules) !== rulesWas || els.name.value.trim() !== saved.name || venues.changed()) return;
 			load().catch((err) => TDC.error(AREA, 'the settings could not be read again.', err, els.status));
 		}
 	};

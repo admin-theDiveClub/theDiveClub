@@ -6,6 +6,7 @@ extraStyles:
   - /stylesheets/league.css
 extraScripts:
   - /scripts/match-settings.js
+  - /scripts/venue-picker.js
   - /scripts/league-new.js
 ---
 {% comment %}
@@ -49,6 +50,17 @@ extraScripts:
 			<label for="s-end">Ends</label>
 			<input type="date" id="s-end">
 		</div>
+	</div>
+
+	{% comment %}
+		Where this season is played (UV, 5 Nov; venue-picker.js). The season's,
+		so it shows when only a season is being opened too, starting from the
+		last season's.
+	{% endcomment %}
+	<div class="field">
+		<label for="s-venues-search">Venues</label>
+		<div id="s-venues"></div>
+		<div class="hint">This season only. Where it is played: as many as you like, or none. Listing a venue gives its staff no say in the league. A new season starts with the same ones.</div>
 	</div>
 
 	{% comment %}

@@ -47,7 +47,7 @@
   - **Cross-cutting:** Platform (audit log, roles).
 - Commerce and Ranking never share tables. `player_id` on a transaction is nullable (cash sales with no linked member are valid).
 
-## Venues (migration `20261105200430`, 5 Nov; step 1 of 3: the database only, no page reads it yet)
+## Venues (migration `20261105200430`, 5 Nov; step 1 of 3: the database. Step 2, the picker, below. Step 3 is to come)
 
 **A competition has two kinds of venue, kept apart on purpose.**
 
@@ -59,6 +59,7 @@
 | Changes | Fixed at creation | Any time |
 
 - **`tbl_matches.venue_id` is a rights column.** A match copies what its competition belongs to, and `private.tdc_can_edit_match` lets that venue's staff edit the card. A played-at venue must never be written there, or a barman at a club hosting one night could change a league's scores.
+- **The picker (`scripts/venue-picker.js`, `TDCVenuePicker`, step 2):** a search box that adds each venue as a pill, for the played-at list only, on `/tournaments/new/`, `/leagues/new/` and both Settings tabs. It filters `tdc_venues()` in the browser with no call, by name, area and city. The order is the order added. The list is saved by its own call after the rest, and only when it changed, so an old competition is never rewritten by an unrelated save. A closed venue is not in `tdc_venues()` and cannot be named by someone who is not its staff, so it keeps a pill reading "A closed venue": a save that left it out would take it off without anyone choosing that. A new season starts from the last season's list, closed venues left out, which is what `tdc_create_league_season` copies; the list is sent only if the person changed it. On a create page the competition exists by the time the venues are saved, so a refusal leaves the button off and links to Settings rather than letting a second press make another. **The venue a competition belongs to has no picker yet: `p_venue_id` is still always null.** Nothing shows the played-at list yet; the season banner and the poster still read the belongs-to venue.
 - **Played-at is per season**, so a league moving club does not rewrite its old seasons. `tdc_create_league_season` copies the last season's list, less any venue since closed. `tdc_set_league_season_venues` and `tdc_set_tournament_venues` take the whole list in order; empty clears it. A venue that closed while on a list may stay on it.
 - **A fixture** may name its own venue (`p_venue_id`, `p_clear_venue` on `tdc_set_league_fixture`; `p_venue_id` on `tdc_add_league_fixture`). `tdc_league_fixtures` returns `venue_id`, `venue_name` and `venue_inherited`: its own, else the season's when the season has exactly one. A blank fixture in a season at several returns none, so the page lists the season's rather than sending a player to the wrong club.
 - **Details on `tbl_venues`:** description, address, area, city, maps_url, picture_path, table_count, table_note, phone, whatsapp, email, website_url, instagram_url, facebook_url, hours_note. Links must be https, which keeps a `javascript:` address off public pages.

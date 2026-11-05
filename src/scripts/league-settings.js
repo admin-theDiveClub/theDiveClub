@@ -30,7 +30,10 @@
 // own (league-standings-edit.js), started once the page knows the person
 // runs the league; each of its changes saves at once.
 //
-// Needs: tdc.js, match-settings.js, league-standings-edit.js.
+// The venues this season is played at (venue-picker.js) are saved between the
+// status and the league, with their own call and only when they changed.
+//
+// Needs: tdc.js, match-settings.js, league-standings-edit.js, venue-picker.js.
 
 TDCLeagueNav.panel('settings', () => {
 	const AREA = 'League settings';
@@ -42,7 +45,7 @@ TDCLeagueNav.panel('settings', () => {
 		picPreview: el('pic-preview'), picChoose: el('pic-choose'), picRemove: el('pic-remove'),
 		picFile: el('pic-file'), picStatus: el('pic-status'),
 		seasonName: el('s-name'), seasonStatus: el('s-status'),
-		start: el('s-start'), end: el('s-end'), reserves: el('s-reserves'),
+		start: el('s-start'), end: el('s-end'), venues: el('st-venues'), reserves: el('s-reserves'),
 		sizeRow: el('size-row'), reservesField: el('reserves-field'),
 		overrides: el('overrides-note'),
 		main: el('settings-main'), rest: el('settings-rest'),
@@ -65,6 +68,7 @@ TDCLeagueNav.panel('settings', () => {
 	// Team play is what this page is mostly for, so it starts open.
 	const openGroups = new Set(['Team play']);
 	let busy = false;
+	const venues = TDCVenuePicker.create(els.venues, AREA, els.status);
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -305,6 +309,8 @@ TDCLeagueNav.panel('settings', () => {
 		savedStatus = row.data.status;
 		els.seasonStatus.value = savedStatus;
 
+		if (!await venues.load('season', seasonId)) return false;
+
 		// A season's own changes still apply on top. There is no form for
 		// them yet, so the director is at least told they exist.
 		const own = Object.keys(s.rules_overrides || {});
@@ -419,7 +425,19 @@ TDCLeagueNav.panel('settings', () => {
 				busy = false;
 				els.save.disabled = false;
 				TDC.showSupabaseError(AREA, st.error, els.status);
-				els.status.textContent += ' The season\'s name, dates and reserves were saved; its status and the league\'s name and rules were not.';
+				els.status.textContent += ' The season\'s name, dates and reserves were saved; its status and venues and the league\'s name and rules were not.';
+				return;
+			}
+		}
+
+		// Where it is played, likewise its own call and only when it changed.
+		if (venues.changed()) {
+			const placed = await venues.save('season', seasonId);
+			if (placed.error) {
+				busy = false;
+				els.save.disabled = false;
+				TDC.showSupabaseError(AREA, placed.error, els.status);
+				els.status.textContent += ' The season\'s name, dates, reserves and status were saved; its venues and the league\'s name and rules were not.';
 				return;
 			}
 		}
@@ -438,7 +456,7 @@ TDCLeagueNav.panel('settings', () => {
 			els.save.disabled = false;
 			TDC.showSupabaseError(AREA, error, els.status);
 			// Said, because half of it did land.
-			els.status.textContent += ' The season\'s name, dates, reserves and status were saved; the league\'s name and rules were not.';
+			els.status.textContent += ' The season\'s name, dates, reserves, status and venues were saved; the league\'s name and rules were not.';
 			return;
 		}
 

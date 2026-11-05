@@ -407,6 +407,47 @@ textarea:not(:disabled):hover {
 }
 .player-pick .pick-chosen .pick-link { margin: 0; }
 
+/* The venues a competition is played at (venue-picker.js): the search above is
+   the player pick's; each venue chosen is a pill above it, with a red cross
+   (every cross is red). Two classes deep for the same reason. */
+.venue-pills {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+}
+.venue-pills:not(:empty) { margin-bottom: var(--space-3); }
+.venue-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	max-width: 100%;
+	padding: 0.25rem 0.3rem 0.25rem 0.75rem;
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-pill);
+	background: var(--bg-surface);
+	font-size: 0.85rem;
+	font-weight: 600;
+}
+.venue-pill-name { min-width: 0; overflow-wrap: anywhere; }
+.venue-pick .venue-pill-remove {
+	flex: 0 0 auto;
+	width: 1.75rem;
+	height: 1.75rem;
+	margin: 0;
+	padding: 0;
+	border: none;
+	border-radius: 50%;
+	background: none;
+	color: var(--color-error);
+	font-size: 1.1rem;
+	font-weight: normal;
+	line-height: 1;
+	letter-spacing: normal;
+}
+.venue-pick .pick-result .result-name,
+.venue-pick .pick-result .result-sub { display: block; }
+.venue-pick .pick-result .result-sub { font-size: 0.82rem; color: var(--text-muted); }
+
 /* Everything that is not a main setting, folded away until wanted. */
 .set-group {
 	border-top: 1px solid var(--border-color);

@@ -4,6 +4,7 @@ title: New Tournament
 description: "Create a tournament and start adding entrants."
 extraScripts:
   - /scripts/match-settings.js
+  - /scripts/venue-picker.js
   - /scripts/tournament-new.js
 ---
 {% comment %}
@@ -37,6 +38,12 @@ extraScripts:
 		<label for="t-when">Starts</label>
 		<input type="datetime-local" id="t-when">
 		<div class="hint">Leave blank if you have not set a date.</div>
+	</div>
+
+	<div class="field">
+		<label for="t-venues-search">Venues</label>
+		<div id="t-venues"></div>
+		<div class="hint">Where it is played: as many as you like, or none. Listing a venue gives its staff no say in the tournament.</div>
 	</div>
 
 	<details class="set-group" id="t-extras">
