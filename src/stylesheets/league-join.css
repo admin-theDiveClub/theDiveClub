@@ -59,8 +59,11 @@
 }
 .lj-pic-inner svg { width: 55%; height: 55%; }
 .lj-pic-inner img { width: 100%; height: 100%; object-fit: cover; }
-.lj-names { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); min-width: 0; }
-.lj-names .jumbo-status { font-family: var(--font-body); }
+/* Name, season, then the status badge under them (UV, 5 Nov): the season
+ * close under the name as its subtitle, the badge a clear step below. */
+.lj-names { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.tdc-card .lj-names .lj-season { margin-top: var(--space-1); }
+.lj-names .jumbo-status { margin-top: var(--space-3); font-family: var(--font-body); }
 .tdc-card .lj-names h1 {
 	margin: 0;
 	font-family: var(--font-display);
@@ -196,13 +199,20 @@
 }
 
 /* ── How it is played: a box per group, label and value rows ── */
+/* Each box only as wide as its rows need, the boxes in a row, wrapping and
+ * centred (UV, 5 Nov); a row of boxes shares its height. */
 .lj-rules {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
 	gap: var(--space-3);
-	align-items: start;
 }
-.lj-rule-box { padding: var(--space-3) var(--space-4) var(--space-2); }
+.lj-rule-box { flex: 0 1 auto; max-width: 100%; box-sizing: border-box; padding: var(--space-3) var(--space-4) var(--space-2); }
+/* A phone has room for one a line: then each takes the whole width, rather
+ * than five ragged widths one under another. */
+@media (max-width: 40rem) {
+	.lj-rule-box { flex-basis: 100%; }
+}
 .tdc-card .lj-rule-title {
 	margin: 0 0 var(--space-2);
 	font-size: 0.66rem;
@@ -216,7 +226,7 @@
 	display: flex;
 	align-items: baseline;
 	justify-content: space-between;
-	gap: var(--space-3);
+	gap: var(--space-5);
 	padding: var(--space-2) 0;
 	border-top: 1px solid var(--border-color);
 }
