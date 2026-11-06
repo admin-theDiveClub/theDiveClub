@@ -183,6 +183,7 @@ TDCLoader.hold((async () => {
 			const b = document.createElement('button');
 			b.type = 'button';
 			b.className = 'points-point';
+			b.dataset.noDots = '';
 			b.append(div('points-point-name', path), div('points-point-type', type), div('points-point-label', label));
 			// Keep the box's cursor and keyboard where they are.
 			b.addEventListener('mousedown', (e) => e.preventDefault());

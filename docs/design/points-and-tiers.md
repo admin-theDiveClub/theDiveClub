@@ -1,6 +1,6 @@
 # Points and tiers: the design so far
 
-**Status: concept settled with UV on 6 Nov 2026; the formulas are not. The tuning page (§9) is being built, `docs/systems/points.md`.** UV describes formulas from the page's data points, Claude adds them, and the sliders judge them against scenarios. **§9a overrides §3's model and §9's weights where they differ.**
+**Status: concept settled with UV on 6 Nov 2026 (§10a holds what UV has since settled); the formulas are not. The tuning page (§9) is being built, `docs/systems/points.md`.** UV describes formulas from the page's data points, Claude adds them, and the sliders judge them against scenarios. **§9a overrides §3's model and §9's weights where they differ.**
 
 **Why this file exists.** The whole concept was worked out in one claude.ai chat (6 Nov). Anything decided there is here so it is not asked again. Lines marked *Claude's, for UV to judge* are suggestions UV has not confirmed; everything else is UV's.
 
@@ -22,7 +22,7 @@ UV, 6 Nov, in his words where possible:
 
 | Rule | UV, 6 Nov |
 |---|---|
-| Who earns | **Replaced 6 Nov:** ID verification is a single bonus in profile completeness and does not carry into any other calculation. The first version read **"Verified accounts only. That's the whole point of the points system."** A guest or walk-in, with no account, still earns nothing, not even reduced points (Claude's reading of what stands; UV to correct) |
+| Who earns | **Replaced 6 Nov:** ID verification is a single bonus in profile completeness and does not carry into any other calculation. The first version read **"Verified accounts only. That's the whole point of the points system."** A guest or walk-in, with no account, still earns nothing, not even reduced points (UV, 6 Nov) |
 | Points and credits | **Separate.** "You can't gamify people's money on a site I give away for free." Many players will use the site without money. Points are never bought, spent or converted |
 | Points and credits, later | They will connect **indirectly**, on the business side, after a lot of trial and error. Not part of this design |
 | Lifetime | Points measure long-term usage. Nothing resets lifetime points |
@@ -237,15 +237,15 @@ UV, 6 Nov: a page on the site that **only he can access**, where he plays with s
 | 5 | How honours (`docs/BACKLOG.md` §2 item 9) relate to points: the same design, or separate |
 | 6 | Whether a player can hide a match without removing it, and whether hiding costs points |
 | 7 | What in the data marks the "negative" playing style. No data point is named for it until UV describes one |
-| 9 | "You never lose points" (UV, 6 Nov) beside §2's "if a player removes a match, the points go too", and retuning moving totals: does a removed match still take its points away? |
-| 10 | Whether the rolling period for tiers is right, and how long it is |
-| 11 | Whether a table of earned points that can always be rebuilt is acceptable beside "frames are the only record" (§10a) |
+| 9 | **The venue multiplier (UV, 6 Nov):** an assumed value to play with, "almost like the signature to say that my club is the one that developed this". What it multiplies is not settled |
 
 **Answered, 6 Nov (from the code):**
 
 - **`clicker_log`** was designed for a referee's physical clicker, built separately (`docs/archive/stats-schema-design.md`): each entry a code and a time, for whose turn it is, pauses, extensions and racking. No page sends it and no frame in production has one.
 - **Shot clock and extension use** is not recorded. `match.js` counts extensions only while the page is open. Only the settings are saved, so those are data points and use is not.
 - **Where weight sets live:** §9a.
+- **Never lose points (UV, 6 Nov):** points are never spent, but a removed match takes its own points with it.
+- **Guests and walk-ins (UV, 6 Nov):** no account, no points.
 - **What "verified" means (UV, 6 Nov):** a single bonus for an ID verified, which does not carry forward to other calculations (§2).
 
 **Data note, 6 Nov:** only 2 of 66 frames in production have a break outcome. The earlier note called these test data since cleared; they were made on 5 Nov, after the clear. 18 matches are finished (5 team with 45 frames, 12 tournament with 11), none social. Break data is the richest story data and is barely used; this is what points should push.
@@ -258,15 +258,16 @@ UV, 6 Nov: a page on the site that **only he can access**, where he plays with s
 
 Everything below is *Claude's, for UV to judge*.
 
-**One number outside, sources inside.** Each formula gets a **stream** (play, running competitions, profile, shop and so on). The player sees one number; the streams let a stream be switched off, weighed or filtered without separate points.
+**One number outside, sources inside (UV, 6 Nov: yes).** Each formula gets a **stream** (play, running competitions, profile, shop and so on). The player sees one number; the streams let a stream be switched off, weighed or filtered without separate points.
 
-**One number, three windows.** All the same points, so no second system:
+**Tiers and the hall of fame (UV, 6 Nov).** Claude's idea of tiers reading a rolling period and lifetime points deciding the hall of fame is **rejected**. It needs a custom implementation, and decisions are still to be made. UV imagines:
 
-| Window | Used for | Why |
-|---|---|---|
-| Lifetime | Hall of fame | Never resets (§2) |
-| A rolling period, e.g. 90 days | Tiers and benefits | Status has to be kept up, a new player can reach it, and benefits follow who is using the club now |
-| Week, month, season | Periodic awards | Frozen into the ledger when the period closes (§4) |
+- The hall of fame is **awarded to a select few** and sits like a **boost on the profile**: straight into a higher tier, or something that affects the player's multiplier for points calculations.
+- **Tiers managed by adjusting points multipliers.** "That's actually a good way to manage the tiers."
+
+**To decide with them** (*Claude's*): whether a multiplier applies only from the day it is given or to everything earned before; and which points a tier's level reads, since a tier that multiplies points which decide the tier feeds itself.
+
+Periodic awards stay as in §5: a period's total is the same points over a period, frozen into the ledger when it closes (§4).
 
 **Points are global; benefits belong to a venue.** A player has one total across the community. Each venue decides what its tiers give, and pays for them.
 
@@ -274,7 +275,7 @@ Everything below is *Claude's, for UV to judge*.
 
 | Option | For | Against |
 |---|---|---|
-| The same `points-formula.js` run by an edge function, writing a table of earned points that can be rebuilt at any time (recommended) | One copy of the formula; fast to read; retuning is one rebuild | A stored table, so it must be treated as a cache: it is never the record, and can be deleted and rebuilt from frames (§5 idea 1 of `CLAUDE.md`) |
+| The same `points-formula.js` run by an edge function, writing a table of earned points that can be rebuilt at any time (**UV, 6 Nov: yes**) | One copy of the formula; fast to read; retuning is one rebuild | A stored table, so it must be treated as a cache: it is never the record, and can be deleted and rebuilt from frames (§5 idea 1 of `CLAUDE.md`) |
 | Rewrite the formula in SQL | Runs beside the data | Two copies that will drift, and UV's formulas are harder to change |
 | Work it out on every read | Nothing stored | Too slow as soon as there is a leaderboard |
 
@@ -282,7 +283,7 @@ Everything below is *Claude's, for UV to judge*.
 
 | Stage | What | Seen by |
 |---|---|---|
-| 1 | Tune formulas on the page; give each a stream and a date rule | UV |
+| 1 | Tune formulas on the page, each with a stream | UV |
 | 2 | Real matches on the page, weight sets saved | UV |
 | 3 | The rebuildable table, running in the background beside a real league | UV |
 | 4 | A player's own total and this period's | Players |
@@ -296,7 +297,7 @@ Everything below is *Claude's, for UV to judge*.
 |---|---|---|
 | Not everything has a date | A picture's upload date is not kept, so it cannot fall in a period | Each formula says "dated" (counts in periods) or "base" (lifetime only). Profile completeness is base |
 | Data that cannot be recovered later | App installs and shop visits are not recorded, so those points cannot be backdated | List what must start recording before opening |
-| Retuning once it is public | A change moves everyone's lifetime total overnight | Keep it private until stable; keep each version; change rarely and say so. Periods soften it, since old points matter less to status |
+| Retuning once it is public | A change moves everyone's lifetime total overnight | Keep it private until stable; keep each version; change rarely and say so |
 | Gaming | Two friends trading wins | Locked data, opponents with accounts, the social cap; watch for it in stage 3, before anyone can see a total |
 | Test data | Today's 18 finished matches would count | Clear them before stage 4 |
 

@@ -14,6 +14,8 @@
 //               tournament  once a person, when the match is in a tournament
 //               league      once a person, when the match is in a league
 //   Who       Which people it runs for. 'players' by default; see WHO.
+//   Stream    Which kind of points it is: profile, play, running competitions,
+//             shop. Players see one total; streams let one be reweighed alone.
 //   calc      (d, w) => a number. d is what that person sees at that level
 //             (d.me, d.frame, d.match, d.rules, d.tournament, d.league, d.site)
 //             and w is the formula's weights. Negative is allowed.
@@ -42,6 +44,10 @@ const TDCPoints = (() => {
 		['sign_in', 'Sign-in methods', (p) => Math.min(p.sign_in_methods / SIGN_IN_METHODS_AVAILABLE, 1)]
 	];
 
+	// Sign-in methods starts with no influence (UV, 6 Nov: perhaps not to count at
+	// all, as a security matter), to be settled when the values are.
+	const PROFILE_START = { sign_in: { value: 0, low: 0 } };
+
 	// UV describes each one; none is assumed (UV, 6 Nov: no starting set). The
 	// sliders' starting values are Claude's, only so the page opens with a number.
 	// `value` is a weight's default and the page's high; `low` is the page's low.
@@ -50,9 +56,10 @@ const TDCPoints = (() => {
 			id: 'profile_completeness',
 			level: 'player',
 			who: 'everyone',
+			stream: 'profile',
 			label: 'Profile completeness',
 			weights: Object.assign(
-				Object.fromEntries(PROFILE_PARTS.map(([key, label]) => [key, { label, value: 1, low: 0.5, min: 0, max: 1, step: 0.05 }])),
+				Object.fromEntries(PROFILE_PARTS.map(([key, label]) => [key, Object.assign({ label, value: 1, low: 0.5, min: 0, max: 1, step: 0.05 }, PROFILE_START[key])])),
 				{ multiplier: { label: 'Multiply the total by', value: 10, low: 5, min: 0, max: 100, step: 1 } }
 			),
 			parts: (d, w) => PROFILE_PARTS.map(([key, label, value]) => ({ label, amount: value(d.me.profile) * w[key] * w.multiplier })),
@@ -640,7 +647,7 @@ const TDCPoints = (() => {
 				if (!appliesTo(formula, person)) continue;
 				const d = viewFor(person, s);
 				const level = formula.level;
-				const line = { formula: formula.id, label: formula.label || formula.id, level, amount: 0, frames: [] };
+				const line = { formula: formula.id, label: formula.label || formula.id, level, stream: formula.stream || null, amount: 0, frames: [] };
 
 				if (level === 'player') {
 					line.amount = run(formula, d, person, '');

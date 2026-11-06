@@ -242,8 +242,9 @@ test('a history is filled in with its difference and percentage', () => {
 	assert.equal(Math.round(s.people[0].history.win_pct), 42);
 });
 
-test('the formula list is well formed', () => {
+test('the formula list is well formed, and each has a stream', () => {
 	assert.deepEqual(TDCPoints.checkFormulas(TDCPoints.FORMULAS), []);
+	for (const f of TDCPoints.FORMULAS) assert.ok(f.stream, f.id + ' has no stream');
 });
 
 test('every built-in scenario runs with no warnings, and its edits exist', () => {
@@ -287,27 +288,29 @@ test('every weight\'s low is within its range and not above its high', () => {
 	}
 });
 
-test('profile completeness: all six steps add up, then multiply', () => {
-	assert.equal(profile(complete), 60);
+test('profile completeness: the steps add up, then multiply; sign-in methods starts at nothing', () => {
+	assert.equal(profile(complete), 50);
 	assert.equal(profile({}), 0);
-	assert.equal(profile(Object.assign({}, complete, { has_picture: false })), 50);
+	assert.equal(profile(Object.assign({}, complete, { has_picture: false })), 40);
+	assert.equal(profile(Object.assign({}, complete, { sign_in_methods: 0 })), 50, 'no influence');
 });
 
-test('profile completeness: one of two sign-in methods is worth half, and more do not overpay', () => {
-	assert.equal(profile(Object.assign({}, complete, { sign_in_methods: 1 })), 55);
-	assert.equal(profile(Object.assign({}, complete, { sign_in_methods: 5 })), 60);
+test('profile completeness: given a weight, one of two sign-in methods is worth half, and more do not overpay', () => {
+	const on = { formulas: { profile_completeness: { sign_in: 1 } } };
+	assert.equal(profile(Object.assign({}, complete, { sign_in_methods: 1 }), on), 55);
+	assert.equal(profile(Object.assign({}, complete, { sign_in_methods: 5 }), on), 60);
 });
 
 test('profile completeness: each slider moves only its own value, the multiplier all of them', () => {
 	const weights = (w) => ({ formulas: { profile_completeness: w } });
-	assert.equal(profile(complete, weights({ id_verified: 0.5 })), 55);
-	assert.equal(profile(complete, weights({ multiplier: 2 })), 12);
-	assert.equal(profile(complete, weights({ picture: 0, multiplier: 1 })), 5);
+	assert.equal(profile(complete, weights({ id_verified: 0.5 })), 45);
+	assert.equal(profile(complete, weights({ multiplier: 2 })), 10);
+	assert.equal(profile(complete, weights({ picture: 0, multiplier: 1 })), 4);
 });
 
 test('profile completeness is for everyone, officials too', () => {
 	const official = { id: 't', name: 'Tess', roles: { td: true }, profile: complete };
-	assert.equal(pointsOf(TDCPoints.calculate({ people: [official] }), 't').points, 60);
+	assert.equal(pointsOf(TDCPoints.calculate({ people: [official] }), 't').points, 50);
 });
 
 test('an ID verified is one bonus and carries into nothing else', () => {
@@ -316,8 +319,8 @@ test('an ID verified is one bonus and carries into nothing else', () => {
 	const scenario = (profileFields) => Object.assign(fiveFour(), { people: [Object.assign({}, alice, { profile: profileFields })] });
 	const withId = pointsOf(TDCPoints.calculate(scenario(complete), formulas), 'a');
 	const without = pointsOf(TDCPoints.calculate(scenario(noId), formulas), 'a');
-	assert.equal(withId.points, 60 + 100 + 9);
-	assert.equal(without.points, 50 + 100 + 9, 'only its own 10 goes');
+	assert.equal(withId.points, 50 + 100 + 9);
+	assert.equal(without.points, 40 + 100 + 9, 'only its own 10 goes');
 });
 
 test('no data point is listed twice', () => {

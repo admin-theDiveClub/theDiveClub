@@ -1479,13 +1479,15 @@ const TDCControls = (() => {
 		// is pressed, for the save it set off and at least DOTS_MIN, a ring
 		// icon's traced and anything else raced round (a fake ring). Done here
 		// once for every page. Left out: a control's own parts (they serve the
-		// control), the nav (nav.js serves its own), and anything the page
-		// has already given the dots (data-dots, e.g. the fixtures' buttons).
+		// control), the nav (nav.js serves its own), anything the page has
+		// already given the dots (data-dots, e.g. the fixtures' buttons), and a
+		// button marked data-no-dots, with no wait of its own to show (UV, 6 Nov:
+		// the points page's data points, tapped in quick succession).
 		// A page that redraws after the press throws the button away: let go
 		// quietly (leaves).
 		let pressMark = null;
 		const BUTTON = 'button, a.btn, [role="button"]';
-		const NOT_BUTTON = '.tdc-stepper, .tdc-select, .tdc-date, .tdc-slide, .tdc-switch, .tdc-check, .tdc-tri, .site-nav, summary';
+		const NOT_BUTTON = '.tdc-stepper, .tdc-select, .tdc-date, .tdc-slide, .tdc-switch, .tdc-check, .tdc-tri, .site-nav, summary, [data-no-dots]';
 		const pressed = (e) => {
 			const b = e.target.closest && e.target.closest(BUTTON);
 			return b && !b.closest(NOT_BUTTON) && !b.disabled && !b.matches('[aria-disabled="true"]') ? b : null;

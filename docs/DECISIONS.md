@@ -1596,3 +1596,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* a player receives only a single bonus for being ID verified. It does not carry forward to other calculations. This replaces "verified accounts only" in the design.
 *Claude's, for UV to judge:* a guest or walk-in with no account still earns nothing, kept from the same rule.
 *So:* `docs/design/points-and-tiers.md` §2, `docs/systems/points.md`.
+
+## 2026-11-06 — Points: tiers by multiplier, one total, a rebuildable table
+
+*Decided by UV:* no account, no points. Points are never spent, but a removed match takes its own points. One number on the outside with a hidden stream on each formula. An edge function may store earned points in a table that can always be rebuilt, never the record. Tiers are a custom implementation with decisions still to make: the hall of fame is awarded to a select few and sits like a boost on the profile, straight into a higher tier or affecting the points multiplier; adjusting points multipliers is a good way to manage tiers. A venue multiplier is an assumed value to play with, almost a signature that this club developed the system. Sign-in methods may not count at all, as a security matter: no influence in the scenario until values are solidified. Data points on the points page skip the button animation.
+*Rejected:* Claude's tiers reading a rolling period with lifetime points deciding the hall of fame.
+*So:* `docs/design/points-and-tiers.md` §10a, §10 q9.
+*Touches:* `points-formula.js`, `points-tuning.js`, `tdc-controls.js` (`data-no-dots`).
