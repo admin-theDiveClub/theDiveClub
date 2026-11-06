@@ -1553,3 +1553,12 @@ These predate the log. They are recorded here because every one of them is a dec
 *Rejected:* upcoming matches; a followed player's own frames on a league night; Finished only once settled and reading on opening only (both Claude's recommendations; UV chose otherwise).
 *So:* `docs/systems/players.md`, "The feed".
 *Touches:* migration `20261105214625_my_feed.sql`, `supabase/tests/064_my_feed.test.sql` (new), `players/index.html`, `scripts/player.js`, `stylesheets/player.css`
+
+## 2026-11-06 — Points: the concept
+
+*Decided by UV:* a points system now, to get people using and testing the site and learning its "language", and as a show of skill and long-term use that feeds a hall of fame and VIP status. Only verified accounts earn. Points and credits stay separate ("You can't gamify people's money on a site I give away for free"); they will connect only indirectly, on the business side, later. Lifetime points never reset. Social games count once per opponent per week and never nearly as much as league or managed tournament play; captains, scorers and directors get more. Recorded data builds a match's pot and frame data splits it (UV's scenarios A to D in the design). Removing a match removes its points, so points are dynamic. Periodic awards exist (e.g. the week's top league player). Tiers are subjective owner-written rules on top of points (e.g. senior citizens; the league's top 3 each week as VIP). UV enters past champions' titles himself, as retro points. Data values are listed objectively (frame time and racking time, not "a fast frame") and each is weighted on its own (B&F and reverse B&F differ). The formula is set on an owner-only tuning page with sliders and scenarios.
+*Why:* every feature someone uses enriches the data and pushes the site forward; leagues, captaincy and fluency are what to encourage.
+*Claude's, for UV to judge:* a pot per frame, not per match; multipliers for context, not separate bases; paying for data recorded on a frame, not settings switched on; paying only once signed; first-use bonuses; points for confirmed bug reports; periodic awards and retro titles and manual adjustments in a small ledger, frozen once given, beside dynamic points; formula versions kept.
+*Rejected:* unverified or guest players earning reduced points; points turning into credits.
+*So:* `docs/design/points-and-tiers.md`.
+*Touches:* nothing in the code yet.
