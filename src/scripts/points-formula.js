@@ -70,7 +70,6 @@ const TDCPoints = (() => {
 			people: [{
 				id: 'player',
 				name: 'Player',
-				verified: true,
 				profile: {
 					has_picture: true,
 					has_display_name: true,
@@ -86,8 +85,7 @@ const TDCPoints = (() => {
 				{ formula: 'profile_completeness', weight: 'full_name', path: 'profile.has_full_name', label: 'Name and surname set', type: 'bool' },
 				{ formula: 'profile_completeness', weight: 'id_verified', path: 'profile.id_verified', label: 'ID verified', type: 'bool' },
 				{ formula: 'profile_completeness', weight: 'notifications', path: 'profile.notifications_enabled', label: 'Notifications enabled', type: 'bool' },
-				{ formula: 'profile_completeness', weight: 'sign_in', path: 'profile.sign_in_methods', label: 'Sign-in methods', type: 'number', min: 0, max: SIGN_IN_METHODS_AVAILABLE },
-				{ path: 'verified', label: 'Verified account', type: 'bool' }
+				{ formula: 'profile_completeness', weight: 'sign_in', path: 'profile.sign_in_methods', label: 'Sign-in methods', type: 'number', min: 0, max: SIGN_IN_METHODS_AVAILABLE }
 			]
 		}
 	];
@@ -107,7 +105,7 @@ const TDCPoints = (() => {
 	const DATA = {
 		me: [
 			['me.side', 'text', 'Side played: home, away, or nothing for an official'],
-			['me.verified', 'yes/no', 'Verified account'],
+			['me.has_account', 'yes/no', 'Has an account; a guest or walk-in has none'],
 			['me.signed', 'yes/no', 'This person signed or approved the result'],
 			['me.earlier_this_week', 'number', 'Earlier social matches v this opponent this week'],
 			['me.roles.td', 'yes/no', 'Tournament director here'],
@@ -117,13 +115,6 @@ const TDCPoints = (() => {
 			['me.roles.referee', 'yes/no', 'Referee here'],
 			['me.profile.joined_days', 'number', 'Days since the account was made'],
 			['me.profile.has_picture', 'yes/no', 'Has a profile picture'],
-			['me.profile.has_display_name', 'yes/no', 'Has a display name'],
-			['me.profile.has_full_name', 'yes/no', 'Has both a name and a surname'],
-			['me.profile.id_entered', 'yes/no', 'Has entered an ID, verified or not'],
-			['me.profile.id_verified', 'yes/no', 'An ID checked by staff, not revoked'],
-			['me.profile.email_confirmed', 'yes/no', 'Has confirmed their email address'],
-			['me.profile.notifications_enabled', 'yes/no', 'Push notifications on, on at least one device'],
-			['me.profile.sign_in_methods', 'number', 'Ways they can sign in: email, Google'],
 			['me.profile.has_display_name', 'yes/no', 'Has a display name'],
 			['me.profile.has_full_name', 'yes/no', 'Has both a name and a surname'],
 			['me.profile.id_entered', 'yes/no', 'Has entered an ID, verified or not'],
@@ -304,7 +295,7 @@ const TDCPoints = (() => {
 		id: p.id,
 		name: p.name || '',
 		side: p.side || null,
-		verified: !!p.verified,
+		has_account: p.has_account !== false,
 		signed: !!p.signed,
 		earlier_this_week: asNumber(p.earlier_this_week),
 		roles: {
@@ -317,13 +308,6 @@ const TDCPoints = (() => {
 		profile: {
 			joined_days: asNumber(p.profile && p.profile.joined_days),
 			has_picture: !!(p.profile && p.profile.has_picture),
-			has_display_name: !!(p.profile && p.profile.has_display_name),
-			has_full_name: !!(p.profile && p.profile.has_full_name),
-			id_entered: !!(p.profile && p.profile.id_entered),
-			id_verified: !!(p.profile && p.profile.id_verified),
-			email_confirmed: !!(p.profile && p.profile.email_confirmed),
-			notifications_enabled: !!(p.profile && p.profile.notifications_enabled),
-			sign_in_methods: asNumber(p.profile && p.profile.sign_in_methods),
 			has_display_name: !!(p.profile && p.profile.has_display_name),
 			has_full_name: !!(p.profile && p.profile.has_full_name),
 			id_entered: !!(p.profile && p.profile.id_entered),
@@ -534,7 +518,7 @@ const TDCPoints = (() => {
 	const viewFor = (person, s) => ({
 		me: {
 			side: person.side,
-			verified: person.verified,
+			has_account: person.has_account,
 			signed: person.signed,
 			earlier_this_week: person.earlier_this_week,
 			roles: person.roles,
@@ -688,11 +672,12 @@ const TDCPoints = (() => {
 			return {
 				id: person.id,
 				name: person.name,
-				verified: person.verified,
+				has_account: person.has_account,
 				capped,
-				// Verified accounts only (UV, 6 Nov). What it would have been is
-				// kept beside it, so the sliders still mean something on a real match.
-				points: person.verified ? earned : 0,
+				// A guest or walk-in earns nothing (UV, 6 Nov). What it would have been
+				// is kept beside it. Having a verified ID is not this: it is one bonus
+				// in profile completeness and touches nothing else (UV, 6 Nov).
+				points: person.has_account ? earned : 0,
 				would_earn: earned,
 				levels,
 				lines

@@ -52,6 +52,7 @@
 	margin-bottom: var(--space-2);
 }
 .points-bar .field { flex: 0 1 auto; margin: 0; min-width: 0; }
+#scenario-fields:empty { display: none; }
 .points-note { margin-bottom: var(--space-2); font-size: 0.8rem; color: var(--text-muted); }
 .points-flag { display: flex; align-items: center; gap: var(--space-2); font-size: 0.85rem; }
 .tdc-card .btn.points-small {

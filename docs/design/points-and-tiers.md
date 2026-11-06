@@ -22,7 +22,7 @@ UV, 6 Nov, in his words where possible:
 
 | Rule | UV, 6 Nov |
 |---|---|
-| Who earns | **Verified accounts only.** "That's the whole point of the points system." A guest, walk-in or unverified player earns nothing, not even reduced points |
+| Who earns | **Replaced 6 Nov:** ID verification is a single bonus in profile completeness and does not carry into any other calculation. The first version read **"Verified accounts only. That's the whole point of the points system."** A guest or walk-in, with no account, still earns nothing, not even reduced points (Claude's reading of what stands; UV to correct) |
 | Points and credits | **Separate.** "You can't gamify people's money on a site I give away for free." Many players will use the site without money. Points are never bought, spent or converted |
 | Points and credits, later | They will connect **indirectly**, on the business side, after a lot of trial and error. Not part of this design |
 | Lifetime | Points measure long-term usage. Nothing resets lifetime points |
@@ -237,7 +237,6 @@ UV, 6 Nov: a page on the site that **only he can access**, where he plays with s
 | 5 | How honours (`docs/BACKLOG.md` §2 item 9) relate to points: the same design, or separate |
 | 6 | Whether a player can hide a match without removing it, and whether hiding costs points |
 | 7 | What in the data marks the "negative" playing style. No data point is named for it until UV describes one |
-| 8 | **What "verified accounts only" (§2) means: an ID checked by staff, or a confirmed email?** §8 item 56 read it as ID, which Claude listed, not UV. Read that way only 2 of 25 players earn anything, which does not fit profile completeness going to "everyone almost by default" (UV, 6 Nov), and "ID verified" could never score for anyone who has not got it. `docs/STATUS.md` §1 item 3 reads it the other way, as the confirmed email plus a bot check |
 | 9 | "You never lose points" (UV, 6 Nov) beside §2's "if a player removes a match, the points go too", and retuning moving totals: does a removed match still take its points away? |
 | 10 | Whether the rolling period for tiers is right, and how long it is |
 | 11 | Whether a table of earned points that can always be rebuilt is acceptable beside "frames are the only record" (§10a) |
@@ -247,6 +246,7 @@ UV, 6 Nov: a page on the site that **only he can access**, where he plays with s
 - **`clicker_log`** was designed for a referee's physical clicker, built separately (`docs/archive/stats-schema-design.md`): each entry a code and a time, for whose turn it is, pauses, extensions and racking. No page sends it and no frame in production has one.
 - **Shot clock and extension use** is not recorded. `match.js` counts extensions only while the page is open. Only the settings are saved, so those are data points and use is not.
 - **Where weight sets live:** §9a.
+- **What "verified" means (UV, 6 Nov):** a single bonus for an ID verified, which does not carry forward to other calculations (§2).
 
 **Data note, 6 Nov:** only 2 of 66 frames in production have a break outcome. The earlier note called these test data since cleared; they were made on 5 Nov, after the clear. 18 matches are finished (5 team with 45 frames, 12 tournament with 11), none social. Break data is the richest story data and is barely used; this is what points should push.
 
@@ -297,7 +297,7 @@ Everything below is *Claude's, for UV to judge*.
 | Not everything has a date | A picture's upload date is not kept, so it cannot fall in a period | Each formula says "dated" (counts in periods) or "base" (lifetime only). Profile completeness is base |
 | Data that cannot be recovered later | App installs and shop visits are not recorded, so those points cannot be backdated | List what must start recording before opening |
 | Retuning once it is public | A change moves everyone's lifetime total overnight | Keep it private until stable; keep each version; change rarely and say so. Periods soften it, since old points matter less to status |
-| Gaming | Two friends trading wins | Locked data, verified opponents, the social cap; watch for it in stage 3, before anyone can see a total |
+| Gaming | Two friends trading wins | Locked data, opponents with accounts, the social cap; watch for it in stage 3, before anyone can see a total |
 | Test data | Today's 18 finished matches would count | Clear them before stage 4 |
 
 **The shop stream.** How shop customers earn is UV's to define when the shop is designed (P5); no page records a visit or a sale yet. It is a stream like any other, with its formulas described the same way.

@@ -261,7 +261,7 @@ TDCLoader.hold((async () => {
 				row.append(total);
 			}
 			els.summary.append(row);
-			if (!person.verified) els.summary.append(div('points-would', 'Not a verified account, so nothing is earned. It would be ' + shown(person.would_earn) + ' to ' + shown(high.would_earn) + '.'));
+			if (!person.has_account) els.summary.append(div('points-would', 'No account, so nothing is earned. It would be ' + shown(person.would_earn) + ' to ' + shown(high.would_earn) + '.'));
 			if (person.capped) els.summary.append(div('points-would', 'Over the social cap this week.'));
 
 			person.lines.forEach((line, n) => {

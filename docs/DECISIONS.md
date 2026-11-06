@@ -1590,3 +1590,9 @@ These predate the log. They are recorded here because every one of them is a dec
 *Why:* think loyalty system.
 *Rejected:* Claude's reading of shop points as "buying points" against §2 of the design, and its suggestion of a legal check. Neither is to be raised again.
 *So:* `docs/design/points-and-tiers.md` §10a. Still to ask: whether a removed match takes its points away (§10 q9).
+
+## 2026-11-06 — An ID verified is one bonus, not a gate
+
+*Decided by UV:* a player receives only a single bonus for being ID verified. It does not carry forward to other calculations. This replaces "verified accounts only" in the design.
+*Claude's, for UV to judge:* a guest or walk-in with no account still earns nothing, kept from the same rule.
+*So:* `docs/design/points-and-tiers.md` §2, `docs/systems/points.md`.

@@ -5,8 +5,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const TDCPoints = require('../../src/scripts/points-formula.js');
 
-const alice = { id: 'a', name: 'Alice', side: 'home', verified: true };
-const bob = { id: 'b', name: 'Bob', side: 'away', verified: true };
+const alice = { id: 'a', name: 'Alice', side: 'home' };
+const bob = { id: 'b', name: 'Bob', side: 'away' };
 const frame = (no, winner, extra = {}) => Object.assign({ frame_no: no, status: 'complete', winner_side: winner, result_event: 'win' }, extra);
 
 // A 5-4 to Alice, with nothing else recorded: UV's scenario A.
@@ -67,7 +67,7 @@ test('each level runs as often as it says', () => {
 });
 
 test('roles earn without playing: a TD with no side', () => {
-	const td = { id: 't', name: 'Tess', verified: true, roles: { td: true } };
+	const td = { id: 't', name: 'Tess', roles: { td: true } };
 	const s = Object.assign(fiveFour(), { people: [alice, bob, td] });
 	const f = { id: 'run', level: 'match', who: 'td', calc: () => 500 };
 	const played = { id: 'played', level: 'frame', calc: () => 1 };
@@ -79,7 +79,7 @@ test('roles earn without playing: a TD with no side', () => {
 test('on a team night, a player formula pays only the frames they played', () => {
 	const s = {
 		match: { kind: 'league', team: true },
-		people: [alice, { id: 'c', name: 'Cara', side: 'home', verified: true }, bob],
+		people: [alice, { id: 'c', name: 'Cara', side: 'home' }, bob],
 		frames: [
 			frame(1, 'home', { players: { home: ['a'], away: ['b'] } }),
 			frame(2, 'home', { players: { home: ['c'], away: ['b'] } })
@@ -91,8 +91,8 @@ test('on a team night, a player formula pays only the frames they played', () =>
 	assert.equal(pointsOf(r, 'b').points, 0);
 });
 
-test('verified accounts only, but what they would have earned is kept', () => {
-	const s = Object.assign(fiveFour(), { people: [alice, Object.assign({}, bob, { verified: false })] });
+test('a guest or walk-in earns nothing, but what they would have earned is kept', () => {
+	const s = Object.assign(fiveFour(), { people: [alice, Object.assign({}, bob, { has_account: false })] });
 	const r = TDCPoints.calculate(s, [{ id: 'f', level: 'match', calc: () => 100 }]);
 	assert.equal(pointsOf(r, 'b').points, 0);
 	assert.equal(pointsOf(r, 'b').would_earn, 100);
@@ -305,11 +305,22 @@ test('profile completeness: each slider moves only its own value, the multiplier
 	assert.equal(profile(complete, weights({ picture: 0, multiplier: 1 })), 5);
 });
 
-test('profile completeness is for everyone, officials too, and the verified rule still applies', () => {
-	const official = { id: 't', name: 'Tess', verified: true, roles: { td: true }, profile: complete };
-	const unverified = Object.assign({}, alice, { verified: false, profile: complete });
-	const r = TDCPoints.calculate({ people: [official, unverified] });
-	assert.equal(pointsOf(r, 't').points, 60);
-	assert.equal(pointsOf(r, 'a').points, 0);
-	assert.equal(pointsOf(r, 'a').would_earn, 60);
+test('profile completeness is for everyone, officials too', () => {
+	const official = { id: 't', name: 'Tess', roles: { td: true }, profile: complete };
+	assert.equal(pointsOf(TDCPoints.calculate({ people: [official] }), 't').points, 60);
+});
+
+test('an ID verified is one bonus and carries into nothing else', () => {
+	const noId = Object.assign({}, complete, { id_verified: false });
+	const formulas = [TDCPoints.FORMULAS.find((f) => f.id === 'profile_completeness'), { id: 'm', level: 'match', calc: () => 100 }, { id: 'f', level: 'frame', calc: () => 1 }];
+	const scenario = (profileFields) => Object.assign(fiveFour(), { people: [Object.assign({}, alice, { profile: profileFields })] });
+	const withId = pointsOf(TDCPoints.calculate(scenario(complete), formulas), 'a');
+	const without = pointsOf(TDCPoints.calculate(scenario(noId), formulas), 'a');
+	assert.equal(withId.points, 60 + 100 + 9);
+	assert.equal(without.points, 50 + 100 + 9, 'only its own 10 goes');
+});
+
+test('no data point is listed twice', () => {
+	const paths = Object.values(TDCPoints.DATA).flat().map(([path]) => path);
+	assert.deepEqual(paths.filter((path, i) => paths.indexOf(path) !== i), []);
 });

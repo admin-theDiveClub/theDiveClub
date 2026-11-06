@@ -39,7 +39,7 @@ UV writes it in the page's formula space (or just describes it); Claude adds it 
 
 | Name | Holds |
 |---|---|
-| `d.me` | Side, verified, signed, roles, profile, history |
+| `d.me` | Side, has an account, signed, roles, profile, history |
 | `d.frame` | The frame (frame level only; otherwise null) |
 | `d.match` | The match and this person's counts in it |
 | `d.rules` | Every match setting, as frozen on the match |
@@ -56,7 +56,7 @@ The full list is `DATA` in the module, which the page will show. A test checks t
 
 | Rule | How |
 |---|---|
-| Verified accounts only | An unverified person's `points` is 0; `would_earn` keeps what it would have been (Claude's, for UV to judge) |
+| Guests and walk-ins earn nothing | `has_account` false: `points` is 0, and `would_earn` keeps what it would have been (Claude's, for UV to judge). An ID verified is not part of this: it is one bonus in profile completeness and carries into nothing else (UV, 6 Nov) |
 | Social cap | `social_cap` on the weight set (default 1, 0 is off). Once a person's earlier social matches against this opponent this week reach it, frame and match formulas stop. Player formulas carry on, and career counts still include those frames (Claude's, for UV to judge) |
 | Complete frames only | Abandoned and in-progress frames are not run or counted |
 | A director's score | Decides `match.won` and `side_frames_won`; the frame counts stay as played |
@@ -95,7 +95,7 @@ total = ( picture + display name + name and surname + ID verified
 | Notifications enabled | `me.profile.notifications_enabled` | 1 or 0 | A row in `tbl_push_subscriptions`: on, on at least one device; a dead phone's row still counts |
 | Sign-in methods | `me.profile.sign_in_methods` | Methods ÷ 2, at most 1 (Claude's) | `auth.identities`, email and Google |
 
-The sliders' starting values (each 0.5 to 1, multiplier 5 to 10, so 15 to 60 with everything done) are Claude's, only so the page opens with a number. It is `who: 'everyone'`, so an official earns it too. As with every formula, the verified rule sits over it: see design §10 q8.
+The sliders' starting values (each 0.5 to 1, multiplier 5 to 10, so 15 to 60 with everything done) are Claude's, only so the page opens with a number. It is `who: 'everyone'`, so an official earns it too.
 
 A formula's `parts` gives the breakdown's rows, in points, and a test checks they add up to its amount.
 
@@ -125,7 +125,7 @@ A formula's `parts` gives the breakdown's rows, in points, and a test checks the
 | Step | What |
 |---|---|
 | 3 | UV's further formulas, each with a scenario, as he describes them (begun: profile completeness) |
-| 4 | Presets A to D, editable frame by frame, with roles, settings, verified, history and the cap |
+| 4 | Presets A to D, editable frame by frame, with roles, settings, history and the cap |
 | 5 | Migration: named weight sets in an owner-only table, saved through `tdc_` functions; an owner-only read of real matches and site-wide stats. Real matches, read only; saving named sets |
 
 **The module is public** like every script, as the board's code is, though nothing links to it. Anyone who finds it can read the formulas. That matters only when real points arrive.
