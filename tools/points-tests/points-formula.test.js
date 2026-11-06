@@ -242,6 +242,56 @@ test('a history is filled in with its difference and percentage', () => {
 	assert.equal(Math.round(s.people[0].history.win_pct), 42);
 });
 
-test('the formula list is well formed, and starts with nothing assumed', () => {
+test('the formula list is well formed', () => {
 	assert.deepEqual(TDCPoints.checkFormulas(TDCPoints.FORMULAS), []);
+});
+
+test('every built-in scenario runs with no warnings, and its edits exist', () => {
+	for (const s of TDCPoints.SCENARIOS) {
+		assert.deepEqual(TDCPoints.calculate(s).warnings, [], s.id);
+		for (const e of s.edit) assert.notEqual(TDCPoints.read(s.people[0], e.path), undefined, e.path);
+	}
+});
+
+test('a formula\'s parts add up to its amount', () => {
+	const half = { has_picture: true, sign_in_methods: 1 };
+	const r = TDCPoints.calculate({ people: [Object.assign({}, alice, { profile: half })] });
+	for (const line of r.people[0].lines.filter((l) => l.parts)) {
+		assert.equal(line.parts.reduce((sum, p) => sum + p.amount, 0), line.amount, line.formula);
+	}
+});
+
+// UV's profile completeness: each value in 0 to 1, added, then multiplied.
+const profile = (fields, weights) => {
+	const person = Object.assign({}, alice, { profile: fields });
+	const line = TDCPoints.calculate({ people: [person] }, TDCPoints.FORMULAS, weights).people[0].lines.find((l) => l.formula === 'profile_completeness');
+	return line.amount;
+};
+const complete = TDCPoints.SCENARIOS.find((s) => s.id === 'profile_complete').people[0].profile;
+
+test('profile completeness: all six steps add up, then multiply', () => {
+	assert.equal(profile(complete), 60);
+	assert.equal(profile({}), 0);
+	assert.equal(profile(Object.assign({}, complete, { has_picture: false })), 50);
+});
+
+test('profile completeness: one of two sign-in methods is worth half, and more do not overpay', () => {
+	assert.equal(profile(Object.assign({}, complete, { sign_in_methods: 1 })), 55);
+	assert.equal(profile(Object.assign({}, complete, { sign_in_methods: 5 })), 60);
+});
+
+test('profile completeness: each slider moves only its own value, the multiplier all of them', () => {
+	const weights = (w) => ({ formulas: { profile_completeness: w } });
+	assert.equal(profile(complete, weights({ id_verified: 0.5 })), 55);
+	assert.equal(profile(complete, weights({ multiplier: 2 })), 12);
+	assert.equal(profile(complete, weights({ picture: 0, multiplier: 1 })), 5);
+});
+
+test('profile completeness is for everyone, officials too, and the verified rule still applies', () => {
+	const official = { id: 't', name: 'Tess', verified: true, roles: { td: true }, profile: complete };
+	const unverified = Object.assign({}, alice, { verified: false, profile: complete });
+	const r = TDCPoints.calculate({ people: [official, unverified] });
+	assert.equal(pointsOf(r, 't').points, 60);
+	assert.equal(pointsOf(r, 'a').points, 0);
+	assert.equal(pointsOf(r, 'a').would_earn, 60);
 });

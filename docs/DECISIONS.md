@@ -1572,6 +1572,12 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* `docs/design/points-and-tiers.md` §9a, `docs/systems/points.md`.
 *Touches:* `src/scripts/points-formula.js`, `tools/points-tests/`.
 
+## 2026-11-06 — The first points formula: profile completeness
+
+*Decided by UV:* picture added, display name added, name and surname set, ID verified, notifications enabled and sign-in methods each carry a value in 0 to 1 (generally -1 to 1) with its own slider; the values are added, then multiplied at the end for a total. It is almost the base for anyone who uses the site, so it should be almost insignificant, and everyone gets it almost by default.
+*Claude's, for UV to judge:* sign-in methods as methods ÷ 2; officials earning it; "notifications enabled" meaning on at least one device; the sliders' starting values.
+*So:* `docs/systems/points.md`, "The formulas". Open: what "verified" means, design §10 q8.
+
 ## 2026-11-06 — New data updates the points page; the tournament win state is to be completed
 
 *Decided by UV:* every time new data is defined, the points page is updated too. The tournament win state (completed win conditions and so on) has to be completed.

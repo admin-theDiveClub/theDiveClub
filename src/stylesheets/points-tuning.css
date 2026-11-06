@@ -1,6 +1,67 @@
 /* The points page (/staff/points/). */
 
 .tdc-card.points-page { max-width: 72rem; }
+
+/* The scenario and its sliders, with the points beside them. On a phone only
+   the total stays on the screen, so a slider can be watched as it moves; the
+   results' wrappers give way so it can stick for the whole of the sliders. */
+.points-tune { margin-bottom: var(--space-6); }
+.points-tune > section { min-width: 0; }
+.points-results, #points-results, .points-person { display: contents; }
+.points-summary {
+	position: sticky;
+	bottom: 0;
+	z-index: 2;
+	padding: var(--space-2) 0;
+	background: var(--bg-base);
+}
+.points-total {
+	font-family: var(--font-display);
+	font-size: 3rem;
+	line-height: 1;
+	text-align: center;
+	color: var(--color-primary);
+}
+.points-total-label { font-size: 0.75rem; text-align: center; color: var(--text-muted); }
+.points-would { margin-bottom: var(--space-3); font-size: 0.85rem; text-align: center; color: var(--color-warning); }
+.points-line, .points-part {
+	display: flex;
+	justify-content: space-between;
+	gap: var(--space-3);
+	padding: var(--space-1) 0;
+	border-top: 1px solid var(--border-color);
+}
+.points-line { font-weight: 700; }
+.points-part { font-size: 0.85rem; border-top: 0; padding-left: var(--space-3); color: var(--text-muted); }
+
+.points-level { margin-bottom: var(--space-4); }
+.points-level-title {
+	margin-bottom: var(--space-2);
+	padding-top: var(--space-2);
+	border-top: 1px solid var(--border-color);
+	font-size: 0.7rem;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+}
+.points-formula-name { margin-bottom: var(--space-2); font-weight: 700; }
+.points-slider {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 0 var(--space-3);
+	align-items: baseline;
+	margin-bottom: var(--space-3);
+}
+.points-slider label { font-size: 0.85rem; }
+.points-slider-value { font-family: var(--font-mono); font-size: 0.9rem; }
+.tdc-card .points-slider input[type="range"] {
+	grid-column: 1 / -1;
+	width: 100%;
+	padding: 0;
+	border-bottom: 0;
+	accent-color: var(--color-primary);
+}
 .points-layout > section { min-width: 0; }
 /* On a phone the writer's parts belong to the layout itself, or the box could
    stay on the screen only as far as the writer's own foot. */
@@ -62,6 +123,16 @@ body:has(.site-nav:not(.is-hidden)) .points-box { top: var(--nav-total); }
 
 /* On a PC the whole writer stays beside the list. */
 @media (min-width: 900px) {
+	.points-tune { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+	.points-results {
+		display: block;
+		position: sticky;
+		top: 0;
+		transition: top var(--nav-slide, 0.3s) ease;
+	}
+	#points-results, .points-person { display: block; }
+	.points-summary { position: static; background: none; }
+	body:has(.site-nav:not(.is-hidden)) .points-results { top: var(--nav-total); }
 	.points-layout { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
 	.points-layout[hidden] { display: none; }
 	.points-data { margin-top: 0; }
@@ -75,5 +146,5 @@ body:has(.site-nav:not(.is-hidden)) .points-box { top: var(--nav-total); }
 	.points-box { position: static; padding-top: 0; background: none; }
 }
 @media (min-width: 900px) and (prefers-reduced-motion: reduce) {
-	.points-writer { transition: none; }
+	.points-writer, .points-results { transition: none; }
 }

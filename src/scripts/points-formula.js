@@ -27,8 +27,68 @@ const TDCPoints = (() => {
 	const LEVELS = ['player', 'frame', 'match', 'tournament', 'league'];
 	const WHO = ['everyone', 'players', 'td', 'ld', 'captain', 'scorer', 'referee'];
 
-	// UV describes each one; none is assumed (UV, 6 Nov: no starting set).
-	const FORMULAS = [];
+	// Email and Google. A new way to sign in changes this.
+	const SIGN_IN_METHODS_AVAILABLE = 2;
+
+	// Each value in 0 to 1 (a property's general range is -1 to 1), added up,
+	// then multiplied at the end: UV, 6 Nov. Almost the base for anyone who uses
+	// the site, so it should stay close to insignificant.
+	const PROFILE_PARTS = [
+		['picture', 'Picture added', (p) => (p.has_picture ? 1 : 0)],
+		['display_name', 'Display name added', (p) => (p.has_display_name ? 1 : 0)],
+		['full_name', 'Name and surname set', (p) => (p.has_full_name ? 1 : 0)],
+		['id_verified', 'ID verified', (p) => (p.id_verified ? 1 : 0)],
+		['notifications', 'Notifications enabled', (p) => (p.notifications_enabled ? 1 : 0)],
+		['sign_in', 'Sign-in methods', (p) => Math.min(p.sign_in_methods / SIGN_IN_METHODS_AVAILABLE, 1)]
+	];
+
+	// UV describes each one; none is assumed (UV, 6 Nov: no starting set). The
+	// sliders' starting values are Claude's, only so the page opens with a number.
+	const FORMULAS = [
+		{
+			id: 'profile_completeness',
+			level: 'player',
+			who: 'everyone',
+			label: 'Profile completeness',
+			weights: Object.assign(
+				Object.fromEntries(PROFILE_PARTS.map(([key, label]) => [key, { label, value: 1, min: 0, max: 1, step: 0.05 }])),
+				{ multiplier: { label: 'Multiply the total by', value: 10, min: 0, max: 100, step: 1 } }
+			),
+			parts: (d, w) => PROFILE_PARTS.map(([key, label, value]) => ({ label, amount: value(d.me.profile) * w[key] * w.multiplier })),
+			calc: (d, w) => PROFILE_PARTS.reduce((sum, [key, , value]) => sum + value(d.me.profile) * w[key], 0) * w.multiplier
+		}
+	];
+
+	// What the page opens with. `edit` is what can be changed on its one person.
+	const SCENARIOS = [
+		{
+			id: 'profile_complete',
+			label: 'Profile completeness',
+			note: 'One player with every step complete. Change a step to see what it is worth.',
+			people: [{
+				id: 'player',
+				name: 'Player',
+				verified: true,
+				profile: {
+					has_picture: true,
+					has_display_name: true,
+					has_full_name: true,
+					id_verified: true,
+					notifications_enabled: true,
+					sign_in_methods: SIGN_IN_METHODS_AVAILABLE
+				}
+			}],
+			edit: [
+				{ path: 'profile.has_picture', label: 'Picture added', type: 'bool' },
+				{ path: 'profile.has_display_name', label: 'Display name added', type: 'bool' },
+				{ path: 'profile.has_full_name', label: 'Name and surname set', type: 'bool' },
+				{ path: 'profile.id_verified', label: 'ID verified', type: 'bool' },
+				{ path: 'profile.notifications_enabled', label: 'Notifications enabled', type: 'bool' },
+				{ path: 'profile.sign_in_methods', label: 'Sign-in methods', type: 'number', min: 0, max: SIGN_IN_METHODS_AVAILABLE },
+				{ path: 'verified', label: 'A verified account (the rule: anyone else earns nothing)', type: 'bool' }
+			]
+		}
+	];
 
 	// Settings that belong to a whole weight set rather than to one formula.
 	const SETTINGS = {
@@ -55,6 +115,20 @@ const TDCPoints = (() => {
 			['me.roles.referee', 'yes/no', 'Referee here'],
 			['me.profile.joined_days', 'number', 'Days since the account was made'],
 			['me.profile.has_picture', 'yes/no', 'Has a profile picture'],
+			['me.profile.has_display_name', 'yes/no', 'Has a display name'],
+			['me.profile.has_full_name', 'yes/no', 'Has both a name and a surname'],
+			['me.profile.id_entered', 'yes/no', 'Has entered an ID, verified or not'],
+			['me.profile.id_verified', 'yes/no', 'An ID checked by staff, not revoked'],
+			['me.profile.email_confirmed', 'yes/no', 'Has confirmed their email address'],
+			['me.profile.notifications_enabled', 'yes/no', 'Push notifications on, on at least one device'],
+			['me.profile.sign_in_methods', 'number', 'Ways they can sign in: email, Google'],
+			['me.profile.has_display_name', 'yes/no', 'Has a display name'],
+			['me.profile.has_full_name', 'yes/no', 'Has both a name and a surname'],
+			['me.profile.id_entered', 'yes/no', 'Has entered an ID, verified or not'],
+			['me.profile.id_verified', 'yes/no', 'An ID checked by staff, not revoked'],
+			['me.profile.email_confirmed', 'yes/no', 'Has confirmed their email address'],
+			['me.profile.notifications_enabled', 'yes/no', 'Push notifications on, on at least one device'],
+			['me.profile.sign_in_methods', 'number', 'Ways they can sign in: email, Google'],
 			['me.profile.followers', 'number', 'Followers'],
 			['me.profile.following', 'number', 'Following'],
 			['me.history.frames', 'number', 'Career frames'],
@@ -241,6 +315,20 @@ const TDCPoints = (() => {
 		profile: {
 			joined_days: asNumber(p.profile && p.profile.joined_days),
 			has_picture: !!(p.profile && p.profile.has_picture),
+			has_display_name: !!(p.profile && p.profile.has_display_name),
+			has_full_name: !!(p.profile && p.profile.has_full_name),
+			id_entered: !!(p.profile && p.profile.id_entered),
+			id_verified: !!(p.profile && p.profile.id_verified),
+			email_confirmed: !!(p.profile && p.profile.email_confirmed),
+			notifications_enabled: !!(p.profile && p.profile.notifications_enabled),
+			sign_in_methods: asNumber(p.profile && p.profile.sign_in_methods),
+			has_display_name: !!(p.profile && p.profile.has_display_name),
+			has_full_name: !!(p.profile && p.profile.has_full_name),
+			id_entered: !!(p.profile && p.profile.id_entered),
+			id_verified: !!(p.profile && p.profile.id_verified),
+			email_confirmed: !!(p.profile && p.profile.email_confirmed),
+			notifications_enabled: !!(p.profile && p.profile.notifications_enabled),
+			sign_in_methods: asNumber(p.profile && p.profile.sign_in_methods),
 			followers: asNumber(p.profile && p.profile.followers),
 			following: asNumber(p.profile && p.profile.following)
 		},
@@ -570,6 +658,7 @@ const TDCPoints = (() => {
 
 				if (level === 'player') {
 					line.amount = run(formula, d, person, '');
+					if (formula.parts) line.parts = formula.parts(d, weights.formulas[formula.id] || {});
 				} else if (level === 'frame') {
 					if (capped) continue;
 					for (const frame of s.frames.filter(isComplete)) {
@@ -680,7 +769,7 @@ const TDCPoints = (() => {
 	};
 
 	return {
-		LEVELS, WHO, FORMULAS, SETTINGS, DATA,
+		LEVELS, WHO, FORMULAS, SCENARIOS, SETTINGS, DATA,
 		calculate, resolveWeights, checkFormulas, fillScenario, viewFor, frameView, read,
 		frameFromRow, historyFromFrames
 	};

@@ -236,6 +236,7 @@ UV, 6 Nov: a page on the site that **only he can access**, where he plays with s
 | 5 | How honours (`docs/BACKLOG.md` §2 item 9) relate to points: the same design, or separate |
 | 6 | Whether a player can hide a match without removing it, and whether hiding costs points |
 | 7 | What in the data marks the "negative" playing style. No data point is named for it until UV describes one |
+| 8 | **What "verified accounts only" (§2) means: an ID checked by staff, or a confirmed email?** §8 item 56 read it as ID, which Claude listed, not UV. Read that way only 2 of 25 players earn anything, which does not fit profile completeness going to "everyone almost by default" (UV, 6 Nov), and "ID verified" could never score for anyone who has not got it. `docs/STATUS.md` §1 item 3 reads it the other way, as the confirmed email plus a bot check |
 
 **Answered, 6 Nov (from the code):**
 

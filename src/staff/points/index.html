@@ -20,7 +20,29 @@ extraScripts:
 
 	<div class="status" id="status-msg"></div>
 
-	<div class="points-layout" id="staff-area" hidden>
+	<div id="staff-area" hidden>
+	<div class="points-tune">
+		<section class="points-setup">
+			<h2>Scenario</h2>
+			<div class="field">
+				<select id="scenario-select" aria-label="Scenario"></select>
+				<div class="hint" id="scenario-note"></div>
+			</div>
+			<div id="scenario-fields"></div>
+
+			<h2>Weights</h2>
+			<div id="formula-sets"></div>
+			<button type="button" class="btn btn-secondary" id="weights-reset">Put the weights back</button>
+		</section>
+
+		<section class="points-results">
+			<h2>Points</h2>
+			<div id="points-results"></div>
+			<div id="points-warnings"></div>
+		</section>
+	</div>
+
+	<div class="points-layout">
 		<section class="points-writer">
 			<h2>Write a formula</h2>
 			<div class="points-details">
@@ -61,5 +83,6 @@ extraScripts:
 			<div id="data-groups"></div>
 			<p class="muted" id="data-empty" hidden>No data point matches that.</p>
 		</section>
+	</div>
 	</div>
 </div>

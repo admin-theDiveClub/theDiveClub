@@ -2,7 +2,7 @@
 
 The tuning page and its formula. The concept and UV's rules are in `docs/design/points-and-tiers.md`; §9a there says how the page came to be this shape.
 
-**Built so far (6 Nov): steps 1 and 2: the formula module and its tests, and `/staff/points/` with the data points list and the formula space.** There is no formula yet, so nothing is calculated on the page. Real points are not worked out or shown anywhere.
+**Built so far (6 Nov): the formula module and its tests; `/staff/points/` with one scenario, sliders and live points, the data points list and the formula space; UV's first formula, profile completeness.** Weights are not saved and real data is not read yet. Real points are not worked out or shown anywhere.
 
 ## The formula module
 
@@ -73,7 +73,35 @@ No install needed:
 node --test tools/points-tests/points-formula.test.js
 ```
 
-The formulas in the test file only prove the engine; none is a real one.
+Most formulas in the test file only prove the engine. The profile completeness tests are for the real one.
+
+## The formulas
+
+### Profile completeness (UV, 6 Nov; level `player`, for everyone)
+
+Almost the base for anyone who uses the site, so it should stay close to insignificant. Each property is a value in 0 to 1 (a property's general range is -1 to 1), each with its own slider; they are added, then multiplied at the end.
+
+```text
+total = ( picture + display name + name and surname + ID verified
+          + notifications + sign-in methods ) x multiplier
+```
+
+| Property | Data point | Value | Will be read from (step 5) |
+|---|---|---|---|
+| Picture added | `me.profile.has_picture` | 1 or 0 | `tbl_players.avatar_path` |
+| Display name added | `me.profile.has_display_name` | 1 or 0 | `tbl_players.display_name`; sign-up asks for it, so nearly always 1 |
+| Name and surname set | `me.profile.has_full_name` | 1 if both | `first_name`, `last_name` |
+| ID verified | `me.profile.id_verified` | 1 or 0 | `tbl_identifier_verifications`, not revoked |
+| Notifications enabled | `me.profile.notifications_enabled` | 1 or 0 | A row in `tbl_push_subscriptions`: on, on at least one device; a dead phone's row still counts |
+| Sign-in methods | `me.profile.sign_in_methods` | Methods ÷ 2, at most 1 (Claude's) | `auth.identities`, email and Google |
+
+The sliders' starting values (each 1, multiplier 10, so 60 with everything done) are Claude's, only so the page opens with a number. It is `who: 'everyone'`, so an official earns it too. As with every formula, the verified rule sits over it: see design §10 q8.
+
+A formula's `parts` gives the breakdown's rows, in points, and a test checks they add up to its amount.
+
+### Scenarios
+
+`SCENARIOS` in the module. Each has `people` and an `edit` list saying what can be changed on the first person, which the page draws as switches and steppers. Edits last until the page is reloaded or another scenario is chosen.
 
 ## The page
 
@@ -83,6 +111,7 @@ The formulas in the test file only prove the engine; none is a real one.
 
 | Part | How |
 |---|---|
+| Scenario and sliders | Each formula's weights get a slider by themselves, under its level; every change recalculates through `TDCPoints.calculate`. On a phone only the total stays on the screen. Put the weights back returns to the defaults |
 | Formula space | Name, Level, For and a pseudo code box. **Nothing parses or runs it**: it is text for Claude (UV, 6 Nov: pseudo code). Copy for Claude adds the name, level and who at the top. The draft stays in this browser only, as a convenience |
 | Data points | `DATA` from the module, grouped, plus every `rules` setting read from `TDCMatchDef.SETTINGS`, so a new setting appears by itself. Scope `match` settings (lag winner, referee) are `match.*` data points instead. A tap drops the name in at the cursor without moving the cursor or keyboard |
 | Search | Every word must match the name, description or type; matching groups open |
@@ -92,8 +121,8 @@ The formulas in the test file only prove the engine; none is a real one.
 
 | Step | What |
 |---|---|
-| 3 | Sliders, live results and the breakdown, preset A |
-| 4 | Presets B to D, editable frame by frame, with roles, settings, verified, history and the cap |
+| 3 | UV's further formulas, each with a scenario, as he describes them (begun: profile completeness) |
+| 4 | Presets A to D, editable frame by frame, with roles, settings, verified, history and the cap |
 | 5 | Migration: named weight sets in an owner-only table, saved through `tdc_` functions; an owner-only read of real matches and site-wide stats. Real matches, read only; saving named sets |
 
 **The module is public** like every script, as the board's code is, though nothing links to it. Anyone who finds it can read the formulas. That matters only when real points arrive.

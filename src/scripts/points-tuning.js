@@ -1,8 +1,10 @@
 // The points page (/staff/points/), owners only.
 //
-// Built so far: the data points list and the place UV writes a formula. The
-// pseudo code is only text: nothing here runs it. UV copies it to Claude, who
-// adds it to FORMULAS in points-formula.js (docs/systems/points.md).
+// A scenario, a slider per weight and the points they give, recalculated live;
+// the data points list and the place UV writes a formula. The pseudo code is
+// only text: nothing here runs it. UV copies it to Claude, who adds it to
+// FORMULAS in points-formula.js, and it then gets its sliders by itself
+// (docs/systems/points.md). Weights are not saved yet.
 //
 // Needs: supabaseClient.js, tdc.js, staff-common.js, match-settings.js, points-formula.js.
 
@@ -13,7 +15,9 @@ TDCLoader.hold((async () => {
 		lineEl: el('venue-line'), fieldEl: el('venue-field'), selectEl: el('venue-select'), statusEl: el('status-msg'),
 		staffArea: el('staff-area'), name: el('formula-name'), level: el('formula-level'), who: el('formula-who'),
 		text: el('formula-text'), copy: el('formula-copy'), clear: el('formula-clear'),
-		search: el('data-search'), groups: el('data-groups'), empty: el('data-empty')
+		search: el('data-search'), groups: el('data-groups'), empty: el('data-empty'),
+		scenario: el('scenario-select'), scenarioNote: el('scenario-note'), scenarioFields: el('scenario-fields'),
+		sets: el('formula-sets'), reset: el('weights-reset'), results: el('points-results'), warnings: el('points-warnings')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -204,6 +208,127 @@ TDCLoader.hold((async () => {
 		}
 		els.empty.hidden = shown > 0;
 	});
+
+	// ─── The scenario, the sliders and the points ───
+
+	const LEVEL_TITLE = { player: 'Player: profile and history', frame: 'Frames', match: 'Matches', tournament: 'Tournaments', league: 'Leagues' };
+	const shown = (n) => String(Math.round(n * 100) / 100);
+	const defaults = () => TDCPoints.resolveWeights(TDCPoints.FORMULAS).weights;
+
+	let weights = defaults();
+	let scenario = null;
+
+	function drawPoints() {
+		const { people, warnings } = TDCPoints.calculate(scenario, TDCPoints.FORMULAS, weights);
+		els.results.textContent = '';
+		for (const person of people) {
+			const box = div('points-person', '');
+			const summary = div('points-summary', '');
+			if (scenario.people.length > 1) summary.append(div('points-total-label', person.name));
+			summary.append(div('points-total', shown(person.points)));
+			box.append(summary);
+			if (!person.verified) box.append(div('points-would', 'Not a verified account, so nothing is earned. It would be ' + shown(person.would_earn) + '.'));
+			if (person.capped) box.append(div('points-would', 'Over the social cap this week.'));
+			for (const line of person.lines) {
+				box.append(div('points-line', ''));
+				box.lastChild.append(div('points-line-name', line.label), div('points-line-amount', shown(line.amount)));
+				for (const part of line.parts || []) {
+					box.append(div('points-part', ''));
+					box.lastChild.append(div('points-part-name', part.label), div('points-part-amount', shown(part.amount)));
+				}
+			}
+			els.results.append(box);
+		}
+		// A formula that fails says so here, never as a quiet low score.
+		els.warnings.textContent = '';
+		for (const w of warnings) {
+			console.error('[' + AREA + '] ' + w);
+			els.warnings.append(div('status error', 'TDC (Error): ' + w));
+		}
+	}
+
+	function drawScenario() {
+		const preset = TDCPoints.SCENARIOS.find((s) => s.id === els.scenario.value);
+		scenario = JSON.parse(JSON.stringify(preset));
+		els.scenarioNote.textContent = preset.note;
+		els.scenarioFields.textContent = '';
+		const person = scenario.people[0];
+		preset.edit.forEach((item, i) => {
+			const keys = item.path.split('.');
+			const holder = keys.slice(0, -1).reduce((v, k) => v[k], person);
+			const key = keys[keys.length - 1];
+			const field = div('field field-beside', '');
+			const input = document.createElement('input');
+			input.id = 'scenario-field-' + i;
+			const label = document.createElement('label');
+			label.htmlFor = input.id;
+			label.textContent = item.label;
+			if (item.type === 'bool') {
+				input.type = 'checkbox';
+				input.checked = !!holder[key];
+			} else {
+				input.type = 'number';
+				input.dataset.stepper = 'across';
+				input.min = item.min;
+				input.max = item.max;
+				input.value = holder[key];
+			}
+			const change = () => {
+				holder[key] = item.type === 'bool' ? input.checked : (Number(input.value) || 0);
+				drawPoints();
+			};
+			input.addEventListener('input', change);
+			input.addEventListener('change', change);
+			field.append(input, label);
+			els.scenarioFields.append(field);
+		});
+		drawPoints();
+	}
+
+	function drawSliders() {
+		els.sets.textContent = '';
+		for (const level of TDCPoints.LEVELS) {
+			const formulas = TDCPoints.FORMULAS.filter((f) => f.level === level);
+			const group = div('points-level', '');
+			group.append(div('points-level-title', LEVEL_TITLE[level]));
+			if (!formulas.length) group.append(div('muted', 'No formulas yet.'));
+			for (const formula of formulas) {
+				group.append(div('points-formula-name', formula.label || formula.id));
+				for (const [key, def] of Object.entries(formula.weights || {})) {
+					const row = div('points-slider', '');
+					const label = document.createElement('label');
+					const slider = document.createElement('input');
+					slider.type = 'range';
+					slider.id = 'weight-' + formula.id + '-' + key;
+					slider.min = def.min;
+					slider.max = def.max;
+					slider.step = def.step;
+					slider.value = weights.formulas[formula.id][key];
+					label.htmlFor = slider.id;
+					label.textContent = def.label || key;
+					const value = div('points-slider-value', shown(Number(slider.value)));
+					slider.addEventListener('input', () => {
+						weights.formulas[formula.id][key] = Number(slider.value);
+						value.textContent = shown(Number(slider.value));
+						drawPoints();
+					});
+					row.append(label, value, slider);
+					group.append(row);
+				}
+			}
+			els.sets.append(group);
+		}
+	}
+
+	fillSelect(els.scenario, TDCPoints.SCENARIOS.map((s) => s.id), Object.fromEntries(TDCPoints.SCENARIOS.map((s) => [s.id, s.label])));
+	els.scenario.addEventListener('change', drawScenario);
+	els.reset.addEventListener('click', () => {
+		weights = defaults();
+		drawSliders();
+		drawPoints();
+	});
+	drawSliders();
+	drawScenario();
 
 	loadDraft();
 	showArea();
