@@ -272,6 +272,8 @@
 	pointer-events: none;
 }
 .pp-find-results { margin-top: var(--space-2); }
+/* The feed's Show more, centred under its rows. */
+.pp-feed-more { display: flex; justify-content: center; margin-top: var(--space-3); }
 /* Whom you follow: the row is the link, the ring beside it stops following. */
 .pp-following-row {
 	display: flex;

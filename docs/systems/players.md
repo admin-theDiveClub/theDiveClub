@@ -62,6 +62,25 @@ The button is the person with a plus, turning to a green tick once you follow. I
 
 Players in the left menu. Type two letters: each result is a link to that player's profile and does nothing else. It reuses `tdc_search_opponents`: everyone with an account but you, by display, first or last name, 20 at most. Walk-ins are not found, and "Nobody by that name" says so. Signed in only, as the profile is. The dots run on a small spot of their own at the field's right, because on the field they would dim it under the person's typing.
 
+### The feed (UV, 5 Nov; migration `20261105214625`, test `064_my_feed`)
+
+On `/players/`, above Following, once you follow somebody: matches being played and results from the players you follow. Playing first, then results, newest first; ten rows, then Show more. A row opens its match to watch, or a league night's team card.
+
+| Part | How |
+|---|---|
+| A singles match | "Shadow v Thabo", the score, Playing with its race or Finished with its date, the competition if any |
+| A league night | One row, "Team 0 v Team 3", the team score, and "Shadow played" (UV) |
+| Two you follow in one match | One row, naming both |
+| Left out | Not started (UV), abandoned (Claude's) |
+
+**Finished as soon as it is scored (UV).** A match reads finished once it is complete, once a card has been submitted, once a race or best-of is reached, or once every frame of a team night has a result. So a result still waiting on a second captain or a coordinator reads Finished here, while the match's own page says more. Claude recommended waiting until it was settled; UV chose this.
+
+**Live while the page is open (UV).** `player.js` watches each match being played through `tbl_matches`, as the fixtures page does, and any change reads the feed again, the score fading (`TDC.liveFade`). Hidden, it lets go of the socket; shown again, it reads the feed. **A match that starts meanwhile is not heard**, so it appears on coming back to the page or reloading.
+
+**Why it is safe.** It shows nothing a signed-in player could not already see on those players' profiles. A team night comes only through its frames, which are made when both lineups lock, so the secret order is never read. Nobody can read another person's feed, so it says nothing about who follows whom.
+
+**Checked:** 25 tests, and driven at 420 on the local copy with real accounts: a second session scored while the page stayed open, for a viewer inside the match and one outside it, and the score followed with no reload. **Not driven in a browser:** a league night's row (by tests only). Not on a phone.
+
 ### The two functions
 
 Both security definer, signed in only, read only; the page never reads `tbl_players` directly (keeps clear of STATUS B2).

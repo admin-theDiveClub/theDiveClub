@@ -751,6 +751,118 @@
 		}));
 	}
 
+	// ─── The feed (UV, 5 Nov) ───
+	// Matches being played and results from the players you follow, from
+	// tdc_my_feed. Every row opens its match to watch, or a league night's card.
+	// Live while the page is open: each match being played is watched as the
+	// fixtures page watches its night, and any change reads the feed again, with
+	// the score fading (TDC.liveFade). A match that starts meanwhile is not
+	// heard, so it appears on coming back to the page.
+	const FEED_STEP = 10;
+	let feedLimit = FEED_STEP;
+	let feedChannel = null;
+	let feedKey = '';
+	let feedSet = new Set();
+	let feedTimer = null;
+
+	function feedRow(m) {
+		const row = node('a', 'pp-row');
+		row.href = matchHref({ team_match: m.team_match, match_id: m.id });
+		const state = m.finished ? 'complete' : 'in_progress';
+		const strip = node('span', 'pp-state fx-state-' + state);
+		strip.title = STATE[state];
+		strip.append(node('span', 'pp-sr', strip.title));
+		let pic;
+		if (m.team_match) {
+			pic = node('span', 'team-pic pp-row-pic');
+			pic.append(TDC.teamPic(m.team_picture));
+		} else {
+			pic = avatar(m.avatar_path, (m.players || [])[0], 'pp-row-pic');
+		}
+		const names = node('span', 'pp-row-names');
+		const race = !m.finished && !m.team_match && m.win_condition === 'free_play' ? TDCMatchDef.WIN_CONDITION.free_play
+			: !m.finished && !m.team_match && m.target ? (TDCMatchDef.WIN_CONDITION[m.win_condition] || m.win_condition) + ' ' + m.target
+			: null;
+		const line = [STATE[state], m.finished ? day(m.played_at) : null, race, m.competition].filter(Boolean).join(' · ');
+		names.append(node('span', 'pp-row-name', m.home + ' v ' + m.away), node('span', 'muted pp-row-sub', line));
+		if (m.team_match) {
+			names.append(node('span', 'muted pp-row-sub', (m.players || []).join(', ') + (m.finished ? ' played' : ' playing')));
+		}
+		const score = node('span', 'pp-score', m.home_frames + '–' + m.away_frames);
+		score.dataset.live = 'feed-' + m.id;
+		row.append(strip, pic, names, score);
+		return row;
+	}
+
+	async function loadFeed() {
+		const { data, error } = await supabaseClient.rpc('tdc_my_feed', { p_limit: feedLimit });
+		if (error) {
+			el('pp-feed-section').hidden = false;
+			TDC.showSupabaseError(AREA, error, el('pp-feed-note'));
+			return false;
+		}
+		const section = el('pp-feed-section');
+		section.hidden = !data.follows;
+		const list = el('pp-feed');
+		const snap = TDC.liveSnapshot(list);
+		TDC.status(el('pp-feed-note'), data.follows && !data.rows.length ? 'Nothing from the players you follow yet.' : '', '');
+		list.replaceChildren(...data.rows.map(feedRow));
+		TDC.liveFade(list, snap);
+		el('pp-feed-more').hidden = !data.more;
+		watchFeed(data.rows.filter((m) => !m.finished).map((m) => m.id));
+		return true;
+	}
+
+	function onFeedLive() {
+		clearTimeout(feedTimer);
+		feedTimer = setTimeout(loadFeed, 400);
+	}
+
+	function watchFeed(ids) {
+		const key = ids.slice().sort().join(',');
+		if (key === feedKey) return;
+		stopFeed();
+		feedKey = key;
+		feedSet = new Set(ids);
+		if (!ids.length) return;
+		// As the fixtures page: a long filter may pass its length limit, so a
+		// big list drops it and sorts on arrival.
+		const filter = ids.length <= 20 ? { filter: 'id=in.(' + ids.join(',') + ')' } : {};
+		feedChannel = supabaseClient
+			.channel('feed')
+			.on('postgres_changes', Object.assign({ event: 'UPDATE', schema: 'public', table: 'tbl_matches' }, filter), (payload) => {
+				if (payload && payload.new && !feedSet.has(payload.new.id)) return;
+				onFeedLive();
+			})
+			.subscribe((status) => {
+				if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+					console.error('[' + AREA + '] live scores in the feed are not running (' + status + ').');
+				}
+			});
+	}
+
+	function stopFeed() {
+		clearTimeout(feedTimer);
+		feedKey = '';
+		if (!feedChannel) return;
+		supabaseClient.removeChannel(feedChannel);
+		feedChannel = null;
+	}
+
+	el('pp-feed-more').addEventListener('click', (e) => {
+		feedLimit += FEED_STEP;
+		TDC.busy(e.currentTarget, loadFeed());
+	});
+
+	// Hidden, the socket is let go (ui.md: battery) and taken up again when
+	// shown; the read covers the gap, and finds a match started meanwhile.
+	document.addEventListener('visibilitychange', () => {
+		if (playerId) return;
+		if (document.visibilityState !== 'visible') { stopFeed(); return; }
+		loadFeed();
+	});
+	window.addEventListener('online', () => { if (!playerId) loadFeed(); });
+
 	// ─── Whom you follow (UV, 5 Nov) ───
 	// Under the search: each player links to their profile, and the green tick
 	// stops following them. The list is read again after each stop.
@@ -791,7 +903,11 @@
 		return true;
 	}
 
-	const stopWriter = TDC.writer({ area: AREA, status: els.followingNote, reload: loadFollowing });
+	const stopWriter = TDC.writer({
+		area: AREA,
+		status: els.followingNote,
+		reload: async () => (await Promise.all([loadFollowing(), loadFeed()])).every(Boolean)
+	});
 	els.following.addEventListener('click', (e) => {
 		const b = e.target.closest('button[data-stop]');
 		if (!b) return;
@@ -844,7 +960,7 @@
 		if (!playerId) {
 			document.title = 'Players — The Dive Club';
 			els.find.hidden = false;
-			await loadFollowing();
+			await Promise.all([loadFollowing(), loadFeed()]);
 			return;
 		}
 

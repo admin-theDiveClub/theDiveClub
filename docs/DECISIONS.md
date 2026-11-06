@@ -1544,3 +1544,12 @@ These predate the log. They are recorded here because every one of them is a dec
 *Why (Claude's reasoning):* a follow is cheap to redo, and nobody is told either way.
 *Rejected:* asking first; keeping the row until a reload so a second tap restores it.
 *Touches:* nothing in the code; it was built this way.
+
+## 2026-11-05 — The feed on /players/
+
+*Decided by UV:* a feed above Following, of matches and results from the players you follow: playing now and finished results, not upcoming; a league night as one row, team v team, the team score and who played; a result reads finished as soon as it is scored; live scores while the page is open.
+*Why (Claude's reasoning for what UV chose):* a row that says the moment a frame or a result lands is what a feed is for, at the cost of showing a result before it is settled and of the page holding a socket while open. Hidden, it lets go, as the site's other live pages do.
+*Claude's, for UV to judge:* abandoned matches left out; ten rows and Show more; a match that starts while the page is open appears only on coming back to it, since hearing every new match would mean listening to all of them.
+*Rejected:* upcoming matches; a followed player's own frames on a league night; Finished only once settled and reading on opening only (both Claude's recommendations; UV chose otherwise).
+*So:* `docs/systems/players.md`, "The feed".
+*Touches:* migration `20261105214625_my_feed.sql`, `supabase/tests/064_my_feed.test.sql` (new), `players/index.html`, `scripts/player.js`, `stylesheets/player.css`
