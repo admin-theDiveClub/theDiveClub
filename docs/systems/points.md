@@ -121,6 +121,20 @@ A formula's `parts` gives the breakdown's rows, in points, and a test checks the
 | Search | Every word must match the name, description or type; matching groups open |
 | Layout | On a phone the box stays on the screen while the list scrolls; on a PC the writer stays beside the list. `.points-writer` is `display: contents` on a phone, or the box could stick only as far as the writer's own foot; `.points-results` likewise, for the totals |
 
+## The title ladder
+
+**Built 6 Nov: the list and the page UV edits it on. Nothing reads it yet:** no player has a step or a chosen title. The design and its open questions are `docs/design/points-and-tiers.md` §6a.
+
+| Part | How |
+|---|---|
+| Tables | `tbl_title_groups` (name, position) and `tbl_titles` (group, name, step 1 to 100, optional note), migration `title_ladder`. RLS on, no policy and no grant to the browser. Neither refers to a player, so `private.tdc_merge_players` does not change; a later table holding a player's chosen title must be added to it |
+| Who | `private.tdc_can_edit_titles()` is the one place: an owner at the venue with slug `the-dive-club` (UV, 6 Nov). Another venue's owner and The Dive Club's staff are refused, reading as well as writing, so players cannot find the list |
+| Functions | `tdc_title_ladder` reads everything; `tdc_save_title` and `tdc_save_title_group` add (`p_id` null) or change; `tdc_delete_title` and `tdc_delete_title_group` delete, a group taking its titles. `tdc_can_edit_titles` is only for the hub's tile, asked only when the person is an owner somewhere |
+| Draft | The migration inserts Claude's lists once. **From then on the list lives in the tables, not in any file**, and a later migration must not reinsert it |
+| Page | `/staff/titles/`: `src/staff/titles/index.html`, `src/scripts/title-ladder.js`, `src/stylesheets/title-ladder.css`. A table scrolling inside its own box both ways, so the step column and the group row can stick. Empty steps stay hidden unless All 100 steps is on. Each cell's titles are plain buttons with the site's button look taken off, because a title's capitals are part of it (T. rex). The forms are `<dialog>`s inside the card, or the site's field styles do not reach them. The switch sits beside its label, not inside one: inside, a tap toggles it twice |
+
+**The points page gains nothing yet:** the list is not data about a player or a match. When a player has a step, it joins `DATA` in `points-formula.js`.
+
 ## Still to build
 
 | Step | What |

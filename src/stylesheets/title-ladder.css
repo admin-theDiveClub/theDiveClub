@@ -1,0 +1,91 @@
+/* The title ladder (/staff/titles/): steps down the side, groups across the top. */
+
+.tdc-card.titles-page { max-width: none; padding-top: var(--space-3); }
+.tdc-card.titles-page h1 { margin-bottom: var(--space-2); font-size: 1.6rem; }
+
+.titles-bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-2) var(--space-3);
+	margin: var(--space-3) 0;
+}
+.tdc-card .titles-bar .btn { width: auto; margin: 0; }
+.titles-all { display: flex; align-items: center; gap: var(--space-2); margin: 0; font-size: 0.85rem; }
+.titles-all label { margin: 0; color: var(--text-primary); }
+
+/* Scrolls by itself both ways, so the step numbers and the group names stay on
+   the screen. */
+.titles-wrap {
+	max-height: 75dvh;
+	overflow: auto;
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-sm);
+}
+.titles-table { border-collapse: separate; border-spacing: 0; font-size: 0.85rem; }
+.titles-table th, .titles-table td {
+	border-right: 1px solid var(--border-color);
+	border-bottom: 1px solid var(--border-color);
+	vertical-align: top;
+}
+.titles-table thead th {
+	position: sticky;
+	top: 0;
+	z-index: 2;
+	padding: var(--space-1);
+	background: var(--border-color);
+}
+.titles-table .titles-step {
+	position: sticky;
+	left: 0;
+	z-index: 1;
+	min-width: 3.25rem;
+	padding: var(--space-2);
+	background: var(--border-color);
+	font-family: var(--font-mono);
+	font-weight: 400;
+	text-align: center;
+	color: var(--text-primary);
+}
+.titles-table thead .titles-step { z-index: 3; }
+.titles-table td { min-width: 9rem; max-width: 12rem; height: 2.75rem; padding: var(--space-1); cursor: pointer; }
+
+/* A title's capitals are part of it (T. rex, Q), so the site's button look stays out. */
+.tdc-card .titles-table button {
+	display: block;
+	width: 100%;
+	min-height: 0;
+	margin: 0;
+	padding: var(--space-1) var(--space-2);
+	border: 0;
+	border-radius: var(--radius-sm);
+	background: none;
+	box-shadow: none;
+	color: var(--text-primary);
+	font: inherit;
+	letter-spacing: normal;
+	text-align: left;
+	text-transform: none;
+	cursor: pointer;
+}
+.tdc-card .titles-table .titles-group { font-weight: 700; }
+.tdc-card .titles-table button:hover { color: var(--color-primary); }
+.titles-group { font-weight: 700; }
+.titles-name, .titles-note { display: block; overflow-wrap: anywhere; }
+.titles-note { font-size: 0.75rem; color: var(--text-muted); }
+
+/* ─── Adding and changing ─── */
+
+.titles-dialog {
+	width: min(28rem, calc(100vw - 2rem));
+	padding: var(--space-3);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-sm);
+	background: var(--bg-base);
+	color: var(--text-primary);
+}
+.titles-dialog::backdrop { background: rgb(0 0 0 / 0.6); }
+.titles-dialog h2 { margin: 0 0 var(--space-3); font-size: 1.1rem; }
+.titles-dialog .field { margin-bottom: var(--space-2); }
+.titles-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.titles-actions .btn { flex: 1 1 auto; width: auto; margin: 0; }

@@ -1603,3 +1603,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Rejected:* Claude's tiers reading a rolling period with lifetime points deciding the hall of fame.
 *So:* `docs/design/points-and-tiers.md` §10a, §10 q9.
 *Touches:* `points-formula.js`, `points-tuning.js`, `tdc-controls.js` (`data-no-dots`).
+
+## 2026-11-06 — The title ladder: 100 steps, titles that unlock, event themes
+
+*Decided by UV:* a ladder of 100 steps where each step can hold several titles. A title has one step ("20+"): from there up, a player may choose it, so titles unlock as points are earned and a player shows off subtly with the one they pick. Each group of titles has its own steps (Space: Planet 20+, Galaxy 40+, Universe 60+). Every title is carefully considered and offers artistic expression: never "George Clooney", perhaps "Clooney" or "Pitt", Clooney on the higher step. UV keeps the list on a new page only he can access, and the site saves his changes: only an owner of The Dive Club may open or edit it, since the titles belong to the whole platform. The page starts from Claude's lists as a draft, with placeholder steps. The docs plan for event themes on the website, such as worldwide holidays.
+*Replaces:* Claude's suggestion of one ladder made of groups, each group holding one band of steps; groups have their own steps instead.
+*Claude's, for UV to judge:* every placeholder step; each title having an optional note for its comparison value; a name being unique only within its group; Captain left out of the Military group because it is already a league role.
+*So:* `docs/design/points-and-tiers.md` §6a, `docs/systems/points.md`, `docs/BACKLOG.md` §2 item 12.

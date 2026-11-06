@@ -110,6 +110,31 @@ So a tier is a **rule** the owner writes, not part of the points maths:
 
 Tiers can be time-limited, earned or assigned.
 
+## 6a. The title ladder (UV, 6 Nov)
+
+**A ladder of 100 steps, and each step can hold several titles.** A title has one step, written as "20+": from that step up, a player may choose it. Each group of titles sets its own steps:
+
+| Group | 20+ | 40+ | 60+ |
+|---|---|---|---|
+| Space (UV's example) | Planet | Galaxy | Universe |
+
+So the list is a matrix: steps down the side, groups across the top, titles in the cells.
+
+- **Titles unlock as points are earned, and stay unlocked.** A player shows whichever unlocked title they like. It is a subtle way to show off, once players learn the language of the values assigned to titles.
+- **The ends so far:** Quark low and Space Emperor high, as examples (UV).
+- **Every title is carefully considered and offers some artistic expression.** Example: never "George Clooney" as a title, but perhaps "Clooney" or "Pitt", with Clooney on a higher step, so a player on the lower step can choose Pitt and only a player on the higher one can choose Clooney.
+- **The groups UV has asked for or liked:** education and physics, films and series, stories, superheroes, sport and sports stars, celebrities, brands, pool brands, cars, coffee strengths, alcohols, chemicals, animals, and military roles (these will be included).
+- **UV keeps the list on an owner-only page that saves his changes** (`/staff/titles/`, built 6 Nov: `docs/systems/points.md`).
+
+**Still open:**
+
+| | Question | Example |
+|---|---|---|
+| 1 | How points decide a player's step | How many points reach step 40 |
+| 2 | How steps relate to the multipliers in §10a | One multiplier per step, or one per band of steps |
+| 3 | What a competition for one group of titles means, now that groups have their own steps | A Star Wars competition: open from the step of a chosen title up, or a range of steps |
+| 4 | How §6's other tiers sit beside the ladder | Senior citizens and a week's VIP are assigned and can end; a step never drops |
+
 ## 7. Retro points for champions
 
 UV: existing champions get retroactive points, which then enable some kind of credit reward through their tier, so high-end players keep coming back. UV enters the titles himself and knows whom to trust for the data. Each title becomes a ledger entry (§4): who, which title, when, at what level, and where the information came from.

@@ -45,4 +45,17 @@ TDCLoader.hold((async () => {
 	};
 	els.selectEl.addEventListener('change', showTiles);
 	showTiles();
+
+	// The title ladder is the whole platform's, so it follows The Dive Club's
+	// owner rather than the venue chosen above (the database decides).
+	const titlesTile = el('titles-tile');
+	if (!titlesTile) {
+		TDC.error(AREA, 'staff page is missing the Titles tile.');
+		return;
+	}
+	if (roles.some((r) => r.role === 'owner')) {
+		const { data: canEdit, error } = await supabaseClient.rpc('tdc_can_edit_titles');
+		if (error) TDC.error(AREA, 'could not check who may open Titles.', error, els.statusEl);
+		else titlesTile.hidden = !canEdit;
+	}
 })(), 'StaffHub');

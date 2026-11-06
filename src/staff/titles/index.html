@@ -1,0 +1,69 @@
+---
+layout: layout.html
+title: Titles
+description: "Owners only: the title ladder."
+extraStyles:
+  - /stylesheets/title-ladder.css
+extraScripts:
+  - /scripts/title-ladder.js
+---
+<div class="tdc-card titles-page">
+	<h1>Titles</h1>
+	<p class="muted" id="titles-count"></p>
+	<div class="status" id="status-msg"></div>
+
+	<div id="titles-area" hidden>
+		<div class="titles-bar">
+			<button type="button" class="btn btn-primary" id="add-title" data-no-dots>+ Title</button>
+			<button type="button" class="btn btn-secondary" id="add-group" data-no-dots>+ Group</button>
+			<div class="titles-all"><input type="checkbox" id="show-all"><label for="show-all">All 100 steps</label></div>
+		</div>
+		<div class="titles-wrap" id="titles-wrap"></div>
+	</div>
+
+	<dialog class="titles-dialog" id="title-dialog">
+		<form method="dialog" id="title-form" novalidate>
+			<h2 id="title-heading"></h2>
+			<div class="field">
+				<label for="title-name">Title</label>
+				<input type="text" id="title-name" maxlength="60" autocomplete="off">
+			</div>
+			<div class="field-pair">
+				<div class="field">
+					<label for="title-group">Group</label>
+					<select id="title-group" data-control="none"></select>
+				</div>
+				<div class="field">
+					<label for="title-step">Step (1 to 100)</label>
+					<input type="number" id="title-step" min="1" max="100" step="1" inputmode="numeric" data-control="none">
+				</div>
+			</div>
+			<div class="field">
+				<label for="title-note">Note</label>
+				<input type="text" id="title-note" maxlength="120" autocomplete="off" placeholder="A value to compare, like 6 m or Mohs 10">
+			</div>
+			<div class="status" id="title-status"></div>
+			<div class="titles-actions">
+				<button type="submit" class="btn btn-primary" id="title-save">Save</button>
+				<button type="button" class="btn btn-secondary" id="title-cancel" data-no-dots>Cancel</button>
+				<button type="button" class="btn btn-danger" id="title-delete">Delete</button>
+			</div>
+		</form>
+	</dialog>
+
+	<dialog class="titles-dialog" id="group-dialog">
+		<form method="dialog" id="group-form" novalidate>
+			<h2 id="group-heading"></h2>
+			<div class="field">
+				<label for="group-name">Name</label>
+				<input type="text" id="group-name" maxlength="40" autocomplete="off">
+			</div>
+			<div class="status" id="group-status"></div>
+			<div class="titles-actions">
+				<button type="submit" class="btn btn-primary" id="group-save">Save</button>
+				<button type="button" class="btn btn-secondary" id="group-cancel" data-no-dots>Cancel</button>
+				<button type="button" class="btn btn-danger" id="group-delete">Delete</button>
+			</div>
+		</form>
+	</dialog>
+</div>
