@@ -95,13 +95,13 @@ total = ( picture + display name + name and surname + ID verified
 | Notifications enabled | `me.profile.notifications_enabled` | 1 or 0 | A row in `tbl_push_subscriptions`: on, on at least one device; a dead phone's row still counts |
 | Sign-in methods | `me.profile.sign_in_methods` | Methods ÷ 2, at most 1 (Claude's) | `auth.identities`, email and Google |
 
-The sliders' starting values (each 1, multiplier 10, so 60 with everything done) are Claude's, only so the page opens with a number. It is `who: 'everyone'`, so an official earns it too. As with every formula, the verified rule sits over it: see design §10 q8.
+The sliders' starting values (each 0.5 to 1, multiplier 5 to 10, so 15 to 60 with everything done) are Claude's, only so the page opens with a number. It is `who: 'everyone'`, so an official earns it too. As with every formula, the verified rule sits over it: see design §10 q8.
 
 A formula's `parts` gives the breakdown's rows, in points, and a test checks they add up to its amount.
 
 ### Scenarios
 
-`SCENARIOS` in the module. Each has `people` and an `edit` list saying what can be changed on the first person, which the page draws as switches and steppers. Edits last until the page is reloaded or another scenario is chosen.
+`SCENARIOS` in the module. Each has `people` and an `edit` list saying what can be changed on the first person, which the page draws as switches and steppers. Edits last until the page is reloaded, Reset is pressed or another scenario is chosen.
 
 ## The page
 
@@ -111,11 +111,14 @@ A formula's `parts` gives the breakdown's rows, in points, and a test checks the
 
 | Part | How |
 |---|---|
-| Scenario and sliders | Each formula's weights get a slider by themselves, under its level; every change recalculates through `TDCPoints.calculate`. On a phone only the total stays on the screen. Put the weights back returns to the defaults |
-| Formula space | Name, Level, For and a pseudo code box. **Nothing parses or runs it**: it is text for Claude (UV, 6 Nov: pseudo code). Copy for Claude adds the name, level and who at the top. The draft stays in this browser only, as a convenience |
+| Scenario and weights | UV, 6 Nov: as compact as possible. Each formula's weights get a row by themselves, in folding groups: a filled band for a level (`.points-band`), a green line down the left holding a formula's rows, with its own low and high on its heading (`.points-sub`). A row is the scenario's toggle for that step (or a small stepper for a number), the name, a typed low, a two-thumb range and a typed high. A scenario step with `formula` and `weight` sits on that row; one without sits above the groups |
+| Low and high | Every weight has both, so every scenario gives a low and a high total: two runs of `TDCPoints.calculate`, one with each set. `value` is a weight's default and the page's high; `low` is the page's low. Low can never pass high: the other follows. A typed value may go past the slider's ends, and the slider grows to fit. Reset returns both weights and the scenario to the start |
+| Results | On a phone only the two totals stay on the screen, stuck to the foot; on a PC they sit beside the weights. The breakdown folds away, low and high in columns |
+| Formula space | Folds away, open by itself if a draft is in it. Name, Level, For and a pseudo code box. **Nothing parses or runs it**: it is text for Claude (UV, 6 Nov: pseudo code). Copy for Claude adds the name, level and who at the top. The draft stays in this browser only, as a convenience |
 | Data points | `DATA` from the module, grouped, plus every `rules` setting read from `TDCMatchDef.SETTINGS`, so a new setting appears by itself. Scope `match` settings (lag winner, referee) are `match.*` data points instead. A tap drops the name in at the cursor without moving the cursor or keyboard |
+| Two-thumb range | Two native range inputs laid over one track, only the thumbs taking the pointer. Where they meet, the one that can still move lies on top. Number boxes are `data-control="none"`, or the site turns them into steppers. The switch's size comes from `--switch-height` and `--switch-width`, set smaller on `.points-tune` |
 | Search | Every word must match the name, description or type; matching groups open |
-| Layout | On a phone the box stays on the screen while the list scrolls; on a PC the writer stays beside the list. `.points-writer` is `display: contents` on a phone, or the box could stick only as far as the writer's own foot |
+| Layout | On a phone the box stays on the screen while the list scrolls; on a PC the writer stays beside the list. `.points-writer` is `display: contents` on a phone, or the box could stick only as far as the writer's own foot; `.points-results` likewise, for the totals |
 
 ## Still to build
 

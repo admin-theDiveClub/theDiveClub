@@ -269,6 +269,24 @@ const profile = (fields, weights) => {
 };
 const complete = TDCPoints.SCENARIOS.find((s) => s.id === 'profile_complete').people[0].profile;
 
+test('a scenario\'s steps name weights that exist', () => {
+	for (const s of TDCPoints.SCENARIOS) {
+		for (const e of s.edit.filter((item) => item.weight)) {
+			const f = TDCPoints.FORMULAS.find((x) => x.id === e.formula);
+			assert.ok(f && f.weights[e.weight], e.formula + '.' + e.weight);
+		}
+	}
+});
+
+test('every weight\'s low is within its range and not above its high', () => {
+	for (const f of TDCPoints.FORMULAS) {
+		for (const [key, w] of Object.entries(f.weights || {})) {
+			const low = w.low ?? w.value;
+			assert.ok(low <= w.value && low >= w.min && w.value <= w.max, f.id + '.' + key);
+		}
+	}
+});
+
 test('profile completeness: all six steps add up, then multiply', () => {
 	assert.equal(profile(complete), 60);
 	assert.equal(profile({}), 0);

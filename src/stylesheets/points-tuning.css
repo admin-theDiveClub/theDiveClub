@@ -1,105 +1,236 @@
-/* The points page (/staff/points/). */
+/* The points page (/staff/points/): as compact as it can be (UV, 6 Nov). */
 
-.tdc-card.points-page { max-width: 72rem; }
+.tdc-card.points-page { max-width: 72rem; padding-top: var(--space-3); }
+.tdc-card.points-page h1 { margin-bottom: var(--space-2); font-size: 1.6rem; }
+.points-page #venue-line { display: none; }
+.points-page .field { margin-bottom: var(--space-2); }
 
-/* The scenario and its sliders, with the points beside them. On a phone only
-   the total stays on the screen, so a slider can be watched as it moves; the
-   results' wrappers give way so it can stick for the whole of the sliders. */
-.points-tune { margin-bottom: var(--space-6); }
+/* Three steps down, each with its own look (UV, 6 Nov: the nested rows were not
+   clear). A band is a section; a sub is a formula or a group of data points,
+   its rows held inside a line down its left. */
+.points-page .set-group { padding: 0; border-top: 0; }
+.points-page .set-group > summary { margin: 0; }
+
+.points-band { margin-top: var(--space-3); }
+.points-page .points-band > summary {
+	padding: var(--space-2) calc(var(--group-dots-size) + var(--space-3)) var(--space-2) var(--space-3);
+	border-radius: var(--radius-sm);
+	background: var(--border-color);
+	color: var(--text-primary);
+}
+.points-page .points-band > summary::after { right: var(--space-2); color: var(--text-primary); }
+
+.points-sub { margin: var(--space-2) 0 0 var(--space-1); }
+.points-page .points-sub > summary {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--space-3);
+	padding: var(--space-1) calc(var(--group-dots-size) + var(--space-2)) var(--space-1) var(--space-2);
+	border-left: 2px solid var(--color-primary);
+	color: var(--text-primary);
+	font-size: 0.85rem;
+	font-weight: 700;
+	letter-spacing: normal;
+	text-transform: none;
+}
+.points-page .points-sub > summary::after { right: 0; }
+.points-page .points-sub[open] { padding-bottom: var(--space-1); border-left: 2px solid var(--color-primary); }
+.points-page .points-sub[open] > summary { border-left: 0; }
+.points-sub[open] > :not(summary) { margin-left: var(--space-2); }
+.tdc-card .points-sub[open] > .points-point { width: calc(100% - var(--space-2)); }
+.points-sub-name { min-width: 0; }
+.points-sub-total { flex: none; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 400; color: var(--color-primary); }
+
+/* ─── The scenario ─── */
+
+.points-bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-2) var(--space-3);
+	margin-bottom: var(--space-2);
+}
+.points-bar .field { flex: 0 1 auto; margin: 0; min-width: 0; }
+.points-note { margin-bottom: var(--space-2); font-size: 0.8rem; color: var(--text-muted); }
+.points-flag { display: flex; align-items: center; gap: var(--space-2); font-size: 0.85rem; }
+.tdc-card .btn.points-small {
+	width: auto;
+	margin: 0 0 0 auto;
+	padding: var(--space-1) var(--space-3);
+	min-height: 0;
+	font-size: 0.7rem;
+}
+
+/* ─── A weight: its toggle, name, low, the range and high ─── */
+
+.points-tune { --switch-height: 1.4rem; --switch-width: 2.6rem; margin-bottom: var(--space-3); }
 .points-tune > section { min-width: 0; }
-.points-results, #points-results, .points-person { display: contents; }
-.points-summary {
+.points-row {
+	display: grid;
+	grid-template-columns: 3.4rem minmax(0, 1fr) 3.6rem 3.6rem;
+	grid-template-areas:
+		"toggle name low high"
+		"range range range range";
+	align-items: center;
+	gap: 0 var(--space-2);
+	padding: var(--space-1) 0;
+}
+.points-row + .points-row { border-top: 1px solid var(--border-color); }
+.points-row-toggle { grid-area: toggle; display: flex; align-items: center; justify-content: flex-start; min-width: 0; }
+.points-row-name { grid-area: name; min-width: 0; font-size: 0.85rem; line-height: 1.2; }
+.tdc-card .points-row input.points-low { grid-area: low; }
+.tdc-card .points-row input.points-high { grid-area: high; }
+.tdc-card .points-row input.points-low,
+.tdc-card .points-row input.points-high {
+	width: 100%;
+	padding: 0;
+	font-family: var(--font-mono);
+	font-size: 1rem; /* 16px stops iPhone zooming in on focus */
+	text-align: right;
+	-moz-appearance: textfield;
+	appearance: textfield;
+}
+.points-row input::-webkit-outer-spin-button,
+.points-row input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* Two native sliders over one track, the thumbs alone taking the pointer. */
+.points-range {
+	--low: 0%;
+	--high: 100%;
+	grid-area: range;
+	position: relative;
+	height: 1.5rem;
+	touch-action: none;
+}
+.points-range::before {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 0;
+	right: 0;
+	height: 4px;
+	transform: translateY(-50%);
+	border-radius: var(--radius-pill);
+	background: linear-gradient(to right,
+		var(--border-color) var(--low), var(--color-primary) var(--low),
+		var(--color-primary) var(--high), var(--border-color) var(--high));
+}
+.tdc-card .points-range input[type="range"] {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: none;
+	pointer-events: none;
+	-webkit-appearance: none;
+	appearance: none;
+}
+.points-range input::-webkit-slider-runnable-track { background: none; }
+.points-range input::-moz-range-track { background: none; }
+.points-range input::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	width: 1.25rem;
+	height: 1.25rem;
+	border: 2px solid var(--bg-base);
+	border-radius: var(--radius-round);
+	background: var(--color-primary);
+	cursor: grab;
+	pointer-events: auto;
+}
+.points-range input::-moz-range-thumb {
+	width: 1rem;
+	height: 1rem;
+	border: 2px solid var(--bg-base);
+	border-radius: var(--radius-round);
+	background: var(--color-primary);
+	cursor: grab;
+	pointer-events: auto;
+}
+/* The high thumb is cream, so the two can be told apart when they meet. */
+.points-range input.points-range-high::-webkit-slider-thumb { background: var(--text-primary); }
+.points-range input.points-range-high::-moz-range-thumb { background: var(--text-primary); }
+.points-range input:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--text-primary); }
+
+.points-row-head {
+	display: grid;
+	grid-template-columns: 3.4rem minmax(0, 1fr) 3.6rem 3.6rem;
+	gap: 0 var(--space-2);
+	font-size: 0.65rem;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	text-align: right;
+	color: var(--text-muted);
+}
+.points-empty { margin: var(--space-2) 0; font-size: 0.8rem; color: var(--text-muted); }
+
+/* ─── The points ─── */
+
+/* On a phone only the totals stay on the screen, so a slider can be watched as
+   it moves; the section gives way so they can stick for all of the sliders. */
+.points-results { display: contents; }
+#points-summary {
 	position: sticky;
 	bottom: 0;
 	z-index: 2;
-	padding: var(--space-2) 0;
-	background: var(--bg-base);
-}
-.points-total {
-	font-family: var(--font-display);
-	font-size: 3rem;
-	line-height: 1;
-	text-align: center;
-	color: var(--color-primary);
-}
-.points-total-label { font-size: 0.75rem; text-align: center; color: var(--text-muted); }
-.points-would { margin-bottom: var(--space-3); font-size: 0.85rem; text-align: center; color: var(--color-warning); }
-.points-line, .points-part {
-	display: flex;
-	justify-content: space-between;
-	gap: var(--space-3);
 	padding: var(--space-1) 0;
+	background: var(--bg-base);
 	border-top: 1px solid var(--border-color);
 }
-.points-line { font-weight: 700; }
-.points-part { font-size: 0.85rem; border-top: 0; padding-left: var(--space-3); color: var(--text-muted); }
+.points-person { display: flex; align-items: baseline; justify-content: center; gap: var(--space-4); flex-wrap: wrap; }
+.points-person-name { font-size: 0.8rem; color: var(--text-muted); }
+.points-total { display: flex; align-items: baseline; gap: var(--space-1); }
+.points-total-label { font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+.points-total-value { font-family: var(--font-display); font-size: 1.8rem; line-height: 1; color: var(--color-primary); }
+.points-would { font-size: 0.75rem; text-align: center; color: var(--color-warning); }
 
-.points-level { margin-bottom: var(--space-4); }
-.points-level-title {
-	margin-bottom: var(--space-2);
-	padding-top: var(--space-2);
-	border-top: 1px solid var(--border-color);
-	font-size: 0.7rem;
-	font-weight: 700;
-	letter-spacing: 0.1em;
-	text-transform: uppercase;
-	color: var(--text-muted);
-}
-.points-formula-name { margin-bottom: var(--space-2); font-weight: 700; }
-.points-slider {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto;
-	gap: 0 var(--space-3);
-	align-items: baseline;
-	margin-bottom: var(--space-3);
-}
-.points-slider label { font-size: 0.85rem; }
-.points-slider-value { font-family: var(--font-mono); font-size: 0.9rem; }
-.tdc-card .points-slider input[type="range"] {
-	grid-column: 1 / -1;
-	width: 100%;
-	padding: 0;
-	border-bottom: 0;
-	accent-color: var(--color-primary);
-}
-.points-layout > section { min-width: 0; }
-/* On a phone the writer's parts belong to the layout itself, or the box could
-   stay on the screen only as far as the writer's own foot. */
-.points-writer { display: contents; }
-.points-data { margin-top: var(--space-5); }
+.points-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 0 var(--space-3); font-size: 0.85rem; }
+.points-grid > div { padding: 1px 0; }
+.points-grid-num { font-family: var(--font-mono); text-align: right; }
+.points-grid-line { font-weight: 700; }
+.points-grid-part { color: var(--text-muted); }
+.points-grid-name.points-grid-part { padding-left: var(--space-3); }
 
-/* The box stays on the screen while the data points scroll beneath it: just
-   under the nav while it shows, at the very top once it has slid away. */
+/* ─── Writing a formula ─── */
+
 .points-box {
 	position: sticky;
 	top: 0;
 	z-index: 2;
-	padding: var(--space-2) 0 var(--space-3);
+	padding: var(--space-1) 0 var(--space-2);
 	background: var(--bg-base);
 	transition: top var(--nav-slide, 0.3s) ease;
 }
 body:has(.site-nav:not(.is-hidden)) .points-box { top: var(--nav-total); }
 @media (prefers-reduced-motion: reduce) { .points-box { transition: none; } }
 
-.points-box .field { margin-bottom: var(--space-3); }
 .tdc-card .points-box textarea {
 	font-family: var(--font-mono);
-	font-size: 0.9rem;
-	line-height: 1.4;
+	font-size: 1rem; /* 16px stops iPhone zooming in on focus */
+	line-height: 1.3;
 	resize: vertical;
 }
 .points-actions { display: flex; gap: var(--space-2); }
-.points-actions .btn { flex: 1 1 0; min-width: 0; }
+.tdc-card .points-actions .btn { flex: 1 1 0; width: auto; min-width: 0; margin: 0; padding: var(--space-1) var(--space-3); min-height: 0; font-size: 0.75rem; }
 
-/* One data point: its name to copy, what it is, what it holds. */
-/* Written in full because the site's buttons are capitals with wide spacing,
-   and a name here must read exactly as it lands in the box. */
+/* On a phone the writer's parts belong to the layout itself, or the box could
+   stay on the screen only as far as the writer's own foot. */
+.points-writer { display: contents; }
+
+/* One data point: its name to copy, what it holds, what it is. Written in full
+   because the site's buttons are capitals with wide spacing, and a name here
+   must read exactly as it lands in the box. */
 .tdc-card .points-point {
-	display: block;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 0 var(--space-2);
 	width: 100%;
 	margin: 0;
 	min-height: 0;
-	padding: var(--space-2) var(--space-1);
+	padding: var(--space-1);
 	border: 0;
 	border-top: 1px solid var(--border-color);
 	border-radius: 0;
@@ -115,27 +246,33 @@ body:has(.site-nav:not(.is-hidden)) .points-box { top: var(--nav-total); }
 .tdc-card .points-point[hidden] { display: none; }
 .points-point:hover .points-point-name { color: var(--color-primary); }
 .points-point:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
-.points-point-name { font-family: var(--font-mono); font-size: 0.9rem; overflow-wrap: anywhere; }
-.points-point-label { font-size: 0.85rem; }
-.points-point-type { font-size: 0.75rem; color: var(--text-muted); overflow-wrap: anywhere; }
-
+.points-point-name { font-family: var(--font-mono); font-size: 0.8rem; overflow-wrap: anywhere; }
+.points-point-type { max-width: 11rem; font-size: 0.65rem; text-align: right; color: var(--text-muted); }
+.points-point-label { grid-column: 1 / -1; font-size: 0.75rem; color: var(--text-muted); }
 .points-data .set-group[hidden] { display: none; }
+.points-data .field { margin-top: var(--space-2); }
 
-/* On a PC the whole writer stays beside the list. */
+/* ─── A PC: the sliders beside the points, a row to a weight ─── */
+
 @media (min-width: 900px) {
-	.points-tune { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+	.points-tune { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; }
 	.points-results {
 		display: block;
 		position: sticky;
 		top: 0;
 		transition: top var(--nav-slide, 0.3s) ease;
 	}
-	#points-results, .points-person { display: block; }
-	.points-summary { position: static; background: none; }
 	body:has(.site-nav:not(.is-hidden)) .points-results { top: var(--nav-total); }
+	#points-summary { position: static; background: none; border-top: 0; }
+	.points-row {
+		grid-template-columns: 3.4rem minmax(0, 10rem) 3.2rem minmax(0, 1fr) 3.2rem;
+		grid-template-areas: "toggle name low range high";
+	}
+	.points-row-head { grid-template-columns: 3.4rem minmax(0, 10rem) 3.2rem minmax(0, 1fr) 3.2rem; }
+	.points-row-head > :nth-child(3) { grid-column: 3; }
+	.points-row-head > :nth-child(4) { grid-column: 5; }
+
 	.points-layout { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
-	.points-layout[hidden] { display: none; }
-	.points-data { margin-top: 0; }
 	.points-writer {
 		display: block;
 		position: sticky;
@@ -143,7 +280,7 @@ body:has(.site-nav:not(.is-hidden)) .points-box { top: var(--nav-total); }
 		transition: top var(--nav-slide, 0.3s) ease;
 	}
 	body:has(.site-nav:not(.is-hidden)) .points-writer { top: var(--nav-total); }
-	.points-box { position: static; padding-top: 0; background: none; }
+	.points-box { position: static; background: none; }
 }
 @media (min-width: 900px) and (prefers-reduced-motion: reduce) {
 	.points-writer, .points-results { transition: none; }

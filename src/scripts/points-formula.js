@@ -44,6 +44,7 @@ const TDCPoints = (() => {
 
 	// UV describes each one; none is assumed (UV, 6 Nov: no starting set). The
 	// sliders' starting values are Claude's, only so the page opens with a number.
+	// `value` is a weight's default and the page's high; `low` is the page's low.
 	const FORMULAS = [
 		{
 			id: 'profile_completeness',
@@ -51,15 +52,16 @@ const TDCPoints = (() => {
 			who: 'everyone',
 			label: 'Profile completeness',
 			weights: Object.assign(
-				Object.fromEntries(PROFILE_PARTS.map(([key, label]) => [key, { label, value: 1, min: 0, max: 1, step: 0.05 }])),
-				{ multiplier: { label: 'Multiply the total by', value: 10, min: 0, max: 100, step: 1 } }
+				Object.fromEntries(PROFILE_PARTS.map(([key, label]) => [key, { label, value: 1, low: 0.5, min: 0, max: 1, step: 0.05 }])),
+				{ multiplier: { label: 'Multiply the total by', value: 10, low: 5, min: 0, max: 100, step: 1 } }
 			),
 			parts: (d, w) => PROFILE_PARTS.map(([key, label, value]) => ({ label, amount: value(d.me.profile) * w[key] * w.multiplier })),
 			calc: (d, w) => PROFILE_PARTS.reduce((sum, [key, , value]) => sum + value(d.me.profile) * w[key], 0) * w.multiplier
 		}
 	];
 
-	// What the page opens with. `edit` is what can be changed on its one person.
+	// What the page opens with. `edit` is what can be changed on its one person;
+	// one with `formula` and `weight` sits on that weight's row.
 	const SCENARIOS = [
 		{
 			id: 'profile_complete',
@@ -79,13 +81,13 @@ const TDCPoints = (() => {
 				}
 			}],
 			edit: [
-				{ path: 'profile.has_picture', label: 'Picture added', type: 'bool' },
-				{ path: 'profile.has_display_name', label: 'Display name added', type: 'bool' },
-				{ path: 'profile.has_full_name', label: 'Name and surname set', type: 'bool' },
-				{ path: 'profile.id_verified', label: 'ID verified', type: 'bool' },
-				{ path: 'profile.notifications_enabled', label: 'Notifications enabled', type: 'bool' },
-				{ path: 'profile.sign_in_methods', label: 'Sign-in methods', type: 'number', min: 0, max: SIGN_IN_METHODS_AVAILABLE },
-				{ path: 'verified', label: 'A verified account (the rule: anyone else earns nothing)', type: 'bool' }
+				{ formula: 'profile_completeness', weight: 'picture', path: 'profile.has_picture', label: 'Picture added', type: 'bool' },
+				{ formula: 'profile_completeness', weight: 'display_name', path: 'profile.has_display_name', label: 'Display name added', type: 'bool' },
+				{ formula: 'profile_completeness', weight: 'full_name', path: 'profile.has_full_name', label: 'Name and surname set', type: 'bool' },
+				{ formula: 'profile_completeness', weight: 'id_verified', path: 'profile.id_verified', label: 'ID verified', type: 'bool' },
+				{ formula: 'profile_completeness', weight: 'notifications', path: 'profile.notifications_enabled', label: 'Notifications enabled', type: 'bool' },
+				{ formula: 'profile_completeness', weight: 'sign_in', path: 'profile.sign_in_methods', label: 'Sign-in methods', type: 'number', min: 0, max: SIGN_IN_METHODS_AVAILABLE },
+				{ path: 'verified', label: 'Verified account', type: 'bool' }
 			]
 		}
 	];

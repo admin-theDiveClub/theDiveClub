@@ -21,68 +21,70 @@ extraScripts:
 	<div class="status" id="status-msg"></div>
 
 	<div id="staff-area" hidden>
-	<div class="points-tune">
-		<section class="points-setup">
-			<h2>Scenario</h2>
-			<div class="field">
-				<select id="scenario-select" aria-label="Scenario"></select>
-				<div class="hint" id="scenario-note"></div>
-			</div>
-			<div id="scenario-fields"></div>
-
-			<h2>Weights</h2>
-			<div id="formula-sets"></div>
-			<button type="button" class="btn btn-secondary" id="weights-reset">Put the weights back</button>
-		</section>
-
-		<section class="points-results">
-			<h2>Points</h2>
-			<div id="points-results"></div>
-			<div id="points-warnings"></div>
-		</section>
-	</div>
-
-	<div class="points-layout">
-		<section class="points-writer">
-			<h2>Write a formula</h2>
-			<div class="points-details">
-				<div class="field">
-					<label for="formula-name">Name</label>
-					<input type="text" id="formula-name" autocomplete="off">
-				</div>
-				<div class="field-pair">
+		<div class="points-tune">
+			<section class="points-setup">
+				<div class="points-bar">
 					<div class="field">
-						<label for="formula-level">Level</label>
-						<select id="formula-level"></select>
+						<select id="scenario-select" aria-label="Scenario"></select>
 					</div>
-					<div class="field">
-						<label for="formula-who">For</label>
-						<select id="formula-who"></select>
-					</div>
+					<button type="button" class="btn btn-secondary points-small" id="weights-reset">Reset</button>
 				</div>
-			</div>
-			<div class="points-box">
-				<div class="field">
-					<label for="formula-text">Pseudo code</label>
-					<textarea id="formula-text" rows="7" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
-				</div>
-				<div class="points-actions">
-					<button type="button" class="btn btn-primary" id="formula-copy">Copy for Claude</button>
-					<button type="button" class="btn btn-secondary" id="formula-clear">Clear</button>
-				</div>
-			</div>
-		</section>
+				<div class="points-note" id="scenario-note"></div>
+				<div class="points-bar" id="scenario-fields"></div>
+				<div id="formula-sets"></div>
+			</section>
 
-		<section class="points-data">
-			<h2>Data points</h2>
-			<p class="muted">Tap one to drop its name in at the cursor.</p>
-			<div class="field">
-				<label for="data-search">Search</label>
-				<input type="search" id="data-search" autocomplete="off">
+			<section class="points-results">
+				<div id="points-summary"></div>
+				<details class="set-group points-band" id="points-breakdown">
+					<summary>Breakdown</summary>
+					<div id="points-lines"></div>
+				</details>
+				<div id="points-warnings"></div>
+			</section>
+		</div>
+
+		<details class="set-group points-band" id="writer-group">
+			<summary>Write a formula</summary>
+			<div class="points-layout">
+				<section class="points-writer">
+					<div class="points-details">
+						<div class="field">
+							<label for="formula-name">Name</label>
+							<input type="text" id="formula-name" autocomplete="off">
+						</div>
+						<div class="field-pair">
+							<div class="field">
+								<label for="formula-level">Level</label>
+								<select id="formula-level"></select>
+							</div>
+							<div class="field">
+								<label for="formula-who">For</label>
+								<select id="formula-who"></select>
+							</div>
+						</div>
+					</div>
+					<div class="points-box">
+						<div class="field">
+							<label for="formula-text">Pseudo code</label>
+							<textarea id="formula-text" rows="4" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+						</div>
+						<div class="points-actions">
+							<button type="button" class="btn btn-primary" id="formula-copy">Copy for Claude</button>
+							<button type="button" class="btn btn-secondary" id="formula-clear">Clear</button>
+						</div>
+					</div>
+				</section>
+
+				<section class="points-data">
+					<div class="field">
+						<label for="data-search">Data points</label>
+						<input type="search" id="data-search" placeholder="Search. A tap drops the name in." autocomplete="off">
+					</div>
+					<div id="data-groups"></div>
+					<p class="muted" id="data-empty" hidden>No data point matches that.</p>
+				</section>
 			</div>
-			<div id="data-groups"></div>
-			<p class="muted" id="data-empty" hidden>No data point matches that.</p>
-		</section>
-	</div>
+		</details>
 	</div>
 </div>

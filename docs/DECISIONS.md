@@ -1583,3 +1583,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* every time new data is defined, the points page is updated too. The tournament win state (completed win conditions and so on) has to be completed.
 *Why:* points are built from the data, so a data point the page does not know earns nothing.
 *So:* `CLAUDE.md` §3 and `docs/STATUS.md` §3 item 0n.
+
+## 2026-11-06 — Points are a loyalty system
+
+*Decided by UV:* points are never used directly for anything and are completely arbitrary. You never lose them. They say to the business that someone is a valued customer who should receive benefits other customers don't: they affect a player's tier, and a tier could, for example, give discounts on anything in the shop. How points link to the business is entirely UV's, the same logic as credits, except that credits are real money and can go up and down.
+*Why:* think loyalty system.
+*Rejected:* Claude's reading of shop points as "buying points" against §2 of the design, and its suggestion of a legal check. Neither is to be raised again.
+*So:* `docs/design/points-and-tiers.md` §10a. Still to ask: whether a removed match takes its points away (§10 q9).

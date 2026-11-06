@@ -221,6 +221,7 @@ UV, 6 Nov: a page on the site that **only he can access**, where he plays with s
 - **Formula sets by level.** Fixed "bonus" formulas from a player's profile and history, then a section each for frames, matches, tournaments, leagues and so on. A first-use bonus is simply a player-level formula.
 - **The way of working.** UV looks at the data points and describes a formula; Claude adds it to the page. The sliders are for judging scenarios afterwards. An on-page formula builder is not part of the first build; UV may want it later.
 - **A space to write formulas.** UV types pseudo code on the page, clicks data points to drop them in, and copies the result to Claude to implement. Then UV moves the weights to see how the scenarios change.
+- **Low and high.** Each weight is a range with a low and a high end, typed or dragged, so every scenario shows a low and a high total. A step's toggle sits beside its slider, and everything collapses, as compact as possible.
 - **Any logic is welcome.** UV is versed in maths and code, so a formula can use any operator.
 - **Roles are data**, so there can be formulas for a TD, an LD and so on, who earn without playing.
 - **Every setting is a data point**, the minimum role for score entry included.
@@ -237,7 +238,7 @@ UV, 6 Nov: a page on the site that **only he can access**, where he plays with s
 | 6 | Whether a player can hide a match without removing it, and whether hiding costs points |
 | 7 | What in the data marks the "negative" playing style. No data point is named for it until UV describes one |
 | 8 | **What "verified accounts only" (§2) means: an ID checked by staff, or a confirmed email?** §8 item 56 read it as ID, which Claude listed, not UV. Read that way only 2 of 25 players earn anything, which does not fit profile completeness going to "everyone almost by default" (UV, 6 Nov), and "ID verified" could never score for anyone who has not got it. `docs/STATUS.md` §1 item 3 reads it the other way, as the confirmed email plus a bot check |
-| 9 | **Shop points against §2's "never bought".** Per rand spent, or only for what a customer does? See §10a |
+| 9 | "You never lose points" (UV, 6 Nov) beside §2's "if a player removes a match, the points go too", and retuning moving totals: does a removed match still take its points away? |
 | 10 | Whether the rolling period for tiers is right, and how long it is |
 | 11 | Whether a table of earned points that can always be rebuilt is acceptable beside "frames are the only record" (§10a) |
 
@@ -253,7 +254,7 @@ UV, 6 Nov: a page on the site that **only he can access**, where he plays with s
 
 **UV's lean, not yet a decision:** one points system that looks simple from the outside, rather than different types for different uses. Shop customers should benefit from using the site too, so someone who is both a pool player and a shop customer qualifies for the best benefits at the club. Periodic totals may need emphasising.
 
-**The conflict to settle first.** §2 says points are never bought and "you can't gamify people's money". Points per rand spent in the shop would be buying points, so that rule has to be kept or changed (§10a q9).
+**What points are (UV, 6 Nov, correcting Claude).** A loyalty system. Points are never used directly for anything and are completely arbitrary. They say to the business that someone is a valued customer who should receive benefits other customers don't. They affect a player's tier, and a tier could, for example, give discounts on anything in the shop. How they link to the business is entirely UV's. It is the same logic as credits, except that credits are real money and can go up and down. Claude raised shop points as "buying points" and asked for a legal check; that was a misreading. Loyalty points earned at a shop are not bought, and neither question is to be raised again.
 
 Everything below is *Claude's, for UV to judge*.
 
@@ -299,7 +300,7 @@ Everything below is *Claude's, for UV to judge*.
 | Gaming | Two friends trading wins | Locked data, verified opponents, the social cap; watch for it in stage 3, before anyone can see a total |
 | Test data | Today's 18 finished matches would count | Clear them before stage 4 |
 
-**The shop stream.** Reward what a shop customer does (a visit, a verified account, using the site), not what they spend, with a daily limit. No page records a visit yet, and P5 is not designed, so this waits for that design. Whether points can reward buying from the cannabis side at all needs asking properly first, as PayFast's approval does in P4, so it stays a stream that can be switched off alone.
+**The shop stream.** How shop customers earn is UV's to define when the shop is designed (P5); no page records a visit or a sale yet. It is a stream like any other, with its formulas described the same way.
 
 ## 11. Not part of this
 
