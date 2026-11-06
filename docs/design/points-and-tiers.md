@@ -1,6 +1,6 @@
 # Points and tiers: the design so far
 
-**Status: concept settled with UV on 6 Nov 2026; the formula is not. Nothing is built.** The next piece of work is **the tuning page** (§9), an owner-only page where UV sets the formula with sliders against scenarios. The formula is designed *on* that page, not in this document.
+**Status: concept settled with UV on 6 Nov 2026; the formulas are not. The tuning page (§9) is being built, `docs/systems/points.md`.** UV describes formulas from the page's data points, Claude adds them, and the sliders judge them against scenarios. **§9a overrides §3's model and §9's weights where they differ.**
 
 **Why this file exists.** The whole concept was worked out in one claude.ai chat (6 Nov). Anything decided there is here so it is not asked again. Lines marked *Claude's, for UV to judge* are suggestions UV has not confirmed; everything else is UV's.
 
@@ -216,18 +216,34 @@ UV, 6 Nov: a page on the site that **only he can access**, where he plays with s
 - Compare two weight sets side by side on the same scenario.
 - Show the "language" checklist for first-use bonuses alongside.
 
+## 9a. How the page changed (UV, 6 Nov, answering the plan)
+
+- **Formula sets by level.** Fixed "bonus" formulas from a player's profile and history, then a section each for frames, matches, tournaments, leagues and so on. A first-use bonus is simply a player-level formula.
+- **The way of working.** UV looks at the data points and describes a formula; Claude adds it to the page. The sliders are for judging scenarios afterwards. An on-page formula builder is not part of the first build; UV may want it later.
+- **A space to write formulas.** UV types pseudo code on the page, clicks data points to drop them in, and copies the result to Claude to implement. Then UV moves the weights to see how the scenarios change.
+- **Any logic is welcome.** UV is versed in maths and code, so a formula can use any operator.
+- **Roles are data**, so there can be formulas for a TD, an LD and so on, who earn without playing.
+- **Every setting is a data point**, the minimum role for score entry included.
+- **No starting set.** "We will place value on the story that comes out of the data (when the data is locked)." Just scores are boring: they say who won and by how much. Rich data could write a whole article about a match, like the commentary Claude wrote from one exported match. So points follow the story's richness.
+- **Locking a result is a feature to reward.** It discourages players from ever deleting a bad result.
+- **"Negative" is a playing style**, not a number below zero, though negative values are allowed too. It is subjective. It suggests site-wide stats as data points, such as average frames per match across all matches ever played, to measure a player against. Nice to have, and Claude found a clean way, so they are on the list.
+- **Weight sets:** named versions in an owner-only table. **No** side-by-side comparison in the first build, **no** bug-report slider.
+
 ## 10. Open questions for UV
 
 | | Question |
 |---|---|
-| 1 | What `clicker_log` holds: shots, shot clock use, something else? |
-| 2 | Is shot clock and extension **use** recorded per frame anywhere? Only the settings were found |
-| 3 | Where the tuning page keeps saved weight sets: a table, or a file in the repo like the sandbox saving `variables.css` |
-| 4 | Claude's suggestions in §3, §4, §5 and §9: each is UV's to accept or reject |
 | 5 | How honours (`docs/BACKLOG.md` §2 item 9) relate to points: the same design, or separate |
 | 6 | Whether a player can hide a match without removing it, and whether hiding costs points |
+| 7 | What in the data marks the "negative" playing style. No data point is named for it until UV describes one |
 
-**Data note, 6 Nov:** only 2 of 66 frames in production had a break outcome (test data, since cleared). Break data is the richest story data and is barely used; this is what points should push.
+**Answered, 6 Nov (from the code):**
+
+- **`clicker_log`** was designed for a referee's physical clicker, built separately (`docs/archive/stats-schema-design.md`): each entry a code and a time, for whose turn it is, pauses, extensions and racking. No page sends it and no frame in production has one.
+- **Shot clock and extension use** is not recorded. `match.js` counts extensions only while the page is open. Only the settings are saved, so those are data points and use is not.
+- **Where weight sets live:** §9a.
+
+**Data note, 6 Nov:** only 2 of 66 frames in production have a break outcome. The earlier note called these test data since cleared; they were made on 5 Nov, after the clear. 18 matches are finished (5 team with 45 frames, 12 tournament with 11), none social. Break data is the richest story data and is barely used; this is what points should push.
 
 ## 11. Not part of this
 

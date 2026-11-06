@@ -33,8 +33,9 @@ Before replying with anything else, read this file, `docs/STATUS.md`, and the sy
 2. Update the system file in `docs/systems/` for what was built and why it is shaped that way.
 3. Update `docs/STATUS.md` — remove what is done, add what was uncovered.
 4. Add to `docs/DECISIONS.md` if a real decision was made.
-5. Run the tests: `npx supabase db reset`, then `npx supabase test db` (local only — see `docs/systems/tests.md`).
-6. Give UV the commit subject. **Never batch the documentation to the end of a session.**
+5. **If new data was defined, update the points page too** (UV, 6 Nov; `docs/systems/points.md`, "When new data is defined").
+6. Run the tests: `npx supabase db reset`, then `npx supabase test db` (local only — see `docs/systems/tests.md`).
+7. Give UV the commit subject. **Never batch the documentation to the end of a session.**
 
 ---
 
@@ -67,6 +68,7 @@ Business to-dos (the club itself, not the code) live on the owner board at `/sta
 | `docs/systems/notifications.md` | The notification record, the push sweep, the tray |
 | `docs/systems/players.md` | The player profile page and head to head, and how its numbers are counted |
 | `docs/systems/project-board.md` | The owner board |
+| `docs/systems/points.md` | The points formula and the owner's tuning page (in progress) |
 | `docs/systems/dots.md` | The dots: the site's loading and feedback motion (in progress) |
 | `docs/systems/tests.md` | The local Supabase copy, how it is kept identical to production, and how to write and run tests |
 

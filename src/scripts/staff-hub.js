@@ -31,11 +31,17 @@ TDCLoader.hold((async () => {
 		TDC.error(AREA, 'staff page is missing the Project Board tile.');
 		return;
 	}
+	const pointsTile = el('points-tile');
+	if (!pointsTile) {
+		TDC.error(AREA, 'staff page is missing the Points tile.');
+		return;
+	}
 	const showTiles = () => {
 		const r = roles.find((x) => x.venue_id === els.selectEl.value);
 		const isAdmin = !!(r && ['owner', 'admin'].includes(r.role));
 		for (const t of adminTiles) t.hidden = !isAdmin;
 		boardTile.hidden = !(r && r.role === 'owner');
+		pointsTile.hidden = boardTile.hidden;
 	};
 	els.selectEl.addEventListener('change', showTiles);
 	showTiles();

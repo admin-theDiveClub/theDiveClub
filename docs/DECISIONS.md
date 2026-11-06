@@ -1562,3 +1562,18 @@ These predate the log. They are recorded here because every one of them is a dec
 *Rejected:* unverified or guest players earning reduced points; points turning into credits.
 *So:* `docs/design/points-and-tiers.md`.
 *Touches:* nothing in the code yet.
+
+## 2026-11-06 — The points tuning page: UV describes formulas, the page judges them
+
+*Decided by UV, answering the plan:* formula sets for each level: fixed bonus formulas from a player's profile and history, then frames, matches, tournaments, leagues and so on. UV writes pseudo code in a space on the page, clicking data points to drop them in, and copies it to Claude, who adds it to the page; the sliders judge scenarios afterwards. Roles and every setting are data points, so there can be formulas for a TD or LD and for values like the minimum role for score entry. There is no starting set: value goes on the story that comes out of the data once it is locked, because just scores say only who won and by how much. Locking a result is itself rewarded, which discourages deleting a bad one. "Negative" is a playing style and subjective, which suggests site-wide stats such as average frames per match as data points. Weight sets are named versions in an owner-only table. Any operator is welcome.
+*Why:* UV is versed in maths and code, so describing a formula is quicker than clicking one together, and it can be refined later.
+*Claude's, for UV to judge:* formulas as plain code in `points-formula.js`; five levels with site-wide stats as data at every level; an unverified person shown 0 with what they would have earned; the social cap stopping frame and match formulas but not player formulas or career counts; a failing formula counting as 0 with a warning.
+*Rejected:* an on-page formula builder in the first build (UV's own earlier idea, may return); fixed pots, bases or multipliers built into the page; side-by-side comparison in the first build; a bug-report slider.
+*So:* `docs/design/points-and-tiers.md` §9a, `docs/systems/points.md`.
+*Touches:* `src/scripts/points-formula.js`, `tools/points-tests/`.
+
+## 2026-11-06 — New data updates the points page; the tournament win state is to be completed
+
+*Decided by UV:* every time new data is defined, the points page is updated too. The tournament win state (completed win conditions and so on) has to be completed.
+*Why:* points are built from the data, so a data point the page does not know earns nothing.
+*So:* `CLAUDE.md` §3 and `docs/STATUS.md` §3 item 0n.

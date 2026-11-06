@@ -1,0 +1,79 @@
+/* The points page (/staff/points/). */
+
+.tdc-card.points-page { max-width: 72rem; }
+.points-layout > section { min-width: 0; }
+/* On a phone the writer's parts belong to the layout itself, or the box could
+   stay on the screen only as far as the writer's own foot. */
+.points-writer { display: contents; }
+.points-data { margin-top: var(--space-5); }
+
+/* The box stays on the screen while the data points scroll beneath it: just
+   under the nav while it shows, at the very top once it has slid away. */
+.points-box {
+	position: sticky;
+	top: 0;
+	z-index: 2;
+	padding: var(--space-2) 0 var(--space-3);
+	background: var(--bg-base);
+	transition: top var(--nav-slide, 0.3s) ease;
+}
+body:has(.site-nav:not(.is-hidden)) .points-box { top: var(--nav-total); }
+@media (prefers-reduced-motion: reduce) { .points-box { transition: none; } }
+
+.points-box .field { margin-bottom: var(--space-3); }
+.tdc-card .points-box textarea {
+	font-family: var(--font-mono);
+	font-size: 0.9rem;
+	line-height: 1.4;
+	resize: vertical;
+}
+.points-actions { display: flex; gap: var(--space-2); }
+.points-actions .btn { flex: 1 1 0; min-width: 0; }
+
+/* One data point: its name to copy, what it is, what it holds. */
+/* Written in full because the site's buttons are capitals with wide spacing,
+   and a name here must read exactly as it lands in the box. */
+.tdc-card .points-point {
+	display: block;
+	width: 100%;
+	margin: 0;
+	min-height: 0;
+	padding: var(--space-2) var(--space-1);
+	border: 0;
+	border-top: 1px solid var(--border-color);
+	border-radius: 0;
+	background: none;
+	color: var(--text-primary);
+	font: inherit;
+	font-weight: 400;
+	letter-spacing: normal;
+	text-transform: none;
+	text-align: left;
+	cursor: pointer;
+}
+.tdc-card .points-point[hidden] { display: none; }
+.points-point:hover .points-point-name { color: var(--color-primary); }
+.points-point:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.points-point-name { font-family: var(--font-mono); font-size: 0.9rem; overflow-wrap: anywhere; }
+.points-point-label { font-size: 0.85rem; }
+.points-point-type { font-size: 0.75rem; color: var(--text-muted); overflow-wrap: anywhere; }
+
+.points-data .set-group[hidden] { display: none; }
+
+/* On a PC the whole writer stays beside the list. */
+@media (min-width: 900px) {
+	.points-layout { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+	.points-layout[hidden] { display: none; }
+	.points-data { margin-top: 0; }
+	.points-writer {
+		display: block;
+		position: sticky;
+		top: 0;
+		transition: top var(--nav-slide, 0.3s) ease;
+	}
+	body:has(.site-nav:not(.is-hidden)) .points-writer { top: var(--nav-total); }
+	.points-box { position: static; padding-top: 0; background: none; }
+}
+@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
+	.points-writer { transition: none; }
+}
