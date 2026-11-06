@@ -237,6 +237,9 @@ UV, 6 Nov: a page on the site that **only he can access**, where he plays with s
 | 6 | Whether a player can hide a match without removing it, and whether hiding costs points |
 | 7 | What in the data marks the "negative" playing style. No data point is named for it until UV describes one |
 | 8 | **What "verified accounts only" (§2) means: an ID checked by staff, or a confirmed email?** §8 item 56 read it as ID, which Claude listed, not UV. Read that way only 2 of 25 players earn anything, which does not fit profile completeness going to "everyone almost by default" (UV, 6 Nov), and "ID verified" could never score for anyone who has not got it. `docs/STATUS.md` §1 item 3 reads it the other way, as the confirmed email plus a bot check |
+| 9 | **Shop points against §2's "never bought".** Per rand spent, or only for what a customer does? See §10a |
+| 10 | Whether the rolling period for tiers is right, and how long it is |
+| 11 | Whether a table of earned points that can always be rebuilt is acceptable beside "frames are the only record" (§10a) |
 
 **Answered, 6 Nov (from the code):**
 
@@ -245,6 +248,58 @@ UV, 6 Nov: a page on the site that **only he can access**, where he plays with s
 - **Where weight sets live:** §9a.
 
 **Data note, 6 Nov:** only 2 of 66 frames in production have a break outcome. The earlier note called these test data since cleared; they were made on 5 Nov, after the clear. 18 matches are finished (5 team with 45 frames, 12 tournament with 11), none social. Break data is the richest story data and is barely used; this is what points should push.
+
+## 10a. One system, and how to build it (6 Nov)
+
+**UV's lean, not yet a decision:** one points system that looks simple from the outside, rather than different types for different uses. Shop customers should benefit from using the site too, so someone who is both a pool player and a shop customer qualifies for the best benefits at the club. Periodic totals may need emphasising.
+
+**The conflict to settle first.** §2 says points are never bought and "you can't gamify people's money". Points per rand spent in the shop would be buying points, so that rule has to be kept or changed (§10a q9).
+
+Everything below is *Claude's, for UV to judge*.
+
+**One number outside, sources inside.** Each formula gets a **stream** (play, running competitions, profile, shop and so on). The player sees one number; the streams let a stream be switched off, weighed or filtered without separate points.
+
+**One number, three windows.** All the same points, so no second system:
+
+| Window | Used for | Why |
+|---|---|---|
+| Lifetime | Hall of fame | Never resets (§2) |
+| A rolling period, e.g. 90 days | Tiers and benefits | Status has to be kept up, a new player can reach it, and benefits follow who is using the club now |
+| Week, month, season | Periodic awards | Frozen into the ledger when the period closes (§4) |
+
+**Points are global; benefits belong to a venue.** A player has one total across the community. Each venue decides what its tiers give, and pays for them.
+
+**How the numbers get worked out.** The page's formula runs in the browser, on one match. A leaderboard needs everybody's points, and a browser can neither hold that nor be trusted with it.
+
+| Option | For | Against |
+|---|---|---|
+| The same `points-formula.js` run by an edge function, writing a table of earned points that can be rebuilt at any time (recommended) | One copy of the formula; fast to read; retuning is one rebuild | A stored table, so it must be treated as a cache: it is never the record, and can be deleted and rebuilt from frames (§5 idea 1 of `CLAUDE.md`) |
+| Rewrite the formula in SQL | Runs beside the data | Two copies that will drift, and UV's formulas are harder to change |
+| Work it out on every read | Nothing stored | Too slow as soon as there is a leaderboard |
+
+**The order to build it in.** Each stage is useful alone, and points can start late: because they are counted from frames, matches played before launch are counted when it happens.
+
+| Stage | What | Seen by |
+|---|---|---|
+| 1 | Tune formulas on the page; give each a stream and a date rule | UV |
+| 2 | Real matches on the page, weight sets saved | UV |
+| 3 | The rebuildable table, running in the background beside a real league | UV |
+| 4 | A player's own total and this period's | Players |
+| 5 | Leaderboards, periodic awards, the ledger, past champions | Players |
+| 6 | Tiers and venue benefits | Players |
+| 7 | The shop stream, after payments and the shop (`docs/STATUS.md` P4, P5) | Players |
+
+**The hard parts.**
+
+| Problem | Example | Plan |
+|---|---|---|
+| Not everything has a date | A picture's upload date is not kept, so it cannot fall in a period | Each formula says "dated" (counts in periods) or "base" (lifetime only). Profile completeness is base |
+| Data that cannot be recovered later | App installs and shop visits are not recorded, so those points cannot be backdated | List what must start recording before opening |
+| Retuning once it is public | A change moves everyone's lifetime total overnight | Keep it private until stable; keep each version; change rarely and say so. Periods soften it, since old points matter less to status |
+| Gaming | Two friends trading wins | Locked data, verified opponents, the social cap; watch for it in stage 3, before anyone can see a total |
+| Test data | Today's 18 finished matches would count | Clear them before stage 4 |
+
+**The shop stream.** Reward what a shop customer does (a visit, a verified account, using the site), not what they spend, with a daily limit. No page records a visit yet, and P5 is not designed, so this waits for that design. Whether points can reward buying from the cannabis side at all needs asking properly first, as PayFast's approval does in P4, so it stays a stream that can be switched off alone.
 
 ## 11. Not part of this
 
