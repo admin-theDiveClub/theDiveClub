@@ -1,0 +1,75 @@
+---
+layout: layout.html
+title: Neumorphism Sandbox
+description: "A scratch page for a raised and sunken sign-in form, its shadows cast by the page's light. Not part of the product."
+extraStyles:
+  - /stylesheets/sandbox.css
+extraScripts:
+  - /scripts/sandbox-neumorph.js
+---
+{% comment %}
+	Neumorphism's sandbox (UV, 6 Nov): a sign-in form raised from and sunk into
+	the page, in the site's colours, its shadows cast by this page's own light,
+	which moves all round the screen, just outside it (sandbox-neumorph.js). A
+	look only: the form is wired to nothing.
+{% endcomment %}
+
+<div class="tdc-card wide sandbox">
+	<h1>Neumorphism</h1>
+	<p class="muted">A look only: nothing here signs anybody in. The light moves all round the screen, just outside it, and the shadows fall away from it. Not linked from the nav.</p>
+</div>
+
+<div class="nm-layout" id="nm-layout">
+	<section class="nm-scene" aria-label="The form">
+		<form class="nm-card" id="nm-form" novalidate>
+			<div class="nm-logo">
+				<img class="for-dark" src="/resources/branding/icon-primary.svg" alt="">
+				<img class="for-light" src="/resources/branding/logo-mark-light.svg" alt="">
+			</div>
+			<h2 class="nm-name">The Dive Club</h2>
+			<p class="nm-tag">A pool lounge in Lonehill</p>
+
+			<label class="nm-well">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+				<input type="email" placeholder="Email" aria-label="Email" autocomplete="off">
+			</label>
+			<label class="nm-well">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+				<input type="password" placeholder="Password" aria-label="Password" autocomplete="off">
+			</label>
+
+			<button type="submit" class="nm-login">Log In</button>
+			<p class="nm-links"><a href="#" data-nm-link>Forgot password?</a> or <a href="#" data-nm-link>Sign Up</a></p>
+			<div class="status" id="nm-status" role="status"></div>
+		</form>
+
+		<div class="nm-sphere-stage">
+			<div class="nm-sphere-shadow" id="nm-sphere-shadow"></div>
+			<div class="nm-sphere" id="nm-sphere"></div>
+		</div>
+	</section>
+
+	<section class="nm-tests" id="nm-tests" aria-label="Test controls">
+		<h2>Test controls</h2>
+		<p class="muted">The outer area is the band round the screen the light moves in. This light is this page's alone; the rest of the site keeps its own.</p>
+		<div class="nm-meter">
+			<div class="nm-meter-line"><span>Performance hit</span><strong id="nm-hit"></strong></div>
+			<p class="muted" id="nm-hit-detail"></p>
+			<p class="muted">A rough guide: small changes are noise, and blurs barely show here.</p>
+		</div>
+		<p class="nm-readout" id="nm-readout" role="status"></p>
+		<h3>The light</h3>
+		<div id="nm-light"></div>
+		<div id="nm-light-look"></div>
+		<label class="nm-slider">
+			<span>Light colour, with the button and the sphere</span>
+			<output id="nm-colour-out"></output>
+			<input type="color" id="nm-colour">
+		</label>
+		<h3>The shadows</h3>
+		<div id="nm-shadows"></div>
+		<h3>The sphere</h3>
+		<div id="nm-sphere-controls"></div>
+		<button type="button" class="nm-reset" id="nm-reset">Back to the starting values</button>
+	</section>
+</div>

@@ -681,3 +681,262 @@
 	width: 100%;
 	height: 100%;
 }
+
+/* ─── Neumorphism's light: its glow's strength and colour (UV, 6 Nov) ───
+   On the body, since the glow is the body's. Fading the glow reveals the page's
+   plain background and leaves everything cast by the light as it was: the
+   shadows are other layers, moved by other properties. */
+body:has(.nm-layout) {
+	--nm-light-colour: var(--color-primary);
+	--nm-light-strength: 1;
+}
+body:has(.nm-layout)::before {
+	opacity: var(--nm-light-strength);
+	background: radial-gradient(circle var(--page-glow-size)
+		at calc(50% + var(--page-light-x, 0px)) calc(-1 * var(--page-light-y, var(--page-glow-rise))),
+		var(--nm-light-colour), var(--bg-base));
+}
+
+/* ─── Neumorphism (/sandbox/neumorph/; UV, 6 Nov) ───
+   A form raised from and sunk into the page. Every part is see-through, so
+   the page and its glow carry on behind it and only the shadows draw it. They
+   are cast by the page's light (--page-shadow-x / -y, page-light.js, which
+   point away from it): raised parts drop a shadow that way and take a
+   highlight on the light's side; sunken parts are the other way round. The
+   --nm-* values stay here, not in variables.css, while this is only a look. */
+.nm-layout {
+	--nm-reach: 1;              /* the shadows' distance, as times the light's offset */
+	--nm-blur: 24px;
+	--nm-shadow-alpha: 0.7;
+	--nm-lit-colour: var(--nm-light-colour);
+	--nm-lit-alpha: 0.12;
+	--nm-radius: 2.5rem;
+	--nm-sphere-shadow-alpha: 0.8;
+
+	--nm-x: calc(var(--page-shadow-x, 0px) * var(--nm-reach));
+	--nm-y: calc(var(--page-shadow-y, var(--page-inset-offset)) * var(--nm-reach));
+	--nm-dark: rgba(0, 0, 0, var(--nm-shadow-alpha));
+	--nm-lit: color-mix(in srgb, var(--nm-lit-colour) calc(var(--nm-lit-alpha) * 100%), transparent);
+	--nm-raised:
+		var(--nm-x) var(--nm-y) var(--nm-blur) var(--nm-dark),
+		calc(var(--nm-x) * -1) calc(var(--nm-y) * -1) var(--nm-blur) var(--nm-lit);
+	--nm-sunken:
+		inset var(--nm-x) var(--nm-y) calc(var(--nm-blur) / 2) var(--nm-dark),
+		inset calc(var(--nm-x) * -1) calc(var(--nm-y) * -1) calc(var(--nm-blur) / 2) var(--nm-lit);
+
+	display: grid;
+	gap: var(--space-7);
+	width: 100%;
+	max-width: 400px;
+	margin: 0 auto;
+	padding: 0 var(--space-4) var(--space-7);
+}
+[data-theme="light"] .nm-layout {
+	--nm-shadow-alpha: 0.2;
+	--nm-lit-colour: white;
+	--nm-lit-alpha: 0.8;
+	--nm-sphere-shadow-alpha: 0.35;
+}
+@media (min-width: 992px) {
+	.nm-layout {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		align-items: start;
+		max-width: calc(100% * 10 / 12);
+	}
+}
+
+.nm-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	width: 100%;
+	max-width: 23rem;
+	margin: 0 auto;
+	padding: var(--space-6) var(--space-5);
+	border-radius: var(--nm-radius);
+	/* Its shadow alone: the highlight is for the parts inside it (UV, 6 Nov) */
+	box-shadow: var(--nm-x) var(--nm-y) var(--nm-blur) var(--nm-dark);
+}
+.nm-logo {
+	display: grid;
+	place-items: center;
+	width: 6rem;
+	height: 6rem;
+	border-radius: var(--radius-round);
+	box-shadow: var(--nm-sunken);
+}
+.nm-logo img { width: 4rem; height: 4rem; object-fit: contain; }
+.nm-name {
+	margin: var(--space-5) 0 var(--space-1);
+	font-family: var(--font-display);
+	font-size: 1.75rem;
+	text-align: center;
+}
+.nm-tag {
+	margin: 0 0 var(--space-6);
+	color: var(--text-muted);
+	font-size: 0.85rem;
+	letter-spacing: 0.08em;
+	text-align: center;
+}
+
+.nm-well {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	width: 100%;
+	height: 3.25rem;
+	margin-bottom: var(--space-5);
+	padding: 0 var(--space-5);
+	border-radius: var(--radius-pill);
+	box-shadow: var(--nm-sunken);
+	cursor: text;
+}
+.nm-well:hover,
+.nm-well:focus-within { box-shadow: var(--nm-sunken), var(--glow-primary); }
+.nm-well svg {
+	flex: none;
+	width: 1.25rem;
+	height: 1.25rem;
+	fill: none;
+	stroke: var(--text-muted);
+	stroke-width: var(--icon-line);
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	vector-effect: non-scaling-stroke;
+}
+.nm-well svg * { vector-effect: non-scaling-stroke; }
+.nm-well input {
+	flex: 1;
+	min-width: 0;
+	padding: 0;
+	border: 0;
+	outline: none;
+	background: transparent;
+	color: var(--text-primary);
+	font-family: inherit;
+	font-size: 1rem;   /* 16px stops iPhone zooming in on focus */
+}
+.nm-well input::placeholder { color: var(--text-muted); }
+/* The site's glow on a field's line: here the well glows instead. */
+.nm-well input:hover { box-shadow: none !important; }
+
+.nm-login {
+	width: 100%;
+	height: 3.25rem;
+	margin-top: var(--space-1);
+	border: 0;
+	border-radius: var(--radius-pill);
+	background: var(--nm-light-colour);
+	color: var(--nm-on-light, var(--color-on-primary));
+	font-family: inherit;
+	font-size: 1rem;
+	font-weight: 600;
+	cursor: pointer;
+	box-shadow: var(--nm-raised);
+}
+.nm-login:active { box-shadow: var(--nm-sunken); }
+.nm-links {
+	margin: var(--space-5) 0 0;
+	color: var(--text-muted);
+	font-size: 0.85rem;
+	text-align: center;
+}
+.nm-links a { color: var(--text-primary); }
+.nm-card .status { margin-top: var(--space-3); text-align: center; }
+.nm-card .status:empty { display: none; }
+
+/* The sphere: no 3D model, a circle shaded by gradients and a blurred ellipse
+   on the page. sandbox-neumorph.js works out where the highlight sits and where
+   the shadow falls, from where the light is. The page's edge keeps a shadow
+   running off the side from scrolling it sideways. */
+main:has(.nm-layout) { overflow-x: clip; }
+.nm-sphere-stage {
+	position: relative;
+	display: grid;
+	place-items: center;
+	height: 18rem;
+	margin-top: var(--space-5);
+}
+.nm-sphere {
+	--nm-sphere-size: 96px;
+	--nm-hx: 50%;
+	--nm-hy: 30%;
+	--nm-shine: 0.85;
+	--nm-shine-size: 22%;
+	position: relative;
+	width: var(--nm-sphere-size);
+	height: var(--nm-sphere-size);
+	border-radius: var(--radius-round);
+	background:
+		radial-gradient(circle at var(--nm-hx) var(--nm-hy), color-mix(in srgb, white calc(var(--nm-shine) * 100%), transparent) 0, transparent var(--nm-shine-size)),
+		radial-gradient(circle at var(--nm-hx) var(--nm-hy),
+			color-mix(in srgb, var(--nm-light-colour) 85%, white) 0,
+			var(--nm-light-colour) 25%,
+			color-mix(in srgb, var(--nm-light-colour) 35%, black) 70%,
+			color-mix(in srgb, var(--nm-light-colour) 12%, black) 110%);
+}
+.nm-sphere-shadow {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	border-radius: var(--radius-round);
+	background: black;
+	pointer-events: none;
+}
+
+.nm-tests h2 { margin: 0 0 var(--space-3); font-size: 1.1rem; text-align: center; }
+.nm-tests h3 { margin: var(--space-5) 0 var(--space-3); font-size: 1rem; }
+.nm-tests p { margin: 0 0 var(--space-3); line-height: 1.5; }
+/* Stays in view while the sliders under it are moved. */
+.nm-meter {
+	position: sticky;
+	top: calc(var(--nav-total) + var(--space-2));
+	z-index: 1;
+	margin-bottom: var(--space-3);
+	padding: var(--space-3) var(--space-4);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-md);
+	background: var(--bg-base);
+}
+.nm-meter-line {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--space-1) var(--space-3);
+	min-height: 1.6rem;
+}
+.nm-meter strong { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.nm-meter strong.late { color: var(--color-warning); }
+.nm-tests .nm-meter p { min-height: 2.6em; margin: var(--space-1) 0 0; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.nm-readout { min-height: 3em; color: var(--color-primary); font-variant-numeric: tabular-nums; }
+.nm-slider {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	gap: var(--space-1) var(--space-3);
+	margin-bottom: var(--space-4);
+	font-size: 0.9rem;
+}
+.nm-slider output { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.nm-slider input { grid-column: 1 / -1; width: 100%; accent-color: var(--color-primary); }
+.nm-slider input[type="color"] {
+	height: 2.75rem;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	cursor: pointer;
+}
+.nm-reset {
+	width: 100%;
+	min-height: 2.75rem;
+	margin-top: var(--space-2);
+	border: var(--control-border) solid var(--control-line);
+	border-radius: var(--radius-pill);
+	background: transparent;
+	color: var(--text-primary);
+	font-family: inherit;
+	font-size: 0.95rem;
+	cursor: pointer;
+}
+.nm-reset:hover { box-shadow: var(--glow-primary); }
