@@ -4,8 +4,13 @@
 .venue-links {
 	display: flex;
 	flex-wrap: wrap;
-	gap: var(--space-2);
+	gap: var(--space-3);
 	margin-top: var(--space-4);
+}
+/* They are links, so their words are centred here rather than by a button's own. */
+.venue-links .btn {
+	display: inline-flex;
+	align-items: center;
 }
 
 .venue-hours {

@@ -31,7 +31,7 @@ main {
 
 .ft-grid {
 	display: grid;
-	grid-template-columns: 1fr 1fr;
+	grid-template-columns: repeat(2, minmax(0, 1fr));   /* a long word must not widen the page */
 	gap: var(--space-6) var(--space-5);
 }
 .ft-brand,
@@ -42,6 +42,7 @@ main {
 /* The mark and its line, centred on a phone. */
 .ft-brand {
 	display: grid;
+	grid-template-columns: minmax(0, 1fr);   /* or the tagline's width sets it, off-centre on a narrow phone */
 	justify-items: center;
 	gap: var(--space-4);
 	text-align: center;
@@ -58,10 +59,13 @@ main {
 	height: var(--ft-mark);
 }
 /* The name as tall as the mark: Rushford Clean's capitals are 1.05 of its
-   size, and the line is trimmed to them so the two centre on each other. */
+   size, and the line is trimmed to them so the two centre on each other. On a
+   screen under about 375px it shrinks to fit (UV, 7 Nov): it does not wrap, and
+   pushed every page wider than the screen. The sum is the screen less the footer's
+   padding, the mark and their gap, over the name's width in its own size. */
 .ft-name {
 	font-family: var(--font-display);
-	font-size: calc(var(--ft-mark) / 1.05);
+	font-size: min(calc(var(--ft-mark) / 1.05), calc((100vw - 6.25rem) / 7.15));
 	line-height: 1;
 	text-box: trim-both cap alphabetic;
 	white-space: nowrap;
@@ -76,6 +80,8 @@ main {
    green. */
 .site-footer .ft-social {
 	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
 	gap: var(--space-3);
 }
 /* .site-footer in front, to outrank the text links' rules below. */
@@ -186,9 +192,13 @@ main {
 		grid-column: auto;
 	}
 	.ft-brand {
+		grid-template-columns: none;
 		justify-items: start;
 		align-content: start;
 		text-align: left;
+	}
+	.site-footer .ft-social {
+		justify-content: flex-start;
 	}
 }
 

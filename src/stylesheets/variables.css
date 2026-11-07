@@ -257,3 +257,49 @@
   --dive-suit: #20333b;
   --dive-skin: #f4e8d2;
 }
+
+/* ── The design (design.css; UV, 7 Nov) ──────────────────────────────
+   The light's offset (page-light.js) reaches every shadow through these. */
+:root {
+  --nm-light-colour: var(--color-primary);
+  --nm-blur: 16px;
+  --nm-shadow-alpha: 1;
+  --nm-lit-colour: var(--nm-light-colour);
+  --nm-lit-alpha: 0.05;
+  --nm-radius: 26px;           /* a card: current iOS */
+  --nm-field: 3.25rem;         /* every field, button, toggle and tab: its height */
+  --nm-field-radius: 1.625rem; /* half that: a pill's round end, kept when it grows */
+  --nm-knob: 2.75rem;          /* a toggle's knob: a field's height less its gaps */
+  --nm-pad: var(--space-5);    /* the words' distance in from a field's edge */
+  --nm-x: var(--page-shadow-x, 0px);
+  --nm-y: var(--page-shadow-y, var(--page-inset-offset));
+  --nm-dark: rgba(0, 0, 0, var(--nm-shadow-alpha));
+  --nm-lit: color-mix(in srgb, var(--nm-lit-colour) calc(var(--nm-lit-alpha) * 100%), transparent);
+  --nm-card: var(--nm-x) var(--nm-y) var(--nm-blur) var(--nm-dark);
+  --nm-raised:
+    var(--nm-x) var(--nm-y) var(--nm-blur) var(--nm-dark),
+    calc(var(--nm-x) * -1) calc(var(--nm-y) * -1) var(--nm-blur) var(--nm-lit);
+  --nm-raised-small:
+    calc(var(--nm-x) / 2) calc(var(--nm-y) / 2) calc(var(--nm-blur) / 3) var(--nm-dark),
+    calc(var(--nm-x) / -2) calc(var(--nm-y) / -2) calc(var(--nm-blur) / 3) var(--nm-lit);
+  --nm-sunken-small:
+    inset calc(var(--nm-x) / 2) calc(var(--nm-y) / 2) calc(var(--nm-blur) / 4) var(--nm-dark),
+    inset calc(var(--nm-x) / -2) calc(var(--nm-y) / -2) calc(var(--nm-blur) / 4) var(--nm-lit);
+  --nm-sunken:
+    inset var(--nm-x) var(--nm-y) calc(var(--nm-blur) / 2) var(--nm-dark),
+    inset calc(var(--nm-x) * -1) calc(var(--nm-y) * -1) calc(var(--nm-blur) / 2) var(--nm-lit);
+  --nm-knob-glow: color-mix(in srgb, var(--nm-light-colour) 40%, transparent);
+  --nm-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2361ffad' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+}
+/* A squircle at a given radius looks far tighter than iOS's curve at that radius:
+   about 1.5 times the radius gives the same corner. Other browsers draw plain 26px. */
+@supports (corner-shape: squircle) {
+  :root { --nm-radius: 40px; }
+}
+[data-theme="light"] {
+  --nm-shadow-alpha: 0.2;
+  --nm-lit-colour: white;
+  --nm-lit-alpha: 0.8;
+  --nm-knob-glow: white;   /* a dark glow reads as a shade */
+  --nm-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23594f4f' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+}

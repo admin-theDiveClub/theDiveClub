@@ -36,30 +36,27 @@
 .tdc-card .pp-names h1,
 .tdc-card .pp-names h1 + p { text-align: left; }
 .pp-pic-wrap { position: relative; }
+/* A plain circle (UV, 7 Nov: no ring round a picture). Narrower on the narrowest
+   screens, where half the card is less than its width. */
 .pp-pic {
-	width: 8.25rem;
-	height: 8.25rem;
-	padding: var(--space-1);
+	width: min(8.25rem, 38vw);
+	height: min(8.25rem, 38vw);
 	border-radius: var(--radius-round);
-	background: conic-gradient(var(--color-primary), color-mix(in srgb, var(--color-primary) 15%, transparent), var(--color-primary));
-	box-shadow: 0 0 28px color-mix(in srgb, var(--color-primary) 35%, transparent);
-	box-sizing: border-box;
+	box-shadow: var(--shadow-pic);
 }
 .pp-pic-inner {
 	display: grid;
 	place-items: center;
 	width: 100%;
 	height: 100%;
-	border: 3px solid var(--bg-base);
 	border-radius: var(--radius-round);
-	box-sizing: border-box;
 	overflow: hidden;
-	background: var(--bg-surface);
 	color: var(--text-primary);
 	font-size: 2.75rem;
 	font-weight: 700;
 }
 .pp-pic-inner img { width: 100%; height: 100%; object-fit: cover; }
+/* A tick on a photo: on a small solid disc, or it could not be seen on every picture. */
 .pp-verified {
 	position: absolute;
 	right: var(--space-1);
@@ -68,12 +65,11 @@
 	place-items: center;
 	width: 1.9rem;
 	height: 1.9rem;
-	border: var(--control-border) solid var(--color-primary);
 	border-radius: var(--radius-round);
 	background: var(--bg-base);
+	box-shadow: var(--shadow-pic);
 }
 .pp-verified[hidden] { display: none; }
-/* Icon lines as heavy as their ring (UV, 5 Nov): the tick's ring is the badge's border. */
 .pp-verified svg { width: 1rem; height: 1rem; fill: none; stroke: var(--color-primary); stroke-width: var(--control-border); stroke-linecap: round; stroke-linejoin: round; }
 .pp-verified svg * { vector-effect: non-scaling-stroke; }
 .tdc-card .pp-hero h1 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 2.75rem; line-height: 1; overflow-wrap: normal; }
@@ -81,14 +77,12 @@
 .pp-full[hidden] { display: none; }
 
 /* ── The large picture (player.js, openZoom) ──
- * The hero's ring and glow at up to 512px, the size pictures are stored at.
- * The ring's padding and the dark edge inside it keep the hero's proportions,
- * so the picture grows from the hero without its ring changing weight. */
+ * The hero's plain circle at up to 512px, the size pictures are stored at. */
 .pp-pic-zoomable { cursor: zoom-in; }
 .pp-pic-zoomable:focus-visible { outline: var(--control-border) solid var(--text-primary); outline-offset: 3px; }
 .pp-pic.pp-pic-away { visibility: hidden; }
 .pp-zoom {
-	--zoom-size: min(80vmin, 36rem);   /* 36rem: a 512px picture inside the ring */
+	--zoom-size: min(80vmin, 32rem);   /* 32rem: 512px */
 	position: fixed;
 	inset: 0;
 	z-index: 500;
@@ -107,46 +101,50 @@
 	position: relative;
 	width: var(--zoom-size);
 	height: var(--zoom-size);
-	padding: calc(var(--zoom-size) * 0.03);
 	border-radius: var(--radius-round);
-	background: conic-gradient(var(--color-primary), color-mix(in srgb, var(--color-primary) 15%, transparent), var(--color-primary));
-	box-shadow: 0 0 calc(var(--zoom-size) * 0.2) color-mix(in srgb, var(--color-primary) 40%, transparent);
-	box-sizing: border-box;
+	box-shadow: var(--shadow-pic);
 	will-change: transform;
 }
 .pp-zoom-inner {
 	width: 100%;
 	height: 100%;
-	border: calc(var(--zoom-size) * 0.023) solid var(--bg-base);
 	border-radius: var(--radius-round);
-	box-sizing: border-box;
 	overflow: hidden;
-	background: var(--bg-surface);
 }
 .pp-zoom-inner img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
-/* Challenge · Follow · Share · More: ring icons (ring-status.js, status.css),
- * each named by its title and label (UV, 5 Nov). Challenge's ring is green,
- * the others cream; on your own profile only Share and More. */
-.pp-actions { display: flex; justify-content: center; gap: var(--space-4); margin-top: var(--space-4); }
+/* Challenge · Follow · Share · More: icons alone (ring-status.js, status.css; UV,
+ * 7 Nov: no rings), each named by its title and label (UV, 5 Nov). Challenge, and
+ * a player you follow, are green, the others cream; under the pointer they swap,
+ * faded. On your own profile only Share and More. */
+.pp-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-4); margin-top: var(--space-4); }
 .tdc-card button.pp-icon {
 	flex: none;
 	width: 3rem;
+	min-height: 0;
 	height: 3rem;
 	padding: 0;
 	margin: 0;
 	border: none;
 	border-radius: var(--radius-round);
 	background: transparent;
+	box-shadow: none;
 	cursor: pointer;
-	transition: box-shadow 0.15s ease;
 	-webkit-tap-highlight-color: transparent;
 }
-.tdc-card button.pp-icon[hidden] { display: none; }
-.tdc-card button.pp-icon:hover,
-.tdc-card button.pp-icon:focus-visible { box-shadow: var(--glow-primary); outline: none; }
-.pp-icon-primary .tdc-ring .ring { stroke: var(--color-primary); }
-.tdc-card button.pp-icon-primary { box-shadow: 0 0 14px color-mix(in srgb, var(--color-primary) 35%, transparent); }
+.tdc-card button.pp-icon:active { box-shadow: none; }
+.tdc-card button.pp-icon:focus-visible { outline: none; }
+.pp-icon .tdc-ring {
+	color: var(--text-primary);
+	transition: color 0.2s ease;
+}
+/* A cross stays red. */
+.pp-icon .tdc-ring .mark:not(.mark-cross, .mark-dot) { stroke: currentColor; }
+.pp-icon-primary .tdc-ring,
+.pp-icon:hover .tdc-ring,
+.pp-icon:focus-visible .tdc-ring { color: var(--color-primary); }
+.pp-icon-primary:hover .tdc-ring,
+.pp-icon-primary:focus-visible .tdc-ring { color: var(--text-primary); }
 .pp-icon .sr {
 	position: absolute;
 	width: 1px;
@@ -155,44 +153,94 @@
 	clip: rect(0 0 0 0);
 	white-space: nowrap;
 }
-.tdc-card .pp-btn {
-	flex: 1;
-	min-height: 3rem;
-	padding: 0 var(--space-4);
-	border: var(--control-border) solid var(--text-primary);
-	border-radius: var(--radius-pill);
-	background: transparent;
-	color: var(--text-primary);
-	font-size: 1rem;
-	font-weight: 700;
-}
-.tdc-card .pp-btn-primary { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-on-primary); }
-.tdc-card .pp-btn:hover,
-.tdc-card .pp-btn:focus-visible { box-shadow: var(--glow-primary); outline: none; }
+.tdc-card .pp-btn { flex: 1; }
+.tdc-card .pp-btn-primary { background: var(--nm-light-colour); color: var(--color-on-primary); }
 .pp-hero [data-note],
 .pp-section [data-note] { margin: var(--space-2) 0 0; text-align: center; }
 [data-note]:empty { display: none; }
 
-/* The toggle under the hero */
+/* ── The toggle under the hero and the period: the site's tabs ──
+ * A sunken pill as tall as a field (design.css .league-nav). These mark their choice
+ * with aria-pressed, for player.js, so the thumb is drawn here rather than by
+ * tdc-controls.js: one layer as wide as a tab, which slides to the one chosen. The
+ * tabs are of one width for that, and scroll inside the pill when they don't fit. */
+.player-page .cp-views {
+	position: relative;
+	display: grid;
+	grid-template-columns: repeat(3, minmax(6.5rem, 1fr));
+	gap: 0;
+	box-sizing: border-box;
+	width: 100%;
+	height: var(--nm-field);
+	padding: var(--space-1);
+	border: 0;
+	border-radius: var(--radius-pill);
+	overflow-x: auto;
+	overflow-y: hidden;
+	scrollbar-width: none;
+	box-shadow: var(--nm-sunken);
+}
+.player-page .cp-views::-webkit-scrollbar { display: none; }
+.player-page .cp-views:has(> :nth-child(2)[aria-pressed="true"]) { --at: 1; }
+.player-page .cp-views:has(> :nth-child(3)[aria-pressed="true"]) { --at: 2; }
+/* Placed on the grid's lines so that it measures the tabs, however far they scroll. Its
+   shadow falls in the pill alone. */
+.player-page .cp-views::before {
+	content: "";
+	position: absolute;
+	grid-area: 1 / 1 / 2 / -1;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	width: calc(100% / 3);
+	border-radius: var(--radius-pill);
+	box-shadow: var(--nm-raised-small), inset 0 0 16px var(--nm-knob-glow);
+	transform: translateX(calc(var(--at, 0) * 100%));
+	transition: transform 0.25s ease;
+}
+.tdc-card.player-page .cp-views button.cp-view {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: auto;
+	min-height: 0;
+	height: 100%;
+	margin: 0;
+	padding: 0 var(--space-2);
+	background: none;
+	color: var(--text-primary);
+	font-size: 1rem;
+	font-weight: 600;
+	box-shadow: none;
+}
+.tdc-card.player-page .cp-views button.cp-view:focus-visible { outline: 2px solid var(--nm-light-colour); outline-offset: -2px; }
+[data-motion="reduce"] .player-page .cp-views::before { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+	:root:not([data-motion="full"]) .player-page .cp-views::before { transition: none; }
+}
 .pp-views { margin: var(--space-5) auto 0; }
-.pp-views[hidden] { display: none; }
 
 /* ── Sections ── */
 .pp-section { margin-top: var(--space-6); }
 .tdc-card .pp-section h2 { margin: 0 0 var(--space-1); font-family: var(--font-display); font-weight: 400; font-size: 1.4rem; color: var(--color-primary); }
 .tdc-card .pp-h3 { margin: var(--space-5) 0 var(--space-1); font-family: var(--font-display); font-weight: 400; font-size: 1.15rem; color: var(--color-primary); text-align: center; }
-.pp-sub { margin: 0; font-size: 0.82rem; text-align: center; }
+.pp-sub { margin: 0; font-size: 0.85rem; text-align: center; }
 .pp-empty { margin: var(--space-3) 0; text-align: center; }
 .pp-primary { color: var(--color-primary); }
 .pp-warning { color: var(--color-warning); }
+.tdc-card .pp-link,
+.tdc-card button.pp-link:active { box-shadow: none; }
 .tdc-card .pp-link {
 	display: block;
+	min-height: 0;
 	margin: var(--space-3) auto 0;
 	padding: var(--space-1) var(--space-2);
 	border: 0;
 	background: none;
 	color: var(--color-primary);
-	font-size: 0.9rem;
+	font-size: 1rem;
 	font-weight: 400;
 	text-align: center;
 	text-decoration: underline;
@@ -208,30 +256,30 @@
 	margin-top: var(--space-3);
 	padding: var(--space-3) var(--space-4);
 	border-radius: var(--radius-pill);
-	box-shadow: var(--shadow-sunken);
+	box-shadow: var(--nm-sunken);
 }
 .pp-dot { flex: none; width: 0.875rem; height: 0.875rem; border-radius: var(--radius-round); box-sizing: border-box; }
 .pp-dot-w { background: var(--color-primary); box-shadow: 0 0 8px color-mix(in srgb, var(--color-primary) 55%, transparent); }
 .pp-dot-l { border: 2px solid var(--border-color); }
 .pp-dot-d { border: 2px solid var(--color-primary); background: linear-gradient(90deg, var(--color-primary) 50%, transparent 50%); }
-/* Form: a frame they broke wears a yellow ring, a gap from the dot. */
-.pp-dot-broke { box-shadow: 0 0 0 3px var(--bg-base), 0 0 0 5px var(--color-warning); }
-.pp-dot-w.pp-dot-broke { box-shadow: 0 0 0 3px var(--bg-base), 0 0 0 5px var(--color-warning), 0 0 12px color-mix(in srgb, var(--color-primary) 55%, transparent); }
+/* Form: a frame they broke wears a yellow ring, a gap from the dot: it says something,
+   as the words above the dots tell, and is not a ring round an icon. */
+.pp-dot-broke { outline: 2px solid var(--color-warning); outline-offset: 3px; }
 
 /* Stats: equal boxes in one row, as many rows as they need (UV, 5 Nov) */
 .pp-period { margin: var(--space-3) auto 0; }
-.pp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
+.pp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
 .pp-cell {
 	display: flex;
 	flex-direction: column;
 	gap: var(--space-2);
 	padding: var(--space-4);
-	border-radius: var(--radius-md);
-	box-shadow: var(--shadow-sunken);
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-sunken);
 }
-.pp-lbl { font-size: 0.72rem; line-height: 1; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.pp-lbl { font-size: 0.85rem; line-height: 1.2; color: var(--text-muted); }
 .pp-big { font-family: var(--font-display); font-size: 2.4rem; line-height: 0.9; }
-.pp-cell-sub { font-size: 0.82rem; line-height: 1.3; }
+.pp-cell-sub { font-size: 0.85rem; line-height: 1.3; }
 
 /* The frame difference per night: each night a column, its bar above the
  * base line for a night won on frames, below it for one lost; the line sits
@@ -250,7 +298,7 @@
 .pp-bar { flex: 1; border-radius: var(--radius-sm) var(--radius-sm) 0 0; background: var(--color-primary); opacity: 0.85; }
 .pp-bar-lost { border-radius: 0 0 var(--radius-sm) var(--radius-sm); background: var(--border-color); }
 .pp-bar-even { height: 2px; border-radius: 0; background: var(--text-muted); }
-.pp-bar-labels { display: flex; gap: var(--space-1); margin-top: var(--space-1); font-size: 0.72rem; }
+.pp-bar-labels { display: flex; gap: var(--space-1); margin-top: var(--space-1); font-size: 0.85rem; }
 .pp-bar-labels span { flex: 1; overflow: visible; white-space: nowrap; }
 
 /* Leagues & teams */
@@ -282,16 +330,18 @@
 	border-bottom: 1px solid var(--border-color);
 }
 .pp-following-row .pp-row { flex: 1; min-width: 0; border-bottom: none; }
+.pp-following-row:last-child { border-bottom: 0; }
 .pp-following-empty { text-align: center; }
 
-.pp-list { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3); }
+/* Something to press stands up from the card; there are only ever a few of these. */
+.pp-list { display: flex; flex-direction: column; gap: var(--space-4); margin-top: var(--space-3); }
 .pp-team {
 	display: flex;
 	align-items: center;
 	gap: var(--space-3);
-	padding: var(--space-3);
-	border: 1px solid var(--border-color);
-	border-radius: var(--radius-md);
+	padding: var(--space-3) var(--space-4);
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-raised);
 	color: var(--text-primary);
 	text-decoration: none;
 }
@@ -303,10 +353,25 @@
 .pp-team-name,
 .pp-row-name { font-weight: 700; overflow-wrap: anywhere; }
 .pp-team-sub,
-.pp-row-sub { font-size: 0.82rem; }
+.pp-row-sub { font-size: 0.85rem; }
 .pp-team-right { display: flex; flex-direction: column; align-items: flex-end; }
 .pp-team-place { font-family: var(--font-display); font-size: 1.5rem; line-height: 1; }
-.pp-team-role { font-size: 0.75rem; }
+.pp-team-role { font-size: 0.85rem; }
+
+/* A list of matches or people: one sunken panel holds the rows, a hairline between
+   them, since a shadow on every row would be repainted at every move of the light. */
+[data-part="league"]:has(.pp-row),
+[data-part="tournament"]:has(.pp-row),
+[data-part="recent"]:has(.pp-row),
+#pp-feed:has(.pp-row),
+#pp-find-results:has(.pp-row),
+#pp-following:has(.pp-row),
+#pp-meetings:has(.pp-meet) {
+	padding: var(--space-2) var(--space-4);
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-sunken);
+}
+.pp-row:last-child { border-bottom: 0; }
 
 /* Recent matches */
 .pp-row {
@@ -329,7 +394,6 @@
 	height: 2.5rem;
 	border-radius: var(--radius-round);
 	overflow: hidden;
-	background: var(--hover-wash);
 	color: var(--text-primary);
 	font-size: 0.85rem;
 	font-weight: 700;
@@ -356,15 +420,12 @@
 	clip: rect(0 0 0 0);
 	white-space: nowrap;
 }
-.pp-key { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-4); margin: var(--space-2) 0 0; font-size: 0.75rem; }
+.pp-key { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-4); margin: var(--space-2) 0 0; font-size: 0.85rem; }
 
-/* A list's heading with its page number on the right (UV, 5 Nov): the
- * heading stays centred, as every heading on the page, the stepper on its
- * side in the right-hand column. */
-.pp-head { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; column-gap: var(--space-3); }
-.pp-head > :first-child { grid-column: 2; }
-.pp-head > .tdc-stepper,
-.pp-head > input { grid-column: 3; justify-self: end; }
+/* A list's heading with its page number under it: the heading stays centred, as every
+ * heading on the page, and the number, as tall and wide as a field now, has no room
+ * beside it in a card this narrow. */
+.pp-head { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; row-gap: var(--space-2); }
 .tdc-card .pp-head h2 { margin: 0; }
 .tdc-card .pp-head .pp-h3 { margin: 0; }
 .pp-head + div { margin-top: var(--space-2); }
@@ -372,7 +433,7 @@
 .pp-section h2 + .pp-head { margin-top: var(--space-3); }
 
 /* About */
-.pp-about { display: grid; grid-template-columns: auto 1fr; margin: var(--space-2) 0 0; font-size: 0.9rem; }
+.pp-about { display: grid; grid-template-columns: auto 1fr; margin: var(--space-2) 0 0; font-size: 1rem; }
 .pp-about dt,
 .pp-about dd { margin: 0; padding: var(--space-3) 0; border-bottom: 1px solid var(--border-color); }
 .pp-about dd { text-align: right; }
@@ -382,40 +443,34 @@
 .pp-versus {
 	margin-top: var(--space-5);
 	padding: var(--space-5) var(--space-3);
-	border-radius: var(--radius-lg);
-	background:
-		radial-gradient(70% 90% at 0% 30%, color-mix(in srgb, var(--color-primary) 20%, transparent), transparent 70%),
-		radial-gradient(70% 90% at 100% 30%, color-mix(in srgb, var(--text-primary) 12%, transparent), transparent 70%);
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-sunken);
 }
 .pp-vs { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
-.pp-vs-side { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); width: 6rem; }
+.pp-vs-side { display: flex; flex: 0 1 6rem; flex-direction: column; align-items: center; gap: var(--space-2); min-width: 0; }
 .pp-vs-pic {
 	display: grid;
 	place-items: center;
-	width: 5.25rem;
-	height: 5.25rem;
-	border: 3px solid var(--text-primary);
+	width: min(5.25rem, 100%);
+	aspect-ratio: 1;
 	border-radius: var(--radius-round);
-	box-sizing: border-box;
 	overflow: hidden;
-	background: var(--bg-surface);
 	font-size: 1.75rem;
 	font-weight: 700;
 	box-shadow: var(--shadow-pic);
 }
 .pp-vs-pic img { width: 100%; height: 100%; object-fit: cover; }
-.pp-vs-pic-me { border-color: var(--color-primary); box-shadow: 0 0 24px color-mix(in srgb, var(--color-primary) 45%, transparent); }
 .pp-vs-name { font-weight: 700; text-align: center; overflow-wrap: anywhere; }
 .pp-vs-mid { display: flex; flex-direction: column; align-items: center; }
-.pp-vs-kicker { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; }
-.pp-vs-score { font-family: var(--font-display); font-size: 3.5rem; line-height: 1; margin-top: var(--space-2); white-space: nowrap; }
+.pp-vs-kicker { font-size: 0.85rem; }
+.pp-vs-score { font-family: var(--font-display); font-size: clamp(2rem, 12vw, 3.5rem); line-height: 1; margin-top: var(--space-2); white-space: nowrap; }
 .pp-vs-colon { font-size: 2.25rem; }
 .pp-split { display: flex; gap: 3px; height: 0.5rem; margin-top: var(--space-5); border-radius: var(--radius-pill); overflow: hidden; }
 .pp-split-me { background: var(--color-primary); }
 .pp-split-them { background: var(--text-primary); }
-.pp-vs-line { display: flex; justify-content: center; gap: var(--space-4); margin: var(--space-3) 0 0; font-size: 0.9rem; }
+.pp-vs-line { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-4); margin: var(--space-3) 0 0; font-size: 1rem; }
 
-.pp-panel { padding: var(--space-4); border-radius: var(--radius-md); box-shadow: var(--shadow-sunken); }
+.pp-panel { padding: var(--space-4); border-radius: var(--nm-field-radius); box-shadow: var(--nm-sunken); }
 .pp-panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); }
 .pp-panel-title { font-family: var(--font-display); font-size: 1.15rem; color: var(--color-primary); }
 .pp-panel-score { display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); }
@@ -425,12 +480,13 @@
 .pp-strip-mine { background: var(--color-primary); }
 
 /* ── Compare (UV, 5 Nov) ──
- * The two profiles side by side, you on the left. The halves are the match
- * stage's (match.css .mv-side::before): each set in with the page's inner
- * shadow, cast by the light, so the centre line is where the two meet. Edge
- * to edge of the card (its 1.25rem sides taken back), so each half has room. */
-.pp-c { position: relative; margin: var(--space-5) -1.25rem 0; }
-.pp-c[hidden] { display: none; }
+ * The two profiles side by side, you on the left, each half sunk into the card,
+ * so the centre line is where the two meet. Edge to edge of the card (its sides
+ * taken back, design.css), so each half has room. */
+.pp-c { position: relative; margin: var(--space-5) calc(-1 * var(--space-5)) 0; }
+@media (max-width: 24rem) {
+	.pp-c { margin-right: calc(-1 * var(--space-3)); margin-left: calc(-1 * var(--space-3)); }
+}
 .pp-c-who::before,
 .pp-c-body::before,
 .pp-c-body::after {
@@ -438,7 +494,8 @@
 	position: absolute;
 	top: 0;
 	bottom: 0;
-	box-shadow: inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-sunken);
 	pointer-events: none;
 	z-index: 0;   /* under the halves' contents, which are lifted to 1 */
 }
@@ -467,8 +524,8 @@ body:has(.site-nav:not(.is-hidden)) .pp-c-head { top: var(--nav-total); }
 .pp-c-who[data-side="mine"] { justify-content: flex-end; }
 
 /* The stage's person (match.css .mv-person, sideways): the picture, then
- * the display name (0.6 of its height) over the full name (0.385), shadows
- * cast by the light. Yours mirrored, both pictures facing the line. */
+ * the display name (0.6 of its height) over the full name (0.385). Yours
+ * mirrored, both pictures facing the line. */
 .pp-c-person {
 	--c-who-h: 2.75rem;
 	display: flex;
@@ -488,11 +545,10 @@ body:has(.site-nav:not(.is-hidden)) .pp-c-head { top: var(--nav-total); }
 	height: var(--c-who-h);
 	border-radius: var(--radius-round);
 	overflow: hidden;
-	background: var(--hover-wash);
 	color: var(--color-primary);
 	font-size: calc(var(--c-who-h) * 0.36);
 	font-weight: 700;
-	box-shadow: var(--match-mark-shadow);
+	box-shadow: var(--shadow-pic);
 }
 .pp-c-pic img { width: 100%; height: 100%; object-fit: cover; }
 .pp-c-names {
@@ -501,7 +557,6 @@ body:has(.site-nav:not(.is-hidden)) .pp-c-head { top: var(--nav-total); }
 	justify-content: center;
 	gap: calc(var(--c-who-h) * 0.1);
 	min-width: 0;
-	filter: drop-shadow(var(--match-mark-shadow));
 }
 .pp-c-name,
 .pp-c-full {
@@ -527,7 +582,7 @@ body:has(.site-nav:not(.is-hidden)) .pp-c-head { top: var(--nav-total); }
 .pp-c-body > .pp-c-h,
 .pp-c-body > .pp-c-wide { grid-column: 1 / -1; }
 /* A half's stat boxes: one column on a phone, two by two once there is room. */
-.pp-c-body .pp-grid { grid-template-columns: repeat(auto-fit, minmax(max(9rem, 40%), 1fr)); }
+.pp-c-body .pp-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, max(9rem, 40%)), 1fr)); }
 .tdc-card .pp-c-h { margin: var(--space-6) 0 var(--space-2); font-family: var(--font-display); font-weight: 400; font-size: 1.4rem; color: var(--color-primary); }
 .pp-c-body > .pp-c-h:first-child { margin-top: var(--space-5); }
 .pp-c-body > .pp-period { margin: var(--space-2) auto var(--space-3); }
@@ -559,32 +614,34 @@ body:has(.site-nav:not(.is-hidden)) .pp-c-head { top: var(--nav-total); }
 .pp-c-body .pp-row { gap: var(--space-2); }
 .pp-c-body .pp-score { font-size: 1.15rem; }
 .pp-c-body .pp-team { gap: var(--space-2); padding: var(--space-2) var(--space-3); }
-.pp-c-body .pp-head { grid-template-columns: minmax(0, 1fr); justify-items: center; row-gap: var(--space-2); }
-.pp-c-body .pp-head > :first-child,
-.pp-c-body .pp-head > .tdc-stepper,
-.pp-c-body .pp-head > input { grid-column: 1; justify-self: center; }
+.pp-c-body [data-part]:has(.pp-row) { padding-right: var(--space-2); padding-left: var(--space-2); }
+/* On the narrowest screens a half is narrower than the number's pill. */
+@media (max-width: 24rem) {
+	.pp-c-body .tdc-stepper.is-across { padding: 0; }
+	.pp-c-body .tdc-stepper.is-across > .tdc-chevron { padding: 0 var(--space-1); }
+}
 .pp-c-body > .pp-c-next { margin-top: var(--space-5); }
 .pp-c-body .pp-head-solo { margin-top: var(--space-1); }
 
 /* About: one table, its headings in the middle, every cell centred (UV, 5 Nov). */
-.pp-c-about { width: 100%; margin-top: var(--space-2); border-collapse: collapse; font-size: 0.9rem; }
+.pp-c-about { width: 100%; margin-top: var(--space-2); border-collapse: collapse; font-size: 1rem; }
 .pp-c-about td,
 .pp-c-about th { padding: var(--space-3) var(--space-2); border-bottom: 1px solid var(--border-color); text-align: center; overflow-wrap: anywhere; }
-.pp-c-about th { width: 7rem; font-size: 0.82rem; font-weight: 400; }
+.pp-c-about th { width: 7rem; font-size: 0.85rem; font-weight: 400; }
 .pp-c-about a { color: var(--color-primary); }
 .tdc-card .pp-c-about .pp-link { display: inline; margin: 0; padding: 0; }
 
-#pp-meetings { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); }
+#pp-meetings { display: flex; flex-direction: column; margin-top: var(--space-3); }
 .pp-meet {
 	display: flex;
 	align-items: center;
 	gap: var(--space-3);
-	padding: var(--space-3) var(--space-4);
-	border: 1px solid var(--border-color);
-	border-radius: var(--radius-md);
+	padding: var(--space-3) 0;
+	border-bottom: 1px solid var(--border-color);
 	color: var(--text-primary);
 	text-decoration: none;
 }
+.pp-meet:not(:has(+ .pp-meet)) { border-bottom: 0; }
 .pp-meet:hover,
 .pp-meet:focus-visible { background: var(--hover-wash); outline: none; }
-.tdc-card .pp-rematch { display: block; width: 100%; margin-top: var(--space-5); box-shadow: 0 0 18px color-mix(in srgb, var(--color-primary) 35%, transparent); }
+.tdc-card .pp-rematch { display: block; width: 100%; margin-top: var(--space-5); }

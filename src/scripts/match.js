@@ -2635,9 +2635,9 @@
 	function renderSetting(def) {
 		// A select's options are often long (team names, rule names), so it gets
 		// its own full-width line instead of being squeezed beside the label.
-		const row = div('set-row' + (def.type === 'select' ? ' stack' : ''));
+		const row = div('field set-row' + (def.type === 'select' ? ' stack' : ''));
 		const label = document.createElement('label');
-		label.className = 'set-label';
+		label.id = 'set-label-' + def.key;   // fixed, so a redraw of the panel is not taken for a new field (tdc-controls.js, itemKey)
 		label.textContent = def.label;
 		label.htmlFor = 'set-' + def.key;
 
@@ -2653,7 +2653,7 @@
 				status: els.stageStatus,
 				onPick: persistReferee
 			}));
-			if (def.hint) row.append(div('set-hint', def.hint));
+			if (def.hint) row.append(div('hint', def.hint));
 			return row;
 		}
 
@@ -2700,7 +2700,7 @@
 		if (!(def.key === 'first_break_side' ? canEdit : canChange)) input.disabled = true;
 
 		row.append(label, input);
-		if (def.hint) row.append(div('set-hint', def.hint));
+		if (def.hint) row.append(div('hint', def.hint));
 		return row;
 	}
 

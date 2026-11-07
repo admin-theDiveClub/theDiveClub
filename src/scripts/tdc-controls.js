@@ -22,33 +22,25 @@
 // TDCMatchDef, rows re-rendered after a write) is picked up as it arrives.
 //
 // Kinds:
-//   stepper  <input type="number">. The number in a pill, a chevron above to
-//            go up and one below to go down. A chevron disappears at its limit
+//   stepper  <input type="number">. The number in a sideways pill, a chevron either
+//            side (UV, 7 Nov: never upright). A chevron disappears at its limit
 //            (min / max) and the pill shrinks with it. Hold a chevron to keep
 //            going; each new number rolls in. Click the number to type one: it
 //            is selected, so typing replaces it, letters are refused, phones
 //            get the number pad, and Enter or leaving it commits it, pulled
-//            into range. Escape undoes. Its label and hint move to its right.
-//            data-stepper="across" lays it on its side, chevrons left and
-//            right, small, for a row of numbers (a fixture's tables); it is
-//            not moved beside a label.
-//   date     <input type="date">. Year, month and day as three steppers, with
-//            a calendar button and a clear button to their left. Pressing a
-//            chevron on an empty date starts it at today; emptying any part,
-//            or the clear button, clears the date. Label and hint to its right.
-//   select   <select>. The options side by side in a horizontal pill, the
-//            chosen one in a green pill of its own that slides to the next.
-//            Click an option to choose it, or use the arrows at either end.
-//            The real select keeps the keyboard: Tab reaches it and the arrow
-//            keys change it.
+//            into range. Escape undoes. It sits beside its label.
+//   date     Kept native (UV, 7 Nov): three sideways steppers do not fit a phone, so
+//            a date is the browser's own field in a sunken pill. Nothing to build.
+//   select   <select>. The dropdown (UV, 7 Nov): a sunken pill that is a window on
+//            its words, opening over the options and pushing what is under it down.
+//            It keeps a <select>'s keys. The real select stays, unseen, and is what
+//            a page reads and hears.
 //   tri      <select> of three options, data-control="tri" only. A switch
 //            with three stops: left, middle (an empty ring) and right (a
 //            tick). Click an end to choose it, the same end again or the
 //            middle for the middle. data-icon picks the ring's icon (a tick
 //            by default) and data-tone its colour (warning). The team card's
 //            lag (a cue ball, warning) and win.
-//   select   data-tone="warning" colours its pill and outline in the warning
-//            colour (the match page's break event).
 //   slide    <input type="range">, data-control="slide" only. A pill with a
 //            cream knob at the max end holding an undo arrow, and the words
 //            from data-label. Drag the knob all the way to the min end and the
@@ -85,6 +77,7 @@ const TDCControls = (() => {
 
 	// Enhance every opted-in element under root that has not been already.
 	function scan(root) {
+		tabBars(root);
 		const selector = ['[data-control]']
 			.concat(Object.values(kinds).filter((k) => k.auto).map((k) => k.auto))
 			.join(',');
@@ -300,18 +293,16 @@ const TDCControls = (() => {
 		}
 
 		// The window clips the number, so a changing one can roll through it.
-		// data-stepper="across" lays it on its side (UV, 24 Oct): down on the
-		// left, up on the right, small enough for a row of them (a fixture's
-		// table numbers). It stays where the page put it, not beside a label.
-		const across = input.dataset.stepper === 'across';
-		const pill = node('span', across ? 'tdc-stepper is-across' : 'tdc-stepper');
+		// On its side (UV, 7 Nov, for every one): down on the left, up on the right.
+		const across = true;
+		const pill = node('span', 'tdc-stepper is-across');
 		const up = chevron('tdc-stepper-up', 'Increase', input.id && input.id + ':up');
 		const down = chevron('tdc-stepper-down', 'Decrease', input.id && input.id + ':down');
 		const view = node('span', 'tdc-stepper-window');
 		input.replaceWith(pill);
 		view.append(input);
-		if (across) pill.append(down, view, up);
-		else { pill.append(up, view, down); besideLabel(pill); }
+		pill.append(down, view, up);
+		besideLabel(pill);
 
 		const min = () => input.min === '' ? -Infinity : Number(input.min);
 		const max = () => input.max === '' ? Infinity : Number(input.max);
@@ -469,164 +460,8 @@ const TDCControls = (() => {
 	}, 'input[type="number"]:not(table input)');
 
 	// ─── Date ───
-	// The date's two icons, in a 24 box: the calendar (body, rule, two rings)
-	// and the cross, each drawn stroke by stroke.
-	const CALENDAR = ['M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z',
-		'M3 10h18', 'M8 3v4', 'M16 3v4'];
-	const CLEAR = ['M6 6l12 12', 'M18 6 6 18'];
-	const pad = (n, width) => String(n).padStart(width, '0');
-	const daysIn = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate();   // m is 1–12
-	const todayParts = () => {
-		const d = new Date();
-		return [d.getFullYear(), d.getMonth() + 1, d.getDate()];
-	};
-
-	define('date', (real) => {
-		if (real.type !== 'date') {
-			TDC.error(AREA, 'a date control must be an <input type="date">.', real);
-			return;
-		}
-
-		const label = labelFor(real);
-		const name = label ? label.textContent.trim() : 'Date';
-		const yearMin = real.min ? Number(real.min.slice(0, 4)) : 1;
-		const yearMax = real.max ? Number(real.max.slice(0, 4)) : 9999;
-
-		const part = (cls, placeholder, lo, hi, what) => {
-			const p = node('input', 'tdc-date-' + cls);
-			p.type = 'number';
-			p.placeholder = placeholder;
-			p.min = lo;
-			p.max = hi;
-			p.disabled = real.disabled;
-			p.dataset.control = 'stepper';
-			p.setAttribute('aria-label', `${name}: ${what}`);
-			return p;
-		};
-		const year = part('year', 'YYYY', yearMin, yearMax, 'year');
-		const month = part('month', 'MM', 1, 12, 'month');
-		const day = part('day', 'DD', 1, 31, 'day');
-		const parts = [year, month, day];
-
-		// The calendar and the clear button stack to the left of the numbers
-		// (UV, 24 Oct). The real input sits invisibly under the calendar, so
-		// the browser's own picker opens beside it.
-		// Drawn icons, so they can draw themselves in like every other.
-		const tool = (cls, label, strokes) => {
-			const b = node('button', cls);
-			b.type = 'button';
-			b.setAttribute('aria-label', `${name}: ${label}`);
-			b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">'
-				+ strokes.map((d) => `<path pathLength="100" d="${d}"/>`).join('') + '</svg>';
-			return b;
-		};
-		const pick = tool('tdc-date-pick', 'choose from a calendar', CALENDAR);
-		const clear = tool('tdc-date-clear', 'clear the date', CLEAR);
-		if (real.id) {
-			pick.dataset.iconKey = real.id + ':pick';
-			clear.dataset.iconKey = real.id + ':clear';
-		}
-		const tools = node('span', 'tdc-date-tools');
-
-		const box = node('span', 'tdc-date');
-		real.replaceWith(box);
-		tools.append(pick, clear, real);
-		box.append(tools, year, month, day);
-		real.tabIndex = -1;
-		real.setAttribute('aria-hidden', 'true');
-		scan(box);   // the three steppers, now rather than on the next tick
-		year.closest('.tdc-stepper').classList.add('is-year');
-		besideLabel(box);
-
-		// The real input is the record; the parts only show it.
-		function show() {
-			const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(real.value);
-			year.value = m ? m[1] : '';
-			month.value = m ? m[2] : '';
-			day.value = m ? m[3] : '';
-			day.max = m ? daysIn(Number(m[1]), Number(m[2])) : 31;
-			drawIcon(clear, !!m, (g) => clear.classList.toggle('is-empty', g));
-		}
-
-		function write(value) {
-			const was = real.value;
-			real.value = value;   // re-shows the parts
-			if (real.value !== was) announce(real);
-		}
-
-		const today = () => {
-			const t = todayParts();
-			write(`${pad(t[0], 4)}-${pad(t[1], 2)}-${pad(t[2], 2)}`);
-		};
-
-		// A part changed: build the date from all three. A part left empty
-		// beside filled ones is taken from today; an emptied one clears it.
-		function compose(changed) {
-			if (changed.value === '' || parts.every((p) => p.value === '')) return write('');
-			const t = todayParts();
-			const [y0, m0, d0] = parts.map((p, i) => p.value === '' ? t[i] : Math.trunc(p.valueAsNumber));
-			const y = Math.min(yearMax, Math.max(yearMin, y0));
-			const m = Math.min(12, Math.max(1, m0));
-			const d = Math.min(daysIn(y, m), Math.max(1, d0));
-			write(`${pad(y, 4)}-${pad(m, 2)}-${pad(d, 2)}`);
-		}
-
-		// The parts' own events stop here: the page hears only the real input,
-		// with a whole date or none.
-		let composing = false;
-		for (const type of ['input', 'change']) {
-			box.addEventListener(type, (e) => {
-				if (e.target === real) { show(); return; }   // the browser's calendar
-				e.stopPropagation();
-				if (type === 'change' && parts.includes(e.target)) {
-					composing = true;
-					try { compose(e.target); } finally { composing = false; }
-				}
-			});
-		}
-
-		// The dots: a part's stepper has them for a number changed there; the
-		// calendar and the clear button give them to the whole date.
-		let mark = null;
-		box.addEventListener('change', (e) => { if (e.target === real && !composing) mark = saveMark(); }, true);
-		box.addEventListener('change', (e) => {
-			if (e.target !== real || composing || !mark) return;
-			serveAfter(box, mark, followField(real, '.tdc-date', { trace: 'none' }));
-			mark = null;
-		});
-
-		// An empty date starts at today on the first chevron or arrow key,
-		// rather than at the year 1.
-		box.addEventListener('pointerdown', (e) => {
-			if (real.value !== '' || real.disabled || !e.target.closest('.tdc-chevron')) return;
-			e.stopPropagation();
-			e.preventDefault();
-			today();
-		}, true);
-		box.addEventListener('keydown', (e) => {
-			if (real.value !== '' || !parts.includes(e.target)) return;
-			if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-			e.preventDefault();
-			today();
-		}, true);
-
-		pick.addEventListener('click', () => {
-			if (typeof real.showPicker !== 'function') {
-				TDC.error(AREA, 'this browser cannot open a calendar from a button. Use the numbers instead.');
-				return;
-			}
-			try { real.showPicker(); }
-			catch (err) { TDC.error(AREA, 'the calendar could not be opened.', err); }
-		});
-		clear.addEventListener('click', () => { if (!real.disabled) write(''); });
-
-		// The label points at the hidden input; send it to the year instead.
-		if (label) label.addEventListener('click', (e) => { e.preventDefault(); year.focus(); });
-
-		onPropSet(real, ['value'], show);
-		show();
-		drawIcon(pick, true, () => {});
-	}, 'input[type="date"]:not(table input)');
+	// The browser's own field, in a sunken pill (design.css). A page may still ask for it.
+	define('date', () => {}, null);
 
 	// ─── Ring and switch (checkboxes) ───
 	// UV's ring status design (ring-status.js) on every checkbox (24 Oct). The
@@ -748,6 +583,7 @@ const TDCControls = (() => {
 		const state = () => c.box.checked ? ON : OFF;
 
 		const wrap = c.wrap = node('span', isSwitch ? 'tdc-switch' : 'tdc-check');
+		if (ownIcons) wrap.classList.add('has-icons');
 		wrap.tdcCheck = c;
 		const face = node('span', 'tdc-ring');
 		face.innerHTML = TDCRing.svg();
@@ -972,184 +808,217 @@ const TDCControls = (() => {
 
 	define('tri', triControl, null);
 
-	// ─── Select ───
-	// Where each select's green pill was the moment an option was chosen, by
-	// the select's id. A page that rebuilds its form after every change (the
-	// ruleset on /leagues/new/) makes a new control each time; the new one
-	// starts its pill here and slides it to the new option.
-	const thumbWas = new Map();
-	const THUMB_MEMORY = 1000;   // ms: older than this is a different visit
+	// ─── Select: the dropdown ───
+	// UV, 7 Nov. The real select stays, unseen: a page reads .value and hears change as
+	// ever. The pill is a window: closed, its left edge follows the selection's width;
+	// open, it reaches the label and the options, which are laid out once and take no part
+	// in the opening. It runs in two steps, so the options are drawn before the mask moves
+	// over them, and the light holds meanwhile, since every move of it repaints the page.
+	const DROP_MOVE = 600;   // ms the light holds for it: its move and a little
+	const holdLight = () => { window.TDCLightHeldUntil = performance.now() + DROP_MOVE; };
+	let dropOpen = null;     // the one that is open: its close
+	let dropCount = 0;
+	document.addEventListener('pointerdown', (e) => {
+		if (dropOpen && !dropOpen.box.contains(e.target)) dropOpen.close(false);
+	});
 
 	define('select', (select) => {
 		if (select.tagName !== 'SELECT' || select.multiple) {
 			TDC.error(AREA, 'a select control must be a single-choice <select>.', select);
 			return;
 		}
-
-		const box = node('span', 'tdc-select');
-		const prev = chevron('tdc-select-prev', 'Previous option', select.id && select.id + ':prev');
-		const next = chevron('tdc-select-next', 'Next option', select.id && select.id + ':next');
-		const track = node('span', 'tdc-select-track scroll-x');
-		// The green pill is its own layer under the options, so it can slide
-		// over and change width to the next one (UV, 24 Oct).
-		const thumb = node('span', 'tdc-select-thumb');
-		thumb.setAttribute('aria-hidden', 'true');
-		if (select.dataset.tone) box.dataset.tone = select.dataset.tone;
+		const box = node('div', 'tdc-drop');
+		const button = node('button', 'tdc-drop-button');
+		button.type = 'button';
+		button.dataset.noDots = '';
+		button.setAttribute('aria-haspopup', 'listbox');
+		button.setAttribute('aria-expanded', 'false');
+		const value = node('span', 'tdc-drop-value');
+		button.append(value);
+		button.insertAdjacentHTML('beforeend', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>');
+		const tray = node('span', 'tdc-drop-tray');
+		const clip = node('div', 'tdc-drop-clip');
+		const list = node('ul', 'tdc-drop-list');
+		const listId = 'tdc-drop-' + (++dropCount);
+		list.id = listId;
+		list.setAttribute('role', 'listbox');
+		list.tabIndex = -1;
+		button.setAttribute('aria-controls', listId);
+		clip.append(list);
+		tray.append(clip);
 		select.replaceWith(box);
-		box.append(prev, track, next, select);
-		markField(box, 'field-centred');
+		box.append(button, tray, select);
+		select.tabIndex = -1;
+		select.setAttribute('aria-hidden', 'true');
+		const field = box.parentElement && box.parentElement.classList.contains('field') ? box.parentElement : null;
 
-		const enabled = () => [...select.options].map((o, i) => o.disabled ? -1 : i).filter((i) => i >= 0);
-		const chosenButton = () => track.querySelector('.tdc-select-option.is-selected');
-
-		// data-icon names a ring icon shown in the chosen option, before its
-		// words (UV, 28 Oct: the match page's break event wears the cue ball).
-		// Its ring is not drawn; the dots trace the icon when it is chosen.
-		let icon = null;
-		const iconName = select.dataset.icon;
-		if (iconName && TDCRing.ICONS[iconName]) {
-			icon = node('span', 'tdc-ring tdc-select-icon');
-			icon.setAttribute('aria-hidden', 'true');
-			icon.innerHTML = TDCRing.svg();
-			try { new TDCRing.RingStatus(icon, { icons: [iconName], initial: iconName }).live.remove(); }
-			catch (err) { TDC.error(AREA, 'the pill\'s icon could not be drawn: ' + iconName, err); icon = null; }
-		} else if (iconName) {
-			TDC.error(AREA, `a pill asks for an icon called "${iconName}", which there is not.`, select);
+		// Its label names the button, and pressing the label goes to the button.
+		const label = labelFor(select);
+		if (label) {
+			if (!label.id) label.id = listId + '-label';
+			value.id = listId + '-value';
+			button.setAttribute('aria-labelledby', label.id + ' ' + value.id);
+			list.setAttribute('aria-labelledby', label.id);
+			label.addEventListener('click', (e) => { e.preventDefault(); button.focus(); });
+		} else if (select.getAttribute('aria-label')) {
+			button.setAttribute('aria-label', select.getAttribute('aria-label'));
+			list.setAttribute('aria-label', select.getAttribute('aria-label'));
 		}
 
-		// Put the pill under b. Slides when the track is animated; jumps when
-		// it is not (the first drawing, a resize).
-		function placeThumb(b) {
-			thumb.hidden = !b;
-			if (!b) return;
-			const ms = motionMs(box);
-			thumb.style.transitionDuration = ms + 'ms';
-			thumb.style.width = b.offsetWidth + 'px';
-			thumb.style.transform = `translateX(${b.offsetLeft}px)`;
-		}
-		function jump(fn) {
-			track.classList.remove('is-animated');
-			fn();
-			void thumb.offsetWidth;   // apply it before the transition comes back
-			track.classList.add('is-animated');
-		}
+		let options = [];
+		let active = -1;
+		const isOpen = () => box.classList.contains('ready');
 
+		// A new screen width, the first measure among them, puts the pill straight in its
+		// place. Only a new selection eases there.
+		let fittedWidth = 0, settling = 0;
+		function fit() {
+			if (!box.isConnected) return;
+			const whole = box.getBoundingClientRect();
+			if (whole.width !== fittedWidth) {
+				fittedWidth = whole.width;
+				box.classList.add('still');
+				cancelAnimationFrame(settling);
+				settling = requestAnimationFrame(() => {
+					settling = requestAnimationFrame(() => box.classList.remove('still'));
+				});
+			}
+			const left = value.getBoundingClientRect().left - whole.left;
+			(field || box).style.setProperty('--nm-selection-left', left + 'px');
+			box.style.setProperty('--nm-selection-left', left + 'px');
+			box.style.setProperty('--nm-list-height', list.getBoundingClientRect().height + 'px');
+			// A label with no room beside the selection goes above the pill.
+			if (field && label && whole.width) {
+				field.classList.remove('drop-stacked');
+				if (label.scrollWidth > label.clientWidth + 1 || label.scrollHeight > label.clientHeight + 1) field.classList.add('drop-stacked');
+			}
+		}
+		const refit = new ResizeObserver(fit);
+		[value, button, list].forEach((part) => refit.observe(part));
+
+		function showActive(i) {
+			active = i;
+			options.forEach((o) => o.li.classList.toggle('active', o.index === i));
+			const now = options.find((o) => o.index === i);
+			if (!now) { list.classList.remove('washed'); return; }
+			list.setAttribute('aria-activedescendant', now.li.id);
+			list.style.setProperty('--nm-active-y', now.li.offsetTop + 'px');
+			list.style.setProperty('--nm-active-height', now.li.offsetHeight + 'px');
+			list.classList.toggle('washed', i !== select.selectedIndex);
+		}
+		function sync() {
+			const chosen = select.options[select.selectedIndex];
+			value.textContent = chosen ? chosen.textContent : '';
+			options.forEach((o) => o.li.setAttribute('aria-selected', String(o.index === select.selectedIndex)));
+			box.classList.toggle('is-disabled', select.disabled);
+			fit();
+		}
 		function build() {
-			track.replaceChildren(thumb, ...[...select.options].map((o, i) => {
-				const b = node('button', 'tdc-select-option');
-				b.type = 'button';
-				b.tabIndex = -1;
-				b.textContent = o.textContent;
-				b.dataset.index = i;
-				b.disabled = o.disabled;
-				b.addEventListener('pointerdown', (e) => { if (e.button === 0) e.preventDefault(); });
-				return b;
-			}));
+			options = [...select.options].map((o, index) => ({ o, index })).filter(({ o }) => !o.hidden).map(({ o, index }) => {
+				const li = node('li');
+				li.id = listId + '-' + index;
+				li.setAttribute('role', 'option');
+				li.textContent = o.textContent || '\u00a0';
+				li.dataset.index = index;
+				if (o.disabled) li.setAttribute('aria-disabled', 'true');
+				return { li, index, disabled: o.disabled };
+			});
+			list.replaceChildren(...options.map((o) => o.li));
 			sync();
 		}
-
-		function sync() {
-			const at = select.selectedIndex;
-			let chosen = null;
-			for (const b of track.querySelectorAll('.tdc-select-option')) {
-				const on = Number(b.dataset.index) === at;
-				b.classList.toggle('is-selected', on);
-				b.setAttribute('aria-pressed', String(on));
-				if (on) chosen = b;
-			}
-			// Before the pill is measured: the icon widens the option.
-			if (icon) { if (chosen) chosen.prepend(icon); else icon.remove(); }
-			const open = enabled();
-			drawIcon(prev, open.some((i) => i < at), (g) => prev.classList.toggle('is-end', g));
-			drawIcon(next, open.some((i) => i > at), (g) => next.classList.toggle('is-end', g));
-			box.classList.toggle('is-disabled', select.disabled);
-			placeThumb(chosen);
-			reveal(chosen, track.classList.contains('is-animated'));
+		let setOff = 0;
+		function open() {
+			if (select.disabled || isOpen()) return;
+			if (dropOpen) dropOpen.close(false);
+			dropOpen = { box, close };
+			box.classList.add('ready');
+			button.setAttribute('aria-expanded', 'true');
+			showActive(select.selectedIndex);
+			const now = options.find((o) => o.index === select.selectedIndex);
+			if (now) list.scrollTop = Math.max(0, now.li.offsetTop - list.clientHeight / 2);
+			list.focus({ preventScroll: true });   // or the page jumps to fit the list, and every word with it
+			setOff = requestAnimationFrame(() => {
+				setOff = requestAnimationFrame(() => {
+					holdLight();
+					box.classList.add('open');
+				});
+			});
 		}
-
-		// Centre the chosen option in the pill (never scrolling the page), so
-		// the soft edges of a sideways scroll fade its neighbours, not it.
-		function reveal(b, smooth) {
-			if (!b || track.scrollWidth <= track.clientWidth) return;
-			const left = b.offsetLeft - (track.clientWidth - b.offsetWidth) / 2;
-			track.scrollTo({ left, behavior: smooth && motionMs(box) ? 'smooth' : 'auto' });
+		function close(refocus) {
+			cancelAnimationFrame(setOff);
+			holdLight();
+			box.classList.remove('ready', 'open');
+			button.setAttribute('aria-expanded', 'false');
+			if (dropOpen && dropOpen.box === box) dropOpen = null;
+			if (refocus) button.focus({ preventScroll: true });
 		}
-
 		function choose(i) {
-			if (select.disabled || i === undefined || i < 0 || i === select.selectedIndex) return;
-			const b = chosenButton();
-			if (select.id && b) {
-				thumbWas.set(select.id, { x: b.offsetLeft, w: b.offsetWidth, scroll: track.scrollLeft, at: Date.now() });
+			if (i !== select.selectedIndex) {
+				select.selectedIndex = i;   // syncs
+				close(true);
+				announce(select);
+			} else {
+				close(true);
 			}
-			select.selectedIndex = i;   // syncs
-			announce(select);
 		}
-
-		track.addEventListener('click', (e) => {
-			const b = e.target.closest('.tdc-select-option');
-			if (b && !b.disabled) choose(Number(b.dataset.index));
+		const usable = () => options.filter((o) => !o.disabled);
+		function move(by) {
+			const all = usable();
+			if (!all.length) return;
+			const at = all.findIndex((o) => o.index === active);
+			const to = all[Math.max(0, Math.min(all.length - 1, (at < 0 ? 0 : at) + by))];
+			showActive(to.index);
+			to.li.scrollIntoView({ block: 'nearest' });   // the keys may reach one out of sight
+		}
+		button.addEventListener('click', () => { if (isOpen()) close(true); else open(); });
+		button.addEventListener('keydown', (e) => {
+			if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+			e.preventDefault();
+			open();
 		});
-		prev.addEventListener('click', () => choose(enabled().filter((i) => i < select.selectedIndex).pop()));
-		next.addEventListener('click', () => choose(enabled().find((i) => i > select.selectedIndex)));
+		list.addEventListener('click', (e) => {
+			const li = e.target.closest('li');
+			if (li && li.getAttribute('aria-disabled') !== 'true') choose(Number(li.dataset.index));
+		});
+		list.addEventListener('pointermove', (e) => {
+			const li = e.target.closest('li');
+			if (li && li.getAttribute('aria-disabled') !== 'true' && Number(li.dataset.index) !== active) showActive(Number(li.dataset.index));
+		});
+		list.addEventListener('keydown', (e) => {
+			if (e.key === 'ArrowDown') move(1);
+			else if (e.key === 'ArrowUp') move(-1);
+			else if (e.key === 'Home') move(-Infinity);
+			else if (e.key === 'End') move(Infinity);
+			else if (e.key === 'Enter' || e.key === ' ') choose(active);
+			else if (e.key === 'Escape') close(true);
+			else if (e.key === 'Tab') { close(true); return; }
+			else return;
+			e.preventDefault();
+		});
 
 		select.addEventListener('change', sync);
 		select.addEventListener('input', sync);
 		onPropSet(select, ['value', 'selectedIndex'], sync);
 
-		// The dots, on a choice made here (a click, an arrow, the keyboard):
-		// they trace the green pill's outline under the chosen option, then it
-		// fills; or the icon in it, when it has one. A page that draws the pill
-		// again after the choice (the match page's break event) gives a new
-		// one, found by the select's id.
-		const dotsTarget = (root) => root.querySelector(icon ? '.tdc-select-icon' : '.tdc-select-thumb');
+		// The dots, on a choice made here: they trace the selection. A page that draws the
+		// control again after the choice gives a new one, found by the select's id.
 		const follow = () => {
 			const s = select.id && document.getElementById(select.id);
-			const b = s && s.closest('.tdc-select');
-			return b && dotsTarget(b);
+			const b = s && s.closest('.tdc-drop');
+			return b && b.querySelector('.tdc-drop-value');
 		};
 		let mark = null;
 		box.addEventListener('change', (e) => { if (e.target === select) mark = saveMark(); }, true);
 		box.addEventListener('change', (e) => {
 			if (e.target !== select || !mark) return;
-			const target = dotsTarget(box);
-			if (target) serveAfter(target, mark, icon ? { follow, leaves: true } : { trace: 'tab', follow, leaves: true });
+			serveAfter(value, mark, { follow, leaves: true });
 			mark = null;
 		});
 		new MutationObserver(build).observe(select, {
 			childList: true, subtree: true, characterData: true,
-			attributes: true, attributeFilter: ['disabled', 'label']
+			attributes: true, attributeFilter: ['disabled', 'label', 'hidden']
 		});
-
-		// First drawing. If this select was just changed in a control the
-		// page has since rebuilt, start from where its pill was and slide.
-		const was = select.id ? thumbWas.get(select.id) : null;
-		if (select.id) thumbWas.delete(select.id);
-		if (was && Date.now() - was.at < THUMB_MEMORY) {
-			jump(() => {
-				build();
-				thumb.style.width = was.w + 'px';
-				thumb.style.transform = `translateX(${was.x}px)`;
-				track.scrollLeft = was.scroll;
-			});
-			sync();
-		} else {
-			jump(build);
-		}
-
-		// A folded group draws its controls at no width, and fonts and the
-		// window change size: put the pill back without sliding.
-		// Only a real change of width: the observer also reports once on
-		// starting, which would cut a slide short.
-		let width = track.clientWidth;
-		new ResizeObserver(() => {
-			if (track.clientWidth === width) return;
-			width = track.clientWidth;
-			jump(() => {
-				const b = chosenButton();
-				placeThumb(b);
-				reveal(b, false);
-			});
-		}).observe(track);
+		build();
 	}, 'select:not([multiple]):not(table select)');
 
 	// ─── Slide ───
@@ -1446,6 +1315,46 @@ const TDCControls = (() => {
 		}, () => {});   // cancelled: a later tap has taken over
 	}
 
+	// ─── Tabs ───
+	// Every tab bar (.league-nav-track) marks the chosen tab with one thumb, which slides to
+	// it (UV, 7 Nov: a selection never jumps). A new screen width puts it straight there.
+	function tabBar(track) {
+		if (track.tdcThumb) return;
+		const thumb = track.tdcThumb = node('span', 'tdc-tab-thumb');
+		thumb.setAttribute('aria-hidden', 'true');
+		let settling = 0;
+		const still = () => {
+			track.classList.add('still');
+			cancelAnimationFrame(settling);
+			settling = requestAnimationFrame(() => {
+				settling = requestAnimationFrame(() => track.classList.remove('still'));
+			});
+		};
+		const place = () => {
+			if (thumb.parentElement !== track) track.prepend(thumb);
+			const tab = track.querySelector('[aria-current]');
+			thumb.hidden = !tab;
+			if (!tab) return;
+			thumb.style.setProperty('--nm-tab-x', tab.offsetLeft + 'px');
+			thumb.style.setProperty('--nm-tab-width', tab.offsetWidth + 'px');
+		};
+		const sized = new ResizeObserver(() => { still(); place(); });
+		sized.observe(track);
+		new MutationObserver((changes) => {
+			if (changes.some((m) => m.type === 'childList')) still();
+			[...track.children].forEach((item) => { if (item !== thumb) sized.observe(item); });
+			place();
+		}).observe(track, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-current'] });
+		[...track.children].forEach((item) => sized.observe(item));
+		still();
+		place();
+	}
+	function tabBars(root) {
+		if (!root.querySelectorAll) return;
+		if (root.matches && root.matches('.league-nav-track')) tabBar(root);
+		root.querySelectorAll('.league-nav-track').forEach(tabBar);
+	}
+
 	// ─── Start ───
 	// Wait for every script at the end of the page, so a kind defined in a
 	// later file is known before anything is called unknown.
@@ -1487,7 +1396,7 @@ const TDCControls = (() => {
 		// quietly (leaves).
 		let pressMark = null;
 		const BUTTON = 'button, a.btn, [role="button"]';
-		const NOT_BUTTON = '.tdc-stepper, .tdc-select, .tdc-date, .tdc-slide, .tdc-switch, .tdc-check, .tdc-tri, .site-nav, summary, [data-no-dots]';
+		const NOT_BUTTON = '.tdc-stepper, .tdc-drop, .tdc-date, .tdc-slide, .tdc-switch, .tdc-check, .tdc-tri, .site-nav, summary, [data-no-dots]';
 		const pressed = (e) => {
 			const b = e.target.closest && e.target.closest(BUTTON);
 			return b && !b.closest(NOT_BUTTON) && !b.disabled && !b.matches('[aria-disabled="true"]') ? b : null;

@@ -65,15 +65,25 @@
 	gap: var(--space-2);
 }
 
-/* A card set into the page, its state in the strip down the left. */
+/* A card set into the page, its state in the strip down the left, clear of its
+ * round corners. The small shadow: a big draw has many of these, and every
+ * shadow repaints as the light moves. */
 .poster-fixture {
 	--strip-color: var(--border-color);
 	position: relative;
-	padding: var(--space-2) var(--space-3);
-	border-left: var(--space-1) solid var(--strip-color);
-	border-radius: var(--radius-md);
-	background: var(--bg-surface);
-	box-shadow: inset var(--page-shadow-x, 0px) var(--page-shadow-y, 0px) var(--page-inset-size) var(--page-inset-spread) rgba(0, 0, 0, var(--page-inset-alpha));
+	padding: var(--space-3) var(--space-4) var(--space-3) var(--space-5);
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-sunken-small);
+}
+.poster-fixture::before {
+	content: "";
+	position: absolute;
+	top: var(--space-4);
+	bottom: var(--space-4);
+	left: var(--space-2);
+	width: var(--space-1);
+	border-radius: var(--radius-pill);
+	background: var(--strip-color);
 }
 .poster-fixture.is-live { --strip-color: var(--color-warning); }
 .poster-fixture.is-done { --strip-color: var(--color-primary); }
@@ -84,14 +94,13 @@
 	gap: var(--space-2);
 	padding: var(--space-1) 0;
 }
-.poster-side .person-pic { width: 1.75rem; height: 1.75rem; font-size: 0.68rem; }
+.poster-side .person-pic { width: 1.75rem; height: 1.75rem; font-size: 0.68rem; box-shadow: var(--shadow-pic); }
 
-/* Nobody there yet: an empty dashed circle, as the draw page has. */
+/* Nobody there yet: the picture's space alone, as the draw page has. */
 .poster-side.tbd .person-pic {
 	color: transparent;
 	background: none;
-	border: 1px dashed var(--border-color);
-	box-sizing: border-box;
+	box-shadow: none;
 }
 .poster-side.tbd .poster-side-name { color: var(--text-muted); }
 
@@ -107,7 +116,6 @@
 	font-size: 1.4rem;
 	line-height: 1;
 	font-variant-numeric: tabular-nums;
-	text-shadow: var(--match-mark-shadow);
 }
 
 /* The winner carries the weight, so a glance at a finished bracket reads as a
@@ -118,7 +126,7 @@
 
 .poster-fixture-tag {
 	margin-top: var(--space-1);
-	font-size: 0.75rem;
+	font-size: 0.85rem;
 	color: var(--text-muted);
 }
 
@@ -127,12 +135,10 @@
 /* Monospace and tall: this is read as a block to be copied whole, not as prose
  * on the page. Resizable because a 32-player result list is long. */
 #p-text {
-	width: 100%;
 	font-family: var(--font-mono);
 	font-size: 0.85rem;
 	line-height: 1.5;
-	resize: vertical;
-	margin-bottom: var(--space-3);
+	margin-bottom: var(--space-5);
 }
 
 /* The summary carries an h2 so the heading level is honest to a screen reader;
@@ -156,5 +162,5 @@
 /* When the page was generated. Quiet, but present: a poster is a snapshot and
  * a reader deserves to know how old a score on it is. */
 .sub {
-	font-size: 0.8rem;
+	font-size: 0.85rem;
 }

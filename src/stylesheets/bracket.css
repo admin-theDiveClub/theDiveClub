@@ -1,18 +1,23 @@
 /* The draw (/tournaments/bracket/).
  *
  * Rounds are columns and the page scrolls sideways, which is how a draw sheet
- * is read and the only shape that survives a 32-player field on a phone. No
- * connector lines: at this width they cost more than they explain, and each
+ * is read and the only shape that survives a 32-player field on a phone. Each
  * fixture carries its number (3-2) and says where each player came from
- * ("Winner of 2-1"), which is the same information in less ink.
+ * ("Winner of 2-1"); the arrows say it again.
+ *
+ * In the site's design (design.css): shadows draw it, and a card is as raised
+ * as anything here gets, because a big draw has many of them and every shadow
+ * repaints as the light moves. No filters, no large blurs per card.
  *
  * Every value here is a token. If something needs a colour or a radius that
  * is not in variables.css, the token is missing, not this file. */
 
 .bracket-scroll {
 	overflow-x: auto;
-	/* Room for the focus ring on a button in the last column. */
-	padding-bottom: var(--space-2);
+	/* Room for the cards' shadows, which the scroller would cut off. Exactly
+	   the 8px across and 24px down that Fit leaves spare in full screen
+	   (fitAll), so a fitted draw still does not scroll. */
+	padding: var(--space-3) var(--space-1);
 	margin-bottom: var(--space-5);
 }
 
@@ -77,8 +82,6 @@
 	min-height: var(--head-h);
 	margin: 0;
 	font-size: 1.1em;
-	letter-spacing: 0.06em;
-	text-transform: uppercase;
 	text-align: center;
 	color: var(--color-primary);
 }
@@ -96,22 +99,22 @@
 
 /* ── A fixture ─────────────────────────────────────────────────────── */
 
-/* Styled as a league fixture (UV, 5 Nov; .fx-* in league.css): a faint
- * outline, the state as a lit strip, a picture beside each name and the
- * score large. Opaque, because the arrows run behind the cards. Spacing
- * kept tight so a card fits a phone's column (UV, 5 Nov). */
+/* Raised from the card: the state as a lit strip, a picture beside each name
+ * and the score large. Spacing kept tight so a card fits a phone's column
+ * (UV, 5 Nov). The fill is the page's own colour, so the card looks see-through
+ * like everything else, yet an arrow passing behind it (a semi-final's loser
+ * going past the final to third place) does not run through the names. */
 .bracket-fixture {
 	display: grid;
 	grid-template-columns: auto minmax(0, 1fr);
-	border: 1px solid var(--border-color);
-	border-radius: var(--radius-md);
-	background: var(--bg-surface);
+	border-radius: var(--nm-field-radius);
+	background: var(--bg-base);
+	box-shadow: var(--nm-raised-small);
 	position: relative;
-	transition: border-color 0.15s;
 }
 .bracket-body {
 	min-width: 0;
-	padding: var(--space-1) var(--space-2) var(--space-1) 0;
+	padding: var(--space-2) var(--space-3) var(--space-2) 0;
 }
 
 /* The strip, coloured as the league fixtures' (.fx-state-<state> in
@@ -122,7 +125,8 @@
 	display: flex;
 	flex-direction: column;
 	gap: 3px;
-	padding: var(--space-2) 6px;
+	/* Clear of the card's round corners. */
+	padding: var(--space-3) 6px;
 }
 .bracket-seg {
 	flex: 1 1 0;
@@ -132,22 +136,32 @@
 	box-shadow: var(--strip-glow, none);
 }
 
-/* A card with a match opens it (UV, 5 Nov), lit as a finished league
- * fixture is when pointed at: the outline in the brand colour, the inside
- * washed. The wash is laid over the surface rather than replacing it, so
- * the card stays opaque over the arrows. */
+/* A card with a match opens it (UV, 5 Nov), and glows from its edge inward
+ * when pointed at. The glow is a layer of its own that fades, as is every
+ * glow here: a transition on the card's shadow would restart at each move of
+ * the light. */
 .bracket-link { cursor: pointer; }
 .bracket-link:focus-visible { outline: none; }
-.bracket-link:is(:hover, :focus-visible) {
-	border-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
-	background: linear-gradient(var(--hover-wash), var(--hover-wash)), var(--bg-surface);
+.bracket-link::after,
+.bracket:not(.bracket-ro) .bracket-side::after,
+.bracket-pill::after,
+.bracket-bin::after,
+.tdc-card .bracket-toggle button.cp-view::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	box-shadow: inset 0 0 16px var(--nm-knob-glow);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.2s ease;
 }
+.bracket-link:is(:hover, :focus-visible)::after { opacity: 1; }
 
 /* The fixture's number, small and out of the way. It is what "Winner of 2-1"
    on the next column refers to, so it has to be findable. */
 .bracket-no {
-	font-size: 0.62em;
-	letter-spacing: 0.1em;
+	font-size: 0.85em;
 	color: var(--text-muted);
 	margin-bottom: 2px;
 	font-variant-numeric: tabular-nums;
@@ -189,12 +203,13 @@
 	width: 2.82em;
 	height: 2.82em;
 	font-size: 0.62em;
+	box-shadow: var(--shadow-pic);
 }
 .bracket[data-pics="hide"] .bracket-side .person-pic { display: none; }
-/* Nobody in the slot yet: an empty circle, so the names line up. */
+/* Nobody in the slot yet: the picture's space alone, so the names line up. A
+   well in every empty slot would be a lot of shadows on a draw not yet played. */
 .bracket-side .bracket-pic-empty {
 	background: none;
-	border: 1px dashed var(--border-color);
 	box-shadow: none;
 }
 
@@ -219,7 +234,6 @@
 	min-width: 0;
 	overflow-wrap: break-word;
 	line-height: 1.2;
-	font-size: 0.9em;
 	font-weight: 600;
 }
 /* A slot nobody has reached yet. Said, not left blank: a draw sheet is
@@ -248,13 +262,10 @@
 	gap: var(--space-1);
 	margin-top: var(--space-1);
 }
-.bracket-tags .badge { font-size: 0.68em; }
+.bracket-tags .badge { font-size: 0.85em; }
 /* Defined here rather than in forms.css: a disputed card is a bracket idea,
    and forms.css already carries .badge.disputed for the match list. */
-.bracket-tags .badge.disputed {
-	border-color: var(--color-error);
-	color: var(--color-error);
-}
+.bracket-tags .badge.disputed { color: var(--color-error); }
 
 .bracket-actions {
 	display: flex;
@@ -264,10 +275,10 @@
 }
 .tdc-card .bracket-actions button.btn {
 	/* Three of these can sit in a 15rem column, so they shrink rather than
-	   wrapping one word per line. */
-	padding: 0.3em 0.6em;
-	font-size: 0.65em;
-	letter-spacing: 0.06em;
+	   wrapping one word per line. In em, so they grow with the text. */
+	min-height: 0;
+	padding: 0.4em 0.8em;
+	font-size: 0.85em;
 }
 
 /* ── Side by side (UV, 5 Nov) ─────────────────────────────────────────
@@ -276,14 +287,14 @@
  * since two names share the width one had. */
 .bracket[data-card="across"] { --card-max: 26em; }
 .bracket[data-card="across"] .bracket-fixture { grid-template-columns: minmax(0, 1fr); }
-.bracket[data-card="across"] .bracket-body { padding: var(--space-1) var(--space-2); }
+.bracket[data-card="across"] .bracket-body { padding: var(--space-2) var(--space-4); }
 
 /* The strip along the top, its two parts over their two players (UV,
  * 5 Nov). Along the bottom where the arrows come in from below: the right
  * half from the outside in, rounds one under another. */
 .bracket[data-card="across"] .bracket-state {
 	flex-direction: row;
-	padding: 6px var(--space-2) 0;
+	padding: var(--space-2) var(--space-5) 0;
 }
 .bracket[data-card="across"] .bracket-seg {
 	width: auto;
@@ -291,7 +302,7 @@
 }
 .bracket[data-card="across"][data-rounds="rows"][data-flow="outside"] .bracket-fixture[data-half="R"] .bracket-state {
 	grid-row: 2;
-	padding: 0 var(--space-2) 6px;
+	padding: 0 var(--space-5) var(--space-2);
 }
 .bracket[data-card="across"][data-rounds="rows"][data-flow="outside"] .bracket-fixture[data-half="R"] .bracket-body { grid-row: 1; }
 
@@ -345,7 +356,8 @@
 	.bracket-side .person-pic { width: 2.68em; height: 2.68em; font-size: 0.56em; }
 	.bracket-frames { font-size: 1.4em; }
 	.bracket[data-card="across"] .bracket-sides.scored .bracket-colon { font-size: 1.4em; }
-	.bracket-state { padding: var(--space-2) 5px; }
+	.bracket-state { padding: var(--space-3) 5px; }
+	.bracket[data-card="across"] .bracket-state { padding: var(--space-2) var(--space-5) 0; }
 }
 
 /* ── Printing ──────────────────────────────────────────────────────── */
@@ -354,9 +366,11 @@
 	.bracket-scroll { overflow: visible; }
 	.bracket { gap: 0.6rem; }
 	.bracket-round { width: auto; min-width: 9rem; }
+	/* Paper has no light: a plain line draws the card. */
 	.bracket-fixture {
 		background: #fff;
-		border-color: #000;
+		box-shadow: none;
+		outline: 1px solid #000;
 		break-inside: avoid;
 	}
 	.bracket-actions, .btn-row, .link-row { display: none !important; }
@@ -385,39 +399,32 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-	font-size: 0.78rem;
+	font-size: 0.85rem;
 	color: var(--text-muted);
 }
 .bracket-entry-v {
 	flex: 0 0 auto;
-	font-size: 0.72rem;
 	color: var(--text-muted);
 }
+/* The two score boxes, kept native, each a small sunken well: a full field
+   would not leave the names any of the line. The ring and the size (16px stops
+   iPhone zooming the whole bracket on focus) are the shared input's. */
 .bracket-entry input[type="number"] {
 	flex: 0 0 auto;
-	width: 2.6rem;
-	padding: 0.25rem;
+	width: 3.25rem;
+	min-height: 2.5rem;
+	padding: 0 var(--space-1);
+	border-radius: var(--radius-md);
 	text-align: center;
 	font-variant-numeric: tabular-nums;
-	border: 1px solid var(--border-color);
-	border-radius: var(--radius-sm);
-	background: var(--bg-base);
-	color: var(--text-primary);
-	font-family: inherit;
-	/* 16px stops iPhone zooming the whole bracket on focus. */
-	font-size: 1rem;
+	color-scheme: dark;
+	box-shadow: var(--nm-sunken-small);
 }
-.bracket-entry input[type="text"] {
-	width: 100%;
-	padding: 0.3rem 0.4rem;
-	border: 1px solid var(--border-color);
-	border-radius: var(--radius-sm);
-	background: var(--bg-base);
-	color: var(--text-primary);
-	font-family: inherit;
-	font-size: 1rem;
-}
-.bracket-entry input:focus { outline: none; border-color: var(--color-primary); }
+[data-theme="light"] .bracket-entry input[type="number"] { color-scheme: light; }
+/* The shared field, with less in from its edge: this is a card's width. */
+.bracket-entry input[type="text"],
+.bracket-entry select { margin-bottom: var(--space-2); padding-left: var(--space-3); }
+.bracket-entry input[type="text"] { padding-right: var(--space-3); }
 
 /* -- How the draw is shown (UV, 5 Nov) --------------------------------
  * Above the bracket, for everybody once there is a draw. */
@@ -425,35 +432,38 @@
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
+	justify-content: center;
 	gap: var(--space-3) var(--space-5);
-	margin-bottom: var(--space-4);
+	margin-bottom: var(--space-5);
 }
-.bracket-view .field { margin: 0; }
+.bracket-view .field {
+	flex: 0 1 auto;
+	max-width: 100%;
+	min-width: 0;
+	margin: 0;
+}
 
-/* A number in the view row (UV, 5 Nov): a stepper on its side inside a pill
-   drawn as the icon toggles are and exactly their height, its name on the
-   left. The height is the toggles' own sum: their outline and padding, a
-   button's padding and its icon. */
+/* A number in the view row (UV, 5 Nov): its name on the card, in line with a
+   field's, and the shared stepper beside it. It wraps under its name when the
+   two will not fit a very narrow screen. */
 .bracket-num {
 	display: inline-flex;
+	flex-wrap: wrap;
 	align-items: center;
-	gap: var(--space-1);
-	box-sizing: border-box;
-	height: calc(1.35rem + 2 * var(--space-2) + 2 * var(--space-1) + 2 * var(--control-border));
-	padding: 0 var(--space-1) 0 var(--space-3);
-	border: var(--control-border) solid var(--control-line);
-	border-radius: var(--radius-pill);
+	justify-content: space-between;
+	gap: var(--space-2) var(--space-3);
+	max-width: 100%;
 }
 .bracket-num > label {
 	margin: 0;
-	font-size: 0.66rem;
-	font-weight: 700;
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
-	color: var(--text-muted);
+	padding-left: var(--nm-pad);
 	white-space: nowrap;
 }
-.bracket-num .tdc-stepper.is-across { padding: 0; }
+/* On a phone they make a list, the steppers down the right edge. */
+@media (max-width: 40rem) {
+	.bracket-num,
+	.bracket-view .field { flex: 1 1 100%; }
+}
 
 /* The folding groups' buttons only as wide as their words, centred, rather
    than the button row's full width. */
@@ -463,46 +473,57 @@
 #settings .btn-row > .btn { flex: 0 1 auto; }
 
 /* The director's red cross: on the card's top right corner, over its edge
-   (UV, 5 Nov), on the surface's colour so the outline does not run through
-   it. Two classes and the element, to outrank league.css's .fx-icon size. */
+   (UV, 5 Nov). The icon alone. Two classes and the element, to outrank
+   league.css's .fx-icon size; its glow is taken off with a pseudo-class. */
 .tdc-card button.bracket-remove {
 	position: absolute;
 	top: -0.7rem;
 	right: -0.7rem;
 	z-index: 2;
 	width: 1.5rem;
+	min-height: 0;
 	height: 1.5rem;
-	background: var(--bg-surface);
+	background: none;
+	box-shadow: none;
+	opacity: 0.8;
+	transition: opacity 0.2s ease;
 }
+.tdc-card button.bracket-remove:is(:hover, :focus-visible, :active) {
+	box-shadow: none;
+	opacity: 1;
+}
+.tdc-card button.bracket-remove:focus-visible { outline: 2px solid var(--nm-light-colour); }
 /* -- The entrants, to drag onto the draw (UV, 5 Nov) ------------------
  * Under the view row, director only. Each entrant a pill only as wide as
  * its name, the picture on the left; they wrap rather than scroll, so a
  * finger on one is never also scrolling the row. */
-.bracket-entrants { margin-bottom: var(--space-4); }
+.bracket-entrants { margin-bottom: var(--space-5); }
 .bracket-pills {
 	display: flex;
 	flex-wrap: wrap;
-	gap: var(--space-2);
-	margin-bottom: var(--space-2);
+	gap: var(--space-3);
+	margin-bottom: var(--space-3);
 }
 .bracket-pill {
+	position: relative;
 	display: inline-flex;
 	align-items: center;
 	gap: var(--space-2);
-	padding: 0.2rem 0.75rem 0.2rem 0.2rem;
-	border: 1px solid var(--border-color);
+	max-width: 100%;
+	padding: var(--space-1) var(--space-4) var(--space-1) var(--space-1);
 	border-radius: var(--radius-pill);
-	background: var(--bg-surface);
-	font-size: 0.85rem;
+	box-shadow: var(--nm-raised-small);
 	font-weight: 600;
 	white-space: nowrap;
 	cursor: grab;
 }
-.bracket-pill:hover { border-color: color-mix(in srgb, var(--color-primary) 55%, transparent); }
+.bracket-pill:hover::after { opacity: 1; }
+.bracket-pill-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .bracket-pill .person-pic {
-	width: 1.6rem;
-	height: 1.6rem;
-	font-size: 0.6rem;
+	width: 1.75rem;
+	height: 1.75rem;
+	font-size: 0.68rem;
+	box-shadow: var(--shadow-pic);
 }
 
 /* Something a director can pick up: a pill, or a slot on a card. A long
@@ -517,26 +538,26 @@
 .bracket-side img { -webkit-user-drag: none; }
 
 /* While dragging: the pill under the pointer, what it was picked up from
-   faded, and the slot it would land in outlined in the brand colour. */
+   faded, and the slot it would land in glowing. The pill passes over names, so
+   it has the page's colour behind it to stay readable, and it stands higher. */
 .bracket-ghost {
 	position: fixed;
 	top: 0;
 	left: 0;
 	z-index: 1000;
 	pointer-events: none;
-	border-color: var(--color-primary);
-	box-shadow: var(--shadow-panel);
+	background: var(--bg-base);
+	box-shadow: var(--nm-raised);
 	cursor: grabbing;
 }
 .bracket-dragging,
 .bracket-dragging * { cursor: grabbing !important; }
 .drag-source { opacity: 0.45; }
-.bracket-side.drop-target {
-	outline: 2px solid var(--color-primary);
-	outline-offset: 1px;
-	border-radius: var(--radius-sm);
-	background: var(--hover-wash);
+.bracket:not(.bracket-ro) .bracket-side {
+	position: relative;
+	border-radius: var(--radius-md);
 }
+.bracket .bracket-side.drop-target::after { opacity: 1; }
 
 /* -- Rounds one under another (UV, 5 Nov) ----------------------------
  * The lane runs downwards and each round is a row: its heading, then its
@@ -568,7 +589,7 @@
 	align-items: center;
 	justify-content: flex-start;
 }
-.tdc-card .bracket[data-rounds="rows"] .bracket-border-add { margin: 0; }
+.tdc-card .bracket[data-rounds="rows"] button.bracket-border-add { margin: 0; }
 /* From the outside in, the middle holds the final and third place. In
    rows they sit side by side, each under its heading: stacked, the arrow
    from the lower half's semi-final ran behind the third-place card to
@@ -625,7 +646,9 @@
  * is a bar along the top that hides itself (tournament-bracket.js), sliding
  * up out of sight as the nav bar does. The entrants are left out: full
  * screen is for showing the draw. The browser's own full screen where it
- * has one; elsewhere (an iPhone) the stage covers the page (.is-full). */
+ * has one; elsewhere (an iPhone) the stage covers the page (.is-full). The
+ * stage and the bar have the page's colour: one hides the page, the other
+ * passes over the draw, and neither can be read with something showing through. */
 .bracket-stage:fullscreen,
 .bracket-stage.is-full {
 	display: flex;
@@ -651,11 +674,12 @@
 	right: 0;
 	z-index: 10;
 	justify-content: center;
+	max-height: 100vh;
 	margin: 0;
-	padding: var(--space-2) var(--space-3);
-	background: color-mix(in srgb, var(--bg-surface) 92%, transparent);
-	backdrop-filter: blur(8px);
-	box-shadow: var(--shadow-panel);
+	padding: var(--space-3);
+	overflow-y: auto;
+	background: var(--bg-base);
+	box-shadow: var(--nm-card);
 	transition: transform 0.25s ease;
 }
 .bracket-stage:fullscreen .bracket-view.is-hidden,
@@ -673,7 +697,7 @@ html.bracket-full { overflow: hidden; }
 
 /* -- The bin (UV, 5 Nov) ----------------------------------------------
  * Before the entrant pills: a player dragged from a match onto it is
- * taken out of that match. Lit in red when a drag is over it. */
+ * taken out of that match. The icon alone, glowing red when a drag is over it. */
 .bracket-entrants-row {
 	display: flex;
 	align-items: flex-start;
@@ -682,17 +706,18 @@ html.bracket-full { overflow: hidden; }
 .bracket-entrants-row > .bracket-pills { flex: 1 1 auto; min-width: 0; }
 .bracket-bin {
 	flex: 0 0 auto;
+	position: relative;
 	display: grid;
 	place-items: center;
-	width: 2.2rem;
-	height: 2.2rem;
-	border: 1px dashed var(--color-error);
+	width: var(--nm-knob);
+	height: var(--nm-knob);
 	border-radius: var(--radius-round);
 	color: var(--color-error);
+	--nm-knob-glow: color-mix(in srgb, var(--color-error) 50%, transparent);
 }
 .bracket-bin svg {
-	width: 1.2rem;
-	height: 1.2rem;
+	width: 1.5rem;
+	height: 1.5rem;
 	fill: none;
 	stroke: currentColor;
 	stroke-width: var(--icon-line);
@@ -700,16 +725,33 @@ html.bracket-full { overflow: hidden; }
 	stroke-linejoin: round;
 }
 .bracket-bin svg * { vector-effect: non-scaling-stroke; }
-.bracket-bin.drop-target {
-	border-style: solid;
-	background: color-mix(in srgb, var(--color-error) 18%, transparent);
-	box-shadow: 0 0 10px color-mix(in srgb, var(--color-error) 50%, transparent);
-}
+.bracket-bin.drop-target::after { opacity: 1; }
 
-/* An icon toggle: the team card's pill (.cp-views, league.css) with the
-   icons alone, so each option is a square round its icon. */
-.bracket-view .cp-views { margin: 0; }
-.tdc-card .bracket-toggle button.cp-view { padding: var(--space-2); }
+/* An icon toggle: a sunken pill as tall as a field, the icons alone in it, each
+   option a knob's size. The chosen one is see-through and glows from its edge
+   inward, as a toggle's knob does; Fit and Reset glow while pressed. */
+.bracket-view .cp-views {
+	flex: 0 0 auto;
+	height: var(--nm-field);
+	margin: 0;
+	border: 0;
+	box-shadow: var(--nm-sunken);
+}
+.tdc-card .bracket-toggle button.cp-view {
+	position: relative;
+	justify-content: center;
+	width: var(--nm-knob);
+	min-height: 0;
+	height: var(--nm-knob);
+	padding: 0;
+	border-radius: var(--radius-round);
+	box-shadow: none;
+}
+.tdc-card .bracket-toggle button.cp-view[aria-pressed="true"] {
+	background: none;
+	color: var(--text-primary);
+}
+.tdc-card .bracket-toggle button.cp-view:is([aria-pressed="true"], :focus-visible, :active)::after { opacity: 1; }
 .bracket-toggle .cp-view svg { width: 1.35rem; height: 1.35rem; }
 
 /* -- A round's own rules ------------------------------------------
@@ -736,16 +778,15 @@ html.bracket-full { overflow: hidden; }
 }
 .tdc-card button.bracket-tool {
 	width: auto;
+	min-height: 0;
 	margin: 0;
 	padding: 0.25em 0.75em;
-	font-size: 0.62em;
-	letter-spacing: 0.08em;
+	font-size: 0.85em;
 	opacity: 0.75;
 }
 .tdc-card button.bracket-tool:hover,
 .tdc-card button.bracket-tool:focus-visible { opacity: 1; }
 .tdc-card button.bracket-round-rules.differs {
-	border-color: var(--color-primary) !important;
 	color: var(--color-primary);
 	opacity: 1;
 }
@@ -785,9 +826,9 @@ html.bracket-full { overflow: hidden; }
 	z-index: 0;
 }
 
-/* Lifted so the arrows pass behind them. A fixture is opaque, so a line
-   under it simply disappears where it is covered, which is what a drawn
-   bracket looks like. */
+/* Lifted so the arrows pass behind them. A fixture has the page's colour
+   behind it, so a line under it simply disappears where it is covered, which
+   is what a drawn bracket looks like. */
 .bracket-fixture,
 .bracket-round-empty,
 .bracket-round-name {
@@ -821,7 +862,7 @@ html.bracket-full { overflow: hidden; }
 /* Wired to a round above itself. Legal, and the draw honours it, so it is
    marked rather than hidden. */
 .bracket-arrow.backwards {
-	stroke: var(--color-warn, #d08a2c);
+	stroke: var(--color-warning);
 	stroke-width: calc(2px * var(--arrow-scale, 1));
 }
 
@@ -853,41 +894,43 @@ html.bracket-full { overflow: hidden; }
 	flex: 0 0 auto;
 }
 
-.tdc-card .bracket-border-add {
+/* The + alone: no ring round it, no shadow under it. */
+.tdc-card button.bracket-border-add {
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	width: 1.5rem;
+	min-height: 0;
 	height: 1.5rem;
 	/* Centred on the 2rem heading line. */
 	margin: calc((var(--head-h) - 1.5rem) / 2) 0 0;
 	padding: 0;
-	border: 1px dashed var(--border-color);
 	border-radius: 50%;
 	background: none;
 	color: var(--text-muted);
-	font-size: 0.9rem;
-	letter-spacing: 0;
+	font-size: 1.25rem;
+	font-weight: 400;
 	line-height: 1;
 	cursor: pointer;
+	box-shadow: none;
+	transition: color 0.2s ease;
 }
 
-.tdc-card .bracket-border-add:hover,
-.tdc-card .bracket-border-add:focus-visible {
-	border-color: var(--color-primary);
+.tdc-card button.bracket-border-add:is(:hover, :focus-visible, :active) {
 	color: var(--color-primary);
 	outline: none;
+	box-shadow: none;
 }
 
 /* An inserted round holds nothing until the TD puts a match in it. There is
    no rounds table, so this gap in the numbering is the round. */
 .bracket-round-empty {
 	padding: var(--space-4);
-	border: 1px dashed var(--border-color);
-	border-radius: var(--radius-md);
+	border-radius: var(--nm-field-radius);
 	color: var(--text-muted);
-	font-size: 0.8em;
+	font-size: 0.85em;
 	text-align: center;
+	box-shadow: var(--nm-sunken-small);
 }
 
 /* The column past the last round. A round on the end moves nothing, so it is
@@ -896,7 +939,15 @@ html.bracket-full { overflow: hidden; }
 .bracket-round-new {
 	justify-content: flex-start;
 }
-.tdc-card .bracket-round-new > .btn {
+.tdc-card .bracket-round-new > button.btn {
 	min-height: var(--head-h);
 	margin: 0;
+}
+
+/* -- Anything that fades ------------------------------------------- */
+[data-motion="reduce"] :is(.bracket-link, .bracket-side, .bracket-pill, .bracket-bin, .cp-view)::after,
+[data-motion="reduce"] :is(.bracket-remove, .bracket-border-add) { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+	:root:not([data-motion="full"]) :is(.bracket-link, .bracket-side, .bracket-pill, .bracket-bin, .cp-view)::after,
+	:root:not([data-motion="full"]) :is(.bracket-remove, .bracket-border-add) { transition: none; }
 }

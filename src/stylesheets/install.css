@@ -69,7 +69,6 @@
 	--ins-show-dark: inline;        /* which logo files the site's screen shows */
 	--ins-show-light: none;
 	--ios-font: -apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
-	--ins-card: color-mix(in srgb, var(--text-primary) 5%, transparent);
 	max-width: 960px;
 	margin: 0 auto;
 	padding: var(--space-6) var(--space-4) var(--space-7);
@@ -91,10 +90,8 @@
 }
 .install-eyebrow {
 	color: var(--color-primary);
-	font-size: 0.78rem;
+	font-size: 0.85rem;
 	font-weight: 600;
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
 }
 .install-head h1 {
 	margin: 0;
@@ -153,29 +150,35 @@
 	gap: var(--space-2) var(--space-3);
 	justify-items: stretch;
 	padding-block: var(--space-2);
-	border-bottom: 1px solid var(--border-color);
 	background: var(--bg-base);   /* the page scrolls under it */
+	box-shadow: var(--nm-raised);
 }
 .install-stage.is-compact > .install-caption { display: none; }
 .install-stage.is-compact > .install-window {
 	margin: 0;
-	height: calc(var(--ins-pw) * 844 / 390 - 42px);
+	height: calc(var(--ins-pw) * 844 / 390 - 44px);
 	overflow: hidden;
 	-webkit-mask-image: linear-gradient(#000 72%, transparent);
 	mask-image: linear-gradient(#000 72%, transparent);
 }
+/* The list slides inside its window here, so it has no panel of its own to move. */
 .install-stage.is-compact .install-steps {
 	gap: 6px;
+	padding: 0;
+	box-shadow: none;
 	transition: transform 0.5s cubic-bezier(0.3, 0.7, 0.2, 1);
 }
+.install-stage.is-compact .install-steps > li + li { border-top: 0; }
 .install-stage.is-compact .install-step { padding: 8px 10px; grid-template-columns: 24px 1fr; gap: 1px 10px; }
-.install-stage.is-compact .install-step .num { width: 24px; height: 24px; font-size: 0.75rem; }
-.install-stage.is-compact .install-step .st { font-size: 0.95rem; line-height: 1.3; }
-.install-stage.is-compact .install-step .sd { font-size: 0.82rem; line-height: 1.35; }
+.install-stage.is-compact .install-step .num { width: 24px; height: 24px; font-size: 0.85rem; }
+.install-stage.is-compact .install-step .st { line-height: 1.3; }
+.install-stage.is-compact .install-step .sd { line-height: 1.35; }
 .install-stage.is-compact > .install-controls { justify-content: flex-start; }
 .install-stage.is-compact #ins-replay { display: none; }
 .install-stage.is-compact .install-btn,
-.install-stage.is-compact .install-seg button { padding: 4px 11px; font-size: 0.8rem; }
+.install-stage.is-compact .install-seg button { min-height: 2.25rem; padding: 0.25rem var(--space-3); font-size: 0.85rem; }
+.install-stage.is-compact .install-btn { box-shadow: var(--nm-raised-small); }
+.install-stage.is-compact .install-seg { box-shadow: var(--nm-sunken-small); }
 ::view-transition-group(ins-head),
 ::view-transition-group(ins-phone),
 ::view-transition-group(ins-cap),
@@ -185,14 +188,14 @@
 	animation-timing-function: cubic-bezier(0.3, 0.7, 0.2, 1);
 }
 
-/* ── The screen: no phone frame, the rounded corners say iPhone; a soft
+/* ── The screen: no phone frame, the rounded corners say iPhone; the light's
    shadow only lifts it off the page ── */
 .install-phone {
 	width: var(--ins-pw);
 	max-width: 100%;
 	aspect-ratio: 390 / 844;
 	border-radius: 10.26% / 4.74%;
-	box-shadow: 0 24px 50px -18px rgba(0, 0, 0, 0.85);
+	box-shadow: var(--nm-raised);
 }
 .install-phone svg { display: block; width: 100%; height: 100%; }
 
@@ -204,44 +207,59 @@
 }
 .install-caption .n {
 	color: var(--color-primary);
-	font-size: 0.78rem;
+	font-size: 0.85rem;
 	font-weight: 600;
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
 }
-.install-caption .t { font-size: 1.05rem; font-weight: 600; }
+.install-caption .t { font-size: 1rem; font-weight: 600; }
 
 .install-controls {
 	display: flex;
 	flex-wrap: wrap;
 	justify-content: center;
-	gap: var(--space-2);
+	gap: var(--space-3);
 }
 .install-btn,
 .install-seg button {
-	padding: 6px 14px;
+	position: relative;
+	min-height: var(--nm-field);
+	padding: 0 var(--space-5);
 	border: 0;
+	border-radius: var(--radius-pill);
 	background: transparent;
-	color: var(--color-primary);
+	color: var(--text-primary);
 	font: inherit;
-	font-size: 0.9rem;
+	font-size: 1rem;
 	font-weight: 600;
 	cursor: pointer;
 }
-.install-btn {
-	border: 1.5px solid var(--color-primary);
-	border-radius: var(--radius-pill);
-}
-.install-btn.is-on,
-.install-seg button[aria-pressed="true"] {
-	background: var(--color-primary);
-	color: var(--color-on-primary);
-}
+.install-btn { box-shadow: var(--nm-raised); }
+.install-btn:active { box-shadow: var(--nm-sunken); }
 .install-seg {
 	display: inline-flex;
 	overflow: hidden;
-	border: 1.5px solid var(--color-primary);
 	border-radius: var(--radius-pill);
+	box-shadow: var(--nm-sunken);
+}
+/* What is on or chosen glows from its edge inward, faded on a layer of its own: a
+   transition on these shadows would start again at every move of the light. */
+.install-btn::after,
+.install-seg button::after,
+.install-step::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	box-shadow: inset 0 0 16px var(--nm-knob-glow);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.2s ease;
+}
+.install-btn.is-on::after,
+.install-seg button[aria-pressed="true"]::after,
+.install-step.is-live::after { opacity: 1; }
+[data-motion="reduce"] :is(.install-btn, .install-seg button, .install-step)::after { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+	:root:not([data-motion="full"]) :is(.install-btn, .install-seg button, .install-step)::after { transition: none; }
 }
 .install-btn:focus-visible,
 .install-seg button:focus-visible,
@@ -250,15 +268,17 @@
 	outline-offset: 2px;
 }
 
-/* ── The steps ── */
+/* ── The steps: one sunken panel holds them, a hairline between each ── */
 .install-steps {
 	position: relative;
 	display: grid;
-	gap: var(--space-2);
 	margin: 0;
-	padding: 0;
+	padding: var(--space-2);
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-sunken);
 	list-style: none;
 }
+.install-steps > li + li { border-top: 1px solid var(--border-color); }
 .install-step {
 	position: relative;
 	display: grid;
@@ -268,9 +288,9 @@
 	width: 100%;
 	overflow: hidden;
 	padding: var(--space-3) 14px;
-	border: 1.5px solid transparent;
-	border-radius: var(--radius-lg);
-	background: var(--ins-card);
+	border: 0;
+	border-radius: var(--nm-field-radius);
+	background: transparent;
 	color: inherit;
 	font: inherit;
 	text-align: left;
@@ -282,16 +302,13 @@
 	place-items: center;
 	width: 30px;
 	height: 30px;
-	border: 1.5px solid var(--text-muted);
-	border-radius: 50%;
 	color: var(--text-muted);
-	font-size: 0.85rem;
+	font-size: 1rem;
 	font-weight: 700;
 	font-variant-numeric: tabular-nums;
 }
-.install-step.is-lead .num { border-style: dashed; }
 .install-step .st { font-weight: 600; }
-.install-step .sd { color: var(--text-muted); font-size: 0.9rem; }
+.install-step .sd { color: var(--text-muted); font-size: 0.85rem; }
 .install-step .bar {
 	position: absolute;
 	left: 0;
@@ -300,13 +317,8 @@
 	height: 2px;
 	background: var(--color-primary);
 }
-.install-step.is-live { border-color: var(--color-primary); }
-.install-step.is-live .num {
-	border-color: var(--color-primary);
-	background: var(--color-primary);
-	color: var(--color-on-primary);
-}
-.install-step.is-done .num { border-color: var(--color-primary); color: var(--color-primary); }
+.install-step.is-live .num,
+.install-step.is-done .num { color: var(--color-primary); }
 
 /* ── Inside the drawing ── */
 .install-phone svg text { font-family: var(--ios-font); }

@@ -1,4 +1,15 @@
-// The light (UV, 29 Oct): the green glow above every page drifts, slowly,
+// The light (UV, 7 Nov, the site's design): on every page but the match page it moves
+// freely all round the screen, in a band just outside it, and never comes inside. Its
+// place is a share of the way round the screen (round, clockwise from the top left
+// corner) and a share of the way out across the band (out), each eased from one random
+// point to the next, round the short way, so no move can cross the screen. Its glow is
+// off (design.css): it is seen only in what it casts. The shadow falls straight away
+// from it and is longer the nearer it is: twice --page-inset-offset at the screen's
+// edge, once at the band's outer edge. A value is written only when it has changed:
+// each write restyles the whole page and repaints every shadow. The match page keeps
+// the drift below, for the stage.
+//
+// The light on the match page (UV, 29 Oct): the green glow above every page drifts, slowly,
 // from one random point to the next, and the shadow round the screen's edges
 // is cast by it, as if the page were set into the phone and lit from above:
 // the frame's lip nearest the light shades the top edge and the side the
@@ -40,7 +51,12 @@
 	'use strict';
 	var STEP = 66;
 	var REST = 30000;
-	var KEY = 'tdc.light';
+	var ORBIT = !/^\/match\/?$/.test(location.pathname);
+	var KEY = ORBIT ? 'tdc.light.orbit' : 'tdc.light';
+	var BAND = 300;       // the orbit's band: its width, px
+	var SPEED = 120;      // how fast it travels, px a second
+	var SHORTEST = 4000;  // the least one move takes, ms
+	var shownX = '', shownY = '';
 	var root = document.documentElement;
 	var calm = window.matchMedia('(prefers-reduced-motion: reduce)');
 	var cfg, from, to, done, dur, last = 0, running = false;
@@ -64,14 +80,54 @@
 	}
 
 	function pick() {
+		if (ORBIT) return { round: Math.random(), out: Math.random() };
 		return {
 			x: (Math.random() * 2 - 1) * cfg.driftX * window.innerWidth,
 			y: (Math.random() * 2 - 1) * cfg.driftY
 		};
 	}
 
+	function shortWay(a, b) { return ((b - a + 1.5) % 1) - 0.5; }   // -0.5 to 0.5, the wrap taken
+
+	// How long the next move takes.
+	function moveTime() {
+		if (!ORBIT) return cfg.move;
+		var far = Math.abs(shortWay(from.round, to.round)) * 2 * (window.innerWidth + window.innerHeight);
+		return Math.max(SHORTEST, far / SPEED * 1000);
+	}
+
+	// Screen coordinates of a place on the orbit: the screen's edge pushed out by depth,
+	// walked clockwise from its top left corner.
+	function locate(round, depth) {
+		var w = window.innerWidth + 2 * depth, h = window.innerHeight + 2 * depth;
+		var along = (((round % 1) + 1) % 1) * 2 * (w + h);
+		if (along < w) return { x: -depth + along, y: -depth };
+		along -= w;
+		if (along < h) return { x: w - depth, y: -depth + along };
+		along -= h;
+		if (along < w) return { x: w - depth - along, y: h - depth };
+		along -= w;
+		return { x: -depth, y: h - depth - along };
+	}
+
+	function writeShadow(x, y) {
+		if (x !== shownX) root.style.setProperty('--page-shadow-x', shownX = x);
+		if (y !== shownY) root.style.setProperty('--page-shadow-y', shownY = y);
+	}
+
+	function putOrbit(p) {
+		// At rest (less motion): straight down.
+		if (p.round === undefined) { writeShadow('0.0px', cfg.offset.toFixed(1) + 'px'); return; }
+		var at = locate(p.round, p.out * BAND);
+		var vx = window.innerWidth / 2 - at.x, vy = window.innerHeight / 2 - at.y;
+		var len = Math.hypot(vx, vy) || 1;
+		var shadow = cfg.offset * (2 - p.out);
+		writeShadow((vx / len * shadow).toFixed(1) + 'px', (vy / len * shadow).toFixed(1) + 'px');
+	}
+
 	// p: the light's place, x from the centre and y from the rise
 	function put(p) {
+		if (ORBIT) { putOrbit(p); return; }
 		var lx = p.x, ly = Math.max(0, cfg.rise + p.y);
 		var vx = -lx, vy = window.innerHeight / 2 + ly;   // light to the screen's centre
 		var len = Math.hypot(vx, vy) || 1;
@@ -87,6 +143,7 @@
 	function at() {
 		var t = Math.min(1, done / dur);
 		var e = 0.5 - 0.5 * Math.cos(Math.PI * t);
+		if (ORBIT) return { round: from.round + shortWay(from.round, to.round) * e, out: from.out + (to.out - from.out) * e };
 		return { x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e };
 	}
 
@@ -100,6 +157,7 @@
 	// Before loader.js has run, the screen is up if it is on the page and not
 	// hidden.
 	function hold() {
+		if (performance.now() < (window.TDCLightHeldUntil || 0)) return true;   // a dropdown moving (tdc-controls.js)
 		if (typeof TDCDots !== 'undefined' && TDCDots.playing) return true;
 		if (typeof TDCLoader !== 'undefined') return TDCLoader.up;
 		var box = document.querySelector('.tdc-loader');
@@ -124,7 +182,7 @@
 			read();
 			to = pick();
 			done = 0;
-			dur = cfg.move;
+			dur = moveTime();
 		}
 		put(at());
 	}
@@ -162,7 +220,7 @@
 		console.warn('[Light] Could not read its place; it starts afresh.', e);
 	}
 	if (!from) {
-		from = pick(); to = pick(); done = 0; dur = cfg.move;
+		from = pick(); to = pick(); done = 0; dur = moveTime();
 	}
 
 	window.addEventListener('pagehide', function () {

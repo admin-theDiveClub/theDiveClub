@@ -7,9 +7,9 @@ extraScripts:
   - /scripts/push.js
 ---
 <style>
-	.section { border-top: 1px solid var(--border-color); padding-top: 0.5rem; margin-top: 2rem; }
-	.section:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
-	.kv { display: flex; justify-content: space-between; gap: 1rem; padding: 0.4rem 0; font-size: 0.95rem; }
+	.section { margin-top: var(--space-6); }
+	.section:first-of-type { margin-top: 0; }
+	.kv { display: flex; justify-content: space-between; gap: 1rem; padding: 0.4rem 0; font-size: 1rem; }
 	.kv .k { color: var(--text-muted); }
 	.kv .v { text-align: right; word-break: break-all; }
 	.id-row { padding: 0.75rem 0; }
@@ -19,12 +19,12 @@ extraScripts:
 	.avatar-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
 	.avatar-large {
 		flex: 0 0 auto; width: 5rem; height: 5rem; border-radius: 50%;
-		border: 1px solid var(--border-color);
+		box-shadow: var(--shadow-pic);
 		background-size: cover; background-position: center;
 	}
 	.avatar-large.placeholder {
 		display: flex; align-items: center; justify-content: center;
-		background-color: var(--bg-surface); color: var(--text-muted);
+		color: var(--text-muted);
 		font-size: 1.6rem; font-weight: 600; letter-spacing: 0.03em;
 	}
 	.avatar-actions { flex: 1 1 auto; min-width: 0; }

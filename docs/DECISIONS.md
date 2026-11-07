@@ -1610,3 +1610,23 @@ These predate the log. They are recorded here because every one of them is a dec
 *Replaces:* Claude's suggestion of one ladder made of groups, each group holding one band of steps; groups have their own steps instead.
 *Claude's, for UV to judge:* every placeholder step; each title having an optional note for its comparison value; a name being unique only within its group; Captain left out of the Military group because it is already a league role.
 *So:* `docs/design/points-and-tiers.md` §6a, `docs/systems/points.md`, `docs/BACKLOG.md` §2 item 12.
+
+## 2026-11-07 — The neumorphism style: one dropdown, sideways number inputs
+
+*Decided by UV:* wherever this style goes, the new dropdown (a sunken pill that opens as a window over its options) replaces the site's sideways select pills, and number inputs are sideways, never upright. Both are gone from the sandbox page, along with the multi-line selector built the same day.
+*Replaces, if the style is adopted:* `data-control="select"` and the upright stepper in `tdc-controls.js`. Whether the style goes anywhere on the site is still undecided, and no live page has changed.
+*Rejected:* a selector showing one selection at a time between two arrows, wrapped over several lines (built and removed 7 Nov).
+*So:* `docs/ui.md`, `docs/STATUS.md` §1 4ab.
+*Touches:* `sandbox/neumorph/index.html`, `sandbox-neumorph.js`, `sandbox.css`.
+
+## 2026-11-07 — The neumorphism design goes site-wide
+
+*Decided by UV:* apply the entire design site-wide, leaving out the match stage, and no more rings around icons. Anything unsure is brought to UV.
+*Replaces:* "whether the style goes anywhere is undecided" in the entry above. It also reopens, by UV's word, the ring status design and the upright stepper in `docs/ui.md`, both recorded earlier as settled; how each is replaced is among the questions with UV.
+*So:* not built yet. The plan is in stages, shared layers first, each tested on real pages.
+
+## 2026-11-07 — How the design went site-wide: Claude's choices, for UV to settle
+
+*UV said go and that questions would be settled later. None of these is UV's decision yet:* a date is the browser's own field; the tick is in a sunken well; a label too long for its dropdown goes above the pill; settings rows are one a row; the arrow replaces + and - on folding groups; standings numbers are 16px, against UV's "numbers large" of 29 Oct; panels that must stay readable over what scrolls under them stay solid; a filled green stays on each page's main action; yellow break rings stay as data; the points page stays compact at 36px.
+*So:* the list with what each looks like is with UV; `docs/STATUS.md`.
+*Touches:* `design.css`, `variables.css`, `tdc-controls.js`, `page-light.js`, every page stylesheet.

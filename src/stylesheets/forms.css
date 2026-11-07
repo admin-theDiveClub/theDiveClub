@@ -91,23 +91,6 @@
 	border-bottom-color: var(--color-primary);
 }
 
-/* The hover glow on every field you type into or choose from, on every page
-   (UV, 24 Oct), the match page's included. A field is a line, so the line
-   glows (--glow-line) rather than a box appearing round it. Not on
-   checkboxes, radios or anything disabled, nor a field that has become a
-   custom control (data-control-ready), which draws its own in controls.css.
-   One kept native with data-control="none" still glows. */
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]):not([data-control-ready="yes"]):not(:disabled),
-select:not(:disabled),
-textarea:not(:disabled) {
-	transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]):not([data-control-ready="yes"]):not(:disabled):hover,
-select:not(:disabled):hover,
-textarea:not(:disabled):hover {
-	box-shadow: var(--glow-line);
-}
-
 /* A select has no box to hang the native arrow on any more, so it gets its
    own. currentColor keeps it right in both themes. */
 .tdc-card select {
@@ -518,7 +501,6 @@ textarea:not(:disabled):hover {
 }
 .field-row > .field > .hint { grid-row: 3; grid-column: 1; }
 /* A pill wants more room than a stepper or a switch. */
-.field-row > .field:has(> .tdc-select) { grid-column: span 2; }
 
 /* A time as two steppers, hour : minute, until there is a time control
    (the league fixtures' first round). */

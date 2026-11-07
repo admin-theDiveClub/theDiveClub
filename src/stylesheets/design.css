@@ -1,0 +1,813 @@
+/* The site's design (UV, 7 Nov; docs/ui.md, "The design"), from the neumorphism
+   sandbox, on every page but the match stage. Loaded after the component and control
+   layers and before a page's own stylesheet.
+
+   Everything is see-through, so the page carries on behind it and only the shadows
+   draw it. They are cast by the light (page-light.js): cards and buttons are raised,
+   inputs are sunken, and the card floats above them. One text size, 16px, one field
+   height, 52px, and 24px between fields. A glow or selection that moves is always
+   animated, on a layer of its own or by an outline: a transition on a shadow holding
+   the light's offset would start again at every move of the light.
+
+   The stage (.mv-stage) draws itself in match.css and is left out. */
+
+/* ── The page ──────────────────────────────────────────────────────── */
+/* Its glow is off: the light is seen only in what it casts. The match page keeps it,
+   for the stage. */
+body:not(:has(#mv-stage))::before { opacity: 0; }
+
+/* ── Cards ─────────────────────────────────────────────────────────── */
+/* Its shadow alone: the highlight is for the parts inside it. */
+.tdc-card:not(:has(.mv-stage)) {
+	margin-top: var(--space-4);
+	margin-bottom: var(--space-5);
+	padding: var(--space-6) var(--space-5);
+	border-radius: var(--nm-radius);
+	corner-shape: squircle;
+	box-shadow: var(--nm-card);
+}
+@media (max-width: 991px) {
+	.tdc-card:not(:has(.mv-stage)) { width: calc(100% - 2 * var(--space-4)); }
+}
+@media (max-width: 24rem) {
+	.tdc-card:not(:has(.mv-stage)) {
+		width: calc(100% - 2 * var(--space-2));
+		padding-right: var(--space-3);
+		padding-left: var(--space-3);
+	}
+}
+@media print {
+	.tdc-card:not(:has(.mv-stage)) { box-shadow: none; }
+}
+
+/* A long word in a heading must not widen the page on a narrow screen. */
+.tdc-card h1,
+.tdc-card h2 { overflow-wrap: anywhere; }
+
+/* A block of related things inside a card is sunk into it. */
+.panel,
+.empty,
+.code-item,
+.selected-player {
+	border: 0;
+	border-radius: var(--nm-field-radius);
+	background: transparent;
+	box-shadow: var(--nm-sunken);
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+}
+.panel { padding: var(--space-5); margin-bottom: var(--space-5); }
+.empty { color: var(--text-muted); font-size: 1rem; }
+
+/* Something you press to open stands up from the card. */
+.tile-link,
+.match-card {
+	border: 0;
+	border-radius: var(--nm-field-radius);
+	background: transparent;
+	box-shadow: var(--nm-raised);
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+}
+.tile-link,
+.match-card { margin-bottom: var(--space-5); padding: var(--space-4) var(--nm-pad); }
+/* A staff tile says its tier in its heading's colour, not a ring round it. */
+.tile-link.tile-staff,
+.tile-link.tile-admin,
+.tile-link.tile-owner { border: 0; box-shadow: var(--nm-raised); }
+.tile-link.tile-staff { color: var(--color-success); }
+.tile-link.tile-admin { color: var(--color-primary); }
+.tile-link.tile-owner { color: var(--color-owner); }
+.tile-link .sub { color: var(--text-muted); }
+.match-card:hover,
+.match-card.needs-you { border: 0; box-shadow: var(--nm-raised); }
+.match-card.needs-you .match-opponent { color: var(--color-primary); }
+
+/* ── Fields ────────────────────────────────────────────────────────── */
+.field { margin-bottom: var(--space-5); }
+.field label {
+	margin-bottom: var(--space-2);
+	padding-left: var(--nm-pad);
+	color: var(--text-primary);
+	font-size: 1rem;
+	font-weight: 400;
+	letter-spacing: normal;
+	text-transform: none;
+}
+.field .hint,
+.field-pair > .hint { margin-top: var(--space-2); padding-left: var(--nm-pad); font-size: 0.85rem; }
+.field-pair { margin-bottom: var(--space-5); row-gap: var(--space-5); }
+@media (max-width: 24rem) {
+	.field-pair { grid-template-columns: minmax(0, 1fr); }
+}
+/* What sat side by side in narrow columns now takes a row each: the controls are as
+   tall and as wide as a field. */
+.field-row { display: block; margin-bottom: 0; }
+.field-row > .field { margin-bottom: var(--space-5); }
+.set-rule { margin: 0 0 var(--space-5); border: 0; }
+
+/* A typed field, a kept native list, a date: a sunken pill. Not in a table, whose
+   cells are too narrow, nor in the stage. The ring is an outline so that it can fade. */
+:is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="hidden"], [type="button"], [type="submit"]), select, textarea):where(:not(table *, .mv-stage *)) {
+	width: 100%;
+	min-height: var(--nm-field);
+	padding: var(--space-2) var(--nm-pad);
+	border: 0;
+	border-radius: var(--radius-pill);
+	outline: 1px solid transparent;
+	background: transparent;
+	color: var(--text-primary);
+	font-family: inherit;
+	font-size: 1rem;   /* 16px stops iPhone zooming in on focus */
+	box-shadow: var(--nm-sunken);
+	transition: outline-color 0.2s ease;
+}
+textarea:where(:not(table *, .mv-stage *)) {
+	display: block;
+	padding-top: var(--space-4);
+	padding-bottom: var(--space-4);
+	border-radius: var(--nm-field-radius);
+	resize: vertical;
+}
+:is(input, select, textarea):where(:not(table *, .mv-stage *))::placeholder { color: var(--text-muted); }
+:is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="hidden"], [type="button"], [type="submit"]), select, textarea):where(:not(table *, .mv-stage *)):focus {
+	outline-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
+}
+@media (hover: hover) {
+	:is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="hidden"], [type="button"], [type="submit"], :disabled), select:not(:disabled), textarea:not(:disabled)):where(:not(table *, .mv-stage *)):hover {
+		outline-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
+	}
+}
+/* A kept native list has an arrow of its own, the dropdown's. */
+select:where(:not(table *, .mv-stage *)) {
+	appearance: none;
+	-webkit-appearance: none;
+	padding-right: calc(var(--nm-pad) + 1.5rem);
+	background-image: var(--nm-arrow);
+	background-position: right var(--nm-pad) center;
+	background-repeat: no-repeat;
+	background-size: 1.25rem;
+}
+/* A native date or time's own picker takes the theme. */
+input:is([type="date"], [type="time"], [type="datetime-local"]):where(:not(table *, .mv-stage *)) { color-scheme: dark; }
+[data-theme="light"] input:is([type="date"], [type="time"], [type="datetime-local"]) { color-scheme: light; }
+
+/* A control beside its label: the word in line with a field's, the control out to the
+   right edge they share, the hint under both. */
+.field.field-beside,
+.field-row > .field.field-beside {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	grid-template-rows: none;
+	align-items: center;
+	justify-items: stretch;
+	column-gap: var(--space-3);
+	margin-bottom: var(--space-5);
+	text-align: left;
+}
+.field-beside > label,
+.field-row > .field.field-beside > label {
+	grid-column: 1;
+	grid-row: 1;
+	align-self: center;
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+.field-beside > .tdc-stepper,
+.field-beside > .tdc-switch,
+.field-beside > .tdc-check,
+.field-beside > .tdc-tri,
+.field-row > .field.field-beside > :not(label):not(.hint) {
+	grid-column: 2;
+	grid-row: 1;
+	justify-self: end;
+	align-self: center;
+}
+.field-beside > .hint,
+.field-row > .field.field-beside > .hint { grid-column: 1 / -1; grid-row: 2; }
+
+/* ── The dropdown ──────────────────────────────────────────────────── */
+/* A sunken pill that is a window (tdc-controls.js): the words lie still under the
+   card and show only through it. Closed it opens on the selection and arrow, with the
+   field's label on the card beside it. Open it reaches the label and the options,
+   chosen one glowing, and pushes what is under it down: the options are laid out once,
+   out of the page's flow, and an empty spacer grows while the mask moves over them. */
+.tdc-drop {
+	--nm-drop-time: 0.45s;
+	--nm-selection-left: calc(100% + var(--nm-pad));
+	position: relative;
+	isolation: isolate;
+	display: block;
+	width: 100%;
+}
+.tdc-drop::before,
+.tdc-drop::after {
+	content: "";
+	position: absolute;
+	inset: 0 0 0 calc(var(--nm-selection-left) - var(--nm-pad));
+	z-index: -1;
+	border-radius: var(--nm-field-radius);
+}
+.tdc-drop::before {
+	box-shadow: var(--nm-sunken);
+	transition: left var(--nm-drop-time) ease;
+}
+.tdc-drop::after {
+	box-shadow: var(--glow-primary);
+	opacity: 0;
+	pointer-events: none;
+	transition: left var(--nm-drop-time) ease, opacity 0.2s ease;
+}
+.tdc-drop.open::before,
+.tdc-drop.open::after { left: 0; }
+.tdc-drop:has(.tdc-drop-button:focus-visible)::after { opacity: 1; }
+.tdc-drop-button {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: var(--space-3);
+	width: 100%;
+	min-height: var(--nm-field);
+	height: var(--nm-field);
+	margin: 0;
+	padding: 0 var(--nm-pad);
+	border: 0;
+	border-radius: var(--radius-pill);
+	outline: none;
+	background: transparent;
+	color: var(--text-primary);
+	font-family: inherit;
+	font-size: 1rem;
+	font-weight: 400;
+	letter-spacing: normal;
+	text-align: right;
+	text-transform: none;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+	/* What it cuts off can be neither seen nor pressed. */
+	clip-path: inset(0 0 0 calc(var(--nm-selection-left) - var(--nm-pad)) round var(--nm-field-radius) var(--nm-field-radius) 0 0);
+	transition: clip-path var(--nm-drop-time) ease;
+}
+.tdc-drop.open .tdc-drop-button { clip-path: inset(0 0 0 0 round var(--nm-field-radius) var(--nm-field-radius) 0 0); }
+.tdc-drop-value {
+	flex: 0 1 auto;
+	min-width: 0;
+	max-width: 75%;
+	font-weight: 600;
+	line-height: 1.2;
+	overflow-wrap: anywhere;
+}
+.tdc-drop-button svg {
+	flex: none;
+	width: 1.25rem;
+	height: 1.25rem;
+	fill: none;
+	stroke: var(--nm-light-colour);
+	stroke-width: 2.5;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	transition: transform var(--nm-drop-time) ease;
+}
+.tdc-drop.open .tdc-drop-button svg { transform: rotate(180deg); }
+.tdc-drop-tray {
+	display: block;
+	height: 0;
+	visibility: hidden;
+	transition: height var(--nm-drop-time) ease, visibility var(--nm-drop-time);
+}
+/* In two steps. .ready: the options are drawn, under the closed mask, and can take the
+   focus. .open, two frames later: the mask and the spacer set off. */
+.tdc-drop.ready .tdc-drop-tray { visibility: visible; transition: height var(--nm-drop-time) ease; }
+.tdc-drop.open .tdc-drop-tray { height: var(--nm-list-height, 0px); }
+.tdc-drop-clip {
+	position: absolute;
+	top: var(--nm-field);
+	right: 0;
+	left: 0;
+	clip-path: inset(calc(-1 * var(--nm-field)) 0 100% calc(var(--nm-selection-left) - var(--nm-pad)) round var(--nm-field-radius));
+	transition: clip-path var(--nm-drop-time) ease;
+}
+.tdc-drop.open .tdc-drop-clip { clip-path: inset(calc(-1 * var(--nm-field)) 0 0 0 round var(--nm-field-radius)); }
+/* A new screen width puts it straight in its place; only a new selection eases there. */
+.tdc-drop.still::before,
+.tdc-drop.still::after,
+.tdc-drop.still .tdc-drop-button,
+.tdc-drop.still .tdc-drop-clip,
+.tdc-drop.still .tdc-drop-tray { transition: none; }
+/* A long list scrolls inside the pill. */
+.tdc-drop-list {
+	position: relative;
+	max-height: 17.5rem;
+	margin: 0;
+	padding: 0 var(--space-2) var(--space-2);
+	overflow-y: auto;
+	list-style: none;
+	outline: none;
+}
+/* The wash under the option the keys or the pointer are on: one layer that slides. */
+.tdc-drop-list::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	right: var(--space-2);
+	left: var(--space-2);
+	height: var(--nm-active-height, 0px);
+	border-radius: var(--radius-pill);
+	background: var(--hover-wash);
+	opacity: 0;
+	transform: translateY(var(--nm-active-y, 0px));
+	transition: transform 0.2s ease, height 0.2s ease, opacity 0.2s ease;
+}
+.tdc-drop-list.washed::before { opacity: 1; }
+.tdc-drop-list li {
+	position: relative;
+	display: flex;
+	align-items: center;
+	min-height: 2.75rem;
+	padding: var(--space-2) var(--space-4) var(--space-2) calc(var(--nm-pad) - var(--space-2));
+	border-radius: var(--radius-pill);
+	color: var(--text-primary);
+	overflow-wrap: anywhere;
+	cursor: pointer;
+	transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+.tdc-drop-list li[aria-selected="true"] {
+	color: var(--nm-light-colour);
+	font-weight: 600;
+	text-shadow: 0 0 0.75rem color-mix(in srgb, var(--nm-light-colour) 80%, transparent);
+}
+.tdc-drop-list li[aria-disabled="true"] { opacity: 0.4; cursor: default; }
+.tdc-drop > select {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	width: 1px;
+	min-height: 0;
+	height: 1px;
+	padding: 0;
+	opacity: 0;
+	box-shadow: none;
+	pointer-events: none;
+}
+.tdc-drop.is-disabled { opacity: 0.4; pointer-events: none; }
+/* Its label lies on the card, level with the selection, the pill growing over it. */
+.field:has(> .tdc-drop) { position: relative; }
+.field:has(> .tdc-drop) > label {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	box-sizing: border-box;
+	width: max(0px, calc(var(--nm-selection-left, 50%) - var(--nm-pad)));
+	height: var(--nm-field);
+	margin: 0;
+	padding: 0 var(--space-2) 0 var(--nm-pad);
+	overflow: hidden;
+	line-height: 1.2;
+	pointer-events: none;
+}
+.field-row > .field:has(> .tdc-drop) { display: block; margin-bottom: var(--space-5); text-align: left; }
+/* A label that would not fit beside a long selection goes above the pill, as a typed
+   field's does (tdc-controls.js decides). */
+.field:has(> .tdc-drop).drop-stacked > label {
+	position: static;
+	display: block;
+	width: auto;
+	height: auto;
+	margin: 0 0 var(--space-2);
+	padding: 0 0 0 var(--nm-pad);
+	overflow: visible;
+}
+
+/* ── The number input ──────────────────────────────────────────────── */
+/* Sideways, sunken, as tall as a field, with the dropdown's text and arrows. At either
+   end its arrow goes and the pill thins, once the pointer has left it, or the other
+   arrow would move from under the finger. */
+.tdc-stepper.is-across {
+	--sn: 1rem;
+	--chevron: 0.8333rem;
+	--chevron-stroke: 3.75;
+	flex: none;
+	height: var(--nm-field);
+	padding: 0 var(--space-3);
+	border: 0;
+	box-shadow: var(--nm-sunken);
+	transition: none;
+}
+.tdc-stepper::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	box-shadow: var(--glow-primary);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.2s ease;
+}
+.tdc-stepper:focus-within::after { opacity: 1; }
+.tdc-stepper:hover { box-shadow: var(--nm-sunken); }
+.tdc-stepper:focus-within { box-shadow: var(--nm-sunken); }
+.tdc-stepper.is-across > .tdc-chevron,
+.tdc-stepper.is-across .tdc-chevron:hover { color: var(--nm-light-colour); }
+.tdc-stepper.is-across > .tdc-chevron { align-self: stretch; padding: 0 var(--space-3); }
+.tdc-stepper.is-across .tdc-stepper-window > input[type="number"],
+.tdc-stepper.is-across .tdc-stepper-ghost { color: var(--text-primary); font-weight: 600; }
+.tdc-stepper .tdc-stepper-window > input[type="number"] {
+	min-height: 0;
+	padding: 0;
+	outline: none;
+	box-shadow: none;
+}
+.tdc-stepper.is-across:hover > .tdc-chevron[hidden] { display: block !important; visibility: hidden; }
+.tdc-stepper.is-across:not(:hover) > .tdc-chevron[hidden] + .tdc-stepper-window { margin-left: var(--space-2); }
+.tdc-stepper.is-across:not(:hover) > .tdc-stepper-window:has(+ .tdc-chevron[hidden]) { margin-right: var(--space-2); }
+/* The window hugs the number, or a 1 sits further from its arrows than a 12. A browser
+   without this keeps the width of the longest number. */
+@supports (field-sizing: content) {
+	.tdc-stepper.is-across .tdc-stepper-window { width: auto; }
+	.tdc-stepper.is-across .tdc-stepper-window > input[type="number"] { width: auto; min-width: 1ch; field-sizing: content; }
+}
+.time-pair { flex-wrap: wrap; justify-content: flex-end; }
+.stepper-row { padding: var(--space-3); }
+
+/* ── Toggles ───────────────────────────────────────────────────────── */
+/* A see-through knob in a sunken track as tall as a field, which holds exactly two
+   knobs. On, the knob glows from its edge inward. Its shadow falls in the track alone,
+   being level with the card. --p runs from 0 off to 1 on, set by the script. */
+.tdc-switch {
+	--switch-width: 6rem;
+	--switch-height: var(--nm-field);
+	overflow: hidden;
+	border-radius: var(--radius-pill);
+}
+.tdc-switch-track,
+.tdc-tri-track {
+	border: 0;
+	background: transparent;
+	box-shadow: var(--nm-sunken-small);
+	transition: none;
+}
+.tdc-switch:hover .tdc-switch-track { box-shadow: var(--nm-sunken-small); }
+.tdc-tri:hover .tdc-tri-track { box-shadow: var(--nm-sunken-small); }
+.tdc-switch:has(> .tdc-check-native:focus-visible) .tdc-switch-track { outline: none; }
+.tdc-switch:has(> .tdc-check-native:focus-visible) { outline: 2px solid var(--nm-light-colour); outline-offset: 2px; }
+.tdc-switch-knob,
+.tdc-tri-knob {
+	top: var(--space-1);
+	left: var(--space-1);
+	width: var(--nm-knob);
+	height: var(--nm-knob);
+	border-radius: var(--radius-round);
+	box-shadow: var(--nm-raised-small);
+}
+.tdc-switch-knob::after,
+.tdc-tri-knob::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	box-shadow: inset 0 0 16px var(--nm-knob-glow);
+	opacity: var(--p);
+	pointer-events: none;
+}
+/* A plain toggle has no tick: the glow says it is on. One with icons of its own (the
+   profile menu's) shows them. */
+.tdc-switch:not(.has-icons) .tdc-switch-knob .tdc-ring { opacity: 0; }
+.tdc-switch-knob .tdc-ring { padding: 15%; box-sizing: border-box; }
+/* The three-way switch: three knobs long, lit at either end. */
+.tdc-tri {
+	--tri-width: 8.75rem;
+	--tri-height: var(--nm-field);
+	overflow: hidden;
+	border-radius: var(--radius-pill);
+}
+.tdc-tri-knob::after { opacity: var(--lit); }
+.tdc-tri-knob .tdc-ring { padding: 15%; box-sizing: border-box; }
+.tdc-tri[data-tone="warning"] { --nm-knob-glow: color-mix(in srgb, var(--color-warning) 40%, transparent); }
+
+/* ── No rings round icons (UV, 7 Nov) ──────────────────────────────── */
+/* The icon stands alone. The stage keeps its own. */
+.tdc-ring:not(.mv-stage .tdc-ring) .ring { display: none; }
+/* A tick against a person or a thing sits in a small sunken well. */
+.tdc-check {
+	box-shadow: var(--nm-sunken-small);
+	transition: none;
+}
+.tdc-check:hover { box-shadow: var(--nm-sunken-small); }
+.tdc-check .tdc-ring { padding: 18%; box-sizing: border-box; }
+
+/* ── Buttons ───────────────────────────────────────────────────────── */
+/* Raised, as tall as a field, in the one text size. Only the main action is filled;
+   the others are see-through, danger quiet in its words alone. */
+.btn,
+.btn-link,
+.tdc-card button:where(:not(.mv-stage *, .tdc-chevron, .tdc-drop-button, .tdc-switch *, .tdc-check *, .tdc-tri *, .tdc-slide *)) {
+	min-height: var(--nm-field);
+	margin-bottom: var(--space-5);
+	padding: var(--space-2) var(--space-5);
+	border: 0;
+	border-radius: var(--radius-pill);
+	background: transparent;
+	color: var(--text-primary);
+	font-size: 1rem;
+	font-weight: 600;
+	letter-spacing: normal;
+	text-transform: none;
+	box-shadow: var(--nm-raised);
+}
+.btn:active,
+.btn-link:active,
+.tdc-card button:where(:not(.mv-stage *, .tdc-chevron, .tdc-drop-button, .tdc-switch *, .tdc-check *, .tdc-tri *, .tdc-slide *)):active { box-shadow: var(--nm-sunken); }
+/* A control's own parts are not buttons. forms.css's .tdc-card button would size them. */
+.tdc-card button.tdc-chevron,
+.tdc-card button.tdc-drop-button { margin: 0; background: none; box-shadow: none; }
+.tdc-card button.tdc-drop-button { width: 100%; font-size: 1rem; font-weight: 400; letter-spacing: normal; text-transform: none; }
+.tdc-card .tdc-stepper.is-across > button.tdc-chevron { width: auto; padding: 0 var(--space-3); letter-spacing: normal; }
+.btn-primary,
+.tdc-card button.btn-primary { background: var(--nm-light-colour); color: var(--color-on-primary); }
+.btn-secondary,
+.btn-danger { border: 0 !important; background: transparent; }
+.btn-secondary { color: var(--text-primary); }
+.btn-danger,
+.tdc-card button.btn-danger { color: var(--color-error); }
+.btn-google,
+.tdc-card button.btn-google { background: #fff; color: #222; }
+.btn-sm,
+.tdc-card button.btn-sm {
+	min-height: 2.25rem;
+	margin-bottom: 0;
+	padding: 0.25rem var(--space-4);
+	font-size: 0.85rem;
+	letter-spacing: normal;
+	box-shadow: var(--nm-raised-small);
+}
+.btn-sm:active,
+.tdc-card button.btn-sm:active { box-shadow: var(--nm-sunken-small); }
+.btn-link {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-decoration: none;
+}
+.btn-row { gap: var(--space-3); margin-bottom: var(--space-5); }
+/* A quiet link, a search result and a picked player are not buttons, though they are
+   <button>s: no shadow, no size of their own. */
+.tdc-card button.link,
+.link-row button.link,
+.chosen .link,
+.player-pick .pick-link,
+.tdc-card button.league-nav-item,
+.venue-pick .venue-pill-remove {
+	min-height: 0;
+	box-shadow: none;
+}
+.tdc-card button.result,
+.player-pick .pick-result {
+	min-height: var(--nm-field);
+	margin: 0 0 var(--space-3);
+	padding: var(--space-2) var(--nm-pad);
+	border: 0;
+	border-radius: var(--nm-field-radius);
+	background: transparent;
+	color: var(--text-primary);
+	font-size: 1rem;
+	font-weight: 400;
+	text-align: left;
+	box-shadow: var(--nm-raised-small);
+}
+.venue-pill {
+	border: 0;
+	background: transparent;
+	font-size: 1rem;
+	box-shadow: var(--nm-sunken-small);
+}
+/* A picture is a plain circle, no line round it. */
+.chosen-avatar { border: 0; box-shadow: var(--shadow-pic); }
+.chosen { border: 0; }
+
+/* ── Status messages ───────────────────────────────────────────────── */
+/* TDC.status's own classes, in a sunken slot that grows for a longer message. */
+.status:not(:empty) {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: var(--nm-field);
+	padding: var(--space-2) var(--nm-pad);
+	border-radius: var(--nm-field-radius);
+	font-size: 1rem;
+	text-align: center;
+	overflow-wrap: anywhere;
+	box-shadow: var(--nm-sunken);
+}
+.status:empty { display: none; }
+
+/* ── Badges ────────────────────────────────────────────────────────── */
+/* A small sunken pill, saying its state in its words' colour. */
+.badge,
+.badge.verified,
+.badge.needs-you,
+.badge.disputed,
+.badge.warn,
+.badge.pending,
+.badge.live,
+.badge.paid {
+	border: 0;
+	font-size: 0.85rem;
+	box-shadow: var(--nm-sunken-small);
+}
+
+/* ── Tabs ──────────────────────────────────────────────────────────── */
+/* A sunken pill as tall as a field. The chosen tab is a thumb like the toggle's knob,
+   which slides to it (tdc-controls.js), its shadow in the pill alone. All one weight, so
+   that choosing one moves no words. They scroll inside the pill when they don't fit. */
+.league-nav {
+	width: 100%;
+	height: var(--nm-field);
+	margin: 0 0 var(--space-5);
+	padding: 0;
+	border: 0;
+	box-shadow: var(--nm-sunken);
+}
+.league-nav-track { position: relative; flex: 1; gap: 0; padding: var(--space-1); }
+.league-nav-item,
+.tdc-card button.league-nav-item {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 1 0 auto;
+	width: auto;
+	margin: 0;
+	padding: 0 var(--space-3);
+	border: 0;
+	background: none;
+	color: var(--text-primary);
+	font-family: inherit;
+	font-size: 1rem;
+	font-weight: 600;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+}
+.league-nav-item[aria-current="page"],
+.tdc-card button.league-nav-item[aria-current="page"] { background: none; color: var(--text-primary); }
+.league-nav-item:focus-visible,
+button.league-nav-item:focus-visible { outline: 2px solid var(--nm-light-colour); outline-offset: -2px; }
+@media (hover: none) {
+	a.league-nav-item:hover,
+	button.league-nav-item:not([aria-current]):hover { background: none; }
+}
+.tdc-tab-thumb {
+	position: absolute;
+	top: var(--space-1);
+	bottom: var(--space-1);
+	left: 0;
+	width: var(--nm-tab-width, 0px);
+	border-radius: var(--radius-pill);
+	box-shadow: var(--nm-raised-small);
+	transform: translateX(var(--nm-tab-x, 0px));
+	transition: transform 0.25s ease, width 0.25s ease;
+}
+.tdc-tab-thumb::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	box-shadow: inset 0 0 16px var(--nm-knob-glow);
+}
+.still > .tdc-tab-thumb { transition: none; }
+
+/* ── Collapsible groups ────────────────────────────────────────────── */
+/* Closed, a field's size, its word in line with a field's; open, the same pill holds
+   what is in it. tdc-controls.js does the opening. */
+.set-group {
+	position: relative;
+	margin-bottom: var(--space-5);
+	padding: 0;
+	border: 0;
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-sunken);
+}
+.set-group::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	box-shadow: var(--glow-primary);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.2s ease;
+}
+.set-group:has(> summary:focus-visible)::after { opacity: 1; }
+.set-group > summary {
+	display: flex;
+	align-items: center;
+	min-height: var(--nm-field);
+	margin: 0;
+	padding: var(--space-2) calc(var(--nm-pad) + 1.5rem) var(--space-2) var(--nm-pad);
+	color: var(--text-primary);
+	font-size: 1rem;
+	font-weight: 400;
+	letter-spacing: normal;
+	text-transform: none;
+	outline: none;
+	-webkit-tap-highlight-color: transparent;
+}
+/* The dropdown's arrow, where the + and - were. */
+.set-group > summary::after,
+.set-group[open] > summary::after {
+	content: "";
+	right: var(--nm-pad);
+	width: 1.25rem;
+	height: 1.25rem;
+	background: var(--nm-arrow) center / contain no-repeat;
+	transition: transform 0.35s ease, opacity var(--dots-dim) ease;
+}
+.set-group[open]:not(.is-closing) > summary::after { transform: translateY(-50%) rotate(180deg); }
+.set-group > summary > .group-dots { right: calc(var(--nm-pad) - 0.2rem); }
+.set-group > :not(summary) { margin-right: var(--nm-pad); margin-left: var(--nm-pad); }
+.set-group > .field,
+.set-group > .field-row { margin-right: var(--space-2); }
+.set-group > .field > label,
+.set-group > .field > .hint,
+.set-group > .field-row > .field > label,
+.set-group > .field-row > .field > .hint { padding-left: 0; }
+.set-group > :not(summary):last-child { margin-bottom: var(--space-5); }
+.set-group > .field-row:last-child > .field:last-child { margin-bottom: 0; }
+
+/* ── Tables and lists ──────────────────────────────────────────────── */
+/* One sunken panel holding the rows, which lie flat in it with a hairline between them:
+   a shadow on every row would be repainted at every move of the light. */
+.table-scroll {
+	position: relative;   /* or a control's hidden parts escape it and widen the page */
+	padding: var(--space-3) var(--space-4);
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-sunken);
+}
+.tdc-table { font-size: 1rem; }
+.tdc-table th,
+.row-table-label,
+.row-table-head {
+	color: var(--text-muted);
+	font-size: 0.85rem;
+	font-weight: 400;
+	letter-spacing: normal;
+	text-transform: none;
+}
+.tdc-table .sub,
+.list-row-main .sub,
+.row-table-meta,
+.row-table-stat,
+.row-table-stat .sub { font-size: 0.85rem; }
+.row-table-row h3 { font-size: 1rem; font-weight: 600; }
+.row-table {
+	padding: var(--space-3) var(--space-4);
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-sunken);
+}
+.row-table-row { margin: 0; transition: background-color 0.2s ease; }
+.row-table-row:hover,
+.row-table-row:focus-visible {
+	background: var(--hover-wash);
+	box-shadow: none;
+}
+.row-table-row:hover::after,
+.row-table-row:focus-visible::after { display: block; }
+.row-table-head { border: 0; }
+.row-table-pic { box-shadow: var(--shadow-pic); }
+@media (max-width: 24rem) {
+	.row-table { padding-right: var(--space-2); padding-left: var(--space-2); }
+	.row-table-row,
+	.row-table.has-pic .row-table-row { padding-right: var(--space-2); }
+	.row-table-badges { align-items: flex-start; grid-column: 1 / -1; }
+	.row-table-row { grid-template-columns: minmax(0, 1fr); }
+	.row-table.has-pic .row-table-row { grid-template-columns: auto minmax(0, 1fr); }
+	.row-table-badges .badge { white-space: normal; }
+	.row-table-stats { grid-template-columns: repeat(auto-fit, minmax(4rem, 1fr)); }
+}
+
+/* ── Anything that fades ───────────────────────────────────────────── */
+[data-motion="reduce"] :is(.tdc-drop::before, .tdc-drop::after),
+[data-motion="reduce"] :is(.tdc-drop-button, .tdc-drop-button svg, .tdc-drop-tray, .tdc-drop-clip, .tdc-drop-list li, .tdc-tab-thumb) { transition: none; }
+[data-motion="reduce"] .tdc-drop::before,
+[data-motion="reduce"] .tdc-drop::after,
+[data-motion="reduce"] .tdc-drop-list::before,
+[data-motion="reduce"] .tdc-stepper::after,
+[data-motion="reduce"] .set-group::after,
+[data-motion="reduce"] .set-group > summary::after { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+	:root:not([data-motion="full"]) .tdc-drop::before,
+	:root:not([data-motion="full"]) .tdc-drop::after,
+	:root:not([data-motion="full"]) .tdc-drop-button,
+	:root:not([data-motion="full"]) .tdc-drop-button svg,
+	:root:not([data-motion="full"]) .tdc-drop-tray,
+	:root:not([data-motion="full"]) .tdc-drop-clip,
+	:root:not([data-motion="full"]) .tdc-drop-list::before,
+	:root:not([data-motion="full"]) .tdc-drop-list li,
+	:root:not([data-motion="full"]) .tdc-tab-thumb,
+	:root:not([data-motion="full"]) .tdc-stepper::after,
+	:root:not([data-motion="full"]) .set-group::after,
+	:root:not([data-motion="full"]) .set-group > summary::after { transition: none; }
+}
