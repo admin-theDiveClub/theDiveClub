@@ -6,7 +6,9 @@
 	src: url("/resources/fonts/rushford-clean.woff2") format("woff2"),
 	     url("/resources/fonts/rushford-clean.woff") format("woff"),
 	     url("/resources/fonts/rushford-clean.otf") format("opentype");
-	font-weight: normal;
+	/* Only ever its one weight (UV, 9 Nov). Saying this file covers every weight
+	   stops a browser thickening it into a false bold, whatever a rule asks for. */
+	font-weight: 1 1000;
 	font-style: normal;
 	font-display: swap;
 	/* Rushford Clean is an all-caps face that reads smaller than its cap height

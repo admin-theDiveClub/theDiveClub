@@ -58,7 +58,7 @@
 	font-family: var(--font-display);
 	font-weight: 400;
 	font-size: clamp(1.5rem, 7vw, 2.5rem);   /* the screen's width, not a breakpoint: a long word must fit beside the picture */
-	line-height: 1.05;
+	line-height: 1.2;   /* the capitals stand 1.08 tall, so less and two lines touch */
 	text-align: left;
 	overflow-wrap: break-word;
 	text-wrap: balance;
@@ -71,6 +71,75 @@
 }
 @media (max-width: 24rem) {
 	.lj-pic { width: 3.5rem; height: 3.5rem; }
+}
+
+/* ── The banner's corner: Share and the way in, icons alone, as the player
+ * page's. The name's first line keeps clear of them ── */
+.lj-corner {
+	position: absolute;
+	top: var(--space-3);
+	right: var(--space-3);
+	z-index: 1;
+	display: flex;
+	gap: var(--space-1);
+}
+/* Balancing lines cannot work round a float: left on, the name runs off the page. */
+.tdc-card .lj-corner + .lj-id h1 { text-wrap: wrap; }
+.lj-corner + .lj-id h1::before {
+	content: "";
+	float: right;
+	width: 5.25rem;
+	height: 1.2em;
+}
+.tdc-card button.lj-icon,
+.lj-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: 2.5rem;
+	height: 2.5rem;
+	min-height: 0;
+	padding: 0;
+	margin: 0;
+	border: none;
+	border-radius: var(--radius-round);
+	background: transparent;
+	box-shadow: none;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+}
+.tdc-card button.lj-icon:active { box-shadow: none; }
+.tdc-card button.lj-icon[hidden],
+.lj-icon[hidden] { display: none; }
+.lj-icon:focus-visible { outline: 2px solid var(--nm-light-colour); outline-offset: 2px; }
+.lj-icon .tdc-ring { color: var(--text-primary); transition: color 0.2s ease; }
+.lj-icon .tdc-ring .mark { stroke: currentColor; }
+.lj-icon-go .tdc-ring,
+.lj-icon:hover .tdc-ring,
+.lj-icon:focus-visible .tdc-ring { color: var(--color-primary); }
+.lj-icon-go:hover .tdc-ring,
+.lj-icon-go:focus-visible .tdc-ring { color: var(--text-primary); }
+
+.lj-icon .sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
+
+/* The details' first row: the badges (UV, 9 Nov). */
+.lj-badges { grid-column: 1 / -1; }
+.lj-badges dd { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; }
+.lj-sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
 }
 
 /* ── Where I stand: a sunken panel that glows from its edge inward, with a
@@ -176,7 +245,7 @@
 	overflow-wrap: break-word;
 }
 
-/* ── How it is played: a box per group, label and value rows ── */
+/* ── The rules: a box per group, label and value rows ── */
 /* Each box only as wide as its rows need, the boxes in a row, wrapping and
  * centred (UV, 5 Nov); a row of boxes shares its height. */
 .lj-rules {
@@ -211,56 +280,57 @@
 .lj-rule dt { color: var(--text-muted); min-width: 0; }
 .lj-rule dd { margin: 0; margin-left: auto; text-align: right; font-weight: 600; min-width: 0; overflow-wrap: break-word; }
 
-/* ── The nights: one sunken panel of rows, a hairline between them and a strip
- * down the left of each in the state's colour, as the fixtures and the
- * scorecard have. A shadow each would be repainted at every move of the
- * light ── */
-.lj-nights {
+/* ── The nights: the fixtures planner's calendar (league.css), a night in its
+ * state's colour, the next glowing as a chosen day does there. The one tapped
+ * has a line round it, which can fade: the day's shadow moves with the light ── */
+.is-later,
+.is-next { --night: var(--nm-light-colour); }
+.is-live { --night: var(--color-warning); }
+.is-done { --night: var(--text-muted); }
+.tdc-card .cal button.cal-day[class*="is-"] {
+	color: var(--night);
+	outline: 2px solid transparent;
+	outline-offset: 2px;
+	transition: outline-color 0.2s ease;
+}
+.tdc-card .cal button.cal-day.is-next::after { opacity: 1; }
+.tdc-card .cal button.cal-day.is-picked { outline-color: var(--night); }
+#l-nights > .empty { flex: 1; }
+.tdc-card #night-note { margin: var(--space-2) 0 0; text-align: center; }
+
+.tdc-card .lj-key {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--space-1) var(--space-4);
+	margin: 0;
+	font-size: 0.85rem;
+	color: var(--text-muted);
+}
+.lj-key[hidden] { display: none; }
+.lj-key-item { display: inline-flex; align-items: center; gap: var(--space-1); }
+.lj-key-item::before {
+	content: "";
+	width: 0.6rem;
+	height: 0.6rem;
+	border-radius: var(--radius-round);
+	background: var(--night);
+}
+.lj-key-item.is-next::before { box-shadow: 0 0 8px 2px var(--nm-knob-glow); }
+
+.lj-picked {
 	display: flex;
 	flex-direction: column;
-	padding: var(--space-2) var(--space-4);
+	align-items: center;
+	margin-top: var(--space-3);
+	padding: var(--space-3) var(--nm-pad);
 	border-radius: var(--nm-field-radius);
 	box-shadow: var(--nm-sunken);
-}
-.lj-nights:empty { display: none; }
-.lj-night {
-	--strip-color: var(--border-color);
-	position: relative;
-	display: flex;
-	align-items: center;
-	gap: var(--space-3);
-	padding: var(--space-2) 0 var(--space-2) var(--space-3);
-	border-bottom: 1px solid var(--border-color);
-}
-.lj-night:last-child { border-bottom: 0; }
-.lj-night::before {
-	content: "";
-	position: absolute;
-	top: var(--space-2);
-	bottom: var(--space-2);
-	left: 0;
-	width: var(--space-1);
-	border-radius: var(--radius-pill);
-	background: var(--strip-color);
-}
-.lj-night.is-next { --strip-color: var(--color-primary); }
-.lj-night.is-live { --strip-color: var(--color-warning); }
-.lj-night.is-done { --strip-color: var(--text-muted); }
-.lj-night-n {
-	flex: 0 0 2rem;
-	font-family: var(--font-display);
-	font-size: 1.4rem;
 	text-align: center;
-	color: var(--strip-color);
 }
-.lj-night.is-done .lj-night-n,
-.lj-night:not(.is-next):not(.is-live):not(.is-done) .lj-night-n { color: var(--text-muted); }
-.lj-night-main { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-.lj-night-day { font-weight: 600; }
-.lj-night-sub { font-size: 0.85rem; color: var(--text-muted); }
-.lj-night-state { font-size: 0.85rem; font-weight: 600; color: var(--strip-color); white-space: nowrap; }
-.lj-night.is-next .lj-night-state { color: var(--color-primary); }
-.lj-night:not(.is-next):not(.is-live):not(.is-done) .lj-night-state { color: var(--text-muted); }
+.lj-picked[hidden] { display: none; }
+.lj-picked-day { font-weight: 600; }
+.lj-picked-sub { font-size: 0.85rem; color: var(--text-muted); }
 
 /* ── The teams: a card each, raised, opening the team on the season page ── */
 .lj-teams {
@@ -321,8 +391,10 @@
 
 /* ── Anything that fades ── */
 [data-motion="reduce"] .lj-team::before,
-[data-motion="reduce"] .lj-team::after { transition: none; }
+[data-motion="reduce"] .lj-team::after,
+[data-motion="reduce"] .tdc-card .cal button.cal-day[class*="is-"] { transition: none; }
 @media (prefers-reduced-motion: reduce) {
 	:root:not([data-motion="full"]) .lj-team::before,
-	:root:not([data-motion="full"]) .lj-team::after { transition: none; }
+	:root:not([data-motion="full"]) .lj-team::after,
+	:root:not([data-motion="full"]) .tdc-card .cal button.cal-day[class*="is-"] { transition: none; }
 }

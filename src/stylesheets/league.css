@@ -883,10 +883,10 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 
 /* ── The season page: the banner, the numbers, the teams (UV, 24 Oct) ──
  *
- * The banner is the league at a glance, sunk into the card: its picture in a
- * large circle, the name big, the season under it and its status as a badge,
- * a small strip along the top in the status colour (as a search tile's); then
- * how it is played, as label and value pairs that run into columns on a PC.
+ * The banner is the league at a glance, raised from the card and glowing from
+ * its edge inward (UV, 9 Nov): its picture in a large circle, the name big, the
+ * season under it and its status as a badge; then a strip in the status colour
+ * above how it is played, as label and value pairs that run into columns on a PC.
  * Then the numbers so far as tiles. Teams fold as a set-group does, with their
  * shield, name and counts in the header, each player a picture, a name and a
  * role, linked to their profile.
@@ -900,17 +900,15 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	padding: var(--space-5);
 	margin-bottom: var(--space-5);
 	border-radius: var(--nm-field-radius);
-	box-shadow: var(--nm-sunken);
+	box-shadow: var(--nm-raised);
 }
 .jumbo::before {
 	content: "";
 	position: absolute;
-	top: var(--space-2);
-	right: var(--nm-pad);
-	left: var(--nm-pad);
-	height: var(--space-1);
-	border-radius: var(--radius-pill);
-	background: var(--strip-color, var(--color-primary));
+	inset: 0;
+	border-radius: inherit;
+	box-shadow: inset 0 0 16px var(--nm-knob-glow);
+	pointer-events: none;
 }
 .jumbo-pic {
 	width: 5rem;
@@ -945,7 +943,20 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	gap: var(--space-3) var(--space-5);
 	margin: 0;
 	padding-top: var(--space-4);
-	border-top: 1px solid var(--border-color);
+}
+/* The status strip, where a line between the banner's parts would be (UV, 9 Nov). */
+.jumbo-facts,
+.sf-frames { position: relative; }
+.jumbo-facts::before,
+.sf-frames::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	right: 0;
+	left: 0;
+	height: var(--space-1);
+	border-radius: var(--radius-pill);
+	background: var(--strip-color, var(--color-primary));
 }
 .jumbo-fact { min-width: 0; }
 .jumbo-fact dt {
@@ -1742,7 +1753,7 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	.sign-form.jumbo { width: auto; }
 }
 .sf-top { min-width: 0; }
-.sf-frames { min-width: 0; padding-top: var(--space-4); border-top: 1px solid var(--border-color); }
+.sf-frames { min-width: 0; padding-top: var(--space-4); }
 .sign-form .h2h-tables { display: flex; flex-wrap: wrap; justify-content: center; }
 .sign-form .h2h-team { flex: 0 1 auto; min-width: 0; }
 .sign-form .h2h-key { margin-bottom: 0; }

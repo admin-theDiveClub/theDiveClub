@@ -30,12 +30,12 @@
 
 	const el = (id) => document.getElementById(id);
 	const els = {
-		jumbo: el('jumbo'), pic: el('l-pic'), statusBadge: el('l-status'),
+		jumbo: el('jumbo'), pic: el('l-pic'),
 		name: el('l-name'), meta: el('l-meta'), facts: el('l-facts'),
-		whereLine: el('where-line'), whereDetail: el('where-detail'),
 		interestBtn: el('interest-btn'), seasonLink: el('season-link'), share: el('share-btn'),
 		numbers: el('l-numbers'), notesBox: el('notes-box'), notes: el('l-notes'),
 		rules: el('l-rules'), nights: el('l-nights'), nightCount: el('night-count'),
+		nightKey: el('night-key'), nightPicked: el('night-picked'), nightNote: el('night-note'),
 		teams: el('l-teams'), teamCount: el('team-count'), teamsHint: el('teams-hint'),
 		officials: el('l-officials'),
 		status: el('page-status')
@@ -169,18 +169,10 @@
 	}
 
 	// ─── The banner ───
-	const ENTRY = {
-		ld_only: 'Added by whoever runs it',
-		interested: 'Put your name down',
-		self_confirm: 'Join straight away'
-	};
-
 	function renderBanner() {
 		const rules = (season && season.rules) || {};
 		const status = seasonRow && seasonRow.status;
 		els.jumbo.className = 'jumbo lj-hero' + (status ? ' league-status-' + status : '');
-		els.statusBadge.hidden = !status;
-		els.statusBadge.textContent = status ? (D.LEAGUE_STATUS[status] || status) : '';
 
 		els.pic.replaceChildren(TDC.leaguePic(seasonRow && seasonRow.tbl_leagues && seasonRow.tbl_leagues.picture_path));
 
@@ -195,9 +187,8 @@
 		facts.push(['Next night', next
 			? next.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' }) + ' · ' + time(next)
 			: 'Not scheduled yet']);
-		facts.push(['Entries', ENTRY[info.entry_mode] || info.entry_mode]);
 
-		els.facts.replaceChildren(...facts.map(([k, v]) => {
+		els.facts.replaceChildren(badges(), ...facts.map(([k, v]) => {
 			const row = node('div', 'jumbo-fact');
 			row.append(node('dt', null, k), node('dd', null, v));
 			return row;
@@ -215,53 +206,76 @@
 	}
 
 	// ─── Where I stand ───
+	// The first row of the details (UV, 9 Nov): the season's status in yellow,
+	// then how this person stands with it or how they would get in, in the
+	// league search's words.
+	const STANDING = {
+		interested: 'Your name is down',
+		withdrawn: 'You withdrew',
+		inactive: 'Inactive',
+		suspended: 'Suspended'
+	};
+
+	function badges() {
+		const status = seasonRow && seasonRow.status;
+		const list = node('dd');
+		if (status) list.append(node('span', 'badge warn', D.LEAGUE_STATUS[status] || status));
+		if (info.my_status === 'active') {
+			list.append(node('span', 'badge team-name', 'You are in this league'));
+			if (!info.i_confirmed) list.append(node('span', 'badge needs-you', 'Confirm your place'));
+		} else if (info.my_status) {
+			list.append(node('span', 'badge pending', STANDING[info.my_status] || info.my_status));
+		} else if (info.entry_mode === 'ld_only') {
+			list.append(node('span', 'badge', 'Added by whoever runs it'));
+		} else if (info.entry_mode === 'self_confirm') {
+			list.append(node('span', 'badge needs-you', 'Join straight away'));
+		} else {
+			list.append(node('span', 'badge', 'Taking names'));
+		}
+		const row = node('div', 'jumbo-fact lj-badges');
+		row.append(node('dt', 'lj-sr', 'Status'), list);
+		return row;
+	}
+
+	// The banner's corner: Share is always there; somebody who is in gets the
+	// arrow to the league, somebody who may put their name down the plus.
 	function render() {
 		els.interestBtn.hidden = true;
 		els.seasonLink.hidden = true;
 		els.seasonLink.href = '/leagues/season/?s=' + encodeURIComponent(seasonId);
 
-		// Where this person already stands comes first: somebody who is in
-		// does not want to be asked to join.
 		if (info.my_status === 'active') {
-			els.whereLine.textContent = 'You are in this league.';
-			els.whereDetail.textContent = info.i_confirmed
-				? ''
-				: 'You still have to confirm that you are playing.';
 			els.seasonLink.hidden = false;
+			wakeIcon(els.seasonLink);
 			return;
 		}
-		if (info.my_status === 'interested') {
-			els.whereLine.textContent = 'Your name is down.';
-			els.whereDetail.textContent = 'Whoever runs the league will confirm it. There is nothing else for you to do.';
-			return;
-		}
-		if (info.my_status === 'suspended') {
-			els.whereLine.textContent = 'Your place here has been suspended.';
-			els.whereDetail.textContent = 'Speak to whoever runs the league.';
-			return;
-		}
-		if (info.my_status === 'withdrawn') {
-			els.whereLine.textContent = 'You withdrew from this league.';
-			els.whereDetail.textContent = 'You can put your name down again.';
-		} else if (info.my_status === 'inactive') {
-			els.whereLine.textContent = 'You are marked inactive in this league.';
-			els.whereDetail.textContent = 'Speak to whoever runs it.';
-			return;
-		} else if (info.entry_mode === 'ld_only') {
-			els.whereLine.textContent = 'This league is not taking names.';
-			els.whereDetail.textContent = 'Whoever runs it adds the players themselves.';
-			return;
-		} else {
-			els.whereLine.textContent = 'Fancy a game?';
-			els.whereDetail.textContent = info.entry_mode === 'self_confirm'
-				? 'Put your name down and you are in.'
-				: 'Put your name down and whoever runs the league will confirm it.';
-		}
+		const again = info.my_status === 'withdrawn';
+		if (!again && (info.my_status || info.entry_mode === 'ld_only')) return;
 
+		const label = again ? 'Put my name down again' : 'Put my name down';
+		els.interestBtn.title = label;
+		els.interestBtn.setAttribute('aria-label', label);
 		els.interestBtn.hidden = false;
-		els.interestBtn.textContent = info.my_status === 'withdrawn'
-			? 'Put my name down again'
-			: 'Put my name down';
+		wakeIcon(els.interestBtn);
+	}
+
+	// An icon draws itself in the first time its button shows.
+	function wakeIcon(b) {
+		if (b.tdcRing) return;
+		const icon = b.dataset.icon;
+		const label = b.getAttribute('aria-label');
+		try {
+			const face = b.querySelector('.tdc-ring');
+			face.innerHTML = TDCRing.svg();
+			b.tdcRing = new TDCRing.RingStatus(face, {
+				icons: [icon],
+				labels: { [icon]: label, empty: label, loading: 'Working' },
+				initial: 'empty'
+			});
+			b.tdcRing.drawTo(icon);
+		} catch (err) {
+			TDC.error(AREA, 'an icon could not be drawn: ' + icon, err, els.status);
+		}
 	}
 
 	// ─── The numbers ───
@@ -295,7 +309,7 @@
 		els.notes.textContent = text || '';
 	}
 
-	// ─── How it is played ───
+	// ─── The rules ───
 	// Every rule the season plays to, in the settings page's groups, worded
 	// from TDCMatchDef. A setting its switch makes irrelevant is left out, as
 	// the settings page hides it.
@@ -357,8 +371,16 @@
 	}
 
 	// ─── The nights ───
-	// Every night with a fixture, in order: its date and time, how many
-	// matches and how many are played. The next one is marked.
+	// A calendar of the months from the first night to the last (UV, 9 Nov),
+	// drawn as the fixtures planner's, a night in its state's colour. A tap
+	// says its time and matches under the calendar; a tap again takes that away.
+	const pad = (n) => String(n).padStart(2, '0');
+	const keyOf = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+	const dayOfKey = (key) => { const [y, m, d] = key.split('-').map(Number); return new Date(y, m - 1, d); };
+	let nights = new Map();     // day key -> what is known of that night
+	let pickedNight = null;     // the day key tapped
+	let calCentred = false;     // the calendar starts on the next night's month, once
+
 	function renderNights() {
 		const games = fixtures.filter((f) => !f.is_bye);
 		const byDay = new Map();
@@ -366,7 +388,7 @@
 		for (const f of games) {
 			if (!f.scheduled_at) { undated++; continue; }
 			const d = new Date(f.scheduled_at);
-			const key = d.toDateString();
+			const key = keyOf(d);
 			if (!byDay.has(key)) byDay.set(key, { at: d, total: 0, played: 0, live: 0 });
 			const n = byDay.get(key);
 			if (d < n.at) n.at = d;
@@ -374,37 +396,142 @@
 			if (f.match_status === 'complete' || f.match_status === 'reopened') n.played++;
 			if (f.match_status === 'in_progress') n.live++;
 		}
-		const list = [...byDay.values()].sort((a, b) => a.at - b.at);
 		const next = nextNight();
-		const nextKey = next && next.toDateString();
-
-		els.nightCount.hidden = !list.length;
-		els.nightCount.textContent = String(list.length);
-
-		const rows = list.map((n, i) => {
-			const row = node('div', 'lj-night');
-			const done = n.played === n.total;
-			if (n.at.toDateString() === nextKey) row.classList.add('is-next');
-			else if (n.live) row.classList.add('is-live');
-			else if (done) row.classList.add('is-done');
-			row.append(node('span', 'lj-night-n', String(i + 1)));
-			const main = node('span', 'lj-night-main');
-			main.append(
-				node('span', 'lj-night-day', n.at.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })),
-				node('span', 'lj-night-sub', time(n.at) + ' · ' + plural(n.total, 'match', 'matches')));
-			row.append(main);
-			const state = n.at.toDateString() === nextKey ? 'Next'
-				: n.live ? 'Playing'
-				: done ? 'Played'
+		const nextKey = next && keyOf(next);
+		for (const [key, n] of byDay) {
+			n.state = n.live ? 'live' : key === nextKey ? 'next' : n.played === n.total ? 'done' : 'later';
+			n.said = n.live ? 'Playing'
+				: key === nextKey ? 'Next'
+				: n.played === n.total ? 'Played'
 				: n.played ? n.played + ' of ' + n.total + ' played'
 				: '';
-			if (state) row.append(node('span', 'lj-night-state', state));
-			return row;
-		});
-		if (undated) rows.push(node('p', 'muted', plural(undated, 'match', 'matches') + ' not dated yet.'));
-		if (!rows.length) rows.push(node('div', 'empty', 'No nights scheduled yet. Whoever runs the league makes the fixtures.'));
-		els.nights.replaceChildren(...rows);
+		}
+		nights = byDay;
+		if (!byDay.has(pickedNight)) pickedNight = null;
+
+		els.nightCount.hidden = !byDay.size;
+		els.nightCount.textContent = String(byDay.size);
+		els.nightKey.hidden = !byDay.size;
+		els.nightNote.hidden = !undated;
+		els.nightNote.textContent = undated ? plural(undated, 'match', 'matches') + ' not dated yet.' : '';
+
+		if (!byDay.size) {
+			els.nights.replaceChildren(node('div', 'empty', 'No nights scheduled yet. Whoever runs the league makes the fixtures.'));
+		} else {
+			drawCalendar(nextKey);
+		}
+		markPicked();
+		sayPicked();
 	}
+
+	function drawCalendar(nextKey) {
+		const keys = [...nights.keys()].sort();
+		const first = dayOfKey(keys[0]);
+		const last = dayOfKey(keys[keys.length - 1]);
+		const today = keyOf(new Date());
+		const months = [];
+		for (let m = new Date(first.getFullYear(), first.getMonth(), 1);
+			m <= last; m = new Date(m.getFullYear(), m.getMonth() + 1, 1)) {
+			months.push(m);
+		}
+
+		let nextMonth = null;
+		els.nights.replaceChildren(...months.map((m) => {
+			const box = node('div', 'cal-month');
+			box.append(node('div', 'cal-month-name', m.toLocaleDateString([], { month: 'long', year: 'numeric' })));
+
+			const table = node('table', 'cal');
+			const head = table.createTHead().insertRow();
+			['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].forEach((d, i) => {
+				const th = node('th');
+				if (i >= 5) th.append(node('span', 'badge', d)); else th.textContent = d;
+				head.append(th);
+			});
+
+			const body = table.createTBody();
+			const days = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
+			const lead = (m.getDay() + 6) % 7;
+			let tr = body.insertRow();
+			for (let i = 0; i < lead; i++) tr.insertCell();
+			for (let d = 1; d <= days; d++) {
+				if (tr.cells.length === 7) tr = body.insertRow();
+				const key = keyOf(new Date(m.getFullYear(), m.getMonth(), d));
+				const td = tr.insertCell();
+				const n = nights.get(key);
+				if (n) {
+					const b = node('button', 'cal-day is-' + n.state, String(d));
+					b.type = 'button';
+					b.dataset.night = key;
+					b.setAttribute('aria-label', n.at.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })
+						+ ', ' + nightLine(n));
+					td.append(b);
+					if (key === nextKey) nextMonth = box;
+				} else {
+					td.append(node('span', 'cal-num', String(d)));
+				}
+				if (key === today) td.classList.add('cal-today');
+			}
+			while (tr.cells.length < 7) tr.insertCell();
+			box.append(table);
+			return box;
+		}));
+
+		if (!calCentred && nextMonth) {
+			els.nights.scrollLeft = nextMonth.offsetLeft - (els.nights.clientWidth - nextMonth.offsetWidth) / 2;
+		}
+		calCentred = true;
+	}
+
+	const nightLine = (n) => [time(n.at), plural(n.total, 'match', 'matches'), n.said].filter(Boolean).join(' · ');
+
+	function markPicked() {
+		for (const b of els.nights.querySelectorAll('button[data-night]')) {
+			const on = b.dataset.night === pickedNight;
+			b.classList.toggle('is-picked', on);
+			b.setAttribute('aria-pressed', on ? 'true' : 'false');
+		}
+	}
+
+	function sayPicked() {
+		const n = pickedNight && nights.get(pickedNight);
+		els.nightPicked.hidden = !n;
+		if (!n) { els.nightPicked.replaceChildren(); return; }
+		els.nightPicked.replaceChildren(
+			node('span', 'lj-picked-day', n.at.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })),
+			node('span', 'lj-picked-sub', nightLine(n)));
+	}
+
+	// What changes fades out and the new fades in (UV, 24 Oct), at once for
+	// somebody who asked for less motion. The last of several quick taps wins.
+	let fadeRun = 0;
+	function revealMs() {
+		if (matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.motion === 'reduce') return 0;
+		const v = getComputedStyle(document.documentElement).getPropertyValue('--control-reveal').trim();
+		const n = parseFloat(v);
+		if (isNaN(n)) return 0;
+		return v.endsWith('ms') ? n : n * 1000;
+	}
+	function fadePicked() {
+		const ms = revealMs() / 2;
+		const run = ++fadeRun;
+		const box = els.nightPicked;
+		if (!ms) { sayPicked(); return; }
+		box.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms, fill: 'forwards' });
+		setTimeout(() => {
+			if (run !== fadeRun) return;
+			sayPicked();
+			box.getAnimations().forEach((a) => a.cancel());
+			box.animate([{ opacity: 0 }, { opacity: 1 }], { duration: ms });
+		}, ms);
+	}
+
+	els.nights.addEventListener('click', (e) => {
+		const b = e.target.closest('button[data-night]');
+		if (!b) return;
+		pickedNight = pickedNight === b.dataset.night ? null : b.dataset.night;
+		markPicked();       // the mark moves at once; the words underneath fade
+		fadePicked();
+	});
 
 	// ─── The teams ───
 	// Each with its picture, captain, places taken and every player's face.
@@ -481,7 +608,7 @@
 	els.interestBtn.addEventListener('click', () => {
 		joinWriter.write('Putting your name down', () => supabaseClient.rpc('tdc_league_show_interest', {
 			p_league_season_id: seasonId
-		}), (data) => data === 'active' ? 'You are in.' : 'Your name is down.', { single: true });
+		}), (data) => data === 'active' ? 'You are in.' : 'Your name is down.', { single: true, dots: els.interestBtn, leaves: true });
 	});
 
 	// Asking to join a team, or taking it back: the dots on the ring, which
@@ -511,6 +638,7 @@
 			TDC.error(AREA, 'no league in the address. Check the link you were sent.', null, els.status);
 			return;
 		}
+		wakeIcon(els.share);
 		TDC.shareButton(els.share, 'season', seasonId, {
 			area: AREA, status: els.status, title: () => els.name.textContent
 		});

@@ -21,36 +21,33 @@ extraScripts:
 	cannot.
 
 	Everything there is to know about the league, before deciding (UV, 5 Nov):
-	the banner in the scorecard's look, the button on a panel in the match
-	stage's (the green pill's line, glow and light-cast shadows), the numbers
-	as the stage's scores, then every rule, the nights, the teams with their
-	players, and who runs it. Every read is one the season page already makes.
+	the banner in the scorecard's look, with Share and the way in as icons in
+	its corner and where you stand as badges in its details (UV, 9 Nov), the
+	numbers as the stage's scores, then the teams with their players, every
+	rule, the nights on a calendar, and who runs it. Every read is one the
+	season page already makes.
 
 	Reached as /leagues/join/?s=<league season id>.
 {% endcomment %}
 
 <div class="tdc-card wide lj-page">
 	<section class="jumbo lj-hero" id="jumbo">
+		<div class="lj-corner">
+			<button type="button" class="lj-icon" id="share-btn" data-icon="share" title="Share" aria-label="Share"><span class="tdc-ring"></span></button>
+			<button type="button" class="lj-icon lj-icon-go" id="interest-btn" data-icon="plus" title="Put my name down" aria-label="Put my name down" hidden><span class="tdc-ring"></span></button>
+			<a class="lj-icon lj-icon-go" id="season-link" href="#" data-icon="arrow" title="Open the league" aria-label="Open the league" hidden><span class="tdc-ring"></span></a>
+		</div>
 		<div class="lj-id">
 			<span class="lj-pic"><span class="lj-pic-inner" id="l-pic"></span></span>
 			<div class="lj-names">
 				<h1 id="l-name">League</h1>
 				<p class="lj-season" id="l-meta"></p>
-				<span class="badge jumbo-status" id="l-status" hidden></span>
 			</div>
 		</div>
 		<dl class="jumbo-facts" id="l-facts"></dl>
 	</section>
 
-	<section class="lj-stage" id="where-panel" aria-live="polite">
-		<h2 class="lj-where" id="where-line"></h2>
-		<p class="lj-where-detail" id="where-detail"></p>
-		<div class="lj-actions">
-			<button type="button" class="lj-btn lj-btn-go" id="interest-btn" hidden>Put my name down</button>
-			<a class="lj-btn" id="season-link" href="#" hidden>Open the league</a>
-			<button type="button" class="lj-btn" id="share-btn">Share</button>
-		</div>
-	</section>
+	<div class="status" id="page-status"></div>
 
 	<section class="lj-numbers" id="l-numbers" aria-label="The league in numbers"></section>
 
@@ -59,20 +56,26 @@ extraScripts:
 		<p class="lj-notes" id="l-notes"></p>
 	</div>
 
-	<h2>How it is played</h2>
-	<div class="lj-rules" id="l-rules"></div>
-
-	<h2>Nights <span class="badge" id="night-count" hidden></span></h2>
-	<div class="lj-nights" id="l-nights"></div>
-
 	<h2>Teams <span class="badge" id="team-count" hidden></span></h2>
 	<p class="muted" id="teams-hint" hidden></p>
 	<div class="lj-teams" id="l-teams"></div>
 
+	<h2>Rules</h2>
+	<div class="lj-rules" id="l-rules"></div>
+
+	<h2>Nights <span class="badge" id="night-count" hidden></span></h2>
+	<div class="cal-months" id="l-nights"></div>
+	<p class="lj-key" id="night-key" hidden>
+		<span class="lj-key-item is-later">Coming up</span>
+		<span class="lj-key-item is-next">Next</span>
+		<span class="lj-key-item is-live">Playing</span>
+		<span class="lj-key-item is-done">Played</span>
+	</p>
+	<div class="lj-picked" id="night-picked" aria-live="polite" hidden></div>
+	<p class="muted" id="night-note" hidden></p>
+
 	<h2>Who runs it</h2>
 	<div class="lj-officials" id="l-officials"></div>
-
-	<div class="status" id="page-status"></div>
 
 	<div class="link-row">
 		<a href="/leagues/">All leagues</a>

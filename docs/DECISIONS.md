@@ -1689,3 +1689,11 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* on a wide screen the league name, season and venue keep their own rows, and the Your Leagues cards show in rows where possible. The sizes are fine.
 *Claude's, for UV to judge:* the rows applied at every width, phones included, so a short name no longer has its season beside it; "where possible" taken as two cards across on a PC, as before, and on a phone in landscape from 40rem wide.
 *Touches:* no migration.
+
+## 2026-11-09 — The league join page, and every banner
+
+*Decided by UV:* on the join page the status badge moves into the details, in yellow, beside a blue badge for being in the league; the Entries detail goes; Share and a way in (arrow or +) sit as icons at the banner's top right; the "You are in this league" section goes; "How it is played" becomes "Rules"; Teams goes above Rules; Nights becomes a calendar in the states' colours, with a one-line key, and a tap on a night shows its time and matches under it. People not in the league get a badge in the league search's words. On **every banner**: an outer shadow rather than an inner one, the full inner green glow, and the status bar where the grey separator was, with the separator gone.
+*Decided by UV:* the display font is only ever its standard weight, site-wide.
+*Claude's, for UV to judge:* the badges as the details' first row; "Added by whoever runs it" for a league that takes no names; a night being played shown yellow even when it is also the next; a past night not fully played staying green; a line round the tapped night; the name's line height, 1.2; the weight enforced once, on the font's own definition, rather than rule by rule; the status bar on the scorecard's result panel going where its grey line was.
+*So:* `docs/systems/leagues.md`, `docs/ui.md`.
+*Touches:* no migration.
