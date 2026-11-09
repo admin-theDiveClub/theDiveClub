@@ -385,8 +385,10 @@
 		const pic = el('div', 'league-tile-pic');
 		pic.append(TDC.leaguePic(pictures.get(l.league_season_id)));
 		const top = el('div', 'lt-top');
-		top.append(pic, tileLine('league-tile-name', l.league_name));
-		if (l.season_name) top.append(tileLine('league-tile-meta', l.season_name));
+		const names = el('div', 'lt-names');
+		names.append(tileLine('league-tile-name', l.league_name));
+		if (l.season_name) names.append(tileLine('league-tile-meta', l.season_name));
+		top.append(pic, names);
 		box.append(top, el('div', 'lt-strip'));
 
 		const where = TDC.venueNames(l.venues);

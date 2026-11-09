@@ -29,6 +29,14 @@ body:not(:has(#mv-stage))::before { opacity: 0; }
 @media (max-width: 991px) {
 	.tdc-card:not(:has(.mv-stage)) { width: calc(100% - 2 * var(--space-4)); }
 }
+/* Turned sideways, a phone's page fills the screen, clear of the notch (UV,
+   9 Nov). The match page has its own landscape. */
+@media (max-width: 991px) and (orientation: landscape) {
+	.tdc-card:not(:has(.mv-stage)) {
+		max-width: none;
+		width: calc(100% - 2 * max(var(--space-4), env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)));
+	}
+}
 /* Less inside the page's card on a phone (UV, 9 Nov). */
 @media (max-width: 36rem) {
 	.tdc-card:not(:has(.mv-stage)) { padding: var(--space-5) var(--space-3); }

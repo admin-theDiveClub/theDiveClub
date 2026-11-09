@@ -231,7 +231,8 @@
 	column-gap: var(--space-5);
 	margin-bottom: calc(-1 * var(--space-5));
 }
-@media (min-width: 62rem) {
+/* Two across wherever there is room: a PC, or a phone turned sideways. */
+@media (min-width: 62rem), (min-width: 40rem) and (orientation: landscape) {
 	.league-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 .lc {
@@ -285,11 +286,11 @@
 	height: var(--lc-pic);
 }
 .lc-text { flex: 1 1 0; min-width: 0; }
+/* League, season and venue a row each, at every width (UV, 9 Nov). */
 .lc-names {
 	display: flex;
-	flex-wrap: wrap;
-	align-items: baseline;
-	gap: var(--space-1) var(--space-3);
+	flex-direction: column;
+	gap: var(--space-1);
 	min-width: 0;
 }
 .tdc-card .lc-names h3 {
@@ -469,7 +470,6 @@
 	display: grid;
 	place-items: center;
 	color: var(--color-primary);
-	grid-row: span 2;
 }
 .league-tile-pic svg { width: 60%; height: 60%; }
 .lt-top {
@@ -479,6 +479,8 @@
 	column-gap: var(--space-2);
 	margin-bottom: var(--space-1);
 }
+/* The same gap as a card's name and season. */
+.lt-names { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
 .lt-line { min-width: 0; }
 .lt-line .lc-run { gap: 0; padding-right: 0; font: inherit; color: inherit; }
 .lt-line { --lc-fade: var(--space-2); }

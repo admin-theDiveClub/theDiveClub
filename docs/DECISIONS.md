@@ -1676,3 +1676,16 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to judge:* besides h1 to h4, the four title classes that are not heading tags (`.cs-title`, `.pp-h3`, `.pp-panel-title`, `.pp-c-h`); the match stage's names and scores, and other numbers in this font, left alone.
 *So:* `docs/ui.md`.
 *Touches:* no migration.
+
+## 2026-11-09 — A phone in landscape fills the screen
+
+*Decided by UV:* across the site, turning to landscape stretches the elements to fit the screen.
+*Claude's, for UV to judge:* `/match/` left out, because it has its own landscape layout; the rule stops at 991px wide, above which the PC layout's ten of twelve columns (UV, 24 Oct) already applies; reading-width limits on a few paragraphs of text left as they are.
+*So:* `docs/ui.md`.
+*Touches:* no migration.
+
+## 2026-11-09 — League cards keep their rows on a wide screen
+
+*Decided by UV:* on a wide screen the league name, season and venue keep their own rows, and the Your Leagues cards show in rows where possible. The sizes are fine.
+*Claude's, for UV to judge:* the rows applied at every width, phones included, so a short name no longer has its season beside it; "where possible" taken as two cards across on a PC, as before, and on a phone in landscape from 40rem wide.
+*Touches:* no migration.
