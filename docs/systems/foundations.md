@@ -85,3 +85,12 @@ How to put the app on a home screen, shown rather than told. UV's decisions are 
 - **Full and Compact**, switched by the pill beside Play and animated between (the View Transitions API; instant where the browser has none or with less motion). **Compact** is for following along on the phone itself: an 84px-wide screen and the live step beside it, held under the nav (`position: sticky`), the heading folded away so the block sits right under the nav (the page is too short to scroll it there). About 198px tall, because Safari's half-open Share sheet leaves about 211px of page under the nav, measured from UV's screenshots (the sheet's top at 329 of 844 points). The list scrolls so the live step sits at the top of its window. The page opens in Full until switched (UV); the choice is kept on the device (`tdc.install-mode`).
 - **Less motion** (the profile menu's toggle or the phone's setting, `TDCPrefs.lessMotion`): the animation waits for Play.
 - `?t=<seconds>` and `?mode=compact` hold a moment, for headless layout checks.
+
+## Short links (9 Nov, being built in steps)
+
+The design is `docs/design/short-links.md`. Step 1, the database, is migration `20261109114638`; no page uses it yet.
+
+- **Stored:** `short_code` and `short_code_by` on `tbl_tournaments` and `tbl_leagues` (only the chosen part: the `T-`, `L-` and dashes are added when shown, so a code cannot clash with an address); `match_number` on both fixture tables; `short_number` on `tbl_matches`, shown only for a social match.
+- **Why the number is on the fixture:** a league or tournament match is only tied to its competition when the fixture's `match_id` is written, just after the match is made. A trigger on that write takes the next number from the competition's `next_match_number`, so no function that creates a match had to change, and locking the competition's row stops two matches getting one number.
+- **Functions:** `tdc_resolve_short_code` (anon too: gives back `{path}` or `{reason}`), `tdc_short_link` (anon too: the code to show), `tdc_short_code_status` (the field's live feedback), `tdc_set_short_code`.
+- **Security:** a path is only ever built in the database from an id, so a code cannot lead off the site. Reasons never name the competition. `short_code_by` references `auth.users`, not `tbl_players`, so the walk-in merge is unaffected.

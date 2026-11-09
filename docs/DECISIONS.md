@@ -1630,3 +1630,12 @@ These predate the log. They are recorded here because every one of them is a dec
 *UV said go and that questions would be settled later. None of these is UV's decision yet:* a date is the browser's own field; the tick is in a sunken well; a label too long for its dropdown goes above the pill; settings rows are one a row; the arrow replaces + and - on folding groups; standings numbers are 16px, against UV's "numbers large" of 29 Oct; panels that must stay readable over what scrolls under them stay solid; a filled green stays on each page's main action; yellow break rings stay as data; the points page stays compact at 36px.
 *So:* the list with what each looks like is with UV; `docs/STATUS.md`.
 *Touches:* `design.css`, `variables.css`, `tdc-controls.js`, `page-light.js`, every page stylesheet.
+
+## 2026-11-09 — Short links: one code each for leagues, tournaments and matches
+
+*Decided by UV:* `thediveclub.org/<code>` is a shortcut to an existing page. Leagues are `L-` and tournaments `T-`, fixed, followed by what the LD or TD chooses; their matches inherit that code and an automatic number (`T-BC26-7`). A social match is only a number and nobody can customise it. Only letters and digits can be typed. Every league, tournament and match gets a code when created, one each and no others. Only whoever set a code may change it, in Settings, with clear feedback rather than a pop-up. A changed code is released at once and can be reused. Share is open to anyone, on the poster and match pages. A code opens the poster, or deeper for somebody signed in and part of it. A broken link says why and never falls back to home. Pages for signed-out visitors are a separate job; until then the current sign-in flow stays.
+*Replaces:* a short link for almost any page, a Share button in the nav's toggle section and a pop-up (UV's first version, same day).
+*Rejected:* codes where the director must follow a shape, such as ending in a letter (UV: people would struggle to make a valid one); a type-less code; an old code that keeps forwarding.
+*Claude's, for UV to judge:* a suggested code being 5 characters with no vowels or look-alikes; 2 to 8 characters for the chosen part; social numbers running in order from 1000; the short list of refused words; one code per league meaning the newest season; a former director who set a code not being able to change it.
+*So:* `docs/design/short-links.md`, `docs/systems/foundations.md`, "Short links".
+*Touches:* migration `20261109114638`, `066_short_links.test.sql`.
