@@ -865,6 +865,14 @@ const TDCControls = (() => {
 			list.setAttribute('aria-label', select.getAttribute('aria-label'));
 		}
 
+		// A filter says its label inside the pill, before the selection (UV, 9 Nov).
+		if (label && field && field.classList.contains('drop-joined')) {
+			const said = node('span', 'tdc-drop-label');
+			said.textContent = label.textContent;
+			said.setAttribute('aria-hidden', 'true');
+			button.prepend(said);
+		}
+
 		let options = [];
 		let active = -1;
 		const isOpen = () => box.classList.contains('ready');
@@ -888,7 +896,7 @@ const TDCControls = (() => {
 			box.style.setProperty('--nm-selection-left', left + 'px');
 			box.style.setProperty('--nm-list-height', list.getBoundingClientRect().height + 'px');
 			// A label with no room beside the selection goes above the pill.
-			if (field && label && whole.width) {
+			if (field && label && whole.width && !field.classList.contains('drop-joined')) {
 				field.classList.remove('drop-stacked');
 				if (label.scrollWidth > label.clientWidth + 1 || label.scrollHeight > label.clientHeight + 1) field.classList.add('drop-stacked');
 			}

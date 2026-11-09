@@ -403,7 +403,7 @@
 		if (!teams.length) tl.textContent = 'None';
 		teams.forEach((t, i) => {
 			if (i) tl.append(document.createTextNode(', '));
-			const a = node('a', null, t.team_name + (t.is_captain ? ' (C)' : ''));
+			const a = node('a', 'team-name', t.team_name + (t.is_captain ? ' (C)' : ''));
 			a.href = '/leagues/season/?s=' + encodeURIComponent(t.league_season_id) + '&team=' + encodeURIComponent(t.team_id);
 			tl.append(a);
 		});

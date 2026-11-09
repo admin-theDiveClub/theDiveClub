@@ -1639,3 +1639,32 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to judge:* a suggested code being 5 characters with no vowels or look-alikes; 2 to 8 characters for the chosen part; social numbers running in order from 1000; the short list of refused words; one code per league meaning the newest season; a former director who set a code not being able to change it.
 *So:* `docs/design/short-links.md`, `docs/systems/foundations.md`, "Short links".
 *Touches:* migration `20261109114638`, `066_short_links.test.sql`.
+
+## 2026-11-09 — League and team pictures get their own shapes; every picture set into the page
+
+*Decided by UV:* a league's picture is framed by a classic shield and a team's by a hexagon. Every picture somebody chose is set into the page with the sandbox's inset, the picture filling the hole with the shadow across it, site-wide and **including the match stage** (the stage was otherwise left out of the design on 7 Nov). A league with no picture shows the empty sunken badge with the trophy inside. On `/leagues/`: no "Your Leagues" heading or count line; each season a card in sections with grey lines, its last row for stats with a real ranking ("1st / 128"); the pill drifts only when its stats do not fit, and a finger stops it.
+*Rejected:* a trophy shape (cuts too far into a picture); the crest badge Claude recommended for leagues, which UV passed over for the shield.
+*Claude's, for UV to judge:* the team's empty hexagon holding its old shield icon (extended from the league's answer); the Team rank and the season's player columns beside Ranking; leaving the league details after them in the pill; "Not ranked yet" before a night counts; the status strip kept; the Ranking column gone; two cards side by side on a PC; 24px a second for the drift.
+*So:* `docs/ui.md`, "Pictures are set into the page"; `docs/systems/leagues.md`.
+*Touches:* no migration.
+
+## 2026-11-09 — League cards, second pass: stats in boxes, the rules in the carousel, a pointed shield
+
+*Decided by UV:* no grey lines on the cards. The shield takes the shape of the reference picture (a point at the top centre), fills its space with minimal padding, and is as tall as the top of the league name to the bottom of the dates. The pill holds league details only, plus every rule in use. The stats have their own row below it, each in its own box: Rank / players, Team Rank / teams in the league, and BF | rBF | GB counts. The pill keeps its auto-scroll and can also be dragged. Each of BF, rBF and GB shows only when that rule is on, as a plain number. The display font's small titles (league names, list-row titles) lose the browser's fake bold and use the font's true weight, which is thinner at the same size; UV preferred that to slimming the letters further. This replaces the same day's grey lines, ranking in the pill and classic shield path.
+*Claude's, for UV to judge:* "Not yet" in the rank boxes before a night is counted; the season's own player columns dropped from the card, since UV's list did not name them; a rule's wording taken from the settings page's labels; the shield capped at 40% of the row; the shield 0.88 as wide as it is tall, everywhere.
+*So:* `docs/systems/leagues.md`.
+*Touches:* no migration.
+
+## 2026-11-09 — A filter's label joins its pill; team names blue; the alternate green becomes orange
+
+*Decided by UV:* on a filter pill the label and the selection share one pill, the label grey, everywhere there are filters. A team's name is the blue of a league match's changes (`--color-edited`), everywhere a team is named. The alternate green (`--color-success`) becomes a muted orange everywhere it is used, so it is easy to tell where it is used, "like the off green" of the site's primary. UV was told this makes the success colour orange and accepted it. No "Find a league" label or "Leave it empty" hint on `/leagues/`. Cards side by side line up row by row, as they already matched in height.
+*Claude's, for UV to judge:* the orange itself, `#ff9b61` (the primary green's lightness and saturation at an orange hue, redder than the warning's amber so the two differ), and `#b8602a` on the light preview; "filters" taken as the `/leagues/` three, the fixtures Team and Match, and the verifications Show, not a form's dropdowns or the fixtures' date fields; a team named inside a sentence, a button or a dropdown option left uncoloured; the card summary's leading side keeping its own colour, because that colour is how it says who is ahead.
+*So:* `docs/ui.md`, "Filters and names".
+*Touches:* no migration.
+
+## 2026-11-09 — League cards, third pass: fixed shields, compact filters, new search tiles
+
+*Decided by UV:* the shield on a card is one size whatever the height of its row, bigger being better, which replaces "as tall as the name to the dates". Venue names in bold. Ranks in the site's green. Lags join the special wins box, and a stats box that does not fit scrolls like the rules pill. Filter pills are compact, in one row where possible, no space between label and selection, tighter margins between them. Search results: picture beside league name and season name, then venue in bold, then discipline. "You are in this one" in blue. A line that does not fit scrolls by itself. The season's status ("Taking entries") is a yellow badge; the team size is a rule and goes in the details text, not a badge. The status bar sits below the season name and picture, and everything below it is centred. The page's outermost card has less inner padding on a phone.
+*Claude's, for UV to judge:* "badges" taken as the league shields, at 6rem tall; a phone taken as up to 36rem wide for the padding; Lags shown when the season records who breaks, counted as Standings' lags won; a tile's date, status and player count dropped, since UV's list did not name them; tile lines auto-scroll but do not drag, so a swipe still moves the row of tiles.
+*So:* `docs/systems/leagues.md`, `docs/ui.md`.
+*Touches:* no migration.

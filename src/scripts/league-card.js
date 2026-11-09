@@ -187,7 +187,7 @@
 			league_season_id: (byId.get(data.home_team_id) || {}).league_season_id
 		});
 
-		els.title.textContent = match.home_name + ' : ' + match.away_name;
+		els.title.replaceChildren(node('span', 'team-name', match.home_name), ' : ', node('span', 'team-name', match.away_name));
 		document.title = match.home_name + ' : ' + match.away_name + ' · The Dive Club';
 		for (const [pic, name, side] of [
 			[els.homePic, els.homeName, 'home'], [els.awayPic, els.awayName, 'away'],
@@ -1332,7 +1332,9 @@
 			box.open = clOpen.has(key) ? clOpen.get(key) : i === 0;
 			box.addEventListener('toggle', () => clOpen.set(key, box.open));
 			const head = node('summary', 'cl-head');
-			head.append(node('strong', null, teamName(g.side) + ' signed'),
+			const who = node('strong');
+			who.append(node('span', 'team-name', teamName(g.side)), ' signed');
+			head.append(who,
 				node('span', 'cl-by', g.by_name + signedAs(g) + ' · ' + when(g.at)),
 				node('span', 'cl-count', mine.length === 1 ? '1 change' : mine.length + ' changes'));
 			box.append(head);

@@ -212,7 +212,12 @@
 		a.href = href;
 		a.append(menuEl('span', 'nav-account-row-name', name));
 		if (right) a.append(right);
-		a.append(menuEl('span', 'nav-account-row-line', line.filter(Boolean).join(' · ')));
+		const said = menuEl('span', 'nav-account-row-line');
+		line.filter(Boolean).forEach((bit, i) => {
+			if (i) said.append(' · ');
+			said.append(bit.team ? menuEl('span', 'team-name', bit.team) : bit);
+		});
+		a.append(said);
 		return a;
 	}
 
@@ -253,7 +258,7 @@
 		const inIt = l.my_status === 'active';
 		return menuRow(href, LEAGUE_STRIP[l.status], l.league_name, [
 			LEAGUE_SAID[l.status] || l.status,
-			l.my_team_name,
+			l.my_team_name && { team: l.my_team_name },
 			l.i_captain && inIt ? 'Captain' : '',
 			l.my_status === 'inactive' ? 'Inactive' : '',
 			l.i_run_it ? 'You run this' : ''

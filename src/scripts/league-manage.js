@@ -218,9 +218,13 @@ TDCLeagueNav.panel('manage', () => {
 		const full = [p.first_name, p.last_name].filter(Boolean).join(' ');
 		if (full && full !== p.display_name) sub.push(full);
 		if (box !== 'interested' && !p.confirmed_at) sub.push('Has not confirmed');
-		if (p.team_name) sub.push(p.team_name);
+		if (p.team_name) sub.push(node('span', 'team-name', p.team_name));
 		if (p.paid_at) sub.push('Paid');
-		if (sub.length) label.append(node('span', 'sub', sub.join(' · ')));
+		if (sub.length) {
+			const line = node('span', 'sub');
+			sub.forEach((bit, i) => line.append(...(i ? [' · ', bit] : [bit])));
+			label.append(line);
+		}
 
 		row.append(tick, label);
 		return row;

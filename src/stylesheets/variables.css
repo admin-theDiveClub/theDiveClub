@@ -26,7 +26,7 @@
   --border-color: #404040;
 
   /* Status */
-  --color-success: #00ff7b;
+  --color-success: #ff9b61;   /* a soft orange, as off-true as the primary green (UV, 9 Nov) */
   --color-warning: #ffae00;
   --color-error: #ff0000;
 
@@ -35,6 +35,8 @@
 
   /* Changed after signing: the team card's edited frames (UV, 28 Oct) */
   --color-edited: #5fa5dd;
+  /* A team's name: the same blue (UV, 9 Nov) */
+  --color-team: var(--color-edited);
 
   /* ── Depth ───────────────────────────────────────────────────────
      Shadows and the dim behind a panel are black at low alpha, as in the
@@ -218,7 +220,7 @@
 
   --border-color: #c6bba9;
 
-  --color-success: #2a9357;
+  --color-success: #b8602a;
   --color-warning: #911818;
   --color-error: #ff0000;
 

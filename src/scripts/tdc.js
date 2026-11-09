@@ -409,8 +409,68 @@ const TDC = (() => {
 		return row;
 	}
 
+	// ─── A league's and a team's picture, in its own shape (UV, 9 Nov) ───
+	// A league's is a shield, a team's a hexagon, each set into the page: the
+	// shadow is the rest of the page's shape, blurred, lying over the picture
+	// and moved by the light (design.css, .tdc-shade). An inset box-shadow
+	// could only follow a rounded rectangle. The paths are in a 100 box; the
+	// shield fills its box, which is narrower than it is tall (UV, 9 Nov).
+	const SHAPES = {
+		shield: 'M50 0C61 9 79 14 97 14Q100 14 100 17V50C100 76 76 92 50 100C24 92 0 76 0 50V17Q0 14 3 14C21 14 39 9 50 0Z',
+		hexagon: 'M46 4Q50 2 54 4L90 24Q94 26 94 31V69Q94 74 90 76L54 96Q50 98 46 96L10 76Q6 74 6 69V31Q6 26 10 24Z'
+	};
+	function shapeClip(kind) {
+		const id = 'tdc-clip-' + kind;
+		if (document.getElementById(id)) return id;
+		let defs = document.getElementById('tdc-clips');
+		if (!defs) {
+			defs = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+			defs.id = 'tdc-clips';
+			defs.setAttribute('aria-hidden', 'true');
+			defs.setAttribute('width', '0');
+			defs.setAttribute('height', '0');
+			defs.style.position = 'absolute';
+			document.body.append(defs);
+		}
+		defs.insertAdjacentHTML('beforeend', `<clipPath id="${id}" clipPathUnits="objectBoundingBox"><path transform="scale(0.01)" d="${SHAPES[kind]}"/></clipPath>`);
+		return id;
+	}
+	function shaped(kind, content) {
+		const box = document.createElement('span');
+		box.className = 'tdc-shaped tdc-shaped-' + kind;
+		box.style.clipPath = `url(#${shapeClip(kind)})`;
+		box.append(content);
+		for (const side of ['dark', 'lit']) {
+			box.insertAdjacentHTML('beforeend', `<svg class="tdc-shade tdc-shade-${side}" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path fill-rule="evenodd" d="M-60-60H160V160H-60Z${SHAPES[kind]}"/></svg>`);
+		}
+		return box;
+	}
+
+	// What goes inside a league's picture box: its own picture (league-pictures,
+	// tbl_leagues.picture_path), or the empty shield with a trophy in it.
+	function leaguePic(path, alt) {
+		const url = pictureUrl('league-pictures', path);
+		if (url) {
+			const img = document.createElement('img');
+			img.src = url;
+			img.alt = alt || '';
+			img.loading = 'lazy';
+			return shaped('shield', img);
+		}
+		const NS = 'http://www.w3.org/2000/svg';
+		const svg = document.createElementNS(NS, 'svg');
+		svg.setAttribute('viewBox', '0 0 24 24');
+		svg.setAttribute('aria-hidden', 'true');
+		const trophy = document.createElementNS(NS, 'path');
+		trophy.setAttribute('fill', 'currentColor');
+		trophy.setAttribute('d', 'M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z');
+		svg.append(trophy);
+		return shaped('shield', svg);
+	}
+
 	// What goes inside a team's .team-pic: its own picture (team-pictures,
-	// tbl_teams.picture_path; 29 Oct), or the shield it had until it had one.
+	// tbl_teams.picture_path; 29 Oct), or the shield it had until it had one,
+	// in the team's hexagon (UV, 9 Nov).
 	// Shared by the season, fixtures and card pages.
 	function teamPic(path) {
 		const url = pictureUrl('team-pictures', path);
@@ -419,7 +479,7 @@ const TDC = (() => {
 			img.src = url;
 			img.alt = '';
 			img.loading = 'lazy';
-			return img;
+			return shaped('hexagon', img);
 		}
 		const NS = 'http://www.w3.org/2000/svg';
 		const svg = document.createElementNS(NS, 'svg');
@@ -433,7 +493,7 @@ const TDC = (() => {
 		shield.setAttribute('vector-effect', 'non-scaling-stroke');
 		shield.setAttribute('stroke-linejoin', 'round');
 		svg.append(shield);
-		return svg;
+		return shaped('hexagon', svg);
 	}
 
 	// ─── Text that changed, faded (UV, 29 Oct) ───
@@ -523,5 +583,5 @@ const TDC = (() => {
 	}
 
 	return { shortUrl, shareButton, error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer,
-		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, teamPic, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade };
+		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, leaguePic, teamPic, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade };
 })();

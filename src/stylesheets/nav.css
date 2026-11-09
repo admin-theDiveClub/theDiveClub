@@ -104,7 +104,10 @@
 }
 
 
-/* The signed-in player's picture, shown in place of the ring, the same size. */
+/* The signed-in player's picture, shown in place of the ring, the same size.
+   In a box of its own, which holds the inset shadow (design.css). */
+.nav-avatar-wrap { display: block; border-radius: var(--radius-round); line-height: 0; }
+.nav-avatar-wrap:has(> img[hidden]) { display: none; }
 .nav-avatar {
 	width: var(--nav-ring-size);
 	height: var(--nav-ring-size);

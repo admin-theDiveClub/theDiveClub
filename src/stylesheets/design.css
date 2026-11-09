@@ -29,6 +29,10 @@ body:not(:has(#mv-stage))::before { opacity: 0; }
 @media (max-width: 991px) {
 	.tdc-card:not(:has(.mv-stage)) { width: calc(100% - 2 * var(--space-4)); }
 }
+/* Less inside the page's card on a phone (UV, 9 Nov). */
+@media (max-width: 36rem) {
+	.tdc-card:not(:has(.mv-stage)) { padding: var(--space-5) var(--space-3); }
+}
 @media (max-width: 24rem) {
 	.tdc-card:not(:has(.mv-stage)) {
 		width: calc(100% - 2 * var(--space-2));
@@ -734,6 +738,35 @@ button.league-nav-item:focus-visible { outline: 2px solid var(--nm-light-colour)
 .set-group > .field > .hint,
 .set-group > .field-row > .field > label,
 .set-group > .field-row > .field > .hint { padding-left: 0; }
+/* A filter: its label and selection together in one small pill, the label grey
+   (UV, 9 Nov). These are not hero elements. The <label> stays for screen
+   readers; tdc-controls.js says it inside the button. */
+.field.drop-joined {
+	--nm-field: 2.25rem;
+	--nm-field-radius: 1.125rem;
+	--nm-pad: var(--space-3);
+	width: fit-content;
+	max-width: 100%;
+	margin-bottom: var(--space-2);
+}
+.field-row > .field.drop-joined { margin-bottom: var(--space-2); }
+.field.drop-joined > .tdc-drop::before,
+.field.drop-joined > .tdc-drop::after { left: 0; }
+.field.drop-joined > .tdc-drop::before { box-shadow: var(--nm-sunken-small); }
+.field.drop-joined > .tdc-drop:not(.open) > .tdc-drop-button { clip-path: inset(0 0 0 0 round var(--nm-field-radius)); }
+.field.drop-joined > label {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+}
+.field.drop-joined .tdc-drop-button { justify-content: flex-start; gap: var(--space-1); padding: 0 var(--space-2) 0 var(--space-3); font-size: 0.8rem; }
+.field.drop-joined .tdc-drop-label { flex: none; color: var(--text-muted); }
+.field.drop-joined .tdc-drop-value { max-width: none; }
+.field.drop-joined .tdc-drop-button svg { width: 1rem; height: 1rem; margin-left: auto; }
+.field.drop-joined .tdc-drop-list li { min-height: 2.25rem; font-size: 0.85rem; }
 .set-group > :not(summary):last-child { margin-bottom: var(--space-5); }
 .set-group > .field-row:last-child > .field:last-child { margin-bottom: 0; }
 
@@ -761,7 +794,7 @@ button.league-nav-item:focus-visible { outline: 2px solid var(--nm-light-colour)
 .row-table-meta,
 .row-table-stat,
 .row-table-stat .sub { font-size: 0.85rem; }
-.row-table-row h3 { font-size: 1rem; font-weight: 600; }
+.row-table-row h3 { font-size: 1rem; }
 .row-table {
 	padding: var(--space-3) var(--space-4);
 	border-radius: var(--nm-field-radius);
@@ -787,6 +820,85 @@ button.league-nav-item:focus-visible { outline: 2px solid var(--nm-light-colour)
 	.row-table-badges .badge { white-space: normal; }
 	.row-table-stats { grid-template-columns: repeat(auto-fit, minmax(4rem, 1fr)); }
 }
+
+/* ── Pictures set into the page (UV, 9 Nov; the whole site, the stage too) ──
+   A picture somebody chose lies in a sunken hole with the shadow across it; as
+   /sandbox/neumorph/'s logo well, but filling it. A box-shadow on the box would
+   be painted under its <img>, so it goes on a layer over it. Initials and
+   default icons stay as they were. A new picture box joins these lists. */
+:is(.nav-avatar-wrap, .nav-account-pic, .nav-account-person-pic, .person-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-person-pic, .pp-row-pic, .pp-vs-pic, .pp-c-pic, .mv-pic):has(> img:not([hidden])) {
+	--shadow-pic: 0 0 transparent;
+	--match-mark-shadow: 0 0 transparent;
+	position: relative;
+}
+:is(.nav-avatar-wrap, .nav-account-pic, .nav-account-person-pic, .person-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-person-pic, .pp-row-pic, .pp-vs-pic, .pp-c-pic, .mv-pic):has(> img:not([hidden]))::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	box-shadow: var(--pic-inset, var(--nm-sunken-small));
+	pointer-events: none;
+}
+/* The bigger ones take the full depth. */
+:is(.nav-account-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-vs-pic, .mv-pic) { --pic-inset: var(--nm-sunken); }
+/* The box round a picture casts nothing once the picture is sunk in it. */
+:is(.pp-pic, .pp-zoom-pic, .lj-pic):has(img) { --shadow-pic: 0 0 transparent; }
+/* These two draw the picture as their own background, under an inset shadow. */
+.avatar-large:not(.placeholder) { box-shadow: var(--nm-sunken); }
+.chosen-avatar:where([style*="background-image"]) { box-shadow: var(--nm-sunken-small); }
+
+/* A league's shield and a team's hexagon (TDC.leaguePic, TDC.teamPic). The box
+   they stand in gives up its circle. The shadow is the page round the shape,
+   blurred once and only moved with the light, on a layer of its own: nothing
+   is blurred again at each move, so a page of them stays cheap. */
+:is(.team-pic, .jumbo-pic, .league-tile-pic, .lc-pic, .lj-pic, .lj-pic-inner):has(.tdc-shaped) {
+	--shadow-pic: 0 0 transparent;
+	border-radius: 0;
+	overflow: visible;
+	background: none;
+}
+.tdc-shaped {
+	--shade-move: 0.5;
+	--shade-blur: calc(var(--nm-blur) / 8);
+	position: relative;
+	display: grid;
+	place-items: center;
+	width: 100%;
+	height: 100%;
+	color: var(--color-primary);
+	overflow: hidden;
+}
+:is(.jumbo-pic, .league-tile-pic, .lc-pic, .lj-pic-inner) .tdc-shaped {
+	--shade-move: 1;
+	--shade-blur: calc(var(--nm-blur) / 4);
+}
+/* As tall as its box, and as wide as a shield is. */
+.tdc-shaped-shield { width: auto; aspect-ratio: 0.88; margin-inline: auto; }
+.tdc-shaped > img { width: 100%; height: 100%; object-fit: cover; }
+.tdc-shaped > svg { width: 58%; height: 58%; }
+.tdc-shaped > .tdc-shade {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+	pointer-events: none;
+	filter: blur(var(--shade-blur));
+	will-change: transform;
+}
+.tdc-shade-dark {
+	fill: var(--nm-dark);
+	transform: translate(calc(var(--nm-x) * var(--shade-move)), calc(var(--nm-y) * var(--shade-move)));
+}
+.tdc-shade-lit {
+	fill: var(--nm-lit);
+	transform: translate(calc(var(--nm-x) * var(--shade-move) * -1), calc(var(--nm-y) * var(--shade-move) * -1));
+}
+
+/* A team's name is blue wherever it stands on its own (UV, 9 Nov). A new place
+   joins this list, or takes .team-name. The card's summary keeps its own colour
+   for the side that is ahead. */
+html :is(.team-name, .cj-name, .cs-team, .tdc-card .h2h-title, .card-players .cp-team, .fx-name, .team-box-name, .team-sep-name, .lj-team-name, .pp-team-name, .sd-team-row .sd-name) { color: var(--color-team); }
 
 /* ── Anything that fades ───────────────────────────────────────────── */
 [data-motion="reduce"] :is(.tdc-drop::before, .tdc-drop::after),

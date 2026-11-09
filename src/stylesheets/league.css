@@ -214,13 +214,169 @@
 .section { border-top: 1px solid var(--border-color); padding-top: var(--space-2); margin-top: var(--space-6); }
 .section:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
 
-/* ── Your leagues on /leagues/ ──
+/* ── Your leagues on /leagues/ (UV, 9 Nov) ──
  *
- * A .row-table (forms.css) with a strip and a picture. Only its PC column
- * tracks are this page's: the picture, the name, the badges, starts, ends,
- * ranking, teams.
+ * A card a season: the shield, one size on every card, beside the names and
+ * the dates; the badges and a sunken pill of the league's
+ * details and rules; then this person's stats, each in its own box. The pill
+ * drifts only when its details do not fit, two copies end to end so the loop
+ * has no seam, and a finger or the mouse can drag it. Each card's three rows
+ * are rows of the list's grid, so cards side by side line up row by row (UV,
+ * 9 Nov). The space between cards is their margin: a grid's row gap would also
+ * open between a card's own rows.
  */
-.row-table.league-rows { --row-cols: 2.75rem minmax(0, 1fr) 9rem 6.5rem 6.5rem 4.5rem 6.5rem; }
+.league-cards {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	column-gap: var(--space-5);
+	margin-bottom: calc(-1 * var(--space-5));
+}
+@media (min-width: 62rem) {
+	.league-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.lc {
+	position: relative;
+	display: grid;
+	grid-row: span 3;
+	grid-template-rows: subgrid;
+	grid-template-columns: minmax(0, 1fr);
+	min-width: 0;
+	margin-bottom: var(--space-5);
+	border-radius: var(--nm-field-radius);
+	color: inherit;
+	text-decoration: none;
+	box-shadow: var(--nm-raised);
+}
+.lc::before {
+	content: "";
+	position: absolute;
+	top: var(--space-4);
+	bottom: var(--space-4);
+	left: var(--space-2);
+	width: var(--space-1);
+	border-radius: var(--radius-pill);
+	background: var(--strip-color, var(--color-primary));
+}
+/* Its glow on a layer of its own, as a search tile's. */
+.lc::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	box-shadow: var(--glow-primary);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.2s ease;
+}
+.lc:hover::after,
+.lc:focus-visible::after { opacity: 1; }
+.lc:focus-visible { outline: none; }
+
+.lc-top {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--space-3);
+	padding: var(--space-3) var(--nm-pad) var(--space-3) var(--space-5);
+}
+.lc-pic {
+	--lc-pic: 6rem;
+	flex: none;
+	width: calc(var(--lc-pic) * 0.88);
+	height: var(--lc-pic);
+}
+.lc-text { flex: 1 1 0; min-width: 0; }
+.lc-names {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: var(--space-1) var(--space-3);
+	min-width: 0;
+}
+.tdc-card .lc-names h3 {
+	margin: 0;
+	font-size: 1rem;
+	overflow-wrap: anywhere;
+}
+.lc-sub,
+.lc-dates {
+	font-size: 0.85rem;
+	color: var(--text-muted);
+	overflow-wrap: anywhere;
+}
+.lc-dates { margin-top: var(--space-1); }
+.lc-venue { font-weight: 700; }
+.lc-foot {
+	display: flex;
+	flex-wrap: wrap;
+	align-content: flex-start;
+	align-items: center;
+	gap: var(--space-2) var(--space-3);
+	padding: 0 var(--nm-pad) var(--space-3) var(--space-5);
+}
+.lc-badges { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.lc-pill {
+	flex: 1 1 11rem;
+	display: flex;
+	align-items: center;
+	min-width: 0;
+	height: 2rem;
+	padding: 0 var(--space-3);
+	border-radius: var(--radius-pill);
+	box-shadow: var(--nm-sunken-small);
+	user-select: none;
+}
+.lc-pill:is(.is-drifting, .is-swiped) { cursor: grab; touch-action: pan-y; }
+.lc-pill.is-held { cursor: grabbing; }
+.lc-window { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+:is(.lc-pill, .lt-line).is-drifting .lc-window {
+	-webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--lc-fade, var(--space-3)), #000 calc(100% - var(--lc-fade, var(--space-3))), transparent);
+	mask-image: linear-gradient(90deg, transparent, #000 var(--lc-fade, var(--space-3)), #000 calc(100% - var(--lc-fade, var(--space-3))), transparent);
+}
+/* With less motion nothing drifts: only a finger or the mouse moves it. */
+/* Words start clear of the faded edge; each copy carries it, so the loop still
+   moves by exactly one copy. */
+.lc-pill.is-drifting { padding: 0; }
+.lc-pill.is-drifting .lc-run { padding-left: var(--space-3); }
+:is(.lc-pill, .lt-line).is-swiped .lc-window { overflow-x: auto; scrollbar-width: none; }
+:is(.lc-pill, .lt-line).is-swiped .lc-window::-webkit-scrollbar { display: none; }
+.lc-track { display: inline-flex; }
+:is(.lc-pill, .lt-line).is-drifting .lc-track { animation: lc-drift var(--lc-drift, 20s) linear infinite; }
+.lc-pill.is-held .lc-track,
+:is(.league-cards, .league-tiles).is-resting .lc-track { animation-play-state: paused; }
+@media (hover: hover) {
+	.lc-pill:hover .lc-track { animation-play-state: paused; }
+}
+@keyframes lc-drift { to { transform: translateX(-50%); } }
+.lc-run {
+	display: inline-flex;
+	gap: var(--space-4);
+	padding-right: var(--space-4);
+	font-size: 0.85rem;
+	color: var(--text-muted);
+	white-space: nowrap;
+}
+.lc-run b { font-weight: 600; color: var(--text-primary); }
+/* One row: the box of counts gives way first, then the ranks, and whatever no
+   longer fits drifts as the pill does. */
+.lc-stats {
+	display: flex;
+	gap: var(--space-2);
+	padding: 0 var(--nm-pad) var(--space-4) var(--space-5);
+}
+.lc-pill.lc-stat {
+	flex: 1 1 auto;
+	height: auto;
+	padding: var(--space-2) var(--space-3);
+	border-radius: var(--radius-md);
+}
+.lc-pill.lc-stat.lc-counts { flex-shrink: 1000; min-width: 5.5rem; }
+.lc-pill.lc-stat.is-drifting { padding: var(--space-2) 0; }
+.lc-stat:not(.is-drifting) .lc-track { display: flex; justify-content: center; }
+.lc-stat .lc-run { flex: none; gap: var(--space-3); padding-right: 0; }
+.lc-stat.is-drifting .lc-run { padding-right: var(--space-4); }
+.lc-cell { display: grid; justify-items: center; font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; }
+.lc-cell b { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.lc-cell b.lc-rank { color: var(--color-primary); }
 
 /* A season's status colour, on the row's strip and the search tile's edge.
  * The keys are TDCMatchDef.LEAGUE_STATUS; a new status needs a line here. */
@@ -237,14 +393,16 @@
  * in, filling the left as it goes. Each tile snaps to the middle.
  */
 .league-search { margin-bottom: var(--space-5); }
+.league-search > .field:first-child { margin-bottom: var(--space-2); }
 
-/* Each filter is a select pill (24 Oct), which needs room to show its
-   options: one a row on a phone, side by side only where each gets 18rem. */
+/* The filters in one row wherever they fit (UV, 9 Nov), sharing it evenly. */
 .league-filters {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
-	gap: 0 var(--space-5);
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: var(--space-1);
 }
+.league-filters > .field.drop-joined { flex: 1 1 auto; width: auto; margin-bottom: 0; }
 
 .league-tiles {
 	--tile-w: 12.5rem;
@@ -264,31 +422,27 @@
 /* Nothing found: a sentence, not a column of tiles. */
 .league-tiles.is-empty { display: block; padding: 0; margin: 0 0 var(--space-5); text-align: center; }
 
-/* A result: something you press to open, so raised. The league's picture on
- * top (a default icon until leagues have their own), the name and details
- * under it, and the status in a small strip along the top. */
+/* A result: something you press to open, so raised. The shield beside the
+ * league and the season, the status in a small strip under them, then the
+ * venue, the game and the badges, centred. A line that does not fit drifts
+ * (leagues.js); a swipe still moves the row of tiles. */
 .league-tile {
 	position: relative;
 	scroll-snap-align: center;
 	display: flex;
 	flex-direction: column;
-	align-items: center;
-	text-align: center;
 	gap: var(--space-1);
-	padding: var(--space-5) var(--space-3) var(--space-4);
+	padding: var(--space-4) var(--space-3);
 	border-radius: var(--nm-field-radius);
 	color: inherit;
 	text-decoration: none;
 	box-shadow: var(--nm-raised);
 	min-width: 0;
 }
-.league-tile::before {
-	content: "";
-	position: absolute;
-	top: var(--space-2);
-	right: var(--nm-pad);
-	left: var(--nm-pad);
+.lt-strip {
+	flex: none;
 	height: var(--space-1);
+	margin: var(--space-1) 0;
 	border-radius: var(--radius-pill);
 	background: var(--strip-color, var(--color-primary));
 }
@@ -315,9 +469,32 @@
 	display: grid;
 	place-items: center;
 	color: var(--color-primary);
-	margin-bottom: var(--space-2);
+	grid-row: span 2;
 }
 .league-tile-pic svg { width: 60%; height: 60%; }
+.lt-top {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	align-items: center;
+	column-gap: var(--space-2);
+	margin-bottom: var(--space-1);
+}
+.lt-line { min-width: 0; }
+.lt-line .lc-run { gap: 0; padding-right: 0; font: inherit; color: inherit; }
+.lt-line { --lc-fade: var(--space-2); }
+.lt-line.is-drifting { margin-left: calc(-1 * var(--space-2)); }
+.lt-line.is-drifting .lc-run { padding: 0 var(--space-5) 0 var(--space-2); }
+.lt-venue { font-weight: 700; }
+.league-tile > .lt-line { text-align: center; }
+.lt-badges {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--space-1);
+	margin-top: auto;
+	padding-top: var(--space-2);
+}
+.league-tile .lt-status { color: var(--color-warning); }
 
 .league-tile-name {
 	font-weight: 600;
@@ -329,8 +506,6 @@
 	color: var(--text-muted);
 	line-height: 1.35;
 }
-.league-tile .badge { margin-top: auto; }
-.league-tile-meta:last-of-type { margin-bottom: var(--space-2); }
 
 /* ── The fixtures page: the planner and every fixture (UV, 24 Oct) ──
  *

@@ -126,28 +126,6 @@ TDCLeagueNav.panel('season', () => {
 		return a;
 	}
 
-	// The league's picture until leagues have their own, as on the leagues
-	// list: a trophy. A team's is TDC.teamPic.
-	function svgIcon(d, filled) {
-		const NS = 'http://www.w3.org/2000/svg';
-		const svg = document.createElementNS(NS, 'svg');
-		svg.setAttribute('viewBox', '0 0 24 24');
-		svg.setAttribute('aria-hidden', 'true');
-		const path = document.createElementNS(NS, 'path');
-		path.setAttribute('d', d);
-		if (filled) path.setAttribute('fill', 'currentColor');
-		else {
-			path.setAttribute('fill', 'none');
-			path.setAttribute('stroke', 'currentColor');
-			path.style.strokeWidth = 'var(--icon-line)';   // as a ring's line, at any size (UV, 5 Nov)
-			path.setAttribute('vector-effect', 'non-scaling-stroke');
-			path.setAttribute('stroke-linejoin', 'round');
-		}
-		svg.append(path);
-		return svg;
-	}
-	const TROPHY = 'M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z';
-
 	const plural = (n, one, many) => (n === 1 ? '1 ' + one : (n || 0) + ' ' + (many || one + 's'));
 
 	function day(s) {
@@ -183,7 +161,7 @@ TDCLeagueNav.panel('season', () => {
 
 		els.name.textContent = info.league_name;
 		els.meta.textContent = info.name;
-		els.jumboPic.replaceChildren(svgIcon(TROPHY, true));
+		els.jumboPic.replaceChildren(TDC.leaguePic(null));
 
 		return true;
 	}
@@ -391,15 +369,7 @@ TDCLeagueNav.panel('season', () => {
 		els.jumboStatus.textContent = status ? (D.LEAGUE_STATUS[status] || status) : '';
 
 		// The league's own picture, or the trophy it had until it had one.
-		const picture = TDC.pictureUrl('league-pictures', seasonRow && seasonRow.tbl_leagues && seasonRow.tbl_leagues.picture_path);
-		if (picture) {
-			const img = document.createElement('img');
-			img.src = picture;
-			img.alt = '';
-			els.jumboPic.replaceChildren(img);
-		} else {
-			els.jumboPic.replaceChildren(svgIcon(TROPHY, true));
-		}
+		els.jumboPic.replaceChildren(TDC.leaguePic(seasonRow && seasonRow.tbl_leagues && seasonRow.tbl_leagues.picture_path));
 
 		const facts = [];
 		facts.push(['Game', D.DISCIPLINE[rules.discipline] || rules.discipline || 'Not set']);

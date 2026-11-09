@@ -6,6 +6,7 @@ extraStyles:
   - /stylesheets/league.css
 extraScripts:
   - /scripts/match-settings.js
+  - /scripts/league-standings-def.js
   - /scripts/leagues.js
 ---
 {% comment %}
@@ -21,13 +22,12 @@ extraScripts:
 	<h1>Leagues</h1>
 
 	{% comment %}
-		A .row-table (forms.css): on a PC each season's dates and counts are
-		columns; on a phone they drop to a small row under the league's name.
+		A card per season (leagues.js, league.css). The line under it is only
+		for somebody in no league.
 	{% endcomment %}
 	<div class="section">
-		<h2>Your Leagues</h2>
-		<p class="muted" id="intro">Leagues you run or play in.</p>
-		<div class="row-table has-strip has-pic league-rows" id="league-list"></div>
+		<p class="muted" id="intro" hidden></p>
+		<div class="league-cards" id="league-list"></div>
 	</div>
 
 	{% comment %}
@@ -45,21 +45,19 @@ extraScripts:
 		{% endcomment %}
 		<div class="league-search">
 			<div class="field">
-				<label for="league-search">Find a league</label>
-				<input type="search" id="league-search" autocomplete="off" placeholder="Name, season or venue">
-				<div class="hint">Leave it empty to see them all.</div>
+				<input type="search" id="league-search" autocomplete="off" placeholder="Name, season or venue" aria-label="Find a league">
 			</div>
 
 			<div class="league-filters">
-				<div class="field">
+				<div class="field drop-joined">
 					<label for="filter-discipline">Discipline</label>
 					<select id="filter-discipline"><option value="">All</option></select>
 				</div>
-				<div class="field">
+				<div class="field drop-joined">
 					<label for="filter-status">Status</label>
 					<select id="filter-status"><option value="">All</option></select>
 				</div>
-				<div class="field">
+				<div class="field drop-joined">
 					<label for="filter-kind">Type</label>
 					<select id="filter-kind">
 						<option value="">All</option>
