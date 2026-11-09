@@ -1027,3 +1027,15 @@ button.league-nav-item:focus-visible { background: var(--hover-wash); outline: n
 	box-shadow: var(--shadow-pic), var(--glow-primary);
 	outline: none;
 }
+
+/* ── A short link's code (UV, 9 Nov; short-code-field.js) ─────────
+   The T- or L- is fixed, the code is typed beside it, and its own Save sits
+   at the end: the change is live at once, unlike the tab's Save. */
+.short-code-row {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+}
+.short-code-row input { flex: 1 1 auto; min-width: 0; }
+.short-code-row .btn { flex: 0 0 auto; }
+.short-code-prefix { color: var(--text-muted); flex: 0 0 auto; }

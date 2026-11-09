@@ -21,7 +21,8 @@
 // The venues it is played at (venue-picker.js) are saved after that, with their
 // own call and only when they changed.
 //
-// Needs: tdc.js, match-settings.js, tournament-nav.js, venue-picker.js.
+// Needs: tdc.js, match-settings.js, tournament-nav.js, venue-picker.js,
+// short-code-field.js.
 
 TDCTournamentNav.panel('settings', () => {
 	const AREA = 'Tournament settings';
@@ -58,6 +59,7 @@ TDCTournamentNav.panel('settings', () => {
 		entryMode: el('ts-entry-mode'), entryModeHint: el('ts-entry-mode-hint'),
 		paidConfirms: el('ts-paid-confirms'), listed: el('ts-listed'), listedHint: el('ts-listed-hint'),
 		main: el('ts-main'), rest: el('ts-rest'),
+		shortCode: el('ts-short-code'),
 		save: el('ts-save'), status: el('ts-status')
 	};
 
@@ -77,6 +79,7 @@ TDCTournamentNav.panel('settings', () => {
 	let mayRun = false;
 	const openGroups = new Set();
 	const venues = TDCVenuePicker.create(els.venues, AREA, els.status);
+	const shortCode = TDCShortCode.create(els.shortCode, AREA, 'tournament', tournamentId);
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -364,6 +367,7 @@ TDCTournamentNav.panel('settings', () => {
 		mayRun = true;
 
 		if (!await load()) return;
+		await shortCode.load();
 		els.save.disabled = false;
 	})(), 'Settings');
 
@@ -373,6 +377,7 @@ TDCTournamentNav.panel('settings', () => {
 	return {
 		refresh: () => {
 			if (!mayRun || !saved) return;
+			shortCode.load();
 			if (JSON.stringify(rules) !== rulesWas || els.name.value.trim() !== saved.name || venues.changed()) return;
 			load().catch((err) => TDC.error(AREA, 'the settings could not be read again.', err, els.status));
 		}

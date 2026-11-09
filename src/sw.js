@@ -18,6 +18,20 @@ const CORE_ASSETS = [
   '/resources/icons/icon-512.png'
 ];
 
+// A short link opened with no connection (docs/design/short-links.md). 404.html
+// cannot do this: its scripts and styles are not in the cache. Anything else
+// with no cached copy stays the browser's own offline page.
+function offlineShortLink(req) {
+  if (!/^\/(\d{1,15}|[tl]-[a-z0-9]{2,8}(-\d{1,9})?)\/?$/i.test(new URL(req.url).pathname)) return undefined;
+  return new Response(
+    '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'
+    + '<meta name="viewport" content="width=device-width, initial-scale=1"><title>You are offline</title></head>'
+    + '<body style="background:#202020;color:#f4e8d2;font-family:sans-serif;padding:2rem;text-align:center">'
+    + '<h1>You are offline</h1><p>This link needs a connection. Try again when you are back online.</p></body></html>',
+    { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+  );
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS))
@@ -47,11 +61,14 @@ self.addEventListener('fetch', (event) => {
 		event.respondWith(
 			fetch(req, { cache: 'no-cache' })
 				.then((res) => {
-					const resClone = res.clone();
-					caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
+					// Only a page that loaded: a short link's 404 must be looked up afresh.
+					if (res.ok) {
+						const resClone = res.clone();
+						caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
+					}
 					return res;
 				})
-				.catch(() => caches.match(req))
+				.catch(() => caches.match(req).then((cached) => cached || offlineShortLink(req)))
 		);
 		return;
 	}

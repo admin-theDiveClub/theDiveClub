@@ -33,7 +33,8 @@
 // The venues this season is played at (venue-picker.js) are saved between the
 // status and the league, with their own call and only when they changed.
 //
-// Needs: tdc.js, match-settings.js, league-standings-edit.js, venue-picker.js.
+// Needs: tdc.js, match-settings.js, league-standings-edit.js, venue-picker.js,
+// short-code-field.js.
 
 TDCLeagueNav.panel('settings', () => {
 	const AREA = 'League settings';
@@ -49,6 +50,7 @@ TDCLeagueNav.panel('settings', () => {
 		sizeRow: el('size-row'), reservesField: el('reserves-field'),
 		overrides: el('overrides-note'),
 		main: el('settings-main'), rest: el('settings-rest'),
+		shortCode: el('st-short-code'),
 		save: el('save-btn'), status: el('st-status')
 	};
 
@@ -59,6 +61,7 @@ TDCLeagueNav.panel('settings', () => {
 	}
 
 	const seasonId = new URLSearchParams(location.search).get('s');
+	const shortCode = TDCShortCode.create(els.shortCode, AREA, 'season', seasonId);
 
 	// ─── State ───
 	let leagueId = null;
@@ -489,6 +492,7 @@ TDCLeagueNav.panel('settings', () => {
 		}
 
 		if (!await load()) return;
+		await shortCode.load();
 		els.save.disabled = false;
 
 		// The standings columns (29 Oct), saved on their own, not with Save.

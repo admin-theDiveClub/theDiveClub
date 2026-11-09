@@ -1,4 +1,29 @@
 ---
+layout: layout.html
 permalink: "/404.html"
+title: A shared link
+description: "A league, tournament or match at The Dive Club."
+ogUrl: "/"
+extraScripts:
+  - /scripts/short-link.js
 ---
-<!DOCTYPE html>
+{% comment %}
+	GitHub Pages sends this page for every address that does not exist, which is
+	what makes thediveclub.org/<code> work on a static site. short-link.js looks
+	the code up and forwards, or says why it cannot. It never falls back to the
+	home page (UV, 9 Nov; docs/design/short-links.md).
+
+	Every address on this page must start at the root: it is served at any depth.
+{% endcomment %}
+
+<div class="tdc-card">
+	<div id="sl-reason" hidden>
+		<h1 id="sl-head"></h1>
+		<p class="muted" id="sl-text"></p>
+		<div class="link-row">
+			<a href="/leagues/">Leagues</a>
+			<a href="/tournaments/">Tournaments</a>
+		</div>
+	</div>
+	<div class="status" id="page-status"></div>
+</div>
