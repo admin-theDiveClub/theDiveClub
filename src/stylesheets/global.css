@@ -171,3 +171,7 @@ h1, h2, h3, h4 {
 	font-weight: normal;
 	letter-spacing: 0.01em;
 }
+/* Rushford Clean's line, set here because Safari ignores the font's overrides
+   above and its normal line would be nearly twice as tall (UV, 9 Nov). 1.32 is
+   what the overrides come to, so nothing moves elsewhere. */
+h1, h2, h3, h4, .cs-title, .pp-h3, .pp-panel-title, .pp-c-h { line-height: 1.32; }

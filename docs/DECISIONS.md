@@ -1664,7 +1664,15 @@ These predate the log. They are recorded here because every one of them is a dec
 
 ## 2026-11-09 — League cards, third pass: fixed shields, compact filters, new search tiles
 
-*Decided by UV:* the shield on a card is one size whatever the height of its row, bigger being better, which replaces "as tall as the name to the dates". Venue names in bold. Ranks in the site's green. Lags join the special wins box, and a stats box that does not fit scrolls like the rules pill. Filter pills are compact, in one row where possible, no space between label and selection, tighter margins between them. Search results: picture beside league name and season name, then venue in bold, then discipline. "You are in this one" in blue. A line that does not fit scrolls by itself. The season's status ("Taking entries") is a yellow badge; the team size is a rule and goes in the details text, not a badge. The status bar sits below the season name and picture, and everything below it is centred. The page's outermost card has less inner padding on a phone.
+*Decided by UV:* the shield on a card is one size whatever the height of its row, bigger being better, which replaces "as tall as the name to the dates". Venue names in bold. Ranks in the site's green. Lags join the special wins box, and a stats box that does not fit scrolls like the rules pill. Filter pills are compact, in one row where possible, no space between label and selection, tighter margins between them. Search results: picture beside league name and season name, then venue in bold, then discipline. "You are in this one" in blue. A line that does not fit scrolls by itself. The season's status ("Taking entries") is a yellow badge; the team size is a rule and goes in the details text, not a badge. A search tile's league name is in the site's font. The status bar sits below the season name and picture, and everything below it is centred. The page's outermost card has less inner padding on a phone.
 *Claude's, for UV to judge:* "badges" taken as the league shields, at 6rem tall; a phone taken as up to 36rem wide for the padding; Lags shown when the season records who breaks, counted as Standings' lags won; a tile's date, status and player count dropped, since UV's list did not name them; tile lines auto-scroll but do not drag, so a swipe still moves the row of tiles.
 *So:* `docs/systems/leagues.md`, `docs/ui.md`.
+*Touches:* no migration.
+
+## 2026-11-09 — A set line height for headings in the display font
+
+*Decided by UV:* every heading in the display font gets the same set line height, after the league names showed extra space on an iPhone.
+*Why:* Safari ignores the font's metric overrides, so a normal line height was nearly twice as tall there. 1.32 is what those overrides come to in Chrome.
+*Claude's, for UV to judge:* besides h1 to h4, the four title classes that are not heading tags (`.cs-title`, `.pp-h3`, `.pp-panel-title`, `.pp-c-h`); the match stage's names and scores, and other numbers in this font, left alone.
+*So:* `docs/ui.md`.
 *Touches:* no migration.

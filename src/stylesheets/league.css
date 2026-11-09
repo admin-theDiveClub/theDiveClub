@@ -496,11 +496,14 @@
 }
 .league-tile .lt-status { color: var(--color-warning); }
 
+/* The site's font, its line set as a heading's is (global.css). Safari places
+   these letters higher in the line, so the clipped window gets room. */
 .league-tile-name {
-	font-weight: 600;
-	line-height: 1.25;
+	font-family: var(--font-display);
+	line-height: 1.32;
 	overflow-wrap: anywhere;
 }
+.league-tile-name .lc-window { margin-block: -0.25em; padding-block: 0.25em; }
 .league-tile-meta {
 	font-size: 0.85rem;
 	color: var(--text-muted);
