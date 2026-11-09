@@ -2494,6 +2494,17 @@
 		return b;
 	}
 
+	// Anyone who can open the match may share it (UV, 9 Nov). Not a data-act:
+	// it changes nothing on the card, so a watcher has it too.
+	function matchShareButton() {
+		const b = mbtn('Share', '', {});
+		TDC.shareButton(b, 'match', liveMatchId, {
+			area: AREA, status: settled() ? els.resultStatus : els.stageStatus,
+			title: () => MATCH.home.name + ' v ' + MATCH.away.name
+		});
+		return b;
+	}
+
 	function showPicker(side) {
 		overlayMode = 'pick:' + side;
 		els.overlayQ.textContent = `${MATCH[side].name} — who is at the table?`;
@@ -2529,6 +2540,7 @@
 			mbtn('Abandon frame', '', { act: 'abandon' }, matchOver()),
 			mbtn('Change table', '', { act: 'changetable' }, MATCH.tables.length < 2),
 			mbtn(timerRunning(matchTimer) ? 'Pause match' : 'Resume match', '', { act: 'togglematchtimer' }, !!matchOver()),
+			matchShareButton(),
 			settingsButton(),
 			mbtn('Close', '', { act: 'closeoverlay' })
 		);
@@ -3614,6 +3626,7 @@
 				if (canDelete) actions.push(mbtn('Delete match', '', { act: 'deletematch' }));
 			}
 		}
+		actions.push(matchShareButton());
 		els.resultActions.replaceChildren(...actions);
 	}
 

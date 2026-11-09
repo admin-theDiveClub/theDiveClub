@@ -481,6 +481,39 @@ const TDC = (() => {
 		}
 	}
 
-	return { error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer,
+	// ─── A Share button (short links, UV 9 Nov) ───
+	// Open to anyone who can see the page. A phone only shares from inside the
+	// tap itself, so the link is read first and the button waits for it. Read
+	// once per page: a match's ⋯ menu is drawn again each time it opens.
+	const shortLinks = new Map();
+
+	function shareButton(button, kind, id, { area, status: statusEl, title }) {
+		button.disabled = true;
+		const key = kind + '|' + id;
+		if (!shortLinks.has(key)) {
+			shortLinks.set(key, Promise.resolve(supabaseClient.rpc('tdc_short_link', { p_kind: kind, p_id: id })));
+		}
+		shortLinks.get(key).then(({ data, error: err }) => {
+			if (err) {
+				shortLinks.delete(key);
+				showSupabaseError(area, err, statusEl);
+				return;
+			}
+			const url = location.origin + '/' + data.code;
+			button.disabled = false;
+			button.addEventListener('click', async () => {
+				try {
+					if (navigator.share) { await navigator.share({ title: title(), url }); return; }
+					await navigator.clipboard.writeText(url);
+					status(statusEl, 'Link copied: ' + url.replace(/^https?:\/\//, ''), 'success');
+				} catch (e) {
+					if (e && e.name === 'AbortError') return;   // the share sheet closed
+					error(area, 'the link could not be shared or copied.', e, statusEl);
+				}
+			});
+		});
+	}
+
+	return { shareButton, error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer,
 		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, teamPic, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade };
 })();

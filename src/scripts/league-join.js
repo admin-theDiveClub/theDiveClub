@@ -33,7 +33,7 @@
 		jumbo: el('jumbo'), pic: el('l-pic'), statusBadge: el('l-status'),
 		name: el('l-name'), meta: el('l-meta'), facts: el('l-facts'),
 		whereLine: el('where-line'), whereDetail: el('where-detail'),
-		interestBtn: el('interest-btn'), seasonLink: el('season-link'),
+		interestBtn: el('interest-btn'), seasonLink: el('season-link'), share: el('share-btn'),
 		numbers: el('l-numbers'), notesBox: el('notes-box'), notes: el('l-notes'),
 		rules: el('l-rules'), nights: el('l-nights'), nightCount: el('night-count'),
 		teams: el('l-teams'), teamCount: el('team-count'), teamsHint: el('teams-hint'),
@@ -533,6 +533,9 @@
 			TDC.error(AREA, 'no league in the address. Check the link you were sent.', null, els.status);
 			return;
 		}
+		TDC.shareButton(els.share, 'season', seasonId, {
+			area: AREA, status: els.status, title: () => els.name.textContent
+		});
 		// Which faces on the teams are mine, so the rings show only to a
 		// player on no team.
 		const me = await TDC.getMyPlayer(AREA, session.user.id, els.status);

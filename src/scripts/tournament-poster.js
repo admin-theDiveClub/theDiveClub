@@ -40,6 +40,7 @@
 		entry: el('p-entry'), entryState: el('p-entry-state'), entryDetail: el('p-entry-detail'),
 		entryActions: el('p-entry-actions'), entryStatus: el('p-entry-status'),
 		text: el('p-text'), copy: el('p-copy'), generated: el('p-generated'),
+		share: el('p-share'), name: el('p-name'),
 		links: el('p-links'), status: el('page-status')
 	};
 
@@ -734,6 +735,10 @@
 		// getSession, not requireSession: a signed-out visitor is the expected
 		// case on this page and must not be redirected to the login screen.
 		const session = await TDC.getSession(AREA);
+
+		TDC.shareButton(els.share, 'tournament', tournamentId, {
+			area: AREA, status: els.status, title: () => els.name.textContent
+		});
 
 		const { data, error } = await supabaseClient.rpc('tdc_tournament_poster', {
 			p_tournament_id: tournamentId

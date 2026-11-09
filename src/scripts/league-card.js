@@ -67,6 +67,7 @@
 		sfDispute: el('sf-dispute'),
 		changedSince: el('changed-since'), changedCount: el('changed-count'), changedList: el('changed-list'),
 		signHome: el('sign-home'), signAway: el('sign-away'), disputeBtn: el('dispute-btn'),
+		share: el('share-btn'),
 		status: el('page-status')
 	};
 
@@ -1722,6 +1723,10 @@
 			TDC.error(AREA, 'no match in the address. Open this page from the fixtures.', null, els.status);
 			return;
 		}
+
+		TDC.shareButton(els.share, 'match', matchId, {
+			area: AREA, status: els.status, title: () => document.title
+		});
 
 		if (!await loadMatch()) return;
 		if (!await loadRosters()) return;
