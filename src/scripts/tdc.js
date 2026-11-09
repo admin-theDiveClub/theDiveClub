@@ -481,6 +481,14 @@ const TDC = (() => {
 		}
 	}
 
+	// A short link as an address to show (UV, 9 Nov). Read each time, unlike
+	// shareButton's: a director can change the code on another tab of the page.
+	async function shortUrl(area, kind, id, statusEl) {
+		const { data, error: err } = await supabaseClient.rpc('tdc_short_link', { p_kind: kind, p_id: id });
+		if (err) { showSupabaseError(area, err, statusEl); return null; }
+		return location.origin + '/' + data.code;
+	}
+
 	// ─── A Share button (short links, UV 9 Nov) ───
 	// Open to anyone who can see the page. A phone only shares from inside the
 	// tap itself, so the link is read first and the button waits for it. Read
@@ -514,6 +522,6 @@ const TDC = (() => {
 		});
 	}
 
-	return { shareButton, error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer,
+	return { shortUrl, shareButton, error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer,
 		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, teamPic, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade };
 })();

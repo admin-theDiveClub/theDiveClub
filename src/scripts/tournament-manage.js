@@ -239,14 +239,15 @@ TDCTournamentNav.panel('entrants', () => {
 	// (tournament-settings.js; UV: each setting in one place).
 	// ─────────────────────────────────────────────────────────────────
 
-	function renderEntrySettings() {
+	async function renderEntrySettings() {
 		els.entrySettings.hidden = readOnly;
 
 		// The poster, which is the one page meant to be opened by somebody who
 		// is not signed in. It shows nothing until a poster has been generated
 		// and shared, which is what the panel below is for — so the hint says
 		// so rather than letting a TD share a link to an empty page.
-		els.entryLink.value = posterUrl();
+		const url = await TDC.shortUrl(AREA, 'tournament', tournamentId, els.status);
+		if (url) els.entryLink.value = url;
 	}
 
 	const posterUrl = () => location.origin
@@ -701,7 +702,7 @@ TDCTournamentNav.panel('entrants', () => {
 			return;
 		}
 
-		renderEntrySettings();
+		await renderEntrySettings();
 		await loadPoster();
 
 		if (!await loadEntrants()) return;
@@ -717,6 +718,7 @@ TDCTournamentNav.panel('entrants', () => {
 			if (readOnly || !tournamentId) return;
 			(async () => {
 				await loadTournament();
+				await renderEntrySettings();
 				await loadPoster();
 				await loadEntrants();
 				await loadOfficials();

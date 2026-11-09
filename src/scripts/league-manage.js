@@ -174,10 +174,16 @@ TDCLeagueNav.panel('manage', () => {
 		els.entryModeHint.textContent = hint;
 		els.paidConfirms.checked = !!season.paid_confirms;
 		els.isListed.checked = !!season.is_listed;
-		els.shareLink.value = location.origin + '/leagues/join/?s=' + encodeURIComponent(seasonId);
 	}
 
 	els.shareLink.addEventListener('focus', () => els.shareLink.select());
+
+	async function loadShareLink() {
+		const url = await TDC.shortUrl(AREA, 'season', seasonId, els.status);
+		if (!url) return false;
+		els.shareLink.value = url;
+		return true;
+	}
 
 	function saveEntry(args) {
 		write('Saving', () => supabaseClient.rpc('tdc_update_league_season',
@@ -736,6 +742,7 @@ TDCLeagueNav.panel('manage', () => {
 	async function loadAll() {
 		const results = [];
 		results.push(await loadSeason());
+		results.push(await loadShareLink());
 		results.push(await loadTeams());
 		results.push(await loadPlayers());
 		results.push(await loadReadiness());
