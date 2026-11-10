@@ -29,7 +29,7 @@ TDCLeagueNav.panel('manage', () => {
 		search: el('player-search'), results: el('search-results'),
 		entryPanel: el('entry-panel'), entryMode: el('entry-mode'),
 		entryModeHint: el('entry-mode-hint'), paidConfirms: el('paid-confirms'),
-		isListed: el('is-listed'), shareLink: el('share-link'),
+		isListed: el('is-listed'), showsPlayers: el('shows-players'), shareLink: el('share-link'),
 		transfer: el('transfer'),
 		table: el('player-table'), rows: el('player-rows'),
 		count: el('player-count'), empty: el('player-empty'),
@@ -148,7 +148,7 @@ TDCLeagueNav.panel('manage', () => {
 	async function loadSeason() {
 		const { data, error } = await supabaseClient
 			.from('tbl_league_seasons')
-			.select('id, entry_mode, paid_confirms, is_listed')
+			.select('id, entry_mode, paid_confirms, is_listed, public_shows_players')
 			.eq('id', seasonId)
 			.maybeSingle();
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
@@ -174,6 +174,7 @@ TDCLeagueNav.panel('manage', () => {
 		els.entryModeHint.textContent = hint;
 		els.paidConfirms.checked = !!season.paid_confirms;
 		els.isListed.checked = !!season.is_listed;
+		els.showsPlayers.checked = !!season.public_shows_players;
 	}
 
 	els.shareLink.addEventListener('focus', () => els.shareLink.select());
@@ -192,6 +193,9 @@ TDCLeagueNav.panel('manage', () => {
 	els.entryMode.addEventListener('change', () => saveEntry({ p_entry_mode: els.entryMode.value }));
 	els.paidConfirms.addEventListener('change', () => saveEntry({ p_paid_confirms: els.paidConfirms.checked }));
 	els.isListed.addEventListener('change', () => saveEntry({ p_is_listed: els.isListed.checked }));
+	els.showsPlayers.addEventListener('change', () => write('Saving', () => supabaseClient.rpc('tdc_set_league_public_players', {
+		p_league_season_id: seasonId, p_show: els.showsPlayers.checked
+	})));
 
 	// ─── The three lists ───
 	// Everything is one read; these are three views of it. The checkboxes are

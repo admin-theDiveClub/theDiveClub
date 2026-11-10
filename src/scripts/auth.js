@@ -27,6 +27,8 @@
 
 	// Where to go after logging in (only pages on this site).
 	const next = TDC.safeNext('/');
+	// Back here and on to next, after Google or the link in a sign-up email.
+	const returnTo = location.origin + '/accounts/' + (next !== '/' ? '?next=' + encodeURIComponent(next) : '');
 
 	// Signed in: on to the next page, by way of /accounts/names/ while either name
 	// is missing (UV, 10 Nov). Once only, as signing in also fires the listener below.
@@ -106,7 +108,7 @@
 							first_name: firstNameInput.value.trim(),
 							last_name: lastNameInput.value.trim()
 						},
-						emailRedirectTo: location.origin + '/accounts/'
+						emailRedirectTo: returnTo
 					}
 				}), statusEl);
 
@@ -147,7 +149,6 @@
 
 	googleBtn.addEventListener('click', async () => {
 		googleBtn.disabled = true;
-		const returnTo = location.origin + '/accounts/' + (next !== '/' ? '?next=' + encodeURIComponent(next) : '');
 
 		const { error } = await supabaseClient.auth.signInWithOAuth({
 			provider: 'google',

@@ -1741,3 +1741,28 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to judge:* Google sends one full name, so the screen starts its boxes off with the first word and the rest, and nothing is saved until Save; Save needs both names, since Skip covers leaving them out; somebody who leaves the email form's names blank meets the screen after confirming their email; a signed-in player with a name missing who opens `/accounts/` meets it too.
 *So:* `docs/design/short-links.md`, "Players"; `docs/systems/foundations.md`, "Short links".
 *Touches:* migration `20261110093122_signup_names.sql`, `supabase/tests/068_signup_names.test.sql`, `accounts/index.html`, `accounts/names/index.html`, `scripts/auth.js`, `scripts/account-names.js`
+
+## 2026-11-10 — A league for signed-out visitors: Season and Standings, and Visible to public
+
+*Decided by UV:* only the Season and Standings tabs open to signed-out visitors, and everything else stays behind a login. **This replaces, from the 10 Nov entry "One page for a league", Standings asking for a sign-in.** Fixtures shows a short message with a Sign in button. "Show in the league search" becomes **Visible to public** and applies to links as well: off, a signed-out visitor is asked to sign in and is then taken to the page they wanted. The names and faces switch is off until the director turns it on. With it off, Standings shows only display names with rank, and the Season tab's teams show no players. Signed-out Standings has neither Live nor Full names: signed nights and display names only. The + stays for a signed-out visitor, going to sign-in and back to the page, where they tap it themselves. A rank is worked out from only the counts that decide it, sent to the browser and not drawn, rather than a second copy of the ranking rule in the database.
+*Claude's, following UV's "everything else behind a login":* two reads of their own (`tdc_public_league_season`, `tdc_public_league_standings`) rather than auditing and opening each existing function as the earlier entry said. Opening them would have let anyone read the fixtures, every league and names the switch must hide. They are live reads, so the departure from 21 Oct stands.
+*Claude's, for UV to judge:* team numbers staying on Team Rankings with the switch off, its teams opening onto rank and name; Who runs it always shown, as on the poster; withdrawn players left off a team and nobody marked Away; names plain text for a signed-out visitor; the switch affecting signed-out visitors only.
+*Worth knowing:* with the switch off Standings still names people, and anyone with a free account sees every name. Turned on, a player's name and face are public on the director's choice alone, and the privacy page is not written yet (B1).
+*Rejected:* the ranking rule in the database (it would live twice); the counts of every column going to a stranger.
+*So:* `docs/systems/leagues.md`, "What a stranger can read"; `docs/STATUS.md` §1 4aj.
+*Touches:* migration `20261110094557_league_public_reads.sql`, `supabase/tests/069_league_public_reads.test.sql`, `_includes/league/manage.html`, `scripts/league-season.js`, `scripts/league-standings.js`, `scripts/league-fixtures.js`, `scripts/league-nav.js`, `scripts/league-manage.js`, `scripts/auth.js`
+
+## 2026-11-10 — The Season banner: who runs it in a row, lines between the details
+
+*Decided by UV:* Who runs it in a row where possible, each person a picture beside their name over their role. Grey lines between the banner's details, vertical and horizontal.
+*Claude's, for UV to judge:* Who runs it taking a whole row, which replaces this morning's "in the row with the league's details" because one column holds only one person; the details four across on a PC, three with no venue.
+*So:* `docs/systems/leagues.md`, "The Season tab restyled"; `docs/STATUS.md` §1 4ak.
+*Touches:* `src/scripts/league-season.js`, `src/stylesheets/league-join.css`
+
+## 2026-11-10 — The Season tab: the details in one row, equal team cards, the numbers at the foot
+
+*Decided by UV:* the banner's details and Who runs it all in one row where possible; a line across only once they wrap; lines unbroken, top to bottom and side to side, between sections only and never above or below them. Every team card the same size, a name that does not fit scrolling; equal cards in rows on a PC, an opened one taking the row. No green glow on your own team's card. The numbers moved to the last section before the page footer, their look unchanged (UV first asked for them smaller and in the banner, then withdrew that).
+*Replaces:* the earlier entry today, Who runs it taking a whole row.
+*Claude's, for UV to judge:* a name running sideways and back rather than round in a loop; "…" with less motion on; a team you have asked to join keeping its glow; the widths at which the details change layout (48rem, 75rem).
+*So:* `docs/systems/leagues.md`, "The Season tab restyled"; `docs/STATUS.md` §1 4ak.
+*Touches:* `src/_includes/league/season.html`, `src/scripts/league-season.js`, `src/stylesheets/league-join.css`, `src/stylesheets/league.css`

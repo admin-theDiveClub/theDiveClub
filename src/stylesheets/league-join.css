@@ -96,11 +96,56 @@
 }
 /* Two icons, one above the other: the name's second line keeps clear too. */
 .lj-corner:has(#interest-btn:not([hidden])) + .lj-id h1::before { height: 5rem; }
-/* Who runs it is in the row with the other details (UV, 10 Nov): five across. */
-@media (min-width: 48rem) {
-	.jumbo-facts:has(> .lj-people) { grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); }
-}
+/* The details all in one row where they fit, Who runs it too (UV, 10 Nov): on
+ * a wide screen one row; narrower, the details across and Who runs it under
+ * them; on a phone two across. */
+.jumbo-facts:has(> .lj-people) { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 0; overflow-x: clip; }
+.lj-people { grid-column: 1 / -1; }
 .lj-people dd { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
+.jumbo-facts:has(> .lj-people) > .jumbo-fact:not(.lj-badges) { padding-block: var(--space-2); }
+.jumbo-facts:has(> .lj-people) > .lj-badges { padding-bottom: var(--space-2); }
+@media (max-width: 47.99rem) {
+	/* An odd one out takes its row, so no line runs down beside nothing. */
+	.jumbo-facts:has(> .lj-people) > :nth-child(even):has(+ .lj-people) { grid-column: 1 / -1; }
+}
+@media (min-width: 48rem) {
+	.jumbo-facts:has(> .lj-people) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+	.jumbo-facts:has(> .lj-people):has(> :nth-child(6)) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (min-width: 75rem) {
+	.jumbo-facts:has(> .lj-people) { grid-template-columns: repeat(3, auto) minmax(14rem, 1fr); }
+	.jumbo-facts:has(> .lj-people):has(> :nth-child(6)) { grid-template-columns: repeat(4, auto) minmax(14rem, 1fr); }
+	.lj-people { grid-column: auto; }
+}
+/* Grey lines between the details only, never above or below them (UV, 10 Nov).
+ * A line down fills its row, so it meets the lines across; a line across runs
+ * the whole width, full row or not. The ones on the outside edge are clipped
+ * off. A line across appears only where the details have wrapped. */
+.jumbo-facts:has(> .lj-people) > * { position: relative; }
+.jumbo-facts:has(> .lj-people) > *::before,
+.jumbo-facts:has(> .lj-people) > :nth-child(n+4)::after {
+	content: "";
+	position: absolute;
+	pointer-events: none;
+}
+.jumbo-facts:has(> .lj-people) > *::before {
+	top: 0;
+	bottom: 0;
+	left: calc(var(--space-5) / -2);
+	border-left: 1px solid var(--border-color);
+}
+.jumbo-facts:has(> .lj-people) > :nth-child(n+4)::after {
+	top: 0;
+	right: -100vw;
+	left: -100vw;
+	border-top: 1px solid var(--border-color);
+}
+@media (min-width: 48rem) {
+	.jumbo-facts:has(> .lj-people) > :nth-child(n+4):not(.lj-people)::after { content: none; }
+}
+@media (min-width: 75rem) {
+	.jumbo-facts:has(> .lj-people) > .lj-people::after { content: none; }
+}
 .tdc-card button.lj-icon,
 .lj-icon {
 	display: inline-flex;
@@ -257,6 +302,9 @@
 }
 .lj-num-long { font-size: 1.55rem; line-height: 1.85rem; }
 .lj-num-label { font-size: 0.8rem; color: var(--text-muted); }
+
+/* The numbers are the last thing on the Season tab (UV, 10 Nov). */
+.lj-fold + .lj-numbers { margin-top: var(--space-5); }
 
 /* ── From whoever runs it ── */
 .lj-notes-box:not([hidden]) ~ .lj-views-row { margin-top: var(--space-5); }
@@ -423,7 +471,11 @@
 
 /* A team's card, inset and folding (UV, 10 Nov): closed, its picture and name;
  * open, the places and the ring join the arrow on its line. */
+/* Every closed card the same size (UV, 10 Nov), as many to a row as fit; an
+ * opened one takes the row and pushes the others on. */
 .team-boxes.lj-teams { align-items: start; }
+.lj-teams .team-box { min-width: 0; }
+.lj-teams .team-box[open] { grid-column: 1 / -1; }
 .lj-teams .team-box.is-asked { box-shadow: inset 0 0 16px var(--nm-knob-glow), var(--nm-sunken); }
 .lj-teams .team-box > summary { flex-wrap: wrap; padding: var(--space-3) var(--nm-pad); }
 .lj-teams .team-box > summary::after { content: none; }
@@ -440,7 +492,16 @@
 	transition: transform 0.35s ease;
 }
 .lj-teams .team-box[open] .lj-team-arrow { transform: rotate(180deg); }
-.lj-teams .team-box-name { min-width: 0; font-family: var(--font-display); font-size: 1.35rem; font-weight: 400; line-height: 1.1; overflow-wrap: break-word; }
+.lj-teams .team-box-name { min-width: 0; font-family: var(--font-display); font-size: 1.35rem; font-weight: 400; line-height: 1.1; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* A name too long for its card runs sideways and back (UV, 10 Nov; fitName in
+ * league-season.js sets how far). With less motion it stops at "…". */
+.lj-run { display: inline-block; }
+.lj-teams .team-box-name.is-long { text-align: left; }
+.lj-teams .is-long > .lj-run { animation: lj-run var(--run-time) ease-in-out infinite alternate; }
+@keyframes lj-run {
+	0%, 15% { transform: translateX(0); }
+	85%, 100% { transform: translateX(var(--run)); }
+}
 /* Cream, your own team blue (UV, 10 Nov). Written with .tdc-card to outrank
  * design.css's rule that makes every team name blue. */
 .tdc-card .lj-teams .team-box-name { color: var(--text-primary); }
@@ -467,6 +528,10 @@
 .lj-officials { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); justify-content: center; }
 
 /* ── Anything that fades ── */
+[data-motion="reduce"] .lj-teams .lj-run { display: inline; animation: none; }
+@media (prefers-reduced-motion: reduce) {
+	:root:not([data-motion="full"]) .lj-teams .lj-run { display: inline; animation: none; }
+}
 [data-motion="reduce"] .lj-arrow,
 [data-motion="reduce"] .lj-team-arrow,
 [data-motion="reduce"] .tdc-card .cal button.cal-day[class*="is-"] { transition: none; }

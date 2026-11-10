@@ -2,11 +2,11 @@
 	The page for somebody who plays in a league, as opposed to running one.
 
 	At the top, the league itself (UV, 24 Oct): a banner with its picture,
-	name, status and everything about how it is played, then its numbers so
-	far. Then two tabs (UV, 5 Nov): Teams (each player with their picture
+	name, status and everything about how it is played. Then two tabs (UV, 5 Nov): Teams (each player with their picture
 	and a link to their profile) and My Season (the player's own place, and
 	for a captain who is waiting for a team). Below both the nights, then the
-	rules, folded away (UV, 10 Nov). Who runs it is in the banner.
+	rules, folded away, then the numbers so far (UV, 10 Nov). Who runs it is
+	in the banner.
 
 	A league player has to confirm their own place before the league can begin;
 	that button lives here, and the notification they get when they are added
@@ -36,15 +36,13 @@
 
 	<div class="status" id="page-status"></div>
 
-	<section class="lj-numbers" id="stats" aria-label="The league in numbers"></section>
-
 	<div class="lj-notes-box" id="notes-box" hidden>
 		<h2 class="lj-heading">From whoever runs it</h2>
 		<p class="lj-notes" id="l-notes"></p>
 	</div>
 
 	{% comment %}
-		Two tabs under the numbers (UV, 5 Nov): Teams, and Players (your own
+		Two tabs under the banner (UV, 5 Nov): Teams, and Players (your own
 		place, and for a captain the players waiting for a team). The pill is
 		shown only when Players has something in it; otherwise the teams alone.
 		Who runs it stays below both.
@@ -149,4 +147,6 @@
 		<summary><h2 class="lj-heading">Rules<span class="lj-arrow" aria-hidden="true"></span></h2></summary>
 		<div class="lj-rules" id="l-rules"></div>
 	</details>
+
+	<section class="lj-numbers" id="stats" aria-label="The league in numbers"></section>
 

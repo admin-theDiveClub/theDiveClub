@@ -377,11 +377,12 @@ TDCLeagueNav.panel('fixtures', () => {
 	// Always, not only while something is watched: a match started elsewhere
 	// is only found by reading again. Hidden, the socket is let go (3 Nov:
 	// battery) and taken up again when shown; the read covers the gap.
+	let signedOut = false;      // this tab asks them to sign in, and reads nothing (UV, 10 Nov)
 	document.addEventListener('visibilitychange', () => {
 		if (document.visibilityState !== 'visible') { stopLive(); return; }
-		if (seasonId) { watchLive(); onLive(null); }
+		if (seasonId && !signedOut) { watchLive(); onLive(null); }
 	});
-	window.addEventListener('online', () => { if (seasonId) onLive(null); });
+	window.addEventListener('online', () => { if (seasonId && !signedOut) onLive(null); });
 
 	// Every night something is played, YYYY-MM-DD → its fixtures in the
 	// server's order.
@@ -1343,8 +1344,18 @@ TDCLeagueNav.panel('fixtures', () => {
 
 	// ─── Start ───
 	TDCLoader.hold((async () => {
-		const session = await TDC.requireSession(AREA);
-		if (!session) return;
+		// Signed out: the message in the tab, and the Season and Standings tabs
+		// still there beside it (UV, 10 Nov).
+		const session = await TDC.getSession(AREA);
+		if (!session) {
+			signedOut = true;
+			const ask = node('div', 'empty');
+			const signIn = node('a', 'btn btn-primary', 'Sign in');
+			signIn.href = '/accounts/?next=' + encodeURIComponent(location.pathname + location.search);
+			ask.append(node('p', null, 'Sign in to see the fixtures.'), signIn);
+			document.querySelector('.league-panel[data-tab="fixtures"]').replaceChildren(ask);
+			return;
+		}
 
 		if (!seasonId) {
 			TDC.error(AREA, 'no league season in the address. Open this page from the leagues list.', null, els.status);
@@ -1368,5 +1379,5 @@ TDCLeagueNav.panel('fixtures', () => {
 
 	// Shown again as a tab (league-nav.js): read again in place, as a live
 	// change would be (waiting while the director's hands are on something).
-	return { refresh: () => onLive(null) };
+	return { refresh: () => { if (!signedOut) onLive(null); } };
 });

@@ -65,6 +65,13 @@ TDCLeagueNav.panel('standings', () => {
 	try { fullNames = localStorage.getItem(NAMES_KEY) === 'full'; } catch (err) { /* private window: display names */ }
 	els.fullNames.checked = fullNames;
 	const nameOf = (p) => (fullNames && p.full_name) || p.display_name;
+	// Somebody not signed in (UV, 10 Nov): tdc_public_league_standings instead,
+	// signed nights and display names only. With the league's names and faces
+	// switch off, Individual Rankings is rank and display name: the counts
+	// that decide the rank come with the read and are not drawn.
+	let signedOut = false;
+	let showsPlayers = true;
+	const faces = () => !signedOut || showsPlayers;
 	// The signed-in person's own rows glow yellow (UV, 29 Oct): their player
 	// row wherever it is, and their team's row in Team Rankings.
 	let myPlayerId = null;
@@ -105,13 +112,15 @@ TDCLeagueNav.panel('standings', () => {
 	// The head of a standings table: #, a picture, the name, the columns.
 	// lead goes before them all: the team table's + / –, first so it is
 	// never scrolled out of sight on a phone.
-	function head(nameLabel, cols, lead) {
+	function head(nameLabel, cols, lead, noPicture) {
 		const thead = node('thead');
 		const tr = node('tr');
 		const pic = node('th', 'sd-pic');
 		pic.setAttribute('aria-label', 'Picture');
 		if (lead) tr.append(lead);
-		tr.append(node('th', 'num sd-rank', '#'), pic, node('th', 'sd-name', nameLabel));
+		tr.append(node('th', 'num sd-rank', '#'));
+		if (!noPicture) tr.append(pic);
+		tr.append(node('th', 'sd-name', nameLabel));
 		for (const c of cols) tr.append(node('th', 'num', c.name));
 		thead.append(tr);
 		return thead;
@@ -131,12 +140,12 @@ TDCLeagueNav.panel('standings', () => {
 	// rows: players already ranked (leagueRanked, or a team's share of it).
 	// key keeps each table's fading numbers apart (data-live is per page).
 	function playerTable(rows, key) {
-		const cols = colsFor('player');
+		const cols = faces() ? colsFor('player') : [];
 		if (!rows.length) return node('div', 'empty', 'Nobody to show yet.');
 
 		const table = node('table', 'tdc-table sd-table');
 		table.dataset.key = key;
-		table.append(head('Player', cols));
+		table.append(head('Player', cols, undefined, !faces()));
 		const body = node('tbody');
 		rows.forEach((r, i) => {
 			const tr = node('tr', i % 2 ? 'sd-alt' : null);
@@ -145,12 +154,17 @@ TDCLeagueNav.panel('standings', () => {
 			const rank = node('td', 'num sd-rank', rankText(r));
 			rank.dataset.live = key + ':' + r.player_id + ':rank';
 			const pic = node('td', 'sd-pic');
-			pic.append(TDC.profilePic(avatar(r.avatar_path, r.name), r.player_id));   // opens their profile (UV, 5 Nov)
+			pic.append(TDC.profilePic(avatar(r.avatar_path, r.name), signedOut ? null : r.player_id));   // opens their profile (UV, 5 Nov)
 			const name = node('td', 'sd-name');
-			const a = node('a', null, r.name);
-			a.href = '/players/?p=' + encodeURIComponent(r.player_id);
-			name.append(a);
-			tr.append(rank, pic, name);
+			if (signedOut) name.textContent = r.name;
+			else {
+				const a = node('a', null, r.name);
+				a.href = '/players/?p=' + encodeURIComponent(r.player_id);
+				name.append(a);
+			}
+			tr.append(rank);
+			if (faces()) tr.append(pic);
+			tr.append(name);
 			for (const c of cols) {
 				const td = node('td', 'num', S.shown(r.values[c.id], c.decimals));
 				td.dataset.live = key + ':' + r.player_id + ':' + c.id;
@@ -416,6 +430,7 @@ TDCLeagueNav.panel('standings', () => {
 	}
 
 	async function load(first) {
+		if (signedOut) return loadPublic(first);
 		const [inf, st, cols] = await Promise.all([
 			supabaseClient.rpc('tdc_league_season_info', { p_league_season_id: seasonId }),
 			// p_live only when on: off is the call 20261029162031 made, so the
@@ -446,6 +461,21 @@ TDCLeagueNav.panel('standings', () => {
 		TDC.venueHeading(els.venues, '', info.venues);
 		render(first);
 		if (live) watchLive(data.watch_match_ids || []); else stopLive();
+		return true;
+	}
+
+	// Not Visible to public, or no such season: it answers nothing, and the
+	// visitor signs in and comes back here. A row's key is not a player's id.
+	async function loadPublic(first) {
+		const { data: got, error } = await supabaseClient.rpc('tdc_public_league_standings', { p_league_season_id: seasonId });
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
+		if (!got) { await TDC.requireSession(AREA); return false; }
+		showsPlayers = got.shows_players;
+		data = Object.assign({}, got, { players: got.players.map((p) => Object.assign({ player_id: 'row' + p.key }, p)) });
+		columns = got.columns;
+		els.title.textContent = got.league_name + ' — Standings';
+		TDC.venueHeading(els.venues, '', got.venues);
+		render(first);
 		return true;
 	}
 
@@ -529,15 +559,24 @@ TDCLeagueNav.panel('standings', () => {
 	// ─── Start ───
 	showView(view, false);
 	TDCLoader.hold((async () => {
-		const session = await TDC.requireSession(AREA);
-		if (!session) return;
+		// getSession, not requireSession: somebody signed out may read this tab
+		// when the league is Visible to public (UV, 10 Nov).
+		const session = await TDC.getSession(AREA);
 		if (!seasonId) {
 			TDC.error(AREA, 'no league season in the address. Open this page from the league.', null, els.status);
 			return;
 		}
-		// For the yellow rows. A failure says so and the tables still draw.
-		const me = await TDC.getMyPlayer(AREA, session.user.id, els.status);
-		myPlayerId = me ? me.id : null;
+		if (session) {
+			// For the yellow rows. A failure says so and the tables still draw.
+			const me = await TDC.getMyPlayer(AREA, session.user.id, els.status);
+			myPlayerId = me ? me.id : null;
+		} else {
+			// Whatever this device last chose when signed in.
+			signedOut = true;
+			live = false;
+			fullNames = false;
+			els.live.closest('.sd-switches').hidden = true;
+		}
 		await load(true);
 	})(), 'Standings');
 

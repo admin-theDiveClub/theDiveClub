@@ -41,15 +41,21 @@
 		</div>
 
 		<div class="field">
-			<label for="is-listed">Show in the league search</label>
+			<label for="is-listed">Visible to public</label>
 			<input type="checkbox" id="is-listed">
-			<div class="hint">Off keeps it private. The link below still works either way, so you can share it with the people you want.</div>
+			<div class="hint">On, anyone with the link can open the Season and Standings tabs without signing in, and it shows in the league search. Off, it stays out of the search and people sign in first.</div>
+		</div>
+
+		<div class="field">
+			<label for="shows-players">Show players' names and faces</label>
+			<input type="checkbox" id="shows-players">
+			<div class="hint">For people not signed in, while Visible to public is on. Off, teams show no players and Standings shows only display names and rank.</div>
 		</div>
 
 		<div class="field">
 			<label for="share-link">The link to share</label>
 			<input type="text" id="share-link" class="share-link" readonly>
-			<div class="hint">Anyone signed in can open this and put their name down.</div>
+			<div class="hint">Anyone can open this while the league is Visible to public. Otherwise they sign in first.</div>
 		</div>
 	</div>
 

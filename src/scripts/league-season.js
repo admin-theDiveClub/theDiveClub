@@ -81,6 +81,8 @@ TDCLeagueNav.panel('season', () => {
 	let seasonRow = null;       // status, reserves, entries: the season's own row
 	let readiness = null;       // only for the people running it and its captains
 	let seasonSoFar = null;     // { data: tdc_league_standings, columns: the season's own }
+	let signedOut = false;      // not signed in: one read fills all of the above (loadPublic)
+	let showsPlayers = true;    // the league's names and faces switch, for somebody signed out
 	// A team named in the address (&team=, from the fixtures page) is opened
 	// and brought into view once, on the first draw.
 	let focusTeam = new URLSearchParams(location.search).get('team');
@@ -125,10 +127,11 @@ TDCLeagueNav.panel('season', () => {
 	}
 
 	// A person: picture, name and what they are, as one link to their profile
-	// (still to be built: /players/ says so). Glows like a row.
+	// (still to be built: /players/ says so). Glows like a row. A signed-out
+	// visitor is given no ids: the same row, not a link (UV, 10 Nov).
 	function personLink(playerId, name, path, sub) {
-		const a = node('a', 'person');
-		a.href = '/players/?p=' + encodeURIComponent(playerId);
+		const a = node(playerId ? 'a' : 'span', 'person');
+		if (playerId) a.href = '/players/?p=' + encodeURIComponent(playerId);
 		const names = node('span', 'person-names');
 		names.append(node('span', 'person-name', name));
 		if (sub) names.append(node('span', 'person-sub', sub));
@@ -173,6 +176,37 @@ TDCLeagueNav.panel('season', () => {
 		els.meta.textContent = info.name;
 		els.jumboPic.replaceChildren(TDC.leaguePic(null));
 
+		return true;
+	}
+
+	// ─── Somebody not signed in ───
+	// tdc_public_league_season carries what this tab draws (UV, 10 Nov), put
+	// into the same state the reads below fill, so every drawing function is
+	// the one a member gets. It answers nothing for a league not Visible to
+	// public or no such season: the visitor signs in and comes back here.
+	async function loadPublic() {
+		const { data, error } = await supabaseClient.rpc('tdc_public_league_season', {
+			p_league_season_id: seasonId
+		});
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
+		if (!data) { await TDC.requireSession(AREA); return false; }
+
+		info = data;
+		els.name.textContent = info.league_name;
+		els.meta.textContent = info.name;
+		seasonRow = {
+			status: data.status, max_reserves: data.max_reserves, entry_mode: data.entry_mode,
+			tbl_leagues: { picture_path: data.picture_path }
+		};
+		joinInfo = { entry_mode: data.entry_mode, players: data.players, interested: data.interested };
+		// One count of a night's frames: nobody's score, as the tab only adds them up.
+		fixtures = data.fixtures.map((f) => Object.assign({ home_frames: f.frames, away_frames: 0 }, f));
+		teams = data.teams;
+		rosters = new Map(teams.map((t) => [t.team_id, (t.roster || []).map((r) => Object.assign({ status: 'active' }, r))]));
+		teamPictures = new Map(teams.map((t) => [t.team_id, t.picture_path]));
+		officials = data.officials;
+		showsPlayers = data.shows_players;
+		renderTeams();
 		return true;
 	}
 
@@ -492,10 +526,10 @@ TDCLeagueNav.panel('season', () => {
 		const venues = TDC.venueFact(info.venues);
 		if (venues) els.jumboFacts.append(venues);
 
-		// Who runs it, their pictures and names (UV, 10 Nov).
+		// Who runs it: each one's picture, with their name over their role (UV, 10 Nov).
 		const people = node('div', 'jumbo-fact lj-people');
 		const list = node('dd');
-		if (officials.length) list.append(...officials.map((o) => personLink(o.player_id, o.display_name, o.avatar_path)));
+		if (officials.length) list.append(...officials.map((o) => personLink(o.player_id, o.display_name, o.avatar_path, o.role_name)));
 		else list.textContent = 'Nobody is listed.';
 		people.append(node('dt', null, 'Who runs it'), list);
 		els.jumboFacts.append(people);
@@ -571,6 +605,8 @@ TDCLeagueNav.panel('season', () => {
 	}
 
 	els.interestBtn.addEventListener('click', () => {
+		// Signed out: to sign-in and back here, where they tap it themselves (UV, 10 Nov).
+		if (signedOut) { TDC.requireSession(AREA); return; }
 		write('Putting your name down', () => supabaseClient.rpc('tdc_league_show_interest', {
 			p_league_season_id: seasonId
 		}), (data) => data === 'active' ? 'You are in.' : 'Your name is down.', { single: true, dots: els.interestBtn, leaves: true });
@@ -1084,6 +1120,19 @@ TDCLeagueNav.panel('season', () => {
 		return row;
 	}
 
+	// A team's name stays on one line so every card is the same size; one too
+	// long runs sideways and back (UV, 10 Nov). Measured whenever its room
+	// changes, which covers a tab first shown and a card opened or closed.
+	function fitName(name) {
+		if (!name.clientWidth) return;
+		const over = name.firstChild.offsetWidth - name.clientWidth;
+		name.classList.toggle('is-long', over > 1);
+		name.style.setProperty('--run', -Math.max(over, 0) + 'px');
+		name.style.setProperty('--run-time', (3 + Math.max(over, 0) / 25).toFixed(1) + 's');
+	}
+	const nameRoom = new ResizeObserver((seen) => seen.forEach((e) => fitName(e.target)));
+	document.fonts.ready.then(() => els.teamList.querySelectorAll('.team-box-name').forEach(fitName));   // the display face changes the widths
+
 	function teamCard(t) {
 		const box = document.createElement('details');
 		box.className = 'team-box';
@@ -1100,7 +1149,10 @@ TDCLeagueNav.panel('season', () => {
 		const top = node('span', 'lj-team-head');
 		const pic = node('span', 'team-pic');
 		pic.append(TDC.teamPic(teamPictures.get(t.team_id)));
-		top.append(pic, node('span', 'team-box-name', t.name));
+		const name = node('span', 'team-box-name');
+		name.append(node('span', 'lj-run', t.name));
+		nameRoom.observe(name);
+		top.append(pic, name);
 		const line = node('span', 'lj-team-line');
 		const places = node('span', 'lj-team-places');
 		places.append(node('span', 'lj-team-places-n', String(t.active_players || 0)),
@@ -1151,7 +1203,13 @@ TDCLeagueNav.panel('season', () => {
 			box.append(picField);
 		}
 
-		if (!roster.length) box.append(node('p', 'muted', 'Nobody is on this team yet.'));
+		if (signedOut && !showsPlayers) {
+			const ask = node('p', 'muted');
+			const signIn = node('a', null, 'Sign in');
+			signIn.href = '/accounts/?next=' + encodeURIComponent(location.pathname + location.search);
+			ask.append(signIn, ' to see the players.');
+			box.append(ask);
+		} else if (!roster.length) box.append(node('p', 'muted', 'Nobody is on this team yet.'));
 		else box.append(...roster.map((r) => rosterRow(t, r)));
 
 		box.addEventListener('toggle', () => {
@@ -1171,6 +1229,7 @@ TDCLeagueNav.panel('season', () => {
 		els.teamsHint.textContent = asked.size
 			? 'The captain of a team you asked decides. Open it and tap its ring to take it back.'
 			: 'You are on no team yet. Open a team and tap its ring to ask to join it; its captain decides.';
+		nameRoom.disconnect();
 		els.teamList.replaceChildren(...teams.map(teamCard));
 
 		// The team named in the address, once: into view, open.
@@ -1357,17 +1416,23 @@ TDCLeagueNav.panel('season', () => {
 	// address is opened on the tab it is on.
 	async function loadAll() {
 		const results = [];
-		results.push(await loadMine());
-		results.push(await loadJoinInfo());
-		results.push(await loadSeasonRow());
-		results.push(await loadFixtures());
-		results.push(await loadTeams());
+		if (signedOut) {
+			if (!await loadPublic()) return false;
+		} else {
+			results.push(await loadMine());
+			results.push(await loadJoinInfo());
+			results.push(await loadSeasonRow());
+			results.push(await loadFixtures());
+			results.push(await loadTeams());
+		}
 		renderMine();
 		results.push(await loadPool());
 		results.push(await loadRequests());
 		renderViews();
-		results.push(await loadReadiness());
-		results.push(await loadOfficials());
+		if (!signedOut) {
+			results.push(await loadReadiness());
+			results.push(await loadOfficials());
+		}
 		results.push(await loadMyNext());
 		results.push(await loadMySeason());
 		renderBanner();
@@ -1388,24 +1453,35 @@ TDCLeagueNav.panel('season', () => {
 
 	// ─── Start ───
 	TDCLoader.hold((async () => {
-		const session = await TDC.requireSession(AREA);
-		if (!session) return;
+		// getSession, not requireSession: somebody signed out may read this tab
+		// when the league is Visible to public (UV, 10 Nov).
+		const session = await TDC.getSession(AREA);
+		signedOut = !session;
 
 		if (!seasonId) {
 			TDC.error(AREA, 'no league season in the address. Open this page from the leagues list.', null, els.status);
 			return;
 		}
 
+		const startShare = () => {
+			wakeIcon(els.share);
+			TDC.shareButton(els.share, 'season', seasonId, {
+				area: AREA, status: els.status, title: () => els.name.textContent
+			});
+		};
+
+		if (signedOut) {
+			await loadAll();
+			if (info) startShare();
+			return;
+		}
 
 		const me = await TDC.getMyPlayer(AREA, session.user.id, els.status);
 		if (!me) return;
 		myPlayerId = me.id;
 
 		if (!await loadInfo()) return;
-		wakeIcon(els.share);
-		TDC.shareButton(els.share, 'season', seasonId, {
-			area: AREA, status: els.status, title: () => els.name.textContent
-		});
+		startShare();
 		await loadAll();
 	})(), 'League season');
 

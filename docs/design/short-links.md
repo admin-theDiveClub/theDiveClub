@@ -36,7 +36,7 @@ A short link is a shortcut to an existing page: `https://thediveclub.org/<code>`
 | Code | Signed out | Signed in, not part of it | Signed in and part of it |
 |---|---|---|---|
 | Tournament | Poster | Poster | Draw |
-| League, newest season | Sign in, then the season page | Season page | Season page |
+| League, newest season | Season page if Visible to public, otherwise sign in, then the season page | Season page | Season page |
 | League or tournament match, social match | Sign in, then the match | The match | The match |
 | Player | Sign in, then the profile | The profile | The profile |
 

@@ -146,10 +146,15 @@ const TDCLeagueNav = (() => {
 		if (!nav) return;
 		if (!seasonId) { nav.hidden = true; return; }
 
-		const { data, error } = await supabaseClient.rpc('tdc_league_season_info', { p_league_season_id: seasonId });
-		if (error) { TDC.showSupabaseError(AREA, error, document.getElementById('page-status')); return; }
-		const info = (data || [])[0];
-		if (!info) { nav.hidden = true; return; }   // the page itself says the season is not there
+		// Signed out (UV, 10 Nov): the three tabs anybody is shown, and nothing
+		// read; each tab says for itself whether that visitor may see it.
+		let info = { i_run_it: false };
+		if (await TDC.getSession(AREA)) {
+			const { data, error } = await supabaseClient.rpc('tdc_league_season_info', { p_league_season_id: seasonId });
+			if (error) { TDC.showSupabaseError(AREA, error, document.getElementById('page-status')); return; }
+			info = (data || [])[0];
+			if (!info) { nav.hidden = true; return; }   // the page itself says the season is not there
+		}
 
 		const s = encodeURIComponent(seasonId);
 		const tabs = tabbed();
