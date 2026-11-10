@@ -751,7 +751,8 @@ html.bracket-full { overflow: hidden; }
 	background: none;
 	color: var(--text-primary);
 }
-.tdc-card .bracket-toggle button.cp-view:is([aria-pressed="true"], :focus-visible, :active)::after { opacity: 1; }
+.tdc-card .bracket-toggle button.cp-view:is(:focus-visible, :active)::after,
+.tdc-card .bracket-toggle:not(:has(> .tdc-tab-thumb)) button.cp-view[aria-pressed="true"]::after { opacity: 1; }
 .bracket-toggle .cp-view svg { width: 1.35rem; height: 1.35rem; }
 
 /* -- A round's own rules ------------------------------------------

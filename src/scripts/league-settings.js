@@ -45,6 +45,8 @@ TDCLeagueNav.panel('settings', () => {
 		title: el('l-title'), meta: el('st-meta'), name: el('st-name'),
 		picPreview: el('pic-preview'), picChoose: el('pic-choose'), picRemove: el('pic-remove'),
 		picFile: el('pic-file'), picStatus: el('pic-status'),
+		docState: el('doc-state'), docChoose: el('doc-choose'), docRemove: el('doc-remove'),
+		docFile: el('doc-file'), docStatus: el('doc-status'), docRulesField: el('doc-rules-field'), docShowRules: el('doc-show-rules'),
 		seasonName: el('s-name'), seasonStatus: el('s-status'),
 		start: el('s-start'), end: el('s-end'), venues: el('st-venues'), reserves: el('s-reserves'),
 		sizeRow: el('size-row'), reservesField: el('reserves-field'),
@@ -259,6 +261,104 @@ TDCLeagueNav.panel('settings', () => {
 		}
 	})(), els.picStatus));
 
+	// ─── The league's document ───
+	// One PDF (UV, 10 Nov), saved as soon as it is chosen: put in the league's
+	// folder under a random name, named on the league through
+	// tdc_set_league_document, which hands back the old one to delete. The
+	// storage server and that function are what refuse a bad file; the checks
+	// here are so that somebody who picked the wrong file is told why.
+	const DOC_BUCKET = 'league-documents';
+	const DOC_MAX_BYTES = 5 * 1024 * 1024;
+	let documentPath = null;
+
+	function showDocument(showRules) {
+		els.docState.textContent = documentPath ? 'A document is uploaded.' : 'No document yet.';
+		els.docChoose.textContent = documentPath ? 'Replace the PDF' : 'Upload a PDF';
+		els.docRemove.hidden = !documentPath;
+		els.docRulesField.hidden = !documentPath;
+		els.docShowRules.checked = showRules;
+	}
+
+	async function isPdf(file) {
+		const head = new Uint8Array(await file.slice(0, 5).arrayBuffer());
+		return String.fromCharCode(...head) === '%PDF-';
+	}
+
+	// Anything in the folder that is not the current document: left by an
+	// upload that failed half way, and it would use up the folder's one spare place.
+	async function clearLeftovers() {
+		const { data, error } = await supabaseClient.storage.from(DOC_BUCKET).list(leagueId);
+		if (error) throw error;
+		const extra = (data || []).map((f) => leagueId + '/' + f.name).filter((p) => p !== documentPath);
+		if (extra.length) {
+			const { error: delErr } = await supabaseClient.storage.from(DOC_BUCKET).remove(extra);
+			if (delErr) throw delErr;
+		}
+	}
+
+	els.docChoose.addEventListener('click', () => els.docFile.click());
+
+	els.docFile.addEventListener('change', () => {
+		const file = els.docFile.files[0];
+		els.docFile.value = '';
+		if (!file || !leagueId) return;
+		TDC.busy(els.docChoose, (async () => {
+			TDC.status(els.docStatus, '', '');
+			if (file.size > DOC_MAX_BYTES) { TDC.status(els.docStatus, 'That file is over 5 MB.', 'error'); return; }
+			if (!await isPdf(file)) { TDC.status(els.docStatus, 'That file is not a PDF.', 'error'); return; }
+			try {
+				await clearLeftovers();
+				const path = leagueId + '/' + crypto.randomUUID() + '.pdf';
+				const up = await supabaseClient.storage.from(DOC_BUCKET).upload(path, file, { contentType: 'application/pdf', upsert: false });
+				if (up.error) { TDC.showSupabaseError(AREA, up.error, els.docStatus); return; }
+
+				const { data: old, error } = await supabaseClient.rpc('tdc_set_league_document', { p_league_id: leagueId, p_path: path });
+				if (error) {
+					await supabaseClient.storage.from(DOC_BUCKET).remove([path]);
+					TDC.showSupabaseError(AREA, error, els.docStatus);
+					return;
+				}
+				documentPath = path;
+				showDocument(els.docShowRules.checked);
+				if (old) {
+					const { error: delErr } = await supabaseClient.storage.from(DOC_BUCKET).remove([old]);
+					if (delErr) console.error('[' + AREA + '] could not delete the old document', delErr);
+				}
+				TDC.status(els.docStatus, 'Document saved.', 'success');
+			} catch (err) {
+				TDC.error(AREA, 'unexpected problem saving the document.', err, els.docStatus);
+			}
+		})(), els.docStatus);
+	});
+
+	els.docRemove.addEventListener('click', () => TDC.busy(els.docRemove, (async () => {
+		if (!documentPath || !leagueId) return;
+		if (!confirm('Remove the league document?\n\nPlayers can no longer open it, and the generated rules show again.')) return;
+		TDC.status(els.docStatus, '', '');
+		try {
+			const { data: old, error } = await supabaseClient.rpc('tdc_set_league_document', { p_league_id: leagueId, p_path: null });
+			if (error) { TDC.showSupabaseError(AREA, error, els.docStatus); return; }
+			documentPath = null;
+			showDocument(true);
+			if (old) {
+				const { error: delErr } = await supabaseClient.storage.from(DOC_BUCKET).remove([old]);
+				if (delErr) console.error('[' + AREA + '] could not delete the document file', delErr);
+			}
+			TDC.status(els.docStatus, 'Document removed.', 'success');
+		} catch (err) {
+			TDC.error(AREA, 'unexpected problem removing the document.', err, els.docStatus);
+		}
+	})(), els.docStatus));
+
+	els.docShowRules.addEventListener('change', () => TDC.busy(els.docShowRules, (async () => {
+		const wanted = els.docShowRules.checked;
+		const { error } = await supabaseClient.rpc('tdc_set_league_show_rules', { p_league_id: leagueId, p_show: wanted });
+		if (error) {
+			els.docShowRules.checked = !wanted;
+			TDC.showSupabaseError(AREA, error, els.docStatus);
+		}
+	})(), els.docStatus));
+
 	// ─── Reading ───
 	async function load() {
 		const info = await supabaseClient.rpc('tdc_league_season_info', { p_league_season_id: seasonId });
@@ -303,7 +403,7 @@ TDCLeagueNav.panel('settings', () => {
 			: '';
 
 		const league = await supabaseClient
-			.from('tbl_leagues').select('name, rules, picture_path').eq('id', leagueId).maybeSingle();
+			.from('tbl_leagues').select('name, rules, picture_path, document_path, show_generated_rules').eq('id', leagueId).maybeSingle();
 		if (league.error) { TDC.showSupabaseError(AREA, league.error, els.status); return false; }
 		if (!league.data) {
 			TDC.error(AREA, 'the league for this season could not be read.', { leagueId }, els.status);
@@ -314,6 +414,8 @@ TDCLeagueNav.panel('settings', () => {
 		els.name.value = league.data.name;
 		picturePath = league.data.picture_path;
 		showPicture();
+		documentPath = league.data.document_path;
+		showDocument(league.data.show_generated_rules);
 		rules = upgrade(league.data.rules);
 		D.tidyRules(rules);
 		renderSettings();

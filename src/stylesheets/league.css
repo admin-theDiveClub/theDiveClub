@@ -1594,7 +1594,8 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	pointer-events: none;
 	transition: opacity 0.2s ease;
 }
-.tdc-card button.cp-view[aria-pressed="true"]::after { opacity: 1; }
+/* A pill of buttons that act has no thumb (tdc-controls.js), so its pressed one glows. */
+.tdc-card .cp-views:not(:has(> .tdc-tab-thumb)) button.cp-view[aria-pressed="true"]::after { opacity: 1; }
 .tdc-card button.cp-view:not([aria-pressed="true"]):hover { background: var(--hover-wash); }
 .tdc-card button.cp-view:focus-visible { outline: 2px solid var(--nm-light-colour); outline-offset: -2px; }
 .cp-view svg {
@@ -1969,9 +1970,9 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	overflow: auto;
 	box-shadow: none;
 }
-.tdc-card .league-panel > div > .table-scroll.sd-scroll { margin-left: calc(-1 * var(--space-5)); margin-right: calc(-1 * var(--space-5)); }
+.tdc-card .league-panel > div > .table-scroll.sd-scroll { margin-left: 0; margin-right: 0; }
 @media (max-width: 24rem) {
-	.tdc-card .league-panel > div > .table-scroll.sd-scroll { margin-left: calc(-1 * var(--space-3)); margin-right: calc(-1 * var(--space-3)); }
+	.tdc-card .league-panel > div > .table-scroll.sd-scroll { margin-left: 0; margin-right: 0; }
 }
 .sd-table > thead > tr > th {
 	position: sticky;
@@ -2152,3 +2153,128 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 .tdc-card .lr-contact h2 { margin: 0; font-size: 1.35rem; }
 .tdc-card .lr-contact p { margin: var(--space-1) 0 var(--space-3); }
 .lr-people { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2) var(--space-4); text-align: left; }
+
+/* ── The fixtures page for a player (UV, 10 Nov), in the Season tab's look. The
+ * director's Schedule tab has none of this. ── */
+.fx-filters {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--space-2);
+	margin-bottom: var(--space-4);
+}
+.fx-filters .field.drop-joined { margin: 0; }
+.field.drop-joined.fx-date {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+	box-sizing: border-box;
+	height: var(--nm-field);
+	padding: 0 var(--space-2) 0 var(--space-3);
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-sunken-small);
+}
+.field.drop-joined.fx-date > label {
+	position: static;
+	width: auto;
+	height: auto;
+	margin: 0;
+	overflow: visible;
+	clip-path: none;
+	color: var(--text-muted);
+	font-size: 0.8rem;
+	font-weight: 400;
+}
+.tdc-card .fx-date input[type="date"] {
+	width: auto;
+	height: auto;
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: none;
+	box-shadow: none;
+	color: var(--text-primary);
+	font: inherit;
+	font-size: 0.8rem;
+}
+:root:not([data-theme="light"]) .fx-date input[type="date"] { color-scheme: dark; }
+
+.fx-player .fx-card {
+	box-sizing: border-box;
+	width: fit-content;
+	max-width: 100%;
+	margin: 0 auto var(--space-5);
+	padding: var(--space-2) var(--space-4);
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-sunken);
+}
+.fx-player .fx-card:has(> table[hidden]) { display: none; }
+.fx-player .fx-card .fx-table { margin: 0; }
+/* Below this the page is the Season tab's: the display face, cream, your team blue. */
+.fx-player #planner,
+.fx-player #all-group { container-type: inline-size; }
+.fx-player #planner > summary,
+.fx-player #all-group > summary { display: none; }
+.fx-player .fx-table td.fx-side { width: auto; }
+.fx-player .fx-table td.fx-mid,
+.fx-player .fx-mid-line { white-space: nowrap; }
+/* A score never goes onto a second row (UV, 10 Nov). */
+.fx-player .fx-mid-line,
+.fx-player .fx-actions { flex-wrap: nowrap; }
+.fx-player .fx-mid-busy > * { order: 0; flex-basis: auto; }
+.fx-player .fx-v-busy { display: none; }
+.fx-player .fx-score + .fx-v { font-size: 1.35rem; }
+.fx-player .fx-score { font-family: var(--font-display); font-size: 1.35rem; font-weight: 400; line-height: 1.32; color: var(--color-primary); }
+.fx-player .team-pic { width: 2rem; height: 2rem; }
+/* The pictures sit inside the names, against the middle (UV, 10 Nov). */
+.fx-player .fx-home .fx-team { flex-direction: row-reverse; justify-content: flex-start; }
+.fx-player .fx-away .fx-team { flex-direction: row; justify-content: flex-start; }
+.fx-player .fx-names { min-width: 0; }
+.fx-player .fx-home .fx-names { align-items: flex-end; }
+.fx-player .fx-away .fx-names { align-items: flex-start; }
+.tdc-card .fx-player .fx-name {
+	display: block;
+	max-width: min(14rem, calc(50cqw - 9rem));
+	overflow: hidden;
+	color: var(--text-primary);
+	font-family: var(--font-display);
+	font-size: 1.05rem;
+	font-weight: 400;
+	line-height: 1.32;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+.tdc-card .fx-player .fx-name.is-mine { color: var(--color-team); }
+.fx-player .fx-home .fx-name { text-align: right; }
+.fx-player .fx-away .fx-name { text-align: left; }
+.fx-player .fx-name.is-long { text-align: left; }
+.fx-player .is-long > .lj-run { animation: lj-run var(--run-time) ease-in-out infinite alternate; }
+[data-motion="reduce"] .fx-player .lj-run { display: inline; animation: none; }
+@media (prefers-reduced-motion: reduce) {
+	:root:not([data-motion="full"]) .fx-player .lj-run { display: inline; animation: none; }
+}
+.fx-player .fx-table td.fx-state-locked { width: 0.75rem; padding-right: var(--space-1); }
+.fx-player .fx-table td.fx-state-locked::before { content: none; }
+.fx-state-locked svg {
+	display: block;
+	width: 0.75rem;
+	height: 0.75rem;
+	fill: none;
+	stroke: var(--text-muted);
+	stroke-width: var(--icon-line);
+}
+.fx-state-locked svg path { vector-effect: non-scaling-stroke; }
+.fx-player .fx-mid-sub { font-size: 0.75rem; }
+/* Too narrow for a picture beside a name: above it (UV, 10 Nov). */
+@container (max-width: 34rem) {
+	.fx-player .fx-card { padding: var(--space-1) var(--space-2); }
+	.fx-player .fx-home .fx-team { flex-direction: column; align-items: flex-end; }
+	.fx-player .fx-away .fx-team { flex-direction: column; align-items: flex-start; }
+	.tdc-card .fx-player .fx-name { max-width: calc(50cqw - 5rem); font-size: 0.95rem; }
+	.fx-player .team-pic { width: 1.75rem; height: 1.75rem; }
+	.fx-player .fx-table td.fx-mid { padding-inline: var(--space-1); }
+}
+
+/* The director's list scrolls inside the card too. */
+#all-view { max-width: 100%; overflow-x: auto; }

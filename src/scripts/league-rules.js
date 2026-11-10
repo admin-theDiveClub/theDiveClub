@@ -13,8 +13,13 @@
 // so describing them here would promise something a league night does not do.
 // They stay on Settings (UV, 10 Nov).
 //
+// A league may also have a document (UV, 10 Nov): a PDF, opened from a link and
+// never shown in the page, through a short-lived link made on the tap, for somebody
+// signed in. It can hide the generated rules; the link and the director remain.
+//
 // Open to signed-out visitors as the Season tab is, from the same public read;
-// that read gives no player ids, so the league director is then not a link.
+// that read gives no player ids, so the league director is then not a link, and
+// the document asks them to sign in.
 //
 // Needs: tdc.js, match-settings.js, rules-doc.js, league-nav.js.
 
@@ -26,13 +31,16 @@ TDCLeagueNav.panel('rules', () => {
 	const el = (id) => document.getElementById(id);
 	const els = {
 		status: el('ru-status'), doc: el('ru-doc'), league: el('ru-league'),
-		intro: el('ru-intro'), body: el('ru-body'), people: el('ru-people')
+		intro: el('ru-intro'), body: el('ru-body'), people: el('ru-people'), document: el('ru-document')
 	};
 
 	let signedOut = false;
 	let info = null;
 	let reserves = 0;
 	let officials = [];
+	let documentPath = null;
+	let hasDocument = false;
+	let showRules = true;
 
 	// ─── What each setting means on a league night ───
 	const PLAYED_OUT = 'The card is still played to the end, because every frame counts in the standings.';
@@ -93,10 +101,53 @@ TDCLeagueNav.panel('rules', () => {
 		['The standings', 'Standings are counted from matches both captains have signed. The Live switch on the Standings tab also shows matches still being played, and those are not final.']
 	];
 
+	// ─── The league's own document ───
+	function renderDocument() {
+		els.document.hidden = !hasDocument;
+		if (!hasDocument) return;
+		const link = document.createElement('a');
+		link.className = 'lr-document-link';
+		if (signedOut) {
+			link.href = '/accounts/?next=' + encodeURIComponent(location.pathname + location.search);
+			link.textContent = 'Sign in to read the league document';
+			els.document.replaceChildren(link);
+			return;
+		}
+		link.href = '#';
+		link.textContent = 'League document';
+		link.addEventListener('click', (e) => { e.preventDefault(); TDC.busy(link, openDocument(), els.status); });
+		const note = document.createElement('p');
+		note.className = 'lr-document-note';
+		note.textContent = 'A PDF from whoever runs this league. It opens in a new tab.';
+		els.document.replaceChildren(link, note);
+	}
+
+	// The tab is opened before the wait, or a phone blocks it as a pop-up, and
+	// is cut off from this page before it goes anywhere.
+	async function openDocument() {
+		const tab = window.open('', '_blank');
+		if (tab) tab.opener = null;
+		const { data, error } = await supabaseClient.storage.from('league-documents').createSignedUrl(documentPath, 300);
+		if (error) {
+			if (tab) tab.close();
+			TDC.showSupabaseError(AREA, error, els.status);
+			return;
+		}
+		if (tab) tab.location.replace(data.signedUrl);
+		else location.href = data.signedUrl;
+	}
+
 	// ─── The document ───
 	function render() {
 		const rules = info.rules || {};
 		els.league.textContent = info.league_name + ' · ' + info.name;
+		renderDocument();
+		els.intro.hidden = !showRules;
+		els.body.hidden = !showRules;
+		if (!showRules) {
+			els.intro.replaceChildren();
+			els.body.replaceChildren();
+		} else {
 		els.intro.replaceChildren(...R.intro([
 			'These rules apply to every match played in ' + info.league_name + ', ' + info.name + ': every team, every night and every frame.',
 			'Whoever runs the league sets them, and each match keeps its own copy from the moment it is created. If the rules change during the season, matches not yet under way follow the change. A match with a locked lineup or a frame on its card keeps the rules it began with, so nothing already played is ever rescored.'
@@ -109,6 +160,7 @@ TDCLeagueNav.panel('rules', () => {
 			{ title: 'Timing', keys: ['max_match_minutes', 'shot_clock_enabled'] },
 			{ title: 'Scores and signing', keys: ['score_entry_mode'], after: SIGNING_CLAUSES }
 		], rules, { words, ownValue, leftOut: ['approval_mode', 'dispute_window_hours'] }));
+		}
 
 		const directors = officials.filter((o) => o.role_name === 'League director');
 		R.contact(els.people, directors.length ? directors : officials);
@@ -123,6 +175,8 @@ TDCLeagueNav.panel('rules', () => {
 		info = data;
 		reserves = data.max_reserves || 0;
 		officials = data.officials || [];
+		hasDocument = !!data.has_document;
+		showRules = data.show_generated_rules !== false;
 		return true;
 	}
 
@@ -141,6 +195,11 @@ TDCLeagueNav.panel('rules', () => {
 		}
 		reserves = (row.data && row.data.max_reserves) || 0;
 		officials = people.data || [];
+		const league = await supabaseClient.from('tbl_leagues').select('document_path, show_generated_rules').eq('id', info.league_id).maybeSingle();
+		if (league.error) { TDC.showSupabaseError(AREA, league.error, els.status); return false; }
+		documentPath = league.data && league.data.document_path;
+		hasDocument = !!documentPath;
+		showRules = !league.data || league.data.show_generated_rules !== false;
 		return true;
 	}
 

@@ -140,10 +140,26 @@
 	color: var(--text-primary);
 	border: 1px solid var(--border-color) !important;
 }
+/* Google blue, the four-colour G on a white square (UV, 10 Nov). */
 .btn-google {
-	background: #fff;
-	color: #222;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-3);
+	background: var(--google-blue);
+	color: var(--google-on-blue);
 }
+.btn-google-mark {
+	display: flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: 1.75rem;
+	height: 1.75rem;
+	border-radius: var(--radius-sm, 4px);
+	background: var(--google-on-blue);
+}
+.btn-google-mark svg { display: block; width: 1.125rem; height: 1.125rem; }
 
 /* The way out of a form is a quiet underlined link, never another button. */
 .link-row {

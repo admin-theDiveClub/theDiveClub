@@ -48,6 +48,28 @@
 	</div>
 
 	{% comment %}
+		The league document (UV, 10 Nov): one PDF per league, 5 MB at most, which
+		players open from a link on the Rules tab. Saved as soon as it is chosen.
+		Once there is one, a switch can hide the generated rules.
+	{% endcomment %}
+	<div class="field">
+		<label for="doc-choose">League document</label>
+		<p class="muted lg-doc-state" id="doc-state"></p>
+		<div class="btn-row">
+			<button type="button" class="btn btn-secondary btn-sm" id="doc-choose">Upload a PDF</button>
+			<button type="button" class="btn btn-danger btn-sm" id="doc-remove" hidden>Remove</button>
+		</div>
+		<input type="file" id="doc-file" accept="application/pdf,.pdf" hidden>
+		<div class="hint">PDF only, 5 MB at most, one for the league. Every season shares it, and players open it from the Rules tab.</div>
+		<div class="status" id="doc-status"></div>
+	</div>
+	<div class="field" id="doc-rules-field" hidden>
+		<label for="doc-show-rules">Show the generated rules</label>
+		<input type="checkbox" id="doc-show-rules">
+		<div class="hint">Off: the Rules tab shows only the league document.</div>
+	</div>
+
+	{% comment %}
 		This season's own name and dates, as set on the new-league page. Saved
 		with tdc_update_league_season. The dates live on the season period,
 		which another league can share; a shared one is refused rather than

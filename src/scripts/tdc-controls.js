@@ -1324,8 +1324,12 @@ const TDCControls = (() => {
 	}
 
 	// ─── Tabs ───
-	// Every tab bar (.league-nav-track) marks the chosen tab with one thumb, which slides to
-	// it (UV, 7 Nov: a selection never jumps). A new screen width puts it straight there.
+	// Every tab bar marks the chosen tab with one thumb, which slides to it (UV, 7 Nov: a
+	// selection never jumps; 10 Nov: every selector on the site alike). A new screen width
+	// puts it straight there. A pill of buttons that act rather than choose (the draw's Fit,
+	// Full screen and Reset) is not a tab bar: every button of one says aria-pressed.
+	const isTabBar = (box) => box.matches('.league-nav-track')
+		|| (box.children.length > 0 && [...box.querySelectorAll(':scope > button')].every((b) => b.hasAttribute('aria-pressed')));
 	function tabBar(track) {
 		if (track.tdcThumb) return;
 		const thumb = track.tdcThumb = node('span', 'tdc-tab-thumb');
@@ -1340,7 +1344,7 @@ const TDCControls = (() => {
 		};
 		const place = () => {
 			if (thumb.parentElement !== track) track.prepend(thumb);
-			const tab = track.querySelector('[aria-current]');
+			const tab = track.querySelector('[aria-current], [aria-pressed="true"]');
 			thumb.hidden = !tab;
 			if (!tab) return;
 			thumb.style.setProperty('--nm-tab-x', tab.offsetLeft + 'px');
@@ -1352,15 +1356,17 @@ const TDCControls = (() => {
 			if (changes.some((m) => m.type === 'childList')) still();
 			[...track.children].forEach((item) => { if (item !== thumb) sized.observe(item); });
 			place();
-		}).observe(track, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-current'] });
+		}).observe(track, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-current', 'aria-pressed'] });
 		[...track.children].forEach((item) => sized.observe(item));
 		still();
 		place();
 	}
 	function tabBars(root) {
 		if (!root.querySelectorAll) return;
-		if (root.matches && root.matches('.league-nav-track')) tabBar(root);
-		root.querySelectorAll('.league-nav-track').forEach(tabBar);
+		const BARS = '.league-nav-track, .cp-views, .install-seg';
+		const bar = (box) => { if (isTabBar(box)) tabBar(box); };
+		if (root.matches && root.matches(BARS)) bar(root);
+		root.querySelectorAll(BARS).forEach(bar);
 	}
 
 	// ─── Start ───

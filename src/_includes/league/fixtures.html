@@ -30,6 +30,13 @@
 		night's own buttons act on every fixture in it. Open from the start
 		(UV, 25 Oct): it is what the page is for.
 	{% endcomment %}
+	<div class="lj-views-row">
+		<div class="cp-views ls-views" id="fx-views" role="group" aria-label="Planner or all fixtures" hidden>
+			<button type="button" class="cp-view" data-fx-view="planner" aria-pressed="true">Planner</button>
+			<button type="button" class="cp-view" data-fx-view="all" aria-pressed="false">All fixtures</button>
+		</div>
+	</div>
+
 	<details class="set-group" id="planner" open>
 		<summary>Planner</summary>
 
@@ -40,7 +47,7 @@
 			<h3 class="fx-day-title" id="day-title"></h3>
 			<div class="btn-row fx-day-actions" id="day-actions" hidden></div>
 			<div id="day-move"></div>
-			<table class="fx-table" id="day-table"></table>
+			<div class="fx-card"><table class="fx-table" id="day-table"></table></div>
 			<div class="empty" id="day-empty" hidden></div>
 		</div>
 	</details>
@@ -52,17 +59,15 @@
 	<details class="set-group" id="all-group">
 		<summary>All fixtures</summary>
 
-		<div class="field-row" data-row="all-dates">
-			<div class="field">
+		<div class="fx-filters">
+			<div class="field drop-joined fx-date">
 				<label for="f-from">From</label>
-				<input type="date" id="f-from">
+				<input type="date" id="f-from" data-control="none">
 			</div>
-			<div class="field">
+			<div class="field drop-joined fx-date">
 				<label for="f-to">To</label>
-				<input type="date" id="f-to">
+				<input type="date" id="f-to" data-control="none">
 			</div>
-		</div>
-		<div class="field-row" data-row="all-who">
 			<div class="field drop-joined">
 				<label for="f-team">Team</label>
 				<select id="f-team"></select>
@@ -78,13 +83,10 @@
 				</select>
 			</div>
 		</div>
-		<div class="field">
-			<label for="f-byes">Show byes</label>
-			<input type="checkbox" id="f-byes" checked>
-		</div>
 
 		<div id="all-view">
 			<table class="fx-table" id="all-table"></table>
+			<div id="all-cards" hidden></div>
 			<div class="empty" id="fixtures-empty" hidden>No fixtures yet.</div>
 			<div class="empty" id="all-none" hidden>No fixtures match these filters.</div>
 		</div>

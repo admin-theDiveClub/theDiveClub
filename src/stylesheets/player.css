@@ -161,10 +161,9 @@
 [data-note]:empty { display: none; }
 
 /* ── The toggle under the hero and the period: the site's tabs ──
- * A sunken pill as tall as a field (design.css .league-nav). These mark their choice
- * with aria-pressed, for player.js, so the thumb is drawn here rather than by
- * tdc-controls.js: one layer as wide as a tab, which slides to the one chosen. The
- * tabs are of one width for that, and scroll inside the pill when they don't fit. */
+ * A sunken pill as tall as a field (design.css .league-nav), with the thumb every tab
+ * bar has (tdc-controls.js). The tabs are of one width, and scroll inside the pill when
+ * they don't fit. */
 .player-page .cp-views {
 	position: relative;
 	display: grid;
@@ -182,23 +181,6 @@
 	box-shadow: var(--nm-sunken);
 }
 .player-page .cp-views::-webkit-scrollbar { display: none; }
-.player-page .cp-views:has(> :nth-child(2)[aria-pressed="true"]) { --at: 1; }
-.player-page .cp-views:has(> :nth-child(3)[aria-pressed="true"]) { --at: 2; }
-/* Placed on the grid's lines so that it measures the tabs, however far they scroll. Its
-   shadow falls in the pill alone. */
-.player-page .cp-views::before {
-	content: "";
-	position: absolute;
-	grid-area: 1 / 1 / 2 / -1;
-	top: 0;
-	bottom: 0;
-	left: 0;
-	width: calc(100% / 3);
-	border-radius: var(--radius-pill);
-	box-shadow: var(--nm-raised-small), inset 0 0 16px var(--nm-knob-glow);
-	transform: translateX(calc(var(--at, 0) * 100%));
-	transition: transform 0.25s ease;
-}
 .tdc-card.player-page .cp-views button.cp-view {
 	position: relative;
 	z-index: 1;
@@ -217,10 +199,6 @@
 	box-shadow: none;
 }
 .tdc-card.player-page .cp-views button.cp-view:focus-visible { outline: 2px solid var(--nm-light-colour); outline-offset: -2px; }
-[data-motion="reduce"] .player-page .cp-views::before { transition: none; }
-@media (prefers-reduced-motion: reduce) {
-	:root:not([data-motion="full"]) .player-page .cp-views::before { transition: none; }
-}
 .pp-views { margin: var(--space-5) auto 0; }
 
 /* ── Sections ── */

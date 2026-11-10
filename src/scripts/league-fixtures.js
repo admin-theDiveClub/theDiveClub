@@ -42,7 +42,8 @@ TDCLeagueNav.panel('fixtures', () => {
 		dayTitle: el('day-title'), dayTable: el('day-table'), dayEmpty: el('day-empty'),
 		addPanel: el('add-panel'), addTo: el('add-to'),
 		addHome: el('add-home'), addAway: el('add-away'), addBtn: el('add-btn'),
-		fFrom: el('f-from'), fTo: el('f-to'), fTeam: el('f-team'), fStatus: el('f-status'), fByes: el('f-byes'),
+		fFrom: el('f-from'), fTo: el('f-to'), fTeam: el('f-team'), fStatus: el('f-status'), allCards: el('all-cards'),
+		views: el('fx-views'), allGroup: el('all-group'),
 		allView: el('all-view'), allTable: el('all-table'), empty: el('fixtures-empty'), allNone: el('all-none'),
 		status: el('fx-status')
 	};
@@ -207,8 +208,57 @@ TDCLeagueNav.panel('fixtures', () => {
 		iRunIt = mayRun && TDCLeagueNav.managing();
 		els.generatePanel.hidden = !iRunIt;
 		els.addPanel.hidden = !iRunIt;
+		// A player's page looks like the Season tab (UV, 10 Nov); the director's
+		// is to be reworked later, and keeps its look until then.
+		els.planner.closest('.league-panel').classList.toggle('fx-player', !iRunIt);
+		els.cal.classList.toggle('lj-cal', !iRunIt);
+		els.dayTitle.classList.toggle('lj-heading', !iRunIt);
+		els.views.hidden = iRunIt;
+		showView(fxView, false);
 		return was !== iRunIt;
 	}
+
+	// A player's Planner and All fixtures are tabs (UV, 10 Nov), the choice
+	// kept per device; the director's Schedule keeps the two folding groups.
+	const VIEW_KEY = 'tdc.fixtures.view';
+	let fxView = 'planner';
+	try { if (localStorage.getItem(VIEW_KEY) === 'all') fxView = 'all'; } catch (err) { /* private window: the default */ }
+
+	function showView(next, animate) {
+		fxView = next;
+		for (const b of els.views.querySelectorAll('[data-fx-view]')) {
+			b.setAttribute('aria-pressed', b.dataset.fxView === next ? 'true' : 'false');
+		}
+		if (iRunIt) {
+			els.planner.hidden = false;
+			els.allGroup.hidden = false;
+			return;
+		}
+		els.planner.open = true;
+		els.allGroup.open = true;
+		els.planner.hidden = next !== 'planner';
+		els.allGroup.hidden = next !== 'all';
+		if (animate) fadeIn(next === 'all' ? els.allGroup : els.planner);
+	}
+
+	els.views.addEventListener('click', (e) => {
+		const b = e.target.closest('[data-fx-view]');
+		if (!b || b.dataset.fxView === fxView) return;
+		showView(b.dataset.fxView, true);
+		try { localStorage.setItem(VIEW_KEY, fxView); } catch (err) { /* kept for this visit only */ }
+	});
+
+	// A player's team names stay on one line; one too long for its room runs
+	// sideways and back, as on the Season tab's cards (UV, 10 Nov).
+	function fitName(name) {
+		if (!name.clientWidth) return;
+		const over = name.firstChild.offsetWidth - name.clientWidth;
+		name.classList.toggle('is-long', over > 1);
+		name.style.setProperty('--run', -Math.max(over, 0) + 'px');
+		name.style.setProperty('--run-time', (3 + Math.max(over, 0) / 25).toFixed(1) + 's');
+	}
+	const nameRoom = new ResizeObserver((seen) => seen.forEach((e) => fitName(e.target)));
+	document.fonts.ready.then(() => document.querySelectorAll('.fx-player .fx-name').forEach(fitName));
 
 	// ─── Readiness, said before the button is pressed ───
 	// The database refuses a schedule built on people who have not confirmed.
@@ -693,9 +743,12 @@ TDCLeagueNav.panel('fixtures', () => {
 		const pic = node('span', 'team-pic');
 		pic.append(TDC.teamPic(teamPictures.get(teamId)));
 		const names = node('span', 'fx-names');
-		names.append(node('span', 'fx-name', name));
+		const label = node('span', 'fx-name' + (teamId === myTeamId ? ' is-mine' : ''));
+		label.append(node('span', 'lj-run', name));
+		names.append(label);
+		if (!iRunIt) nameRoom.observe(label);
 		const t = teamById.get(teamId);
-		if (t) names.append(node('span', 'fx-sub', plural(t.active_players, 'player')));
+		if (t && iRunIt) names.append(node('span', 'fx-sub', plural(t.active_players, 'player')));
 		team.append(pic, names);
 		td.append(team);
 		return td;
@@ -786,11 +839,23 @@ TDCLeagueNav.panel('fixtures', () => {
 
 	const fixtureName = (f) => f.is_bye ? f.home_name + '’s bye' : f.home_name + ' : ' + f.away_name;
 
+	function lockIcon() {
+		const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+		svg.setAttribute('viewBox', '30 34 40 40');
+		svg.setAttribute('aria-hidden', 'true');
+		for (const d of ['M34 52L66 52L66 70L34 70L34 52', 'M41 52L41 42C41 35 59 35 59 42L59 52']) {
+			const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+			path.setAttribute('d', d);
+			svg.append(path);
+		}
+		return svg;
+	}
+
 	function fixtureRows(f, where, dayTime) {
 		const key = where + ':' + f.fixture_id;
 		const tr = node('tr', 'fx-row' + (f.is_bye ? ' fx-row-bye' : ''));
 		const mine = myTeamId && (f.home_team_id === myTeamId || f.away_team_id === myTeamId);
-		if (mine) tr.classList.add('fx-mine');
+		if (mine && iRunIt) tr.classList.add('fx-mine');
 		// A finished fixture opens its card from anywhere in its box (UV, 25
 		// Oct): both its rows carry the link, and the main row is what a
 		// keyboard reaches.
@@ -807,10 +872,16 @@ TDCLeagueNav.panel('fixtures', () => {
 		// row under it (UV, 24 Oct).
 		const state = stateOf(f);
 		const strip = node('td', 'fx-state fx-state-' + state);
-		strip.rowSpan = f.is_bye ? 1 : 2;
+		strip.rowSpan = f.is_bye || !iRunIt ? 1 : 2;
 		if (state !== 'bye') {
 			strip.title = STATE[state] || state;
 			strip.append(node('span', 'visually-hidden', STATE[state] || state));
+		}
+		// For a player, a finished match is a grey lock rather than a bar (UV,
+		// 10 Nov: an experiment). A re-opened card is not locked, so keeps its bar.
+		if (!iRunIt && state === 'complete') {
+			strip.classList.add('fx-state-locked');
+			strip.append(lockIcon());
 		}
 
 		// The middle: each side's score beside its team, the buttons between
@@ -841,6 +912,11 @@ TDCLeagueNav.panel('fixtures', () => {
 		if (scored) line.append(liveScore(f, 'away'));
 		mid.append(line);
 
+		// A player's tables sit under the ":" or the arrow (UV, 10 Nov).
+		if (!iRunIt && (f.table_numbers || []).length) {
+			mid.append(node('span', 'fx-mid-sub', (f.table_numbers.length === 1 ? 'Table ' : 'Tables ') + f.table_numbers.join(' · ')));
+		}
+
 		// Under the buttons: the time when it is not the night's.
 		if (f.scheduled_at && dayTime !== undefined && time24(new Date(f.scheduled_at)) !== dayTime) {
 			mid.append(node('span', 'fx-mid-sub', time24(new Date(f.scheduled_at))));
@@ -852,7 +928,7 @@ TDCLeagueNav.panel('fixtures', () => {
 		tr.append(strip, teamCell(f.home_team_id, f.home_name, 'home', !done), mid, away);
 
 		const out = [tr];
-		if (!f.is_bye) {
+		if (!f.is_bye && iRunIt) {
 			// Your team's highlight covers the tables row too, as the strip does.
 			const tables = tablesRow(f, where);
 			if (mine) tables.classList.add('fx-mine');
@@ -968,7 +1044,6 @@ TDCLeagueNav.panel('fixtures', () => {
 		if (team && f.home_team_id !== team && f.away_team_id !== team) return false;
 		const status = els.fStatus.value;
 		if (status && (f.is_bye || stateOf(f) !== status)) return false;
-		if (!els.fByes.checked && f.is_bye) return false;
 		return true;
 	}
 
@@ -980,6 +1055,16 @@ TDCLeagueNav.panel('fixtures', () => {
 			if (a.scheduled_at && a.scheduled_at !== b.scheduled_at) return a.scheduled_at < b.scheduled_at ? -1 : 1;
 			return a.round - b.round;
 		});
+
+		els.allCards.hidden = iRunIt || !rows.length;
+		els.allNone.hidden = !fixtures.length || !!rows.length;
+		if (!iRunIt) {
+			els.allTable.hidden = true;
+			els.allTable.replaceChildren();
+			renderRoundCards(rows);
+			return;
+		}
+		els.allCards.replaceChildren();
 
 		const out = [];
 		let group = null;
@@ -1001,10 +1086,31 @@ TDCLeagueNav.panel('fixtures', () => {
 		els.allTable.replaceChildren(...out);
 		els.allTable.hidden = !rows.length;
 		wakeIcons(els.allTable);
-		els.allNone.hidden = !fixtures.length || !!rows.length;
 	}
 
-	for (const f of [els.fFrom, els.fTo, els.fTeam, els.fStatus, els.fByes]) {
+	// A player's fixtures (UV, 10 Nov): each round's in an inset card as wide as
+	// its rows need, its date as a heading outside the card, as on the Season tab.
+	function renderRoundCards(rows) {
+		const groups = [];
+		for (const f of rows) {
+			const g = f.scheduled_at ? 'at:' + f.scheduled_at : 'round:' + f.round;
+			if (!groups.length || groups[groups.length - 1].g !== g) groups.push({ g, f, rows: [] });
+			groups[groups.length - 1].rows.push(f);
+		}
+		els.allCards.replaceChildren(...groups.flatMap(({ f, rows: inRound }) => {
+			const head = node('h2', 'lj-heading', f.scheduled_at
+				? longDate(dayKey(f.scheduled_at)) + ' · ' + time24(new Date(f.scheduled_at)) + ' · Round ' + f.round
+				: 'Round ' + f.round + ' · no date');
+			const card = node('div', 'fx-card');
+			const table = node('table', 'fx-table');
+			table.append(...inRound.flatMap((x) => fixtureRows(x, 'all')));
+			card.append(table);
+			return [head, card];
+		}));
+		wakeIcons(els.allCards);
+	}
+
+	for (const f of [els.fFrom, els.fTo, els.fTeam, els.fStatus]) {
 		f.addEventListener('change', () => fade([els.allView], renderAll));
 	}
 

@@ -240,6 +240,7 @@
 	border-radius: var(--radius-pill);
 	box-shadow: var(--nm-sunken);
 }
+.install-seg button { z-index: 1; }
 /* What is on or chosen glows from its edge inward, faded on a layer of its own: a
    transition on these shadows would start again at every move of the light. */
 .install-btn::after,
@@ -255,7 +256,6 @@
 	transition: opacity 0.2s ease;
 }
 .install-btn.is-on::after,
-.install-seg button[aria-pressed="true"]::after,
 .install-step.is-live::after { opacity: 1; }
 [data-motion="reduce"] :is(.install-btn, .install-seg button, .install-step)::after { transition: none; }
 @media (prefers-reduced-motion: reduce) {

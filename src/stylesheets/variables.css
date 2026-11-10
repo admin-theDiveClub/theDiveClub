@@ -151,6 +151,8 @@
 
   /* ── Space ─────────────────────────────────────────────────────────
      One scale. Reach for the nearest step rather than a new decimal. */
+  --google-blue: #4285f4;
+  --google-on-blue: #fff;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
