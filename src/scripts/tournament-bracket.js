@@ -134,6 +134,7 @@ TDCTournamentNav.panel('draw', () => {
 	let tournament = null;
 	let fixtures = [];
 	let readOnly = true;
+	let mayRun = false;
 	// The fixture whose score the TD is typing, if any. One at a time: two
 	// half-filled score forms on one bracket is a mis-tap waiting to happen.
 	let entering = null;
@@ -955,6 +956,31 @@ TDCTournamentNav.panel('draw', () => {
 		b.dataset.fixture = fixtureId;
 		if (entrantId) b.dataset.entrant = entrantId;
 		return b;
+	}
+
+	// The director's controls show on Run the draw alone; on Draw whoever runs
+	// the tournament sees what a player sees (UV, 10 Nov). True if that changed.
+	function applyMode() {
+		const was = readOnly;
+		readOnly = !mayRun || !TDCTournamentNav.managing();
+		return was !== readOnly;
+	}
+
+	// What only the director's view needs, read as it opens.
+	async function editingReads() {
+		// The pills, read once: dragging changes the draw, not who entered.
+		// Read with no draw too, so they are there once one is generated.
+		await loadEntrants();
+		// Catches up anything decided on somebody else's phone. Only worth
+		// a second read when there was actually a draw to resolve.
+		if (fixtures.length) {
+			await resolve();
+			await loadDraw();
+			await checkDrift();
+		}
+		// Generate the draw is there with a draw too (UV, 5 Nov), so its
+		// count of who would go in is always wanted.
+		await describeField();
 	}
 
 	// ─── The whole bracket ───
@@ -2630,26 +2656,13 @@ TDCTournamentNav.panel('draw', () => {
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
 
 		const row = (mine || []).find((t) => t.id === tournamentId);
-		readOnly = !row || !row.i_run_it;
+		mayRun = !!row && !!row.i_run_it;
+		applyMode();
 
 		if (!await loadDraw()) return;
 		await loadStatus();
 
-		if (!readOnly) {
-			// The pills, read once: dragging changes the draw, not who entered.
-			// Read with no draw too, so they are there once one is generated.
-			await loadEntrants();
-			// Catches up anything decided on somebody else's phone. Only worth
-			// a second read when there was actually a draw to resolve.
-			if (fixtures.length) {
-				await resolve();
-				await loadDraw();
-				await checkDrift();
-			}
-			// Generate the draw is there with a draw too (UV, 5 Nov), so its
-			// count of who would go in is always wanted.
-			await describeField();
-		}
+		if (!readOnly) await editingReads();
 	})(), 'Draw');
 
 	// Shown again as a tab (tournament-nav.js): read again in place, so a
@@ -2657,9 +2670,11 @@ TDCTournamentNav.panel('draw', () => {
 	return {
 		refresh: () => (async () => {
 			if (!tournamentId || !await loadTournament()) return;
+			const nowEditing = applyMode() && !readOnly;
 			if (!await loadDraw()) return;
 			await loadStatus();
-			if (!readOnly) await describeField();
+			if (nowEditing) await editingReads();
+			else if (!readOnly) await describeField();
 		})().catch((err) => TDC.error(AREA, 'the draw could not be read again.', err, els.status))
 	};
 });

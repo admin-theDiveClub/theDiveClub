@@ -304,7 +304,7 @@
 .lj-num-label { font-size: 0.8rem; color: var(--text-muted); }
 
 /* The numbers are the last thing on the Season tab (UV, 10 Nov). */
-.lj-fold + .lj-numbers { margin-top: var(--space-5); }
+.lj-cal ~ .lj-numbers { margin-top: var(--space-5); }
 
 /* ── From whoever runs it ── */
 .lj-notes-box:not([hidden]) ~ .lj-views-row { margin-top: var(--space-5); }
@@ -424,20 +424,6 @@
 .lj-views-row { margin-bottom: var(--space-5); }
 
 /* Rules, folded: a heading with its line, the arrow right after the word. */
-.set-group.lj-fold > summary { width: auto; padding: 0; }
-.set-group.lj-fold > summary::after { content: none; }
-.lj-fold > summary > .lj-heading { flex: 1; min-width: 0; margin: 0; }
-.lj-arrow {
-	flex: none;
-	width: 1.25rem;
-	height: 1.25rem;
-	margin-left: calc(var(--space-2) - var(--space-3));
-	background: var(--nm-arrow) center / contain no-repeat;
-	transition: transform 0.35s ease;
-}
-.lj-fold[open]:not(.is-closing) .lj-arrow { transform: rotate(180deg); }
-.set-group.lj-fold { margin-top: var(--space-5); }
-.lj-fold > .lj-rules { margin-top: var(--space-3); }
 
 /* A month is an inset card (UV, 10 Nov), with a line between Friday and Saturday. */
 .lj-cal .cal-month {
@@ -454,8 +440,9 @@
 .lj-cal .cal td:nth-child(6) { border-left: 1px solid var(--border-color); }
 
 .lj-teams {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
 	gap: var(--space-5);
 }
 .lj-team-head { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
@@ -471,11 +458,11 @@
 
 /* A team's card, inset and folding (UV, 10 Nov): closed, its picture and name;
  * open, the places and the ring join the arrow on its line. */
-/* Every closed card the same size (UV, 10 Nov), as many to a row as fit; an
- * opened one takes the row and pushes the others on. */
-.team-boxes.lj-teams { align-items: start; }
-.lj-teams .team-box { min-width: 0; }
-.lj-teams .team-box[open] { grid-column: 1 / -1; }
+/* Every closed card the same size (UV, 10 Nov), as many to a row as fit, each
+ * row centred; an opened one takes the row and pushes the others on. */
+.team-boxes.lj-teams { flex-direction: row; align-items: flex-start; }
+.lj-teams .team-box { flex: 0 0 min(100%, 22rem); min-width: 0; }
+.lj-teams .team-box[open] { flex-basis: 100%; }
 .lj-teams .team-box.is-asked { box-shadow: inset 0 0 16px var(--nm-knob-glow), var(--nm-sunken); }
 .lj-teams .team-box > summary { flex-wrap: wrap; padding: var(--space-3) var(--nm-pad); }
 .lj-teams .team-box > summary::after { content: none; }
@@ -492,7 +479,7 @@
 	transition: transform 0.35s ease;
 }
 .lj-teams .team-box[open] .lj-team-arrow { transform: rotate(180deg); }
-.lj-teams .team-box-name { min-width: 0; font-family: var(--font-display); font-size: 1.35rem; font-weight: 400; line-height: 1.1; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.lj-teams .team-box-name { min-width: 0; font-family: var(--font-display); font-size: 1.35rem; font-weight: 400; line-height: 1.32; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 /* A name too long for its card runs sideways and back (UV, 10 Nov; fitName in
  * league-season.js sets how far). With less motion it stops at "…". */
 .lj-run { display: inline-block; }
@@ -514,7 +501,6 @@
  * centred under that, as many to a row as fit. An opened one takes the row and
  * pushes the others on. */
 @media (max-width: 40rem) {
-	.team-boxes.lj-teams { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
 	.lj-teams .team-box { flex: 0 0 7.5rem; }
 	.lj-teams .team-box[open] { flex-basis: 100%; }
 	.lj-teams .team-box > summary { flex-direction: column; flex-wrap: nowrap; gap: var(--space-2); padding: var(--space-3); }
@@ -524,6 +510,34 @@
 	.lj-teams .team-box > :not(summary) { margin-right: var(--space-4); margin-left: var(--space-4); }
 }
 
+/* ── The Rules tab: a written document (UV, 10 Nov) ── */
+.lr-doc {
+	box-sizing: border-box;
+	max-width: 48rem;
+	margin: 0 auto;
+	padding: var(--space-5) var(--nm-pad);
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-sunken);
+}
+.lr-head { text-align: center; }
+.tdc-card .lr-head h1 { margin: 0; }
+.tdc-card .lr-league { margin: var(--space-1) 0 0; color: var(--text-muted); }
+.lr-intro { margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border-color); }
+.tdc-card .lr-intro p { margin: 0; line-height: 1.55; }
+.tdc-card .lr-intro p + p { margin-top: var(--space-3); }
+.lr-section { margin-top: var(--space-5); }
+.tdc-card .lr-section h2 { margin: 0 0 var(--space-2); text-align: left; font-size: 1.35rem; }
+.lr-clause { padding: var(--space-3) 0; border-top: 1px solid var(--border-color); }
+.lr-clause-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-3); }
+.lr-no { flex: none; min-width: 2rem; font-size: 0.85rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.tdc-card .lr-clause h3 { margin: 0; font-family: var(--font-body); font-size: 1rem; font-weight: 600; }
+.lr-value { margin-left: auto; font-weight: 600; color: var(--color-primary); text-align: right; overflow-wrap: anywhere; }
+.tdc-card .lr-clause p { margin: var(--space-1) 0 0; line-height: 1.55; overflow-wrap: break-word; }
+.lr-contact { margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--border-color); text-align: center; }
+.tdc-card .lr-contact h2 { margin: 0; font-size: 1.35rem; }
+.tdc-card .lr-contact p { margin: var(--space-1) 0 var(--space-3); }
+.lr-people { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2) var(--space-4); text-align: left; }
+
 /* ── Who runs it ── */
 .lj-officials { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); justify-content: center; }
 
@@ -532,11 +546,9 @@
 @media (prefers-reduced-motion: reduce) {
 	:root:not([data-motion="full"]) .lj-teams .lj-run { display: inline; animation: none; }
 }
-[data-motion="reduce"] .lj-arrow,
 [data-motion="reduce"] .lj-team-arrow,
 [data-motion="reduce"] .tdc-card .cal button.cal-day[class*="is-"] { transition: none; }
 @media (prefers-reduced-motion: reduce) {
-	:root:not([data-motion="full"]) .lj-arrow,
 	:root:not([data-motion="full"]) .lj-team-arrow,
 	:root:not([data-motion="full"]) .tdc-card .cal button.cal-day[class*="is-"] { transition: none; }
 }

@@ -45,7 +45,7 @@ TDCLeagueNav.panel('season', () => {
 		poolPlaces: el('pool-places'),
 		jumbo: el('jumbo'), jumboPic: el('jumbo-pic'), jumboFacts: el('jumbo-facts'),
 		share: el('share-btn'), interestBtn: el('interest-btn'),
-		stats: el('stats'), notesBox: el('notes-box'), notes: el('l-notes'), rules: el('l-rules'),
+		stats: el('stats'), notesBox: el('notes-box'), notes: el('l-notes'),
 		nights: el('l-nights'), nightCount: el('night-count'), nightKey: el('night-key'), nightPicked: el('night-picked'), nightNote: el('night-note'),
 		teamsHead: el('teams-head'), teamsHeadCount: el('teams-head-count'),
 		poolPanel: el('pool-panel'), poolHint: el('pool-hint'), poolList: el('pool-list'),
@@ -662,67 +662,6 @@ TDCLeagueNav.panel('season', () => {
 		const text = info && info.notes && info.notes.trim();
 		els.notesBox.hidden = !text;
 		els.notes.textContent = text || '';
-	}
-
-	// ─── The rules ───
-	// Every rule the season plays to, in the settings page's groups, worded
-	// from TDCMatchDef. A setting its switch makes irrelevant is left out, as
-	// the settings page hides it.
-	function ruleValue(def, rules) {
-		const v = rules[def.key];
-		if (def.key === 'win_condition_type') {
-			const name = D.WIN_CONDITION[v] || v;
-			return v === 'free_play' || !rules.win_condition_target ? name : name + ' ' + rules.win_condition_target;
-		}
-		if (def.key === 'team_size') {
-			const reserves = seasonRow && seasonRow.max_reserves;
-			return v + ' a side' + (reserves ? ', up to ' + plural(reserves, 'reserve') : '');
-		}
-		if (def.type === 'rotation') return v ? 'The league’s own order' : 'The standard rotation';
-		if (def.type === 'bool') return v ? 'Yes' : 'No';
-		if (def.type === 'select') {
-			const options = typeof def.options === 'function' ? def.options() : def.options;
-			return (options && options[v]) || String(v);
-		}
-		if (def.type === 'int') {
-			if (/_seconds$/.test(def.key)) return v + ' s';
-			const unit = /\((\w+)\)$/.exec(def.label);
-			if (unit) return v ? v + ' ' + (v === 1 ? unit[1].replace(/s$/, '') : unit[1]) : 'None';
-			return String(v);
-		}
-		return v == null ? '' : String(v);
-	}
-
-	function renderRules() {
-		const rules = (info && info.rules) || {};
-		const boxes = [];
-		for (const group of D.GROUPS.concat(D.LEAGUE_GROUPS)) {
-			const rows = [];
-			for (const def of D.SETTINGS) {
-				if (def.group !== group || def.scope !== 'rules') continue;
-				if (def.key === 'win_condition_target') continue;   // said with the win condition
-				if (def.when && !def.when(rules)) continue;
-				if (rules[def.key] === undefined) continue;
-				rows.push([def.label.replace(/\s*\(\w+\)$/, ''), ruleValue(def, rules)]);
-				// A night's length follows from the team size.
-				if (def.key === 'team_size' && rules.team_size) {
-					rows.push(['A night', rules.team_size + ' sessions, ' + rules.team_size * rules.team_size + ' frames']);
-				}
-			}
-			if (!rows.length) continue;
-			const box = node('section', 'lj-rule-box');
-			box.append(node('h3', 'lj-rule-title', group));
-			const dl = node('dl', 'lj-rule-list');
-			for (const [k, v] of rows) {
-				const row = node('div', 'lj-rule');
-				row.append(node('dt', null, k), node('dd', null, v));
-				dl.append(row);
-			}
-			box.append(dl);
-			boxes.push(box);
-		}
-		if (!boxes.length) boxes.push(node('p', 'muted', 'No rules set yet.'));
-		els.rules.replaceChildren(...boxes);
 	}
 
 	const time = (d) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
@@ -1438,7 +1377,6 @@ TDCLeagueNav.panel('season', () => {
 		renderBanner();
 		renderStats();
 		renderNotes();
-		renderRules();
 		renderNights();
 		return results.every(Boolean);
 	}

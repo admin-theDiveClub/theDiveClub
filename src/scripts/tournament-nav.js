@@ -2,8 +2,11 @@
 // (league-nav.js, whose sibling this is: the same bar, the same way of
 // opening a tab, the same loading screens; keep the two in step).
 //
-// One page, /tournaments/bracket/?t=<tournament id>&tab=<entrants|settings>:
-// Draw (everybody), Entrants and Settings (the people running it). Each is a
+// One page, /tournaments/bracket/?t=<tournament id>&tab=<run|entrants|settings>:
+// Draw (everybody, as a player sees it) in the first pill; Run the draw, Entrants
+// and Settings (the people running it) in a second pill under it (UV, 10 Nov).
+// Run the draw is the Draw panel with its director's controls on, and managing()
+// is how that panel knows which it is being. Each is a
 // panel, <div class="tournament-panel" data-tab="<key>" data-title="<title>">,
 // whose script registers with TDCTournamentNav.panel(key, start); start()
 // runs the first time the tab opens, and may return { refresh } to read the
@@ -26,12 +29,15 @@
 const TDCTournamentNav = (() => {
 	const AREA = 'Tournament pages';
 
-	// [key, label, only for the people running it]
+	// [key, label, only for the people running it, the panel if not its own]
 	const TABS = [
 		['draw', 'Draw', false],
+		['run', 'Run the draw', true, 'draw'],
 		['entrants', 'Entrants', true],
 		['settings', 'Settings', true]
 	];
+	const tabOf = (key) => TABS.find(([k]) => k === key);
+	const panelOf = (key) => (tabOf(key) && tabOf(key)[3]) || key;
 	const posterUrl = (t) => '/tournaments/poster/?t=' + t;
 
 	const starts = new Map();     // key -> the panel's start(), registered as its script loads
@@ -41,7 +47,9 @@ const TDCTournamentNav = (() => {
 	const DOTS_MIN = 200;         // ms, as every control (tdc-controls.js)
 
 	const panels = () => [...document.querySelectorAll('.tournament-panel')];
-	const known = (key) => TABS.some(([k]) => k === key);
+	const known = (key) => !!tabOf(key);
+	// Whether the tab showing is one of the second pill's.
+	const managing = () => !!(tabOf(current) && tabOf(current)[2]);
 	const tabInAddress = () => {
 		const t = new URLSearchParams(location.search).get('tab');
 		return known(t) ? t : 'draw';
@@ -54,21 +62,22 @@ const TDCTournamentNav = (() => {
 
 	// The tab in the green pill, wherever the bar has got to drawing.
 	function mark(key) {
-		const nav = document.getElementById('tournament-nav');
-		if (!nav) return;
-		for (const item of nav.querySelectorAll('[data-tab]')) {
-			if (item.dataset.tab === key) item.setAttribute('aria-current', 'page');
-			else item.removeAttribute('aria-current');
+		for (const nav of document.querySelectorAll('#tournament-nav, #tournament-nav-admin')) {
+			for (const item of nav.querySelectorAll('[data-tab]')) {
+				if (item.dataset.tab === key) item.setAttribute('aria-current', 'page');
+				else item.removeAttribute('aria-current');
+			}
+			const here = nav.querySelector('[aria-current]');
+			const track = nav.querySelector('.league-nav-track');
+			if (here && track) track.scrollLeft = here.offsetLeft - (track.clientWidth - here.offsetWidth) / 2;
 		}
-		const here = nav.querySelector('[aria-current]');
-		const track = nav.querySelector('.league-nav-track');
-		if (here && track) track.scrollLeft = here.offsetLeft - (track.clientWidth - here.offsetWidth) / 2;
 	}
 
 	// Show a tab's panel, starting its script the first time. push: put it in
 	// the address (a tap). tab: the pill item tapped, for the dots.
 	function open(key, { push = false, tab = null } = {}) {
-		const target = document.querySelector(`.tournament-panel[data-tab="${key}"]`);
+		const shown = panelOf(key);
+		const target = document.querySelector(`.tournament-panel[data-tab="${shown}"]`);
 		if (!target) { TDC.error(AREA, `this page has no "${key}" tab.`); return; }
 		if (push && key !== current) {
 			const u = new URL(location.href);
@@ -83,28 +92,28 @@ const TDCTournamentNav = (() => {
 
 		let call = null;
 		const before = typeof TDCNet !== 'undefined' ? TDCNet.started : 0;
-		const first = !started.has(key);
+		const first = !started.has(shown);
 		if (!first) {
 			// Shown again: read again in place, so a change made on another
 			// tab (a setting saved, an entrant added) shows here.
-			const refresh = refreshers.get(key);
+			const refresh = refreshers.get(shown);
 			if (refresh && key !== was) {
 				try { refresh(); }
 				catch (err) { TDC.error(AREA, `the "${key}" tab could not be read again.`, err, target.querySelector('.status')); }
 			}
 		} else {
-			started.add(key);
+			started.add(shown);
 			// Opened after the page has loaded: the screen over this tab alone
 			// (UV, 5 Nov), up before its script starts so the holds the script
 			// makes join it. Opened with the page, the page's own screen is up.
 			if (typeof TDCLoader !== 'undefined' && !TDCLoader.up) TDCLoader.cover(target, `the ${target.dataset.title || key} tab`);
-			const start = starts.get(key);
+			const start = starts.get(shown);
 			if (!start) {
 				TDC.error(AREA, `the "${key}" tab has no script.`, null, target.querySelector('.status'));
 			} else {
 				try {
 					const got = start();
-					if (got && typeof got.refresh === 'function') refreshers.set(key, got.refresh);
+					if (got && typeof got.refresh === 'function') refreshers.set(shown, got.refresh);
 				} catch (err) { TDC.error(AREA, `the "${key}" tab could not start.`, err, target.querySelector('.status')); }
 			}
 		}
@@ -138,17 +147,21 @@ const TDCTournamentNav = (() => {
 		const posterRow = Array.isArray(poster.data) ? poster.data[0] : poster.data;
 
 		const t = encodeURIComponent(tournamentId);
-		const track = document.createElement('div');
-		track.className = 'league-nav-track scroll-x';
-		for (const [key, label, runners] of TABS) {
-			if (runners && !iRunIt) continue;
-			const item = document.createElement('button');
-			item.type = 'button';
-			item.className = 'league-nav-item';
-			item.dataset.tab = key;
-			item.textContent = label;
-			track.append(item);
-		}
+		const pill = (forRunners) => {
+			const track = document.createElement('div');
+			track.className = 'league-nav-track scroll-x';
+			for (const [key, label, runners] of TABS) {
+				if (runners !== forRunners) continue;
+				const item = document.createElement('button');
+				item.type = 'button';
+				item.className = 'league-nav-item';
+				item.dataset.tab = key;
+				item.textContent = label;
+				track.append(item);
+			}
+			return track;
+		};
+		const track = pill(false);
 		if (iRunIt || posterRow) {
 			const item = document.createElement('a');
 			item.className = 'league-nav-item';
@@ -159,6 +172,13 @@ const TDCTournamentNav = (() => {
 		nav.replaceChildren(track);
 		nav.setAttribute('aria-label', 'This tournament’s pages');
 		nav.hidden = false;
+
+		const admin = document.getElementById('tournament-nav-admin');
+		if (admin && iRunIt) {
+			admin.replaceChildren(pill(true));
+			admin.setAttribute('aria-label', 'Running this tournament');
+			admin.hidden = false;
+		}
 		mark(current);
 
 		// A tab for the people running it, opened by somebody who does not:
@@ -167,7 +187,7 @@ const TDCTournamentNav = (() => {
 	}
 
 	document.addEventListener('click', (e) => {
-		const item = e.target.closest('#tournament-nav button[data-tab]');
+		const item = e.target.closest('#tournament-nav button[data-tab], #tournament-nav-admin button[data-tab]');
 		if (!item) return;
 		open(item.dataset.tab, { push: true, tab: item });
 	});
@@ -181,5 +201,5 @@ const TDCTournamentNav = (() => {
 		if (typeof TDCLoader !== 'undefined') TDCLoader.hold(bar, 'the tournament’s tabs');
 	});
 
-	return { show, panel, open };
+	return { show, panel, open, managing };
 })();

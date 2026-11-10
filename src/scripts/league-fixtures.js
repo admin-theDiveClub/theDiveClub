@@ -60,6 +60,7 @@ TDCLeagueNav.panel('fixtures', () => {
 	let teams = [];
 	let teamById = new Map();
 	let teamPictures = new Map(); // team id -> picture_path, or null
+	let mayRun = false;
 	let iRunIt = false;
 	let myTeamId = null;        // so a captain can find their own night
 	let selected = null;        // { day: 'YYYY-MM-DD' } or { round: n } (a round with no date)
@@ -194,11 +195,19 @@ TDCLeagueNav.panel('fixtures', () => {
 
 		els.name.textContent = info.league_name + ' — ' + info.name;
 		TDC.venueHeading(els.meta, '', info.venues);
-		iRunIt = !!info.i_run_it;
+		mayRun = !!info.i_run_it;
+		applyMode();
+		return true;
+	}
 
+	// The director's controls show on Schedule alone; on Fixtures whoever runs
+	// the league sees what a player sees (UV, 10 Nov). True if that changed.
+	function applyMode() {
+		const was = iRunIt;
+		iRunIt = mayRun && TDCLeagueNav.managing();
 		els.generatePanel.hidden = !iRunIt;
 		els.addPanel.hidden = !iRunIt;
-		return true;
+		return was !== iRunIt;
 	}
 
 	// ─── Readiness, said before the button is pressed ───
@@ -1379,5 +1388,11 @@ TDCLeagueNav.panel('fixtures', () => {
 
 	// Shown again as a tab (league-nav.js): read again in place, as a live
 	// change would be (waiting while the director's hands are on something).
-	return { refresh: () => { if (!signedOut) onLive(null); } };
+	return {
+		refresh: () => {
+			if (signedOut) return;
+			if (applyMode()) { moving = null; movingNight = false; loadAll(); }
+			else onLive(null);
+		}
+	};
 });

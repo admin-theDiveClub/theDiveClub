@@ -15,15 +15,17 @@ extraScripts:
   - /scripts/league-standings.js
   - /scripts/league-manage.js
   - /scripts/league-standings-edit.js
+  - /scripts/league-rules.js
   - /scripts/venue-picker.js
   - /scripts/short-code-field.js
   - /scripts/league-settings.js
 ---
 {% comment %}
 	A league season's one page (UV, 29 Oct), and since 10 Nov the one a director
-	shares: the join page was folded into its Season tab. Season, Fixtures, Run it and
-	Settings as tabs that switch in place (league-nav.js), at
-	/leagues/season/?s=<league season id>&tab=<fixtures|manage|settings>.
+	shares: the join page was folded into its Season tab. Season, Fixtures, Standings
+	and Rules as tabs that switch in place (league-nav.js), with Run it, Schedule and
+	Settings in a second pill for whoever runs it, at
+	/leagues/season/?s=<league season id>&tab=<fixtures|standings|rules|manage|schedule|settings>.
 	Each tab's panel is its own include in _includes/league/, written as the
 	page it used to be, and each panel's script starts the first time its tab
 	is opened. The ids the old pages shared are prefixed in the panels that
@@ -36,6 +38,7 @@ extraScripts:
 
 <div class="tdc-card wide">
 	<nav class="league-nav" id="league-nav" data-page="season" hidden></nav>
+	<nav class="league-nav league-nav-admin" id="league-nav-admin" hidden></nav>
 
 	<div class="league-panel" data-tab="season" data-title="League Season" hidden>
 {% include "league/season.html" %}
@@ -47,6 +50,10 @@ extraScripts:
 
 	<div class="league-panel" data-tab="standings" data-title="Standings" hidden>
 {% include "league/standings.html" %}
+	</div>
+
+	<div class="league-panel" data-tab="rules" data-title="League Rules" hidden>
+{% include "league/rules.html" %}
 	</div>
 
 	<div class="league-panel" data-tab="manage" data-title="Run a League" hidden>

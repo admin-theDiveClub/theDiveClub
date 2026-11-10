@@ -642,6 +642,8 @@ input:is([type="date"], [type="time"], [type="datetime-local"]):where(:not(table
 	border: 0;
 	box-shadow: var(--nm-sunken);
 }
+/* The tabs only whoever runs it has (UV, 10 Nov): a second pill, just under the first. */
+.league-nav:has(+ .league-nav-admin:not([hidden])) { margin-bottom: var(--space-2); }
 .league-nav-track { position: relative; flex: 1; gap: 0; padding: var(--space-1); }
 .league-nav-item,
 .tdc-card button.league-nav-item {

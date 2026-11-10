@@ -15,9 +15,10 @@ extraScripts:
   - /scripts/tournament-settings.js
 ---
 {% comment %}
-	A tournament's one page (UV, 5 Nov): Draw, Entrants and Settings as tabs
-	that switch in place (tournament-nav.js), as a league season's are, at
-	/tournaments/bracket/?t=<tournament id>&tab=<entrants|settings>. Each
+	A tournament's one page (UV, 5 Nov): Draw for everybody, and Run the draw,
+	Entrants and Settings in a second pill for whoever runs it (UV, 10 Nov), as
+	tabs that switch in place (tournament-nav.js), as a league season's are, at
+	/tournaments/bracket/?t=<tournament id>&tab=<run|entrants|settings>. Each
 	tab's panel is its own include in _includes/tournament/, the first two
 	written as the pages they used to be, and each panel's script starts the
 	first time its tab is opened. The Poster keeps its own address (anybody
@@ -28,6 +29,7 @@ extraScripts:
 
 <div class="tdc-card wide">
 	<nav class="league-nav" id="tournament-nav" hidden></nav>
+	<nav class="league-nav league-nav-admin" id="tournament-nav-admin" hidden></nav>
 
 	<div class="tournament-panel" data-tab="draw" data-title="Draw" hidden>
 {% include "tournament/draw.html" %}

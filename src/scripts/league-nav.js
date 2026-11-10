@@ -22,9 +22,13 @@
 // page learns its season late (opened by match), so it puts data-auto="no"
 // on the bar and calls TDCLeagueNav.show(seasonId).
 //
-// The tabs only the people running the league can use (Run it, Settings,
-// New season) are offered to them alone: tdc_league_season_info says who
-// they are, and each of those panels refuses anybody else anyway.
+// The tabs only the people running the league can use (Run it, Schedule,
+// Settings, New season) are offered to them alone, in a second pill under the
+// first (UV, 10 Nov): tdc_league_season_info says who they are, and each of
+// those panels refuses anybody else anyway. The first pill is the league as a
+// player sees it, for them too, so a director can show it to somebody on their
+// phone. Schedule is the Fixtures panel with its director's controls on, and
+// managing() is how a panel shared that way knows which it is being.
 //
 // The tab the page opens on, and the bar itself, hold the loading screen
 // until they have read (loader.js, 29 Oct); a tab opened later gets a screen
@@ -37,14 +41,18 @@
 const TDCLeagueNav = (() => {
 	const AREA = 'League pages';
 
-	// [key, label, only for the people running it]
+	// [key, label, only for the people running it, the panel if not its own]
 	const TABS = [
 		['season', 'Season', false],
 		['fixtures', 'Fixtures', false],
 		['standings', 'Standings', false],
+		['rules', 'Rules', false],
 		['manage', 'Run it', true],
+		['schedule', 'Schedule', true, 'fixtures'],
 		['settings', 'Settings', true]
 	];
+	const tabOf = (key) => TABS.find(([k]) => k === key);
+	const panelOf = (key) => (tabOf(key) && tabOf(key)[3]) || key;
 	const tabUrl = (s, key) => '/leagues/season/?s=' + s + (key === 'season' ? '' : '&tab=' + key);
 	const newSeasonUrl = (info) => '/leagues/new/?l=' + encodeURIComponent(info.league_id);
 
@@ -56,7 +64,9 @@ const TDCLeagueNav = (() => {
 
 	const panels = () => [...document.querySelectorAll('.league-panel')];
 	const tabbed = () => panels().length > 0;
-	const known = (key) => TABS.some(([k]) => k === key);
+	const known = (key) => !!tabOf(key);
+	// Whether the tab showing is one of the second pill's.
+	const managing = () => !!(tabOf(current) && tabOf(current)[2]);
 	const tabInAddress = () => {
 		const t = new URLSearchParams(location.search).get('tab');
 		return known(t) ? t : 'season';
@@ -69,21 +79,22 @@ const TDCLeagueNav = (() => {
 
 	// The tab in the green pill, wherever the bar has got to drawing.
 	function mark(key) {
-		const nav = document.getElementById('league-nav');
-		if (!nav) return;
-		for (const item of nav.querySelectorAll('[data-tab]')) {
-			if (item.dataset.tab === key) item.setAttribute('aria-current', 'page');
-			else item.removeAttribute('aria-current');
+		for (const nav of document.querySelectorAll('#league-nav, #league-nav-admin')) {
+			for (const item of nav.querySelectorAll('[data-tab]')) {
+				if (item.dataset.tab === key) item.setAttribute('aria-current', 'page');
+				else item.removeAttribute('aria-current');
+			}
+			const here = nav.querySelector('[aria-current]');
+			const track = nav.querySelector('.league-nav-track');
+			if (here && track) track.scrollLeft = here.offsetLeft - (track.clientWidth - here.offsetWidth) / 2;
 		}
-		const here = nav.querySelector('[aria-current]');
-		const track = nav.querySelector('.league-nav-track');
-		if (here && track) track.scrollLeft = here.offsetLeft - (track.clientWidth - here.offsetWidth) / 2;
 	}
 
 	// Show a tab's panel, starting its script the first time. push: put it in
 	// the address (a tap). tab: the pill item tapped, for the dots.
 	function open(key, { push = false, tab = null } = {}) {
-		const target = document.querySelector(`.league-panel[data-tab="${key}"]`);
+		const shown = panelOf(key);
+		const target = document.querySelector(`.league-panel[data-tab="${shown}"]`);
 		if (!target) { TDC.error(AREA, `this page has no "${key}" tab.`); return; }
 		if (push && key !== current) {
 			const u = new URL(location.href);
@@ -98,29 +109,29 @@ const TDCLeagueNav = (() => {
 
 		let call = null;
 		const before = typeof TDCNet !== 'undefined' ? TDCNet.started : 0;
-		const first = !started.has(key);
+		const first = !started.has(shown);
 		if (!first) {
 			// Shown again: read again in place (item 13), the changed text
 			// fading. Settings returns none, so a half-made change is kept.
-			const refresh = refreshers.get(key);
+			const refresh = refreshers.get(shown);
 			if (refresh && key !== was) {
 				try { refresh(); }
 				catch (err) { TDC.error(AREA, `the "${key}" tab could not be read again.`, err, target.querySelector('.status')); }
 			}
 		} else {
-			started.add(key);
+			started.add(shown);
 			// Opened after the page has loaded: the screen over this tab
 			// alone (UV, 5 Nov), up before its script starts so the holds
 			// the script makes join it. Opened with the page, the page's own
 			// screen is up and covers it.
 			if (typeof TDCLoader !== 'undefined' && !TDCLoader.up) TDCLoader.cover(target, `the ${target.dataset.title || key} tab`);
-			const start = starts.get(key);
+			const start = starts.get(shown);
 			if (!start) {
 				TDC.error(AREA, `the "${key}" tab has no script.`, null, target.querySelector('.status'));
 			} else {
 				try {
 					const got = start();
-					if (got && typeof got.refresh === 'function') refreshers.set(key, got.refresh);
+					if (got && typeof got.refresh === 'function') refreshers.set(shown, got.refresh);
 				} catch (err) { TDC.error(AREA, `the "${key}" tab could not start.`, err, target.querySelector('.status')); }
 			}
 		}
@@ -158,38 +169,50 @@ const TDCLeagueNav = (() => {
 
 		const s = encodeURIComponent(seasonId);
 		const tabs = tabbed();
-		const track = document.createElement('div');
-		track.className = 'league-nav-track scroll-x';
-		for (const [key, label, runners] of TABS) {
-			if (runners && !info.i_run_it) continue;
-			let item;
-			if (tabs) {
-				item = document.createElement('button');
-				item.type = 'button';
-			} else {
-				item = document.createElement('a');
-				item.href = tabUrl(s, key);
+		const pill = (forRunners) => {
+			const track = document.createElement('div');
+			track.className = 'league-nav-track scroll-x';
+			for (const [key, label, runners] of TABS) {
+				if (runners !== forRunners) continue;
+				let item;
+				if (tabs) {
+					item = document.createElement('button');
+					item.type = 'button';
+				} else {
+					item = document.createElement('a');
+					item.href = tabUrl(s, key);
+				}
+				item.className = 'league-nav-item';
+				item.dataset.tab = key;
+				item.textContent = label;
+				track.append(item);
 			}
-			item.className = 'league-nav-item';
-			item.dataset.tab = key;
-			item.textContent = label;
-			track.append(item);
-		}
-		if (info.i_run_it) {
+			return track;
+		};
+		nav.replaceChildren(pill(false));
+		nav.setAttribute('aria-label', 'This league’s pages');
+		nav.hidden = false;
+
+		const admin = document.getElementById('league-nav-admin');
+		if (admin && info.i_run_it) {
+			const track = pill(true);
 			const item = document.createElement('a');
 			item.className = 'league-nav-item';
 			item.href = newSeasonUrl(info);
 			item.textContent = 'New season';
 			track.append(item);
+			admin.replaceChildren(track);
+			admin.setAttribute('aria-label', 'Running this league');
+			admin.hidden = false;
 		}
-		nav.replaceChildren(track);
-		nav.setAttribute('aria-label', 'This league’s pages');
-		nav.hidden = false;
 		if (tabs) mark(current); else mark(nav.dataset.page);
+
+		// Schedule in the address for somebody who does not run it: Fixtures.
+		if (tabs && !info.i_run_it && current === 'schedule') open('fixtures');
 	}
 
 	document.addEventListener('click', (e) => {
-		const item = e.target.closest('#league-nav button[data-tab]');
+		const item = e.target.closest('#league-nav button[data-tab], #league-nav-admin button[data-tab]');
 		if (!item) return;
 		open(item.dataset.tab, { push: true, tab: item });
 	});
@@ -205,5 +228,5 @@ const TDCLeagueNav = (() => {
 		if (typeof TDCLoader !== 'undefined') TDCLoader.hold(bar, 'the league’s tabs');
 	});
 
-	return { show, panel, open };
+	return { show, panel, open, managing };
 })();
