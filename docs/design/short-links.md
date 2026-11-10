@@ -49,7 +49,7 @@ Full names, so a list of links can be searched elsewhere.
 - **Built by the site, never chosen.** First name, dash, surname, each word kept (`Mary-Anne-van-der-Merwe`). Accents come off and apostrophes close up (`Jose-OBrien`).
 - **The first to register has the plain name.** The next person with it gets `-2`, then `-3`.
 - **It follows the name.** Change your name and the link changes; the old one stops working and anybody may have it. Saving the same name keeps the link, its number included.
-- **No first name or surname, no link.** Share gives the long address, and your own page says why.
+- **No first name or surname, no link.** Share gives the long address, and your own page says why. Sign-up asks for both and can be skipped, with the same warning; somebody who skipped is asked again at each sign-in until both are in.
 - **Only somebody with an account has one**, so a walk-in cannot hold a name ahead of the person who later registers. Merging a walk-in gives them one.
 - **A signed-out visitor is always asked to sign in first, found or not**, so nobody can test names to learn who belongs to the club.
 - **A name cannot clash with another code.** It holds only letters, so it is never all digits and never ends in a number but the one added. A first name reading `T-` or `L-`, or either name under two letters, gets no link: `T-Bone` would read as a tournament's code.

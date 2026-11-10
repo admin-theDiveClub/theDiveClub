@@ -1733,3 +1733,11 @@ These predate the log. They are recorded here because every one of them is a dec
 *Left open by UV:* the wording for a withdrawn player against the + in the banner ("leave it for now").
 *So:* `docs/systems/leagues.md`, "My Season".
 *Touches:* no migration. `_includes/league/season.html`, `scripts/league-season.js`, `stylesheets/league.css`
+
+## 2026-11-10 — First name and surname asked for at sign-up, and skippable
+
+*Decided by UV:* sign-up asks for a first name and surname, and a player may skip them, with the warning that no short link will exist without both. Somebody who skipped is asked again at each sign-in until both are in.
+*Rejected:* making the names required, with the site waiting until they are in; asking once only; refusing a lone initial.
+*Claude's, for UV to judge:* Google sends one full name, so the screen starts its boxes off with the first word and the rest, and nothing is saved until Save; Save needs both names, since Skip covers leaving them out; somebody who leaves the email form's names blank meets the screen after confirming their email; a signed-in player with a name missing who opens `/accounts/` meets it too.
+*So:* `docs/design/short-links.md`, "Players"; `docs/systems/foundations.md`, "Short links".
+*Touches:* migration `20261110093122_signup_names.sql`, `supabase/tests/068_signup_names.test.sql`, `accounts/index.html`, `accounts/names/index.html`, `scripts/auth.js`, `scripts/account-names.js`

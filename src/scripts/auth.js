@@ -8,6 +8,9 @@
 	const formTitle        = document.getElementById('form-title');
 	const displayNameField = document.getElementById('display-name-field');
 	const displayNameInput = document.getElementById('display-name');
+	const namesFields      = document.getElementById('names-fields');
+	const firstNameInput   = document.getElementById('first-name');
+	const lastNameInput    = document.getElementById('last-name');
 	const emailInput       = document.getElementById('email');
 	const passwordInput    = document.getElementById('password');
 	const passwordHint     = document.getElementById('password-hint');
@@ -25,6 +28,17 @@
 	// Where to go after logging in (only pages on this site).
 	const next = TDC.safeNext('/');
 
+	// Signed in: on to the next page, by way of /accounts/names/ while either name
+	// is missing (UV, 10 Nov). Once only, as signing in also fires the listener below.
+	let goingOn = false;
+	async function goOn(userId) {
+		if (goingOn) return;
+		goingOn = true;
+		const me = await TDC.getMyPlayer(AREA, userId, statusEl);
+		if (!me) return;   // the error is on the page
+		location.replace(me.first_name && me.last_name ? next : '/accounts/names/?next=' + encodeURIComponent(next));
+	}
+
 	let mode = 'login'; // or 'signup'
 
 	function updateModeUI() {
@@ -33,6 +47,7 @@
 		submitBtn.textContent        = signup ? 'Create Account' : 'Log In';
 		toggleBtn.textContent        = signup ? 'Already have an account? Log in' : "Don't have an account? Sign up";
 		displayNameField.hidden      = !signup;
+		namesFields.hidden           = !signup;
 		passwordHint.hidden          = !signup;
 		forgotRow.hidden             = signup;
 		passwordInput.autocomplete   = signup ? 'new-password' : 'current-password';
@@ -86,7 +101,11 @@
 					email,
 					password,
 					options: {
-						data: { display_name: displayNameInput.value.trim() },
+						data: {
+							display_name: displayNameInput.value.trim(),
+							first_name: firstNameInput.value.trim(),
+							last_name: lastNameInput.value.trim()
+						},
 						emailRedirectTo: location.origin + '/accounts/'
 					}
 				}), statusEl);
@@ -104,7 +123,7 @@
 				updateModeUI();
 				TDC.status(statusEl, 'Check your email for a confirmation link, then log in.', 'success');
 			} else {
-				const { error } = await TDC.busy(submitBtn, supabaseClient.auth.signInWithPassword({ email, password }), statusEl);
+				const { data, error } = await TDC.busy(submitBtn, supabaseClient.auth.signInWithPassword({ email, password }), statusEl);
 
 				if (error) {
 					if (error.code === 'email_not_confirmed') {
@@ -117,7 +136,7 @@
 					return;
 				}
 
-				location.replace(next);
+				await goOn(data.user.id);
 			}
 		} catch (err) {
 			TDC.error(AREA, 'unexpected problem while ' + (mode === 'signup' ? 'signing up.' : 'logging in.'), err, statusEl);
@@ -145,7 +164,8 @@
 	// Already logged in (including coming back from Google or an email link): go on to the next page.
 	supabaseClient.auth.onAuthStateChange((event, session) => {
 		if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
-			location.replace(next);
+			// After this callback: a database call from inside it never comes back.
+			setTimeout(() => goOn(session.user.id), 0);
 		}
 	});
 

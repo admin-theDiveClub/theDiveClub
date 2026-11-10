@@ -1,0 +1,37 @@
+---
+layout: layout.html
+title: Your Name
+description: Add your first name and surname at The Dive Club.
+extraScripts:
+  - /scripts/account-names.js
+---
+{% comment %}
+	Shown after signing in while a first name or surname is missing (UV, 10 Nov).
+	Optional: Skip goes on, and it asks again at the next sign-in. auth.js sends
+	people here. account-names.js fills it in.
+{% endcomment %}
+
+<div class="tdc-card">
+	<div id="names-body" hidden>
+		<h1>Your name</h1>
+		<p class="muted">Without both your first name and surname, you will have no short link to your profile.</p>
+
+		<form id="names-form" novalidate>
+			<div class="field">
+				<label for="names-first">First name</label>
+				<input type="text" id="names-first" maxlength="100" autocomplete="given-name">
+			</div>
+			<div class="field">
+				<label for="names-last">Surname</label>
+				<input type="text" id="names-last" maxlength="100" autocomplete="family-name">
+			</div>
+			<button type="submit" class="btn-primary" id="names-save">Save</button>
+		</form>
+
+		<div class="link-row">
+			<button type="button" class="link" id="names-skip">Skip for now</button>
+		</div>
+	</div>
+
+	<div class="status" id="names-status"></div>
+</div>
