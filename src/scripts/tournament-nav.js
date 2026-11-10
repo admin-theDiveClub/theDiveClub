@@ -2,8 +2,8 @@
 // (league-nav.js, whose sibling this is: the same bar, the same way of
 // opening a tab, the same loading screens; keep the two in step).
 //
-// One page, /tournaments/bracket/?t=<tournament id>&tab=<run|entrants|settings>:
-// Draw (everybody, as a player sees it) in the first pill; Run the draw, Entrants
+// One page, /tournaments/bracket/?t=<tournament id>&tab=<rules|run|entrants|settings>:
+// Draw and Rules (everybody, as a player sees them) in the first pill; Run the draw, Entrants
 // and Settings (the people running it) in a second pill under it (UV, 10 Nov).
 // Run the draw is the Draw panel with its director's controls on, and managing()
 // is how that panel knows which it is being. Each is a
@@ -32,6 +32,7 @@ const TDCTournamentNav = (() => {
 	// [key, label, only for the people running it, the panel if not its own]
 	const TABS = [
 		['draw', 'Draw', false],
+		['rules', 'Rules', false],
 		['run', 'Run the draw', true, 'draw'],
 		['entrants', 'Entrants', true],
 		['settings', 'Settings', true]
