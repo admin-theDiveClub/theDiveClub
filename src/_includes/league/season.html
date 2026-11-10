@@ -18,16 +18,29 @@
 	open one team and bring it into view (a team's name on the fixtures page).
 {% endcomment %}
 
-	<section class="jumbo" id="jumbo">
-		<div class="jumbo-pic" id="jumbo-pic"></div>
-		<div class="jumbo-main">
-			<h1 class="jumbo-title"><span id="l-name">League</span> <span class="badge jumbo-status" id="jumbo-status" hidden></span></h1>
-			<p class="jumbo-season" id="l-meta"></p>
+	<section class="jumbo lj-hero" id="jumbo">
+		<div class="lj-corner">
+			<button type="button" class="lj-icon" id="share-btn" data-icon="share" title="Share" aria-label="Share"><span class="tdc-ring"></span></button>
+			<button type="button" class="lj-icon lj-icon-go" id="interest-btn" data-icon="plus" title="Put my name down" aria-label="Put my name down" hidden><span class="tdc-ring"></span></button>
+		</div>
+		<div class="lj-id">
+			<span class="lj-pic"><span class="lj-pic-inner" id="jumbo-pic"></span></span>
+			<div class="lj-names">
+				<h1 id="l-name">League</h1>
+				<p class="lj-season" id="l-meta"></p>
+			</div>
 		</div>
 		<dl class="jumbo-facts" id="jumbo-facts"></dl>
 	</section>
 
-	<section class="league-stats" id="stats" aria-label="The league so far"></section>
+	<div class="status" id="page-status"></div>
+
+	<section class="lj-numbers" id="stats" aria-label="The league in numbers"></section>
+
+	<div class="lj-notes-box" id="notes-box" hidden>
+		<h2>From whoever runs it</h2>
+		<p class="lj-notes" id="l-notes"></p>
+	</div>
 
 	{% comment %}
 		Two tabs under the numbers (UV, 5 Nov): Teams, and Players (your own
@@ -37,11 +50,14 @@
 	{% endcomment %}
 	<div class="cp-views ls-views" id="ls-views" role="group" aria-label="Teams or players" hidden>
 		<button type="button" class="cp-view" data-ls-view="teams" aria-pressed="true">Teams <span class="ls-view-count" id="team-count" hidden></span></button>
-		<button type="button" class="cp-view" data-ls-view="players" aria-pressed="false">Players</button>
+		<button type="button" class="cp-view" data-ls-view="players" aria-pressed="false">My Season</button>
 	</div>
 
+	<h2 id="teams-head" hidden>Teams <span class="badge" id="teams-head-count" hidden></span></h2>
+
 	<div id="ls-teams">
-		<div class="team-boxes" id="team-list"></div>
+		<p class="muted" id="teams-hint" hidden></p>
+		<div class="team-boxes lj-teams" id="team-list"></div>
 		<div class="empty" id="team-empty" hidden>No teams yet. Whoever runs the league makes them.</div>
 	</div>
 
@@ -64,8 +80,8 @@
 		</section>
 
 		{% comment %}
-			Captains only (UV, 5 Nov). Players who asked on the join page to
-			join this captain's team: Take puts them on it (the same claim as
+			Captains only (UV, 5 Nov). Players who asked with the ring on a card
+			to join this captain's team: Take puts them on it (the same claim as
 			below), Decline turns them down.
 		{% endcomment %}
 		<section class="ls-pool" id="ask-panel" hidden>
@@ -92,8 +108,20 @@
 		</section>
 	</div>
 
-	<h2>Who runs it</h2>
-	<div id="official-list"></div>
+	<h2>Rules</h2>
+	<div class="lj-rules" id="l-rules"></div>
 
-	<div class="status" id="page-status"></div>
+	<h2>Nights <span class="badge" id="night-count" hidden></span></h2>
+	<div class="cal-months" id="l-nights"></div>
+	<p class="lj-key" id="night-key" hidden>
+		<span class="lj-key-item is-later">Coming up</span>
+		<span class="lj-key-item is-next">Next</span>
+		<span class="lj-key-item is-live">Playing</span>
+		<span class="lj-key-item is-done">Played</span>
+	</p>
+	<div class="lj-picked" id="night-picked" aria-live="polite" hidden></div>
+	<p class="muted" id="night-note" hidden></p>
+
+	<h2>Who runs it</h2>
+	<div class="lj-officials" id="official-list"></div>
 

@@ -158,7 +158,7 @@ select is(public.tdc_short_link('match', :'m_c') ->> 'code', 'T-BC26-3', 'a numb
 -- ─── Leagues ───
 
 select tests.sign_in_anon();
-select is(public.tdc_resolve_short_code('L-BCDAM') ->> 'path', '/leagues/join/?s=' || :'s1', 'signed out: the join page');
+select is(public.tdc_resolve_short_code('L-BCDAM') ->> 'path', '/leagues/season/?s=' || :'s1', 'signed out: the season page');
 select tests.sign_out();
 
 select tests.sign_in(:'dee');
@@ -188,7 +188,7 @@ select tests.sign_out();
 
 select tests.create_user('Link Joe') as joe \gset
 select tests.sign_in(:'joe');
-select is(public.tdc_resolve_short_code('L-BCDAM') ->> 'path', '/leagues/join/?s=' || :'s1', 'signed in, not part of it: the join page');
+select is(public.tdc_resolve_short_code('L-BCDAM') ->> 'path', '/leagues/season/?s=' || :'s1', 'signed in, not part of it: the season page');
 select tests.sign_out();
 
 select tests.sign_in(:'dee');
@@ -196,7 +196,7 @@ select public.tdc_create_league_season(:'l1', 'Second') as s2 \gset
 select tests.sign_out();
 update public.tbl_league_seasons set created_at = now() + interval '1 day' where id = :'s2';
 
-select is(public.tdc_resolve_short_code('L-BCDAM') ->> 'path', '/leagues/join/?s=' || :'s2', 'a league''s code follows its newest season');
+select is(public.tdc_resolve_short_code('L-BCDAM') ->> 'path', '/leagues/season/?s=' || :'s2', 'a league''s code follows its newest season');
 select is(public.tdc_resolve_short_code('L-BCDAM-1') ->> 'path', '/leagues/card/?m=' || :'lm', 'and an old season''s match still opens');
 
 -- ─── Nonsense ───

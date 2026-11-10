@@ -906,7 +906,7 @@ button.league-nav-item:focus-visible { outline: 2px solid var(--nm-light-colour)
 /* A team's name is blue wherever it stands on its own (UV, 9 Nov). A new place
    joins this list, or takes .team-name. The card's summary keeps its own colour
    for the side that is ahead. */
-html :is(.team-name, .cj-name, .cs-team, .tdc-card .h2h-title, .card-players .cp-team, .fx-name, .team-box-name, .team-sep-name, .lj-team-name, .pp-team-name, .sd-team-row .sd-name) { color: var(--color-team); }
+html :is(.team-name, .cj-name, .cs-team, .tdc-card .h2h-title, .card-players .cp-team, .fx-name, .team-box-name, .team-sep-name, .pp-team-name, .sd-team-row .sd-name) { color: var(--color-team); }
 
 /* ── Anything that fades ───────────────────────────────────────────── */
 [data-motion="reduce"] :is(.tdc-drop::before, .tdc-drop::after),

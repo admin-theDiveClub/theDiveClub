@@ -1040,7 +1040,7 @@ button.league-nav-item:focus-visible { background: var(--hover-wash); outline: n
 .short-code-row .btn { flex: 0 0 auto; }
 .short-code-prefix { color: var(--text-muted); flex: 0 0 auto; }
 
-/* The Share button on a poster, join page or team card (short links, UV 9 Nov):
+/* The Share button on a poster, league season or team card (short links, UV 9 Nov):
    at the right, its own size rather than the row's full width. */
 .share-row { justify-content: flex-end; }
 .share-row > .btn { flex: 0 0 auto; }

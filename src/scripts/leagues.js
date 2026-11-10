@@ -380,7 +380,7 @@
 	function tile(l) {
 		const box = document.createElement('a');
 		box.className = 'league-tile league-status-' + l.status;
-		box.href = '/leagues/join/?s=' + encodeURIComponent(l.league_season_id);
+		box.href = '/leagues/season/?s=' + encodeURIComponent(l.league_season_id);
 
 		const pic = el('div', 'league-tile-pic');
 		pic.append(TDC.leaguePic(pictures.get(l.league_season_id)));

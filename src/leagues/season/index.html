@@ -4,6 +4,7 @@ title: League Season
 description: "A league season: the league, its fixtures, and for the people running it, running it and its settings."
 extraStyles:
   - /stylesheets/league.css
+  - /stylesheets/league-join.css
 extraScripts:
   - /scripts/match-settings.js
   - /scripts/league-nav.js
@@ -19,7 +20,8 @@ extraScripts:
   - /scripts/league-settings.js
 ---
 {% comment %}
-	A league season's one page (UV, 29 Oct): Season, Fixtures, Run it and
+	A league season's one page (UV, 29 Oct), and since 10 Nov the one a director
+	shares: the join page was folded into its Season tab. Season, Fixtures, Run it and
 	Settings as tabs that switch in place (league-nav.js), at
 	/leagues/season/?s=<league season id>&tab=<fixtures|manage|settings>.
 	Each tab's panel is its own include in _includes/league/, written as the

@@ -972,26 +972,6 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 }
 
 /* The numbers so far: tiles, as many to a row as fit. */
-.league-stats {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(min(100%, 6.25rem), 1fr));
-	gap: var(--space-3);
-	margin-bottom: var(--space-5);
-}
-.league-stat {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	gap: var(--space-1);
-	padding: var(--space-3) var(--space-2);
-	border-radius: var(--nm-field-radius);
-	text-align: center;
-	box-shadow: var(--nm-sunken);
-}
-.league-stat-value { font-size: 1.5rem; font-weight: 700; color: var(--color-primary); line-height: 1.1; }
-.league-stat-label { font-size: 0.85rem; color: var(--text-muted); }
-
 /* A team: a pill that folds, as a set-group does, whose header is its shield,
  * name and numbers. Your own team glows from the edge inward. */
 .team-boxes { display: flex; flex-direction: column; gap: var(--space-5); margin-bottom: var(--space-5); }
@@ -1039,9 +1019,6 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	transition: transform 0.35s ease, opacity var(--dots-dim) ease;
 }
 .team-box[open] > summary::after { transform: rotate(180deg); }
-/* A team loading its players: the dots sit on the arrow (TDC.groupDots), which
-   hides meanwhile. */
-.team-box > summary > .group-dots { right: calc(var(--nm-pad) - 0.2rem); }
 .team-box > summary .team-pic { width: 2.75rem; height: 2.75rem; }
 .team-box-names { display: flex; flex-direction: column; min-width: 0; }
 .team-box-name { font-weight: 600; overflow-wrap: break-word; }

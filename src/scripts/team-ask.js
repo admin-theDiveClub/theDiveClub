@@ -1,6 +1,6 @@
 // The ring with which a league player on no team asks to join a team (UV,
-// 5 Nov; 20261105153021). Shared by the join page's team cards and the
-// season page's Teams tab, so it is drawn one way: a person with a plus to
+// 5 Nov; 20261105153021). Drawn on the team cards of the season page's Teams
+// tab: a person with a plus to
 // ask, a tick in a green ring once asked, greyed when the team is full and
 // not asked. Each page sends the request through its own writer
 // (tdc_request_team, tdc_cancel_team_request) and finds the ring again after

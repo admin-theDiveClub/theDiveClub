@@ -1,4 +1,6 @@
-// A league season, as a player sees it (/leagues/season/?s=<league season id>).
+// A league season, as a player sees it (/leagues/season/?s=<league season id>),
+// in the league or not: the one page for a league, and the one a director
+// shares. The join page was folded into it (UV, 9-10 Nov).
 //
 // At the top, the league (UV, 24 Oct): a banner with its picture, name,
 // status and how it is played, read from the season info, the season's own
@@ -13,8 +15,9 @@
 //     can say they are not playing after all.
 //   • The league. Teams with their rosters (each player's picture, name and
 //     a link to their profile, still to be built), and who runs it.
-//   • Asked to join (UV, 5 Nov), if you captain a team: players who asked on
-//     the join page to join it. Take is the same claim as below; Decline.
+//   • Asked to join (UV, 5 Nov), if you captain a team: players who asked,
+//     with the ring on its card, to join it. Take is the same claim as below;
+//     Decline.
 //   • Your team, if you captain one. Claim a player who has confirmed and is on
 //     no team, release one, name another captain, rename the team.
 //
@@ -37,11 +40,14 @@ TDCLeagueNav.panel('season', () => {
 		meConfirm: el('me-confirm'), meWithdraw: el('me-withdraw'), meAway: el('me-away'), mePic: el('me-pic'),
 		views: el('ls-views'), teamsView: el('ls-teams'), playersView: el('ls-players'),
 		poolPlaces: el('pool-places'),
-		jumbo: el('jumbo'), jumboPic: el('jumbo-pic'), jumboStatus: el('jumbo-status'), jumboFacts: el('jumbo-facts'),
-		stats: el('stats'),
+		jumbo: el('jumbo'), jumboPic: el('jumbo-pic'), jumboFacts: el('jumbo-facts'),
+		share: el('share-btn'), interestBtn: el('interest-btn'),
+		stats: el('stats'), notesBox: el('notes-box'), notes: el('l-notes'), rules: el('l-rules'),
+		nights: el('l-nights'), nightCount: el('night-count'), nightKey: el('night-key'), nightPicked: el('night-picked'), nightNote: el('night-note'),
+		teamsHead: el('teams-head'), teamsHeadCount: el('teams-head-count'),
 		poolPanel: el('pool-panel'), poolHint: el('pool-hint'), poolList: el('pool-list'),
 		askPanel: el('ask-panel'), askCount: el('ask-count'), askHint: el('ask-hint'), askList: el('ask-list'),
-		teamCount: el('team-count'), teamList: el('team-list'), teamEmpty: el('team-empty'),
+		teamCount: el('team-count'), teamList: el('team-list'), teamEmpty: el('team-empty'), teamsHint: el('teams-hint'),
 		officialList: el('official-list'),
 		status: el('page-status'),
 		meCard: el('me-card')
@@ -58,9 +64,10 @@ TDCLeagueNav.panel('season', () => {
 	// ─── State ───
 	let info = null;
 	let mine = null;            // my row from tdc_my_leagues, or null
+	let joinInfo = null;        // tdc_league_join_info: where I stand, for anybody signed in
 	let myPlayerId = null;      // tdc_my_leagues does not carry it; marking myself away needs it
 	let teams = [];
-	let rosters = new Map();    // team id -> roster rows, loaded when a team is opened
+	let rosters = new Map();    // team id -> roster rows
 	let teamPictures = new Map(); // team id -> picture_path, or null
 	const openTeams = new Set();
 	let officials = [];
@@ -172,6 +179,17 @@ TDCLeagueNav.panel('season', () => {
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 
 		mine = (data || []).find((l) => l.league_season_id === seasonId) || null;
+		return true;
+	}
+
+	// Where I stand and how somebody gets in: it answers
+	// any signed-in player, in the league or not, and decides the plus.
+	async function loadJoinInfo() {
+		const { data, error } = await supabaseClient.rpc('tdc_league_join_info', {
+			p_league_season_id: seasonId
+		});
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
+		joinInfo = (data || [])[0] || null;
 		return true;
 	}
 
@@ -352,48 +370,29 @@ TDCLeagueNav.panel('season', () => {
 	}
 
 	// ─── The banner ───
-	// Everything about how the league is played, neatly: label and value
-	// pairs under the name, wrapping into columns on a PC.
-	const ENTRY = {
-		ld_only: 'Added by whoever runs it',
-		interested: 'Put your name down',
-		self_confirm: 'Join straight away'
-	};
-
+	// The name with Share and the way in at its corner, then the badges and
+	// the details under the status strip (UV, 9 Nov: the join page's). The
+	// rest of how it is played is under Rules.
 	function renderBanner() {
 		if (!info) return;
 		const rules = info.rules || {};
 		const status = seasonRow && seasonRow.status;
-		els.jumbo.className = 'jumbo' + (status ? ' league-status-' + status : '');
-		els.jumboStatus.hidden = !status;
-		els.jumboStatus.textContent = status ? (D.LEAGUE_STATUS[status] || status) : '';
+		els.jumbo.className = 'jumbo lj-hero' + (status ? ' league-status-' + status : '');
 
 		// The league's own picture, or the trophy it had until it had one.
 		els.jumboPic.replaceChildren(TDC.leaguePic(seasonRow && seasonRow.tbl_leagues && seasonRow.tbl_leagues.picture_path));
 
 		const facts = [];
 		facts.push(['Game', D.DISCIPLINE[rules.discipline] || rules.discipline || 'Not set']);
-		if (rules.team_size) {
-			const reserves = seasonRow && seasonRow.max_reserves;
-			facts.push(['Teams', rules.team_size + ' a side'
-				+ (reserves ? ', up to ' + plural(reserves, 'reserve') : '')]);
-			facts.push(['A night', rules.team_size + ' sessions, ' + rules.team_size * rules.team_size + ' frames']);
-		}
-		if (rules.win_condition_type && rules.win_condition_type !== 'free_play') {
-			facts.push(['Each match', (D.WIN_CONDITION[rules.win_condition_type] || rules.win_condition_type)
-				+ (rules.win_condition_target ? ' ' + rules.win_condition_target : '')]);
-		}
 		const when = [info.starts_on ? day(info.starts_on) : null, info.ends_on ? day(info.ends_on) : null].filter(Boolean);
 		facts.push(['Dates', when.length ? when.join(' to ') : 'Not set yet']);
 		const next = nextNight();
-		if (next) {
-			facts.push(['Next night', next.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })
-				+ ' · ' + next.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })]);
-		}
-		if (seasonRow && seasonRow.entry_mode) facts.push(['Entries', ENTRY[seasonRow.entry_mode] || seasonRow.entry_mode]);
-		if (rules.lineup_cutoff_hours) facts.push(['Lineups', plural(rules.lineup_cutoff_hours, 'hour') + ' before a match']);
+		facts.push(['Next night', next
+			? next.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })
+				+ ' · ' + next.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+			: 'Not scheduled yet']);
 
-		els.jumboFacts.replaceChildren(...facts.map(([k, v]) => {
+		els.jumboFacts.replaceChildren(badges(), ...facts.map(([k, v]) => {
 			const row = node('div', 'jumbo-fact');
 			row.append(node('dt', null, k), node('dd', null, v));
 			return row;
@@ -401,7 +400,82 @@ TDCLeagueNav.panel('season', () => {
 
 		const venues = TDC.venueFact(info.venues);
 		if (venues) els.jumboFacts.append(venues);
+		renderCorner();
 	}
+
+	// The first row of the details (UV, 9 Nov): the season's status in yellow,
+	// then how this person stands with it or how they would get in, in the
+	// league search's words.
+	const STANDING = {
+		interested: 'Your name is down',
+		withdrawn: 'You withdrew',
+		inactive: 'Inactive',
+		suspended: 'Suspended'
+	};
+
+	function badges() {
+		const status = seasonRow && seasonRow.status;
+		const list = node('dd');
+		if (status) list.append(node('span', 'badge warn', D.LEAGUE_STATUS[status] || status));
+		if (joinInfo) {
+			if (joinInfo.my_status === 'active') {
+				list.append(node('span', 'badge team-name', 'You are in this league'));
+				if (!joinInfo.i_confirmed) list.append(node('span', 'badge needs-you', 'Confirm your place'));
+			} else if (joinInfo.my_status) {
+				list.append(node('span', 'badge pending', STANDING[joinInfo.my_status] || joinInfo.my_status));
+			} else if (joinInfo.entry_mode === 'ld_only') {
+				list.append(node('span', 'badge', 'Added by whoever runs it'));
+			} else if (joinInfo.entry_mode === 'self_confirm') {
+				list.append(node('span', 'badge needs-you', 'Join straight away'));
+			} else {
+				list.append(node('span', 'badge', 'Taking names'));
+			}
+		}
+		const row = node('div', 'jumbo-fact lj-badges');
+		row.append(node('dt', 'lj-sr', 'Status'), list);
+		return row;
+	}
+
+	// The banner's corner: Share is always there, and the plus for somebody
+	// who may put their name down (tdc_league_show_interest decides what that
+	// does, as the season was set up).
+	function renderCorner() {
+		els.interestBtn.hidden = true;
+		if (!joinInfo) return;
+		const again = joinInfo.my_status === 'withdrawn';
+		if (!again && (joinInfo.my_status || joinInfo.entry_mode === 'ld_only')) return;
+
+		const label = again ? 'Put my name down again' : 'Put my name down';
+		els.interestBtn.title = label;
+		els.interestBtn.setAttribute('aria-label', label);
+		els.interestBtn.hidden = false;
+		wakeIcon(els.interestBtn);
+	}
+
+	// An icon draws itself in the first time its button shows.
+	function wakeIcon(b) {
+		if (b.tdcRing) return;
+		const icon = b.dataset.icon;
+		const label = b.getAttribute('aria-label');
+		try {
+			const face = b.querySelector('.tdc-ring');
+			face.innerHTML = TDCRing.svg();
+			b.tdcRing = new TDCRing.RingStatus(face, {
+				icons: [icon],
+				labels: { [icon]: label, empty: label, loading: 'Working' },
+				initial: 'empty'
+			});
+			b.tdcRing.drawTo(icon);
+		} catch (err) {
+			TDC.error(AREA, 'an icon could not be drawn: ' + icon, err, els.status);
+		}
+	}
+
+	els.interestBtn.addEventListener('click', () => {
+		write('Putting your name down', () => supabaseClient.rpc('tdc_league_show_interest', {
+			p_league_season_id: seasonId
+		}), (data) => data === 'active' ? 'You are in.' : 'Your name is down.', { single: true, dots: els.interestBtn, leaves: true });
+	});
 
 	// The first night from now that has a fixture.
 	function nextNight() {
@@ -412,42 +486,274 @@ TDCLeagueNav.panel('season', () => {
 	}
 
 	// ─── The league so far ───
-	// Counted from the fixtures and the teams, never stored.
+	// Counted from the fixtures and the teams, never stored; the join page's
+	// seven, with Confirmed for those who could see it already (UV, 9 Nov).
 	let statsDrawn = false;
 	function renderStats() {
 		const games = fixtures.filter((f) => !f.is_bye);
 		// A re-opened night (signed, then changed; 29 Oct) was still played.
 		const played = games.filter((f) => f.match_status === 'complete' || f.match_status === 'reopened').length;
-		const live = games.filter((f) => f.match_status === 'in_progress').length;
 		const frames = games.reduce((n, f) => n + (f.home_frames || 0) + (f.away_frames || 0), 0);
 		const nights = new Set(fixtures.filter((f) => f.scheduled_at).map((f) => new Date(f.scheduled_at).toDateString())).size;
-		const players = teams.reduce((n, t) => n + (t.active_players || 0), 0);
 
 		const tiles = [
 			['Teams', teams.length],
-			['Players', players],
-			['Matches scheduled', games.length],
-			['Matches played', played],
-			['Playing now', live],
-			['Frames played', frames],
-			['Nights', nights]
+			['Players', (joinInfo && joinInfo.players) || 0],
+			['Names down', (joinInfo && joinInfo.interested) || 0],
+			['Nights', nights],
+			['Matches', games.length],
+			['Played', played],
+			['Frames', frames]
 		];
 		if (readiness && readiness.active_players) {
-			tiles.push(['Confirmed', readiness.confirmed + ' of ' + readiness.active_players]);
+			tiles.push(['Confirmed', readiness.confirmed + '/' + readiness.active_players]);
 		}
 		// A number a re-read changed (the tab shown again, a save) fades out
 		// and in (TDC.liveFade, UV 29 Oct); the first draw fades nothing.
 		const snap = statsDrawn ? TDC.liveSnapshot(els.stats) : null;
 		els.stats.replaceChildren(...tiles.map(([label, value]) => {
-			const tile = node('div', 'league-stat');
-			const shown = node('span', 'league-stat-value', String(value));
+			const tile = node('div', 'lj-num');
+			const shown = node('span', 'lj-num-value', String(value));
 			shown.dataset.live = 'stat|' + label;
-			tile.append(shown, node('span', 'league-stat-label', label));
+			tile.append(shown, node('span', 'lj-num-label', label));
 			return tile;
 		}));
 		TDC.liveFade(els.stats, snap);
 		statsDrawn = true;
 	}
+
+	function renderNotes() {
+		const text = info && info.notes && info.notes.trim();
+		els.notesBox.hidden = !text;
+		els.notes.textContent = text || '';
+	}
+
+	// ─── The rules ───
+	// Every rule the season plays to, in the settings page's groups, worded
+	// from TDCMatchDef. A setting its switch makes irrelevant is left out, as
+	// the settings page hides it.
+	function ruleValue(def, rules) {
+		const v = rules[def.key];
+		if (def.key === 'win_condition_type') {
+			const name = D.WIN_CONDITION[v] || v;
+			return v === 'free_play' || !rules.win_condition_target ? name : name + ' ' + rules.win_condition_target;
+		}
+		if (def.key === 'team_size') {
+			const reserves = seasonRow && seasonRow.max_reserves;
+			return v + ' a side' + (reserves ? ', up to ' + plural(reserves, 'reserve') : '');
+		}
+		if (def.type === 'rotation') return v ? 'The league’s own order' : 'The standard rotation';
+		if (def.type === 'bool') return v ? 'Yes' : 'No';
+		if (def.type === 'select') {
+			const options = typeof def.options === 'function' ? def.options() : def.options;
+			return (options && options[v]) || String(v);
+		}
+		if (def.type === 'int') {
+			if (/_seconds$/.test(def.key)) return v + ' s';
+			const unit = /\((\w+)\)$/.exec(def.label);
+			if (unit) return v ? v + ' ' + (v === 1 ? unit[1].replace(/s$/, '') : unit[1]) : 'None';
+			return String(v);
+		}
+		return v == null ? '' : String(v);
+	}
+
+	function renderRules() {
+		const rules = (info && info.rules) || {};
+		const boxes = [];
+		for (const group of D.GROUPS.concat(D.LEAGUE_GROUPS)) {
+			const rows = [];
+			for (const def of D.SETTINGS) {
+				if (def.group !== group || def.scope !== 'rules') continue;
+				if (def.key === 'win_condition_target') continue;   // said with the win condition
+				if (def.when && !def.when(rules)) continue;
+				if (rules[def.key] === undefined) continue;
+				rows.push([def.label.replace(/\s*\(\w+\)$/, ''), ruleValue(def, rules)]);
+				// A night's length follows from the team size.
+				if (def.key === 'team_size' && rules.team_size) {
+					rows.push(['A night', rules.team_size + ' sessions, ' + rules.team_size * rules.team_size + ' frames']);
+				}
+			}
+			if (!rows.length) continue;
+			const box = node('section', 'lj-rule-box');
+			box.append(node('h3', 'lj-rule-title', group));
+			const dl = node('dl', 'lj-rule-list');
+			for (const [k, v] of rows) {
+				const row = node('div', 'lj-rule');
+				row.append(node('dt', null, k), node('dd', null, v));
+				dl.append(row);
+			}
+			box.append(dl);
+			boxes.push(box);
+		}
+		if (!boxes.length) boxes.push(node('p', 'muted', 'No rules set yet.'));
+		els.rules.replaceChildren(...boxes);
+	}
+
+	const time = (d) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+
+	// ─── The nights ───
+	// A calendar of the months from the first night to the last (UV, 9 Nov),
+	// drawn as the fixtures planner's, a night in its state's colour. A tap
+	// says its time and matches under the calendar; a tap again takes that away.
+	const pad = (n) => String(n).padStart(2, '0');
+	const keyOf = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+	const dayOfKey = (key) => { const [y, m, d] = key.split('-').map(Number); return new Date(y, m - 1, d); };
+	let nights = new Map();     // day key -> what is known of that night
+	let pickedNight = null;     // the day key tapped
+	let calCentred = false;     // the calendar starts on the next night's month, once
+
+	function renderNights() {
+		const games = fixtures.filter((f) => !f.is_bye);
+		const byDay = new Map();
+		let undated = 0;
+		for (const f of games) {
+			if (!f.scheduled_at) { undated++; continue; }
+			const d = new Date(f.scheduled_at);
+			const key = keyOf(d);
+			if (!byDay.has(key)) byDay.set(key, { at: d, total: 0, played: 0, live: 0 });
+			const n = byDay.get(key);
+			if (d < n.at) n.at = d;
+			n.total++;
+			if (f.match_status === 'complete' || f.match_status === 'reopened') n.played++;
+			if (f.match_status === 'in_progress') n.live++;
+		}
+		const next = nextNight();
+		const nextKey = next && keyOf(next);
+		for (const [key, n] of byDay) {
+			n.state = n.live ? 'live' : key === nextKey ? 'next' : n.played === n.total ? 'done' : 'later';
+			n.said = n.live ? 'Playing'
+				: key === nextKey ? 'Next'
+				: n.played === n.total ? 'Played'
+				: n.played ? n.played + ' of ' + n.total + ' played'
+				: '';
+		}
+		nights = byDay;
+		if (!byDay.has(pickedNight)) pickedNight = null;
+
+		els.nightCount.hidden = !byDay.size;
+		els.nightCount.textContent = String(byDay.size);
+		els.nightKey.hidden = !byDay.size;
+		els.nightNote.hidden = !undated;
+		els.nightNote.textContent = undated ? plural(undated, 'match', 'matches') + ' not dated yet.' : '';
+
+		if (!byDay.size) {
+			els.nights.replaceChildren(node('div', 'empty', 'No nights scheduled yet. Whoever runs the league makes the fixtures.'));
+		} else {
+			drawCalendar(nextKey);
+		}
+		markPicked();
+		sayPicked();
+	}
+
+	function drawCalendar(nextKey) {
+		const keys = [...nights.keys()].sort();
+		const first = dayOfKey(keys[0]);
+		const last = dayOfKey(keys[keys.length - 1]);
+		const today = keyOf(new Date());
+		const months = [];
+		for (let m = new Date(first.getFullYear(), first.getMonth(), 1);
+			m <= last; m = new Date(m.getFullYear(), m.getMonth() + 1, 1)) {
+			months.push(m);
+		}
+
+		let nextMonth = null;
+		els.nights.replaceChildren(...months.map((m) => {
+			const box = node('div', 'cal-month');
+			box.append(node('div', 'cal-month-name', m.toLocaleDateString([], { month: 'long', year: 'numeric' })));
+
+			const table = node('table', 'cal');
+			const head = table.createTHead().insertRow();
+			['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].forEach((d, i) => {
+				const th = node('th');
+				if (i >= 5) th.append(node('span', 'badge', d)); else th.textContent = d;
+				head.append(th);
+			});
+
+			const body = table.createTBody();
+			const days = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
+			const lead = (m.getDay() + 6) % 7;
+			let tr = body.insertRow();
+			for (let i = 0; i < lead; i++) tr.insertCell();
+			for (let d = 1; d <= days; d++) {
+				if (tr.cells.length === 7) tr = body.insertRow();
+				const key = keyOf(new Date(m.getFullYear(), m.getMonth(), d));
+				const td = tr.insertCell();
+				const n = nights.get(key);
+				if (n) {
+					const b = node('button', 'cal-day is-' + n.state, String(d));
+					b.type = 'button';
+					b.dataset.night = key;
+					b.setAttribute('aria-label', n.at.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })
+						+ ', ' + nightLine(n));
+					td.append(b);
+					if (key === nextKey) nextMonth = box;
+				} else {
+					td.append(node('span', 'cal-num', String(d)));
+				}
+				if (key === today) td.classList.add('cal-today');
+			}
+			while (tr.cells.length < 7) tr.insertCell();
+			box.append(table);
+			return box;
+		}));
+
+		if (!calCentred && nextMonth) {
+			els.nights.scrollLeft = nextMonth.offsetLeft - (els.nights.clientWidth - nextMonth.offsetWidth) / 2;
+		}
+		calCentred = true;
+	}
+
+	const nightLine = (n) => [time(n.at), plural(n.total, 'match', 'matches'), n.said].filter(Boolean).join(' · ');
+
+	function markPicked() {
+		for (const b of els.nights.querySelectorAll('button[data-night]')) {
+			const on = b.dataset.night === pickedNight;
+			b.classList.toggle('is-picked', on);
+			b.setAttribute('aria-pressed', on ? 'true' : 'false');
+		}
+	}
+
+	function sayPicked() {
+		const n = pickedNight && nights.get(pickedNight);
+		els.nightPicked.hidden = !n;
+		if (!n) { els.nightPicked.replaceChildren(); return; }
+		els.nightPicked.replaceChildren(
+			node('span', 'lj-picked-day', n.at.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })),
+			node('span', 'lj-picked-sub', nightLine(n)));
+	}
+
+	// What changes fades out and the new fades in (UV, 24 Oct), at once for
+	// somebody who asked for less motion. The last of several quick taps wins.
+	let fadeRun = 0;
+	function revealMs() {
+		if (matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.motion === 'reduce') return 0;
+		const v = getComputedStyle(document.documentElement).getPropertyValue('--control-reveal').trim();
+		const n = parseFloat(v);
+		if (isNaN(n)) return 0;
+		return v.endsWith('ms') ? n : n * 1000;
+	}
+	function fadePicked() {
+		const ms = revealMs() / 2;
+		const run = ++fadeRun;
+		const box = els.nightPicked;
+		if (!ms) { sayPicked(); return; }
+		box.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms, fill: 'forwards' });
+		setTimeout(() => {
+			if (run !== fadeRun) return;
+			sayPicked();
+			box.getAnimations().forEach((a) => a.cancel());
+			box.animate([{ opacity: 0 }, { opacity: 1 }], { duration: ms });
+		}, ms);
+	}
+
+	els.nights.addEventListener('click', (e) => {
+		const b = e.target.closest('button[data-night]');
+		if (!b) return;
+		pickedNight = pickedNight === b.dataset.night ? null : b.dataset.night;
+		markPicked();       // the mark moves at once; the words underneath fade
+		fadePicked();
+	});
+
 
 	// ─── Waiting for a team ───
 	async function loadPool() {
@@ -511,7 +817,7 @@ TDCLeagueNav.panel('season', () => {
 	});
 
 	// ─── Asked to join (UV, 5 Nov) ───
-	// Players who asked on the join page to join my team. The function gives
+	// Players who asked, with the ring on its card, to join my team. The function gives
 	// a captain only their own team's (the director every team's, but they
 	// have Run it). Take is the claim above; Decline turns them down.
 	// The same read gives a player on no team their own requests, for the
@@ -621,14 +927,12 @@ TDCLeagueNav.panel('season', () => {
 			if (!teams.some((t) => t.team_id === id)) openTeams.delete(id);
 		}
 
-		// Rosters are read for every open team, again, after every write.
-		const fresh = new Map();
-		for (const id of openTeams) {
-			const { data: roster, error: rosterError } = await supabaseClient.rpc('tdc_team_roster', { p_team_id: id });
-			if (rosterError) { TDC.showSupabaseError(AREA, rosterError, els.status); return false; }
-			fresh.set(id, roster || []);
-		}
-		rosters = fresh;
+		// Every team's roster, again after every write: a closed card shows its
+		// players' faces (UV, 9 Nov).
+		const read = await Promise.all(teams.map((t) => supabaseClient.rpc('tdc_team_roster', { p_team_id: t.team_id })));
+		const failed = read.find((r) => r.error);
+		if (failed) { TDC.showSupabaseError(AREA, failed.error, els.status); return false; }
+		rosters = new Map(teams.map((t, i) => [t.team_id, read[i].data || []]));
 		renderTeams();
 		return true;
 	}
@@ -689,88 +993,84 @@ TDCLeagueNav.panel('season', () => {
 		box.dataset.team = t.team_id;
 		box.open = openTeams.has(t.team_id);
 		if (mine && mine.my_team_id === t.team_id) box.classList.add('is-mine');
+		if (asked.has(t.team_id)) box.classList.add('is-asked');
 
+		// The join page's card (UV, 9 Nov): the team on the top row, its faces
+		// on the next with the arrow at the end of them. Open, the faces go and
+		// the arrow stays on its row, the players below.
 		const head = document.createElement('summary');
+		const top = node('span', 'lj-team-head');
 		const pic = node('span', 'team-pic');
 		pic.append(TDC.teamPic(teamPictures.get(t.team_id)));
 		const names = node('span', 'team-box-names');
 		names.append(node('span', 'team-box-name', t.name));
-		// The captain and nothing else (UV, 29 Oct). The count against the
-		// limit is on the manage page and in the claim list's hint.
 		if ((t.captains || []).length) names.append(node('span', 'team-box-sub', 'Captain: ' + t.captains.join(', ')));
-		head.append(pic, names);
-		if (mine && mine.my_team_id === t.team_id) head.append(node('span', 'badge live', 'Your team'));
+		if (mine && mine.my_team_id === t.team_id) names.append(node('span', 'badge live', 'Your team'));
+		const places = node('span', 'lj-team-places');
+		places.append(node('span', 'lj-team-places-n', String(t.active_players || 0)),
+			node('span', 'lj-team-places-of', 'of ' + (t.team_limit || 0)));
+		places.title = (t.active_players || 0) + ' of ' + (t.team_limit || 0) + ' places taken';
+		top.append(pic, names, places);
 		// The ring to ask to join, for a player on no team (UV, 5 Nov).
-		if (requestsRead && mayAsk()) head.append(TDCTeamAsk.ring(t, asked.has(t.team_id), AREA, els.status));
+		if (requestsRead && mayAsk()) top.append(TDCTeamAsk.ring(t, asked.has(t.team_id), AREA, els.status));
+
+		const roster = rosters.get(t.team_id) || [];
+		const playing = roster.filter((r) => r.status !== 'withdrawn');
+		const faces = node('span', 'lj-team-faces');
+		if (playing.length) {
+			faces.append(...playing.map((r) => {
+				const face = avatar(r.avatar_path, r.display_name);
+				face.title = r.display_name || '';
+				return TDC.profilePic(face, r.player_id);
+			}));
+		} else {
+			faces.append(node('span', 'team-box-sub', 'Nobody on it yet'));
+		}
+		head.append(top, faces);
 		box.append(head);
 
-		// Not read yet: nothing in it; opening it reads, with the dots (below).
-		const roster = rosters.get(t.team_id);
-		if (roster) {
-			if (controlsTeam() && t.team_id === mine.my_team_id) {
-				const field = node('div', 'field');
-				const label = node('label', null, 'Team name');
-				label.htmlFor = 'rename-input';
-				const input = document.createElement('input');
-				input.type = 'text';
-				input.id = 'rename-input';
-				input.maxLength = 120;
-				input.value = t.name;
-				const save = node('button', 'btn btn-secondary btn-sm', 'Rename');
-				save.type = 'button';
-				save.dataset.action = 'rename';
-				field.append(label, input, save);
-				box.append(field);
+		if (controlsTeam() && t.team_id === mine.my_team_id) {
+			const field = node('div', 'field');
+			const label = node('label', null, 'Team name');
+			label.htmlFor = 'rename-input';
+			const input = document.createElement('input');
+			input.type = 'text';
+			input.id = 'rename-input';
+			input.maxLength = 120;
+			input.value = t.name;
+			const save = node('button', 'btn btn-secondary btn-sm', 'Rename');
+			save.type = 'button';
+			save.dataset.action = 'rename';
+			field.append(label, input, save);
+			box.append(field);
 
-				// The team's picture (29 Oct), as the league's is on its
-				// settings: saved at once, shown in the heading above.
-				const picField = node('div', 'field');
-				picField.append(node('label', null, 'Team picture'));
-				const has = !!teamPictures.get(t.team_id);
-				const choose = node('button', 'btn btn-secondary btn-sm', has ? 'Change the picture' : 'Choose a picture');
-				choose.type = 'button';
-				choose.dataset.action = 'pic-choose';
-				const remove = node('button', 'btn btn-secondary btn-sm', 'Remove');
-				remove.type = 'button';
-				remove.dataset.action = 'pic-remove';
-				remove.hidden = !has;
-				const file = document.createElement('input');
-				file.type = 'file';
-				file.accept = 'image/*';
-				file.id = 'team-pic-file';
-				file.hidden = true;
-				picField.append(choose, remove, file);
-				box.append(picField);
-			}
-
-			if (!roster.length) box.append(node('p', 'muted', 'Nobody is on this team yet.'));
-			else box.append(...roster.map((r) => rosterRow(t, r)));
+			// The team's picture (29 Oct), as the league's is on its
+			// settings: saved at once, shown in the heading above.
+			const picField = node('div', 'field');
+			picField.append(node('label', null, 'Team picture'));
+			const has = !!teamPictures.get(t.team_id);
+			const choose = node('button', 'btn btn-secondary btn-sm', has ? 'Change the picture' : 'Choose a picture');
+			choose.type = 'button';
+			choose.dataset.action = 'pic-choose';
+			const remove = node('button', 'btn btn-secondary btn-sm', 'Remove');
+			remove.type = 'button';
+			remove.dataset.action = 'pic-remove';
+			remove.hidden = !has;
+			const file = document.createElement('input');
+			file.type = 'file';
+			file.accept = 'image/*';
+			file.id = 'team-pic-file';
+			file.hidden = true;
+			picField.append(choose, remove, file);
+			box.append(picField);
 		}
 
-		box.addEventListener('toggle', async () => {
-			if (box.open) {
-				openTeams.add(t.team_id);
-				// First time opened: fetch the players, then draw, the dots on
-				// the team until they are in (UV, 29 Oct: every section that
-				// loads shows the dots). The draw makes a new box: the dots
-				// follow it by its id.
-				// The dots sit at the right of the team's heading, in green.
-				const spot = (b) => b && TDC.groupDots(b.querySelector(':scope > summary'));
-				if (!rosters.has(t.team_id) && !spot(box).dataset.dots) {
-					const read = (async () => {
-						const { data, error } = await supabaseClient.rpc('tdc_team_roster', { p_team_id: t.team_id });
-						if (error) { TDC.showSupabaseError(AREA, error, els.status); throw error; }
-						rosters.set(t.team_id, data || []);
-						renderTeams();
-					})();
-					if (typeof TDCDots !== 'undefined') {
-						TDCDots.serve(spot(box), read, { status: els.status, trace: 'none', follow: () => spot(document.getElementById('team-' + t.team_id)) });
-					}
-					read.catch(() => {});
-				}
-			} else {
-				openTeams.delete(t.team_id);
-			}
+		if (!roster.length) box.append(node('p', 'muted', 'Nobody is on this team yet.'));
+		else box.append(...roster.map((r) => rosterRow(t, r)));
+
+		box.addEventListener('toggle', () => {
+			if (box.open) openTeams.add(t.team_id);
+			else openTeams.delete(t.team_id);
 		});
 		return box;
 	}
@@ -778,7 +1078,13 @@ TDCLeagueNav.panel('season', () => {
 	function renderTeams() {
 		els.teamCount.hidden = !teams.length;
 		els.teamCount.textContent = String(teams.length);
+		els.teamsHeadCount.hidden = !teams.length;
+		els.teamsHeadCount.textContent = String(teams.length);
 		els.teamEmpty.hidden = !!teams.length;
+		els.teamsHint.hidden = !(requestsRead && mayAsk()) || !teams.length;
+		els.teamsHint.textContent = asked.size
+			? 'The captain of a team you asked decides. Tap its ring again to take it back.'
+			: 'You are on no team yet. Tap a team’s ring to ask to join it; its captain decides.';
 		els.teamList.replaceChildren(...teams.map(teamCard));
 
 		// The team named in the address, once: into view, open.
@@ -905,13 +1211,8 @@ TDCLeagueNav.panel('season', () => {
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		officials = data || [];
 
-		els.officialList.replaceChildren(...officials.map((o) => {
-			const row = node('div', 'list-row');
-			const main = node('div', 'list-row-main');
-			main.append(personLink(o.player_id, o.display_name, o.avatar_path, o.role_name));
-			row.append(main);
-			return row;
-		}));
+		els.officialList.replaceChildren(...officials.map((o) =>
+			personLink(o.player_id, o.display_name, o.avatar_path, o.role_name)));
 		if (!officials.length) els.officialList.replaceChildren(node('p', 'muted', 'Nobody is listed.'));
 		return true;
 	}
@@ -949,6 +1250,7 @@ TDCLeagueNav.panel('season', () => {
 	function renderViews() {
 		const players = !els.mePanel.hidden || !els.poolPanel.hidden || !els.askPanel.hidden;
 		els.views.hidden = !players;
+		els.teamsHead.hidden = players;   // nothing to switch to: just the heading
 		if (!viewsDrawn) {
 			viewsDrawn = true;
 			const mustConfirm = mine && mine.my_status === 'active' && !mine.confirmed_at;
@@ -974,6 +1276,7 @@ TDCLeagueNav.panel('season', () => {
 	async function loadAll() {
 		const results = [];
 		results.push(await loadMine());
+		results.push(await loadJoinInfo());
 		results.push(await loadSeasonRow());
 		results.push(await loadFixtures());
 		results.push(await loadTeams());
@@ -986,6 +1289,9 @@ TDCLeagueNav.panel('season', () => {
 		results.push(await loadMyNext());
 		renderBanner();
 		renderStats();
+		renderNotes();
+		renderRules();
+		renderNights();
 		return results.every(Boolean);
 	}
 
@@ -1013,6 +1319,10 @@ TDCLeagueNav.panel('season', () => {
 		myPlayerId = me.id;
 
 		if (!await loadInfo()) return;
+		wakeIcon(els.share);
+		TDC.shareButton(els.share, 'season', seasonId, {
+			area: AREA, status: els.status, title: () => els.name.textContent
+		});
 		await loadAll();
 	})(), 'League season');
 

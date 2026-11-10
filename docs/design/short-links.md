@@ -34,7 +34,7 @@ A short link is a shortcut to an existing page: `https://thediveclub.org/<code>`
 | Code | Signed out | Signed in, not part of it | Signed in and part of it |
 |---|---|---|---|
 | Tournament | Poster | Poster | Draw |
-| League, newest season | Sign in, then the join page | Join page | Season page |
+| League, newest season | Sign in, then the season page | Season page | Season page |
 | League or tournament match, social match | Sign in, then the match | The match | The match |
 
 Signed-out visitors keep the current flow until the pages for them exist (`docs/STATUS.md` §0 P2).
@@ -55,7 +55,7 @@ An unknown address reaches `404.html` (GitHub Pages sends it for anything that d
 ## Where it appears
 
 - **The code:** a section in league Settings and tournament Settings, with live feedback (Too short, Taken, Available).
-- **The Share button:** the tournament poster, the league join page, the match page (⋯ menu and the finished match's result, until that menu is tidied) and the league match card.
+- **The Share button:** the tournament poster, the league season page, the match page (⋯ menu and the finished match's result, until that menu is tidied) and the league match card.
 - **Long links replaced:** the league's share box and the tournament's entry link.
 
 ## Security

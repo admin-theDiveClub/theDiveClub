@@ -5,7 +5,7 @@
 // tdc_venue_competitions. Only what the venue has filled in is shown. A venue
 // with no owner cannot be edited yet, so most of the seeded ones are short.
 //
-// A league opens its join page and a tournament its poster until it starts, then
+// A league opens its season page and a tournament its poster until it starts, then
 // its draw, as on the two lists. Both of those but the poster ask a stranger to
 // sign in.
 //
@@ -146,7 +146,7 @@
 
 	function leagueCard(l) {
 		const box = node('a', 'match-card');
-		box.href = '/leagues/join/?s=' + encodeURIComponent(l.league_season_id);
+		box.href = '/leagues/season/?s=' + encodeURIComponent(l.league_season_id);
 		const top = node('div', 'match-top');
 		top.append(node('span', 'match-opponent', l.league_name));
 		const bits = [];

@@ -1,6 +1,7 @@
-/* The page a league director shares (/leagues/join/, scripts/league-join.js;
- * UV, 5 Nov: as much about the league as there is, in the site's look). Loaded
- * after league.css, whose .jumbo banner, .jumbo-facts, .team-pic and .person it
+/* The look of a league's Season tab (scripts/league-season.js; UV, 5 Nov: as
+ * much about the league as there is, in the site's look), also used by the
+ * tournament poster and the venue page. It was the league join page's, which
+ * was folded into the Season tab (UV, 10 Nov). Loaded after league.css, whose .jumbo banner, .jumbo-facts, .team-pic and .person it
  * uses. Tokens only.
  *
  * Panels and small boxes are sunk into the card; something you press to open
@@ -238,6 +239,7 @@
 .lj-num-label { font-size: 0.85rem; color: var(--text-muted); }
 
 /* ── From whoever runs it ── */
+.lj-notes-box:not([hidden]) ~ .ls-views { margin-top: var(--space-5); }
 .tdc-card .lj-notes {
 	margin: 0;
 	padding: var(--space-4) var(--nm-pad);
@@ -338,44 +340,7 @@
 	grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
 	gap: var(--space-5);
 }
-/* The card is a box, not a link, since the icon in it is a button (a button
- * may not sit in a link): the team's name is the link, stretched over the
- * whole card by its ::after, and the faces and the icon sit above it. */
-.lj-team {
-	position: relative;
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-3);
-	padding: var(--space-4) var(--nm-pad);
-	border-radius: var(--nm-field-radius);
-	box-shadow: var(--nm-raised);
-}
-/* The pointer's glow and the glow of a team asked to join, each on a layer of
- * its own, which can fade: the card's shadow moves with the light. */
-.lj-team::before,
-.lj-team::after {
-	content: "";
-	position: absolute;
-	inset: 0;
-	border-radius: inherit;
-	opacity: 0;
-	pointer-events: none;
-	transition: opacity 0.2s ease;
-}
-.lj-team::before { box-shadow: var(--glow-primary); }
-.lj-team::after { box-shadow: inset 0 0 16px var(--nm-knob-glow); }
-.lj-team:hover::before,
-.lj-team:focus-within::before,
-.lj-team.is-asked::after { opacity: 1; }
 .lj-team-head { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
-.lj-team-head .team-pic { width: 3rem; height: 3rem; }
-.lj-team-names { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-.lj-team-name { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.1; overflow-wrap: break-word; color: inherit; text-decoration: none; }
-.lj-team-name::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
-.lj-team-name:focus-visible { outline: none; }
-.lj-team-faces,
-.lj-team .team-ask { position: relative; z-index: 1; }
-.lj-team-sub { font-size: 0.85rem; color: var(--text-muted); }
 .lj-team-places { display: flex; flex-direction: column; align-items: center; line-height: 1; }
 .lj-team-places-n {
 	font-family: var(--font-display);
@@ -386,15 +351,30 @@
 .lj-team-faces { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .lj-team-faces .person-pic { width: 2rem; height: 2rem; font-size: 0.7rem; }
 
+/* A team's card, which folds (UV, 9 Nov). The summary's
+ * arrow shares a row with the faces; open, the faces go and it stays there. */
+.team-boxes.lj-teams { align-items: start; }
+.lj-teams .team-box { box-shadow: var(--nm-raised); }
+.lj-teams .team-box.is-mine,
+.lj-teams .team-box.is-asked { box-shadow: inset 0 0 16px var(--nm-knob-glow), var(--nm-raised); }
+.lj-teams .team-box > summary { flex-wrap: wrap; padding: var(--space-4) var(--nm-pad); }
+.lj-teams .team-box > summary:has(.team-ask)::after { margin-left: auto; }
+.lj-teams .team-box > summary .team-pic { width: 3rem; height: 3rem; }
+.lj-teams .lj-team-head { flex: 0 0 100%; }
+.lj-teams .lj-team-faces { flex: 1 1 0; min-width: 0; }
+.lj-teams .team-box[open] .lj-team-faces { display: none; }
+.lj-teams .team-box-names { flex: 1; }
+.lj-teams .team-box-names .badge { align-self: flex-start; margin-top: var(--space-1); }
+.lj-teams .team-box-name { font-family: var(--font-display); font-size: 1.35rem; font-weight: 400; line-height: 1.1; }
+@media (min-width: 24.0625rem) {
+	.lj-teams .team-box > :not(summary) { margin-left: calc(var(--nm-pad) + 3rem + var(--space-3)); }
+}
+
 /* ── Who runs it ── */
 .lj-officials { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); justify-content: center; }
 
 /* ── Anything that fades ── */
-[data-motion="reduce"] .lj-team::before,
-[data-motion="reduce"] .lj-team::after,
 [data-motion="reduce"] .tdc-card .cal button.cal-day[class*="is-"] { transition: none; }
 @media (prefers-reduced-motion: reduce) {
-	:root:not([data-motion="full"]) .lj-team::before,
-	:root:not([data-motion="full"]) .lj-team::after,
 	:root:not([data-motion="full"]) .tdc-card .cal button.cal-day[class*="is-"] { transition: none; }
 }
