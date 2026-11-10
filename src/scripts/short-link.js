@@ -30,7 +30,8 @@
 	const REASONS = {
 		invalid: ['Page not found', 'There is no page at this address. Check it for a typing mistake.'],
 		not_found: ['Link not found', `Nothing has the code ${code.toUpperCase()}. It may be mistyped, or whoever set it may have changed it.`],
-		no_such_match: ['Match not found', 'That league or tournament has no match with this number. It may be mistyped, or the match may have been removed.'],
+		no_player: ['Player not found', 'Nobody has this link. It may be mistyped, or they may have changed their name.'],
+		no_such_match: ['Match not found','That league or tournament has no match with this number. It may be mistyped, or the match may have been removed.'],
 		poster_not_shared: ['Not shared yet', 'This tournament has not shared its poster yet. Ask whoever sent you the link, or try again later.'],
 		no_season: ['No season yet', 'This league has not started a season yet. Try again later.'],
 		offline: ['You are offline', 'This link needs a connection. Try again when you are back online.'],
@@ -51,7 +52,7 @@
 
 	async function open() {
 		// Anything that could not be a code is not worth a call.
-		if (!/^[A-Za-z0-9-]{1,24}$/.test(code)) {
+		if (!/^[A-Za-z0-9-]{1,210}$/.test(code)) {
 			show('invalid');
 			return;
 		}
@@ -82,6 +83,12 @@
 			}
 			TDCLoader.leaving();
 			location.replace(path);
+			return;
+		}
+
+		// A player's link, signed out. Sign-in brings them back here to look it up.
+		if (reason === 'sign_in') {
+			if (await TDC.requireSession(AREA)) show('failed');
 			return;
 		}
 

@@ -897,17 +897,20 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	grid-template-columns: auto minmax(0, 1fr);
 	align-items: center;
 	gap: var(--space-4) var(--space-5);
-	padding: var(--space-5);
+	padding: calc(var(--space-5) + var(--space-2));
 	margin-bottom: var(--space-5);
 	border-radius: var(--nm-field-radius);
-	box-shadow: var(--nm-raised);
+	box-shadow: var(--nm-sunken);
 }
+/* A green line just inside the edge, which casts its own shadow both ways
+ * (UV, 10 Nov). */
 .jumbo::before {
 	content: "";
 	position: absolute;
-	inset: 0;
-	border-radius: inherit;
-	box-shadow: inset 0 0 16px var(--nm-knob-glow);
+	inset: var(--space-2);
+	border: 2px solid var(--color-primary);
+	border-radius: calc(var(--nm-field-radius) - var(--space-2));
+	box-shadow: var(--nm-raised-small), var(--nm-sunken-small);
 	pointer-events: none;
 }
 .jumbo-pic {
@@ -967,7 +970,7 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 .jumbo-venue { display: block; }
 
 @media (max-width: 30rem) {
-	.jumbo { padding: var(--space-4); gap: var(--space-3) var(--space-4); }
+	.jumbo { padding: calc(var(--space-4) + var(--space-2)); gap: var(--space-3) var(--space-4); }
 	.jumbo-pic { width: 3.5rem; height: 3.5rem; }
 }
 
@@ -1020,9 +1023,7 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 }
 .team-box[open] > summary::after { transform: rotate(180deg); }
 .team-box > summary .team-pic { width: 2.75rem; height: 2.75rem; }
-.team-box-names { display: flex; flex-direction: column; min-width: 0; }
 .team-box-name { font-weight: 600; overflow-wrap: break-word; }
-.team-box-sub { font-size: 0.85rem; color: var(--text-muted); }
 /* A team's players start under its name, not its shield (UV, 5 Nov: indent
  * them so an open list reads as the team's): the heading's padding, the
  * shield and the gap after it. */
@@ -1088,44 +1089,30 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 .ls-views { margin-bottom: var(--space-5); }
 .ls-view-count { margin-left: var(--space-1); opacity: 0.7; font-variant-numeric: tabular-nums; }
 
+/* My Season's top (UV, 9 Nov): your team in one row, the next thing to do under it. */
 .ls-stage {
-	--q: var(--color-primary);
 	position: relative;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: var(--space-2);
+	gap: var(--space-3);
 	margin: 0 0 var(--space-5);
-	padding: var(--space-5) var(--space-4);
+	padding: var(--space-4);
 	border-radius: var(--nm-field-radius);
 	box-shadow: var(--nm-sunken);
 	text-align: center;
 }
 .ls-stage[hidden] { display: none; }
-/* Withdrawn, inactive or away: its word greyed, no glow. */
-.ls-stage[data-tone="off"] { --q: var(--text-muted); }
-/* The glow on a layer of its own, which fades when the tone changes. */
-.ls-stage::before {
-	content: "";
-	position: absolute;
-	inset: 0;
-	border-radius: inherit;
-	box-shadow: inset 0 0 16px var(--nm-knob-glow);
-	pointer-events: none;
-	transition: opacity 0.2s ease;
-}
-.ls-stage[data-tone="off"]::before { opacity: 0; }
-.ls-eyebrow {
-	font-size: 0.85rem;
-	color: var(--q);
-}
-.ls-stage-pic { width: 3.5rem; height: 3.5rem; }
-.ls-stage-pic[hidden] { display: none; }
+.ms-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-3); min-width: 0; }
+.ms-row[hidden] { display: none; }
+.ms-row .team-pic { width: 2.75rem; height: 2.75rem; }
+.ms-team { min-width: 0; font-family: var(--font-display); font-size: 1.5rem; line-height: 1.1; color: var(--color-team); overflow-wrap: anywhere; }
+.tdc-card .ls-where:empty { display: none; }
 .tdc-card .ls-where {
 	margin: 0;
 	font-family: var(--font-display);
 	font-weight: 400;
-	font-size: 1.9rem;
+	font-size: 1.4rem;
 	line-height: 1.1;
 	text-transform: none;
 	letter-spacing: normal;
@@ -1134,7 +1121,7 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 }
 .tdc-card .ls-where-detail { margin: 0; color: var(--text-muted); max-width: 32rem; }
 .tdc-card .ls-where-detail:empty { display: none; }
-.ls-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); margin-top: var(--space-2); }
+.ls-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); }
 .ls-actions:not(:has(> :not([hidden]))) { display: none; }
 
 /* Raised, as a .btn is; the way forward is the main action, filled. A long
@@ -1191,14 +1178,27 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	opacity: 0.85;
 }
 
+/* A result of my team's: the date, who against, the score and how it went, a
+ * link to its card. */
+.ls-waiting:has(> .ms-result) { grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr)); }
+.tdc-card a.ms-result { justify-content: flex-start; color: inherit; text-decoration: none; }
+.ms-result-when { flex: 0 0 3.75rem; font-size: 0.85rem; color: var(--text-muted); }
+.ms-result-who { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.ms-result-score { flex: none; font-variant-numeric: tabular-nums; font-weight: 600; }
+.ms-result .badge { flex: none; min-width: 3.25rem; text-align: center; }
+.tdc-card .ms-note { margin: var(--space-3) 0 var(--space-5); text-align: center; font-size: 0.85rem; }
+/* Away and Not playing: small, at the foot of the tab. */
+.ms-foot { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); margin-bottom: var(--space-5); }
+.ms-foot:not(:has(> :not([hidden]))) { display: none; }
+
 /* Waiting for a team: the heading with the places taken beside it, then one
  * sunken panel of people, as many to a row as fit, a hairline under each. A
  * shadow each would be repainted at every move of the light. */
 .ls-pool { margin-bottom: var(--space-5); }
 .ls-pool[hidden] { display: none; }
 .ls-pool-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
-.tdc-card .ls-pool-head h2 { margin: 0; }
-.tdc-card .ls-pool-hint { margin: var(--space-2) 0 var(--space-3); color: var(--text-muted); }
+.tdc-card .ls-pool-head h2 { flex: 1; margin: 0; }
+.tdc-card .ls-pool-hint { margin: var(--space-2) 0 var(--space-3); color: var(--text-muted); text-align: center; }
 .tdc-card .ls-pool-hint.is-full { color: var(--color-warning); }
 .ls-waiting {
 	display: grid;
@@ -1396,8 +1396,6 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	font-family: var(--font-display);
 }
 .cs-title-score { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--text-muted); }
-/* The rows take as much of the pill's width as they can. */
-.cs-session.set-group > .cs-grid { margin-right: var(--space-3); margin-left: var(--space-3); }
 /* The one place the switches are smaller than a field: a frame has two, a night
  * many frames, and the players' names need the row. The knob is three to the
  * track, and the totals below reckon from the same height. */
@@ -2117,14 +2115,12 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 /* ── Anything that fades ── */
 [data-motion="reduce"] .league-tile::after,
 [data-motion="reduce"] .team-box::after,
-[data-motion="reduce"] .ls-stage::before,
 [data-motion="reduce"] .tdc-card .cal button.cal-day::after,
 [data-motion="reduce"] .tdc-card button.cp-view::after,
 [data-motion="reduce"] .team-box > summary::after { transition: none; }
 @media (prefers-reduced-motion: reduce) {
 	:root:not([data-motion="full"]) .league-tile::after,
 	:root:not([data-motion="full"]) .team-box::after,
-	:root:not([data-motion="full"]) .ls-stage::before,
 	:root:not([data-motion="full"]) .tdc-card .cal button.cal-day::after,
 	:root:not([data-motion="full"]) .tdc-card button.cp-view::after,
 	:root:not([data-motion="full"]) .team-box > summary::after { transition: none; }

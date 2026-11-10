@@ -38,6 +38,9 @@ TDCLeagueNav.panel('season', () => {
 		name: el('l-name'), meta: el('l-meta'),
 		mePanel: el('me-panel'), meLine: el('me-line'), meDetail: el('me-detail'),
 		meConfirm: el('me-confirm'), meWithdraw: el('me-withdraw'), meAway: el('me-away'), mePic: el('me-pic'),
+		meRow: el('me-row'), meTeam: el('me-team'), meCaptain: el('me-captain'),
+		meSeason: el('me-season'), meStats: el('me-stats'), meTeamBox: el('me-team-box'), meTeamName: el('me-team-name'),
+		meTeamPlace: el('me-team-place'), meResults: el('me-results'), meResultsEmpty: el('me-results-empty'),
 		views: el('ls-views'), teamsView: el('ls-teams'), playersView: el('ls-players'),
 		poolPlaces: el('pool-places'),
 		jumbo: el('jumbo'), jumboPic: el('jumbo-pic'), jumboFacts: el('jumbo-facts'),
@@ -48,7 +51,6 @@ TDCLeagueNav.panel('season', () => {
 		poolPanel: el('pool-panel'), poolHint: el('pool-hint'), poolList: el('pool-list'),
 		askPanel: el('ask-panel'), askCount: el('ask-count'), askHint: el('ask-hint'), askList: el('ask-list'),
 		teamCount: el('team-count'), teamList: el('team-list'), teamEmpty: el('team-empty'), teamsHint: el('teams-hint'),
-		officialList: el('official-list'),
 		status: el('page-status'),
 		meCard: el('me-card')
 	};
@@ -78,6 +80,7 @@ TDCLeagueNav.panel('season', () => {
 	let fixtures = [];
 	let seasonRow = null;       // status, reserves, entries: the season's own row
 	let readiness = null;       // only for the people running it and its captains
+	let seasonSoFar = null;     // { data: tdc_league_standings, columns: the season's own }
 	// A team named in the address (&team=, from the fixtures page) is opened
 	// and brought into view once, on the first draw.
 	let focusTeam = new URLSearchParams(location.search).get('team');
@@ -260,18 +263,18 @@ TDCLeagueNav.panel('season', () => {
 		// place to show. They have the manage page.
 		const plays = mine && mine.my_status;
 		els.mePanel.hidden = !plays;
-		if (!plays) return;
-
 		els.meConfirm.hidden = true;
 		els.meWithdraw.hidden = true;
 		els.meAway.hidden = true;
+		if (!plays) return;
 
-		// The stage's green line, greyed for someone not playing just now
-		// (withdrawn, inactive or away); their team's picture above the line
-		// once they are on one.
-		els.mePanel.dataset.tone = mine.my_status === 'withdrawn' || mine.my_status === 'inactive' ? 'off' : '';
-		els.mePic.hidden = !mine.my_team_id;
-		if (mine.my_team_id) els.mePic.replaceChildren(TDC.teamPic(teamPictures.get(mine.my_team_id)));
+		// The compact row, once they are on a team.
+		els.meRow.hidden = !mine.my_team_id;
+		if (mine.my_team_id) {
+			els.mePic.replaceChildren(TDC.teamPic(teamPictures.get(mine.my_team_id)));
+			els.meTeam.textContent = mine.my_team_name;
+			els.meCaptain.hidden = !controlsTeam();
+		}
 
 		if (mine.my_status === 'withdrawn') {
 			els.meLine.textContent = 'You withdrew from this league.';
@@ -300,8 +303,9 @@ TDCLeagueNav.panel('season', () => {
 			els.meDetail.textContent = 'You are not on a team yet. A captain can claim you, or whoever runs the league can place you.';
 			els.meWithdraw.hidden = false;
 		} else {
-			els.meLine.textContent = 'You are playing for ' + mine.my_team_name + '.';
-			els.meDetail.textContent = controlsTeam() ? 'You are a captain of this team.' : '';
+			// The row says it all.
+			els.meLine.textContent = '';
+			els.meDetail.textContent = '';
 			els.meWithdraw.hidden = false;
 			els.meAway.textContent = 'I am away for a while';
 			els.meAway.dataset.active = '0';
@@ -335,6 +339,93 @@ TDCLeagueNav.panel('season', () => {
 			p_league_season_id: seasonId
 		}));
 	});
+
+	// ─── My season so far ───
+	// The Standings tab's reads and its ranking (TDCStandings) with Live off,
+	// so the two can never disagree: signed nights only. A re-opened night is
+	// still a complete match, and Standings counts it, so it is a result here.
+	async function loadMySeason() {
+		seasonSoFar = null;
+		if (mine && mine.my_status) {
+			const [st, cols] = await Promise.all([
+				supabaseClient.rpc('tdc_league_standings', { p_league_season_id: seasonId }),
+				supabaseClient.from('tbl_league_standing_columns')
+					.select('id, scope, position, name, equation, decimals, rank_priority, higher_first')
+					.eq('league_season_id', seasonId).order('position')
+			]);
+			for (const r of [st, cols]) {
+				if (r.error) { TDC.showSupabaseError(AREA, r.error, els.status); renderMySeason(); return false; }
+			}
+			if (!st.data || !Array.isArray(st.data.players) || !Array.isArray(st.data.teams)) {
+				TDC.error(AREA, 'the standings came back in a shape this page does not know.', st.data, els.status);
+				renderMySeason();
+				return false;
+			}
+			seasonSoFar = { data: st.data, columns: cols.data || [] };
+		}
+		renderMySeason();
+		return true;
+	}
+
+	function ordinal(n) {
+		const teen = n % 100 >= 11 && n % 100 <= 13;
+		return n + (teen ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
+	}
+
+	function renderMySeason() {
+		const data = seasonSoFar && seasonSoFar.data;
+		const colsFor = (scope) => seasonSoFar.columns.filter((c) => c.scope === scope);
+		const me = data && TDCStandings.rank(data.players.map((p) => Object.assign({ name: p.display_name }, p)), colsFor('player'))
+			.find((p) => p.player_id === myPlayerId);
+		const s = (me && me.stats) || {};
+		const played = s.frames_played || 0;
+		// Name down, or gone without playing: no season to speak of yet.
+		const has = me && (played > 0 || mine.my_status === 'active' || mine.my_status === 'inactive');
+		els.meSeason.hidden = !has;
+		if (!has) return;
+		els.meStats.replaceChildren(...[
+			[me.rank === null ? '–' : ordinal(me.rank), 'of ' + plural(data.players.length, 'player')],
+			[played, 'Frames played'],
+			[s.frames_won || 0, 'Frames won'],
+			[s.frames_lost || 0, 'Frames lost'],
+			[played ? Math.round((s.frames_won || 0) / played * 100) + '%' : '–', 'Win %'],
+			[s.lags_won || 0, 'Lags won']
+		].map(([value, label]) => {
+			const tile = node('div', 'lj-num');
+			const shown = node('span', 'lj-num-value', String(value));
+			if (String(value).length > 4) shown.classList.add('lj-num-long');
+			tile.append(shown, node('span', 'lj-num-label', label));
+			return tile;
+		}));
+
+		els.meTeamBox.hidden = !mine.my_team_id;
+		if (!mine.my_team_id) return;
+		els.meTeamName.textContent = mine.my_team_name;
+		const team = TDCStandings.rank(data.teams.map((t) => Object.assign({}, t)), colsFor('team'))
+			.find((t) => t.team_id === mine.my_team_id);
+		els.meTeamPlace.hidden = !team || team.rank === null;
+		if (team && team.rank !== null) els.meTeamPlace.textContent = ordinal(team.rank) + ' of ' + data.teams.length;
+
+		const at = (f) => (f.scheduled_at ? new Date(f.scheduled_at).getTime() : 0);
+		const results = fixtures
+			.filter((f) => !f.is_bye && f.match_id && (f.match_status === 'complete' || f.match_status === 'reopened')
+				&& (f.home_team_id === mine.my_team_id || f.away_team_id === mine.my_team_id))
+			.sort((a, b) => at(b) - at(a) || b.round - a.round || b.position - a.position);
+		els.meResultsEmpty.hidden = results.length > 0;
+		els.meResults.replaceChildren(...results.map((f) => {
+			const home = f.home_team_id === mine.my_team_id;
+			const us = (home ? f.home_frames : f.away_frames) || 0;
+			const them = (home ? f.away_frames : f.home_frames) || 0;
+			const row = node('a', 'ls-wait ms-result');
+			row.href = '/leagues/card/?m=' + encodeURIComponent(f.match_id);
+			row.append(
+				node('span', 'ms-result-when', f.scheduled_at ? new Date(f.scheduled_at).toLocaleDateString([], { day: 'numeric', month: 'short' }) : ''),
+				node('span', 'ms-result-who', 'v ' + (home ? f.away_name : f.home_name)),
+				node('span', 'ms-result-score', us + '–' + them),
+				node('span', us > them ? 'badge live' : 'badge', us > them ? 'Won' : us < them ? 'Lost' : 'Drawn'));
+			return row;
+		}));
+	}
 
 	// ─── Readiness ───
 	// The function answers only the people running the league and its
@@ -400,6 +491,14 @@ TDCLeagueNav.panel('season', () => {
 
 		const venues = TDC.venueFact(info.venues);
 		if (venues) els.jumboFacts.append(venues);
+
+		// Who runs it, their pictures and names (UV, 10 Nov).
+		const people = node('div', 'jumbo-fact lj-people');
+		const list = node('dd');
+		if (officials.length) list.append(...officials.map((o) => personLink(o.player_id, o.display_name, o.avatar_path)));
+		else list.textContent = 'Nobody is listed.';
+		people.append(node('dt', null, 'Who runs it'), list);
+		els.jumboFacts.append(people);
 		renderCorner();
 	}
 
@@ -514,6 +613,7 @@ TDCLeagueNav.panel('season', () => {
 		els.stats.replaceChildren(...tiles.map(([label, value]) => {
 			const tile = node('div', 'lj-num');
 			const shown = node('span', 'lj-num-value', String(value));
+			if (String(value).length > 4) shown.classList.add('lj-num-long');   // 12/20 keeps its tile the size of the rest
 			shown.dataset.live = 'stat|' + label;
 			tile.append(shown, node('span', 'lj-num-label', label));
 			return tile;
@@ -663,10 +763,8 @@ TDCLeagueNav.panel('season', () => {
 
 			const table = node('table', 'cal');
 			const head = table.createTHead().insertRow();
-			['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].forEach((d, i) => {
-				const th = node('th');
-				if (i >= 5) th.append(node('span', 'badge', d)); else th.textContent = d;
-				head.append(th);
+			['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].forEach((d) => {
+				head.append(node('th', null, d));
 			});
 
 			const body = table.createTBody();
@@ -927,8 +1025,7 @@ TDCLeagueNav.panel('season', () => {
 			if (!teams.some((t) => t.team_id === id)) openTeams.delete(id);
 		}
 
-		// Every team's roster, again after every write: a closed card shows its
-		// players' faces (UV, 9 Nov).
+		// Every team's roster, again after every write, so a card opens at once.
 		const read = await Promise.all(teams.map((t) => supabaseClient.rpc('tdc_team_roster', { p_team_id: t.team_id })));
 		const failed = read.find((r) => r.error);
 		if (failed) { TDC.showSupabaseError(AREA, failed.error, els.status); return false; }
@@ -942,10 +1039,11 @@ TDCLeagueNav.panel('season', () => {
 		const main = node('div', 'list-row-main');
 
 		// No confirmation here (UV, 29 Oct): who has confirmed is the
-		// director's business, on the manage page.
-		const sub = [r.is_captain ? 'Captain' : 'Player'];
-		if (r.status !== 'active') sub.push(r.status === 'withdrawn' ? 'Withdrawn' : 'Away');
-		main.append(personLink(r.player_id, r.display_name, r.avatar_path, sub.join(' · ')));
+		// director's business, on the manage page. A badge for the captain
+		// and no word for everybody else (UV, 10 Nov).
+		const sub = r.status === 'active' ? '' : (r.status === 'withdrawn' ? 'Withdrawn' : 'Away');
+		main.append(personLink(r.player_id, r.display_name, r.avatar_path, sub));
+		if (r.is_captain) main.append(node('span', 'badge live', 'Captain'));
 		row.append(main);
 
 		// Captain controls, on my own team only.
@@ -995,39 +1093,27 @@ TDCLeagueNav.panel('season', () => {
 		if (mine && mine.my_team_id === t.team_id) box.classList.add('is-mine');
 		if (asked.has(t.team_id)) box.classList.add('is-asked');
 
-		// The join page's card (UV, 9 Nov): the team on the top row, its faces
-		// on the next with the arrow at the end of them. Open, the faces go and
-		// the arrow stays on its row, the players below.
+		// Closed, the team's picture and name and nothing else (UV, 10 Nov).
+		// Open, the places taken and the ring to ask share the arrow's line
+		// (the stylesheet hides them on a closed card), the players below.
 		const head = document.createElement('summary');
 		const top = node('span', 'lj-team-head');
 		const pic = node('span', 'team-pic');
 		pic.append(TDC.teamPic(teamPictures.get(t.team_id)));
-		const names = node('span', 'team-box-names');
-		names.append(node('span', 'team-box-name', t.name));
-		if ((t.captains || []).length) names.append(node('span', 'team-box-sub', 'Captain: ' + t.captains.join(', ')));
-		if (mine && mine.my_team_id === t.team_id) names.append(node('span', 'badge live', 'Your team'));
+		top.append(pic, node('span', 'team-box-name', t.name));
+		const line = node('span', 'lj-team-line');
 		const places = node('span', 'lj-team-places');
 		places.append(node('span', 'lj-team-places-n', String(t.active_players || 0)),
 			node('span', 'lj-team-places-of', 'of ' + (t.team_limit || 0)));
 		places.title = (t.active_players || 0) + ' of ' + (t.team_limit || 0) + ' places taken';
-		top.append(pic, names, places);
+		line.append(places);
 		// The ring to ask to join, for a player on no team (UV, 5 Nov).
-		if (requestsRead && mayAsk()) top.append(TDCTeamAsk.ring(t, asked.has(t.team_id), AREA, els.status));
+		if (requestsRead && mayAsk()) line.append(TDCTeamAsk.ring(t, asked.has(t.team_id), AREA, els.status));
+		line.append(node('span', 'lj-team-arrow'));
+		head.append(top, line);
+		box.append(head);
 
 		const roster = rosters.get(t.team_id) || [];
-		const playing = roster.filter((r) => r.status !== 'withdrawn');
-		const faces = node('span', 'lj-team-faces');
-		if (playing.length) {
-			faces.append(...playing.map((r) => {
-				const face = avatar(r.avatar_path, r.display_name);
-				face.title = r.display_name || '';
-				return TDC.profilePic(face, r.player_id);
-			}));
-		} else {
-			faces.append(node('span', 'team-box-sub', 'Nobody on it yet'));
-		}
-		head.append(top, faces);
-		box.append(head);
 
 		if (controlsTeam() && t.team_id === mine.my_team_id) {
 			const field = node('div', 'field');
@@ -1083,8 +1169,8 @@ TDCLeagueNav.panel('season', () => {
 		els.teamEmpty.hidden = !!teams.length;
 		els.teamsHint.hidden = !(requestsRead && mayAsk()) || !teams.length;
 		els.teamsHint.textContent = asked.size
-			? 'The captain of a team you asked decides. Tap its ring again to take it back.'
-			: 'You are on no team yet. Tap a team’s ring to ask to join it; its captain decides.';
+			? 'The captain of a team you asked decides. Open it and tap its ring to take it back.'
+			: 'You are on no team yet. Open a team and tap its ring to ask to join it; its captain decides.';
 		els.teamList.replaceChildren(...teams.map(teamCard));
 
 		// The team named in the address, once: into view, open.
@@ -1210,10 +1296,6 @@ TDCLeagueNav.panel('season', () => {
 		});
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		officials = data || [];
-
-		els.officialList.replaceChildren(...officials.map((o) =>
-			personLink(o.player_id, o.display_name, o.avatar_path, o.role_name)));
-		if (!officials.length) els.officialList.replaceChildren(node('p', 'muted', 'Nobody is listed.'));
 		return true;
 	}
 
@@ -1287,6 +1369,7 @@ TDCLeagueNav.panel('season', () => {
 		results.push(await loadReadiness());
 		results.push(await loadOfficials());
 		results.push(await loadMyNext());
+		results.push(await loadMySeason());
 		renderBanner();
 		renderStats();
 		renderNotes();

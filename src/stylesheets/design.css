@@ -692,33 +692,22 @@ button.league-nav-item:focus-visible { outline: 2px solid var(--nm-light-colour)
 .still > .tdc-tab-thumb { transition: none; }
 
 /* ── Collapsible groups ────────────────────────────────────────────── */
-/* Closed, a field's size, its word in line with a field's; open, the same pill holds
-   what is in it. tdc-controls.js does the opening. */
+/* Just the heading with the arrow right after its words (UV, 10 Nov: no pill).
+   tdc-controls.js does the opening. */
 .set-group {
 	position: relative;
 	margin-bottom: var(--space-5);
 	padding: 0;
 	border: 0;
-	border-radius: var(--nm-field-radius);
-	box-shadow: var(--nm-sunken);
 }
-.set-group::after {
-	content: "";
-	position: absolute;
-	inset: 0;
-	border-radius: inherit;
-	box-shadow: var(--glow-primary);
-	opacity: 0;
-	pointer-events: none;
-	transition: opacity 0.2s ease;
-}
-.set-group:has(> summary:focus-visible)::after { opacity: 1; }
 .set-group > summary {
 	display: flex;
 	align-items: center;
+	width: fit-content;
+	max-width: 100%;
 	min-height: var(--nm-field);
 	margin: 0;
-	padding: var(--space-2) calc(var(--nm-pad) + 1.5rem) var(--space-2) var(--nm-pad);
+	padding: var(--space-2) 1.75rem var(--space-2) 0;
 	color: var(--text-primary);
 	font-size: 1rem;
 	font-weight: 400;
@@ -727,21 +716,19 @@ button.league-nav-item:focus-visible { outline: 2px solid var(--nm-light-colour)
 	outline: none;
 	-webkit-tap-highlight-color: transparent;
 }
+.set-group > summary:focus-visible { outline: 2px solid var(--nm-light-colour); outline-offset: 2px; border-radius: var(--radius-pill); }
 /* The dropdown's arrow, where the + and - were. */
 .set-group > summary::after,
 .set-group[open] > summary::after {
 	content: "";
-	right: var(--nm-pad);
+	right: 0;
 	width: 1.25rem;
 	height: 1.25rem;
 	background: var(--nm-arrow) center / contain no-repeat;
 	transition: transform 0.35s ease, opacity var(--dots-dim) ease;
 }
 .set-group[open]:not(.is-closing) > summary::after { transform: translateY(-50%) rotate(180deg); }
-.set-group > summary > .group-dots { right: calc(var(--nm-pad) - 0.2rem); }
-.set-group > :not(summary) { margin-right: var(--nm-pad); margin-left: var(--nm-pad); }
-.set-group > .field,
-.set-group > .field-row { margin-right: var(--space-2); }
+.set-group > summary > .group-dots { right: -0.2rem; }
 .set-group > .field > label,
 .set-group > .field > .hint,
 .set-group > .field-row > .field > label,
@@ -915,7 +902,6 @@ html :is(.team-name, .cj-name, .cs-team, .tdc-card .h2h-title, .card-players .cp
 [data-motion="reduce"] .tdc-drop::after,
 [data-motion="reduce"] .tdc-drop-list::before,
 [data-motion="reduce"] .tdc-stepper::after,
-[data-motion="reduce"] .set-group::after,
 [data-motion="reduce"] .set-group > summary::after { transition: none; }
 @media (prefers-reduced-motion: reduce) {
 	:root:not([data-motion="full"]) .tdc-drop::before,
@@ -928,6 +914,5 @@ html :is(.team-name, .cj-name, .cs-team, .tdc-card .h2h-title, .card-players .cp
 	:root:not([data-motion="full"]) .tdc-drop-list li,
 	:root:not([data-motion="full"]) .tdc-tab-thumb,
 	:root:not([data-motion="full"]) .tdc-stepper::after,
-	:root:not([data-motion="full"]) .set-group::after,
 	:root:not([data-motion="full"]) .set-group > summary::after { transition: none; }
 }

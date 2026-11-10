@@ -118,6 +118,7 @@
  * a player you follow, are green, the others cream; under the pointer they swap,
  * faded. On your own profile only Share and More. */
 .pp-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-4); margin-top: var(--space-4); }
+.pp-link-note { text-align: center; margin-top: var(--space-3); }
 .tdc-card button.pp-icon {
 	flex: none;
 	width: 3rem;

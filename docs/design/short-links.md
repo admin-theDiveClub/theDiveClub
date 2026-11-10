@@ -13,10 +13,12 @@ A short link is a shortcut to an existing page: `https://thediveclub.org/<code>`
 | `L-BCDAM` | A league | The LD types BCDAM; the `L-` is fixed |
 | `L-BCDAM-14` | Match 14 of that league | Automatic, nobody can change it |
 | `4821` | A social match | Automatic, nobody can change it |
+| `Yuvan-Naidoo` | A player (UV, 10 Nov) | Automatic, built from their first name and surname |
+| `Yuvan-Naidoo-2` | The next player with that name | Automatic |
 
 - **Nobody can type an invalid code.** The field takes letters and digits only, 2 to 8 of them, and capitals as you type. The site adds the dashes. Capitals or lower case in an address count as the same code.
 - **Only leagues and tournaments can be customised.** Matches inside them carry the competition's code and a number; social matches carry a number.
-- **One code each.** One per league, one per tournament, one for every match. No other page has one.
+- **One code each.** One per league, one per tournament, one for every match, one per player. No other page has one.
 - **Every one gets a code automatically** when it is created. The LD or TD can replace it.
 
 ## Who can do what
@@ -36,8 +38,21 @@ A short link is a shortcut to an existing page: `https://thediveclub.org/<code>`
 | Tournament | Poster | Poster | Draw |
 | League, newest season | Sign in, then the season page | Season page | Season page |
 | League or tournament match, social match | Sign in, then the match | The match | The match |
+| Player | Sign in, then the profile | The profile | The profile |
 
 Signed-out visitors keep the current flow until the pages for them exist (`docs/STATUS.md` §0 P2).
+
+## Players (UV, 10 Nov)
+
+Full names, so a list of links can be searched elsewhere.
+
+- **Built by the site, never chosen.** First name, dash, surname, each word kept (`Mary-Anne-van-der-Merwe`). Accents come off and apostrophes close up (`Jose-OBrien`).
+- **The first to register has the plain name.** The next person with it gets `-2`, then `-3`.
+- **It follows the name.** Change your name and the link changes; the old one stops working and anybody may have it. Saving the same name keeps the link, its number included.
+- **No first name or surname, no link.** Share gives the long address, and your own page says why.
+- **Only somebody with an account has one**, so a walk-in cannot hold a name ahead of the person who later registers. Merging a walk-in gives them one.
+- **A signed-out visitor is always asked to sign in first, found or not**, so nobody can test names to learn who belongs to the club.
+- **A name cannot clash with another code.** It holds only letters, so it is never all digits and never ends in a number but the one added. A first name reading `T-` or `L-`, or either name under two letters, gets no link: `T-Bone` would read as a tournament's code.
 
 ## Broken links
 
@@ -48,6 +63,7 @@ An unknown address reaches `404.html` (GitHub Pages sends it for anything that d
 | Not a valid code | The address cannot be a code at all |
 | No such code | Nothing has it. It may have been changed or removed |
 | No such match | The league or tournament exists, its match number does not |
+| Player not found | Signed in, and nobody has this name's link |
 | Poster not shared yet | The tournament's poster is private. Its name is not shown |
 | No season yet | The league has no season to open |
 | Offline | The lookup could not be made |

@@ -925,18 +925,18 @@
 		findTimer = setTimeout(() => findPlayers(term), 250);
 	});
 
-	el('pp-share').addEventListener('click', async () => {
-		const url = location.origin + '/players/?p=' + encodeURIComponent(playerId);
-		const title = (them ? them.player.display_name : 'A player') + ' — The Dive Club';
-		try {
-			if (navigator.share) { await navigator.share({ title, url }); return; }
-			await navigator.clipboard.writeText(url);
-			TDC.status(els.status, 'Link copied.', 'success');
-		} catch (err) {
-			if (err && err.name === 'AbortError') return;   // the share sheet closed
-			TDC.error(AREA, 'the link could not be shared or copied.', err, els.status);
-		}
-	});
+	// The short link once they have a first name and surname, else the long one
+	// (UV, 10 Nov). Your own page says why yours is long.
+	function wireShare() {
+		TDC.shareButton(el('pp-share'), 'player', playerId, {
+			area: AREA,
+			status: els.status,
+			title: () => them.player.display_name + ' — The Dive Club',
+			longUrl: location.origin + '/players/?p=' + encodeURIComponent(playerId)
+		}).then((link) => {
+			if (link && !link.code && them.player.is_me) el('pp-link-note').hidden = false;
+		});
+	}
 
 	// ─── Start ───
 	function check(r, what) {
@@ -989,6 +989,7 @@
 		views.forEach(listenPages);
 
 		renderHero();
+		wireShare();
 		renderProfile();
 		renderH2H();
 		for (const v of views) renderTeams(v, null);

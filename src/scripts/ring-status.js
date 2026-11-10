@@ -115,13 +115,19 @@ const TDCRing = (() => {
 			'M64.2 40.4A1.8 0.8 49.8 1 1 61.8 37.6A1.8 0.8 49.8 1 1 64.2 40.4M33.4 54.3A1.8 0.8 -110.6 1 1 34.6 57.7A1.8 0.8 -110.6 1 1 33.4 54.3M53.2 64.6A1.9 1.1 160.3 1 1 56.8 63.4A1.9 1.1 160.3 1 1 53.2 64.6M68.6 56.6A1.7 0.3 104.7 1 1 69.4 53.4A1.7 0.3 104.7 1 1 68.6 56.6',
 			'M40.8 30.9A2.1 0.4 -31.4 1 1 37.2 33.1A2.1 0.4 -31.4 1 1 40.8 30.9M45 71.7A2 0.3 -172.2 1 1 49 72.3A2 0.3 -172.2 1 1 45 71.7'] },
 		// Added 5 Nov for the player page's buttons (UV): follow (the person,
-		// moved left, with a small plus), share (an arrow up out of an open
-		// box) and more (three dots, each its own stroke).
+		// moved left, with a small plus), share (three small circles joined by
+		// two lines; UV, 10 Nov: softer than the box it was) and more (three
+		// dots, each its own stroke).
 		follow: { label: 'Follow', strokes: [
 			'M44 33A8 8 0 1 1 44 49A8 8 0 1 1 44 33',
 			'M28 68C28 58 35 54 44 54C53 54 60 58 60 68',
 			'M67 37L67 51M60 44L74 44'] },
-		share: { label: 'Share', strokes: ['M50 58L50 29', 'M40 39L50 29L60 39', 'M37 49L37 68L63 68L63 49'] },
+		share: { label: 'Share', strokes: [
+			'M73 32A7 7 0 1 1 59 32A7 7 0 1 1 73 32',
+			'M41 50A7 7 0 1 1 27 50A7 7 0 1 1 41 50',
+			'M73 68A7 7 0 1 1 59 68A7 7 0 1 1 73 68',
+			'M40.1 46.6L59.9 35.4',
+			'M40.1 53.4L59.9 64.6'] },
 		more: { label: 'More', widths: [8, 8, 8], strokes: [
 			'M33 46A4 4 0 1 1 33 54A4 4 0 1 1 33 46',
 			'M50 46A4 4 0 1 1 50 54A4 4 0 1 1 50 46',

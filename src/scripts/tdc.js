@@ -555,19 +555,21 @@ const TDC = (() => {
 	// once per page: a match's ⋯ menu is drawn again each time it opens.
 	const shortLinks = new Map();
 
-	function shareButton(button, kind, id, { area, status: statusEl, title }) {
+	// longUrl: what to share when this has no code, as a player with no surname.
+	// Resolves to the link read, or nothing if it could not be.
+	function shareButton(button, kind, id, { area, status: statusEl, title, longUrl }) {
 		button.disabled = true;
 		const key = kind + '|' + id;
 		if (!shortLinks.has(key)) {
 			shortLinks.set(key, Promise.resolve(supabaseClient.rpc('tdc_short_link', { p_kind: kind, p_id: id })));
 		}
-		shortLinks.get(key).then(({ data, error: err }) => {
+		return shortLinks.get(key).then(({ data, error: err }) => {
 			if (err) {
 				shortLinks.delete(key);
 				showSupabaseError(area, err, statusEl);
-				return;
+				return null;
 			}
-			const url = location.origin + '/' + data.code;
+			const url = data.code ? location.origin + '/' + data.code : longUrl;
 			button.disabled = false;
 			button.addEventListener('click', async () => {
 				try {
@@ -579,6 +581,7 @@ const TDC = (() => {
 					error(area, 'the link could not be shared or copied.', e, statusEl);
 				}
 			});
+			return data;
 		});
 	}
 

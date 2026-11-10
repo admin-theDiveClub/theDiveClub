@@ -1706,3 +1706,30 @@ These predate the log. They are recorded here because every one of them is a dec
 *Rejected:* forwarding `/leagues/join/` to the season page; keeping both pages.
 *So:* `docs/systems/leagues.md`, "One page for a league"; `docs/ui.md`.
 *Touches:* migration `20261110075409_league_short_link_season.sql`, `supabase/tests/066_short_links.test.sql`, `leagues/join/index.html` and `scripts/league-join.js` (both removed), `leagues/season/index.html`, `_includes/league/season.html`, `scripts/league-season.js`, `scripts/leagues.js`, `scripts/venue.js`, `scripts/team-ask.js`, `stylesheets/league-join.css`, `stylesheets/league.css`, `stylesheets/design.css`, `stylesheets/forms.css`
+
+## 2026-11-10 — The Season tab, every banner and collapsible groups restyled
+
+*Decided by UV:* **every banner** has inset shadows only and a thin site-green inner line that casts shadows, replacing the outer shadow and inner glow of 9 Nov. **Who runs it** moves into the league banner after Venue, as pictures and names. **Rules** is the last section, collapsed at the start. Each **calendar month** is an inset card, a grey line separates weekends from weekdays, and the Sa and Su pills go. Number rows are centred with even padding. **Share** sits below the + in site green, with a softer icon. A grey line runs through each section heading and either side of the Teams and My Season pill. **Collapsible groups, site-wide:** the pill goes and the arrow sits right after the words, reversing 29 Oct's move to the right end. **Team cards** are inset and show only the picture and name; open shows every player with a Captain badge and no "Player" word, the places on the arrow's line, and the ask ring there too; the "Your team" badge goes. This replaces the faces row and places on a closed card (9-10 Nov). On a phone the cards are condensed, name under picture, arrow centred below, fitting in rows, and an opened card expands and pushes the others.
+*Claude's, for UV to judge:* the share icon as three joined circles (UV asked for a softer one and left the choice); the phone card's 7.5rem width; the calendar change kept to the Season tab, leaving the Fixtures planner; Away and Withdrawn kept on a player's row; the hint's new words, "Open a team and tap its ring"; every roster still read with the page, so a card opens at once.
+*Decided by UV, second look the same day:* Who runs it in the row with the league's details; team names cream, your own team's blue; no pills on the league nights; a thicker green line on the banners; number tiles raised rather than inlaid, with smaller text; the places on a team card held within the arrow's row.
+*Claude's, for UV to judge, second look:* the next night keeps its soft glow, since without it Next and Coming up are the same green.
+*Not built:* a Scorer badge. "Scorer" is only a score-entry rule, and no person can be named one.
+*So:* `docs/systems/leagues.md`, "The Season tab restyled"; `docs/ui.md`.
+*Touches:* no migration. `_includes/league/season.html`, `scripts/league-season.js`, `scripts/ring-status.js`, `stylesheets/league-join.css`, `stylesheets/league.css`, `stylesheets/design.css`
+
+## 2026-11-10 — Short links for players: their full name, built by the site
+
+*Decided by UV:* a player's short link is their first name and surname with dashes (`Yuvan-Naidoo`), and a number only when the name is already taken. Full names, so a list of links can be searched elsewhere. It cannot be customised, and the first to register has the plain name. It follows the name: change your name and the old link stops working. A second person with a name gets the next number in order (`Yuvan-Naidoo-2`). A player without a first name and surname has no short link: Share gives the long address and their own page says why. A signed-out visitor is always asked to sign in first, found or not, so nobody can test names to learn who belongs to the club.
+*Replaces:* "No other page has one" in the 9 Nov short links decision, for players only.
+*Rejected:* a link fixed when first made; a random number; "Link not found" for a signed-out visitor; a display name standing in for a missing name.
+*Claude's, for UV to judge:* only somebody with an account has a link, so a walk-in cannot hold a name ahead of whoever registers; a first name reading T- or L-, or either name under two letters, gets no link, since T-Bone would read as a tournament's code; a number freed by a change is given out again; accents dropped and apostrophes closed up (Jose-OBrien); the note on your own page always showing rather than only after Share.
+*So:* `docs/design/short-links.md`, `docs/systems/foundations.md`, "Short links".
+*Touches:* migration `20261110084238_player_short_links.sql`, `supabase/tests/067_player_short_links.test.sql`, `scripts/short-link.js`, `scripts/tdc.js`, `scripts/player.js`, `players/index.html`, `stylesheets/player.css`
+
+## 2026-11-10 — My Season: where you stand, and your season so far
+
+*Decided by UV:* "Players" becomes "My Season". The top of the tab is one compact row (team picture, team name, Captain) with My next match as the one main button, and Away and Not playing small at the foot of the tab. Your season so far: rank, frames played, won and lost, win %, lags won, plus your team's place and its results. Confirm, the other standings, Asked to join and Waiting for a team stay.
+*Claude's, for UV to judge:* Asked to join and Waiting for a team above the season so far, since they need action; the numbers counted exactly as Standings with Live off, so signed nights only; a player whose name is only down, or who left without playing, sees no season section; the green glow and "Your place" label gone from the panel.
+*Left open by UV:* the wording for a withdrawn player against the + in the banner ("leave it for now").
+*So:* `docs/systems/leagues.md`, "My Season".
+*Touches:* no migration. `_includes/league/season.html`, `scripts/league-season.js`, `stylesheets/league.css`

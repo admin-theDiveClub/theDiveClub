@@ -55,6 +55,7 @@
 .tdc-card .lj-names .lj-season { margin-top: var(--space-1); }
 .lj-names .jumbo-status { margin-top: var(--space-3); font-family: var(--font-body); }
 .tdc-card .lj-names h1 {
+	max-width: 100%;
 	margin: 0;
 	font-family: var(--font-display);
 	font-weight: 400;
@@ -78,10 +79,11 @@
  * page's. The name's first line keeps clear of them ── */
 .lj-corner {
 	position: absolute;
-	top: var(--space-3);
-	right: var(--space-3);
+	top: var(--space-4);
+	right: var(--space-4);
 	z-index: 1;
 	display: flex;
+	flex-direction: column;
 	gap: var(--space-1);
 }
 /* Balancing lines cannot work round a float: left on, the name runs off the page. */
@@ -89,9 +91,16 @@
 .lj-corner + .lj-id h1::before {
 	content: "";
 	float: right;
-	width: 5.25rem;
+	width: 2.75rem;
 	height: 1.2em;
 }
+/* Two icons, one above the other: the name's second line keeps clear too. */
+.lj-corner:has(#interest-btn:not([hidden])) + .lj-id h1::before { height: 5rem; }
+/* Who runs it is in the row with the other details (UV, 10 Nov): five across. */
+@media (min-width: 48rem) {
+	.jumbo-facts:has(> .lj-people) { grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); }
+}
+.lj-people dd { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
 .tdc-card button.lj-icon,
 .lj-icon {
 	display: inline-flex;
@@ -114,13 +123,10 @@
 .tdc-card button.lj-icon[hidden],
 .lj-icon[hidden] { display: none; }
 .lj-icon:focus-visible { outline: 2px solid var(--nm-light-colour); outline-offset: 2px; }
-.lj-icon .tdc-ring { color: var(--text-primary); transition: color 0.2s ease; }
+.lj-icon .tdc-ring { color: var(--color-primary); transition: color 0.2s ease; }
 .lj-icon .tdc-ring .mark { stroke: currentColor; }
-.lj-icon-go .tdc-ring,
 .lj-icon:hover .tdc-ring,
-.lj-icon:focus-visible .tdc-ring { color: var(--color-primary); }
-.lj-icon-go:hover .tdc-ring,
-.lj-icon-go:focus-visible .tdc-ring { color: var(--text-primary); }
+.lj-icon:focus-visible .tdc-ring { color: var(--text-primary); }
 
 .lj-icon .sr {
 	position: absolute;
@@ -214,11 +220,21 @@
 .lj-btn:focus-visible { outline: 2px solid var(--nm-light-colour); outline-offset: 2px; }
 
 /* ── The numbers: each sunk into the card ── */
+/* Rows of equal tiles, each row centred (UV, 10 Nov), so a short last row sits
+ * in the middle. Three to a row on a phone, two on the narrowest. */
 .lj-numbers {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(min(100%, 6rem), 1fr));
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
 	gap: var(--space-3);
 	margin-bottom: var(--space-5);
+}
+.lj-numbers > .lj-num { flex: 0 0 calc((100% - 2 * var(--space-3)) / 3); min-width: 0; }
+@media (max-width: 22rem) {
+	.lj-numbers > .lj-num { flex-basis: calc((100% - var(--space-3)) / 2); }
+}
+@media (min-width: 48rem) {
+	.lj-numbers > .lj-num { flex-basis: 7.5rem; }
 }
 .lj-num {
 	display: flex;
@@ -226,20 +242,24 @@
 	align-items: center;
 	justify-content: center;
 	gap: var(--space-1);
-	padding: var(--space-3) var(--space-2);
+	/* Uneven on purpose: the display face's line box has its capitals low in it.
+	 * Measured: the same 12px of clear space above the number and below the label. */
+	padding: 1.0625rem var(--space-2) 0.5625rem;
 	text-align: center;
+	box-shadow: var(--nm-raised);
 }
 .lj-num-value {
 	font-family: var(--font-display);
-	font-size: 2.25rem;
+	font-size: 1.85rem;
 	line-height: 1;
 	font-variant-numeric: tabular-nums;
 	color: var(--color-primary);
 }
-.lj-num-label { font-size: 0.85rem; color: var(--text-muted); }
+.lj-num-long { font-size: 1.55rem; line-height: 1.85rem; }
+.lj-num-label { font-size: 0.8rem; color: var(--text-muted); }
 
 /* ── From whoever runs it ── */
-.lj-notes-box:not([hidden]) ~ .ls-views { margin-top: var(--space-5); }
+.lj-notes-box:not([hidden]) ~ .lj-views-row { margin-top: var(--space-5); }
 .tdc-card .lj-notes {
 	margin: 0;
 	padding: var(--space-4) var(--nm-pad);
@@ -335,46 +355,123 @@
 .lj-picked-sub { font-size: 0.85rem; color: var(--text-muted); }
 
 /* ── The teams: a card each, raised, opening the team on the season page ── */
+/* A grey line through a section's heading (UV, 10 Nov), and either side of the
+ * Teams and My Season pill, which stands where a heading would. */
+.lj-heading,
+.lj-views-row { display: flex; align-items: center; gap: var(--space-3); }
+.lj-heading[hidden] { display: none; }
+.tdc-card .lj-heading .badge { font-family: var(--font-body); text-transform: none; letter-spacing: normal; }
+.lj-views-row:has(> .ls-views[hidden]) { display: none; }
+.lj-heading::before,
+.lj-heading::after,
+.lj-views-row::before,
+.lj-views-row::after {
+	content: "";
+	flex: 1 1 1rem;
+	min-width: 1rem;
+	height: 1px;
+	background: var(--border-color);
+}
+.lj-views-row .ls-views { margin: 0; flex: none; }
+.lj-views-row { margin-bottom: var(--space-5); }
+
+/* Rules, folded: a heading with its line, the arrow right after the word. */
+.set-group.lj-fold > summary { width: auto; padding: 0; }
+.set-group.lj-fold > summary::after { content: none; }
+.lj-fold > summary > .lj-heading { flex: 1; min-width: 0; margin: 0; }
+.lj-arrow {
+	flex: none;
+	width: 1.25rem;
+	height: 1.25rem;
+	margin-left: calc(var(--space-2) - var(--space-3));
+	background: var(--nm-arrow) center / contain no-repeat;
+	transition: transform 0.35s ease;
+}
+.lj-fold[open]:not(.is-closing) .lj-arrow { transform: rotate(180deg); }
+.set-group.lj-fold { margin-top: var(--space-5); }
+.lj-fold > .lj-rules { margin-top: var(--space-3); }
+
+/* A month is an inset card (UV, 10 Nov), with a line between Friday and Saturday. */
+.lj-cal .cal-month {
+	padding: var(--space-3);
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-sunken);
+}
+/* A night is its number in its colour, no pill (UV, 10 Nov). The next night keeps
+ * its soft glow, the only thing that tells it from the others coming up. */
+.tdc-card .lj-cal .cal button.cal-day,
+.tdc-card .lj-cal .cal button.cal-day:hover,
+.tdc-card .lj-cal .cal button.cal-day:active { background: none; box-shadow: none; }
+.lj-cal .cal th:nth-child(6),
+.lj-cal .cal td:nth-child(6) { border-left: 1px solid var(--border-color); }
+
 .lj-teams {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
 	gap: var(--space-5);
 }
 .lj-team-head { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
-.lj-team-places { display: flex; flex-direction: column; align-items: center; line-height: 1; }
+/* Held inside the arrow's height (UV, 10 Nov); the nudge centres the display
+ * face, whose capitals sit high at this size. */
+.lj-team-places { position: relative; top: 0.125rem; display: flex; align-items: baseline; gap: 0.25em; line-height: 1.25rem; }
 .lj-team-places-n {
 	font-family: var(--font-display);
-	font-size: 1.6rem;
+	font-size: 1.05rem;
 	color: var(--color-primary);
 }
 .lj-team-places-of { font-size: 0.85rem; color: var(--text-muted); }
-.lj-team-faces { display: flex; flex-wrap: wrap; gap: var(--space-1); }
-.lj-team-faces .person-pic { width: 2rem; height: 2rem; font-size: 0.7rem; }
 
-/* A team's card, which folds (UV, 9 Nov). The summary's
- * arrow shares a row with the faces; open, the faces go and it stays there. */
+/* A team's card, inset and folding (UV, 10 Nov): closed, its picture and name;
+ * open, the places and the ring join the arrow on its line. */
 .team-boxes.lj-teams { align-items: start; }
-.lj-teams .team-box { box-shadow: var(--nm-raised); }
-.lj-teams .team-box.is-mine,
-.lj-teams .team-box.is-asked { box-shadow: inset 0 0 16px var(--nm-knob-glow), var(--nm-raised); }
-.lj-teams .team-box > summary { flex-wrap: wrap; padding: var(--space-4) var(--nm-pad); }
-.lj-teams .team-box > summary:has(.team-ask)::after { margin-left: auto; }
+.lj-teams .team-box.is-asked { box-shadow: inset 0 0 16px var(--nm-knob-glow), var(--nm-sunken); }
+.lj-teams .team-box > summary { flex-wrap: wrap; padding: var(--space-3) var(--nm-pad); }
+.lj-teams .team-box > summary::after { content: none; }
 .lj-teams .team-box > summary .team-pic { width: 3rem; height: 3rem; }
-.lj-teams .lj-team-head { flex: 0 0 100%; }
-.lj-teams .lj-team-faces { flex: 1 1 0; min-width: 0; }
-.lj-teams .team-box[open] .lj-team-faces { display: none; }
-.lj-teams .team-box-names { flex: 1; }
-.lj-teams .team-box-names .badge { align-self: flex-start; margin-top: var(--space-1); }
-.lj-teams .team-box-name { font-family: var(--font-display); font-size: 1.35rem; font-weight: 400; line-height: 1.1; }
-@media (min-width: 24.0625rem) {
+.lj-teams .lj-team-head { flex: 1 1 8rem; }
+.lj-team-line { display: flex; align-items: center; gap: var(--space-3); margin-left: auto; }
+.lj-teams .team-box:not([open]) .lj-team-places,
+.lj-teams .team-box:not([open]) .team-ask { display: none; }
+.lj-team-arrow {
+	flex: none;
+	width: 1.25rem;
+	height: 1.25rem;
+	background: var(--nm-arrow) center / contain no-repeat;
+	transition: transform 0.35s ease;
+}
+.lj-teams .team-box[open] .lj-team-arrow { transform: rotate(180deg); }
+.lj-teams .team-box-name { min-width: 0; font-family: var(--font-display); font-size: 1.35rem; font-weight: 400; line-height: 1.1; overflow-wrap: break-word; }
+/* Cream, your own team blue (UV, 10 Nov). Written with .tdc-card to outrank
+ * design.css's rule that makes every team name blue. */
+.tdc-card .lj-teams .team-box-name { color: var(--text-primary); }
+.tdc-card .lj-teams .team-box.is-mine .team-box-name { color: var(--color-team); }
+.lj-teams .team-box .list-row-main { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+@media (min-width: 40.0625rem) {
 	.lj-teams .team-box > :not(summary) { margin-left: calc(var(--nm-pad) + 3rem + var(--space-3)); }
+}
+/* On a phone (UV, 10 Nov): small cards, the name under the picture and the arrow
+ * centred under that, as many to a row as fit. An opened one takes the row and
+ * pushes the others on. */
+@media (max-width: 40rem) {
+	.team-boxes.lj-teams { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+	.lj-teams .team-box { flex: 0 0 7.5rem; }
+	.lj-teams .team-box[open] { flex-basis: 100%; }
+	.lj-teams .team-box > summary { flex-direction: column; flex-wrap: nowrap; gap: var(--space-2); padding: var(--space-3); }
+	.lj-teams .lj-team-head { flex: none; flex-direction: column; gap: var(--space-2); max-width: 100%; text-align: center; }
+	.lj-teams .team-box-name { font-size: 1.1rem; }
+	.lj-team-line { margin-left: 0; }
+	.lj-teams .team-box > :not(summary) { margin-right: var(--space-4); margin-left: var(--space-4); }
 }
 
 /* ── Who runs it ── */
 .lj-officials { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); justify-content: center; }
 
 /* ── Anything that fades ── */
+[data-motion="reduce"] .lj-arrow,
+[data-motion="reduce"] .lj-team-arrow,
 [data-motion="reduce"] .tdc-card .cal button.cal-day[class*="is-"] { transition: none; }
 @media (prefers-reduced-motion: reduce) {
+	:root:not([data-motion="full"]) .lj-arrow,
+	:root:not([data-motion="full"]) .lj-team-arrow,
 	:root:not([data-motion="full"]) .tdc-card .cal button.cal-day[class*="is-"] { transition: none; }
 }

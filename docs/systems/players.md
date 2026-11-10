@@ -11,7 +11,7 @@ Built from UV's combined design (artboard D, "Player Profile Designs" canvas on 
 | Part | What | From |
 |---|---|---|
 | Hero | Picture in a green ring with the verified tick, left of the centre line; display name and full name right of it. A tap on a photo shows it large (below) | `player` |
-| Buttons | Ring icons in one row: Challenge (the cue ball, green ring; not built), Follow (below), Share (the phone's share sheet, else copies the link), More (not built) | `tdc_i_follow` |
+| Buttons | Ring icons in one row: Challenge (the cue ball, green ring; not built), Follow (below), Share (the phone's share sheet, else copies the link; the player's short link, or the long address if they have none, and then your own page says why; `docs/systems/foundations.md`, "Short links"), More (not built) | `tdc_i_follow` |
 | Toggle | Profile · Head to head · Compare; `&tab=h2h` or `&tab=cmp` in the address keeps it on reload | |
 | Profile | Form (their last 10 frames, a yellow ring where they broke), Stats with a period (All time · Last 90 days · Last 30 days) in four boxes, the frame difference per night (last 15 nights in the period), leagues and teams with the team's place, recent matches (3, then See all), the last match's frames, honours, about | `matches`, `frames`, `teams` |
 | Head to head | Your meetings: you v them in meetings won, the split bar, frames and the current streak; the last meeting frame by frame; every meeting (3, then All); Challenge to a rematch (not built) | `tdc_head_to_head` |

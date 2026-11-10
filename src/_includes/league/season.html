@@ -4,8 +4,9 @@
 	At the top, the league itself (UV, 24 Oct): a banner with its picture,
 	name, status and everything about how it is played, then its numbers so
 	far. Then two tabs (UV, 5 Nov): Teams (each player with their picture
-	and a link to their profile) and Players (the player's own place, and
-	for a captain who is waiting for a team). Who runs it below both.
+	and a link to their profile) and My Season (the player's own place, and
+	for a captain who is waiting for a team). Below both the nights, then the
+	rules, folded away (UV, 10 Nov). Who runs it is in the banner.
 
 	A league player has to confirm their own place before the league can begin;
 	that button lives here, and the notification they get when they are added
@@ -20,8 +21,8 @@
 
 	<section class="jumbo lj-hero" id="jumbo">
 		<div class="lj-corner">
+			<button type="button" class="lj-icon" id="interest-btn" data-icon="plus" title="Put my name down" aria-label="Put my name down" hidden><span class="tdc-ring"></span></button>
 			<button type="button" class="lj-icon" id="share-btn" data-icon="share" title="Share" aria-label="Share"><span class="tdc-ring"></span></button>
-			<button type="button" class="lj-icon lj-icon-go" id="interest-btn" data-icon="plus" title="Put my name down" aria-label="Put my name down" hidden><span class="tdc-ring"></span></button>
 		</div>
 		<div class="lj-id">
 			<span class="lj-pic"><span class="lj-pic-inner" id="jumbo-pic"></span></span>
@@ -38,7 +39,7 @@
 	<section class="lj-numbers" id="stats" aria-label="The league in numbers"></section>
 
 	<div class="lj-notes-box" id="notes-box" hidden>
-		<h2>From whoever runs it</h2>
+		<h2 class="lj-heading">From whoever runs it</h2>
 		<p class="lj-notes" id="l-notes"></p>
 	</div>
 
@@ -48,12 +49,14 @@
 		shown only when Players has something in it; otherwise the teams alone.
 		Who runs it stays below both.
 	{% endcomment %}
-	<div class="cp-views ls-views" id="ls-views" role="group" aria-label="Teams or players" hidden>
-		<button type="button" class="cp-view" data-ls-view="teams" aria-pressed="true">Teams <span class="ls-view-count" id="team-count" hidden></span></button>
-		<button type="button" class="cp-view" data-ls-view="players" aria-pressed="false">My Season</button>
+	<div class="lj-views-row">
+		<div class="cp-views ls-views" id="ls-views" role="group" aria-label="Teams or players" hidden>
+			<button type="button" class="cp-view" data-ls-view="teams" aria-pressed="true">Teams <span class="ls-view-count" id="team-count" hidden></span></button>
+			<button type="button" class="cp-view" data-ls-view="players" aria-pressed="false">My Season</button>
+		</div>
 	</div>
 
-	<h2 id="teams-head" hidden>Teams <span class="badge" id="teams-head-count" hidden></span></h2>
+	<h2 class="lj-heading" id="teams-head" hidden>Teams <span class="badge" id="teams-head-count" hidden></span></h2>
 
 	<div id="ls-teams">
 		<p class="muted" id="teams-hint" hidden></p>
@@ -63,19 +66,22 @@
 
 	<div id="ls-players" hidden>
 		{% comment %}
-			Your place: the join page's stage panel (UV, 5 Nov: prettier), the
-			green line greyed for someone withdrawn or inactive.
+			Your place (UV, 9 Nov): one compact row, your team and whether you
+			captain it, with the one thing to do next as the main button. A
+			sentence only when there is something to say about where you stand.
+			Away and Not playing are small, at the foot of the tab.
 		{% endcomment %}
 		<section class="ls-stage" id="me-panel" aria-live="polite" hidden>
-			<span class="ls-eyebrow">Your place</span>
-			<span class="team-pic ls-stage-pic" id="me-pic" hidden></span>
+			<div class="ms-row" id="me-row" hidden>
+				<span class="team-pic" id="me-pic"></span>
+				<span class="ms-team" id="me-team"></span>
+				<span class="badge live" id="me-captain" hidden>Captain</span>
+			</div>
 			<h2 class="ls-where" id="me-line"></h2>
 			<p class="ls-where-detail" id="me-detail"></p>
 			<div class="ls-actions">
 				<a class="ls-btn ls-btn-go" id="me-card" href="#" hidden>My next match</a>
 				<button type="button" class="ls-btn ls-btn-go" id="me-confirm" hidden>Confirm that I am playing</button>
-				<button type="button" class="ls-btn" id="me-away" hidden>I am away for a while</button>
-				<button type="button" class="ls-btn" id="me-withdraw" hidden>I am not playing</button>
 			</div>
 		</section>
 
@@ -86,8 +92,7 @@
 		{% endcomment %}
 		<section class="ls-pool" id="ask-panel" hidden>
 			<div class="ls-pool-head">
-				<h2>Asked to join</h2>
-				<span class="badge live" id="ask-count" hidden></span>
+				<h2 class="lj-heading">Asked to join <span class="badge live" id="ask-count" hidden></span></h2>
 			</div>
 			<p class="ls-pool-hint" id="ask-hint"></p>
 			<div class="ls-waiting" id="ask-list"></div>
@@ -100,19 +105,37 @@
 		{% endcomment %}
 		<section class="ls-pool" id="pool-panel" hidden>
 			<div class="ls-pool-head">
-				<h2>Waiting for a team</h2>
-				<span class="badge ls-places" id="pool-places" hidden></span>
+				<h2 class="lj-heading">Waiting for a team <span class="badge ls-places" id="pool-places" hidden></span></h2>
 			</div>
 			<p class="ls-pool-hint" id="pool-hint"></p>
 			<div class="ls-waiting" id="pool-list"></div>
 		</section>
+
+		{% comment %}
+			My season so far (UV, 9 Nov): the Standings tab's own counts and
+			ranking with Live off, so signed nights only. League nights record
+			no break-and-dish, golden break or frame times, so none are shown.
+		{% endcomment %}
+		<section id="me-season" hidden>
+			<h2 class="lj-heading">My season so far</h2>
+			<div class="lj-numbers" id="me-stats"></div>
+
+			<div id="me-team-box" hidden>
+				<h2 class="lj-heading"><span id="me-team-name"></span> <span class="badge" id="me-team-place" hidden></span></h2>
+				<div class="ls-waiting" id="me-results"></div>
+				<p class="muted ms-note" id="me-results-empty" hidden>No signed results yet.</p>
+			</div>
+			<p class="muted ms-note">From signed nights only.</p>
+		</section>
+
+		<div class="ms-foot">
+			<button type="button" class="ls-btn ls-btn-sm" id="me-away" hidden>I am away for a while</button>
+			<button type="button" class="ls-btn ls-btn-sm" id="me-withdraw" hidden>I am not playing</button>
+		</div>
 	</div>
 
-	<h2>Rules</h2>
-	<div class="lj-rules" id="l-rules"></div>
-
-	<h2>Nights <span class="badge" id="night-count" hidden></span></h2>
-	<div class="cal-months" id="l-nights"></div>
+	<h2 class="lj-heading">Nights <span class="badge" id="night-count" hidden></span></h2>
+	<div class="cal-months lj-cal" id="l-nights"></div>
 	<p class="lj-key" id="night-key" hidden>
 		<span class="lj-key-item is-later">Coming up</span>
 		<span class="lj-key-item is-next">Next</span>
@@ -122,6 +145,8 @@
 	<div class="lj-picked" id="night-picked" aria-live="polite" hidden></div>
 	<p class="muted" id="night-note" hidden></p>
 
-	<h2>Who runs it</h2>
-	<div class="lj-officials" id="official-list"></div>
+	<details class="set-group lj-fold">
+		<summary><h2 class="lj-heading">Rules<span class="lj-arrow" aria-hidden="true"></span></h2></summary>
+		<div class="lj-rules" id="l-rules"></div>
+	</details>
 
