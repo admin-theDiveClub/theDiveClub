@@ -30,6 +30,7 @@ Built from the project doc `claude/stats-todo.md` on 23 Oct 2026, with everythin
 | 10 | **Fantasy league** (UV, 6 Nov: "a big one", saved for later). Likely builds on points (`docs/design/points-and-tiers.md`) | Large |
 | 11 | **The pool game / simulator** UV made, placed somewhere on the site (UV, 6 Nov). Waiting on UV for the file or a link | ? |
 | 12 | **Event themes on the website** (UV, 6 Nov): plan for the site taking on a theme for events such as worldwide holidays. Not designed yet. Related: the title ladder could theme the site too (`docs/design/points-and-tiers.md` §6a) | ? |
+| 13 | **Moving a league night, and everything after it** (UV, 11 Nov). Rivonia 8MTL lost 4 Nov 2026 to a public holiday (voting) and every later night moved down a week. Today the fixtures page moves one fixture or one night ("Move all"), never the rest of the season, and knows nothing of a night with no league (a holiday, a break, a singles or doubles event). Not designed yet: whether a shift carries the breaks and events with it, a cancelled night as a record of its own, and telling the players | Medium |
 
 ## 3. Database still to build
 
