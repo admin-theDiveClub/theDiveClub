@@ -373,6 +373,15 @@
 	function renderBanner(locked, both) {
 		const [key, label] = stateOf(both);
 		els.jumbo.className = 'jumbo card-jumbo card-state-' + key;
+		// The page speaks a fixture's colours (UV, 11 Nov): the state on the
+		// body colours every score; a banner name turns yellow once its side
+		// has locked and is underlined for the viewer's own team.
+		document.body.dataset.cardState = key;
+		const mine = myTeamSide();
+		for (const [name, side] of [[els.homeName, 'home'], [els.awayName, 'away'], [els.sumHomeName, 'home'], [els.sumAwayName, 'away']]) {
+			name.classList.toggle('is-locked', !!locked[side]);
+			name.classList.toggle('is-mine', mine === side);
+		}
 		els.jumboStatus.hidden = false;
 		els.jumboStatus.textContent = label;
 		els.stateDetail.textContent = stateDetail(locked, both);
@@ -864,6 +873,13 @@
 		return card.some(isMine) || lineup.some((l) => l.player_id === myPlayerId);
 	}
 	const sideOf = (f) => (f.home_player_id === myPlayerId ? 'home' : 'away');
+	// The viewer's own team tonight: a captain's side, else the side of a
+	// frame they play in; nobody's for anyone else.
+	function myTeamSide() {
+		if (lineupState && lineupState.my_side) return lineupState.my_side;
+		const f = card.find(isMine);
+		return f ? sideOf(f) : null;
+	}
 	const otherOf = (side) => (side === 'home' ? 'away' : 'home');
 
 	function renderMine(both) {
@@ -982,7 +998,7 @@
 
 		const wrap = (title, table) => {
 			const box = node('section', 'h2h-team');
-			box.append(node('h3', 'h2h-title', title));
+			box.append(node('h3', 'h2h-title lj-heading', title));
 			const scroll = node('div', 'table-scroll');
 			scroll.append(table);
 			box.append(scroll);
@@ -1074,7 +1090,7 @@
 		const tables = ['home', 'away'].map((side) => {
 			const other = side === 'home' ? 'away' : 'home';
 			const block = node('section', 'h2h-team');
-			block.append(node('h3', 'h2h-title', teamName(side)));
+			block.append(node('h3', 'h2h-title lj-heading', teamName(side)));
 
 			const table = node('table', 'tdc-table card-players h2h-table');
 			const thead = node('thead');
@@ -1320,7 +1336,8 @@
 		// after it and before the next (UV, 29 Oct): the top group is what is
 		// still to be signed. A change is rows of Frame · Change · Was · Now,
 		// with who made it (the league director said so) and when under them.
-		els.changedSince.hidden = !signatures.length;
+		// Hidden while it has nothing in it (UV, 11 Nov).
+		els.changedSince.hidden = !signatures.length || !changes.length;
 		els.changedCount.textContent = changes.length;
 		// Each group folds on its own (UV, 29 Oct): the newest open, the rest
 		// closed, each as the reader left it through every redraw.
@@ -1333,7 +1350,7 @@
 			box.addEventListener('toggle', () => clOpen.set(key, box.open));
 			const head = node('summary', 'cl-head');
 			const who = node('strong');
-			who.append(node('span', 'team-name', teamName(g.side)), ' signed');
+			who.append(teamName(g.side) + ' signed');
 			head.append(who,
 				node('span', 'cl-by', g.by_name + signedAs(g) + ' · ' + when(g.at)),
 				node('span', 'cl-count', mine.length === 1 ? '1 change' : mine.length + ' changes'));
@@ -1726,6 +1743,17 @@
 			return;
 		}
 
+		// The share icon draws itself in, as the Season tab's.
+		try {
+			const face = els.share.querySelector('.tdc-ring');
+			face.innerHTML = TDCRing.svg();
+			const ring = new TDCRing.RingStatus(face, {
+				icons: ['share'], labels: { share: 'Share', empty: 'Share', loading: 'Working' }, initial: 'empty'
+			});
+			ring.drawTo('share');
+		} catch (err) {
+			TDC.error(AREA, 'the share icon could not be drawn.', err, els.status);
+		}
 		TDC.shareButton(els.share, 'match', matchId, {
 			area: AREA, status: els.status, title: () => document.title
 		});

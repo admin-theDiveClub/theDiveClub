@@ -1812,3 +1812,14 @@ These predate the log. They are recorded here because every one of them is a dec
 *Rejected:* holding rounds 5 to 22 until the LD answers; a shift that skips event nights (UV chose the flat 7 days); the import's logic committed with only the data private.
 *So:* `docs/systems/leagues.md`, "The Rivonia 8MTL import"; `docs/STATUS.md` §1 R1; the data set's README.
 *Touches:* `private-data/rivonia-8mtl-2026-27/` only (gitignored): `clean.py`, `fixtures.csv`, `build_import.py`, `import-template.sql`, `import.sql`, `README.md`
+
+## 2026-11-11 — The team card's colours follow a fixture's
+
+*Decided by UV:* the card's finished banner, win dots in Head to head and By session, and "Signed" use the site's green, not the orange success colour. The banner's strip and badge follow the fixtures' colours and glow: every state before both have signed is yellow (Lineups not in included, as a fixture open for lineups is yellow), Signed by both green, both lit. Published stays grey.
+*Claude's, for UV to judge:* Disputed kept red and unlit, as an abandoned fixture is.
+*So:* `docs/systems/leagues.md`, "The card's colours follow a fixture's"; `docs/STATUS.md` §1 4ao.
+*Touches:* `src/stylesheets/league.css`
+
+*Decided by UV, later the same day:* the whole card copies the fixtures' and Season tab's styling, text colours and the banner design included, so the pages read as one language; apply the logic, don't ask item by item. Built: every score yellow until signed, then green (the winner green, the loser grey); banner names in the fixture's state colours, your own team underlined; every other team name cream; the Season tab's headings with a grey line through; the banner's details with the Season tab's grey lines between them; ":" between the result's scores.
+*Claude's, for UV to judge:* Published names green (the result stands), though the badge stays grey; a disputed card's scores cream; the league over the result in the display face, cream; four details across from 48rem.
+*Touches:* `src/leagues/card/index.html`, `src/scripts/league-card.js`, `src/stylesheets/league.css`, `src/stylesheets/design.css`

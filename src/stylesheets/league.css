@@ -1317,14 +1317,82 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 }
 
 /* The card's state: the banner's strip and badge. The keys are the
- * script's stateOf(); a new state needs a line here. */
-.card-state-lineups  { --strip-color: var(--color-primary); }
-.card-state-playing  { --strip-color: var(--color-success); }
+ * script's stateOf(); a new state needs a line here. As a fixture's state
+ * (UV, 11 Nov): everything before the card is agreed is yellow, signed by
+ * both is the site's green, both lit; disputed red and published grey,
+ * unlit. */
+.card-state-lineups  { --strip-color: var(--color-warning); }
+.card-state-playing  { --strip-color: var(--color-warning); }
 .card-state-awaiting { --strip-color: var(--color-warning); }
 .card-state-reopened { --strip-color: var(--color-warning); }
 .card-state-disputed { --strip-color: var(--color-error); }
-.card-state-agreed   { --strip-color: var(--color-success); }
+.card-state-agreed   { --strip-color: var(--color-primary); }
 .card-state-approved { --strip-color: var(--text-muted); }
+.card-state-lineups,
+.card-state-playing,
+.card-state-awaiting,
+.card-state-reopened,
+.card-state-agreed   { --strip-glow: 0 0 10px color-mix(in srgb, var(--strip-color) 60%, transparent); }
+.card-jumbo .jumbo-facts::before,
+.card-jumbo .sf-frames::before { box-shadow: var(--strip-glow, none); }
+.card-jumbo .jumbo-status { text-shadow: var(--strip-glow, none); }
+
+/* The page in a fixture's language (UV, 11 Nov: "a consistent language
+ * between pages"; the players' fixtures in league.css, the Season tab in
+ * league-join.css). Every score on the card is yellow and lit until both have
+ * signed, then green and lit; a disputed card's cream. The state is on the
+ * body (renderBanner). */
+body[data-card-state] { --card-score: var(--text-primary); --card-score-glow: none; }
+body:is([data-card-state="lineups"], [data-card-state="playing"], [data-card-state="awaiting"], [data-card-state="reopened"]) {
+	--card-score: var(--color-warning);
+	--card-score-glow: 0 0 10px color-mix(in srgb, var(--color-warning) 60%, transparent);
+}
+body:is([data-card-state="agreed"], [data-card-state="approved"]) {
+	--card-score: var(--color-primary);
+	--card-score-glow: 0 0 10px color-mix(in srgb, var(--color-primary) 60%, transparent);
+}
+/* A team's name in a banner, as a fixture's: cream while lineups are open, a
+ * side that has locked yellow; yellow while it is played; green once signed
+ * (Published too: the result stands). Your own team underlined. Everywhere
+ * else on the card a team's name is cream, as the Season tab's. */
+.card-jumbo .cj-name { color: var(--text-primary); }
+.card-state-lineups .cj-name.is-locked,
+:is(.card-state-playing, .card-state-awaiting, .card-state-reopened) .cj-name { color: var(--color-warning); }
+:is(.card-state-agreed, .card-state-approved) .cj-name { color: var(--color-primary); }
+.card-jumbo .cj-name.is-mine { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.2em; }
+
+/* The banner's details with grey lines between them only, never above or
+ * below, as the Season tab's (league-join.css): two across on a phone, four
+ * from 48rem; a line down fills its row, a line across runs the whole width
+ * and shows only where the details have wrapped; the outer ones are clipped. */
+.card-jumbo .jumbo-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 0; overflow-x: clip; }
+.card-jumbo .jumbo-facts > * { position: relative; padding-block: var(--space-2); }
+.card-jumbo .jumbo-facts > *::before,
+.card-jumbo .jumbo-facts > :nth-child(n+3)::after {
+	content: "";
+	position: absolute;
+	pointer-events: none;
+}
+.card-jumbo .jumbo-facts > *::before {
+	top: 0;
+	bottom: 0;
+	left: calc(var(--space-5) / -2);
+	border-left: 1px solid var(--border-color);
+}
+.card-jumbo .jumbo-facts > :nth-child(n+3)::after {
+	top: 0;
+	right: -100vw;
+	left: -100vw;
+	border-top: 1px solid var(--border-color);
+}
+/* An odd one out takes its row, so no line runs down beside nothing. */
+.card-jumbo .jumbo-facts > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+@media (min-width: 48rem) {
+	.card-jumbo .jumbo-facts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+	.card-jumbo .jumbo-facts > :last-child:nth-child(odd) { grid-column: auto; }
+	.card-jumbo .jumbo-facts > :nth-child(n+3)::after { content: none; }
+	.card-jumbo .jumbo-facts > :nth-child(n+5)::after { content: ""; }
+}
 
 /* A player named on the card: their picture and name. */
 .card-person {
@@ -1364,10 +1432,14 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 .cj-mid .jumbo-status { white-space: nowrap; }
 .cj-v { font-family: var(--font-display); font-size: 1.5rem; color: var(--text-muted); }
 .tdc-card .cj-detail { margin: 0; color: var(--text-muted); text-align: center; }
-.card-jumbo .jumbo-facts { text-align: left; grid-template-columns: repeat(auto-fill, minmax(min(100%, 8.5rem), 1fr)); }
+.card-jumbo .jumbo-facts { text-align: left; }
+/* Room for the share icon in the corner, both sides alike so the teams stay
+ * centred: the icon reaches 1.75rem in from the banner's padding. */
+.card-jumbo:has(> .lj-corner) .cj-head { padding-inline: 1.75rem; }
 
-/* The result: the score big in the middle, the side ahead in the brand
- * colour. */
+/* The result: the score big in the middle, as a fixture's (UV, 11 Nov):
+ * yellow and lit while it is played; once signed the winner's green and lit,
+ * the loser's grey, a draw both green. */
 .card-summary { margin-top: var(--space-6); }
 .cj-score {
 	display: inline-flex;
@@ -1377,11 +1449,11 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	font-size: 3rem;
 	line-height: 1;
 	font-variant-numeric: tabular-nums;
-	color: var(--color-primary);
 }
+.cj-num { color: var(--card-score, var(--text-primary)); text-shadow: var(--card-score-glow, none); }
+:is(.card-state-agreed, .card-state-approved)[data-lead="home"] .cj-num-away,
+:is(.card-state-agreed, .card-state-approved)[data-lead="away"] .cj-num-home { color: var(--text-muted); text-shadow: none; }
 .cj-dash { color: var(--text-muted); font-size: 2rem; }
-.card-summary[data-lead="home"] .cj-team:first-child .cj-name,
-.card-summary[data-lead="away"] .cj-team:last-child .cj-name { color: var(--color-primary); }
 
 @media (max-width: 30rem) {
 	.card-jumbo .cj-pic { width: 3.25rem; height: 3.25rem; }
@@ -1396,7 +1468,12 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	gap: var(--space-2);
 	font-family: var(--font-display);
 }
-.cs-title-score { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--text-muted); }
+/* The heading the session's full width, its arrow at the right end (UV,
+ * 11 Nov); the score only while it is folded, beside the arrow: open, the
+ * totals under the frames say it. */
+.cs-session.set-group > summary.cs-title { width: 100%; }
+.cs-title-score { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--card-score, var(--text-muted)); text-shadow: var(--card-score-glow, none); }
+.cs-session[open]:not(.is-closing) > summary .cs-title-score { display: none; }
 /* The one place the switches are smaller than a field: a frame has two, a night
  * many frames, and the players' names need the row. The knob is three to the
  * track, and the totals below reckon from the same height. */
@@ -1418,7 +1495,7 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 .cs-head { padding-top: 0; }
 .cs-team {
 	font-weight: 600;
-	color: var(--color-primary);
+	color: var(--text-primary);
 	overflow-wrap: anywhere;
 }
 .cs-head .cs-home { grid-column: 1; text-align: right; }
@@ -1518,7 +1595,7 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 }
 .cs-tot { display: flex; flex-direction: column; align-items: center; width: 2.5rem; }
 .cs-tot-label { font-size: 0.85rem; color: var(--text-muted); }
-.cs-tot-value { font-size: 1.35rem; font-weight: 700; color: var(--color-primary); font-variant-numeric: tabular-nums; }
+.cs-tot-value { font-size: 1.35rem; font-weight: 700; color: var(--card-score, var(--color-primary)); text-shadow: var(--card-score-glow, none); font-variant-numeric: tabular-nums; }
 
 /* Too narrow for the switches between two names: the names side by side, the
  * switches under them. */
@@ -1620,7 +1697,8 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	gap: var(--space-5);
 	align-items: start;
 }
-.tdc-card .h2h-title { margin: 0 0 var(--space-2); font-size: 1rem; color: var(--color-primary); text-align: center; }
+/* Each table's team as a Season tab heading, a grey line through it (UV, 11 Nov). */
+.tdc-card .h2h-title { margin: 0 0 var(--space-2); font-size: 1rem; color: var(--text-primary); text-align: center; }
 .card-players th.h2h-when { vertical-align: bottom; font-size: 0.85rem; white-space: normal; min-width: 4.5rem; color: var(--text-muted); text-transform: none; letter-spacing: normal; text-align: left; }
 .card-players.h2h-table th.cp-player { min-width: 3rem; padding-left: var(--space-1); padding-right: var(--space-1); white-space: normal; }
 .h2h-table .cp-name { font-size: 0.85rem; }
@@ -1653,8 +1731,8 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	width: 0.75rem;
 	height: 0.75rem;
 	border-radius: 50%;
-	background: var(--color-success);
-	box-shadow: 0 0 8px color-mix(in srgb, var(--color-success) 70%, transparent);
+	background: var(--color-primary);
+	box-shadow: 0 0 8px color-mix(in srgb, var(--color-primary) 70%, transparent);
 }
 .h2h-mark.is-lag {
 	border-color: var(--color-warning);
@@ -1670,8 +1748,8 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	font-weight: 800;
 	letter-spacing: 0.02em;
 	line-height: 1;
-	color: var(--color-success);
-	text-shadow: 0 0 6px color-mix(in srgb, var(--color-success) 70%, transparent);
+	color: var(--color-primary);
+	text-shadow: 0 0 6px color-mix(in srgb, var(--color-primary) 70%, transparent);
 }
 /* On a phone a five-man table fits without scrolling: the row's names lose
  * their pictures (the column headings keep theirs) and the marks shrink. */
@@ -1694,10 +1772,10 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 .card-players td:last-child,
 .card-players th:last-child { text-align: center; padding-left: var(--space-2); padding-right: var(--space-2); }
 .card-players .cp-label { white-space: nowrap; }
-.card-players .cp-team { color: var(--color-primary); border-bottom: none; }
-.card-players th.cp-player { vertical-align: bottom; min-width: 4.5rem; text-transform: none; letter-spacing: normal; }
-.cp-player .person-pic { width: 1.75rem; height: 1.75rem; margin: 0 auto var(--space-1); font-size: 0.68rem; }
-.cp-name { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); overflow-wrap: anywhere; }
+.card-players .cp-team { color: var(--text-primary); border-bottom: none; }
+/* A player's name wraps over its words (UV, 11 Nov), so By session is no wider than it must be. */
+.card-players th.cp-player { vertical-align: bottom; min-width: 3rem; white-space: normal; text-transform: none; letter-spacing: normal; }.cp-player .person-pic { width: 1.75rem; height: 1.75rem; margin: 0 auto var(--space-1); font-size: 0.68rem; }
+.cp-name { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); overflow-wrap: break-word; }
 .cp-pos { display: block; font-size: 0.85rem; color: var(--text-muted); }
 /* Between the teams: the score, each session's and the night's. */
 .card-players .cp-sep {
@@ -1709,7 +1787,7 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	font-variant-numeric: tabular-nums;
 }
 .card-players th.cp-sep { vertical-align: bottom; }
-.card-players .cp-score { font-weight: 700; color: var(--color-primary); }
+.card-players .cp-score { font-weight: 700; color: var(--card-score, var(--color-primary)); text-shadow: var(--card-score-glow, none); }
 .cp-colon { margin: 0 var(--space-1); color: var(--text-muted); font-weight: 400; }
 .card-players .cp-cell.is-won { color: var(--color-primary); font-weight: 700; }
 .card-players .cp-cell.is-open { color: var(--text-muted); }
@@ -1751,10 +1829,15 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 }
 .mine-tables > div { min-width: 0; max-width: 100%; }
 .mine-table td.mine-opp { text-align: left; }
+/* The league over the result in the display face, cream, as a banner's name
+ * on the Season tab (UV, 11 Nov; it was green). */
 .tdc-card .sf-league {
 	margin: 0;
-	font-weight: 600;
-	color: var(--color-primary);
+	font-family: var(--font-display);
+	font-size: 1.35rem;
+	font-weight: 400;
+	line-height: 1.32;
+	color: var(--text-primary);
 }
 .tdc-card .sf-date { margin: var(--space-1) 0 0; color: var(--text-muted); }
 /* Each side's line under its team in the banner's head. The two share two
@@ -1769,8 +1852,8 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 }
 .sf-side { display: grid; grid-row: span 2; grid-template-rows: subgrid; justify-items: center; min-width: 0; }
 /* The line a captain signs on: empty until they sign, then "Signed" and
- * when, in the success colour, or the warning colour once the card has
- * changed since. */
+ * when, in the site's green (UV, 11 Nov), or the warning colour once the
+ * card has changed since. */
 .sf-line {
 	display: flex;
 	flex-direction: column;
@@ -1782,7 +1865,7 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	padding-bottom: var(--space-1);
 	border-bottom: 1px solid var(--text-muted);
 }
-.sf-signed { font-family: var(--font-display); font-size: 1.2rem; color: var(--color-success); }
+.sf-signed { font-family: var(--font-display); font-size: 1.2rem; color: var(--color-primary); }
 .sf-when { font-size: 0.85rem; color: var(--text-muted); }
 .sf-line.is-stale .sf-signed { color: var(--color-warning); }
 .sf-cap { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: var(--space-1) var(--space-2); font-size: 0.85rem; }

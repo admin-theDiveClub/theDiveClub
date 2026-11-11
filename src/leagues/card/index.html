@@ -4,6 +4,7 @@ title: Team Card
 description: "The night's card: lineups, every frame, and the two signatures."
 extraStyles:
   - /stylesheets/league.css
+  - /stylesheets/league-join.css
 extraScripts:
   - /scripts/match-settings.js
   - /scripts/league-nav.js
@@ -51,6 +52,10 @@ extraScripts:
 	<h1 class="card-sr" id="m-title">Team Card</h1>
 
 	<section class="jumbo card-jumbo" id="jumbo">
+		{% comment %} Share in the banner's corner, an icon alone, as the Season tab's (UV, 11 Nov). {% endcomment %}
+		<div class="lj-corner">
+			<button type="button" class="lj-icon" id="share-btn" data-icon="share" title="Share" aria-label="Share"><span class="tdc-ring"></span></button>
+		</div>
 		<div class="cj-head">
 			<div class="cj-team">
 				<span class="team-pic cj-pic" id="home-pic"></span>
@@ -68,10 +73,6 @@ extraScripts:
 		<p class="cj-detail" id="state-detail"></p>
 		<dl class="jumbo-facts" id="jumbo-facts"></dl>
 	</section>
-
-	<div class="btn-row share-row">
-		<button type="button" class="btn btn-secondary btn-sm" id="share-btn">Share</button>
-	</div>
 
 	{% comment %}
 		The league director's side switch. Outside #setup on purpose: #setup
@@ -92,7 +93,7 @@ extraScripts:
 		side switch instead.
 	{% endcomment %}
 	<div id="setup" hidden>
-		<h2>Tonight's lineup</h2>
+		<h2 class="lj-heading">Tonight's lineup</h2>
 		<p class="muted" id="squad-hint"></p>
 		<div id="squad-list"></div>
 
@@ -106,7 +107,7 @@ extraScripts:
 		how many positions they have filled, never who is in them.
 	{% endcomment %}
 	<div class="panel" id="other-side" hidden>
-		<h2 id="other-head" class="team-name">The other side</h2>
+		<h2 id="other-head" class="lj-heading">The other side</h2>
 		<p class="muted" id="other-detail"></p>
 	</div>
 
@@ -150,7 +151,7 @@ extraScripts:
 				<span class="cj-name" id="sum-home-name">Home</span>
 			</div>
 			<div class="cj-mid">
-				<span class="cj-score"><span id="sum-home-score">0</span><span class="cj-dash">–</span><span id="sum-away-score">0</span></span>
+				<span class="cj-score"><span class="cj-num cj-num-home" id="sum-home-score">0</span><span class="cj-dash">:</span><span class="cj-num cj-num-away" id="sum-away-score">0</span></span>
 			</div>
 			<div class="cj-team">
 				<span class="team-pic cj-pic" id="sum-away-pic"></span>
