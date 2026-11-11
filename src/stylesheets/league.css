@@ -516,7 +516,7 @@
  *
  * The calendar is the months side by side, scrolling sideways; a night the
  * league plays is a small raised button, and the chosen one glows from its
- * edge inward. The weekend's headings are badges.
+ * edge inward. The weekend's headings are plain, as the weekdays' (UV, 11 Nov).
  *
  * A fixture is home | menu | away in one table row, the menu column fixed,
  * so names and menus line up down the page; names wrap rather than push.
@@ -551,7 +551,6 @@
 	color: var(--text-muted);
 	text-align: center;
 }
-.cal th .badge { padding: 0.1rem 0.4rem; }
 .cal td { width: 2.4rem; height: 2.4rem; padding: 0; text-align: center; }
 .cal-num { font-size: 0.85rem; color: var(--text-muted); }
 .cal-today .cal-num { color: var(--text-primary); font-weight: 700; text-decoration: underline; }
@@ -2214,7 +2213,13 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	box-shadow: var(--nm-sunken);
 }
 .fx-player .fx-card:has(> table[hidden]) { display: none; }
-.fx-player .fx-card > .fx-table { width: 100%; margin: 0; }
+/* Fixed layout: the table is the card's width exactly and nothing in it can
+ * widen it, so a name's fade ends at the card's edge (UV, 11 Nov: on a phone
+ * the letters showed through at the edge, the fade ending past it). The middle
+ * is its set width, the two sides share the rest equally. */
+.fx-player .fx-card > .fx-table { width: 100%; margin: 0; table-layout: fixed; }
+.fx-player .fx-table td.fx-side { width: auto; }
+.fx-player .fx-table td.fx-mid { box-sizing: border-box; width: calc(6.5rem + 2 * var(--space-3)); }
 /* Below this the page is the Season tab's: the display face, cream, your team blue. */
 .fx-player #planner,
 .fx-player #all-group { container-type: inline-size; }
@@ -2226,6 +2231,23 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
  * no scores yet lines up with one that has them (UV, 11 Nov). On the contents:
  * a cell's own width gives way to the halves either side of it. */
 .fx-player .fx-mid-line { min-width: 6.5rem; }
+/* Three set slots, so a score stands in the same place in every state (UV,
+ * 11 Nov: the play button pushed a live match's scores outward): the home
+ * score against the middle from the left, the lock, checklist, play or ":"
+ * in the middle, the away score against it from the right. */
+.fx-player .fx-mid-line {
+	display: grid;
+	/* The middle slot is the drawn icon's size, not the button's (UV, 11 Nov:
+	 * too much room round it); the button keeps its tap size and spills over
+	 * the narrow slot, unseen. */
+	grid-template-columns: 1.75rem 1.25rem 1.75rem;
+	column-gap: var(--space-1);
+	justify-content: center;
+	align-items: center;
+}
+.fx-player .fx-mid-line > * { grid-row: 1; grid-column: 2; justify-self: center; }
+.fx-player .fx-mid-line > .fx-score-home { grid-column: 1; justify-self: end; }
+.fx-player .fx-mid-line > .fx-score-away { grid-column: 3; justify-self: start; }
 .fx-player .fx-table td.fx-mid,
 .fx-player .fx-mid-line { white-space: nowrap; }
 /* A score never goes onto a second row (UV, 10 Nov). */
@@ -2251,23 +2273,33 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	min-width: 100%;
 	overflow: hidden;
 	color: var(--text-primary);
-	font-family: var(--font-display);
+	/* The body face (UV, 11 Nov), bold as the site's other names in a row. */
+	font-family: var(--font-body);
 	font-size: 1.05rem;
-	font-weight: 400;
+	font-weight: 600;
 	line-height: 1.32;
 	white-space: nowrap;
 	text-overflow: ellipsis;
 }
-.tdc-card .fx-player .fx-name.is-mine { color: var(--color-team); }
 .fx-player .fx-home .fx-name { text-align: right; }
 .fx-player .fx-away .fx-name { text-align: left; }
 .fx-player .fx-name.is-long { text-align: left; }
 .fx-player .is-long > .lj-run { animation: lj-run var(--run-time) ease-in-out infinite alternate; }
+/* A name that runs sideways fades at both edges rather than being cut (UV, 11 Nov). */
+.tdc-card .fx-player .fx-name.is-long {
+	text-overflow: clip;
+	-webkit-mask-image: linear-gradient(to right, transparent, #000 0.75rem, #000 calc(100% - 0.75rem), transparent);
+	mask-image: linear-gradient(to right, transparent, #000 0.75rem, #000 calc(100% - 0.75rem), transparent);
+}
 [data-motion="reduce"] .fx-player .lj-run { display: inline; animation: none; }
 @media (prefers-reduced-motion: reduce) {
 	:root:not([data-motion="full"]) .fx-player .lj-run { display: inline; animation: none; }
 }
-.fx-player .fx-mid-sub { font-size: 0.75rem; }
+.fx-player .fx-mid-sub { font-size: 0.75rem; line-height: 1rem; margin-top: var(--space-1); }
+/* The middle on the row's centre (UV, 11 Nov): the score, lock, checklist or
+ * play sits halfway down the whole row, its table hanging under it. A spacer
+ * as tall as the table line above it keeps it there. */
+.fx-player .fx-table td.fx-mid:has(.fx-mid-sub)::before { content: ""; display: block; height: calc(1rem + var(--space-1)); }
 
 /* ── A player's fixture says its state (UV, 11 Nov; playerState in
  * league-fixtures.js) ── */
@@ -2275,7 +2307,9 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 .tdc-card .fx-player .fx-p-abandoned .fx-name { color: var(--text-muted); }
 .tdc-card .fx-player .fx-name.is-locked { color: var(--color-warning); }
 .tdc-card .fx-player .fx-p-complete .fx-name { color: var(--color-primary); }
-.tdc-card .fx-player .fx-row .fx-name.is-mine { color: var(--color-team); }
+/* Your own team: its state's colour like the rest, underlined (UV, 11 Nov; it
+ * was blue). On the inner run, which an underline on the name would not reach. */
+.fx-player .fx-name.is-mine > .lj-run { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.2em; }
 .fx-p-lock { display: inline-flex; align-items: center; justify-content: center; height: 2.1rem; }
 .fx-p-lock svg {
 	display: block;
@@ -2293,17 +2327,18 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 .fx-player .fx-score.is-winner { color: var(--color-primary); text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 60%, transparent); }
 .fx-player .fx-score.is-loser,
 .fx-player .fx-p-abandoned .fx-score { color: var(--text-muted); }
-/* Its round: the number left and the date right, grey, over its card (UV, 11 Nov). */
+/* Its round: the number left and the date right, grey, over its card, in the
+ * display face (UV, 11 Nov; its line set as a heading's for Safari). */
 .tdc-card .fx-player .fx-round-label:not([hidden]) { display: flex; }
 .tdc-card .fx-player .fx-round-label {
 	justify-content: space-between;
 	gap: var(--space-3);
 	margin: 0 0 var(--space-1);
 	padding-inline: var(--space-3);
-	font-family: var(--font-body);
-	font-size: 0.85rem;
+	font-family: var(--font-display);
+	font-size: 1rem;
 	font-weight: 400;
-	line-height: 1.4;
+	line-height: 1.32;
 	letter-spacing: normal;
 	text-align: left;
 	color: var(--text-muted);
@@ -2315,11 +2350,18 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	.fx-player .fx-away .fx-team { flex-direction: column; align-items: flex-start; }
 	/* The picture centred in its side, over the name (UV, 11 Nov). */
 	.fx-player .fx-side .team-pic { align-self: center; }
+	/* The name centred under it too (UV, 11 Nov); one that runs sideways starts
+	 * from its left edge, as everywhere. */
+	.fx-player .fx-side .fx-name:not(.is-long) { text-align: center; }
 	.fx-player .fx-names { flex: none; align-self: stretch; }
 	.tdc-card .fx-player .fx-name { font-size: 0.95rem; }
 	.fx-player .team-pic { width: 1.75rem; height: 1.75rem; }
-	.fx-player .fx-table td.fx-mid { padding-inline: var(--space-1); }
+	.fx-player .fx-table td.fx-mid { padding-inline: var(--space-1); width: calc(6.5rem + 2 * var(--space-1)); }
 }
 
 /* The director's list scrolls inside the card too. */
 #all-view { max-width: 100%; overflow-x: auto; }
+/* A player's does not need to (each round's card holds its own), and a box that
+ * scrolls clips what rises above it: the first round's labels, in the display
+ * face whose capitals sit high, lost their tops (UV, 11 Nov). */
+.fx-player #all-view { overflow: visible; }

@@ -2,3 +2,5 @@ node_modules/
 _site/
 .claude/settings.local.json
 .claude/worktrees/
+# Real people's data (names, emails) kept for imports. Never committed.
+private-data/

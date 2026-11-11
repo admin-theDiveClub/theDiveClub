@@ -265,8 +265,20 @@ TDCLeagueNav.panel('fixtures', () => {
 		name.style.setProperty('--run', -Math.max(over, 0) + 'px');
 		name.style.setProperty('--run-time', (3 + Math.max(over, 0) / 25).toFixed(1) + 's');
 	}
-	const nameRoom = new ResizeObserver((seen) => seen.forEach((e) => fitName(e.target)));
-	document.fonts.ready.then(() => document.querySelectorAll('.fx-player .fx-name').forEach(fitName));
+	// Both the name's room and its words are watched: the room no longer follows
+	// the words (a name fills its side), so a font arriving after the first
+	// look widens the words alone, and only watching them sees it (UV, 11 Nov:
+	// long names were cut at the card's edge, neither faded nor running).
+	const nameRoom = new ResizeObserver((seen) => seen.forEach((e) => {
+		const name = e.target.closest('.fx-name');
+		if (name) fitName(name);
+	}));
+	const fitAllNames = () => document.querySelectorAll('.fx-player .fx-name').forEach(fitName);
+	document.fonts.ready.then(fitAllNames);
+	// The names' bold face may load only once they are drawn: look again then,
+	// and after every redraw once the fonts it asked for are in and it is laid out.
+	document.fonts.addEventListener('loadingdone', fitAllNames);
+	const refitNames = () => { if (!iRunIt) document.fonts.ready.then(() => requestAnimationFrame(fitAllNames)); };
 
 	// ─── Readiness, said before the button is pressed ───
 	// The database refuses a schedule built on people who have not confirmed.
@@ -544,12 +556,8 @@ TDCLeagueNav.panel('fixtures', () => {
 
 			const table = node('table', 'cal');
 			const head = table.createTHead().insertRow();
-			['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].forEach((d, i) => {
-				const th = node('th');
-				// The weekend's headings are badges, not buttons (UV, 24 Oct).
-				if (i >= 5) th.append(node('span', 'badge', d)); else th.textContent = d;
-				head.append(th);
-			});
+			// Plain headings, the weekend's too (UV, 11 Nov; they were badges).
+			['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].forEach((d) => head.append(node('th', null, d)));
 
 			const body = table.createTBody();
 			const days = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
@@ -629,6 +637,7 @@ TDCLeagueNav.panel('fixtures', () => {
 		els.dayTable.replaceChildren(...rows.flatMap((f) => fixtureRows(f, 'day', dayTime)));
 		els.dayTable.hidden = !rows.length;
 		wakeIcons(els.dayTable);
+		refitNames();
 		els.dayEmpty.hidden = !!rows.length;
 		els.dayEmpty.textContent = !fixtures.length && !iRunIt
 			? 'No fixtures yet.'
@@ -757,7 +766,7 @@ TDCLeagueNav.panel('fixtures', () => {
 		const label = node('span', 'fx-name' + (teamId === myTeamId ? ' is-mine' : '') + (locked ? ' is-locked' : ''));
 		label.append(node('span', 'lj-run', name));
 		names.append(label);
-		if (!iRunIt) nameRoom.observe(label);
+		if (!iRunIt) { nameRoom.observe(label); nameRoom.observe(label.firstChild); }
 		const t = teamById.get(teamId);
 		if (t && iRunIt) names.append(node('span', 'fx-sub', plural(t.active_players, 'player')));
 		team.append(pic, names);
@@ -1064,7 +1073,9 @@ TDCLeagueNav.panel('fixtures', () => {
 	function separator() {
 		const tr = node('tr', 'fx-sep');
 		const td = node('td');
-		td.colSpan = 4;
+		// A player's rows have no strip (UV, 11 Nov), so three columns: a fourth
+		// here would add an empty column the fixed layout gives a share to.
+		td.colSpan = iRunIt ? 4 : 3;
 		tr.append(td);
 		return tr;
 	}
@@ -1173,6 +1184,7 @@ TDCLeagueNav.panel('fixtures', () => {
 			return [head, card];
 		}));
 		wakeIcons(els.allCards);
+		refitNames();
 	}
 
 	for (const f of [els.fFrom, els.fTo, els.fTeam, els.fStatus]) {
