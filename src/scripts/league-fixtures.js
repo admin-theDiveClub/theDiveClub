@@ -117,6 +117,13 @@ TDCLeagueNav.panel('fixtures', () => {
 	const dateOfKey = (key) => { const [y, m, d] = key.split('-').map(Number); return new Date(y, m - 1, d); };
 	const time24 = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 	const longDate = (key) => dateOfKey(key).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+	// A player's round labels alone write the date DD/MM/YY (UV, 11 Nov).
+	const shortDate = (d) => d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
+	// A player's round as two grey labels over its card (UV, 11 Nov): the round
+	// on the left, its date and time on the right.
+	function roundLabel(target, roundText, whenText) {
+		target.replaceChildren(node('span', 'fx-round-no', roundText), node('span', 'fx-round-when', whenText));
+	}
 
 	function dayKey(iso) {
 		const d = new Date(iso);
@@ -212,7 +219,7 @@ TDCLeagueNav.panel('fixtures', () => {
 		// is to be reworked later, and keeps its look until then.
 		els.planner.closest('.league-panel').classList.toggle('fx-player', !iRunIt);
 		els.cal.classList.toggle('lj-cal', !iRunIt);
-		els.dayTitle.classList.toggle('lj-heading', !iRunIt);
+		els.dayTitle.classList.toggle('fx-round-label', !iRunIt);
 		els.views.hidden = iRunIt;
 		showView(fxView, false);
 		return was !== iRunIt;
@@ -248,8 +255,9 @@ TDCLeagueNav.panel('fixtures', () => {
 		try { localStorage.setItem(VIEW_KEY, fxView); } catch (err) { /* kept for this visit only */ }
 	});
 
-	// A player's team names stay on one line; one too long for its room runs
-	// sideways and back, as on the Season tab's cards (UV, 10 Nov).
+	// A player's team names stay on one line, every one the same size (UV, 11
+	// Nov: shrinking a long one was tried and dropped); one too long for its
+	// room runs sideways and back, as on the Season tab's cards (UV, 10 Nov).
 	function fitName(name) {
 		if (!name.clientWidth) return;
 		const over = name.firstChild.offsetWidth - name.clientWidth;
@@ -605,10 +613,13 @@ TDCLeagueNav.panel('fixtures', () => {
 		if (selected.day) {
 			const rounds = [...new Set(rows.map((f) => f.round))].sort((a, b) => a - b);
 			const time = mostCommon(rows.map((f) => time24(new Date(f.scheduled_at))));
-			els.dayTitle.textContent = (rounds.length > 1 ? 'Rounds ' + rounds.join(' and ') : 'Round ' + rounds[0])
-				+ ' · ' + longDate(selected.day) + (time ? ' · ' + time : '');
-		} else {
+			const roundText = rounds.length > 1 ? 'Rounds ' + rounds.join(' and ') : 'Round ' + rounds[0];
+			if (iRunIt) els.dayTitle.textContent = roundText + ' · ' + longDate(selected.day) + (time ? ' · ' + time : '');
+			else roundLabel(els.dayTitle, roundText, shortDate(dateOfKey(selected.day)) + (time ? ' · ' + time : ''));
+		} else if (iRunIt) {
 			els.dayTitle.textContent = 'Round ' + selected.round + ' · no date';
+		} else {
+			roundLabel(els.dayTitle, 'Round ' + selected.round, 'No date');
 		}
 		els.dayTitle.hidden = !fixtures.length && !iRunIt;
 
@@ -734,7 +745,7 @@ TDCLeagueNav.panel('fixtures', () => {
 	// it the tables it is played on, the two in one outline, and a gap before
 	// the next. A second row under it while it is being moved. A finished
 	// fixture has no buttons: its whole box opens the card (25 Oct).
-	function teamCell(teamId, name, side, linked) {
+	function teamCell(teamId, name, side, linked, locked) {
 		const td = node('td', 'fx-side fx-' + side);
 		// To the season page with this team open and in view (UV, 24 Oct). Not
 		// on a finished fixture, whose whole box opens the card (25 Oct).
@@ -743,7 +754,7 @@ TDCLeagueNav.panel('fixtures', () => {
 		const pic = node('span', 'team-pic');
 		pic.append(TDC.teamPic(teamPictures.get(teamId)));
 		const names = node('span', 'fx-names');
-		const label = node('span', 'fx-name' + (teamId === myTeamId ? ' is-mine' : ''));
+		const label = node('span', 'fx-name' + (teamId === myTeamId ? ' is-mine' : '') + (locked ? ' is-locked' : ''));
 		label.append(node('span', 'lj-run', name));
 		names.append(label);
 		if (!iRunIt) nameRoom.observe(label);
@@ -767,7 +778,7 @@ TDCLeagueNav.panel('fixtures', () => {
 		// decides for itself what they may do once they are there.
 		if (f.match_id) {
 			const mine = myTeamId && (f.home_team_id === myTeamId || f.away_team_id === myTeamId);
-			items.push(['open', 'arrow', mine ? 'Open my card' : 'Open the card', '']);
+			items.push(['open', 'scorecard', mine ? 'Open my card' : 'Open the card', '']);
 		}
 		if (!iRunIt) return items;
 		if (!f.is_bye && !f.match_id) items.push(['start', 'play', 'Start the match', '']);
@@ -839,6 +850,23 @@ TDCLeagueNav.panel('fixtures', () => {
 
 	const fixtureName = (f) => f.is_bye ? f.home_name + '’s bye' : f.home_name + ' : ' + f.away_name;
 
+	// ─── A player's fixture says its state (UV, 11 Nov) ───
+	// Scheduled (no match yet): a grey lock between grey names. Open for
+	// lineups (a match made): a yellow checklist, names cream, a side that has
+	// locked its lineup yellow. Lineups in and being played (both locked, a
+	// frame in, or a signed card changed since): the scores yellow either side
+	// of a yellow play. Completed: green names, the scores round a ":", the
+	// winner's green and the loser's grey, no table. The checklist and the play
+	// open the card. Abandoned: grey, as scheduled. Your own team stays blue.
+	function playerState(f) {
+		if (f.is_bye) return 'bye';
+		if (!f.match_id) return 'scheduled';
+		if (f.match_status === 'complete') return 'complete';
+		if (f.match_status === 'abandoned') return 'abandoned';
+		if (f.match_status === 'in_progress' || f.match_status === 'reopened' || (f.home_locked && f.away_locked)) return 'playing';
+		return 'lineups';
+	}
+
 	function lockIcon() {
 		const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 		svg.setAttribute('viewBox', '30 34 40 40');
@@ -849,6 +877,36 @@ TDCLeagueNav.panel('fixtures', () => {
 			svg.append(path);
 		}
 		return svg;
+	}
+
+	function playerLine(f, state, key, where) {
+		const line = node('div', 'fx-mid-line');
+		const open = (icon, label) => iconButton(icon, label + ': ' + fixtureName(f), 'glow',
+			{ action: 'open', fixture: f.fixture_id, where }, key + ':open');
+		const hasFrames = (f.home_frames || 0) + (f.away_frames || 0) > 0;
+		if (state === 'scheduled') {
+			const lock = node('span', 'fx-p-lock');
+			lock.title = 'Scheduled';
+			lock.append(lockIcon(), node('span', 'visually-hidden', 'Scheduled'));
+			line.append(lock);
+		} else if (state === 'lineups') {
+			line.append(open('checklist', 'Lineups being set, open the card'));
+		} else if (state === 'playing') {
+			line.append(liveScore(f, 'home'), open('play', 'Being played, open the card'), liveScore(f, 'away'));
+		} else if (state === 'complete' || (state === 'abandoned' && hasFrames)) {
+			const home = liveScore(f, 'home');
+			const away = liveScore(f, 'away');
+			if (state === 'complete') {
+				// A draw has no loser: both green (Claude's).
+				const h = f.home_frames || 0, a = f.away_frames || 0;
+				home.classList.add(h >= a ? 'is-winner' : 'is-loser');
+				away.classList.add(a >= h ? 'is-winner' : 'is-loser');
+			}
+			line.append(home, node('span', 'fx-v', ':'), away);
+		} else {
+			line.append(node('span', 'fx-v', ':'));
+		}
+		return line;
 	}
 
 	function fixtureRows(f, where, dayTime) {
@@ -869,51 +927,56 @@ TDCLeagueNav.panel('fixtures', () => {
 		}
 
 		// The strip runs the fixture's whole height: its row and the tables
-		// row under it (UV, 24 Oct).
+		// row under it (UV, 24 Oct). The director's alone: a player's fixtures
+		// have no strip and no lock (UV, 11 Nov), until the match states are
+		// settled.
 		const state = stateOf(f);
-		const strip = node('td', 'fx-state fx-state-' + state);
-		strip.rowSpan = f.is_bye || !iRunIt ? 1 : 2;
-		if (state !== 'bye') {
-			strip.title = STATE[state] || state;
-			strip.append(node('span', 'visually-hidden', STATE[state] || state));
-		}
-		// For a player, a finished match is a grey lock rather than a bar (UV,
-		// 10 Nov: an experiment). A re-opened card is not locked, so keeps its bar.
-		if (!iRunIt && state === 'complete') {
-			strip.classList.add('fx-state-locked');
-			strip.append(lockIcon());
+		const strip = iRunIt ? node('td', 'fx-state fx-state-' + state) : null;
+		if (strip) {
+			strip.rowSpan = f.is_bye ? 1 : 2;
+			if (state !== 'bye') {
+				strip.title = STATE[state] || state;
+				strip.append(node('span', 'visually-hidden', STATE[state] || state));
+			}
 		}
 
 		// The middle: each side's score beside its team, the buttons between
 		// them (UV, 25 Oct). A score shows once any frame has a result, or the
 		// match is finished, whether or not the night is.
 		const mid = node('td', 'fx-mid');
-		const line = node('div', 'fx-mid-line');
-		const scored = f.match_id && (f.home_frames || f.away_frames || signed(f));
-		if (scored) line.append(liveScore(f, 'home'));
-		const items = actions(f);
-		if (items.length) {
-			const box = node('div', 'fx-actions');
-			for (const [action, icon, label, tone] of items) {
-				box.append(iconButton(icon, label + ': ' + fixtureName(f), tone,
-					{ action, fixture: f.fixture_id, where }, key + ':' + action));
-			}
-			line.append(box);
+		const pState = iRunIt ? null : playerState(f);
+		if (pState) {
+			tr.classList.add('fx-p-' + pState);
+			mid.append(playerLine(f, pState, key, where));
 		} else {
-			line.append(node('span', 'fx-v', ':'));
+			const line = node('div', 'fx-mid-line');
+			const scored = f.match_id && (f.home_frames || f.away_frames || signed(f));
+			if (scored) line.append(liveScore(f, 'home'));
+			const items = actions(f);
+			if (items.length) {
+				const box = node('div', 'fx-actions');
+				for (const [action, icon, label, tone] of items) {
+					box.append(iconButton(icon, label + ': ' + fixtureName(f), tone,
+						{ action, fixture: f.fixture_id, where }, key + ':' + action));
+				}
+				line.append(box);
+			} else {
+				line.append(node('span', 'fx-v', ':'));
+			}
+			if (scored && items.length) {
+				// A phone has no room for a score either side of the buttons while
+				// a match is played; there the score closes up round a colon and the
+				// buttons go under it (league.css). Hidden otherwise.
+				line.classList.add('fx-mid-busy');
+				line.append(node('span', 'fx-v fx-v-busy', ':'));
+			}
+			if (scored) line.append(liveScore(f, 'away'));
+			mid.append(line);
 		}
-		if (scored && items.length) {
-			// A phone has no room for a score either side of the buttons while
-			// a match is played; there the score closes up round a colon and the
-			// buttons go under it (league.css). Hidden otherwise.
-			line.classList.add('fx-mid-busy');
-			line.append(node('span', 'fx-v fx-v-busy', ':'));
-		}
-		if (scored) line.append(liveScore(f, 'away'));
-		mid.append(line);
 
-		// A player's tables sit under the ":" or the arrow (UV, 10 Nov).
-		if (!iRunIt && (f.table_numbers || []).length) {
+		// A player's tables sit under the middle (UV, 10 Nov), once the match is
+		// made and until it is completed (UV, 11 Nov).
+		if (pState && f.match_id && pState !== 'complete' && (f.table_numbers || []).length) {
 			mid.append(node('span', 'fx-mid-sub', (f.table_numbers.length === 1 ? 'Table ' : 'Tables ') + f.table_numbers.join(' · ')));
 		}
 
@@ -922,10 +985,11 @@ TDCLeagueNav.panel('fixtures', () => {
 			mid.append(node('span', 'fx-mid-sub', time24(new Date(f.scheduled_at))));
 		}
 
-		const away = f.is_bye ? node('td', 'fx-side fx-away') : teamCell(f.away_team_id, f.away_name, 'away', !done);
+		const away = f.is_bye ? node('td', 'fx-side fx-away') : teamCell(f.away_team_id, f.away_name, 'away', !done, !!pState && f.away_locked);
 		if (f.is_bye) away.append(node('span', 'fx-bye', 'Bye'));
 
-		tr.append(strip, teamCell(f.home_team_id, f.home_name, 'home', !done), mid, away);
+		if (strip) tr.append(strip);
+		tr.append(teamCell(f.home_team_id, f.home_name, 'home', !done, !!pState && f.home_locked), mid, away);
 
 		const out = [tr];
 		if (!f.is_bye && iRunIt) {
@@ -1098,9 +1162,10 @@ TDCLeagueNav.panel('fixtures', () => {
 			groups[groups.length - 1].rows.push(f);
 		}
 		els.allCards.replaceChildren(...groups.flatMap(({ f, rows: inRound }) => {
-			const head = node('h2', 'lj-heading', f.scheduled_at
-				? longDate(dayKey(f.scheduled_at)) + ' · ' + time24(new Date(f.scheduled_at)) + ' · Round ' + f.round
-				: 'Round ' + f.round + ' · no date');
+			const head = node('h2', 'fx-round-label');
+			roundLabel(head, 'Round ' + f.round, f.scheduled_at
+				? shortDate(new Date(f.scheduled_at)) + ' · ' + time24(new Date(f.scheduled_at))
+				: 'No date');
 			const card = node('div', 'fx-card');
 			const table = node('table', 'fx-table');
 			table.append(...inRound.flatMap((x) => fixtureRows(x, 'all')));

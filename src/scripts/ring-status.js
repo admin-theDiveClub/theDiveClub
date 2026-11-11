@@ -60,6 +60,16 @@ const TDCRing = (() => {
 		// Added 24 Oct for the league fixtures' buttons (Move, Take match off).
 		calendar: { label: 'Moved', strokes: ['M30 36L70 36L70 70L30 70L30 36', 'M30 47L70 47', 'M40 29L40 40', 'M60 29L60 40'] },
 		minus: { label: 'Taken off', strokes: ['M30 50L70 50'] },
+		// Added 11 Nov for the fixtures' Open the card (UV): a scorecard, its
+		// outline, the header line and the line between the two sides' columns.
+		scorecard: { label: 'Scorecard', strokes: ['M30 28L70 28L70 72L30 72L30 28', 'M30 40L70 40', 'M50 40L50 72'] },
+		// Added 11 Nov for a fixture open for lineups (UV's picture): a clipboard,
+		// its clip, three ticks down the left and a line beside each.
+		checklist: { label: 'Lineups', strokes: [
+			'M34 30L66 30L66 74L34 74L34 30',
+			'M44 30L44 25L56 25L56 30',
+			'M39 42L42 45L47 39M39 53L42 56L47 50M39 64L42 67L47 61',
+			'M52 42L61 42M52 53L61 53M52 64L61 64'] },
 		// Added 24 Oct for the nav: the menu (three lines; it turns into the
 		// cross when open) and reload (a circle round to its arrowhead).
 		menu: { label: 'Menu', strokes: ['M32 35L68 35', 'M32 50L68 50', 'M32 65L68 65'] },
