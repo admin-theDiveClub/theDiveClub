@@ -50,6 +50,7 @@
 	const els = {
 		title: el('m-title'),
 		jumbo: el('jumbo'), jumboStatus: el('jumbo-status'), stateDetail: el('state-detail'), facts: el('jumbo-facts'),
+		jumboMore: el('jumbo-more'),
 		homePic: el('home-pic'), homeName: el('home-name'), awayPic: el('away-pic'), awayName: el('away-name'),
 		sideSwitch: el('side-switch'), sidePick: el('side-pick'),
 		lineups: el('lineups'), compare: el('team-compare'), teamTables: el('team-tables'),
@@ -398,9 +399,15 @@
 	// ─── The banner ───
 	// Both teams, the state as a badge, a line on what happens next, and the
 	// fixture's details as label and value pairs.
+	// Which way the banner's details were last set by the page: closed once
+	// both lineups are in, open before (UV, 12 Nov). Set again only when that
+	// changes, so the reader's own opening or closing survives every redraw.
+	let bannerSetFor = null;
+
 	function renderBanner(locked, both) {
 		const [key, label] = stateOf(both);
 		els.jumbo.className = 'jumbo card-jumbo card-state-' + key;
+		if (bannerSetFor !== both) { els.jumboMore.open = !both; bannerSetFor = both; }
 		// The page speaks a fixture's colours (UV, 11 Nov): the state on the
 		// body colours every score; a banner name turns yellow once its side
 		// has locked and is underlined for the viewer's own team.
@@ -761,76 +768,96 @@
 	}
 
 	// ─── Now and next (UV, 12 Nov) ───
-	// The next four frames without a result, in the night's order, and above
-	// them any frame out of that order that is under way: a frame is under
-	// way from the moment its lag is in. So a captain who strays from the
-	// order still finds every live frame at the top. Each is an inset pill
-	// with the frame's L and W, live for the captains and the league
-	// director only (UV), greyed for everybody else, players included.
+	// Two groups. **Now**, in a yellow ring: every frame shown that is under
+	// way (a frame is under way from the moment its lag is in), any outside
+	// the night's order first. **Next**, in a grey ring: the rest. What is
+	// shown is the next frames without a result in the night's order, twice
+	// as many as the fixture has tables, or four with no tables set (UV),
+	// and any frame under way beyond them, so a captain who strays from the
+	// order still finds every live frame. Each frame is an inset pill with
+	// its L and W, live for the captains and the league director only (UV),
+	// greyed for everybody else, players included.
 	//
-	// A frame that leaves (its result is in) fades out completely, the list
-	// lifts into its place, and only then does the next fade in at the
-	// bottom (UV). A redraw during that waits for it and then draws once
-	// from the latest card.
-	const QUICK_NEXT = 4;
+	// Motion (UV): a frame that leaves a group (its result is in, or its lag
+	// moved it from Next to Now) fades out completely, the cards below lift
+	// into its place, and only then does it, or the next frame, fade in where
+	// it belongs. A group with nothing left folds away the same way; one
+	// that gains its first frame fades in. A redraw during that waits for it
+	// and then draws once from the latest card.
 	let quickRun = null;
 	let quickAgain = false;
 	let quickDrawn = false;
+	const quickGroups = { now: node('div', 'qv-group qv-now'), next: node('div', 'qv-group qv-next') };
+	quickGroups.now.setAttribute('aria-label', 'Under way');
+	quickGroups.next.setAttribute('aria-label', 'Next');
+	for (const g of Object.values(quickGroups)) { g.hidden = true; els.quickList.append(g); }
 
-	// Each frame with its group: 'stray' (under way, out of order, at the
-	// top) or 'next'.
+	// Twice the fixture's tables, else four (UV, 12 Nov).
+	const quickCount = () => (fixture && fixture.table_numbers && fixture.table_numbers.length ? 2 * fixture.table_numbers.length : 4);
+
+	// Each frame shown, with its group, in the order drawn.
 	function quickFrames() {
 		const open = card.filter((f) => f.status !== 'complete');   // the card is in frame order
-		const next = open.slice(0, QUICK_NEXT);
-		const inNext = new Set(next.map((f) => f.frame_no));
-		return open.filter((f) => f.break_side && !inNext.has(f.frame_no)).map((f) => ({ f, group: 'stray' }))
-			.concat(next.map((f) => ({ f, group: 'next' })));
+		const ahead = open.slice(0, quickCount());
+		const inAhead = new Set(ahead.map((f) => f.frame_no));
+		const strays = open.filter((f) => f.break_side && !inAhead.has(f.frame_no));
+		return strays.concat(ahead.filter((f) => f.break_side)).map((f) => ({ f, group: 'now' }))
+			.concat(ahead.filter((f) => !f.break_side).map((f) => ({ f, group: 'next' })));
 	}
 
 	function renderQuick(both) {
 		const lockedCard = cardState && (cardState.state === 'agreed' || cardState.state === 'approved');
 		const list = both && !lockedCard ? quickFrames() : [];
 		if (quickRun) { quickAgain = true; return; }
-		if (!list.length) {
-			els.quick.hidden = true;
-			els.quickList.replaceChildren();
-			quickDrawn = false;
-			return;
-		}
+		if (!list.length && !quickDrawn) { els.quick.hidden = true; return; }
 		els.quick.hidden = false;
 		quickRun = syncQuick(list, quickDrawn)
 			.catch((err) => TDC.error(AREA, 'could not draw Now and next.', err, els.status))
 			.finally(() => {
 				quickRun = null;
-				quickDrawn = true;
+				quickDrawn = list.length > 0;
+				if (!list.length) els.quick.hidden = true;
 				if (quickAgain) { quickAgain = false; renderQuick(lineupState.home_locked && lineupState.away_locked); }
 			});
 	}
 
 	async function syncQuick(list, animate) {
 		const want = new Map(list.map((x) => [String(x.f.frame_no), x]));
-		const rows = [...els.quickList.children];
+		const pills = [...els.quickList.querySelectorAll('.qv-pill')];
 		// A pill that stays in its group is drawn again in place, as every
 		// frame row is. One that left the list goes; so does one that changed
-		// group (a stray now among the next four), to come back in its place.
+		// group, to come back in its new place.
 		const stays = (r) => want.has(r.dataset.frame) && want.get(r.dataset.frame).group === r.dataset.group;
-		for (const r of rows) if (stays(r)) r.replaceChildren(...quickPill(want.get(r.dataset.frame).f));
-		await Promise.all(rows.filter((r) => !stays(r)).map((r) => (animate ? quickLeave(r) : r.remove())));
+		for (const r of pills) if (stays(r)) r.replaceChildren(...quickPill(want.get(r.dataset.frame).f));
+		const leaving = pills.filter((r) => !stays(r));
 
-		const have = new Map([...els.quickList.children].map((r) => [r.dataset.frame, r]));
+		// A group left with nothing folds away whole, its pills with it.
+		const wanted = (g) => list.some((x) => x.group === g);
+		const emptying = Object.entries(quickGroups).filter(([g, el]) => !el.hidden && !wanted(g)).map(([, el]) => el);
+		const alone = leaving.filter((r) => !emptying.includes(r.parentElement));
+		await Promise.all([
+			...alone.map((r) => (animate ? quickLeave(r) : r.remove())),
+			...emptying.map((el) => (animate ? quickLeave(el, true) : Promise.resolve()))
+		]);
+		for (const el of emptying) { el.replaceChildren(); el.hidden = true; }
+
+		const have = new Map([...els.quickList.querySelectorAll('.qv-pill')].map((r) => [r.dataset.frame, r]));
 		const fresh = [];
+		const appearing = [];
 		for (const { f, group } of list) {
+			const box = quickGroups[group];
+			if (box.hidden) { box.hidden = false; appearing.push(box); }
 			let r = have.get(String(f.frame_no));
 			if (!r) {
 				r = node('div', 'qv-pill');
 				r.dataset.frame = String(f.frame_no);
 				r.dataset.group = group;
 				r.replaceChildren(...quickPill(f));
-				fresh.push(r);
+				if (!appearing.includes(box)) fresh.push(r);   // a new group fades in whole
 			}
-			els.quickList.append(r);   // in the list's order: strays at the top, the next at the bottom
+			box.append(r);   // in the list's order within its group
 		}
-		if (animate) await Promise.all(fresh.map(quickEnter));
+		if (animate) await Promise.all(fresh.concat(appearing).map(quickEnter));
 	}
 
 	// Less motion (the person's choice, else the device's): no fading.
@@ -841,8 +868,16 @@
 	const QUICK_FADE_MS = 280, QUICK_LIFT_MS = 260;
 	const done = (a) => a.finished.catch(() => { /* cancelled: nothing to wait for */ });
 
-	async function quickLeave(r) {
-		if (lessMotion()) { r.remove(); return; }
+	// A pill, or a whole group (keep: it is hidden afterwards, not removed,
+	// and its motion and styles are cleared so it can come back).
+	async function quickLeave(r, keep = false) {
+		const finish = () => {
+			if (!keep) { r.remove(); return; }
+			r.hidden = true;   // before the motion is cleared, or it shows again for a frame
+			for (const a of r.getAnimations()) a.cancel();
+			r.style.pointerEvents = r.style.overflow = '';
+		};
+		if (lessMotion()) { finish(); return; }
 		r.style.pointerEvents = 'none';
 		await done(r.animate([{ opacity: 1 }, { opacity: 0 }], { duration: QUICK_FADE_MS, easing: 'ease-out', fill: 'forwards' }));
 		const cs = getComputedStyle(r);
@@ -851,7 +886,7 @@
 			{ height: r.offsetHeight + 'px', marginTop: cs.marginTop, paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom, opacity: 0 },
 			{ height: '0px', marginTop: '0px', paddingTop: '0px', paddingBottom: '0px', opacity: 0 }
 		], { duration: QUICK_LIFT_MS, easing: 'ease-in-out', fill: 'forwards' }));
-		r.remove();
+		finish();
 	}
 
 	function quickEnter(r) {

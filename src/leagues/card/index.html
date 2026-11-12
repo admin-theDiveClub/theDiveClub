@@ -71,8 +71,16 @@ extraScripts:
 				<span class="cj-name" id="away-name">Away</span>
 			</div>
 		</div>
-		<p class="cj-detail" id="state-detail"></p>
-		<dl class="jumbo-facts" id="jumbo-facts"></dl>
+		{% comment %}
+			The rest folds under an arrow centred below the teams (UV, 12 Nov):
+			closed once both lineups are in, so the banner is compact while the
+			night is played, and open before. The site's folding group.
+		{% endcomment %}
+		<details class="set-group cj-more" id="jumbo-more" open>
+			<summary class="cj-more-arrow" aria-label="The night's details"></summary>
+			<p class="cj-detail" id="state-detail"></p>
+			<dl class="jumbo-facts" id="jumbo-facts"></dl>
+		</details>
 	</section>
 
 	{% comment %}

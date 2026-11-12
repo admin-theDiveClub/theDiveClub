@@ -1408,6 +1408,25 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 
 /* The banner: two teams either side of the state (or the score). */
 .card-jumbo { grid-template-columns: minmax(0, 1fr); text-align: center; }
+/* Its details fold under an arrow centred below the teams (UV, 12 Nov): the
+ * site's folding group, with nothing of its heading but the arrow. Inside,
+ * the line and the details keep the banner's spacing. */
+.card-jumbo .cj-more { margin: 0; padding: 0; border: 0; }
+.card-jumbo .cj-more > summary {
+	justify-content: center;
+	width: 2.75rem;
+	min-height: 0;
+	height: 1.75rem;
+	margin: calc(-1 * var(--space-2)) auto 0;
+	padding: 0;
+	border-radius: var(--radius-pill);
+	cursor: pointer;
+}
+.card-jumbo .cj-more > summary::after { position: static; transform: none; }
+.card-jumbo .cj-more[open]:not(.is-closing) > summary::after { transform: rotate(180deg); }
+.card-jumbo .cj-more > summary > .group-dots { right: auto; left: 50%; transform: translate(-50%, -50%); }
+.card-jumbo .cj-more > :not(summary) { margin-top: var(--space-4); }
+.card-jumbo .cj-more > :not(summary):last-child { margin-bottom: 0; }
 .cj-head {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -1603,14 +1622,23 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .cs-tot-label { font-size: 0.85rem; color: var(--text-muted); }
 .cs-tot-value { font-size: 1.35rem; font-weight: 700; color: var(--card-score, var(--color-primary)); text-shadow: var(--card-score-glow, none); font-variant-numeric: tabular-nums; }
 
-/* Too narrow for the switches between two names: the names side by side, the
- * switches under them. */
+/* A small phone keeps every frame on one row, the names either side of the
+ * switches (UV, 12 Nov: a name wraps over its words rather than the switches
+ * dropping under the names, as they did until then). The switches a little
+ * smaller to leave the names their room; a name breaks inside a word only
+ * when that word alone is too wide. */
 @media (max-width: 24rem) {
-	.cs-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-	.cs-row > .cs-home { grid-column: 1; grid-row: 1; }
-	.cs-row > .cs-away { grid-column: 2; grid-row: 1; }
-	.cs-row > .cs-toggles { grid-column: 1 / -1; grid-row: 2; }
-	.cs-tots { grid-column: 1 / -1; justify-self: center; width: var(--cs-mid); }
+	.cs-grid,
+	.cs-grid .tdc-tri,
+	.qv-list,
+	.qv-list .tdc-tri { --tri-width: 5.25rem; --tri-height: 2.2rem; --nm-knob: 1.7rem; }
+	.cs-grid,
+	.qv-list { --cs-mid: calc(var(--tri-width) + 2.4rem); }
+	.cs-row { gap: var(--space-1); }
+	.cs-tog { gap: var(--space-1); }   /* the letters closer, so the middle fits its narrower track */
+	.cs-player .card-person-name { font-size: 0.9rem; }
+	.cs-sub { font-size: 0.75rem; }
+	.qv-pill { padding-left: var(--space-2); padding-right: var(--space-2); }
 	.cj-mid .jumbo-status { white-space: normal; text-align: center; }
 }
 
@@ -1999,8 +2027,9 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 
 /* ── Now and next (UV, 12 Nov) ───────────────────────────────────────
  * At the top of the scorecard: an inset pill per frame, the session's
- * row inside it. Pills are spaced by a margin, not a gap, so a leaving one
- * can fold its space away (the list lifts) before it goes. */
+ * row inside it, in two ringed groups. Pills are spaced by a margin, not a
+ * gap, so a leaving one can fold its space away (the list lifts) before it
+ * goes. */
 #quick { margin-top: var(--space-5); }
 .qv-list { max-width: 40rem; margin: 0 auto; }
 .qv-list,
@@ -2012,6 +2041,20 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	box-shadow: var(--nm-sunken);
 }
 .qv-pill + .qv-pill { margin-top: var(--space-3); }
+/* The two groups as rings (UV, 12 Nov): Now (under way) yellow and lit, as
+ * the lag and a fixture being played are; Next grey. Spaced by a margin so a
+ * group that empties can fold its space away too. */
+.qv-group {
+	padding: var(--space-2);
+	border-radius: calc(var(--nm-field-radius) + var(--space-2));
+	border: 2px solid var(--border-color);
+}
+.qv-group.qv-now {
+	border-color: var(--color-warning);
+	box-shadow: 0 0 10px color-mix(in srgb, var(--color-warning) 45%, transparent), inset 0 0 10px color-mix(in srgb, var(--color-warning) 20%, transparent);
+}
+.qv-group.qv-next { border-color: var(--text-muted); }
+.qv-group:not([hidden]) ~ .qv-group:not([hidden]) { margin-top: var(--space-4); }
 .qv-pill .cs-row { border-bottom: none; padding-top: var(--space-1); }
 .qv-top { display: flex; justify-content: center; align-items: baseline; gap: var(--space-2); font-size: 0.8rem; color: var(--text-muted); }
 .qv-live { font-weight: 700; color: var(--color-warning); text-shadow: 0 0 8px color-mix(in srgb, var(--color-warning) 55%, transparent); }

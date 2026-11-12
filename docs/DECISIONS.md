@@ -1847,3 +1847,17 @@ These predate the log. They are recorded here because every one of them is a dec
 *Rejected:* bars under the head-to-head numbers (not asked for); showing tonight's order on the lineup page beyond what `tdc_match_lineup` already reveals to the reader.
 *So:* `docs/systems/leagues.md`, "The lineup page", "Now and next", "F1, not Frame 1, and a player centred"; `docs/ui.md` (headless at 500px, motion checks).
 *Touches:* `src/leagues/card/index.html`, `src/scripts/league-card.js`, `src/stylesheets/league.css`, `src/stylesheets/design.css`
+
+## 2026-11-12 — Now and next in two rings, sized by the tables; a compact banner once the lineups are in
+
+*Decided by UV:* Now and next shows **twice as many frames as the match has tables**, or **four** where no tables are set. The frames under way sit in a **yellow ring (Now)**, the rest in a **grey ring (Next)**, each a group. Adding and removing animate: **fade out, the cards scroll up, then the new one fades in**, and a frame **moving between the groups out of order animates too**. **Once both lineups are in, the banner is compact**: only the teams and the state above the "Record each frame…" line, with a **dropdown arrow centred** to show the rest; **closed by default once the lineups are in, open by default before**.
+*Claude's, for UV to judge:* "under way beyond the shown frames" still joins Now (out of order, first); a group that empties folds away as one, and a new group fades in as one rather than pill by pill; the reader's own opening or closing of the banner is kept until the lineups change state; the arrow points down when closed and up when open, as every folding group's.
+*So:* `docs/systems/leagues.md`, "Now and next in two rings; how many; the compact banner".
+*Touches:* `src/leagues/card/index.html`, `src/scripts/league-card.js`, `src/stylesheets/league.css`
+
+## 2026-11-12 — On a small phone a frame stays on one row
+
+*Decided by UV:* on small screens a player's name word-wraps rather than the L and W switches moving to a row of their own.
+*Claude's, for UV to judge:* the switches a little smaller below 24rem (5.25rem wide, from 6.25rem) and the names 0.9rem there, so a name wraps at its spaces rather than inside a word.
+*Replaces:* the 24rem rule that put the names side by side and the switches under them.
+*Touches:* `src/stylesheets/league.css`
