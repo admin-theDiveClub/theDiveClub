@@ -92,7 +92,7 @@ const out = `<!-- The dive (3 Nov): the email GIF's diver as an inline SVG, for 
 	</g>
 </svg>
 `;
-fs.writeFileSync(path.join(ROOT, 'src/_includes/dive.svg'), out.replace(/\r?\n/g, '\r\n'));
+fs.writeFileSync(path.join(ROOT, 'src/_includes/dive.svg'), out.replace(/\r?\n/g, '\n'));
 console.log(out.length, 'chars;', (out.match(/<path/g) || []).length, 'paths;', (out.match(/var\(--dive/g) || []).length, 'colour hooks;', (out.match(/\sid="/g) || []).length, 'ids');
 
 // The wordmark (3 Nov): the loading screen's, behind the falling diver. The
@@ -138,6 +138,6 @@ for (const theme of ['dark', 'light']) {
 	if (!/viewBox=/.test(fixed)) throw new Error('wordmark: no viewBox in the ' + theme + ' logo');
 	w = w.replace(head, fixed);
 	w = w.replace(/<svg/, `<!-- The wordmark, made by tools/dive-svg/build.js from logo-primary-${theme}.svg. Do not edit: rebuild. -->\n<svg`);
-	fs.writeFileSync(path.join(ROOT, `src/resources/branding/wordmark-${theme}.svg`), w.replace(/\r?\n/g, '\r\n'));
+	fs.writeFileSync(path.join(ROOT, `src/resources/branding/wordmark-${theme}.svg`), w.replace(/\r?\n/g, '\n'));
 	console.log(`wordmark-${theme}.svg:`, w.length, 'chars');
 }

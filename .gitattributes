@@ -1,0 +1,3 @@
+# Line endings: LF everywhere, on every machine (12 Nov, after the move from
+# Windows to a Mac). Git detects binary files itself and leaves them alone.
+* text=auto eol=lf

@@ -1823,3 +1823,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV, later the same day:* the whole card copies the fixtures' and Season tab's styling, text colours and the banner design included, so the pages read as one language; apply the logic, don't ask item by item. Built: every score yellow until signed, then green (the winner green, the loser grey); banner names in the fixture's state colours, your own team underlined; every other team name cream; the Season tab's headings with a grey line through; the banner's details with the Season tab's grey lines between them; ":" between the result's scores.
 *Claude's, for UV to judge:* Published names green (the result stands), though the badge stays grey; a disputed card's scores cream; the league over the result in the display face, cream; four details across from 48rem.
 *Touches:* `src/leagues/card/index.html`, `src/scripts/league-card.js`, `src/stylesheets/league.css`, `src/stylesheets/design.css`
+
+## 2026-11-12 — LF line endings, after the move to a Mac
+
+*Decided by UV:* files use **LF**, not CRLF, now that the repo has moved from Windows to a Mac. The repository already stored every file as LF; the CRLF was only in the Windows working copies. A `.gitattributes` (`* text=auto eol=lf`) makes it the rule on every machine. `tools/dive-svg/build.js` writes LF instead of forcing CRLF.
+*Rejected:* keeping CRLF (every file would have shown as changed on the Mac).
+*So:* `CLAUDE.md` §1; `docs/systems/notifications.md` (the old CRLF trap marked as history).
+*Touches:* `.gitattributes`, `CLAUDE.md`, `docs/systems/notifications.md`, `tools/dive-svg/build.js`

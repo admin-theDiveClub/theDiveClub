@@ -19,7 +19,7 @@ This file is read at the start of every session, so it is kept short. **The deta
 - **Tell UV when to start a fresh conversation** (at each milestone, or when a session has grown long) and **which model suits the next job**, by the rules in `docs/MODELS.md`. UV aims to use his Max 5x allowance fully.
 - **Never fall back silently.** On a failure show `TDC (Error): …` on the page and `console.error` with an `[Area]` prefix, using the helpers in `scripts/tdc.js`.
 - **Never put secrets in client code or the repo** (VAPID private key, service-role key).
-- Files use **CRLF and tabs**.
+- Files use **LF and tabs** (`.gitattributes` enforces LF; until the move to a Mac on 12 Nov the working copies were CRLF).
 - **Dashboard settings** (Supabase, Google, Resend, Squarespace) are done by UV. Test locally with `npx eleventy --serve` before pushing, then check the live site after a deploy.
 - **UV will not remember implementation details.** These files, migration comments and commit messages are the memory.
 

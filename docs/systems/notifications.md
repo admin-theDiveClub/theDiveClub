@@ -40,4 +40,4 @@
 - A bell, a pip and a tray, shown only to a signed-in player. **The pip is a dot, not a count**: a number would mean reading the whole list on every page load, when "something is waiting" is the entire message.
 - Opening the tray **loads the list and then marks it seen**, in that order, so what arrived while they were away is still drawn as unread and greys out next time. Clear one, or clear all.
 - *(Until 29 Oct, on the bar.)* **The tray is `position: fixed` at `top: 60px; right: 1rem`, not anchored to the bell.** Anchored with `right: 0` it overflowed the *left* edge of a phone, because the bell sits mid-bar and the tray is 22rem. The nav is itself fixed with a 1rem gutter, so matching it cannot overflow at any width. Found by rendering it in a headless Chromium, not by reading the CSS.
-- **The nav files are CRLF.** A patch written with `\n` search strings matches nothing and reports success having changed nothing.
+- *(Until 12 Nov, on Windows.)* **The nav files were CRLF**, and a patch written with `\n` search strings matched nothing while reporting success. Since the move to a Mac every file is LF (`.gitattributes`), so this trap is gone.
