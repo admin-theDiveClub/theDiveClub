@@ -1545,12 +1545,18 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	padding: 0.05rem 0.4rem;
 	color: var(--color-warning);
 }
-/* On a phone the picture goes above the name, so the name has the column. */
+/* On a phone the picture goes above the name, so the name has the column;
+ * both are then centred in their side, the line under them too (UV,
+ * 12 Nov: wherever a player takes more than one line). */
 @media (max-width: 30rem) {
 	.cs-seat,
 	.cs-player.cs-home .cs-seat { flex-direction: column; }
 	.cs-player .card-person,
 	.cs-player.cs-home .card-person { flex-direction: column; gap: var(--space-1); }
+	.cs-player,
+	.cs-player.cs-home,
+	.cs-player.cs-away { align-items: center; text-align: center; }
+	.cs-player .card-person-name { text-align: center; }
 	.cs-seat.is-pickable,
 	.cs-player.cs-home .cs-seat.is-pickable { padding: var(--space-1); border-radius: var(--radius-md); }
 }
@@ -1754,7 +1760,7 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 /* On a phone a five-man table fits without scrolling: the row's names lose
  * their pictures (the column headings keep theirs) and the marks shrink. */
 @media (max-width: 30rem) {
-	.card-players th.h2h-row { min-width: 4.5rem; }
+	.card-players th.h2h-row { min-width: 4.5rem; text-align: center; }   /* the name over its position, centred (UV, 12 Nov) */
 	.h2h-row .person-pic { display: none; }
 	.h2h-row .cp-pos { margin-left: 0; }
 	.card-players.h2h-table th.cp-player { min-width: 2.6rem; }
@@ -1791,6 +1797,10 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .cp-colon { margin: 0 var(--space-1); color: var(--text-muted); font-weight: 400; }
 .card-players .cp-cell.is-won { color: var(--color-primary); font-weight: 700; }
 .card-players .cp-cell.is-open { color: var(--text-muted); }
+/* By session: a reserve's frame carries their small picture beside the
+ * mark (UV, 12 Nov), so the cell says who played the position that session. */
+.card-players td.cp-cell { white-space: nowrap; }
+.cp-cell .person-pic.cp-reserve { display: inline-flex; width: 1.2rem; height: 1.2rem; margin: 0 var(--space-1) 0 0; font-size: 0.5rem; vertical-align: middle; }
 .card-players tfoot td { border-top: 1px solid var(--border-color); border-bottom: none; font-weight: 700; }
 
 /* The result and the signatures: one section in the banner's style (UV,
@@ -1816,8 +1826,8 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .sign-form .table-scroll { padding: 0; border-radius: 0; box-shadow: none; }
 
 /* The player's view (UV, 29 Oct): their frames as one session block, as
- * wide as a session on a PC, then their two small tables side by side
- * while they fit, centred. */
+ * wide as a session on a PC, then their by-session table (its head-to-head
+ * twin removed, UV, 12 Nov), centred. */
 #mine-frames .cs-mine { max-width: 40rem; margin-inline: auto; }
 .mine-tables {
 	display: flex;
@@ -1915,16 +1925,96 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .sf-buttons { display: flex; flex-direction: column; gap: var(--space-3); }
 .sf-buttons > .btn { width: 100%; margin: 0; }
 
-/* The lineup (UV, 29 Oct): one row per player, here tonight's switch and
-   their position's number side by side at the right, under the name when the
-   name would be squeezed. */
-.card-lineup-row { flex-wrap: wrap; align-items: center; }
-/* The number loses an arrow at its limit and shrinks (UV, 24 Oct): in a slot as
-   wide as a whole one, so the switches stay in one column. */
-.card-lineup-controls { display: grid; grid-template-columns: auto 7rem; align-items: center; justify-items: center; gap: var(--space-3); margin-left: auto; }
-@media (max-width: 24rem) {
-	.card-lineup-controls { grid-template-columns: auto; justify-items: end; }
+/* ── The lineup page (UV, 12 Nov) ────────────────────────────────────
+ * Until both lineups are in: the two teams' season so far as a football
+ * head-to-head, then a sunken card per team (the Season tab's team cards:
+ * the shield over the name, centred) holding a Standings table. The team
+ * being set up has the switch and the stepper in its table. Names follow
+ * the banner's rule: cream, yellow once locked, your own underlined. */
+#lineups { margin-top: var(--space-5); }
+.lu-compare {
+	max-width: 34rem;
+	margin: 0 auto var(--space-5);
+	padding: var(--space-2) var(--nm-pad);
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-sunken);
 }
+.lu-cmp-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(5.5rem, auto) minmax(0, 1fr);
+	align-items: center;
+	gap: var(--space-3);
+	padding: var(--space-2) 0;
+	border-top: 1px solid var(--border-color);
+}
+.lu-cmp-row:first-child { border-top: none; }
+.lu-cmp-k { text-align: center; font-size: 0.85rem; color: var(--text-muted); }
+.lu-cmp-v { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.1; color: var(--text-primary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.lu-cmp-home { text-align: right; }
+.lu-cmp-away { text-align: left; }
+.lu-cmp-head .lu-cmp-v { font-size: 1rem; }
+/* The better of the two as a finished fixture's winning score, the other grey. */
+.lu-cmp-v.is-best { color: var(--color-primary); text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 60%, transparent); }
+.lu-cmp-v.is-behind { color: var(--text-muted); }
+
+.lu-teams { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: var(--space-5); }
+.lu-team {
+	flex: 1 1 22rem;
+	min-width: 0;
+	padding: var(--space-4) var(--space-3);
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-sunken);
+}
+/* On a phone the team being set up comes first. */
+@media (max-width: 47.99rem) {
+	.lu-team.is-managing { order: -1; }
+}
+.lu-head { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); text-align: center; }
+.lu-head .team-pic { width: 3rem; height: 3rem; }
+.tdc-card .lu-name { margin: 0; font-family: var(--font-display); font-size: 1.25rem; color: var(--text-primary); overflow-wrap: anywhere; }
+.tdc-card .lu-name.is-locked { color: var(--color-warning); }
+.lu-name.is-mine { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.2em; }
+.tdc-card .lu-state { margin: var(--space-1) 0 var(--space-3); text-align: center; font-size: 0.85rem; color: var(--text-muted); }
+.tdc-card .lu-state.is-locked { color: var(--color-warning); }
+.tdc-card .lu-hint { margin: 0 0 var(--space-3); text-align: center; font-size: 0.85rem; }
+.lu-table .lu-player { display: block; }
+.lu-table .lu-badge { display: inline-block; margin-top: 2px; font-size: 0.7rem; }
+.lu-table .lu-sub { display: block; font-size: 0.75rem; font-weight: 400; color: var(--text-muted); }
+.tdc-card .lu-table th.lu-ctl,
+.tdc-card .lu-table td.lu-ctl { text-align: center; }
+.lu-table td { vertical-align: middle; }
+.lu-table .lu-pos { font-weight: 600; color: var(--text-muted); }
+/* The switch and the stepper at a table row's size (as the points page's
+ * rows): the row is a player, not a setting. */
+.lu-table .tdc-switch { --switch-width: 3.5rem; --switch-height: 2rem; --nm-knob: 1.5rem; }
+.lu-table .tdc-stepper.is-across { height: 2.25rem; }
+/* On a phone the team being set up keeps its switch and stepper in view: its
+ * initials go (the name is beside them); the numbers scroll sideways, as the
+ * Standings tab's. */
+@media (max-width: 30rem) {
+	.lu-team.is-managing .lu-table { --sd-w-pic: 0rem; }   /* the frozen name column moves up with it */
+	.lu-team.is-managing .lu-table .sd-pic { display: none; }
+}
+.tdc-card .lu-lock { justify-content: center; margin-top: var(--space-4); }
+
+/* ── Now and next (UV, 12 Nov) ───────────────────────────────────────
+ * At the top of the scorecard: an inset pill per frame, the session's
+ * row inside it. Pills are spaced by a margin, not a gap, so a leaving one
+ * can fold its space away (the list lifts) before it goes. */
+#quick { margin-top: var(--space-5); }
+.qv-list { max-width: 40rem; margin: 0 auto; }
+.qv-list,
+.qv-list .tdc-tri { --tri-width: 6.25rem; --tri-height: 2.4rem; --nm-knob: 1.9rem; }
+.qv-list { --cs-mid: calc(var(--tri-width) + 2.6rem); }
+.qv-pill {
+	padding: var(--space-2) var(--space-3) var(--space-1);
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-sunken);
+}
+.qv-pill + .qv-pill { margin-top: var(--space-3); }
+.qv-pill .cs-row { border-bottom: none; padding-top: var(--space-1); }
+.qv-top { display: flex; justify-content: center; align-items: baseline; gap: var(--space-2); font-size: 0.8rem; color: var(--text-muted); }
+.qv-live { font-weight: 700; color: var(--color-warning); text-shadow: 0 0 8px color-mix(in srgb, var(--color-warning) 55%, transparent); }
 
 /* ── Standings (UV, 29 Oct) ───────────────────────────────────────────
    The Standings tab's two tables (league-standings.js) and the columns

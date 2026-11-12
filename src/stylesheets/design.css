@@ -926,12 +926,12 @@ html :is(.team-name, .fx-name, .team-box-name, .team-sep-name, .pp-team-name, .s
  * does not fit scrolls inside the card. Everywhere; a new kind of card joins this list. */
 .tdc-card,
 .tdc-card > *,
-.tdc-card :where(.jumbo, .fx-card, .lr-doc, .team-box, .lj-rule-box, .lj-notes, .ls-stage, .cal-month) {
+.tdc-card :where(.jumbo, .fx-card, .lr-doc, .team-box, .lj-rule-box, .lj-notes, .ls-stage, .cal-month, .lu-compare, .lu-team, .qv-pill) {
 	box-sizing: border-box;
 	min-width: 0;
 	max-width: 100%;
 }
-.tdc-card :where(.jumbo, .fx-card, .lr-doc, .team-box, .lj-rule-box, .lj-notes, .ls-stage, .cal-month) {
+.tdc-card :where(.jumbo, .fx-card, .lr-doc, .team-box, .lj-rule-box, .lj-notes, .ls-stage, .cal-month, .lu-compare, .lu-team, .qv-pill) {
 	overflow: auto hidden;
 	scrollbar-width: none;
 }

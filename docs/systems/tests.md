@@ -12,7 +12,7 @@ How the database is tested. Set up 23 Oct 2026, replacing the scratch databases 
 | Run one file | `npx supabase test db supabase/tests/<file>` | Local only |
 | Check local still matches production | `supabase/scripts/schema-fingerprint.sql`, run on both | Production read-only |
 
-Docker Desktop must be running (installed 23 Oct). **Never add `--linked` to `db reset` or `test db`**: that runs against production, which has no rollback.
+Docker must be running. On the Mac (from 12 Nov) that is **OrbStack** (`brew install --cask orbstack`, chosen by UV over Docker Desktop as lighter and quieter); open the app and the `docker` command works. On the old Windows laptop it was Docker Desktop (23 Oct). **Never add `--linked` to `db reset` or `test db`**: that runs against production, which has no rollback.
 
 Before a migration is handed to UV: write it, `db reset` (which applies it after all the others to a clean database), then `test db`. Both must pass.
 
@@ -97,6 +97,7 @@ Call the `tdc_` functions as the user who would call them from the website, neve
 | `058_venues.test.sql` | Who may tie a competition to a venue; played-at giving no rights; a season's list copied on; a fixture's own venue and inheriting, never reaching the match; signed-out reading; editing; the picture |
 | `069_league_public_reads.test.sql` | A league's Season and Standings for somebody not signed in: nothing while not Visible to public, the same as no such season; the names and faces switch (off by default, only whoever runs it); off, no players on a team and Standings display names with only the ranking counts; on, rosters with no ids or status and the withdrawn left off; no surname, player id, match id or pairing anywhere; the exact list of what a stranger can reach |
 | `072_league_placeholders.test.sql` | League placeholders (UV, 11 Nov): a walk-in entered without the placeholder mark still refused, with it allowed; `tdc_add_league_entrant` still refuses a walk-in; an account holder needs no mark; a captain puts a placeholder in the squad and a position; signing up with the placeholder's email finds and claims the record, keeping its id and team place; a fixture's `external_ref` once per season |
+| `073_league_submit_lineup.test.sql` | A lineup in one call (UV, 12 Nov): the other captain refused; a player from the other team, one player in two positions, a position for somebody not here and a fourth position each refused with nothing saved (squad, order and locks as before); the captain's call sets the squad to exactly who was sent and the order as sent, emptying an earlier save; a second call for a locked side refused; the director's call for the other side builds the frames as sent |
 
 **A league needs a team size since `20261023213048`**, and `tests.rules()` carries `team_size: 0` (it is `DEFAULT_RULES`, for matches). A test that makes a league passes `tests.rules('{"team_size": 5}')` or similar.
 

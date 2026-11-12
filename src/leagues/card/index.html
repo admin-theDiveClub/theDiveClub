@@ -7,6 +7,7 @@ extraStyles:
   - /stylesheets/league-join.css
 extraScripts:
   - /scripts/match-settings.js
+  - /scripts/league-standings-def.js
   - /scripts/league-nav.js
   - /scripts/league-card.js
 ---
@@ -75,9 +76,10 @@ extraScripts:
 	</section>
 
 	{% comment %}
-		The league director's side switch. Outside #setup on purpose: #setup
-		hides once the chosen side is locked, and with the switch inside it the
-		director had no way across to the side still to lock (UV, 24 Oct).
+		The league director's side switch: which team's table the director is
+		setting up. Outside the tables on purpose: a locked side's table has no
+		controls, and with the switch inside it the director had no way across
+		to the side still to lock (UV, 24 Oct).
 	{% endcomment %}
 	<div class="toolbar" id="side-switch" hidden>
 		<div class="field">
@@ -87,29 +89,40 @@ extraScripts:
 	</div>
 
 	{% comment %}
-		Before the lock. One row per player (UV, 29 Oct, was two sections): a
-		switch for here tonight (the squad) and a stepper for their position
-		(the order). A captain's own side only — the league director gets a
-		side switch instead.
+		Before both lineups are in, the lineup page (UV, 12 Nov): everybody
+		sees the two teams' season so far side by side, as a football
+		head-to-head (home value, the stat, away value), then each team in a
+		table of its own, its players with the league's Standings columns.
+		A captain manages their own team in its table: a switch for here
+		tonight and a stepper for the position, and Lock the lineup under it
+		(the director: the side chosen above). A player sees the same tables,
+		read-only. Once both lineups are in this gives way to the scorecard.
+		Nothing about tonight's order is shown that tdc_match_lineup does
+		not already reveal to this reader.
 	{% endcomment %}
-	<div id="setup" hidden>
-		<h2 class="lj-heading">Tonight's lineup</h2>
-		<p class="muted" id="squad-hint"></p>
-		<div id="squad-list"></div>
-
-		<div class="btn-row">
+	<section id="lineups" hidden>
+		<h2 class="lj-heading">This season</h2>
+		<div class="lu-compare" id="team-compare"></div>
+		<p class="muted lu-hint" id="squad-hint" hidden></p>
+		<div class="lu-teams" id="team-tables"></div>
+		<div class="btn-row lu-lock" id="lock-row">
 			<button type="button" class="btn btn-primary btn-sm" id="lock-btn">Lock the lineup</button>
 		</div>
-	</div>
+	</section>
 
 	{% comment %}
-		The other side's shape, which is all anybody may see before the lock:
-		how many positions they have filled, never who is in them.
+		Now and next (UV, 12 Nov), at the top of the scorecard: the next four
+		frames without a result, in the night's order, and above them any
+		frame out of that order whose lag is in (a frame is under way from
+		its lag). Each is an inset pill with the frame's L and W, live for
+		the captains and the league director, greyed for everybody else. A
+		frame that gets its result fades out, the list lifts, and the next
+		fades in at the bottom.
 	{% endcomment %}
-	<div class="panel" id="other-side" hidden>
-		<h2 id="other-head" class="lj-heading">The other side</h2>
-		<p class="muted" id="other-detail"></p>
-	</div>
+	<section id="quick" hidden aria-label="Frames being played and next">
+		<h2 class="lj-heading">Now and next</h2>
+		<div class="qv-list" id="quick-list"></div>
+	</section>
 
 	<div id="grid" hidden>
 		<div id="session-list"></div>
@@ -121,13 +134,12 @@ extraScripts:
 		somebody who plays tonight and is neither captain nor league
 		director: their own frames, their name always at the left with the
 		session and frame under it, only their own L and W live; then their
-		own two tables, both shown. The result and signatures below are
-		everybody's, read-only for them.
+		own table, by session (its head-to-head twin removed, UV, 12 Nov).
+		The result and signatures below are everybody's, read-only for them.
 	{% endcomment %}
 	<div id="mine" hidden>
 		<div id="mine-frames"></div>
 		<div class="mine-tables">
-			<div id="mine-h2h"></div>
 			<div id="mine-sessions"></div>
 		</div>
 	</div>
