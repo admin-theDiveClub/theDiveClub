@@ -1861,3 +1861,11 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to judge:* the switches a little smaller below 24rem (5.25rem wide, from 6.25rem) and the names 0.9rem there, so a name wraps at its spaces rather than inside a word.
 *Replaces:* the 24rem rule that put the names side by side and the switches under them.
 *Touches:* `src/stylesheets/league.css`
+
+## 2026-11-12 — A full name's surname is lighter, site-wide
+
+*Decided by UV:* wherever a player's first name and surname are shown, the surname is drawn in a lower weight than the first name, as a rule across the whole site (asked first for the league pages, then made site-wide). **Full names only**: display names are never split. **The server sends the surname on its own**, so a two-word first name splits correctly. **The surname is always 400**, whatever the first name's weight.
+*Rejected:* splitting display names too (they are often nicknames); splitting the full name at its first space in the browser (wrong for "Mary Anne Smith"); one step lighter than the first name (300 where the name is already 400); always 300.
+*Claude's, for UV to judge:* the new field is called `surname`, not `last_name`; a full name in the draw no longer fades when its slot changes (`TDC.liveFade` skips elements holding other elements).
+*So:* `docs/systems/foundations.md`, "Full names: the surname lighter"; `docs/ui.md`, "Full names".
+*Touches:* migration `20261112152540_surnames_apart.sql`, `supabase/tests/074_surnames_apart.test.sql`, `src/scripts/tdc.js`, `src/stylesheets/global.css`, `league-standings.js`, `league-manage.js`, `tournament-bracket.js`, `tournament-manage.js`, `match-new.js`, `match-settings.js`, `match.js`, `player.js`, `nav.js`, `profile.js`, `staff-common.js` and the five staff pages that use its player line

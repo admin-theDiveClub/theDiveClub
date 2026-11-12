@@ -289,6 +289,9 @@ TDCTournamentNav.panel('draw', () => {
 		// and the frames fade when a re-read changes them (render).
 		const slotKey = f.fixture_id + '|' + which;
 		const shown = node('span', 'bracket-name' + (pending ? ' pending' : ''), label);
+		// A full name with its surname lighter (UV, 12 Nov).
+		const full = which === 'home' ? f.home_full_name : f.away_full_name;
+		if (name && fullNames && full) shown.replaceChildren(TDC.fullName(full, which === 'home' ? f.home_surname : f.away_surname));
 		shown.dataset.live = 'bn|' + slotKey;
 		nameCell.append(shown);
 
@@ -1828,16 +1831,19 @@ TDCTournamentNav.panel('draw', () => {
 		(fullNames && [e.first_name, e.last_name].filter(Boolean).join(' ')) || e.display_name;
 
 	// A pill only as wide as its name: the picture on the left, the name in it.
-	function pill(pic, name) {
+	// shown, optional: the name as drawn, a full name with its surname lighter.
+	function pill(pic, name, shown) {
 		const p = node('div', 'bracket-pill');
-		p.append(avatar(pic, name), node('span', 'bracket-pill-name', name));
+		const label = node('span', 'bracket-pill-name', name);
+		if (shown) label.replaceChildren(shown);
+		p.append(avatar(pic, name), label);
 		return p;
 	}
 
 	function renderEntrants() {
 		els.entrantPills.replaceChildren(...entrants.map((e) => {
 			const name = entrantName(e);
-			const p = pill(e.avatar_path, name);
+			const p = pill(e.avatar_path, name, fullNames && (e.first_name || e.last_name) ? TDC.fullNameOf(e.first_name, e.last_name) : null);
 			p.dataset.drag = 'entrant';
 			p.dataset.entrant = e.entrant_id;
 			p.title = e.status === 'confirmed' ? name : name + ' (' + e.status + ')';

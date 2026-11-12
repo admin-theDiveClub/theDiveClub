@@ -619,9 +619,9 @@ TDCLoader.hold((async () => {
 		name.textContent = w.display_name;
 		const sub = document.createElement('div');
 		sub.className = 'muted';
-		const full = [w.first_name, w.last_name].filter(Boolean).join(' ');
 		const added = new Date(w.created_at).toLocaleDateString();
-		sub.textContent = [full, 'added ' + added].filter(Boolean).join(' · ');
+		sub.append(TDC.fullNameOf(w.first_name, w.last_name));   // the surname lighter (UV, 12 Nov)
+		sub.append((sub.childNodes.length ? ' · ' : '') + 'added ' + added);
 
 		const btn = document.createElement('button');
 		btn.type = 'button';

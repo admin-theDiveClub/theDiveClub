@@ -73,7 +73,7 @@ TDCLoader.hold((async () => {
 		redeemPlayer = p;
 		const label = TDCStaff.playerLabel(p);
 		els.redeemSelectedName.textContent = label.name;
-		els.redeemSelectedSub.textContent = label.sub;
+		els.redeemSelectedSub.replaceChildren(label.sub);
 		els.redeemSearchStep.hidden = true;
 		els.redeemForm.hidden = false;
 		TDC.status(els.statusEl, '', '');

@@ -220,7 +220,7 @@ TDCLeagueNav.panel('manage', () => {
 
 		const sub = [];
 		const full = [p.first_name, p.last_name].filter(Boolean).join(' ');
-		if (full && full !== p.display_name) sub.push(full);
+		if (full && full !== p.display_name) sub.push(TDC.fullNameOf(p.first_name, p.last_name));
 		if (box !== 'interested' && !p.confirmed_at) sub.push('Has not confirmed');
 		if (p.team_name) sub.push(node('span', 'team-name', p.team_name));
 		if (p.paid_at) sub.push('Paid');
@@ -420,7 +420,11 @@ TDCLeagueNav.panel('manage', () => {
 		const who = document.createElement('td');
 		who.append(node('span', null, p.display_name));
 		const full = [p.first_name, p.last_name].filter(Boolean).join(' ');
-		if (full && full !== p.display_name) who.append(node('span', 'sub', full));
+		if (full && full !== p.display_name) {
+			const line = node('span', 'sub');
+			line.append(TDC.fullNameOf(p.first_name, p.last_name));
+			who.append(line);
+		}
 
 		// Confirmation is the player's own act. There is no control here by
 		// design: nothing on this page can confirm for somebody.
@@ -593,11 +597,15 @@ TDCLeagueNav.panel('manage', () => {
 			b.append(node('span', 'result-name', p.display_name));
 
 			const sub = [];
-			if (p.full_name && p.full_name !== p.display_name) sub.push(p.full_name);
+			if (p.full_name && p.full_name !== p.display_name) sub.push(TDC.fullName(p.full_name, p.surname));
 			if (p.entrant_status === 'withdrawn') sub.push('Withdrew — add back');
 			else if (p.entrant_status === 'inactive') sub.push('Already in, inactive');
 			else if (p.entrant_status) sub.push('Already in');
-			if (sub.length) b.append(node('span', 'result-sub', sub.join(' · ')));
+			if (sub.length) {
+				const line = node('span', 'result-sub');
+				sub.forEach((bit, i) => line.append(...(i ? [' · ', bit] : [bit])));
+				b.append(line);
+			}
 
 			// Somebody already in is shown so the director can see they are
 			// there, rather than vanishing and reading as "not found". A
@@ -711,10 +719,14 @@ TDCLeagueNav.panel('manage', () => {
 			b.append(node('span', 'result-name', p.display_name));
 
 			const sub = [];
-			if (p.full_name && p.full_name !== p.display_name) sub.push(p.full_name);
+			if (p.full_name && p.full_name !== p.display_name) sub.push(TDC.fullName(p.full_name, p.surname));
 			const held = officials.filter((o) => o.player_id === p.id).map((o) => o.role_name);
 			if (held.length) sub.push('Already ' + held.join(', ').toLowerCase());
-			if (sub.length) b.append(node('span', 'result-sub', sub.join(' · ')));
+			if (sub.length) {
+				const line = node('span', 'result-sub');
+				sub.forEach((bit, i) => line.append(...(i ? [' · ', bit] : [bit])));
+				b.append(line);
+			}
 
 			b.addEventListener('click', () => addOfficial(p.id, p.display_name));
 			return b;

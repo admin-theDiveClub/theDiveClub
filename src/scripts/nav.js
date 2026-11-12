@@ -499,7 +499,7 @@
 		if (accountDisplay) accountDisplay.textContent = bannerName;
 		if (accountFull) {
 			const full = me ? [me.first_name, me.last_name].filter(Boolean).join(' ') : '';
-			accountFull.textContent = full;
+			accountFull.replaceChildren(TDC.fullNameOf(me && me.first_name, me && me.last_name));
 			accountFull.hidden = !full;
 		}
 		showBannerPic(me ? avatarUrlFor(me.avatar_path) : null);

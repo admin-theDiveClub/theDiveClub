@@ -77,7 +77,7 @@ TDCLoader.hold((async () => {
 		selectedPlayer = p;
 		const label = TDCStaff.playerLabel(p);
 		els.selectedName.textContent = label.name;
-		els.selectedSub.textContent = label.sub;
+		els.selectedSub.replaceChildren(label.sub);
 		els.searchStep.hidden = true;
 		els.balanceArea.hidden = false;
 		els.adjustArea.hidden = true;

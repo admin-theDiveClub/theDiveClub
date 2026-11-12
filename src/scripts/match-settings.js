@@ -424,7 +424,9 @@ const TDCMatchDef = (() => {
 			const names = el('div', 'pick-names');
 			names.append(el('div', 'pick-display', chosen.display_name));
 			if (chosen.full_name && chosen.full_name !== chosen.display_name) {
-				names.append(el('div', 'pick-full', chosen.full_name));
+				const full = el('div', 'pick-full');
+				full.append(TDC.fullName(chosen.full_name, chosen.surname));
+				names.append(full);
 			}
 			line.append(names);
 			if (!disabled) {
@@ -466,7 +468,11 @@ const TDCMatchDef = (() => {
 					const b = el('button', 'pick-result');
 					b.type = 'button';
 					b.append(el('span', 'result-name', p.display_name));
-					if (p.full_name) b.append(el('span', 'result-sub', p.full_name));
+					if (p.full_name) {
+						const sub = el('span', 'result-sub');
+						sub.append(TDC.fullName(p.full_name, p.surname));
+						b.append(sub);
+					}
 					b.addEventListener('click', () => onPick(p));
 					return b;
 				}));

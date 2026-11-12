@@ -32,7 +32,7 @@ TDCLoader.hold((async () => {
 	function show(selectedEl, nameEl, subEl, p) {
 		const label = TDCStaff.playerLabel(p);
 		nameEl.textContent = label.name;
-		subEl.textContent = label.sub;
+		subEl.replaceChildren(label.sub);
 		selectedEl.hidden = false;
 	}
 

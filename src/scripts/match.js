@@ -791,7 +791,11 @@
 		const names = div('mv-names');
 		names.append(div('mv-name', p.display_name));
 		const full = p.full_name;
-		if (full !== p.display_name) names.append(div('mv-full', full));
+		if (full !== p.display_name) {
+			const line = div('mv-full');
+			line.append(TDC.fullName(full, p.surname));   // the surname lighter (UV, 12 Nov)
+			names.append(line);
+		}
 		const person = div('mv-person');
 		person.append(pic, names);
 		node.replaceChildren(person);
@@ -3244,6 +3248,7 @@
 				id: p.id,
 				display_name: p.display_name,
 				full_name: fullName(p),
+				surname: (p.first_name || p.last_name) ? p.last_name : null,
 				avatar_url: avatarUrl(p.avatar_path)
 			};
 		}

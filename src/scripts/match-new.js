@@ -195,8 +195,8 @@
 
 		els.chosenDisplay.textContent = opponent.display_name;
 		// Plenty of people sign up with their full name as their display name.
-		els.chosenFull.textContent =
-			(opponent.full_name && opponent.full_name !== opponent.display_name) ? opponent.full_name : '';
+		els.chosenFull.replaceChildren(
+			(opponent.full_name && opponent.full_name !== opponent.display_name) ? TDC.fullName(opponent.full_name, opponent.surname) : '');
 		els.chosenAvatar.textContent = (opponent.display_name || '?').trim().charAt(0).toUpperCase();
 		TDC.profilePic(els.chosenAvatar, opponent.id);   // opens their profile (UV, 5 Nov)
 		if (opponent.avatar_path) {
@@ -228,7 +228,11 @@
 			const b = node('button', 'result');
 			b.type = 'button';
 			b.append(node('span', 'result-name', p.display_name));
-			if (p.full_name) b.append(node('span', 'result-sub', p.full_name));
+			if (p.full_name) {
+				const sub = node('span', 'result-sub');
+				sub.append(TDC.fullName(p.full_name, p.surname));
+				b.append(sub);
+			}
 			b.addEventListener('click', () => { opponent = p; els.search.value = ''; showChosen(); });
 			return b;
 		}));

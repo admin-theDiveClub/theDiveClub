@@ -65,6 +65,8 @@ TDCLeagueNav.panel('standings', () => {
 	try { fullNames = localStorage.getItem(NAMES_KEY) === 'full'; } catch (err) { /* private window: display names */ }
 	els.fullNames.checked = fullNames;
 	const nameOf = (p) => (fullNames && p.full_name) || p.display_name;
+	// The name as drawn: a full name with its surname lighter (UV, 12 Nov).
+	const nameShown = (r) => (fullNames && r.full_name) ? TDC.fullName(r.full_name, r.surname) : r.name;
 	// Somebody not signed in (UV, 10 Nov): tdc_public_league_standings instead,
 	// signed nights and display names only. With the league's names and faces
 	// switch off, Individual Rankings is rank and display name: the counts
@@ -156,9 +158,10 @@ TDCLeagueNav.panel('standings', () => {
 			const pic = node('td', 'sd-pic');
 			pic.append(TDC.profilePic(avatar(r.avatar_path, r.name), signedOut ? null : r.player_id));   // opens their profile (UV, 5 Nov)
 			const name = node('td', 'sd-name');
-			if (signedOut) name.textContent = r.name;
+			if (signedOut) name.append(nameShown(r));
 			else {
-				const a = node('a', null, r.name);
+				const a = node('a');
+				a.append(nameShown(r));
 				a.href = '/players/?p=' + encodeURIComponent(r.player_id);
 				name.append(a);
 			}

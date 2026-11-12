@@ -327,6 +327,43 @@ const TDC = (() => {
 		return supabaseClient.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 	}
 
+	// ─── A full name: the surname in a lower weight (UV, 12 Nov) ───
+	// Wherever a player's first name and surname are shown, the surname is
+	// drawn at 400 (.tdc-surname, global.css) and the first name keeps the
+	// weight of whatever holds it. A display name is never split: it is the
+	// player's own choice, often a nickname. The surname comes on its own
+	// (migration surnames_apart, or the row's last_name), because a first
+	// name can have a space in it ("Mary Anne Smith").
+	//
+	//   TDC.fullName(full, surname)     a DocumentFragment to append
+	//   TDC.fullNameOf(first, last)     the same, from the two names
+	//
+	// Both strings are built from the same row, so the surname always ends
+	// the full name; if it ever does not, that is reported and the name is
+	// drawn whole.
+	function fullName(full, surname) {
+		const out = document.createDocumentFragment();
+		const text = (full || '').trim();
+		const last = (surname || '').trim();
+		if (!text) return out;
+		if (!last) { out.append(text); return out; }
+		if (!text.endsWith(last)) {
+			console.error('[Names] the surname does not end the full name, so it is drawn whole.', { full, surname });
+			out.append(text);
+			return out;
+		}
+		const first = text.slice(0, text.length - last.length);
+		const s = document.createElement('span');
+		s.className = 'tdc-surname';
+		s.textContent = last;
+		if (first) out.append(first);
+		out.append(s);
+		return out;
+	}
+	function fullNameOf(first, last) {
+		return fullName([first, last].map((x) => (x || '').trim()).filter(Boolean).join(' '), last);
+	}
+
 	// ─── A player's picture opens their profile (UV, 5 Nov) ───
 	// Wherever a player's picture (or initials) is shown, a tap on it opens
 	// /players/?p=<id>. The picture is marked, not wrapped in a link: it often
@@ -586,5 +623,5 @@ const TDC = (() => {
 	}
 
 	return { shortUrl, shareButton, error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer,
-		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, leaguePic, teamPic, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade };
+		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, fullName, fullNameOf, leaguePic, teamPic, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade };
 })();

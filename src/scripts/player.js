@@ -149,7 +149,7 @@
 		els.verified.hidden = !p.verified;
 		els.name.textContent = p.display_name;
 		fitName();
-		els.full.textContent = p.full_name || '';
+		els.full.replaceChildren(TDC.fullName(p.full_name, p.surname));
 		els.full.hidden = !p.full_name;
 		document.title = p.display_name + ' — The Dive Club';
 
@@ -391,7 +391,7 @@
 	function aboutRows(p) {
 		const rows = [];
 		const add = (label, value) => rows.push([label, value]);
-		add('Full name', document.createTextNode(p.player.full_name || 'Not given'));
+		add('Full name', p.player.full_name ? TDC.fullName(p.player.full_name, p.player.surname) : document.createTextNode('Not given'));
 		const d = discipline(p);
 		add('Plays', document.createTextNode(d || '–'));
 		const venue = node('button', 'pp-link', 'Not built yet');
@@ -450,7 +450,11 @@
 			const person = node('div', 'pp-c-person');
 			const names = node('div', 'pp-c-names');
 			names.append(node('span', 'pp-c-name', p.player.display_name));
-			if (p.player.full_name) names.append(node('span', 'pp-c-full', p.player.full_name));
+			if (p.player.full_name) {
+				const full = node('span', 'pp-c-full');
+				full.append(TDC.fullName(p.player.full_name, p.player.surname));
+				names.append(full);
+			}
 			person.append(TDC.profilePic(avatar(p.player.avatar_path, p.player.display_name, 'pp-c-pic'), p.player.player_id), names);
 			who.replaceChildren(person);
 		}
@@ -745,7 +749,11 @@
 			row.href = '/players/?p=' + encodeURIComponent(p.id);
 			const names = node('span', 'pp-row-names');
 			names.append(node('span', 'pp-row-name', p.display_name));
-			if (p.full_name) names.append(node('span', 'muted pp-row-sub', p.full_name));
+			if (p.full_name) {
+				const full = node('span', 'muted pp-row-sub');
+				full.append(TDC.fullName(p.full_name, p.surname));
+				names.append(full);
+			}
 			row.append(avatar(p.avatar_path, p.display_name, 'pp-row-pic'), names);
 			return row;
 		}));
@@ -872,7 +880,11 @@
 		link.href = '/players/?p=' + encodeURIComponent(p.player_id);
 		const names = node('span', 'pp-row-names');
 		names.append(node('span', 'pp-row-name', p.display_name));
-		if (p.full_name) names.append(node('span', 'muted pp-row-sub', p.full_name));
+		if (p.full_name) {
+			const full = node('span', 'muted pp-row-sub');
+			full.append(TDC.fullName(p.full_name, p.surname));
+			names.append(full);
+		}
 		link.append(avatar(p.avatar_path, p.display_name, 'pp-row-pic'), names);
 
 		const label = 'Following ' + p.display_name + '. Tap to stop';

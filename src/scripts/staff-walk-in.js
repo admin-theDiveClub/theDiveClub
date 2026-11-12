@@ -41,7 +41,7 @@ TDCLoader.hold((async () => {
 		host = p;
 		const label = TDCStaff.playerLabel(p);
 		els.hostName.textContent = label.name;
-		els.hostSub.textContent = label.sub;
+		els.hostSub.replaceChildren(label.sub);
 		els.hostSelected.hidden = false;
 		els.hostResults.textContent = '';
 	});

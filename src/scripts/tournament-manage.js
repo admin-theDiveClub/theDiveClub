@@ -449,13 +449,17 @@ TDCTournamentNav.panel('entrants', () => {
 			b.append(node('span', 'result-name', p.display_name));
 
 			const sub = [];
-			if (p.full_name && p.full_name !== p.display_name) sub.push(p.full_name);
+			if (p.full_name && p.full_name !== p.display_name) sub.push(TDC.fullName(p.full_name, p.surname));
 			// A walk-in has no account, so they cannot sign in to score
 			// anything. Worth saying before somebody appoints one as a scorer.
 			if (!p.has_account) sub.push('Walk-in — cannot sign in');
 			const held = officials.filter((o) => o.player_id === p.id).map((o) => o.role_name);
 			if (held.length) sub.push('Already ' + held.join(', ').toLowerCase());
-			if (sub.length) b.append(node('span', 'result-sub', sub.join(' · ')));
+			if (sub.length) {
+				const line = node('span', 'result-sub');
+				sub.forEach((bit, i) => line.append(...(i ? [' · ', bit] : [bit])));
+				b.append(line);
+			}
 
 			b.disabled = !p.has_account;
 			if (p.has_account) {
@@ -640,10 +644,14 @@ TDCTournamentNav.panel('entrants', () => {
 			b.append(node('span', 'result-name', p.display_name));
 
 			const sub = [];
-			if (p.full_name && p.full_name !== p.display_name) sub.push(p.full_name);
+			if (p.full_name && p.full_name !== p.display_name) sub.push(TDC.fullName(p.full_name, p.surname));
 			if (!p.has_account) sub.push('Walk-in');
 			if (p.already_in) sub.push('Already entered');
-			if (sub.length) b.append(node('span', 'result-sub', sub.join(' · ')));
+			if (sub.length) {
+				const line = node('span', 'result-sub');
+				sub.forEach((bit, i) => line.append(...(i ? [' · ', bit] : [bit])));
+				b.append(line);
+			}
 
 			// Somebody already in the list is shown so the TD can see they are
 			// there, rather than vanishing and reading as "not found".

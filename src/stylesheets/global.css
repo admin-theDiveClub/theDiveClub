@@ -177,3 +177,8 @@ h1, h2, h3, h4 {
    above and its normal line would be nearly twice as tall (UV, 9 Nov). 1.32 is
    what the overrides come to, so nothing moves elsewhere. */
 h1, h2, h3, h4, .cs-title, .pp-h3, .pp-panel-title, .pp-c-h { line-height: 1.32; }
+
+/* A player's full name: the surname always at 400, the first name at the
+   weight of whatever holds it (UV, 12 Nov). Drawn by TDC.fullName; display
+   names are never split. */
+.tdc-surname { font-weight: 400; }

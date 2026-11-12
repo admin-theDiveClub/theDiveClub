@@ -71,13 +71,13 @@ const TDCStaff = (() => {
 	const typeLabels = { member: 'member', walk_in: 'walk-in', guest: 'guest' };
 
 	// "Display name" plus a line like "Walter Kerr · walk-in · no account".
+	// sub is a DocumentFragment, the surname lighter (UV, 12 Nov): put it in
+	// with replaceChildren, not textContent.
 	function playerLabel(p) {
-		const full = [p.first_name, p.last_name].filter(Boolean).join(' ');
-		const account = p.user_id ? 'has account' : 'no account';
-		return {
-			name: p.display_name,
-			sub: [full, typeLabels[p.player_type] || p.player_type, account].filter(Boolean).join(' · ')
-		};
+		const rest = [typeLabels[p.player_type] || p.player_type, p.user_id ? 'has account' : 'no account'].filter(Boolean).join(' · ');
+		const sub = TDC.fullNameOf(p.first_name, p.last_name);
+		sub.append((sub.childNodes.length ? ' · ' : '') + rest);
+		return { name: p.display_name, sub };
 	}
 
 	// Show players as tappable buttons in container; onPick(player) is called on tap.
@@ -99,7 +99,7 @@ const TDCStaff = (() => {
 			name.textContent = label.name;
 			const sub = document.createElement('div');
 			sub.className = 'sub';
-			sub.textContent = label.sub;
+			sub.replaceChildren(label.sub);
 			btn.append(name, sub);
 			btn.addEventListener('click', () => onPick(p));
 			container.appendChild(btn);
