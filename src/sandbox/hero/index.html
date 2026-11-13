@@ -1,0 +1,77 @@
+---
+layout: layout.html
+title: Hero Sandbox
+description: "A scratch page for the home page's hero: a pool table from above, a shot played again and again. Not part of the product."
+extraStyles:
+  - /stylesheets/sandbox.css
+extraScripts:
+  - /scripts/sandbox-hero.js
+---
+{% comment %}
+	The hero's sandbox (UV, 13 Nov): the animation meant for the home page, to point
+	a visitor to their cue-sports profile. A pool table seen from straight above, the
+	logo mark on the cloth, a spotted cue ball, a striped ball and a solid one; the cue
+	ball plays at them for ever; a potted ball falls into the void and a new one drops in from above. Built from UV's
+	pool sandbox (its table and physics); drawn on a 2D canvas in the site's design.
+	Line art for now; lighting later.
+	Nothing here is wired into the home page.
+{% endcomment %}
+
+<div class="tdc-card wide sandbox hero-sandbox">
+	<h1>Hero</h1>
+	<p class="muted">For the home page: a shot played again and again, live, from wherever the last one left the balls. A ball that drops falls into the void, and a new one drops onto the table from above. The shadows fall away from the page's light. Not linked from the nav.</p>
+
+	<div class="status" id="hero-status" role="status"></div>
+	<div class="hero-stage" id="hero-stage"></div>
+	<p class="muted hero-shot" id="hero-shot" aria-live="polite">Lining up the first shot…</p>
+
+	<div class="hero-controls">
+		<label for="hero-speed">Speed</label>
+		<input type="range" id="hero-speed" data-hero="speed" min="0.25" max="2" step="0.05">
+		<output id="hero-speed-out"></output>
+
+		<label for="hero-cs">Cloth speed</label>
+		<input type="range" id="hero-cs" data-hero="cs" min="1" max="18" step="0.5">
+		<output id="hero-cs-out"></output>
+
+		<label for="hero-cg">Cloth spin</label>
+		<input type="range" id="hero-cg" data-hero="cg" min="2" max="60" step="1">
+		<output id="hero-cg-out"></output>
+
+		<label for="hero-ks">Cushion speed</label>
+		<input type="range" id="hero-ks" data-hero="ks" min="0" max="0.8" step="0.01">
+		<output id="hero-ks-out"></output>
+
+		<label for="hero-kg">Cushion spin</label>
+		<input type="range" id="hero-kg" data-hero="kg" min="0" max="1" step="0.01">
+		<output id="hero-kg-out"></output>
+
+		<label for="hero-bb">Ball–ball</label>
+		<input type="range" id="hero-bb" data-hero="bb" min="0" max="0.5" step="0.01">
+		<output id="hero-bb-out"></output>
+
+		<label for="hero-sw">Swerve</label>
+		<input type="range" id="hero-sw" data-hero="sw" min="0" max="0.6" step="0.01">
+		<output id="hero-sw-out"></output>
+
+		<label for="hero-linepx">Lines (px)</label>
+		<input type="range" id="hero-linepx" data-hero="linePx" min="1" max="4" step="0.25">
+		<output id="hero-linepx-out"></output>
+
+		<label for="hero-shadow">Shadow</label>
+		<input type="range" id="hero-shadow" data-hero="shadow" min="0" max="1" step="0.05">
+		<output id="hero-shadow-out"></output>
+
+		<label for="hero-blur">Blur</label>
+		<input type="range" id="hero-blur" data-hero="blur" min="0" max="2" step="0.05">
+		<output id="hero-blur-out"></output>
+
+		<label for="hero-glow">Glow</label>
+		<input type="range" id="hero-glow" data-hero="glow" min="0" max="2" step="0.05">
+		<output id="hero-glow-out"></output>
+
+		<label for="hero-miss">Misses</label>
+		<input type="range" id="hero-miss" data-hero="miss" min="0" max="1" step="0.05">
+		<output id="hero-miss-out"></output>
+	</div>
+</div>
