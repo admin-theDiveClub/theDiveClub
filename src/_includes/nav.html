@@ -38,6 +38,18 @@
 	</div>
 </nav>
 
+<!-- Getting the app (13 Nov; nav.js, "Getting the app"). In the page's flow,
+     straight under the bar, so it pushes the page down rather than covering
+     it. Phones only, never in the installed app: shown on every page from a
+     visit to the home page until ✕, then again at the next visit to the home
+     page. In the installed app it is the one-off welcome instead. nav.js
+     writes the words and the button. -->
+<div class="nav-get-app" id="nav-get-app" role="region" aria-label="Get the app" hidden>
+	<span class="nav-get-app-text" id="nav-get-app-text"></span>
+	<a class="nav-get-app-go" id="nav-get-app-go" href="/install/"></a>
+	<button type="button" class="nav-get-app-x" id="nav-get-app-x" aria-label="Hide this">✕</button>
+</div>
+
 <div class="nav-menu" id="nav-menu">
 	<!-- Notifications. Hidden until nav.js finds a signed-in player: there is
 	     nothing to show a stranger, and a bell that opens an empty list is
@@ -65,6 +77,13 @@
 			<li><a href="{{ link.url }}">{{ link.label }}</a></li>
 		{% endfor %}
 	</ul>
+
+	<!-- Shown by nav.js on a phone in a browser (13 Nov): always there, for
+	     whoever closed the strip. Gone in the installed app. -->
+	<a class="nav-menu-row nav-get-app-row" id="nav-get-app-row" href="/install/" hidden>
+		<span class="nav-menu-icon"><span class="tdc-ring nav-ring" id="nav-get-app-ring"></span></span>
+		<span>Get the app</span>
+	</a>
 
 	<!-- Shown by nav.js only when the app is running installed, where there is
 	     no browser chrome and therefore no way to reload. -->

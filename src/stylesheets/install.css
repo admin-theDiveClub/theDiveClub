@@ -335,6 +335,85 @@
 .install-phone .i-lbl { fill: var(--ios-text); font-size: 12.5px; text-anchor: middle; }
 .install-phone .i-row { fill: var(--ios-text); font-size: 15.5px; }
 
+/* ── Which steps (13 Nov): "Not your phone?", and the written sections ──
+   One section per kind of device; install.js shows one. Claude's first look,
+   for UV to refine. */
+.install-for[hidden],
+.install-pick[hidden] { display: none; }
+.install-for {
+	display: grid;
+	gap: var(--space-4);
+	justify-items: center;
+}
+.install-link {
+	padding: var(--space-1) var(--space-2);
+	border: 0;
+	background: none;
+	color: var(--color-primary);
+	font: inherit;
+	font-size: 0.9rem;
+	text-decoration: underline;
+	text-underline-offset: 0.2em;
+	cursor: pointer;
+}
+.install-pick {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--space-2);
+}
+.install-pick .install-btn { min-height: 2.25rem; padding: 0 var(--space-4); font-size: 0.9rem; }
+.install-pick .install-btn[aria-pressed="true"] { color: var(--color-primary); box-shadow: var(--nm-sunken); }
+.install-lead,
+.install-note {
+	margin: 0;
+	max-width: 46ch;
+	text-align: center;
+	line-height: 1.5;
+}
+.install-note { color: var(--text-muted); font-size: 0.9rem; }
+.install-note strong { color: var(--text-primary); }
+.install-cta {
+	display: grid;
+	gap: var(--space-2);
+	justify-items: center;
+	text-align: center;
+}
+.install-cta[hidden] { display: none; }
+.install-cta-note { color: var(--text-muted); font-size: 0.85rem; max-width: 40ch; }
+.install-btn-main {
+	display: inline-flex;
+	align-items: center;
+	color: var(--color-primary);
+	text-decoration: none;
+	font-size: 1.1rem;
+}
+.install-list {
+	list-style: none;
+	counter-reset: ins;
+	margin: 0;
+	padding: 0;
+	width: min(100%, 32rem);
+	box-shadow: var(--nm-sunken);
+	border-radius: var(--radius-lg);
+}
+.install-list > li {
+	counter-increment: ins;
+	display: grid;
+	grid-template-columns: 2rem 1fr;
+	column-gap: var(--space-2);
+	padding: var(--space-3) var(--space-4);
+}
+.install-list > li + li { border-top: 1px solid var(--border-color); }
+.install-list > li::before {
+	content: counter(ins);
+	grid-row: span 2;
+	color: var(--color-primary);
+	font-weight: 700;
+}
+.install-list .st { font-weight: 600; }
+.install-list .sd { color: var(--text-muted); font-size: 0.85rem; }
+
 /* The light theme: iOS in light mode, and the site's light screen */
 [data-theme="light"] .install {
 	--ios-bg: #f2f2f7;

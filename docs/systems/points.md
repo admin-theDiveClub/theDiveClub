@@ -52,6 +52,8 @@ The full list is `DATA` in the module, which the page will show. A test checks t
 
 **Every time the site defines new data, the points page is updated too** (UV, 6 Nov; `CLAUDE.md` §3). Add it to `DATA` and the views in `points-formula.js`, and to the read that fills a real match. A new match setting in `TDCMatchDef` needs nothing more.
 
+**Using the app (13 Nov; migration `20261113164109_player_devices`):** `me.profile.uses_app` (has opened the installed app on any device) and `me.profile.app_days` (the days they did) are in `DATA` and `fillPerson`. They will be read from `tbl_player_devices`: any row with `installed` true, and the sum of those rows' `days_seen`. Recording started with that migration and nothing before it can be recovered. No formula uses them yet, and the real read is not built.
+
 ## Rules in the engine, not in a formula
 
 | Rule | How |

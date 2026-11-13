@@ -15,6 +15,99 @@
 // short enough to stay above Safari's half-open Share sheet; the heading gives
 // way so the block sits right under the nav. The page opens in
 // Full until switched (UV, 3 Nov); the choice is kept on the device.
+//
+// Which steps (13 Nov): the page has one section per kind of device, and the
+// first part below shows the one TDCDevice.kind (scripts/device.js) names, or
+// ?for=<kind>. "Not your phone?" lists the others. The animation plays only
+// while the Safari section is showing.
+
+(() => {
+	const AREA = 'Install';
+	const $ = (id) => document.getElementById('ins-' + id);
+	const msg = $('msg');
+	const sections = [...document.querySelectorAll('.install-for')];
+	if (!sections.length || typeof TDCDevice === 'undefined') {
+		TDC.error(AREA, 'the steps could not be chosen.', null, msg);
+		return;
+	}
+
+	const BROWSER = { chrome: 'Chrome', edge: 'Edge', firefox: 'Firefox', opera: 'Opera', samsung: 'Samsung Internet' };
+	const NAME = {
+		'ios-safari': 'iPhone · Safari',
+		'ios-other': 'iPhone · ' + (TDCDevice.os === 'ios' && BROWSER[TDCDevice.browser] || 'Chrome, Edge or Firefox'),
+		'android': 'Android',
+		'in-app': 'Inside another app',
+		'installed': 'In the app',
+		'desktop': 'On a computer'
+	};
+	// What the list under "Not your phone?" offers.
+	const PICK = [
+		['ios-safari', 'iPhone, Safari'],
+		['ios-other', 'iPhone, another browser'],
+		['android', 'Android'],
+		['in-app', 'Inside Instagram, Facebook…']
+	];
+
+	function show(kind) {
+		if (!NAME[kind]) kind = 'desktop';
+		for (const s of sections) s.hidden = s.dataset.for !== kind;
+		$('for-name').textContent = NAME[kind];
+		for (const b of $('for-pick').children) b.setAttribute('aria-pressed', String(b.dataset.for === kind));
+		window.dispatchEvent(new CustomEvent('tdc:install-for', { detail: kind }));
+	}
+
+	// "Not your phone?"
+	const pick = $('for-pick'), change = $('for-change');
+	for (const [kind, label] of PICK) {
+		const b = document.createElement('button');
+		b.type = 'button';
+		b.className = 'install-btn';
+		b.dataset.for = kind;
+		b.textContent = label;
+		b.addEventListener('click', () => show(kind));
+		pick.append(b);
+	}
+	change.addEventListener('click', () => {
+		pick.hidden = !pick.hidden;
+		change.setAttribute('aria-expanded', String(!pick.hidden));
+	});
+
+	// Android: the one-tap install, while the browser offers it.
+	const cta = $('android-cta'), installBtn = $('android-install');
+	const offer = () => { cta.hidden = !TDCDevice.canInstall; $('android-manual').hidden = !cta.hidden; };
+	offer();
+	window.addEventListener('tdc:installable', offer);
+	window.addEventListener('tdc:installed', () => show('installed'));
+	installBtn.addEventListener('click', () => {
+		TDC.busy(installBtn, TDCDevice.install().then((outcome) => {
+			offer();
+			if (outcome === 'unavailable') {
+				TDC.error(AREA, 'the install dialog would not open. Use your browser\'s menu, below.', null, msg);
+			}
+		}), msg);
+	});
+
+	// Inside another app: Chrome can be opened directly on Android.
+	const appName = { instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', snapchat: 'Snapchat', linkedin: 'LinkedIn', twitter: 'X', line: 'LINE', wechat: 'WeChat' }[TDCDevice.inApp];
+	if (appName) $('app-name').textContent = appName;
+	const intent = TDCDevice.inApp ? TDCDevice.openInBrowserUrl() : null;
+	if (intent) {
+		$('open-chrome').href = intent;
+		$('open-android').hidden = false;
+	}
+	$('copy').addEventListener('click', async () => {
+		const note = $('copy-note');
+		try {
+			await navigator.clipboard.writeText('https://thediveclub.org/install/');
+			note.textContent = 'Copied. Open your browser and paste it into the address bar.';
+		} catch (err) {
+			console.error('[' + AREA + '] could not copy the link.', err);
+			note.textContent = 'Copying is blocked here. Type thediveclub.org/install into your browser.';
+		}
+	});
+
+	show(new URLSearchParams(location.search).get('for') || TDCDevice.kind);
+})();
 
 (() => {
 	const AREA = 'Install';
@@ -298,6 +391,7 @@
 
 	// ── Full / Compact ──
 	const stage = $('stage');
+	const section = stage.closest('.install-for');
 	const MODE = 'tdc.install-mode';
 	let mode = 'full';
 	try { mode = localStorage.getItem(MODE) || 'full'; } catch (e) { /* private browsing: Full */ }
@@ -305,7 +399,7 @@
 	function applyMode(m) {
 		mode = m;
 		stage.classList.toggle('is-compact', m === 'compact');
-		stage.parentElement.classList.toggle('is-compact', m === 'compact');
+		stage.closest('.install').classList.toggle('is-compact', m === 'compact' && !section.hidden);
 		$('m-full').setAttribute('aria-pressed', String(m === 'full'));
 		$('m-compact').setAttribute('aria-pressed', String(m === 'compact'));
 		positionSteps();
@@ -327,7 +421,24 @@
 	window.addEventListener('resize', positionSteps);
 	applyMode(mode);
 
+	// Only while the Safari section is showing (13 Nov): a hidden drawing is
+	// battery for nothing. Showing it again starts the loop again.
+	let running = false;
+	function startLoop() {
+		if (running || section.hidden) return;
+		running = true;
+		last = null;
+		dirty = true;
+		requestAnimationFrame(frame);
+	}
+	window.addEventListener('tdc:install-for', startLoop);
+	// Compact's heading rule follows the section: Compact means nothing elsewhere.
+	window.addEventListener('tdc:install-for', () => {
+		stage.closest('.install').classList.toggle('is-compact', mode === 'compact' && !section.hidden);
+	});
+
 	function frame(now) {
+		if (section.hidden) { running = false; return; }
 		if (last !== null && playing) {
 			t += Math.min(0.1, (now - last) / 1000);
 			if (t > D) t = 0;
@@ -345,5 +456,5 @@
 		}
 		requestAnimationFrame(frame);
 	}
-	requestAnimationFrame(frame);
+	startLoop();
 })();

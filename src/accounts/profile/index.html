@@ -130,10 +130,12 @@ extraScripts:
 		<div class="status" id="id-status"></div>
 	</div>
 
-	<!-- Notifications -->
-	<div class="section">
+	<!-- Notifications. id="notifications": the installed app's welcome links
+	     here (nav.js). On an iPhone in a browser push.js turns the button into
+	     a way to the install steps, as notifications only work in the app. -->
+	<div class="section" id="notifications">
 		<h2>Notifications</h2>
-		<p class="muted">On iPhone, add this site to your Home Screen first, then enable notifications from there.</p>
+		<p class="muted" id="notif-hint">On iPhone, add this site to your Home Screen first, then enable notifications from there.</p>
 		<button type="button" class="btn-primary" id="enable-notifications">Enable Notifications</button>
 		<button type="button" class="btn-secondary" id="notif-preset-1">Send Test Notification</button>
 		<div class="status" id="notif-status"></div>

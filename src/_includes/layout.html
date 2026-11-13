@@ -55,6 +55,10 @@
 	<!-- The person's theme and motion choices (scripts/prefs.js), put on <html>
 	     before the first paint so a light page never flashes dark. -->
 	<script src="/scripts/prefs.js?v={{ build.version }}"></script>
+	<!-- The device, the browser and whether this is the installed app
+	     (scripts/device.js). In the head so it hears Android's install offer
+	     however early it comes. -->
+	<script src="/scripts/device.js?v={{ build.version }}"></script>
 	<!-- The light (scripts/page-light.js): the green glow above every page drifts
 	     and the edge shadow falls away from it. In the head, after the styles, so
 	     the first paint has the light where the last page left it. -->

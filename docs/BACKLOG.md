@@ -25,7 +25,7 @@ Built from the project doc `claude/stats-todo.md` on 23 Oct 2026, with everythin
 | 5 | **Offline for the other input pages** — the nav pip and `tdc:offline` / `tdc:online` already work everywhere; only the match page acts on them | Small each |
 | 6 | ~~Payments~~ **Moved to `docs/STATUS.md` §0 (P4), 31 Oct** | |
 | 7 | **An owner finance tracker** — payments, invoices and receipts in the owner tools, with exports for the accountant and financial advisor (UV, 23 Oct) | Medium |
-| 8 | **Add to Home Screen** install prompt | Small |
+| 8 | ~~Add to Home Screen install prompt~~ **Built 13 Nov: `docs/STATUS.md` §1 4as** | |
 | 9 | **Honours on the player page** (UV, 5 Nov: taken off the page until built; nobody should see it before then). Almost every match will carry several honours, so it needs its own design first: what an honour is, which ones exist, how they are earned and stored, trophies for competitions. The first version (5 Nov, Claude's) showed tiles for golden breaks, break and finishes and the best win streak counted from frames, beside a Trophies tile; it is in the 5 Nov commit's history (`renderHonours` in `scripts/player.js`). **6 Nov:** may belong with points, `docs/design/points-and-tiers.md` §10 q5 | Medium |
 | 10 | **Fantasy league** (UV, 6 Nov: "a big one", saved for later). Likely builds on points (`docs/design/points-and-tiers.md`) | Large |
 | 11 | **The pool game / simulator** UV made, placed somewhere on the site (UV, 6 Nov). Waiting on UV for the file or a link | ? |

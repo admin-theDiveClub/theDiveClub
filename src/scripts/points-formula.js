@@ -131,6 +131,8 @@ const TDCPoints = (() => {
 			['me.profile.sign_in_methods', 'number', 'Ways they can sign in: email, Google'],
 			['me.profile.followers', 'number', 'Followers'],
 			['me.profile.following', 'number', 'Following'],
+			['me.profile.uses_app', 'yes/no', 'Has opened the installed app, on any device'],
+			['me.profile.app_days', 'number', 'Days they opened the installed app'],
 			['me.history.frames', 'number', 'Career frames'],
 			['me.history.frames_won', 'number', 'Career frames won'],
 			['me.history.frames_lost', 'number', 'Career frames lost'],
@@ -323,7 +325,9 @@ const TDCPoints = (() => {
 			notifications_enabled: !!(p.profile && p.profile.notifications_enabled),
 			sign_in_methods: asNumber(p.profile && p.profile.sign_in_methods),
 			followers: asNumber(p.profile && p.profile.followers),
-			following: asNumber(p.profile && p.profile.following)
+			following: asNumber(p.profile && p.profile.following),
+			uses_app: !!(p.profile && p.profile.uses_app),
+			app_days: asNumber(p.profile && p.profile.app_days)
 		},
 		history: fillHistory(p.history),
 		lineup_by_captain: !!p.lineup_by_captain,

@@ -1,7 +1,7 @@
 ---
 layout: layout.html
 title: Install the app
-description: "Put The Dive Club on your iPhone's home screen, step by step."
+description: "Put The Dive Club on your phone's home screen, step by step."
 extraStyles:
   - /stylesheets/install.css
 extraScripts:
@@ -9,41 +9,102 @@ extraScripts:
 ---
 {% comment %}
 	The install tutorial (UV, 3 Nov; docs/DECISIONS.md, docs/systems/foundations.md).
-	Safari on an iPhone first: one animation of the whole process, a green dot
-	for the finger, the steps beside it. Full / Compact: Compact holds a small
-	screen and the live step under the nav, short enough to stay in view above
-	Safari's half-open Share sheet while the person follows along.
 
-	The drawing is _includes/install/safari.svg; the timeline and the switch are
-	scripts/install.js. The step list is built there too, from the same list the
-	timeline uses. Not linked from anywhere yet (UV, 3 Nov).
+	One section per kind of device (13 Nov), and install.js shows the one that
+	fits, from TDCDevice.kind (scripts/device.js). "Not your phone?" lists them
+	all; ?for=<kind> opens one directly. The kinds: ios-safari, ios-other,
+	android, in-app, installed, desktop.
+
+	Safari on an iPhone is the drawn one: one animation of the whole process, a
+	green dot for the finger, the steps beside it. Full / Compact: Compact holds
+	a small screen and the live step under the nav, short enough to stay in view
+	above Safari's half-open Share sheet while the person follows along. The
+	drawing is _includes/install/safari.svg; the timeline and the switch are
+	scripts/install.js, which builds the step list from the timeline's own list.
+	The others are written steps until UV's screenshots are drawn.
+
+	Linked from the nav's strip and its "Get the app" row, and from the profile
+	page's notifications on an iPhone.
 {% endcomment %}
 
 <div class="install">
 	<header class="install-head">
-		<span class="install-eyebrow">iPhone · Safari</span>
+		<span class="install-eyebrow" id="ins-for-name">iPhone · Safari</span>
 		<h1>Put The Dive Club on your home screen</h1>
 		<p>It then opens like an app: full screen, one tap from your home screen.</p>
+		<button type="button" class="install-link" id="ins-for-change" aria-expanded="false" aria-controls="ins-for-pick">Not your phone?</button>
+		<div class="install-pick" id="ins-for-pick" role="group" aria-label="Show the steps for" hidden></div>
 	</header>
 
-	<div class="install-stage" id="ins-stage">
-		<div class="install-phone">
-			{% include "install/safari.svg" %}
-		</div>
-		<div class="install-caption" aria-live="polite">
-			<span class="n" id="ins-cap-n">Before you start</span>
-			<span class="t" id="ins-cap-t">Open thediveclub.org in Safari</span>
-		</div>
-		<div class="install-controls">
-			<button class="install-btn is-on" id="ins-play" type="button">Pause</button>
-			<button class="install-btn" id="ins-replay" type="button">Start again</button>
-			<div class="install-seg" role="group" aria-label="Layout">
-				<button type="button" id="ins-m-full" aria-pressed="true">Full</button>
-				<button type="button" id="ins-m-compact" aria-pressed="false">Compact</button>
+	<section class="install-for" data-for="ios-safari" hidden>
+		<div class="install-stage" id="ins-stage">
+			<div class="install-phone">
+				{% include "install/safari.svg" %}
 			</div>
+			<div class="install-caption" aria-live="polite">
+				<span class="n" id="ins-cap-n">Before you start</span>
+				<span class="t" id="ins-cap-t">Open thediveclub.org in Safari</span>
+			</div>
+			<div class="install-controls">
+				<button class="install-btn is-on" id="ins-play" type="button">Pause</button>
+				<button class="install-btn" id="ins-replay" type="button">Start again</button>
+				<div class="install-seg" role="group" aria-label="Layout">
+					<button type="button" id="ins-m-full" aria-pressed="true">Full</button>
+					<button type="button" id="ins-m-compact" aria-pressed="false">Compact</button>
+				</div>
+			</div>
+			<div class="install-window"><ol class="install-steps" id="ins-steps"></ol></div>
 		</div>
-		<div class="install-window"><ol class="install-steps" id="ins-steps"></ol></div>
-	</div>
+		<p class="install-note">The app keeps its own sign-in on an iPhone: <strong>sign in once more</strong> the first time you open it.</p>
+	</section>
+
+	<section class="install-for" data-for="ios-other" hidden>
+		<ol class="install-list">
+			<li><span class="st">Tap Share</span><span class="sd">The square with an arrow. In Chrome and Edge it is in the address bar at the top; in Firefox, tap ☰ first.</span></li>
+			<li><span class="st">Tap Add to Home Screen</span><span class="sd">Scroll the list down if you don't see it.</span></li>
+			<li><span class="st">Leave Open as Web App on, and tap Add</span><span class="sd">The Dive Club is now on your home screen.</span></li>
+		</ol>
+		<p class="install-note">The app keeps its own sign-in on an iPhone: <strong>sign in once more</strong> the first time you open it.</p>
+		<p class="install-note">Easier to follow? Open thediveclub.org/install in Safari for the steps drawn out.</p>
+	</section>
+
+	<section class="install-for" data-for="android" hidden>
+		<div class="install-cta" id="ins-android-cta" hidden>
+			<button type="button" class="install-btn install-btn-main" id="ins-android-install">Install the app</button>
+			<span class="install-cta-note">One tap, then Install.</span>
+		</div>
+		<p class="install-note" id="ins-android-manual">If there's no Install button above, use your browser's menu:</p>
+		<ol class="install-list">
+			<li><span class="st">Chrome: tap ⋮, then Add to home screen</span><span class="sd">It may say Install app instead. Then tap Install.</span></li>
+			<li><span class="st">Samsung Internet: tap ☰, then Add page to, then Home screen</span><span class="sd">Some versions say Install app.</span></li>
+			<li><span class="st">Firefox: tap ⋮, then Install</span><span class="sd">Or Add to Home screen.</span></li>
+		</ol>
+	</section>
+
+	<section class="install-for" data-for="in-app" hidden>
+		<p class="install-lead">You've opened this inside <strong id="ins-app-name">another app</strong>. Apps can't be installed from here, so open the page in your phone's browser first.</p>
+		<div class="install-cta" id="ins-open-android" hidden>
+			<a class="install-btn install-btn-main" id="ins-open-chrome" href="#">Open in Chrome</a>
+		</div>
+		<ol class="install-list" id="ins-open-steps">
+			<li><span class="st">Tap ⋯ or ⋮ at the top or bottom of the screen</span><span class="sd">It's the app's own menu, usually in a corner.</span></li>
+			<li><span class="st">Tap Open in browser</span><span class="sd">It may say Open in Safari, Open in Chrome or Open in external browser.</span></li>
+			<li><span class="st">Then come back to this page</span><span class="sd">It will show the steps for your browser.</span></li>
+		</ol>
+		<div class="install-cta">
+			<button type="button" class="install-btn" id="ins-copy">Copy the link</button>
+			<span class="install-cta-note" id="ins-copy-note">No menu? Copy the link and paste it into your browser.</span>
+		</div>
+	</section>
+
+	<section class="install-for" data-for="installed" hidden>
+		<p class="install-lead">You're already in the app. Nothing more to do.</p>
+		<p class="install-note">Turn on notifications on your <a href="/accounts/profile/">profile</a> so you hear about your matches.</p>
+	</section>
+
+	<section class="install-for" data-for="desktop" hidden>
+		<p class="install-lead">The app is for your phone. Open <strong>thediveclub.org/install</strong> on your phone and it will show you the steps.</p>
+	</section>
 
 	<div class="status" id="ins-msg"></div>
 </div>

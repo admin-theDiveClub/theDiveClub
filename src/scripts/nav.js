@@ -809,6 +809,144 @@
 
 	window.TDCNet = { get online() { return navigator.onLine; } };
 
+	// ─── Getting the app (13 Nov) ─────────────────────────────────────
+	// docs/systems/foundations.md, "Getting the app". UV's rules:
+	//   - Phones only, never in the installed app.
+	//   - The strip shows on every page from a visit to the home page until ✕;
+	//     ✕ hides it until the next visit to the home page. A first visit
+	//     anywhere shows it too.
+	//   - "Get the app" in the menu is always there on a phone in a browser.
+	// On Android, where the browser offers a one-tap install (device.js), the
+	// strip's button installs directly; everywhere else it opens /install/.
+	//
+	// In the installed app the strip is a one-off welcome instead: signed out,
+	// "sign in once more" (an iPhone's app keeps its own sign-in); signed in,
+	// "turn on notifications" until the phone has been asked. ✕ ends it.
+	//
+	// And signed in, it records once a day which device and browser this is
+	// and whether it is the app (tdc_record_device).
+	(function () {
+		const D = window.TDCDevice;
+		if (!D) {
+			console.error('[' + AREA + '] device.js is missing, so the install strip is off.');
+			return;
+		}
+		const strip = document.getElementById('nav-get-app');
+		const text  = document.getElementById('nav-get-app-text');
+		const go    = document.getElementById('nav-get-app-go');
+		const x     = document.getElementById('nav-get-app-x');
+		const row   = document.getElementById('nav-get-app-row');
+
+		const OFF = 'tdc.get-app-off';        // ✕ pressed since the last visit to the home page
+		const WELCOMED = 'tdc.app-welcomed';  // the app's welcome is over
+		const SEEN = 'tdc.device-seen';       // the last day's record, so it is sent once a day
+		const store = {
+			get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+			set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* not kept: it shows again */ } },
+			del(k) { try { localStorage.removeItem(k); } catch (e) { /* nothing kept to clear */ } }
+		};
+		const path = location.pathname;
+		const onHome = path === '/' || path === '/index.html';
+		const onInstall = path.startsWith('/install');
+
+		let onGo = null;   // what the strip's button does, when it is not a plain link
+		function fill(words, label, href, action) {
+			if (!strip || !text || !go) return;
+			text.textContent = words;
+			go.textContent = label;
+			go.href = href;
+			onGo = action || null;
+			strip.hidden = false;
+		}
+		function hide() { if (strip) strip.hidden = true; }
+		if (go) go.addEventListener('click', (e) => {
+			if (!onGo) return;
+			e.preventDefault();
+			onGo();
+		});
+
+		TDC.getSession(AREA).then((session) => {
+			if (session) record(session);
+
+			if (D.installed) {
+				welcome(session);
+				return;
+			}
+			if (!D.mobile) return;
+
+			if (row) {
+				row.hidden = false;
+				makeRing('install', 'nav-get-app-ring', ['install'], { install: 'Get the app' });
+			}
+			if (onHome) store.del(OFF);
+			if (onInstall || store.get(OFF)) return;
+
+			const offer = () => {
+				if (D.canInstall) {
+					fill('Get the app: one tap and it\'s on your home screen.', 'Install', '/install/', async () => {
+						const outcome = await D.install();
+						if (outcome === 'accepted') hide();
+						else if (outcome === 'unavailable') location.href = '/install/';
+					});
+				} else if (D.kind === 'in-app') {
+					fill('Open this in your browser to get the app.', 'How', '/install/');
+				} else {
+					fill('Get the app on your home screen.', 'How', '/install/');
+				}
+			};
+			offer();
+			// Android's offer often comes after the page has loaded.
+			window.addEventListener('tdc:installable', () => { if (strip && !strip.hidden) offer(); });
+		});
+
+		window.addEventListener('tdc:installed', () => {
+			hide();
+			if (row) row.hidden = true;
+		});
+
+		if (x) x.addEventListener('click', () => {
+			hide();
+			store.set(D.installed ? WELCOMED : OFF, '1');
+		});
+
+		function welcome(session) {
+			if (store.get(WELCOMED)) return;
+			if (!session) {
+				fill(D.os === 'ios'
+					? 'You\'re in the app. Sign in once more here: the app keeps its own sign-in.'
+					: 'You\'re in the app. Sign in to see your matches.',
+				'Sign in', '/accounts/?next=' + encodeURIComponent(path + location.search));
+				return;
+			}
+			// Signed in: notifications, until the phone has asked.
+			const canAsk = 'Notification' in window && 'PushManager' in window && Notification.permission === 'default';
+			if (!canAsk) {
+				store.set(WELCOMED, '1');
+				return;
+			}
+			if (path.startsWith('/accounts/profile')) return;   // the button is on this page
+			fill('You\'re in the app. Turn on notifications to hear about your matches.', 'Turn on', '/accounts/profile/#notifications');
+		}
+
+		// Once a day per device, browser and app-or-not, for each person:
+		// whether people use the app is something the points will count
+		// (docs/systems/points.md), and every day not recorded is lost.
+		function record(session) {
+			const today = new Date().toISOString().slice(0, 10);
+			const key = [session.user.id, D.os, D.browser, D.installed, today].join('|');
+			if (store.get(SEEN) === key) return;
+			supabaseClient.rpc('tdc_record_device', {
+				p_os: D.os, p_browser: D.browser, p_installed: D.installed
+			}).then(({ error }) => {
+				if (error) {
+					console.error('[' + AREA + '] could not record this device.', error);
+					return;
+				}
+				store.set(SEEN, key);
+			});
+		}
+	})();
+
 	// ─── Reload ───────────────────────────────────────────────────────
 	// An installed app has no address bar and no reload button, so there is
 	// no way out of a page that has gone stale — a live page whose socket

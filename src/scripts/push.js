@@ -20,9 +20,23 @@ function urlBase64ToUint8Array(base64String) {
 
 // The dots show it's working, on the button pressed (UV, 29 Oct: never a
 // loading message).
-document.getElementById('enable-notifications').addEventListener('click', (e) => {
-	TDC.busy(e.currentTarget, enableNotifications(), document.getElementById('notif-status'));
-});
+//
+// On an iPhone in a browser (13 Nov) the phone will not send a website
+// notifications at all, only the installed app, so the button leads to the
+// install steps instead of failing.
+if (typeof TDCDevice !== 'undefined' && TDCDevice.os === 'ios' && !TDCDevice.installed) {
+	const btn = document.getElementById('enable-notifications');
+	const hint = document.getElementById('notif-hint');
+	const test = document.getElementById('notif-preset-1');
+	btn.textContent = 'Get the app first';
+	if (hint) hint.textContent = 'On an iPhone, notifications only come to the app. Put it on your home screen, open it from there, and turn them on here.';
+	if (test) test.hidden = true;
+	btn.addEventListener('click', () => { location.href = '/install/'; });
+} else {
+	document.getElementById('enable-notifications').addEventListener('click', (e) => {
+		TDC.busy(e.currentTarget, enableNotifications(), document.getElementById('notif-status'));
+	});
+}
 
 async function enableNotifications() {
 	const statusEl = document.getElementById('notif-status');

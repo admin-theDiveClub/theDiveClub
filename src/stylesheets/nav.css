@@ -180,6 +180,50 @@
 .nav-menu-row:disabled { opacity: 0.4; cursor: default; }
 .nav-notify { margin-top: 1rem; }
 .nav-reload { margin-bottom: 1rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem; }
+/* "Get the app" is a link, so it drops a link's underline (13 Nov). */
+a.nav-menu-row { text-decoration: none; }
+.nav-get-app-row { margin-bottom: 1rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem; }
+
+/* ── Getting the app: the strip under the bar (13 Nov) ───────────────
+ * In the page's flow, so it pushes the page down rather than covering it,
+ * and scrolls away with it. Claude's first look, for UV to refine. */
+.nav-get-app {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	padding: var(--space-2) max(var(--space-4), env(safe-area-inset-right, 0px)) var(--space-2) max(var(--space-4), env(safe-area-inset-left, 0px));
+	background: var(--bg-base);
+	box-shadow: var(--nm-sunken);
+	font-size: 0.9rem;
+	line-height: 1.3;
+}
+.nav-get-app[hidden] { display: none; }
+.nav-get-app-text { flex: 1 1 auto; min-width: 0; color: var(--text-primary); }
+.nav-get-app-go {
+	flex: 0 0 auto;
+	padding: var(--space-1) var(--space-3);
+	border: 0;
+	border-radius: var(--radius-pill);
+	background: none;
+	box-shadow: var(--nm-raised-small);
+	color: var(--color-primary);
+	font: inherit;
+	font-weight: 600;
+	text-decoration: none;
+	white-space: nowrap;
+	cursor: pointer;
+}
+.nav-get-app-x {
+	flex: 0 0 auto;
+	width: 2.25rem;
+	height: 2.25rem;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--text-muted);
+	font-size: 1rem;
+	cursor: pointer;
+}
 /* The ring and its pip, so the pip sits on the ring rather than the row. */
 .nav-menu-icon {
 	position: relative;
