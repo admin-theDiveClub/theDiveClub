@@ -210,8 +210,8 @@
 }
 
 [data-theme="light"] {
-  /* Teal is deepened so it still reads as text and as a border on cream. */
-  --color-primary: #594f4f;
+  /* The brand teal, the dark theme's green equivalent (UV, 12 Nov). */
+  --color-primary: #2b9fa6;   /* the site's brand teal (restored UV, 12 Nov) */
   --color-on-primary: #f4e8d2;
 
   --bg-base: #f4e8d2;
