@@ -1878,3 +1878,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to judge:* the strip's look and words; the installed app's one-off welcome (sign in once more, then turn on notifications); `/install/`'s written steps for iPhone Chrome, Android and in-app browsers until they are drawn; the record as one row per player, device, browser and app-or-not, once a day, Johannesburg days, unknown values refused.
 *So:* `docs/systems/foundations.md`, "Getting the app"; `docs/systems/points.md`, "Using the app".
 *Touches:* `src/scripts/device.js` (new), `_includes/layout.html`, `_includes/nav.html`, `scripts/nav.js`, `stylesheets/nav.css`, `scripts/ring-status.js`, `install/index.html`, `scripts/install.js`, `stylesheets/install.css`, `accounts/profile/index.html`, `scripts/push.js`, `scripts/points-formula.js`, migration `20261113164109_player_devices.sql`, `supabase/tests/075_player_devices.test.sql`
+
+## 2026-11-14 — The pool-table banner is the site's banner; today's banner is its reduced-motion form
+
+*Decided by UV:* the banner built on `/sandbox/banner/` (the hero's table as the banner's edge: cushions and pockets, no markings, the balls playing shots over the banner's text, frosted, the cushions following the banner as it opens and closes and pushing the balls) becomes **the normal banner, site-wide**. **The existing banner** (the sunken card with the green line inside its edge, `league.css` `.jumbo`) **stays, as the banner under reduced motion.**
+*Why:* UV's design for the banner; the animation is the motion, so less motion keeps the still banner the site already has.
+*Also decided by UV, the same day:* the **top banners only** (the league's Season tab, the scorecard's top banner, the tournament poster, the venue page); the scorecard's result-and-signatures section keeps today's look, as it holds a form. Switching less motion on or off changes the banners **straight away**. The shot readout stays on the sandbox only.
+*So:* `docs/systems/file-map.md`, the banner sandbox; the build onto the real banners is planned in `docs/STATUS.md` §1 4au.
