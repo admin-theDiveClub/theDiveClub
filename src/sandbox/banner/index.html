@@ -1,81 +1,68 @@
 ---
 layout: layout.html
 title: Banner Sandbox
-description: "A scratch page for the new banner: the hero's pool table and balls, to be adjusted before it is built. Not part of the product."
+description: "A scratch page for the new banner: a live pool table as the banner's edge, its balls rolling over the banner. Not part of the product."
 extraStyles:
+  - /stylesheets/league.css
+  - /stylesheets/league-join.css
   - /stylesheets/sandbox.css
 extraScripts:
   - /scripts/sandbox-banner.js
 ---
 {% comment %}
-	The banner's sandbox (UV, 14 Nov): a copy of /sandbox/hero/, whose table and balls
-	are to become the new banner design. Adjusted here before it is built; the hero's page is
-	kept as it was for later. The hero's notes follow.
-
-	The hero's sandbox (UV, 13 Nov): the animation meant for the home page, to point
-	a visitor to their cue-sports profile. A pool table seen from straight above, the
-	logo mark on the cloth, a spotted cue ball, a striped ball and a solid one; the cue
-	ball plays at them for ever; a potted ball falls into the void and a new one drops in from above. Built from UV's
-	pool sandbox (its table and physics); drawn on a 2D canvas in the site's design.
-	Line art for now; lighting later.
-	Nothing here is wired into the home page.
+	The banner's sandbox (UV, 14 Nov): the hero's table and balls (/sandbox/hero/, kept
+	as it was for later) as the new banner design. The banner is the captain's scorecard
+	banner (leagues/card/index.html: .jumbo.card-jumbo, the same markup and stylesheets,
+	so the same size), with made-up teams and facts and its details folded under the
+	arrow. Its green line becomes the table's edge: the table takes the banner's shape
+	and size, and only its cushions and pockets follow the banner as it opens and closes.
+	No markings. The balls roll over the banner's text, frosted where they are see-through.
+	Nothing here is wired into a real banner.
 {% endcomment %}
 
 <div class="tdc-card wide sandbox banner-sandbox">
 	<h1>Banner</h1>
-	<p class="muted">For the home page: a shot played again and again, live, from wherever the last one left the balls. A ball that drops falls into the void, and a new one drops onto the table from above. The shadows fall away from the page's light. Not linked from the nav.</p>
+	<p class="muted">The scorecard's banner with the hero's table as its edge. Open and close it with the arrow: the cushions follow it and push the balls. Not linked from the nav.</p>
 
 	<div class="status" id="banner-status" role="status"></div>
-	<div class="banner-stage" id="banner-stage"></div>
-	<p class="muted banner-shot" id="banner-shot" aria-live="polite">Lining up the first shot…</p>
 
-	<div class="banner-controls">
-		<label for="banner-speed">Speed</label>
-		<input type="range" id="banner-speed" data-banner="speed" min="0.25" max="2" step="0.05">
-		<output id="banner-speed-out"></output>
-
-		<label for="banner-cs">Cloth speed</label>
-		<input type="range" id="banner-cs" data-banner="cs" min="1" max="18" step="0.5">
-		<output id="banner-cs-out"></output>
-
-		<label for="banner-cg">Cloth spin</label>
-		<input type="range" id="banner-cg" data-banner="cg" min="2" max="60" step="1">
-		<output id="banner-cg-out"></output>
-
-		<label for="banner-ks">Cushion speed</label>
-		<input type="range" id="banner-ks" data-banner="ks" min="0" max="0.8" step="0.01">
-		<output id="banner-ks-out"></output>
-
-		<label for="banner-kg">Cushion spin</label>
-		<input type="range" id="banner-kg" data-banner="kg" min="0" max="1" step="0.01">
-		<output id="banner-kg-out"></output>
-
-		<label for="banner-bb">Ball–ball</label>
-		<input type="range" id="banner-bb" data-banner="bb" min="0" max="0.5" step="0.01">
-		<output id="banner-bb-out"></output>
-
-		<label for="banner-sw">Swerve</label>
-		<input type="range" id="banner-sw" data-banner="sw" min="0" max="0.6" step="0.01">
-		<output id="banner-sw-out"></output>
-
-		<label for="banner-linepx">Lines (px)</label>
-		<input type="range" id="banner-linepx" data-banner="linePx" min="1" max="4" step="0.25">
-		<output id="banner-linepx-out"></output>
-
-		<label for="banner-shadow">Shadow</label>
-		<input type="range" id="banner-shadow" data-banner="shadow" min="0" max="1" step="0.05">
-		<output id="banner-shadow-out"></output>
-
-		<label for="banner-blur">Blur</label>
-		<input type="range" id="banner-blur" data-banner="blur" min="0" max="2" step="0.05">
-		<output id="banner-blur-out"></output>
-
-		<label for="banner-glow">Glow</label>
-		<input type="range" id="banner-glow" data-banner="glow" min="0" max="2" step="0.05">
-		<output id="banner-glow-out"></output>
-
-		<label for="banner-miss">Misses</label>
-		<input type="range" id="banner-miss" data-banner="miss" min="0" max="1" step="0.05">
-		<output id="banner-miss-out"></output>
+	{% comment %}
+		The scorecard's banner, as leagues/card/index.html has it, made-up content. The
+		table and balls are drawn in the wrapper round it, not in it: a banner clips
+		sideways (design.css, "nothing leaves its card"), and the table reaches out into
+		the page card's margin.
+	{% endcomment %}
+	<div class="banner-wrap">
+	<section class="jumbo card-jumbo card-state-lineups banner-stage" id="banner-stage">
+		<div class="cj-head">
+			<div class="cj-team">
+				<span class="team-pic cj-pic" data-banner-pic></span>
+				<span class="cj-name">Corner Pocket</span>
+			</div>
+			<div class="cj-mid">
+				<span class="badge jumbo-status">Lineups</span>
+				<span class="cj-v">:</span>
+			</div>
+			<div class="cj-team">
+				<span class="team-pic cj-pic" data-banner-pic></span>
+				<span class="cj-name">The Gantry Sharks</span>
+			</div>
+		</div>
+		<details class="set-group cj-more" open>
+			<summary class="cj-more-arrow" aria-label="The night's details"></summary>
+			<p class="cj-detail">Both captains still to send their lineups.</p>
+			<dl class="jumbo-facts">
+				<div class="jumbo-fact"><dt>League</dt><dd>Friday League · Season 1</dd></div>
+				<div class="jumbo-fact"><dt>Date</dt><dd>Friday, 20 November 2026</dd></div>
+				<div class="jumbo-fact"><dt>Time</dt><dd>19:00</dd></div>
+				<div class="jumbo-fact"><dt>Round</dt><dd>3</dd></div>
+				<div class="jumbo-fact"><dt>Tables</dt><dd>1, 2</dd></div>
+				<div class="jumbo-fact"><dt>Players</dt><dd>5 a side</dd></div>
+				<div class="jumbo-fact"><dt>Reserves</dt><dd>Up to 2 a team</dd></div>
+				<div class="jumbo-fact"><dt>Frames</dt><dd>25</dd></div>
+			</dl>
+		</details>
+	</section>
 	</div>
+	<p class="muted banner-shot" id="banner-shot" aria-live="polite">Lining up the first shot…</p>
 </div>

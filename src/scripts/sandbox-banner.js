@@ -1,5 +1,13 @@
-// The banner (UV, 14 Nov; /sandbox/banner/), copied from the hero's sandbox (/sandbox/hero/,
-// kept as it was for later) to become the new banner design. The hero's notes follow.
+// The banner (UV, 14 Nov; /sandbox/banner/): the hero's table and balls (/sandbox/hero/,
+// kept as it was for later) as the new banner design, on the captain's scorecard banner.
+// What changed from the hero: the table takes the banner's shape and size, its edge on
+// the banner's line (the ::before, hidden), with no markings or logo; the ball's size
+// follows the banner's width only, so opening and closing the banner moves the right
+// and bottom cushions and nothing else, and a cushion moving in pushes the balls it
+// reaches (pushWalls); no shot is planned or played while the banner changes size; the
+// pockets are the hero's, and the cushions come in until they fit in the card; the balls roll over the banner's
+// text on a canvas of their own, each over a frosted circle (a backdrop blur); and a
+// ball's line undraws from the moment that ball stops. The hero's notes follow.
 // The hero (UV, 13 Nov; /sandbox/hero/): a pool table seen from straight above, the
 // logo mark in the middle of the cloth, a spotted cue ball and two object balls, one
 // with a stripe and one solid with the stripe cut out of it. The cue ball plays at an
@@ -35,45 +43,38 @@
 	var statusEl = document.getElementById('banner-status');
 	var shotEl = document.getElementById('banner-shot');
 	if (!stage) return;
+	var wrap = stage.parentElement;   // the table and balls are drawn here, round the banner
 	try { init(); } catch (e) { TDC.error(AREA, 'the table could not be drawn.', e, statusEl); }
 
 	function init() {
 		var root = document.documentElement;
 
-		/* ---------- table geometry (from the game) ---------- */
+		/* ---------- table geometry (from the game), live: the banner's shape ---------- */
+		// The banner (UV, 14 Nov): the table takes the banner's shape and size, its edge on
+		// the line the banner had just inside its own. The balls and pockets keep their
+		// size as the banner opens and closes; only the cushions move (buildTable). There
+		// are no markings and no logo: the banner's own content is shown on the cloth.
 		var R = 0.5;                    // ball radius
-		var HX = 9, HZ = 18;            // half-width, half-length of the bed
-		var LX = HX - R, LZ = HZ - R;   // ball-CENTRE limits at the cushions
 		var D2 = R * 2;                 // contact distance between two balls
-		var CW = 2.0;                   // rail width (cushion and wood, as on a real table)
-		var OX = HX + CW, OZ = HZ + CW; // the table's outer edge (not drawn): past it a ball is lost
-		// The pockets, from a real English 7ft table (UV, 13 Nov: the game's middle pockets
-		// stuck far out into the bed). The mouth is the gap between the cushions' noses:
-		// about 3.5in at a corner and a little wider at the middle, in 2in balls 1.8 and
-		// 1.9. The cushion is cut back there into two short straight jaws that lead to the
-		// hole; the hole is as wide as the mouth and lies behind it, in the rail: a corner's
-		// on the corner point, a middle's just behind the cushion's nose line, so it comes
-		// only MID_LIP into the bed.
+		// The pockets, from a real English 7ft table (UV, 13 Nov). The mouth is the gap
+		// between the cushions' noses: about 3.5in at a corner and a little wider at the
+		// middle, in 2in balls 1.8 and 1.9. The cushion is cut back there into two short
+		// straight jaws that lead to the hole; the hole is as wide as the mouth and lies
+		// behind it, in the rail: a corner's on the corner point, a middle's just behind
+		// the cushion's nose line, so it comes only MID_LIP into the bed. The hero's pockets
+		// exactly (UV, 14 Nov: "keep the current pocket design"); on the banner the
+		// cushions come in from the card's edge until the pockets fit inside it (tableIn).
 		var CM = 1.8, MM = 1.9, MID_LIP = 0.15;
-		// How far the table reaches, holes included: there is no rail drawn (UV, 13 Nov)
-		var EX = HX + MM - MID_LIP, EZ = HZ + CM / 2;
+		var CA = CM / Math.SQRT2;       // how far along a rail a corner's mouth reaches
+		var EDGE_PX = 4;                // CSS px a pocket's line and glow reach past its hole: kept inside the page card
+		var FIT_GAP = 0;                // EDGE_PX in balls, set by fit
+		var POCKET_MAX = 32;            // CSS px: the widest a pocket may be (UV, 14 Nov)
 		var PIT_Y = -R - 0.75;          // a potted ball's centre, at rest in the pocket
 		var GRAV = 26, STOPV = 0.22, PMIN = 5, PMAX = 48;
-		var MARGIN = 1.6;               // round the table, for its shadows
-		var LOGO_PAD = 2.2;             // the logo fills the bed between the markings, this far in
 		var SPOT_R = 0.28;              // a spot's angular radius on the cue ball
 		var BAND = 0.40;                // half the stripe's angular width
 		var TRAIL_MAX = 600, TRAIL_STEP = 0.06;
-		// The markings UV puts on the club's tables (13 Nov, from photos of them; the sizes
-		// are read from the photos until UV measures them): the baulk line across the
-		// table a fifth of its length from the baulk cushion, broken at its centre and
-		// either side, with a small dot in each break; and a cross for the black's spot
-		// at the other end, a fifth of the length from the top cushion.
-		var BAULK_Z = HZ - HZ * 2 / 5;   // the baulk end is +z (the foot of the screen upright)
-		var SPOT_Z = -BAULK_Z;
-		var BAULK_DOTS = [-2.5, 0, 2.5], BAULK_GAP = 0.45, BAULK_DOT = 0.11;
-		// The cross is longer along the table than across it (UV's photo)
-		var CROSS_LONG = 1.15, CROSS_SHORT = 0.68;
+		var UNDRAW = 1;                 // seconds a ball's line takes to undraw once it stops
 		// A ball potted falls into the void; a new one drops from above the camera (UV,
 		// 13 Nov). The camera is CAM_D above the cloth: a ball nearer it is drawn larger
 		// and further from the middle of the screen, as a camera sees it.
@@ -82,21 +83,56 @@
 		// little roll from the first one, as a dropped ball seldom lands dead.
 		var CAM_D = 46, DROP_H = 40, VOID_Y = -5, FALL_G = 120, BOUNCE = 0.35, SETTLE = 3;
 
+		// Set by buildTable from the banner: the bed's half-width (x, across the screen)
+		// and half-height (z, down it), the ball-centre limits at the cushions; and by
+		// fit, the card's half-width and half-height and its corners' radius (all in balls)
+		var HX = 9, HZ = 18, LX = 0, LZ = 0, OX = 0, OZ = 0, CX = 9.5, CZ = 18.5, CARD_R = 1;
+		var midOnX = true;              // the middle pockets on the left and right cushions, or the top and bottom
+		var pockets = [], JAWS = [], BED = [];
+
+		// Does a hole of radius r at (x, z) lie inside the card, with FIT_GAP to spare?
+		function fitsCard(x, z, r) {
+			var ex = CX - FIT_GAP, ez = CZ - FIT_GAP, k = Math.max(0, CARD_R - FIT_GAP);
+			var ax = Math.abs(x), az = Math.abs(z);
+			if (ax + r > ex || az + r > ez) return false;
+			if (ax > ex - k && az > ez - k) return Math.hypot(ax - (ex - k), az - (ez - k)) + r <= k;
+			return true;
+		}
+		// How far in from the banner's edge the cushions sit (UV, 14 Nov: "pockets will
+		// force the cushion edge inside of the card"): from the edge itself (line, 0;
+		// UV, 14 Nov: "less padding between card edge and the new banner border"), each
+		// side only as far in as its own pockets need, so the long sides, with the middle
+		// pockets, come in further than the short ones
+		function tableIn(line) {
+			var onX = CZ >= CX, mx = line, mz = line, rm = MM / 2;
+			// The middle pockets' sides: the hole reaches MM - MID_LIP past the cushion
+			while (onX ? !fitsCard(CX - mx + rm - MID_LIP, 0, rm) : !fitsCard(0, CZ - mz + rm - MID_LIP, rm)) {
+				if (onX) mx += 0.02; else mz += 0.02;
+				if (mx > CX || mz > CZ) break;
+			}
+			// The corners: a hole on the corner point
+			while (!fitsCard(CX - mx, CZ - mz, CM / 2) && mx < CX && mz < CZ) { mx += 0.02; mz += 0.02; }
+			return [CX - mx, CZ - mz, mx, mz];
+		}
+
 		// Each pocket: its hole (x, z, r), its mouth's centre (mx, mz), the way into the
 		// table (ix, iz), its two jaws (J: the cushion's nose, T: where the jaw meets the
 		// hole), the point a shot aims at and how wide an angle it takes a ball from
-		function corner(sx, sz) {
-			var ix = -sx / Math.SQRT2, iz = -sz / Math.SQRT2, A = CM / Math.SQRT2;
-			return mkPocket(true, sx * HX, sz * HZ, CM / 2, ix, iz,
-				[sx * (HX - A), sz * HZ], [sx * HX, sz * (HZ - A)]);
+		function corner(sx, sz, key) {
+			var ix = -sx / Math.SQRT2, iz = -sz / Math.SQRT2;
+			return mkPocket(key, true, sx * HX, sz * HZ, CM / 2, ix, iz,
+				[sx * (HX - CA), sz * HZ], [sx * HX, sz * (HZ - CA)]);
 		}
-		function middle(sx) {
+		function middleX(sx, key) {
 			var r = MM / 2;
-			return mkPocket(false, sx * (HX + r - MID_LIP), 0, r, -sx, 0,
-				[sx * HX, -MM / 2], [sx * HX, MM / 2]);
+			return mkPocket(key, false, sx * (HX + r - MID_LIP), 0, r, -sx, 0, [sx * HX, -MM / 2], [sx * HX, MM / 2]);
 		}
-		function mkPocket(isCorner, x, z, r, ix, iz, j1, j2) {
-			var pk = { corner: isCorner, x: x, z: z, r: r, ix: ix, iz: iz };
+		function middleZ(sz, key) {
+			var r = MM / 2;
+			return mkPocket(key, false, 0, sz * (HZ + r - MID_LIP), r, 0, -sz, [-MM / 2, sz * HZ], [MM / 2, sz * HZ]);
+		}
+		function mkPocket(key, isCorner, x, z, r, ix, iz, j1, j2) {
+			var pk = { key: key, corner: isCorner, x: x, z: z, r: r, ix: ix, iz: iz };
 			pk.mx = (j1[0] + j2[0]) / 2; pk.mz = (j1[1] + j2[1]) / 2;
 			// A jaw runs straight back from the nose, along the pocket, to the hole
 			pk.jaws = [j1, j2].map(function (J) {
@@ -107,18 +143,14 @@
 			pk.take = isCorner ? 40 : 35;                         // the widest angle it takes, from straight in
 			return pk;
 		}
-		// Clockwise from the top left
-		var pockets = [corner(-1, -1), corner(1, -1), middle(1), corner(1, 1), corner(-1, 1), middle(-1)];
-		var JAWS = [];
-		pockets.forEach(function (pk) { pk.jaws.forEach(function (j) { JAWS.push(j); }); });
-		// Where along a rail the cushion is cut away for a mouth
-		var CA = CM / Math.SQRT2;
-		function mouthOnLong(z) { return z < -HZ + CA || z > HZ - CA || Math.abs(z) < MM / 2; }
-		function mouthOnShort(x) { return x < -HX + CA || x > HX - CA; }
+		// Where along a rail the cushion is cut away for a mouth: the left and right
+		// cushions (at z) and the top and bottom ones (at x)
+		function mouthOnX(z) { return Math.abs(z) > HZ - CA || (midOnX && Math.abs(z) < MM / 2); }
+		function mouthOnZ(x) { return Math.abs(x) > HX - CA || (!midOnX && Math.abs(x) < MM / 2); }
 
 		// The bed's edge, clockwise: the cushions' noses and, at each pocket, in along one
 		// jaw, round the back of the hole and out along the other
-		var BED = (function () {
+		function bedOutline() {
 			var pts = [];
 			function ang(p, pk) { return Math.atan2(p[1] - pk.z, p[0] - pk.x); }
 			pockets.forEach(function (pk) {
@@ -140,7 +172,25 @@
 				pts.push(outJ.T, outJ.J);
 			});
 			return pts;
-		})();
+		}
+
+		// The table at a new size. The middle pockets sit on whichever sides are longer.
+		function buildTable(hx, hz) {
+			HX = hx; HZ = hz; LX = HX - R; LZ = HZ - R;
+			OX = CX + 1; OZ = CZ + 1;   // past the card a ball is lost
+			midOnX = CZ >= CX;          // the banner's long sides, as tableIn has it
+			var tl = corner(-1, -1, 'tl'), tr = corner(1, -1, 'tr'), br = corner(1, 1, 'br'), bl = corner(-1, 1, 'bl');
+			// Clockwise from the top left
+			pockets = midOnX ? [tl, tr, middleX(1, 'm1'), br, bl, middleX(-1, 'm2')]
+				: [tl, middleZ(-1, 'm1'), tr, br, middleZ(1, 'm2'), bl];
+			JAWS = [];
+			pockets.forEach(function (pk) { pk.jaws.forEach(function (j) { JAWS.push(j); }); });
+			BED = bedOutline();
+			// A ball on its way down a pocket stays with that pocket as it moves
+			if (balls) balls.forEach(function (b) {
+				if (b.pk) b.pk = pockets.filter(function (pk) { return pk.key === b.pk.key; })[0] || nearestPocket(b);
+			});
+		}
 
 		/* ---------- the tunables ---------- */
 		// Physics: the game's, with the cloth's grip and the swerve on sliders here
@@ -188,32 +238,118 @@
 			C.inset = num('--page-inset-offset', 10);
 		}
 
-		/* ---------- the canvas ---------- */
+		/* ---------- the canvases ---------- */
+		// The table and the trails under the banner's text; the balls and their shadows
+		// over it, each with a frosted circle under it (a backdrop blur, sandbox.css)
 		var canvas = document.createElement('canvas');
-		stage.appendChild(canvas);
+		canvas.className = 'banner-table';
+		wrap.insertBefore(canvas, stage);
 		var ctx = canvas.getContext('2d');
-		// The table changes only when the light moves, so it is drawn on a layer of its own
+		var top = document.createElement('canvas');
+		top.className = 'banner-balls';
+		wrap.appendChild(top);
+		var tctx = top.getContext('2d');
+		// The table changes only when the light or the banner's size changes, so it is
+		// drawn on a layer of its own
 		var layer = document.createElement('canvas');
 		var lctx = layer.getContext('2d');
-		var dpr = 1, cw = 0, ch = 0, sc = 10, cx = 0, cy = 0, land = false, layerKey = '';
+		var dpr = 1, cw = 0, ch = 0, sc = 10, cx = 0, cy = 0, layerKey = '', boxKey = '', bleed = 0, topOff = 0;
 
+		// The banner's size, read every frame. The ball's size follows the banner's width
+		// only (UV, 14 Nov), so opening and closing it never changes the balls or the
+		// pockets: a real table is 18 balls across and 36 long, so the width is taken as
+		// the short side on an upright screen and the long side on a wide one. No pocket
+		// is ever wider than POCKET_MAX (UV, 14 Nov: 32px), and the balls are sized down
+		// to match it: the widest pocket, a middle one, is MM balls across. The table's
+		// edge starts at the banner's edge and comes in as far as the pockets need (tableIn).
+		// Returns how far the bed's half-width and half-height grew, in balls, when only
+		// the banner's size changed at the same ball size; null otherwise.
 		function fit() {
-			var w = stage.clientWidth, h = stage.clientHeight;
-			if (!w || !h) return;
-			dpr = Math.min(window.devicePixelRatio || 1, 2);
-			cw = Math.round(w * dpr); ch = Math.round(h * dpr);
-			canvas.width = layer.width = cw;
-			canvas.height = layer.height = ch;
-			// The table's long side along the screen's long side
-			land = w > h;
-			var halfW = (land ? EZ : EX) + MARGIN, halfH = (land ? EX : EZ) + MARGIN;
-			sc = Math.min(cw / (2 * halfW), ch / (2 * halfH));
+			var bw = stage.clientWidth, h = stage.clientHeight;
+			if (!bw || !h) return null;
+			// The table reaches out into the page card's side margin (UV, 14 Nov: "let the
+			// new banner edge extend into that margin space"): the canvases are wider than
+			// the banner by the card's own side padding, each side
+			var card = wrap.parentElement;
+			var bl = card ? parseFloat(getComputedStyle(card).paddingLeft) || 0 : 0;
+			var w = bw + 2 * bl;
+			var d = Math.min(window.devicePixelRatio || 1, 2);
+			var upright = window.innerWidth < window.innerHeight;
+			var ballPx = Math.min(bw / (upright ? 18 : 36), POCKET_MAX / MM);
+			// Where the corner pockets reach out into the card's margin, they are made
+			// smaller to fit in it, line and glow included, and the balls with them (UV,
+			// 14 Nov): a corner's hole, CM / 2 balls past the cushion, fits in the margin
+			if (bl > EDGE_PX) ballPx = Math.min(ballPx, (bl - EDGE_PX) / (CM / 2));
+			var key = [bw, h, d, ballPx, bl, stage.offsetTop].join();
+			if (key === boxKey) return null;
+			boxKey = key;
+			bleed = bl; topOff = stage.offsetTop;
+			[canvas, top].forEach(function (el) {
+				el.style.left = el.style.right = -bl + 'px';
+				el.style.top = topOff + 'px';
+				el.style.height = h + 'px';
+			});
+			var sameBall = ballPx * d === sc && d === dpr;
+			dpr = d; sc = ballPx * d;
+			cw = Math.round(w * d); ch = Math.round(h * d);
+			canvas.width = layer.width = top.width = cw;
+			canvas.height = layer.height = top.height = ch;
 			cx = cw / 2; cy = ch / 2;
 			layerKey = '';
+			// The banner's own rounded card is not drawn, so the pockets may reach its corners
+			CX = w / 2 / ballPx; CZ = h / 2 / ballPx; CARD_R = 0; FIT_GAP = EDGE_PX / ballPx;
+			var bed = tableIn(0), hx = bed[0], hz = bed[1];
+			// The content padded in as far as the cushions came in (sandbox.css). Set only
+			// when it changes: it changes the banner's size, which is read again next frame.
+			// (from the banner's own edge: the cushions may sit out in the card's margin)
+			var padX = Math.round(bed[2] * ballPx - bl) + 'px', padZ = Math.round(bed[3] * ballPx) + 'px';
+			if (stage.style.getPropertyValue('--banner-in-x') !== padX) stage.style.setProperty('--banner-in-x', padX);
+			if (stage.style.getPropertyValue('--banner-in-z') !== padZ) stage.style.setProperty('--banner-in-z', padZ);
+			var dX = hx - HX, dZ = hz - HZ, oldX = HX, oldZ = HZ;
+			buildTable(hx, hz);
+			if (!balls) return null;
+			if (sameBall) {
+				// The banner's top left stays where it is on the page as it opens or
+				// closes: the balls keep their place on the screen, so in the table's
+				// own terms (from its middle) they move with it
+				balls.forEach(function (b) {
+					b.x -= dX; b.z -= dZ;
+					b.trail.forEach(function (p) { if (p) { p[0] -= dX; p[1] -= dZ; } });
+				});
+				return { dX: dX, dZ: dZ };
+			}
+			// A new ball size (a new screen width): everything keeps its place on the table
+			balls.forEach(function (b) {
+				b.x *= hx / oldX; b.z *= hz / oldZ;
+				b.x = Math.max(-LX, Math.min(LX, b.x)); b.z = Math.max(-LZ, Math.min(LZ, b.z));
+				b.trail = [];
+			});
+			return null;
 		}
-		// The table to the screen (device px). Upright: x right, z down. On its side:
-		// z right, x up.
-		function W(x, z) { return land ? [cx + z * sc, cy - x * sc] : [cx + x * sc, cy + z * sc]; }
+		// The table to the screen (device px): x right, z down
+		function W(x, z) { return [cx + x * sc, cy + z * sc]; }
+
+		// The living wall (UV, 14 Nov): a cushion that moves in pushes whatever it
+		// reaches. The right and bottom cushions move (the banner's top left stays put),
+		// at ux and uz balls a second outward. A ball still or slower than the cushion is
+		// carried at its speed; one running into it also bounces off it.
+		function pushWalls(ux, uz) {
+			var keep = 1 - P.ks;
+			function wall(b, axis, s, u) {
+				var lim = axis === 'x' ? LX : LZ, v = axis === 'x' ? 'vx' : 'vz';
+				if (b[axis] * s <= lim) return;
+				b[axis] = s * lim;
+				var into = b[v] * s;   // the ball's own speed towards the cushion
+				var out = u - Math.max(0, into) * keep;
+				if (out < into) { b[v] = s * out; b.hit = true; }
+			}
+			balls.forEach(function (b) {
+				if (b.state !== 'play') return;
+				if (!mouthOnX(b.z)) { wall(b, 'x', 1, ux); wall(b, 'x', -1, 0); }
+				if (!mouthOnZ(b.x)) { wall(b, 'z', 1, uz); wall(b, 'z', -1, 0); }
+				for (var j = 0; j < JAWS.length; j++) jaw(b, JAWS[j]);
+			});
+		}
 
 		/* ---------- the light, from page-light.js ---------- */
 		var light = { x: 0, y: 10 };   // the page's shadow offset, CSS px
@@ -283,69 +419,7 @@
 			c.restore();
 		}
 
-		/* ---------- the logo mark ---------- */
-		var logoImg = null, logoAr = 1, logoFor = '';
-		function loadLogo() {
-			var which = root.dataset.theme === 'light' ? 'light' : 'dark';
-			if (which === logoFor) return;
-			logoFor = which;
-			var img = new Image();
-			img.onload = function () {
-				// Cropped to what is drawn, so it fills its space without the file's margin
-				var ar = (img.naturalHeight / img.naturalWidth) || 1;
-				var full = document.createElement('canvas');
-				full.width = 1024; full.height = Math.round(1024 * ar);
-				var fc = full.getContext('2d', { willReadFrequently: true });
-				fc.drawImage(img, 0, 0, full.width, full.height);
-				var px = fc.getImageData(0, 0, full.width, full.height).data;
-				var x0 = full.width, y0 = full.height, x1 = -1, y1 = -1;
-				for (var yy = 0; yy < full.height; yy++) {
-					for (var xx = 0; xx < full.width; xx++) {
-						if (px[(yy * full.width + xx) * 4 + 3] > 8) {
-							if (xx < x0) x0 = xx; if (xx > x1) x1 = xx;
-							if (yy < y0) y0 = yy; if (yy > y1) y1 = yy;
-						}
-					}
-				}
-				if (x1 < 0) { logoImg = full; logoAr = ar; layerKey = ''; return; }
-				var crop = document.createElement('canvas');
-				crop.width = x1 - x0 + 1; crop.height = y1 - y0 + 1;
-				crop.getContext('2d').drawImage(full, x0, y0, crop.width, crop.height, 0, 0, crop.width, crop.height);
-				logoImg = crop;
-				logoAr = crop.height / crop.width;
-				layerKey = '';
-			};
-			img.onerror = function (e) { TDC.error(AREA, 'the logo for the middle of the table did not load.', e, statusEl); };
-			img.src = '/resources/branding/logo-mark-' + which + '.svg';
-		}
-
-		/* ---------- the markings ---------- */
-		function drawMarkings(c) {
-			c.save();
-			c.strokeStyle = c.fillStyle = css(C.grey);   // the site's grey (UV, 13 Nov)
-			c.lineWidth = Math.max(1.5, S.linePx * 1.1) * dpr;
-			c.lineCap = 'round';
-			function line(x1, z1, x2, z2) {
-				var a = W(x1, z1), b = W(x2, z2);
-				c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]);
-			}
-			c.beginPath();
-			// The baulk line, cushion to cushion, broken round each dot
-			var from = -HX;
-			BAULK_DOTS.forEach(function (x) { line(from, BAULK_Z, x - BAULK_GAP, BAULK_Z); from = x + BAULK_GAP; });
-			line(from, BAULK_Z, HX, BAULK_Z);
-			// The black's spot
-			line(0, SPOT_Z - CROSS_LONG, 0, SPOT_Z + CROSS_LONG);   // along the table
-			line(-CROSS_SHORT, SPOT_Z, CROSS_SHORT, SPOT_Z);        // across it
-			c.stroke();
-			BAULK_DOTS.forEach(function (x) {
-				var p = W(x, BAULK_Z);
-				c.beginPath(); c.arc(p[0], p[1], Math.max(1.8 * dpr, BAULK_DOT * sc), 0, Math.PI * 2); c.fill();
-			});
-			c.restore();
-		}
-
-		/* ---------- the table, drawn when the light moves ---------- */
+		/* ---------- the table, drawn when the light or the banner's size changes ---------- */
 		function drawLayer() {
 			var c = lctx, L = light, B = C.blur * S.blur, lit = css(C.lit, C.litA);
 			c.clearRect(0, 0, cw, ch);
@@ -355,19 +429,7 @@
 			insetShadow(c, bedPath, lit, -L.x, -L.y, B / 2);
 			// The pockets, sunk deeper
 			pockets.forEach(function (pk) { pocketShade(c, pk); });
-			// The markings, chalked flat on the cloth
-			drawMarkings(c);
-			// The logo, with the soft shadow of the match page's marks
-			if (logoImg) {
-				// As large as fits the bed's width and the space between the cross and the baulk line
-				var across = 2 * (HX - LOGO_PAD), along = 2 * (-(SPOT_Z + CROSS_LONG) - LOGO_PAD);
-				var boxW = (land ? along : across) * sc, boxH = (land ? across : along) * sc;
-				var lw = Math.min(boxW, boxH / logoAr), lh = lw * logoAr;
-				c.save();
-				setShadow(c, dark(0.45), L.x / 2, L.y / 2, 10 * S.blur);
-				c.drawImage(logoImg, cx - lw / 2, cy - lh / 2, lw, lh);
-				c.restore();
-			}
+			// No markings and no logo on the banner (UV, 14 Nov): its content is on the cloth
 			// The lines: their own shadow, then their glow
 			c.save();
 			c.lineJoin = 'round'; c.lineCap = 'round';
@@ -386,9 +448,13 @@
 		/* ---------- the balls ---------- */
 		function mkBall(kind, name) {
 			var body = document.createElement('canvas'), feat = document.createElement('canvas');
+			var frost = document.createElement('div');
+			frost.className = 'banner-frost';
+			frost.hidden = true;
+			wrap.appendChild(frost);
 			return { kind: kind, name: name, body: body, feat: feat, bctx: body.getContext('2d'), fctx: feat.getContext('2d'), size: 0,
-				x: 0, y: 0, z: 0, vx: 0, vz: 0, vy: 0, sx: 0, sz: 0, wy: 0, hit: false, state: 'play', pk: null, t: 0,
-				q: randomQuat(), trail: [] };
+				frost: frost, x: 0, y: 0, z: 0, vx: 0, vz: 0, vy: 0, sx: 0, sz: 0, wy: 0, hit: false, state: 'play', pk: null, t: 0,
+				q: randomQuat(), trail: [], fade: 1, still: 0 };
 		}
 		function randomQuat() {
 			var u1 = Math.random(), u2 = Math.random() * Math.PI * 2, u3 = Math.random() * Math.PI * 2;
@@ -422,6 +488,9 @@
 			}
 			return false;
 		}
+		// The table at the banner's size before the balls are placed on it
+		buildTable(HX, HZ);
+		fit();
 		balls.forEach(function (b) {
 			var x, z, n = 0;
 			do { x = (Math.random() * 2 - 1) * (LX - 1.5); z = (Math.random() * 2 - 1) * (LZ - 1.5); n++; }
@@ -516,10 +585,10 @@
 				if (Math.abs(b.x) > OX || Math.abs(b.z) > OZ) { potted(b, nearestPocket(b)); continue; }
 
 				// The cushions, only where they are: not across a pocket's mouth
-				if (!mouthOnLong(b.z)) {
+				if (!mouthOnX(b.z)) {
 					if (b.x < -LX) { b.x = -LX; cushion(b, 1, 0); } else if (b.x > LX) { b.x = LX; cushion(b, -1, 0); }
 				}
-				if (!mouthOnShort(b.x)) {
+				if (!mouthOnZ(b.x)) {
 					if (b.z < -LZ) { b.z = -LZ; cushion(b, 0, 1); } else if (b.z > LZ) { b.z = LZ; cushion(b, 0, -1); }
 				}
 				// The jaws, their noses included: a ball off line rattles in or out
@@ -591,7 +660,9 @@
 					b.vx = b.vz = b.vy = b.sx = b.sz = b.wy = 0;
 					b.hit = false; b.pk = null; b.bounced = false;
 					b.q = randomQuat();
-					b.trail = [];
+					// Its old line is left to finish undrawing (UV, 14 Nov), not wiped; a break
+					// in it, so the new ball's line never joins the old one across the table
+					b.trail.push(null);
 					return;
 				}
 				b.t = 0.3;   // nowhere clear: try again shortly
@@ -623,7 +694,7 @@
 		}
 
 		/* ---------- the shot picker ---------- */
-		var shot = null, shots = 0, stillFor = 0, nextWait = 1.2, busyFor = 0, trailFade = 1;
+		var shot = null, shots = 0, stillFor = 0, nextWait = 1.2, busyFor = 0, resizedAgo = 99;
 		var target = null;   // the ball being played, kept until it goes down
 		function rad(deg) { return deg * Math.PI / 180; }
 		function gauss() { return (Math.random() + Math.random() + Math.random() - 1.5) / 1.5; }
@@ -826,8 +897,7 @@
 			var ce = Math.cos(err), se = Math.sin(err);
 			strike(cue, plan.ax * ce - plan.az * se, plan.ax * se + plan.az * ce, power, tipX, tipY);
 			objs.forEach(function (o) { o.hit = false; o.sx = 0; o.sz = 0; o.wy = 0; });
-			balls.forEach(function (b) { b.trail = []; });
-			trailFade = 1;
+			balls.forEach(function (b) { b.trail = []; b.fade = 1; b.still = 0; });
 
 			shots++;
 			var words = 'Shot ' + shots + ': ';
@@ -892,7 +962,7 @@
 					var nz0 = Math.sqrt(Math.max(0, 1 - d2));   // towards the camera
 					// The surface's normal on the table: up is +y
 					var nx, ny = nz0, nz;
-					if (land) { nx = -v; nz = u; } else { nx = u; nz = v; }
+					nx = u; nz = v;
 					var bx = m00 * nx + m01 * ny + m02 * nz;
 					var by = m10 * nx + m11 * ny + m12 * nz;
 					var bz = m20 * nx + m21 * ny + m22 * nz;
@@ -932,34 +1002,45 @@
 		}
 
 		function drawBall(b) {
-			if (b.state === 'gone') return;
-			var L = light, B = C.blur * S.blur;
+			var fr = b.frost;
+			if (b.state === 'gone') { fr.hidden = true; return; }
+			var L = light, B = C.blur * S.blur, c = tctx;
 			var k = CAM_D / (CAM_D - b.y);   // nearer the camera, larger and further out
 			var p0 = W(b.x, b.z), p = [cx + (p0[0] - cx) * k, cy + (p0[1] - cy) * k];
 			var rp = R * sc * k;
 			var under = b.y < 0;
 			// Fading into the void below the pocket; appearing at once from above
 			var alpha = under ? clamp01(1 - b.y / VOID_Y) : clamp01((DROP_H - b.y) / 3);
+			// Frosted where it is see-through (UV, 14 Nov): a blurred circle under it, over
+			// the banner's text. Not while it goes down the pocket, where the table hides it.
+			if (under || alpha <= 0) fr.hidden = true;
+			else {
+				var dc = 2 * rp / dpr;
+				fr.hidden = false;
+				fr.style.width = fr.style.height = dc + 'px';
+				fr.style.transform = 'translate(' + (p[0] / dpr - dc / 2 - bleed) + 'px,' + (p[1] / dpr - dc / 2 + topOff) + 'px)';   // where the canvas sits in the wrapper
+				fr.style.opacity = alpha;
+			}
 			paintBall(b, rp);
 			// Its shadow on the cloth, as a small raised button's (--nm-raised-small): the
 			// higher the ball, the further off, softer and fainter
 			// The ball is see-through, so its shadow is kept outside it, as a box-shadow is
 			if (!under) {
 				var h = b.y, off = 0.6 + h * 0.12;
-				ctx.save();
-				ctx.beginPath(); everything(ctx); circlePath(p[0], p[1], rp)(ctx); ctx.clip('evenodd');
-				shadowOnly(ctx, p0[0], p0[1], R * sc, dark(alpha / (1 + h * 0.08)), L.x * off, L.y * off, (B / 2) * (1 + h * 0.1));
-				ctx.restore();
+				c.save();
+				c.beginPath(); everything(c); circlePath(p[0], p[1], rp)(c); c.clip('evenodd');
+				shadowOnly(c, p0[0], p0[1], R * sc, dark(alpha / (1 + h * 0.08)), L.x * off, L.y * off, (B / 2) * (1 + h * 0.1));
+				c.restore();
 			}
-			ctx.save();
-			ctx.globalAlpha = alpha;
+			c.save();
+			c.globalAlpha = alpha;
 			// Through the hole: the table hides whatever is not over it
-			if (under && b.pk) { ctx.beginPath(); pocketPath(b.pk)(ctx); ctx.clip(); }
-			ctx.drawImage(b.body, p[0] - b.size / 2, p[1] - b.size / 2);
-			if (S.glow > 0) setShadow(ctx, css(b === cue ? C.yellowGlow : C.glow, S.glow), 0, 0, 8 * S.glow);
-			ctx.drawImage(b.feat, p[0] - b.size / 2, p[1] - b.size / 2);
-			noShadow(ctx);
-			ctx.restore();
+			if (under && b.pk) { c.beginPath(); pocketPath(b.pk)(c); c.clip(); }
+			c.drawImage(b.body, p[0] - b.size / 2, p[1] - b.size / 2);
+			if (S.glow > 0) setShadow(c, css(b === cue ? C.yellowGlow : C.glow, S.glow), 0, 0, 8 * S.glow);
+			c.drawImage(b.feat, p[0] - b.size / 2, p[1] - b.size / 2);
+			noShadow(c);
+			c.restore();
 		}
 
 		/* ---------- the trails (from the game) ---------- */
@@ -976,19 +1057,21 @@
 			return { x: cx + (p0[0] - cx) * k, y: cy + (p0[1] - cy) * k, r: R * sc * k };
 		}
 		function drawTrails() {
-			if (trailFade <= 0) return;
 			ctx.save();
+			// Only on the table, its pockets included (UV, 14 Nov: nothing outside the edge)
+			ctx.beginPath(); bedPath(ctx); ctx.clip();
 			// The balls mask the trails (UV, 13 Nov): nothing is drawn where a ball is
 			ctx.beginPath(); everything(ctx);
 			balls.forEach(function (b) { var o = onScreen(b); if (o) circlePath(o.x, o.y, o.r)(ctx); });
 			ctx.clip('evenodd');
 			ctx.lineJoin = 'round'; ctx.lineCap = 'round';
 			ctx.lineWidth = 1.5 * dpr;
-			// Undrawn from its tail towards the ball, on every ball (UV, 13 Nov)
+			// Undrawn from its tail towards the ball, on every ball (UV, 13 Nov), each from
+			// the moment it stops (UV, 14 Nov)
 			balls.forEach(function (b) {
 				var T = b.trail, n = T.length;
-				if (n < 2) return;
-				var from = (1 - trailFade) * (n - 1), i0 = Math.floor(from), part = from - i0;
+				if (n < 2 || b.fade <= 0) return;
+				var from = (1 - b.fade) * (n - 1), i0 = Math.floor(from), part = from - i0;
 				ctx.strokeStyle = css(b === cue ? C.cream : C.teal, b === cue ? 0.6 : 0.5);
 				ctx.beginPath();
 				var pen = false;
@@ -1013,19 +1096,40 @@
 		function frame(now) {
 			if (failed) return;
 			try {
-				var dt = Math.min((now - last) / 1000, 0.05) * S.speed;
+				var real = Math.min((now - last) / 1000, 0.05), dt = real * S.speed;
 				last = now;
+				// The banner's size: as it opens or closes, the right and bottom cushions
+				// move and push what they reach. No shot is planned or played until it has
+				// held still a moment, as the planner plays shots on a copy of the table.
+				var grew = fit();
+				resizedAgo += real;
+				if (grew) {
+					resizedAgo = 0;
+					planning = null;
+					if (dt > 0) pushWalls(2 * grew.dX / dt, 2 * grew.dZ / dt);
+				}
 				acc = Math.min(acc + dt, 0.1);
 				while (acc >= STEP) { step(STEP); acc -= STEP; }
 				balls.forEach(function (b) {
 					spin(b, dt);
-					if ((b.state === 'play' || b.state === 'drop') && (Math.abs(b.vx) > 0.004 || Math.abs(b.vz) > 0.004)) trailPush(b);
+					var going = Math.abs(b.vx) > 0.004 || Math.abs(b.vz) > 0.004;
+					if ((b.state === 'play' || b.state === 'drop') && going) trailPush(b);
+					// A ball's line undraws from the moment it stops (UV, 14 Nov). Set off
+					// again, it keeps what is still drawn and carries on from there.
+					// A potted ball has stopped once it is gone down the pocket (UV, 14 Nov:
+					// every ball undraws its own line), and stays stopped as its new one drops in
+					if ((b.state === 'play' && !going) || b.state === 'gone' || b.state === 'fall') b.still += dt;
+					else if (b.still > 0) {
+						b.trail.splice(0, Math.floor((1 - b.fade) * Math.max(0, b.trail.length - 1)));
+						b.still = 0;
+					}
+					b.fade = clamp01(1 - b.still / UNDRAW);
 				});
 
 				// The next shot once everything has stopped, after a random pause in which
 				// the trails fade out. A shot that never settles (it should not) is stopped
 				// after 30 s.
-				if (moving()) {
+				if (moving() || resizedAgo < 0.3) {
 					stillFor = 0;
 					planning = null;
 					busyFor += dt;
@@ -1043,22 +1147,26 @@
 						if (shotEl) shotEl.textContent = told;
 					}
 					stillFor += dt;
-					trailFade = clamp01(1 - stillFor / (nextWait * 0.85));
 					if (!planning) planning = startPlanning();
 					var ready = planning ? planStep(planning) : false;
-					if (stillFor > nextWait && ready) {
+					// Not before every line has undrawn: a shot wipes what is left of them
+					var undrawn = balls.every(function (b) { return b.fade <= 0 || b.trail.length < 2; });
+					if (stillFor > nextWait && ready && undrawn) {
 						shoot(planning);
 						planning = null; stillFor = 0; nextWait = 1 + Math.random() * 1.4;
 					}
 				}
 
 				readLight();
-				var key = [light.x, light.y, cw, ch, S.linePx, S.shadow, S.blur, S.glow, logoImg ? logoFor : ''].join();
+				var key = [light.x, light.y, cw, ch, HX, HZ, S.linePx, S.shadow, S.blur, S.glow].join();
 				if (key !== layerKey) { layerKey = key; drawLayer(); }
 				ctx.clearRect(0, 0, cw, ch);
 				ctx.drawImage(layer, 0, 0);
 				drawTrails();
-				// Balls going into the void first, then those on the table, then any falling
+				// Over the banner's text: balls going into the void first, then those on the
+				// table, then any falling (a ball gone hides its frosted circle)
+				tctx.clearRect(0, 0, cw, ch);
+				balls.forEach(function (b) { if (b.state === 'gone') drawBall(b); });
 				['drop', 'play', 'fall'].forEach(function (st) {
 					balls.filter(function (b) { return b.state === st; }).forEach(drawBall);
 				});
@@ -1069,23 +1177,9 @@
 			}
 		}
 
-		/* ---------- the sliders ---------- */
-		document.querySelectorAll('[data-banner]').forEach(function (input) {
-			var key = input.dataset.banner, store = key in P ? P : S, out = document.getElementById(input.id + '-out');
-			function take() {
-				store[key] = parseFloat(input.value);
-				if (out) out.textContent = key === 'miss' ? Math.round(store[key] * 100) + '%' : input.value;
-			}
-			input.value = store[key];
-			take();
-			input.addEventListener('input', take);
-		});
-
+		// No sliders on the banner (UV, 14 Nov): the tunables above are its settings
 		readTokens();
-		loadLogo();
-		fit();
-		new ResizeObserver(fit).observe(stage);
-		new MutationObserver(function () { readTokens(); loadLogo(); layerKey = ''; })
+		new MutationObserver(function () { readTokens(); layerKey = ''; })
 			.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
 		requestAnimationFrame(frame);
 	}
