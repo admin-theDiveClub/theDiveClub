@@ -1,0 +1,36 @@
+{% comment %}
+	A policy page (UV, 14 Nov): terms, privacy, refunds and cancellations,
+	delivery. Written for PayFast's onboarding review and for players. Drawn in
+	the league rules' look (league.css, .lr-*): numbered sections of clauses.
+	Each page holds its own words in its front matter (title, updated, intro,
+	sections → clauses of h and p), so the wording can be read and checked
+	without reading any markup. A clause's p may carry a link.
+	All four end with the same company and contact block (policy/details.html).
+	The wording is checked by a person before it goes live (STATUS B1).
+{% endcomment %}
+<div class="tdc-card wide">
+	<article class="lr-doc">
+		<header class="lr-head">
+			<h1>{{ title }}</h1>
+			<p class="lr-league">The Dive Club · Last updated {{ updated }}</p>
+		</header>
+		<div class="lr-intro">
+			{%- for p in intro %}
+			<p>{{ p }}</p>
+			{%- endfor %}
+		</div>
+		{%- for s in sections %}
+		{%- assign sn = forloop.index %}
+		<section class="lr-section">
+			<h2>{{ sn }}. {{ s.title }}</h2>
+			{%- for c in s.clauses %}
+			<div class="lr-clause">
+				<div class="lr-clause-head"><span class="lr-no">{{ sn }}.{{ forloop.index }}</span><h3>{{ c.h }}</h3></div>
+				<p>{{ c.p }}</p>
+			</div>
+			{%- endfor %}
+		</section>
+		{%- endfor %}
+{% include "policy/details.html" %}
+	</article>
+</div>

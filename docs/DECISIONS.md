@@ -1885,3 +1885,16 @@ These predate the log. They are recorded here because every one of them is a dec
 *Why:* UV's design for the banner; the animation is the motion, so less motion keeps the still banner the site already has.
 *Also decided by UV, the same day:* the **top banners only** (the league's Season tab, the scorecard's top banner, the tournament poster, the venue page); the scorecard's result-and-signatures section keeps today's look, as it holds a form. Switching less motion on or off changes the banners **straight away**. The shot readout stays on the sandbox only.
 *So:* `docs/systems/file-map.md`, the banner sandbox; the build onto the real banners is planned in `docs/STATUS.md` §1 4au.
+
+## 2026-11-14 — The policy pages: what is sold, refunds, delivery, age, privacy
+
+*Decided by UV*, for PayFast's onboarding (worked through in the claude.ai project, 14 Nov):
+- **Scope:** The Dive Club only; terms for other clubs come later. The company and contact details are shown on the policy pages only, never the footer: The Dive Club (Pty) Ltd, 2025/917817/07, not registered for VAT; trading address C5, The Gantry, Lonehill, Fourways, 2191; registered office "Kyalami, Midrand, 1684" (the short form, with a note that it is being updated); admin@thediveclub.org, +27 82 766 4905. Never the tax number, bank details or the director's ID.
+- **Information Officer:** UV. Not yet registered with the Information Regulator.
+- **Sold through PayFast:** credits only. Credits buy table time, games and activities, entries and merchandise.
+- **Refunds:** credits not refundable except where the law requires; credits never expire; no refund of an entry once entered; an event the club cancels is refunded in full in credits; a card refund, where due, goes to the original method within 5 business days of approval (the bank a further 3 to 10).
+- **Delivery:** credits added at once; activities used at the venue; merchandise bought with credits and collected at the venue within 30 days by the account holder with ID, else cancelled and the credits returned; out of stock, credits returned in full; nothing posted.
+- **Age:** the site is open to all ages; adults-only areas, products and features unlock only after staff verify an ID in person; restricted products are never named. Under 18: a parent or guardian gives their name and email and confirms by email; minors are shown like everyone else.
+- **Privacy:** ID photos (planned) kept while the account is open and 30 days after; the device record while the account is open; a closed account's match history keeps the name, everything else deleted, payment records five years; a former player may ask for their name to be removed; a player may hide their photo; account deletion is a button in the profile, **built before the pages go live**.
+*Claude's, for UV and the reviewer to judge:* the standard clauses UV did not discuss: rulings final for a competition, suspending an account, points and tiers having no cash value, our content and the profile picture permission, the limits of liability, credits bought at the venue as well as online, prices of credits and items changing, the breach notice, the legal grounds, and the providers named as processing outside South Africa.
+*So:* `/termsofservice.html`, `/privacypolicy.html`, `/refunds/`, `/delivery/`; STATUS B1.
