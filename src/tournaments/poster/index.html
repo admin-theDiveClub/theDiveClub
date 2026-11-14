@@ -5,8 +5,10 @@ description: "A tournament at The Dive Club: when, where, the format and how to 
 extraStyles:
   - /stylesheets/league.css
   - /stylesheets/league-join.css
+  - /stylesheets/banner-table.css
   - /stylesheets/poster.css
 extraScripts:
+  - /scripts/banner-table.js
   - /scripts/match-settings.js
   - /scripts/tournament-poster.js
 ---
@@ -45,7 +47,7 @@ extraScripts:
 	</div>
 
 	<div id="poster" hidden>
-		<section class="jumbo lj-hero" id="p-hero">
+		<section class="jumbo lj-hero" id="p-hero" data-banner-table>
 			<div class="lj-id">
 				<span class="lj-pic"><span class="lj-pic-inner" id="p-pic"></span></span>
 				<div class="lj-names">

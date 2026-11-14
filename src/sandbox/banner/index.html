@@ -5,9 +5,10 @@ description: "A scratch page for the new banner: a live pool table as the banner
 extraStyles:
   - /stylesheets/league.css
   - /stylesheets/league-join.css
+  - /stylesheets/banner-table.css
   - /stylesheets/sandbox.css
 extraScripts:
-  - /scripts/sandbox-banner.js
+  - /scripts/banner-table.js
 ---
 {% comment %}
 	The banner's sandbox (UV, 14 Nov): the hero's table and balls (/sandbox/hero/, kept
@@ -17,7 +18,7 @@ extraScripts:
 	arrow. Its green line becomes the table's edge: the table takes the banner's shape
 	and size, and only its cushions and pockets follow the banner as it opens and closes.
 	No markings. The balls roll over the banner's text, frosted where they are see-through.
-	Nothing here is wired into a real banner.
+	The table is the site's banner since 14 Nov (DECISIONS); this page is where it is tuned.
 {% endcomment %}
 
 <div class="tdc-card wide sandbox banner-sandbox">
@@ -28,12 +29,9 @@ extraScripts:
 
 	{% comment %}
 		The scorecard's banner, as leagues/card/index.html has it, made-up content. The
-		table and balls are drawn in the wrapper round it, not in it: a banner clips
-		sideways (design.css, "nothing leaves its card"), and the table reaches out into
-		the page card's margin.
+		table is the site's (scripts/banner-table.js); this page alone shows its readout.
 	{% endcomment %}
-	<div class="banner-wrap">
-	<section class="jumbo card-jumbo card-state-lineups banner-stage" id="banner-stage">
+	<section class="jumbo card-jumbo card-state-lineups" id="banner-stage" data-banner-table data-banner-shot="banner-shot" data-banner-status="banner-status">
 		<div class="cj-head">
 			<div class="cj-team">
 				<span class="team-pic cj-pic" data-banner-pic></span>
@@ -63,6 +61,5 @@ extraScripts:
 			</dl>
 		</details>
 	</section>
-	</div>
 	<p class="muted banner-shot" id="banner-shot" aria-live="polite">Lining up the first shot…</p>
 </div>

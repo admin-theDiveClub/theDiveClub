@@ -827,49 +827,7 @@ body:has(.nm-layout) .sandbox h1 { overflow-wrap: anywhere; }   /* one long word
 .hero-controls output { text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ─── The banner (/sandbox/banner/; UV, 14 Nov) ───
-   The scorecard's banner with the hero's table as its edge. Its green line is
-   hidden: the table, from the banner's edge in, is its edge now. In
-   layers: the table and trails under the banner's text, the balls over it,
-   each ball's see-through body a frosted circle (backdrop blur). */
-.banner-stage::before { visibility: hidden; }
-/* No edge but the table's (UV, 14 Nov: "the cushions and pockets are the edge"):
-   the banner's own sunken card is not drawn, as the hero's table has nothing round it */
-.banner-stage { box-shadow: none; }
-/* The content keeps the gap it had to the banner's line (league.css .jumbo: its
-   padding less the line's inset, --space-2), now from the cushions (UV, 14 Nov:
-   "everything is sitting too close to the edge of the table"): the script says how
-   far in from the banner's edge each pair of cushions sits (--banner-in-x, -z) */
-.banner-stage {
-	--banner-pad: calc(var(--space-5) + var(--space-2));
-	padding: calc(var(--banner-pad) - var(--space-2) + var(--banner-in-z, var(--space-2))) max(0px, calc(var(--banner-pad) - var(--space-2) + var(--banner-in-x, var(--space-2))));
-}
-@media (max-width: 30rem) {
-	.banner-stage { --banner-pad: calc(var(--space-4) + var(--space-2)); }
-}
-.banner-wrap { position: relative; }
-.banner-stage { z-index: 1; }   /* the banner's content over the table */
-/* In the wrapper, level with the banner and wider than it by the page card's side
-   padding (the script sets top, left, right and height): the table reaches out into
-   that margin */
-.banner-table,
-.banner-balls {
-	position: absolute;
-	width: auto;
-	pointer-events: none;
-}
-.banner-table { z-index: 0; }
-.banner-balls { z-index: 3; }
-.banner-frost {
-	position: absolute;
-	top: 0;
-	left: 0;
-	z-index: 2;
-	border-radius: 50%;
-	pointer-events: none;
-	-webkit-backdrop-filter: blur(var(--banner-frost, 3px));
-	backdrop-filter: blur(var(--banner-frost, 3px));
-	will-change: transform;
-}
+   The table itself is the site's (banner-table.css); here only the shot readout. */
 .banner-shot {
 	min-height: 1.5em;
 	margin-top: var(--space-2);

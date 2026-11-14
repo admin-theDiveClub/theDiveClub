@@ -5,7 +5,9 @@ description: "The night's card: lineups, every frame, and the two signatures."
 extraStyles:
   - /stylesheets/league.css
   - /stylesheets/league-join.css
+  - /stylesheets/banner-table.css
 extraScripts:
+  - /scripts/banner-table.js
   - /scripts/match-settings.js
   - /scripts/league-standings-def.js
   - /scripts/league-nav.js
@@ -52,7 +54,7 @@ extraScripts:
 	{% endcomment %}
 	<h1 class="card-sr" id="m-title">Team Card</h1>
 
-	<section class="jumbo card-jumbo" id="jumbo">
+	<section class="jumbo card-jumbo" id="jumbo" data-banner-table>
 		{% comment %} Share in the banner's corner, an icon alone, as the Season tab's (UV, 11 Nov). {% endcomment %}
 		<div class="lj-corner">
 			<button type="button" class="lj-icon" id="share-btn" data-icon="share" title="Share" aria-label="Share"><span class="tdc-ring"></span></button>

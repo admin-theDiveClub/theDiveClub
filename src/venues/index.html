@@ -5,8 +5,10 @@ description: "A pool venue: where it is, its tables and hours, and its leagues a
 extraStyles:
   - /stylesheets/league.css
   - /stylesheets/league-join.css
+  - /stylesheets/banner-table.css
   - /stylesheets/venue.css
 extraScripts:
+  - /scripts/banner-table.js
   - /scripts/match-settings.js
   - /scripts/venue.js
 ---
@@ -31,7 +33,7 @@ extraScripts:
 	</div>
 
 	<div id="venue" hidden>
-		<section class="jumbo lj-hero" id="v-hero">
+		<section class="jumbo lj-hero" id="v-hero" data-banner-table>
 			<div class="lj-id">
 				<span class="lj-pic"><span class="lj-pic-inner" id="v-pic"></span></span>
 				<div class="lj-names">
