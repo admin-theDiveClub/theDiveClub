@@ -11,9 +11,9 @@
 // table, the spin model). From it: the units (1 = a ball's diameter, R = 0.5, the bed
 // 18 x 36), the pockets, the slip model of spin, the cushion and ball-to-ball rules
 // and the trails. Changed for the hero (UV, 13 Nov, "spin more apparent, nice arcs"):
-// the cloth grips less (cg 22 -> 9), so a ball slides longer before it rolls and draw
-// and follow bend its path in a visible arc after contact; swerve is stronger (sw
-// 0.08 -> 0.22) and side spin lasts longer and turns a cushion's angle more. Before its
+// side spin lasts longer and turns a cushion's angle more. The defaults are UV's, set
+// on the sliders on an iPad (14 Nov): cloth speed 4.5, cloth spin 35, cushion speed
+// 0.25, cushion spin 0.9, ball-ball 0.04, no swerve; shadow 1, blur 1.2, no misses. Before its
 // first contact the cue ball still runs straight (UV's rule in the game), which is
 // also what lets the shot picker aim.
 //
@@ -142,8 +142,8 @@
 
 		/* ---------- the tunables ---------- */
 		// Physics: the game's, with the cloth's grip and the swerve on sliders here
-		var P = { cs: 7, cg: 9, ks: 0.25, kg: 0.25, bb: 0.04, sw: 0.22, side: 0.35, wyKeep: 0.03 };
-		var S = { speed: 1, linePx: 2, shadow: 0.6, blur: 1, glow: 1, miss: 0.25 };
+		var P = { cs: 4.5, cg: 35, ks: 0.25, kg: 0.9, bb: 0.04, sw: 0, side: 0.35, wyKeep: 0.03 };   // UV's, 14 Nov
+		var S = { speed: 1, linePx: 2, shadow: 1, blur: 1.2, glow: 1, miss: 0 };                     // UV's, 14 Nov
 
 		/* ---------- colours and sizes, from the site's tokens ---------- */
 		var probe = document.createElement('canvas');

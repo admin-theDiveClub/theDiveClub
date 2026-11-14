@@ -1,0 +1,81 @@
+---
+layout: layout.html
+title: Banner Sandbox
+description: "A scratch page for the new banner: the hero's pool table and balls, to be adjusted before it is built. Not part of the product."
+extraStyles:
+  - /stylesheets/sandbox.css
+extraScripts:
+  - /scripts/sandbox-banner.js
+---
+{% comment %}
+	The banner's sandbox (UV, 14 Nov): a copy of /sandbox/hero/, whose table and balls
+	are to become the new banner design. Adjusted here before it is built; the hero's page is
+	kept as it was for later. The hero's notes follow.
+
+	The hero's sandbox (UV, 13 Nov): the animation meant for the home page, to point
+	a visitor to their cue-sports profile. A pool table seen from straight above, the
+	logo mark on the cloth, a spotted cue ball, a striped ball and a solid one; the cue
+	ball plays at them for ever; a potted ball falls into the void and a new one drops in from above. Built from UV's
+	pool sandbox (its table and physics); drawn on a 2D canvas in the site's design.
+	Line art for now; lighting later.
+	Nothing here is wired into the home page.
+{% endcomment %}
+
+<div class="tdc-card wide sandbox banner-sandbox">
+	<h1>Banner</h1>
+	<p class="muted">For the home page: a shot played again and again, live, from wherever the last one left the balls. A ball that drops falls into the void, and a new one drops onto the table from above. The shadows fall away from the page's light. Not linked from the nav.</p>
+
+	<div class="status" id="banner-status" role="status"></div>
+	<div class="banner-stage" id="banner-stage"></div>
+	<p class="muted banner-shot" id="banner-shot" aria-live="polite">Lining up the first shot…</p>
+
+	<div class="banner-controls">
+		<label for="banner-speed">Speed</label>
+		<input type="range" id="banner-speed" data-banner="speed" min="0.25" max="2" step="0.05">
+		<output id="banner-speed-out"></output>
+
+		<label for="banner-cs">Cloth speed</label>
+		<input type="range" id="banner-cs" data-banner="cs" min="1" max="18" step="0.5">
+		<output id="banner-cs-out"></output>
+
+		<label for="banner-cg">Cloth spin</label>
+		<input type="range" id="banner-cg" data-banner="cg" min="2" max="60" step="1">
+		<output id="banner-cg-out"></output>
+
+		<label for="banner-ks">Cushion speed</label>
+		<input type="range" id="banner-ks" data-banner="ks" min="0" max="0.8" step="0.01">
+		<output id="banner-ks-out"></output>
+
+		<label for="banner-kg">Cushion spin</label>
+		<input type="range" id="banner-kg" data-banner="kg" min="0" max="1" step="0.01">
+		<output id="banner-kg-out"></output>
+
+		<label for="banner-bb">Ball–ball</label>
+		<input type="range" id="banner-bb" data-banner="bb" min="0" max="0.5" step="0.01">
+		<output id="banner-bb-out"></output>
+
+		<label for="banner-sw">Swerve</label>
+		<input type="range" id="banner-sw" data-banner="sw" min="0" max="0.6" step="0.01">
+		<output id="banner-sw-out"></output>
+
+		<label for="banner-linepx">Lines (px)</label>
+		<input type="range" id="banner-linepx" data-banner="linePx" min="1" max="4" step="0.25">
+		<output id="banner-linepx-out"></output>
+
+		<label for="banner-shadow">Shadow</label>
+		<input type="range" id="banner-shadow" data-banner="shadow" min="0" max="1" step="0.05">
+		<output id="banner-shadow-out"></output>
+
+		<label for="banner-blur">Blur</label>
+		<input type="range" id="banner-blur" data-banner="blur" min="0" max="2" step="0.05">
+		<output id="banner-blur-out"></output>
+
+		<label for="banner-glow">Glow</label>
+		<input type="range" id="banner-glow" data-banner="glow" min="0" max="2" step="0.05">
+		<output id="banner-glow-out"></output>
+
+		<label for="banner-miss">Misses</label>
+		<input type="range" id="banner-miss" data-banner="miss" min="0" max="1" step="0.05">
+		<output id="banner-miss-out"></output>
+	</div>
+</div>
