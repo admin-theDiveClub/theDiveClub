@@ -43,6 +43,7 @@ Built from the project doc `claude/stats-todo.md` on 23 Oct 2026, with everythin
 | 5 | A `referee` column, or drop the setting — marked `stored: false` and deliberately not sent |
 | 6 | Team-match notifications — `notify-card` answers "team match" today, because there is no single other player to tell |
 | 7 | Platform limits for unverified accounts: cap *active* competitions, rate-limit creation by time, unlisted until verified (`docs/archive/stats-build-changes.md`) |
+| 8 | **Keep a picture of the ID document used for verification** (Damian's recommendation, noted by UV 14 Nov; to be built when there is time, not designed yet). Today staff type the number from the document on `/staff/verify/` and nothing else is kept (`docs/systems/foundations.md`). A picture is special personal information under POPIA, so the design must settle: a **private** bucket (unlike `player-avatars`), who may see it (staff at which venue), how long it is kept, whether the player sees and can delete it, and the privacy policy wording (`docs/STATUS.md` B1) |
 
 ## 4. Match page — elements still to place
 

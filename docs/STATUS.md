@@ -146,7 +146,7 @@ Found in a read-only review of every migration, the front end, the edge function
 
 | | What | Notes |
 |---|---|---|
-| B1 | **Privacy policy and terms** | Stubs today while the site stores SA ID numbers. Written or checked by a person, not Claude alone. Register an Information Officer with the Information Regulator |
+| B1 | **Privacy policy and terms** | Stubs today while the site stores SA ID numbers. Written or checked by a person, not Claude alone. Register an Information Officer with the Information Regulator. **Being drafted (14 Nov) as the PayFast policy pages:** terms, privacy, refunds and cancellations, delivery, styled like the league rules; waiting on UV's answers (entity, contacts, Information Officer, what is sold, refund rules). Keeping pictures of ID documents is planned (`docs/BACKLOG.md` §3 item 8, Damian's recommendation), so the privacy policy should allow for it or be revised when it is built |
 | B2 | **Direct reads of personal data** | `tbl_tournament_entrants` (paid, notes — §6) and `tbl_players` (every player's first and last name, including names staff typed from ID documents) are readable by any signed-in user. Director notes on tournaments, leagues and fixtures, and dispute notes, likewise. Revoke the direct reads; read through functions |
 | B3 | **Sign-in redirect** | `TDC.safeNext` lets `?next=/\evil.example` through, which sends a user off-site after sign-in. Notification links share the gap in their check constraint. Compare origins with `new URL(next, location.origin)` |
 | B4 | `tdc_staff_link_account` | Staff at any venue can attach any walk-in to any account, with no consent and no venue link. Owner/admin only, walk-in tied to that venue, user confirms |
