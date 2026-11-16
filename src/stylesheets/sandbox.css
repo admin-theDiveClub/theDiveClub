@@ -827,9 +827,15 @@ body:has(.nm-layout) .sandbox h1 { overflow-wrap: anywhere; }   /* one long word
 .hero-controls output { text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ─── The banner (/sandbox/banner/; UV, 14 Nov) ───
-   The table itself is the site's (banner-table.css); here only the shot readout. */
+   The table itself is the site's (banner-table.css); here only the shot readout and the
+   speed switches (16 Nov). */
 .banner-shot {
 	min-height: 1.5em;
 	margin-top: var(--space-2);
 	text-align: center;
 }
+.banner-perf {
+	min-height: 1.5em;
+	font-variant-numeric: tabular-nums;
+}
+.banner-controls { margin-top: var(--space-3); }

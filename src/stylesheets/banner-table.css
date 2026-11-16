@@ -40,11 +40,20 @@
 }
 .banner-table { z-index: 0; }
 .banner-balls { z-index: 3; }
+/* The frosted circles' box (16 Nov): over the banner's text, under the balls, the balls'
+   canvas's size (the script sets top, left, right and height), clipping a circle that
+   reaches past it so the page never scrolls sideways */
+.banner-frosts {
+	position: absolute;
+	z-index: 2;
+	overflow: hidden;
+	overflow: clip;
+	pointer-events: none;
+}
 .banner-frost {
 	position: absolute;
 	top: 0;
 	left: 0;
-	z-index: 2;
 	border-radius: 50%;
 	pointer-events: none;
 	-webkit-backdrop-filter: blur(var(--banner-frost, 3px));

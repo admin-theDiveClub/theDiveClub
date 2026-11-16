@@ -46,6 +46,24 @@ var TDCBannerTable = (function () {
 	'use strict';
 	var AREA = 'Banner';
 
+	// The speed-ups that change the look (UV, 16 Nov: "implement all and let me decide"),
+	// each off, so every page looks as it did until UV chooses; switched on
+	// /sandbox/banner/ (sandbox-banner-controls.js) through quality().
+	//   glow       'full': the features' glow blurred at full size; 'quarter': blurred on a
+	//              picture a quarter the size and enlarged (C1)
+	//   frost      'full' (3px), 'light' (1.5px) or 'off': the frosted circles (G)
+	//   sharp      the most pixels per CSS pixel drawn: 2, 1.5 or 1
+	//   autoSharp, autoFrost, autoPlan: once the phone is struggling (H; under about 22
+	//              frames a second for 2 s, and from then on for the page's life), sharpness
+	//              1.5 at most, the frost off, and shots planned 2 ms a frame, not 5 (I)
+	var Q = { glow: 'full', frost: 'full', sharp: 2, autoSharp: false, autoFrost: false, autoPlan: false };
+	var live = [];   // the tables on the page, told when Q changes
+	function quality(changes) {
+		if (changes) Object.keys(changes).forEach(function (k) { if (k in Q) Q[k] = changes[k]; });
+		live.forEach(function (t) { t.qualityChanged(); });
+		return Q;
+	}
+
 	// The table and balls round one banner (stage). They are drawn in a wrapper put round
 	// it (.banner-wrap), not in it: a banner clips sideways (design.css, "nothing leaves
 	// its card") and the table reaches out into the page card's margin. opts.status: where
@@ -58,7 +76,7 @@ var TDCBannerTable = (function () {
 		wrap.className = 'banner-wrap';
 		stage.parentNode.insertBefore(wrap, stage);
 		wrap.appendChild(stage);
-		var statusEl = opts.status || null, shotEl = opts.shot || null;
+		var statusEl = opts.status || null, shotEl = opts.shot || null, perfEl = opts.perf || null;
 		function fail(message, e) {
 			if (!statusEl) {
 				statusEl = document.createElement('div');
@@ -300,6 +318,27 @@ var TDCBannerTable = (function () {
 			top.className = 'banner-balls';
 			wrap.appendChild(top);
 			var tctx = top.getContext('2d');
+			// The frosted circles, in a box the balls' canvas's size that clips them (16 Nov:
+			// a ball dropping in from above the camera is drawn large and far out, and its
+			// circle reached past the page's edge, so the page scrolled sideways). The
+			// balls' canvas cuts the ball off at the same edge, so nothing that showed is lost.
+			var frosts = document.createElement('div');
+			frosts.className = 'banner-frosts';
+			wrap.appendChild(frosts);
+			// The look-changing speed-ups (Q, above): whether this phone is struggling, from
+			// a running average of the time between frames (ms), measured from 3 s after
+			// the table starts; once struggling, it stays so for the page's life, so the
+			// lighter drawing never flicks back and forth
+			var startedAt = performance.now(), frameMs = 1000 / 60, slowFor = 0, struggling = false, frostOff = false, perfAt = 0;
+			function sharpNow() { return struggling && Q.autoSharp ? Math.min(Q.sharp, 1.5) : Q.sharp; }
+			function frostNow() { return struggling && Q.autoFrost ? 'off' : Q.frost; }
+			function planMsNow() { return struggling && Q.autoPlan ? 2 : PLAN_MS; }
+			function applyFrost() {
+				var f = frostNow();
+				frostOff = f === 'off';
+				frosts.style.setProperty('--banner-frost', f === 'light' ? '1.5px' : '3px');
+			}
+			applyFrost();
 			// The table changes only when the light or the banner's size changes, so it is
 			// drawn on a layer of its own, a canvas on the page under the trails' (16 Nov: it
 			// was copied onto the trails' canvas every frame)
@@ -348,7 +387,7 @@ var TDCBannerTable = (function () {
 					bl = Math.max(0, Math.floor(Math.min(sr.left - cr.left, cr.right - sr.right) - card.clientLeft));
 				}
 				var w = bw + 2 * bl;
-				var d = Math.min(window.devicePixelRatio || 1, 2);
+				var d = Math.min(window.devicePixelRatio || 1, sharpNow());
 				var upright = window.innerWidth < window.innerHeight;
 				var ballPx = Math.min(bw / (upright ? 18 : 36), POCKET_MAX / MM);
 				// Where the corner pockets reach out into the card's margin, they are made
@@ -359,7 +398,7 @@ var TDCBannerTable = (function () {
 				if (key === boxKey) return null;
 				boxKey = key;
 				bleed = bl; topOff = stage.offsetTop;
-				[layer, canvas, top].forEach(function (el) {
+				[layer, canvas, top, frosts].forEach(function (el) {
 					el.style.left = el.style.right = -bl + 'px';
 					el.style.top = topOff + 'px';
 					el.style.height = h + 'px';
@@ -529,7 +568,7 @@ var TDCBannerTable = (function () {
 				var frost = document.createElement('div');
 				frost.className = 'banner-frost';
 				frost.hidden = true;
-				wrap.appendChild(frost);
+				frosts.appendChild(frost);
 				return { kind: kind, name: name, body: body, feat: feat, bctx: body.getContext('2d'), fctx: feat.getContext('2d'), size: 0,
 					glow: glow, gctx: glow.getContext('2d'), gm: 0,
 					frost: frost, x: 0, y: 0, z: 0, vx: 0, vz: 0, vy: 0, sx: 0, sz: 0, wy: 0, hit: false, state: 'play', pk: null, t: 0,
@@ -924,7 +963,7 @@ var TDCBannerTable = (function () {
 			}
 			function planStep(pl) {
 				var t0 = performance.now();
-				while (pl.queue.length && performance.now() - t0 < PLAN_MS) {
+				while (pl.queue.length && performance.now() - t0 < planMsNow()) {
 					var q = pl.queue.shift(), power = paceFor(q.plan, q.arrive);
 					var r = simulate(q.plan, power, q.tipX, q.tipY, pl.other, pl.next);
 					if (r.potted && !r.scratch) pl.tried.push({ plan: q.plan, power: power, tipX: q.tipX, tipY: q.tipY, arrive: q.arrive, err: r.err });
@@ -1020,7 +1059,7 @@ var TDCBannerTable = (function () {
 			function paintBall(b, rp) {
 				var size = Math.ceil(rp * 2) + 4;
 				var same = b.size === size && b.prp === rp && b.pv === tokVer && b.pg === S.glow && b.pd === dpr;
-				if (same && b.pq === b.q) return;
+				if (same && b.pq === b.q && b.pgq === Q.glow) return;
 				var fd, half = size / 2, px, n = size * size;
 				if (!same) {
 					if (b.size !== size) {
@@ -1096,7 +1135,22 @@ var TDCBannerTable = (function () {
 				// blur reaches 1.5 times its size, so the picture has that much room round it.
 				var gb = 8 * S.glow * dpr, m = Math.ceil(gb * 1.5) + 2, gs = size + 2 * m, g = b.gctx;
 				if (b.glow.width !== gs) b.glow.width = b.glow.height = gs; else g.clearRect(0, 0, gs, gs);
-				b.gm = m;
+				b.gm = m; b.pgq = Q.glow;
+				if (S.glow > 0 && Q.glow === 'quarter') {
+					// C1 (Q.glow): the glow alone blurred on a picture a quarter the size,
+					// enlarged under the crisp features. The shape is drawn off that picture and
+					// its shadow thrown back onto it, so only the glow lands there.
+					var k = 4, ls = Math.ceil(gs / k);
+					if (!b.low) { b.low = document.createElement('canvas'); b.lctx = b.low.getContext('2d'); }
+					if (b.low.width !== ls) b.low.width = b.low.height = ls; else b.lctx.clearRect(0, 0, ls, ls);
+					var lc = b.lctx;
+					lc.shadowColor = css(b === cue ? C.yellowGlow : C.glow, S.glow);
+					lc.shadowBlur = gb / k; lc.shadowOffsetX = 4 * ls; lc.shadowOffsetY = 0;
+					lc.drawImage(b.feat, m / k - 4 * ls, m / k, size / k, size / k);
+					g.drawImage(b.low, 0, 0, ls * k, ls * k);
+					g.drawImage(b.feat, m, m);
+					return;
+				}
 				if (S.glow > 0) setShadow(g, css(b === cue ? C.yellowGlow : C.glow, S.glow), 0, 0, 8 * S.glow);
 				g.drawImage(b.feat, m, m);
 				noShadow(g);
@@ -1141,12 +1195,12 @@ var TDCBannerTable = (function () {
 				// Frosted where it is see-through (UV, 14 Nov): a blurred circle under it, over
 				// the banner's text. Not while it goes down the pocket, where the table hides it.
 				// (each style written only when it changes, 16 Nov)
-				var hide = under || alpha <= 0;
+				var hide = under || alpha <= 0 || frostOff;
 				if (fr.hidden !== hide) fr.hidden = hide;
 				if (!hide) {
 					var dc = 2 * rp / dpr;
 					if (fr.tdcD !== dc) { fr.tdcD = dc; fr.style.width = fr.style.height = dc + 'px'; }
-					var tf = 'translate(' + (p[0] / dpr - dc / 2 - bleed) + 'px,' + (p[1] / dpr - dc / 2 + topOff) + 'px)';   // where the canvas sits in the wrapper
+					var tf = 'translate(' + (p[0] / dpr - dc / 2) + 'px,' + (p[1] / dpr - dc / 2) + 'px)';   // in the frosts' box, which lies over the canvas
 					if (fr.tdcT !== tf) { fr.tdcT = tf; fr.style.transform = tf; }
 					if (fr.tdcA !== alpha) { fr.tdcA = alpha; fr.style.opacity = alpha; }
 				}
@@ -1254,8 +1308,20 @@ var TDCBannerTable = (function () {
 				raf = 0;
 				if (failed || !seen) return;
 				try {
-					var real = Math.min((now - last) / 1000, 0.05), dt = real * S.speed;
+					var raw = now - last, real = Math.min(raw / 1000, 0.05), dt = real * S.speed;
 					last = now;
+					// Struggling (Q): the time between frames, averaged, over 45 ms for 2 s
+					if (now - startedAt > 3000) {
+						frameMs = frameMs * 0.92 + Math.min(raw, 250) * 0.08;
+						if (!struggling) {
+							slowFor = frameMs > 45 ? slowFor + raw / 1000 : 0;
+							if (slowFor > 2) { struggling = true; qualityChanged(); }
+						}
+					}
+					if (perfEl && now - perfAt > 500) {
+						perfAt = now;
+						perfEl.textContent = Math.round(1000 / frameMs) + ' frames a second' + (struggling ? ' · struggling' : '');
+					}
 					// The banner's size: as it opens or closes, the right and bottom cushions
 					// move and push what they reach. No shot is planned or played until it has
 					// held still a moment, as the planner plays shots on a copy of the table.
@@ -1361,8 +1427,12 @@ var TDCBannerTable = (function () {
 				else if (raf) { cancelAnimationFrame(raf); raf = 0; }
 			});
 			seeWatch.observe(wrap);
-			return {
+			// A switch on the sandbox changed (quality), or this phone began to struggle
+			function qualityChanged() { applyFrost(); sizeMayChange(); forceDraw = true; }
+			var me = {
+				qualityChanged: qualityChanged,
 				stop: function () {
+					live.splice(live.indexOf(me), 1);
 					failed = true;
 					if (raf) cancelAnimationFrame(raf);
 					raf = 0;
@@ -1373,6 +1443,8 @@ var TDCBannerTable = (function () {
 					unwrap();
 				}
 			};
+			live.push(me);
+			return me;
 		}
 	}
 
@@ -1385,7 +1457,7 @@ var TDCBannerTable = (function () {
 		var off = lessMotion();
 		document.querySelectorAll('[data-banner-table]').forEach(function (el) {
 			if (off && el.tdcTable) { el.tdcTable.stop(); el.tdcTable = null; }
-			else if (!off && !el.tdcTable) el.tdcTable = attach(el, { status: byId(el.dataset.bannerStatus), shot: byId(el.dataset.bannerShot) });
+			else if (!off && !el.tdcTable) el.tdcTable = attach(el, { status: byId(el.dataset.bannerStatus), shot: byId(el.dataset.bannerShot), perf: byId(el.dataset.bannerPerf) });
 		});
 	}
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sync);
@@ -1393,5 +1465,5 @@ var TDCBannerTable = (function () {
 	new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ['data-motion'] });
 	matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', sync);
 
-	return { attach: attach, sync: sync };
+	return { attach: attach, sync: sync, quality: quality };
 })();

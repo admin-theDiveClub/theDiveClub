@@ -9,6 +9,7 @@ extraStyles:
   - /stylesheets/sandbox.css
 extraScripts:
   - /scripts/banner-table.js
+  - /scripts/sandbox-banner-controls.js
 ---
 {% comment %}
 	The banner's sandbox (UV, 14 Nov): the hero's table and balls (/sandbox/hero/, kept
@@ -31,7 +32,7 @@ extraScripts:
 		The scorecard's banner, as leagues/card/index.html has it, made-up content. The
 		table is the site's (scripts/banner-table.js); this page alone shows its readout.
 	{% endcomment %}
-	<section class="jumbo card-jumbo card-state-lineups" id="banner-stage" data-banner-table data-banner-shot="banner-shot" data-banner-status="banner-status">
+	<section class="jumbo card-jumbo card-state-lineups" id="banner-stage" data-banner-table data-banner-shot="banner-shot" data-banner-status="banner-status" data-banner-perf="banner-perf">
 		<div class="cj-head">
 			<div class="cj-team">
 				<span class="team-pic cj-pic" data-banner-pic></span>
@@ -62,4 +63,52 @@ extraScripts:
 		</details>
 	</section>
 	<p class="muted banner-shot" id="banner-shot" aria-live="polite">Lining up the first shot…</p>
+
+	{% comment %}
+		The speed-ups that change the look (UV, 16 Nov: "implement all and let me decide"),
+		for UV to try on his phone in Low Power Mode. Each starts as the site has it; real
+		pages keep the site's look until UV chooses (banner-table.js, Q). Kept in this
+		browser only (sandbox-banner-controls.js).
+	{% endcomment %}
+	<h2>Speed</h2>
+	<p class="muted banner-perf" id="banner-perf" aria-live="off"></p>
+	<div class="banner-controls">
+		<div class="field">
+			<label for="bq-glow">Glow</label>
+			<select id="bq-glow">
+				<option value="full">Blurred at full size (now)</option>
+				<option value="quarter">Blurred at a quarter size</option>
+			</select>
+		</div>
+		<div class="field">
+			<label for="bq-frost">Frosted circles</label>
+			<select id="bq-frost">
+				<option value="full">Full (now)</option>
+				<option value="light">Light</option>
+				<option value="off">Off</option>
+			</select>
+		</div>
+		<div class="field">
+			<label for="bq-sharp">Sharpness</label>
+			<select id="bq-sharp">
+				<option value="2">2× (now)</option>
+				<option value="1.5">1.5×</option>
+				<option value="1">1×</option>
+			</select>
+		</div>
+		<p class="muted">When the phone struggles (under about 22 frames a second for 2 seconds; from then on until the page is reloaded):</p>
+		<div class="field">
+			<label for="bq-auto-sharp">Sharpness down to 1.5×</label>
+			<input type="checkbox" id="bq-auto-sharp">
+		</div>
+		<div class="field">
+			<label for="bq-auto-frost">Frosted circles off</label>
+			<input type="checkbox" id="bq-auto-frost">
+		</div>
+		<div class="field">
+			<label for="bq-auto-plan">Shots planned in smaller slices</label>
+			<input type="checkbox" id="bq-auto-plan">
+			<div class="hint">2 ms a frame instead of 5: a shot may wait a moment longer</div>
+		</div>
+	</div>
 </div>
