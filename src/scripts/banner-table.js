@@ -330,6 +330,13 @@ var TDCBannerTable = (function () {
 			// the table starts; once struggling, it stays so for the page's life, so the
 			// lighter drawing never flicks back and forth
 			var startedAt = performance.now(), frameMs = 1000 / 60, slowFor = 0, struggling = false, frostOff = false, perfAt = 0;
+			// The light (UV, 16 Nov: stutters "when the light moves and the balls are moving at
+			// the same time"): every move of page-light.js's light redraws the table's blurs
+			// and restyles the page. From the first stutter (a frame more than twice the usual
+			// time between frames, and at least 40 ms: at 30 frames a second, a steady 30 is
+			// not one) the light holds while any ball moves, for the rest of the visit, and
+			// drifts on from where it was in the pauses. Site-wide, on every banner (UV).
+			var usualMs = 1000 / 60, stutterSeen = false, lightHeld = false;
 			function sharpNow() { return struggling && Q.autoSharp ? Math.min(Q.sharp, 1.5) : Q.sharp; }
 			function frostNow() { return struggling && Q.autoFrost ? 'off' : Q.frost; }
 			function planMsNow() { return struggling && Q.autoPlan ? 2 : PLAN_MS; }
@@ -1318,9 +1325,19 @@ var TDCBannerTable = (function () {
 							if (slowFor > 2) { struggling = true; qualityChanged(); }
 						}
 					}
+					// The light (above). A gap over a second is the page coming back from the
+					// background, not a stutter.
+					var rolling = moving();
+					if (now - startedAt > 3000 && raw < 1000) {
+						if (!stutterSeen && rolling && raw > Math.max(40, 2 * usualMs)) stutterSeen = true;
+						if (raw <= 2 * usualMs) usualMs = usualMs * 0.95 + raw * 0.05;
+					}
+					lightHeld = stutterSeen && rolling;
+					if (lightHeld) window.TDCLightHeldUntil = Math.max(window.TDCLightHeldUntil || 0, performance.now() + 250);
 					if (perfEl && now - perfAt > 500) {
 						perfAt = now;
-						perfEl.textContent = Math.round(1000 / frameMs) + ' frames a second' + (struggling ? ' · struggling' : '');
+						perfEl.textContent = Math.round(1000 / frameMs) + ' frames a second' + (struggling ? ' · struggling' : '') +
+							(lightHeld ? ' · light held' : stutterSeen ? ' · stutter seen' : '');
 					}
 					// The banner's size: as it opens or closes, the right and bottom cushions
 					// move and push what they reach. No shot is planned or played until it has

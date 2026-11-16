@@ -1082,6 +1082,7 @@
 		var STEP = 1 / 480, acc = 0;
 		var last = performance.now(), failed = false;
 		var LIGHT_MS = 200, layerLight = '', layerAt = -1e9, drawnFade = -1;
+		var startedAt = performance.now(), usualMs = 1000 / 60, stutterSeen = false;
 		var DRAW_ORDER = ['drop', 'play', 'fall'];
 		// What the balls look like, as numbers: the canvas is drawn again only when one
 		// differs. forceDraw: the canvas was cleared by a new size (fit).
@@ -1104,8 +1105,17 @@
 		function frame(now) {
 			if (failed) return;
 			try {
-				var dt = Math.min((now - last) / 1000, 0.05) * S.speed;
+				var raw = now - last, dt = Math.min(raw / 1000, 0.05) * S.speed;
 				last = now;
+				// The light holds while a ball moves, from the first stutter on (as the banner,
+				// banner-table.js; UV, 16 Nov): a frame more than twice the usual time between
+				// frames and at least 40 ms; a gap over a second is the page coming back
+				var rolling = moving();
+				if (now - startedAt > 3000 && raw < 1000) {
+					if (!stutterSeen && rolling && raw > Math.max(40, 2 * usualMs)) stutterSeen = true;
+					if (raw <= 2 * usualMs) usualMs = usualMs * 0.95 + raw * 0.05;
+				}
+				if (stutterSeen && rolling) window.TDCLightHeldUntil = Math.max(window.TDCLightHeldUntil || 0, performance.now() + 250);
 				acc = Math.min(acc + dt, 0.1);
 				while (acc >= STEP) { step(STEP); acc -= STEP; }
 				balls.forEach(function (b) {
