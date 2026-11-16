@@ -1,0 +1,35 @@
+---
+layout: layout.html
+permalink: "/L-BC8MTL.html"
+title: Billiard Cafe 8-Ball Mainstream
+description: "Fixtures, standings and results for the 8-ball league at Billiard Cafe, Rivonia."
+ogUrl: "/L-BC8MTL"
+ogImage: "/resources/share/L-BC8MTL.png"
+ogImageWidth: 1200
+ogImageHeight: 1200
+ogImageAlt: "The Dive Club and Billiard Cafe logos. 8-Ball League, Billiard Cafe, Rivonia."
+extraScripts:
+  - /scripts/short-link.js
+---
+{% comment %}
+	The 8-Ball Mainstream league's short link with its own share preview (UV, 16 Nov).
+	WhatsApp runs no script, so the preview comes from this page's own tags; the
+	404 page every other short link uses carries the site's picture. GitHub Pages
+	serves /L-BC8MTL from this file. Everything else is 404.html's: short-link.js
+	looks the code up from the address and forwards, so only the preview differs.
+	If the league's code changes, this page stops working: delete it.
+
+	Every address on this page must start at the root.
+{% endcomment %}
+
+<div class="tdc-card">
+	<div id="sl-reason" hidden>
+		<h1 id="sl-head"></h1>
+		<p class="muted" id="sl-text"></p>
+		<div class="link-row">
+			<a href="/leagues/">Leagues</a>
+			<a href="/tournaments/">Tournaments</a>
+		</div>
+	</div>
+	<div class="status" id="page-status"></div>
+</div>

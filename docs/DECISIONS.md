@@ -2051,3 +2051,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to judge:* the words ("Turn on notifications to hear about your matches. You can change them any time on your profile page."; after it, "Notifications are on…" or, refused, that only the phone's settings can undo it); the welcome ending once notifications are on or refused.
 *Not checked:* on a phone; driven headless as the installed app with a stand-in sign-in, where the flow stops at "no service worker" (none off the live site).
 *Touches:* `src/index.html`, `src/scripts/home.js`, `src/scripts/nav.js`, `src/scripts/push.js`, `src/scripts/push-core.js` (new), `src/_includes/layout.html`
+
+## 2026-11-16 — The 8-Ball Mainstream link's own share picture
+
+*Decided by UV:* `thediveclub.org/L-BC8MTL` previews with its own picture: The Dive Club's mark and Billiard Cafe's logo, the green band from the site's share picture reading "8-BALL LEAGUE / BILLIARD CAFE / RIVONIA", **square**, the words wrapped and the logos smaller.
+*How:* a real page at that address (`src/L-BC8MTL.html`), since WhatsApp reads only a page's own tags; it forwards through `short-link.js` as every short link does. `layout.html` takes a page's own `ogImage`. `docs/systems/foundations.md`, "Short links".
+*Claude's, not asked:* the title "Billiard Cafe 8-Ball Mainstream" and description "Fixtures, standings and results for the 8-ball league at Billiard Cafe, Rivonia."; the thin line between the logos; PNG rather than JPG (182 KB).
+*Touches:* `src/L-BC8MTL.html` (new), `src/resources/share/L-BC8MTL.png` (new), `src/_includes/layout.html`
