@@ -8,6 +8,108 @@ main {
 	min-height: calc(100dvh - var(--nav-total) - env(safe-area-inset-bottom, 0px));
 }
 
+/* Partners and sponsors (_includes/footer.html; UV, 16 Nov): a band in the
+   site's grey above the footer, each icon a cut-out showing the page's
+   background through it. The icon file is used only as a mask, so its own
+   colours never show. */
+.site-partners {
+	position: relative;
+	background: var(--text-muted);
+	/* Tight round the icons, so they fill the band (UV, 16 Nov), and a gap
+	   below it before the footer. */
+	padding: var(--space-4) var(--space-5);
+	margin-bottom: var(--space-5);
+}
+.pt-list {
+	list-style: none;
+	margin: 0 auto;
+	padding: 0;
+	max-width: 1040px;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: center;
+	gap: var(--space-5) var(--space-7);
+}
+.pt-logo {
+	display: block;
+	width: 10rem;
+	height: 5rem;
+	background: var(--bg-base);
+	-webkit-mask: var(--pt-icon) center / contain no-repeat;
+	mask: var(--pt-icon) center / contain no-repeat;
+	transition: opacity 0.15s;
+}
+a.pt-logo:hover,
+a.pt-logo:focus-visible {
+	opacity: 0.75;
+}
+/* On a phone (UV, 16 Nov): one row, edge to edge. Icons that fit sit centred
+   and still; when they do not, scripts/partners.js makes the row a carousel
+   (.is-carousel: the icons twice over, slid left by one set, endlessly) or,
+   with less motion, a row swiped by hand (.is-swipe). Either way the icons
+   fade out at the banner's edges rather than being cut off. The gap is each
+   icon's own padding, not the list's gap, so the two sets measure the same
+   and the loop has no seam. */
+@media (max-width: 47.99rem) {
+	.site-partners {
+		padding-inline: 0;
+	}
+	.pt-list {
+		flex-wrap: nowrap;
+		gap: 0;
+	}
+	.pt-list li {
+		flex: 0 0 auto;
+		padding-inline: var(--space-2);
+	}
+	.pt-view.is-carousel,
+	.pt-view.is-swipe {
+		--pt-fade: var(--space-6);
+		-webkit-mask: linear-gradient(to right, transparent, #000 var(--pt-fade), #000 calc(100% - var(--pt-fade)), transparent);
+		mask: linear-gradient(to right, transparent, #000 var(--pt-fade), #000 calc(100% - var(--pt-fade)), transparent);
+	}
+	.pt-view.is-carousel {
+		overflow: hidden;
+	}
+	.is-carousel .pt-list {
+		width: max-content;
+		max-width: none;
+		justify-content: flex-start;
+		animation: pt-drift var(--pt-loop, 20s) linear infinite;
+	}
+	/* Held still while a finger or the pointer is on it, or an icon has focus */
+	.is-carousel:hover .pt-list,
+	.is-carousel:active .pt-list,
+	.is-carousel:focus-within .pt-list {
+		animation-play-state: paused;
+	}
+	.pt-view.is-swipe {
+		overflow-x: auto;
+		scrollbar-width: none;
+		overscroll-behavior-x: contain;
+	}
+	.pt-view.is-swipe::-webkit-scrollbar { display: none; }
+	.is-swipe .pt-list {
+		width: max-content;
+		max-width: none;
+		justify-content: flex-start;
+		padding-inline: var(--space-6);   /* the first and last icon clear the fade */
+	}
+}
+@keyframes pt-drift {
+	to { transform: translateX(-50%); }
+}
+
+/* The mask would clip an outline drawn on the icon itself, so the ring goes
+   round its list item. */
+a.pt-logo:focus-visible { outline: none; }
+.pt-list li:has(a.pt-logo:focus-visible) {
+	outline: 2px solid var(--bg-base);
+	outline-offset: 4px;
+	border-radius: 2px;
+}
+
 .site-footer {
 	/* The mark's height; the name is set to match it. */
 	--ft-mark: 2.5rem;
@@ -203,8 +305,9 @@ main {
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.site-footer a { transition: none; }
-}
+	.site-footer a,
+	.pt-logo { transition: none; }}
 @media print {
-	.site-footer { display: none; }
+	.site-footer,
+	.site-partners { display: none; }
 }

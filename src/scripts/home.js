@@ -1,59 +1,52 @@
-// The home page (UV, 16 Nov): the site icon where the loading screen leaves it, and the
-// hero's pool table (hero.js) covering the first screen over it.
+// The home page (UV, 16 Nov): the hero's table (hero.js) frozen in the screen under the
+// bar, which always shows here, and the page's content scrolling in a box laid on its
+// cloth, the balls rolling over it (index.html stacks the three).
 //
-// The icon is the loading screen's own drawing (the layout's #tdc-dive-art, dive.js), at
-// rest, in a box the size of the loading screen's (index.html .home-icon) and with the
-// same options as loader.js, so its portal lands on the loader's portal (UV: "use the
-// portal to align them") and the loader fades into the page with nothing moving. It
-// sits at the foot of the first screen, as the loader's does.
-//
-// The table covers the screen (UV, 16 Nov: "use screen size"): its stage runs from where
-// the page's content starts (under the bar, and the strip under it when there is one)
-// to the foot of the first screen, edge to edge, and its shape follows the screen
-// (hero.js). The icon lies under the table, inside its cloth, so the balls roll over it.
+// hero.js says where the cloth is each time it lays the table out ('tdc-hero-bed' on the
+// stage, and stage.heroBed for the first time, which comes before this script runs);
+// the box is placed on the cushions' noses, its corners rounded clear of the corner
+// pockets' jaws. Any part of the box under the bar or the banners under it (nav.html:
+// linked to your league record, Get the app; above everything here, as the bar is,
+// UV 16 Nov: index.html) is padded (--home-under-bar), so the content's first line
+// shows below them.
 (function () {
 	'use strict';
 	var AREA = 'Home';
-	var box = document.getElementById('home-icon');
 	var stage = document.getElementById('hero-stage');
+	var box = document.getElementById('home-scroll');
 	var statusEl = document.getElementById('hero-status');
-	if (!box || !stage) return;
+	if (!stage || !box) return;
 	try { init(); } catch (e) { TDC.error(AREA, 'the home page could not be laid out.', e, statusEl); }
 
 	function init() {
-		var art = document.getElementById('tdc-dive-art');
-		if (!art || typeof TDCDive === 'undefined') throw new Error('the dive drawing (#tdc-dive-art, dive.js) is not on this page.');
-		var svg = art.content.querySelector('svg.dive').cloneNode(true);
-		svg.removeAttribute('role');
-		svg.removeAttribute('aria-label');
-		box.append(svg);
-		// As loader.js: frame 'fit', the scene the screen's width over the golden ratio
-		if (!TDCDive.attach(svg, { frame: 'fit', across: 1 / 1.618 })) throw new Error('the dive drawing could not be laid out.');
-
-		var parts = [svg.querySelector('.dive-base'), svg.querySelector('.dive-diver')];
-
-		// The foot of the icon's box is the foot of the first screen. The icon itself (the
-		// portal, ladder and diver as drawn) goes to hero.js as data-keep, so the table's
-		// cloth always holds it (UV, 16 Nov: "as if on the cloth")
-		function size() {
+		var strips = ['nav-linked', 'nav-get-app'].map(function (id) { return document.getElementById(id); }).filter(Boolean);
+		var bar = document.querySelector('.site-nav');
+		var bed = null;
+		function place() {
+			if (!bed) return;
 			try {
-				var foot = box.getBoundingClientRect().bottom, top = stage.getBoundingClientRect().top;
-				stage.style.height = Math.max(0, Math.floor(foot - top)) + 'px';
-				var s = stage.getBoundingClientRect(), r = parts.map(function (p) { return p.getBoundingClientRect(); });
-				var keep = [
-					Math.min(r[0].left, r[1].left) - s.left, Math.min(r[0].top, r[1].top) - s.top,
-					Math.max(r[0].right, r[1].right) - s.left, Math.max(r[0].bottom, r[1].bottom) - s.top,
-				].map(Math.round).join(',');
-				if (stage.dataset.keep !== keep) stage.dataset.keep = keep;
+				var s = stage.getBoundingClientRect();
+				box.style.left = (s.left + bed.left) + 'px';
+				box.style.top = (s.top + bed.top) + 'px';
+				box.style.width = Math.max(0, bed.right - bed.left) + 'px';
+				box.style.height = Math.max(0, bed.bottom - bed.top) + 'px';
+				box.style.borderRadius = Math.round(bed.pocket * 0.6) + 'px';
+				// The foot of the bar and of any banner showing under it, as they stand when the
+				// bar shows (they slide away, but their sizes stay)
+				var foot = bar ? bar.offsetHeight : 0;
+				strips.forEach(function (el) { if (el.offsetHeight) foot = Math.max(foot, el.offsetTop + el.offsetHeight); });
+				var under = foot - (s.top + bed.top);
+				box.style.setProperty('--home-under-bar', Math.max(0, Math.ceil(under)) + 'px');
 			} catch (e) {
-				TDC.error(AREA, 'the table could not be sized.', e, statusEl);
+				TDC.error(AREA, 'the content could not be laid on the table.', e, statusEl);
 			}
 		}
-		// Whenever the screen or the page above the table changes height (the strip under the bar)
-		var watch = new ResizeObserver(size);
-		watch.observe(box);
-		watch.observe(svg);   // after dive.js has laid the icon out (its watcher is older)
-		watch.observe(document.body);
-		size();
+		stage.addEventListener('tdc-hero-bed', function (e) { bed = e.detail; place(); });
+		// A banner shown or closed (nav.js fills them in after the page has loaded)
+		var watch = new ResizeObserver(place);
+		strips.forEach(function (el) { watch.observe(el); });
+		bed = stage.heroBed || null;
+		if (!bed) console.error('[' + AREA + '] the table has not said where its cloth is yet; the content waits for it.');
+		place();
 	}
 })();

@@ -1975,3 +1975,17 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to judge:* the icon drawn under the table, so the balls roll over it; the icon is the loader's own drawing at rest (`dive.svg`, laid out by `dive.js` with the loader's options), not `icon-primary.svg`, so the portals match to the pixel; 18 balls of cloth across the short side unless holding the icon needs smaller balls; the table's margin half a ball, so it runs nearly to the screen's edges; a side of the icon that would need balls under 9px is not held (a phone on its side: the portal's foot over the bottom cushion, the diver's head under the bar); the search description still says "Opening soon".
 *So:* `docs/systems/file-map.md`, the home page and the hero.
 *Touches:* no migration. `src/index.html`, `src/scripts/home.js` (new), `src/scripts/hero.js` (was `sandbox-hero.js`), `src/sandbox/hero/index.html`
+
+## 2026-11-16 — The home page's table frozen, its content scrolling on the cloth
+
+*Decided by UV, later the same day:* **no icon** on the home page (and so not its grey version). **The table is frozen with its animation** over the whole screen, under the bar, which hides it until the bar slides away; **the content scrolls inside the table**, as wide as the cloth. **The balls roll over the content**, and **the table's shadows, highlights and outline lie over it too**. **The content starts at the top of the cloth.** **The footer is always at the foot of the page and nothing scrolls past it.** **The banners under the bar stay above everything, as the bar does.** **The balls are sized from the pockets, and the pockets from the screen.**
+*Replaces:* the icon in the loader's spot and the cloth sized to hold it (the entry above).
+*Decided by UV, later the same day:* the pockets keep **the banner's maximum, 32px** (14 Nov): UV preferred the small pockets and balls of the stretched table with the icon on it, which came from fitting the icon, not from a rule. Measured as the banner measures it, on a middle pocket, so balls are at most 16.8px on any screen.
+*Claude's, for UV to judge:* a corner pocket's mouth 0.08 of the screen's short side below that maximum (only a small screen comes under it); the content's first line padded below the bar and any banner, so it is not hidden when the page opens; the banners sliding away with the bar (elsewhere they scroll away with the page); the window not scrolling, so the bar's hiding follows the box's scroll (`nav.js`, `data-page-scroll`); the footer's own solid background kept, so it reads as a panel on the cloth.
+*So:* `docs/systems/file-map.md`, the home page and the hero.
+*Touches:* no migration. `src/index.html`, `src/scripts/home.js`, `src/scripts/hero.js`, `src/scripts/nav.js`
+
+*Decided by UV, later the same day:* on the home page **the bar always shows** (no hiding on scroll), and **the table fits the screen under it**. The banners under the bar stay above everything, over the table's top.
+*Replaces:* the table running under the bar and showing whole once the bar hides; the bar following the content box's scroll (`nav.js` and `data-page-scroll` are back as they were: the bar hides only on the page's own scroll, and this page never scrolls).
+*Claude's, for UV to judge:* the table not made smaller for a banner (they come and go, and a resize would move the balls); the content's first line padded below a banner instead.
+*Touches:* `src/index.html`, `src/scripts/home.js`; `src/scripts/nav.js` unchanged from before this work

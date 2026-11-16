@@ -2,67 +2,87 @@
 layout: layout.html
 title: Home
 description: The Dive Club — pool lounge in Lonehill, Fourways, Johannesburg. Opening soon.
+hideFooter: true
+extraStyles:
+  - /stylesheets/footer.css
 extraScripts:
   - /scripts/hero.js
   - /scripts/home.js
 ---
 {% comment %}
-	The home page (UV, 16 Nov): the site icon where the loading screen leaves it, its
-	portal on the loading screen's portal, so the loader fades into the page with
-	nothing moving; the hero's pool table (scripts/hero.js) covering the first screen
-	over it, its shape following the screen and its cloth holding the icon, with no
-	logo and no markings on the cloth. The table plays whatever the motion setting
-	(UV, 16 Nov). The layout is scripts/home.js.
+	The home page (UV, 16 Nov): the hero's pool table (scripts/hero.js) frozen in the
+	screen under the bar, playing whatever the motion setting; its shape follows the
+	screen, its pockets never over 32px (the banner's); no logo and no markings on the
+	cloth. The page itself does not scroll: its content (the footer, for now) scrolls in
+	a box laid on the cloth (scripts/home.js), and the table's shadows, highlights,
+	outline and pockets lie over it, the balls over those. The bar always shows here
+	(UV, 16 Nov): it hides only on the page's own scroll, and this page never scrolls.
+	The site's footer is drawn here, in the box, not by the layout (hideFooter).
 {% endcomment %}
 <style>
-	/* The table covers the first screen, edge to edge; home.js sets its height */
-	.home {
-		min-height: calc(100dvh - var(--nav-total));
-	}
-	/* The loading screen's box (loader.css .tdc-loader, the screen at the top of
-	   the page), drawn into as the loader draws into it, so the icon lands where
-	   the loader's does. It scrolls with the page. */
-	.home-icon {
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 100dvh;
+	/* Nothing scrolls but the box on the cloth */
+	html, body { overflow: hidden; }
+
+	/* The content on the cloth, then the table's shadows, highlights, outline and
+	   pockets over it (UV, 16 Nov; the table's canvas is see-through elsewhere), then
+	   the balls; all in the screen under the bar, which always shows. Taps go
+	   through the table and the balls to the content. */
+	.home .hero-stage,
+	.home-balls {
+		position: fixed;
+		inset: var(--nav-total) 0 0 0;
+		overflow: hidden;   /* never grows to fit the canvas */
 		pointer-events: none;
 	}
-	.home-icon svg.dive {
+	.home .hero-stage { z-index: 2; }
+	.home-balls { z-index: 3; }
+	.home .hero-stage canvas,
+	.home-balls canvas {
 		display: block;
 		width: 100%;
 		height: 100%;
 	}
-	/* The icon greyed out, on the home page only (UV, 16 Nov): the light green (the
-	   portal's rim and the diver's suit) in grey, the dark green (the portal's
-	   pool) in the page's background. The pool's colour is written inline on the
-	   drawing, so only !important reaches it. */
-	.home-icon {
-		--dive-ring: var(--text-muted);
-		--dive-suit: var(--text-muted);
-	}
-	.home-icon .sha_portal {
-		fill: var(--bg-base) !important;
-		fill-opacity: 1 !important;
-	}
-	/* Over the icon, so the balls roll over it */
-	.home .hero-stage {
+	/* The banners under the bar (linked to your league record, Get the app) stay
+	   above everything, as the bar does (UV, 16 Nov): still in the page's flow under
+	   the bar, which here does not scroll, raised over the table, content and balls.
+	   The table is not made smaller for them: they come and go (✕) */
+	.nav-linked,
+	.nav-get-app {
 		position: relative;
+		z-index: 99;
+	}
+	/* home.js places it on the cloth (the cushions' noses) and sets --home-under-bar,
+	   the part of it under a banner, so its first line shows below the banner */
+	.home-scroll {
+		position: fixed;
 		z-index: 1;
-		overflow: hidden;   /* never grows to fit the canvas */
+		left: 0;
+		top: 0;
+		width: 0;
+		height: 0;
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		overflow-x: hidden;
+		overflow-y: auto;
+		/* No scrolling past the footer, not even a phone's bounce (UV, 16 Nov) */
+		overscroll-behavior: none;
+		-webkit-overflow-scrolling: touch;
+		padding-top: var(--home-under-bar, 0px);
 	}
-	.home .hero-stage canvas {
-		display: block;
-		width: 100%;
-		height: 100%;
-	}
+	.home-scroll > * { flex: 0 0 auto; }
+	/* The page's content takes the room left, so the footer is always at the foot
+	   of the cloth, however little there is above it (UV, 16 Nov) */
+	.home-content { flex: 1 0 auto; }
 </style>
 
 <div class="home">
 	<h1 class="visually-hidden">The Dive Club</h1>
-	<div class="status" id="hero-status" role="status"></div>
-	<div class="hero-stage" id="hero-stage" data-logo="off" data-markings="off" data-margin="0.5" aria-hidden="true"></div>
+	<div class="hero-stage" id="hero-stage" data-logo="off" data-markings="off" data-margin="0.5" data-balls="home-balls" aria-hidden="true"></div>
+	<div class="home-scroll" id="home-scroll">
+		<div class="status" id="hero-status" role="status"></div>
+		<div class="home-content"></div>
+		{% include "footer.html" %}
+	</div>
+	<div class="home-balls" id="home-balls" aria-hidden="true"></div>
 </div>
-<div class="home-icon" id="home-icon" aria-hidden="true"></div>

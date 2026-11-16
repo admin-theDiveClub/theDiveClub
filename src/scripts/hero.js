@@ -1,4 +1,5 @@
-// The hero (UV, 13 Nov; the home page since 16 Nov, and /sandbox/hero/ with its sliders):
+// The hero (UV, 13 Nov; the home page since 16 Nov, frozen behind its content with the
+// balls over it, and /sandbox/hero/ with its sliders):
 // a pool table seen from straight above, the
 // logo mark in the middle of the cloth, a spotted cue ball and two object balls, one
 // with a stripe and one solid with the stripe cut out of it. The cue ball plays at an
@@ -43,8 +44,8 @@
 		var R = 0.5;                    // ball radius
 		// The bed's size follows the stage (UV, 16 Nov: "any dimensions but based on screen
 		// size"): setTable() sets these and everything made from them, fit() chooses them.
-		// The short side keeps 18 balls of cloth, as the game's table, unless the stage
-		// asks for smaller balls (data-keep, below); the long side takes what the stage gives.
+		// The pockets, and so the balls, are sized from the stage's short side (POCKET_SHARE,
+		// in fit()); the bed takes whatever room that leaves.
 		var HX = 9, HZ = 18;            // half-width, half-length of the bed
 		var LX, LZ;                     // ball-CENTRE limits at the cushions
 		var D2 = R * 2;                 // contact distance between two balls
@@ -231,14 +232,26 @@
 
 		/* ---------- the canvas ---------- */
 		var canvas = document.createElement('canvas');
-		stage.appendChild(canvas);
 		var ctx = canvas.getContext('2d');
 		// The table changes only when the light moves, so it is drawn on a layer of its own
 		var layer = document.createElement('canvas');
 		var lctx = layer.getContext('2d');
+		// Split (the stage's data-balls names an element, UV 16 Nov: the home page's balls
+		// roll over its content): the table's layer is shown in the stage itself and the
+		// balls and their trails go on a canvas in that element, which the page lays over
+		// its content, the stage's size and place. Otherwise one canvas holds the lot.
+		var ballsBox = stage.dataset.balls ? document.getElementById(stage.dataset.balls) : null;
+		if (stage.dataset.balls && !ballsBox) throw new Error('the stage names #' + stage.dataset.balls + ' for the balls, and there is none.');
+		var split = !!ballsBox;
+		if (split) { stage.appendChild(layer); ballsBox.appendChild(canvas); }
+		else stage.appendChild(canvas);
 		var dpr = 1, cw = 0, ch = 0, sc = 10, cx = 0, cy = 0, land = false, layerKey = '';
 
-		var KEEP_PAD = 10, KEEP_MIN = 9;   // CSS px: room round the kept box; the smallest ball it may ask for
+		// A corner pocket's mouth, as a share of the stage's short side; and no pocket ever
+		// wider than POCKET_MAX, the banner's (banner-table.js; UV, 14 Nov: 32px), measured on
+		// the widest, a middle pocket, MM balls across. So the balls are at most 16.8px: a
+		// phone's short side gives a little more and is held to that, as a PC's is
+		var POCKET_SHARE = 0.08, POCKET_MAX = 32;
 		// A new size of table under balls already on it (the stage resized, a phone turned):
 		// any ball now past a cushion comes back inside it, its trail is dropped, and the
 		// next shot is worked out again
@@ -267,25 +280,27 @@
 			// in balls: the margin and how far that side's pockets reach
 			var padSide = MARGIN + (land ? REACH_SHORT : REACH_LONG);
 			var padEnd = MARGIN + (land ? REACH_LONG : REACH_SHORT);
-			// The ball, CSS px: 18 balls of cloth across the short side, as the game's table...
-			var ball = Math.min(w, h) / (2 * (9 + (land ? padEnd : padSide)));
-			// ...or smaller, so the cloth holds the stage's data-keep box ("left,top,right,
-			// bottom", CSS px from the stage's top left; the home page's icon) with KEEP_PAD
-			// round it. A side that would need balls under KEEP_MIN px is left out: a phone on
-			// its side, where the icon's top is under the bar and its portal 24px off the foot
-			var keep = (stage.dataset.keep || '').split(',').map(parseFloat);
-			if (keep.length === 4 && keep.every(isFinite)) {
-				[[keep[0], padSide], [w - keep[2], padSide], [keep[1], padEnd], [h - keep[3], padEnd]].forEach(function (s) {
-					var b = (s[0] - KEEP_PAD) / s[1];
-					if (b >= KEEP_MIN) ball = Math.min(ball, b);
-				});
-			}
+			// The ball follows the pockets and the pockets follow the screen (UV, 16 Nov): a
+			// corner pocket's mouth is POCKET_SHARE of the stage's short side, and the ball is
+			// a corner mouth over CM (the mouths are measured in balls); never a pocket over
+			// POCKET_MAX
+			var ball = Math.min(Math.min(w, h) * POCKET_SHARE / CM, POCKET_MAX / MM);
 			// The bed fills the rest of the stage
 			var acrossW = w / (2 * ball) - padSide, acrossH = h / (2 * ball) - padEnd;
 			var hx = Math.max(4, land ? acrossH : acrossW), hz = Math.max(hx, land ? acrossW : acrossH);
 			if (Math.abs(hx - HX) > 1e-6 || Math.abs(hz - HZ) > 1e-6) newTable(hx, hz);
 			sc = ball * dpr;
 			cx = cw / 2; cy = ch / 2;
+			// Where the cloth is, for the page (the home page lays its content on it): the
+			// cushions' noses, CSS px from the stage's top left, and a corner pocket's mouth
+			// (also kept as stage.heroBed, for a script that starts after this one)
+			var a = W(-HX, -HZ), b = W(HX, HZ);
+			stage.heroBed = {
+				left: Math.min(a[0], b[0]) / dpr, top: Math.min(a[1], b[1]) / dpr,
+				right: Math.max(a[0], b[0]) / dpr, bottom: Math.max(a[1], b[1]) / dpr,
+				pocket: CM * ball,
+			};
+			stage.dispatchEvent(new CustomEvent('tdc-hero-bed', { detail: stage.heroBed }));
 			layerKey = '';
 			forceDraw = true;   // the canvas was cleared
 		}
@@ -1231,7 +1246,7 @@
 				if (changed) {
 					drawnFade = trailFade;
 					ctx.clearRect(0, 0, cw, ch);
-					ctx.drawImage(layer, 0, 0);
+					if (!split) ctx.drawImage(layer, 0, 0);
 					drawTrails();
 					// Balls going into the void first, then those on the table, then any falling
 					for (var si = 0; si < DRAW_ORDER.length; si++) {
@@ -1261,7 +1276,6 @@
 		loadLogo();
 		fit();
 		new ResizeObserver(fit).observe(stage);
-		new MutationObserver(fit).observe(stage, { attributes: true, attributeFilter: ['data-keep'] });
 		new MutationObserver(function () { readTokens(); loadLogo(); layerKey = ''; })
 			.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
 		requestAnimationFrame(frame);
