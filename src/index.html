@@ -35,6 +35,18 @@ extraScripts:
 		width: 100%;
 		height: 100%;
 	}
+	/* The icon greyed out, on the home page only (UV, 16 Nov): the light green (the
+	   portal's rim and the diver's suit) in grey, the dark green (the portal's
+	   pool) in the page's background. The pool's colour is written inline on the
+	   drawing, so only !important reaches it. */
+	.home-icon {
+		--dive-ring: var(--text-muted);
+		--dive-suit: var(--text-muted);
+	}
+	.home-icon .sha_portal {
+		fill: var(--bg-base) !important;
+		fill-opacity: 1 !important;
+	}
 	/* Over the icon, so the balls roll over it */
 	.home .hero-stage {
 		position: relative;
