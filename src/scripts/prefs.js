@@ -146,7 +146,29 @@ var TDCPrefs = (function () {
 		else healSoon(0);
 	}
 
+	// Whether the app is in front and has focus (UV, 16 Nov: every animation stops
+	// when it is not in view or the app is not in focus). False while the page is
+	// hidden (another app, the phone locked, another tab) or its window has lost
+	// focus; true again on its return. Counted as focused until a blur says
+	// otherwise, so a page that opens without focus (the address bar's) still plays.
+	// TDCPrefs.awake, and TDCPrefs.onAwake(fn) to hear each change.
+	var focused = true, awake = !document.hidden, awakeFns = [];
+	var sayAwake = function () {
+		var now = focused && !document.hidden;
+		if (now === awake) return;
+		awake = now;
+		awakeFns.forEach(function (fn) {
+			try { fn(awake); } catch (e) { console.error('[Prefs] an animation could not be paused or resumed.', e); }
+		});
+	};
+	document.addEventListener('visibilitychange', sayAwake);
+	window.addEventListener('blur', function () { focused = false; sayAwake(); });
+	window.addEventListener('focus', function () { focused = true; sayAwake(); });
+	window.addEventListener('pageshow', function () { focused = true; sayAwake(); });
+
 	return {
+		get awake() { return awake; },
+		onAwake: function (fn) { awakeFns.push(fn); },
 		get light() { return root.getAttribute('data-theme') === 'light'; },
 		get lessMotion() {
 			var m = root.dataset.motion;

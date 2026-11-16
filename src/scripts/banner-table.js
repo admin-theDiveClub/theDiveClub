@@ -1375,14 +1375,17 @@ var TDCBannerTable = (function () {
 				sigNow = sigWas; sigWas = s; forceDraw = false;
 				return changed;
 			}
+			// Plays only while seen and while the app is in front with focus (UV, 16 Nov)
+			var awake = function () { return typeof TDCPrefs === 'undefined' || TDCPrefs.awake; };
 			function run() {
-				if (raf || failed || !seen) return;
+				if (raf || failed || !seen || !awake()) return;
 				last = performance.now();
 				raf = requestAnimationFrame(frame);
 			}
+			function pause() { if (raf) { cancelAnimationFrame(raf); raf = 0; } }
 			function frame(now) {
 				raf = 0;
-				if (failed || !seen) return;
+				if (failed || !seen || !awake()) return;
 				try {
 					var raw = now - last, real = Math.min(raw / 1000, 0.05), dt = real * S.speed;
 					last = now;
@@ -1507,18 +1510,20 @@ var TDCBannerTable = (function () {
 			var themeWatch = new MutationObserver(function () { readTokens(); layerKey = ''; });
 			themeWatch.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
 			// Only while it can be seen (UV, 14 Nov: a phone at the bar): off the screen, or
-			// in a part of the page that is hidden (another tab), it stops; a browser tab in
-			// the background gets no frames anyway
+			// in a part of the page that is hidden (another tab), it stops; and while the
+			// app is in the background or its window has lost focus (UV, 16 Nov)
 			var seeWatch = new IntersectionObserver(function (es) {
 				seen = es[es.length - 1].isIntersecting;
 				if (seen) run();
-				else if (raf) { cancelAnimationFrame(raf); raf = 0; }
+				else pause();
 			});
 			seeWatch.observe(wrap);
+			function awakeChanged(on) { if (on) run(); else pause(); }
 			// A switch on the sandbox changed (quality), or this phone began to struggle
 			function qualityChanged() { applyFrost(); sizeMayChange(); forceDraw = true; }
 			var me = {
 				qualityChanged: qualityChanged,
+				awakeChanged: awakeChanged,
 				stop: function () {
 					live.splice(live.indexOf(me), 1);
 					failed = true;
@@ -1551,6 +1556,8 @@ var TDCBannerTable = (function () {
 	}
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sync);
 	else sync();
+	// The app sent to the background or out of focus, and back (prefs.js; UV, 16 Nov)
+	if (typeof TDCPrefs !== 'undefined') TDCPrefs.onAwake(function (on) { live.forEach(function (t) { t.awakeChanged(on); }); });
 	new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ['data-motion'] });
 	matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', sync);
 

@@ -1215,8 +1215,20 @@
 			sigNow = sigWas; sigWas = s; forceDraw = false;
 			return changed;
 		}
+		// Plays only while seen and while the app is in front with focus (UV, 16 Nov;
+		// TDCPrefs.awake in prefs.js): paused, it picks up where it was, the time
+		// away not counted.
+		var raf = 0, seen = true;
+		var awake = function () { return typeof TDCPrefs === 'undefined' || TDCPrefs.awake; };
+		function run() {
+			if (raf || failed || !seen || !awake()) return;
+			last = performance.now();
+			raf = requestAnimationFrame(frame);
+		}
+		function pause() { if (raf) { cancelAnimationFrame(raf); raf = 0; } }
 		function frame(now) {
-			if (failed) return;
+			raf = 0;
+			if (failed || !seen || !awake()) return;
 			try {
 				var raw = now - last, dt = Math.min(raw / 1000, 0.05) * S.speed;
 				last = now;
@@ -1290,7 +1302,7 @@
 						for (var bi = 0; bi < balls.length; bi++) if (balls[bi].state === DRAW_ORDER[si]) drawBall(balls[bi]);
 					}
 				}
-				requestAnimationFrame(frame);
+				raf = requestAnimationFrame(frame);
 			} catch (e) {
 				failed = true;
 				TDC.error(AREA, 'the animation stopped.', e, statusEl);
@@ -1315,6 +1327,13 @@
 		new ResizeObserver(fit).observe(stage);
 		new MutationObserver(function () { readTokens(); loadLogo(); layerKey = ''; })
 			.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
-		requestAnimationFrame(frame);
+		if (typeof IntersectionObserver !== 'undefined') {
+			new IntersectionObserver(function (es) {
+				seen = es[es.length - 1].isIntersecting;
+				if (seen) run(); else pause();
+			}).observe(stage);
+		}
+		if (typeof TDCPrefs !== 'undefined') TDCPrefs.onAwake(function (on) { if (on) run(); else pause(); });
+		run();
 	}
 })();
