@@ -4126,7 +4126,9 @@
 			showNotice('<strong>Someone else has scored this match.</strong> Your last change was '
 				+ 'not saved, because it was aimed at the card as it was before theirs.' + more
 				+ ' The score above is up to date — check it, then carry on.', 'error');
-			TDC.status(els.stageStatus, 'Not saved — the card had already moved on.', '');
+			// The stage says it once, on the note (16 Nov: a second line saying
+			// the same lay over the bottom player's name); any older message goes.
+			TDC.status(els.stageStatus, '', '');
 			noteStale = 'Someone else has scored';
 			paintStageNote();
 			console.error('[' + AREA + '] write refused: ' + (moved.details || moved.message));

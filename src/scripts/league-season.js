@@ -306,7 +306,7 @@ TDCLeagueNav.panel('season', () => {
 		els.meRow.hidden = !mine.my_team_id;
 		if (mine.my_team_id) {
 			els.mePic.replaceChildren(TDC.teamPic(teamPictures.get(mine.my_team_id)));
-			els.meTeam.textContent = mine.my_team_name;
+			TDC.runName(els.meTeam, mine.my_team_name);   // one line, running when too long (UV, 16 Nov)
 			els.meCaptain.hidden = !controlsTeam();
 		}
 
@@ -694,8 +694,11 @@ TDCLeagueNav.panel('season', () => {
 		}
 		const next = nextNight();
 		const nextKey = next && keyOf(next);
+		// A night whose day has gone is over, grey, even with matches left
+		// unplayed (postponed): never "Coming up" (16 Nov; docs/ui.md, "State colours").
+		const todayKey = keyOf(new Date());
 		for (const [key, n] of byDay) {
-			n.state = n.live ? 'live' : key === nextKey ? 'next' : n.played === n.total ? 'done' : 'later';
+			n.state = n.live ? 'live' : key === nextKey ? 'next' : n.played === n.total || key < todayKey ? 'done' : 'later';
 			n.said = n.live ? 'Playing'
 				: key === nextKey ? 'Next'
 				: n.played === n.total ? 'Played'

@@ -821,7 +821,14 @@
 		const kept = readLinked();
 		let seasons = kept && kept.user === session.user.id ? kept.seasons : [];
 
-		const { data, error } = await supabaseClient.rpc('tdc_link_my_league_records');
+		let { data, error } = await supabaseClient.rpc('tdc_link_my_league_records');
+		// A dropped connection (a phone on a weak signal, 16 Nov) is tried once
+		// more after a moment before it is reported; anything else at once.
+		if (error && /load failed|failed to fetch|networkerror|network request failed/i.test(error.message || '')) {
+			console.warn('[' + AREA + '] linking your league record lost its connection; trying once more.', error);
+			await new Promise((r) => setTimeout(r, 3000));
+			({ data, error } = await supabaseClient.rpc('tdc_link_my_league_records'));
+		}
 		if (error) {
 			console.error('[' + AREA + '] could not link your league record.', error);
 			const msg = error.message || '';

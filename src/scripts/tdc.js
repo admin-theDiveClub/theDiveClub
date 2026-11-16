@@ -622,6 +622,39 @@ const TDC = (() => {
 		});
 	}
 
+	// ─── A team name on one line, running sideways when too long (UV, 16 Nov) ───
+	// Never broken inside a word: the name stays on one line, and one too long
+	// for its room runs sideways and back, as the Season tab's cards and the
+	// players' fixtures do (UV, 10-11 Nov). Puts text into el (or keeps el's
+	// own) inside a .lj-run and watches both: the room changes with the screen
+	// and the words when the display font arrives. Styles: .tdc-run, design.css.
+	const runRoom = typeof ResizeObserver === 'undefined' ? null
+		: new ResizeObserver((seen) => seen.forEach((e) => fitRun(e.target.closest('.tdc-run'))));
+	function fitRun(el) {
+		if (!el || !el.clientWidth || !el.firstChild) return;
+		const over = el.firstChild.offsetWidth - el.clientWidth;
+		el.classList.toggle('is-long', over > 1);
+		el.style.setProperty('--run', -Math.max(over, 0) + 'px');
+		el.style.setProperty('--run-time', (3 + Math.max(over, 0) / 25).toFixed(1) + 's');
+	}
+	function runName(el, text) {
+		const words = text === undefined ? el.textContent : (text || '');
+		const inner = document.createElement('span');
+		inner.className = 'lj-run';
+		inner.textContent = words;
+		el.classList.add('tdc-run');
+		el.title = words;
+		el.replaceChildren(inner);
+		if (runRoom) { runRoom.observe(el); runRoom.observe(inner); }
+		fitRun(el);
+		return el;
+	}
+	if (document.fonts) {
+		const refitRuns = () => document.querySelectorAll('.tdc-run').forEach(fitRun);
+		document.fonts.ready.then(refitRuns);
+		document.fonts.addEventListener('loadingdone', refitRuns);
+	}
+
 	return { shortUrl, shareButton, error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer,
-		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, fullName, fullNameOf, leaguePic, teamPic, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade };
+		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, fullName, fullNameOf, leaguePic, teamPic, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade, runName };
 })();
