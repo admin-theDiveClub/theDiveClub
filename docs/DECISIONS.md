@@ -1933,3 +1933,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to judge:* the link runs on **every signed-in page load**, not only at sign-in, so players already signed in are caught too (Vashan Reddy signed up on 11 Nov and never opened his profile); it runs before the nav reads the player, adding one call to each load. A link the merge refuses (two SA IDs, both in one season) shows its error in the same strip, red, on every page. The strip's wording; a button per league season, labelled with the league's name.
 *Rejected:* a trigger on sign-up (a failed merge would break signing up); keeping the strip on every device (a column and a second function, for little gain).
 *So:* migration `20261116073757_league_auto_link.sql`, `supabase/tests/076_league_auto_link.test.sql`, `src/_includes/nav.html`, `src/scripts/nav.js`, `src/stylesheets/nav.css`; `docs/systems/leagues.md`, "League placeholders"; STATUS §1 4aw.
+
+## 2026-11-16 — Anybody who runs a league or tournament may change its short code
+
+*Decided by UV:* any LD (and any TD) may change the short code, not only whoever set it. Asked whether that should include venue staff: **yes, anyone who runs it**: every LD or TD, a league's creator, and the venue's owner, admins and staff, the same people who see the Settings tab. Raised because a league's second LD saw "Only Rick can change this code".
+*Replaces:* "Only whoever set it may change it, a co-director or the club owner included" in the 9 Nov short links decision.
+*Claude's, for UV to judge:* `short_code_by` is kept and now records who changed the code last; a director who leaves loses the right with everything else in Settings, even if they changed the code last.
+*So:* migration `20261116083932_short_code_any_director.sql`, `supabase/tests/066_short_links.test.sql`, `src/scripts/short-code-field.js`; `docs/design/short-links.md`, "Who can do what"; `docs/systems/foundations.md`, "Short links".

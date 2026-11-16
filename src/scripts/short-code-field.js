@@ -4,9 +4,9 @@
 //
 // The T- or L- is fixed and only letters and digits can be typed, so nobody can
 // make an invalid code. The field says Too short, Taken or Available as you type,
-// asking tdc_short_code_status once the typing stops. Only whoever set the code
-// may change it (tdc_short_link says so): anybody else running it sees the code
-// and who can. After saving it reads the code again rather than trusting the form.
+// asking tdc_short_code_status once the typing stops. Anybody who runs it may
+// change the code (UV, 16 Nov; tdc_short_link says so). After saving it reads the
+// code again rather than trusting the form.
 //
 // A page says where to draw it and calls load().
 //
@@ -135,7 +135,7 @@ const TDCShortCode = (() => {
 			note.className = canChange ? 'hint warn' : 'hint';
 			note.textContent = canChange
 				? 'Changing it stops the old link and every match link straight away, and anybody can then take the old code.'
-				: (data.set_by ? `Only ${data.set_by} can change this code.` : 'Only the person who set this code can change it.');
+				: 'Only whoever runs it can change this code.';
 			return true;
 		}
 

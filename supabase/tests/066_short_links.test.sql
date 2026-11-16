@@ -6,10 +6,11 @@
 --   • a league or tournament match is the competition's code and a number
 --   • a social match is a number and cannot be customised
 --   • only whoever set a code may change it, and an old code is released at once
+--     (UV, 16 Nov, migration 20261116083932: anybody who runs it may change it)
 --   • a code opens the poster, or deeper for somebody who is part of it
 begin;
 \ir _helpers.psql
-select plan(63);
+select plan(66);
 
 select tests.create_user('Link Dee') as dee \gset
 select tests.create_user('Link Pat') as pat \gset
@@ -64,21 +65,37 @@ select tests.sign_out();
 
 select tests.sign_in(:'sam');
 select throws_ok(format($$ select public.tdc_set_short_code('tournament', %L, 'SAM') $$, :'t1'),
-	'Only the person who set this short link may change it.', 'a stranger cannot change a tournament''s code');
+	'Only whoever runs it may change its short link.', 'a stranger cannot change a tournament''s code');
 select throws_ok(format($$ select public.tdc_set_short_code('season', %L, 'SAM') $$, :'s1'),
-	'Only the person who set this short link may change it.', 'nor a league''s, by its season');
+	'Only whoever runs it may change its short link.', 'nor a league''s, by its season');
 select tests.sign_out();
 
--- A co-director runs it but did not set the code.
+-- A co-director runs it but did not set the code (UV, 16 Nov: they may change it).
 insert into public.tbl_competition_roles (tournament_id, player_id, role)
 values (:'t1', tests.player_of(:'pat'), 'director');
 select tests.sign_in(:'pat');
-select throws_ok(format($$ select public.tdc_set_short_code('tournament', %L, 'PAT') $$, :'t1'),
-	'Only the person who set this short link may change it.', 'a co-director who did not set it cannot change it');
-select is((public.tdc_short_link('tournament', :'t1') ->> 'can_change')::boolean, false, 'and the page knows that');
-select is(public.tdc_short_link('tournament', :'t1') ->> 'set_by', 'Link Dee', 'and is told who can');
+select is((public.tdc_short_link('tournament', :'t1') ->> 'can_change')::boolean, true, 'a co-director who did not set it may change it');
+select lives_ok(format($$ select public.tdc_set_short_code('tournament', %L, 'PAT') $$, :'t1'), 'and does');
+select is((select short_code_by from public.tbl_tournaments where id = :'t1'), :'pat'::uuid, 'who changed it last is recorded');
+select is(public.tdc_short_link('tournament', :'t1') ->> 'set_by', 'Link Pat', 'and shown to whoever runs it');
+select public.tdc_set_short_code('tournament', :'t1', 'BC26');
 select tests.sign_out();
 delete from public.tbl_competition_roles where tournament_id = :'t1' and player_id = tests.player_of(:'pat');
+select tests.sign_in(:'pat');
+select throws_ok(format($$ select public.tdc_set_short_code('tournament', %L, 'PAT') $$, :'t1'),
+	'Only whoever runs it may change its short link.', 'a former co-director cannot, though they changed it last');
+select tests.sign_out();
+
+-- A second LD, by the league's season.
+select tests.sign_in(:'dee');
+select public.tdc_add_league_role(:'s1', tests.player_of(:'pat'), 'director') as pat_ld \gset
+select tests.sign_out();
+select tests.sign_in(:'pat');
+select lives_ok(format($$ select public.tdc_set_short_code('season', %L, 'PATL') $$, :'s1'), 'a second LD may change a league''s code');
+select tests.sign_out();
+select tests.sign_in(:'dee');
+select public.tdc_remove_league_role(:'pat_ld');
+select tests.sign_out();
 
 select tests.sign_in(:'sam');
 select throws_ok(format($$ update public.tbl_tournaments set short_code = 'SAM' where id = %L $$, :'t1'),
@@ -91,7 +108,7 @@ select throws_ok(format($$ select public.tdc_set_short_code('tournament', %L, 'A
 select tests.sign_out();
 
 select tests.sign_in(:'dee');
-select is((public.tdc_short_link('tournament', :'t1') ->> 'can_change')::boolean, true, 'whoever set it may change it');
+select is((public.tdc_short_link('tournament', :'t1') ->> 'can_change')::boolean, true, 'whoever created it may change it');
 select lives_ok(format($$ select public.tdc_set_short_code('season', %L, 'BCDAM') $$, :'s1'), 'a league''s code is set by its season');
 select public.tdc_set_short_code('tournament', :'t2', 'OLDONE');
 select public.tdc_set_short_code('tournament', :'t2', 'NEWONE');

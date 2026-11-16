@@ -26,10 +26,10 @@ A short link is a shortcut to an existing page: `https://thediveclub.org/<code>`
 | Action | Who |
 |---|---|
 | Share a link | Anyone who can open the page, including a signed-out visitor on a tournament poster |
-| Change a league's or tournament's code | Only whoever created it, in that league's or tournament's Settings. For a suggested code, that is whoever created the league or tournament |
+| Change a league's or tournament's code | Anybody who runs it, in that league's or tournament's Settings (UV, 16 Nov): every LD or TD, a league's creator, and the venue's owner, admins and staff |
 
 - A changed code is **released at once**. The old link stops working, its match links too, and anybody can take it afterwards. Settings says so beside the field.
-- Nobody else can change a code, a co-director or the club owner included (UV, 9 Nov).
+- *Replaced 16 Nov:* until then only whoever set a code could change it, a co-director or the club owner included (UV, 9 Nov). A league with two LDs showed the second "Only Rick can change this code".
 
 ## What a code opens
 
@@ -90,4 +90,3 @@ The lookup runs after the page has loaded and GitHub answers these addresses wit
 - Social match numbers run in order from 1000 rather than at random: short, and never clashing. Someone could walk through them, but a number only leads to a page that still asks for a sign-in.
 - The ban list on what a director types is a short list of the worst words.
 - A league or tournament match's number belongs to its fixture, so a rematch on the same fixture keeps it. Numbers are never reused, even after a redraw.
-- A former director who created the code cannot change it: they must still be running the competition too.
