@@ -2020,3 +2020,8 @@ These predate the log. They are recorded here because every one of them is a dec
 *Replaces:* the home page's table without markings (16 Nov, "no logo and no markings on the cloth"), for the markings only: the table itself still draws none and no logo of its own.
 *Claude's, for UV to judge:* the logo centred in what is seen below a banner when one shows (so it sits a little lower than the markings' middle then); the logo at rest, not the loader's falling diver; its own colours.
 *Touches:* `src/index.html`, `src/scripts/home.js`, `src/scripts/hero.js` (`data-markings-into`, `drawMarksInto`; `/sandbox/hero/` unchanged)
+
+*Decided by UV, later the same day:* **the Get the app card, when it shows, sits at the top of the table, between the table's edge and the cross**; with the table on its side (a computer, a phone turned), where the cross is at the left, **in the band between the top cushion and the logo, centred** (UV's choice of three). It scrolls away with the logo and the markings.
+*Claude's, for UV to judge:* the card at most 32rem wide (it had run the cloth's whole width on a computer); centred in its band.
+*Found:* on a phone on its side (844×390) the band above the logo is 51px and the card 66px, so it was cut by the top cushion and overlapped the logo's top. *Decided by UV:* **there, a one-line card, the icon and "Get the app" only** (UV's choice of four): whenever the full card is taller than its band, it becomes one line (48px).
+*Touches:* `src/index.html`, `src/scripts/home.js`, `src/scripts/hero.js` (`heroBed.cross`, `heroBed.land`), `src/stylesheets/home.css`

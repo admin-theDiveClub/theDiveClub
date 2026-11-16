@@ -295,10 +295,21 @@
 			// cushions' noses, CSS px from the stage's top left, and a corner pocket's mouth
 			// (also kept as stage.heroBed, for a script that starts after this one)
 			var a = W(-HX, -HZ), b = W(HX, HZ);
+			// and the black's cross, as drawn when there are markings (the home page sets its
+			// Get the app card between the top cushion and it, UV 16 Nov), and which way the
+			// table lies (land: on its side, the cross at the left)
+			var xs = [W(0, SPOT_Z - CROSS_LONG), W(0, SPOT_Z + CROSS_LONG), W(-CROSS_SHORT, SPOT_Z), W(CROSS_SHORT, SPOT_Z)];
 			stage.heroBed = {
 				left: Math.min(a[0], b[0]) / dpr, top: Math.min(a[1], b[1]) / dpr,
 				right: Math.max(a[0], b[0]) / dpr, bottom: Math.max(a[1], b[1]) / dpr,
 				pocket: CM * ball,
+				cross: {
+					left: Math.min.apply(null, xs.map(function (p) { return p[0]; })) / dpr,
+					top: Math.min.apply(null, xs.map(function (p) { return p[1]; })) / dpr,
+					right: Math.max.apply(null, xs.map(function (p) { return p[0]; })) / dpr,
+					bottom: Math.max.apply(null, xs.map(function (p) { return p[1]; })) / dpr,
+				},
+				land: land,
 			};
 			stage.dispatchEvent(new CustomEvent('tdc-hero-bed', { detail: stage.heroBed }));
 			layerKey = '';

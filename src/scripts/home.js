@@ -30,7 +30,25 @@
 		// The Get the app card (UV, 16 Nov): never in the installed app
 		var card = document.getElementById('home-install');
 		if (card && !runningInstalled()) card.hidden = false;
-		var bed = null;
+		var bed = null, lastPlace = null;
+		// The Get the app card at the top of the table (UV, 16 Nov): centred in the band from
+		// the top of what is seen of the cloth (below any banner) to the black's cross, or,
+		// the table on its side (the cross at the left), to the logo. In the box's own
+		// coordinates, so it scrolls away with the logo and the markings
+		function placeCard(under, seen, logo) {
+			lastPlace = [under, seen, logo];
+			if (!card || card.hidden) return;
+			under = Math.max(0, Math.ceil(under));
+			var foot = bed.land || !bed.cross ? under + (seen - logo) / 2 : bed.cross.top - bed.top;
+			var mid = (under + foot) / 2;
+			// Too tall for its band (a phone on its side): one line, the icon and "Get the
+			// app" only (UV, 16 Nov)
+			card.classList.remove('is-compact');
+			if (card.offsetHeight > foot - under) card.classList.add('is-compact');
+			card.style.left = Math.round((box.clientWidth - card.offsetWidth) / 2) + 'px';
+			card.style.top = Math.round(mid - card.offsetHeight / 2) + 'px';
+			if (card.offsetHeight > foot - under) console.error('[' + AREA + '] the Get the app card (' + card.offsetHeight + 'px) is taller than the room above the ' + (bed.land ? 'logo' : 'cross') + ' (' + Math.round(foot - under) + 'px); it is centred there all the same.');
+		}
 		function place() {
 			if (!bed) return;
 			try {
@@ -59,7 +77,9 @@
 				// (UV, 16 Nov)
 				var seen = Math.max(0, (bed.bottom - bed.top) - Math.max(0, Math.ceil(under)));
 				box.style.setProperty('--home-first', Math.floor(seen) + 'px');
-				box.style.setProperty('--home-logo-size', Math.floor(Math.min(bed.right - bed.left, seen) / 1.618) + 'px');
+				var logo = Math.floor(Math.min(bed.right - bed.left, seen) / 1.618);
+				box.style.setProperty('--home-logo-size', logo + 'px');
+				placeCard(under, seen, logo);
 			} catch (e) {
 				TDC.error(AREA, 'the content could not be laid on the table.', e, statusEl);
 			}
@@ -68,6 +88,8 @@
 		// A banner shown or closed (nav.js fills them in after the page has loaded)
 		var watch = new ResizeObserver(place);
 		strips.forEach(function (el) { watch.observe(el); });
+		// The card's words wrapping differently, or the font arriving, changes its height
+		if (card) new ResizeObserver(function () { if (bed && lastPlace) placeCard.apply(null, lastPlace); }).observe(card);
 		bed = stage.heroBed || null;
 		if (!bed) console.error('[' + AREA + '] the table has not said where its cloth is yet; the content waits for it.');
 		place();

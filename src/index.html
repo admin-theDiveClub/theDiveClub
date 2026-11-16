@@ -119,12 +119,19 @@ extraScripts:
 		height: var(--home-logo-size, 0px);
 	}
 
-	/* Get the app (UV, 16 Nov): a raised glass card at the top of the content, on any
-	   device not running the installed app (home.js). Below it, the sponsor banner's
-	   own gap to the footer (footer.css .site-partners), so every card on the page is
-	   spaced alike (UV, 16 Nov) */
+	/* Get the app (UV, 16 Nov): a raised glass card on any device not running the
+	   installed app, on the first screen with the logo and the markings, scrolling
+	   away with them: at the top of the table, between the top cushion and the
+	   black's cross (UV); with the table on its side (the cross at the left), between
+	   the top cushion and the logo (UV). home.js places it, centred in that band.
+	   Still a raised card: over the balls, cut off by the table's edge. */
+	.home-install.home-raised {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: min(calc(100% - 2 * var(--space-4)), 32rem);
+	}
 	.home-install {
-		margin: var(--space-4) var(--space-4) var(--space-5);
 		box-sizing: border-box;
 		display: flex;
 		align-items: center;
@@ -140,6 +147,11 @@ extraScripts:
 		text-decoration: none;
 	}
 	.home-install-icon { width: 40px; height: 40px; flex: 0 0 auto; }
+	/* Too tall for the room above the logo (a phone on its side; home.js): one line,
+	   the icon and "Get the app" only (UV, 16 Nov) */
+	.home-install.is-compact { padding: var(--space-2) var(--space-3); }
+	.home-install.is-compact .home-install-icon { width: 28px; height: 28px; }
+	.home-install.is-compact .home-install-sub { display: none; }
 	.home-install-words { flex: 1 1 auto; min-width: 0; }
 	.home-install-title { display: block; font-weight: 600; }
 	.home-install-sub { display: block; font-size: 0.85rem; color: var(--text-muted); }

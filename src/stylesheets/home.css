@@ -6,7 +6,7 @@
 .home-cards {
 	display: grid;
 	gap: var(--space-5);
-	margin: 0 var(--space-4) var(--space-5);
+	margin: var(--space-4) var(--space-4) var(--space-5);
 }
 @media (min-width: 992px) {
 	.home-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
