@@ -191,7 +191,7 @@
 	min-height: 1.2em;
 }
 .status.error   { color: var(--color-error); }
-.status.success { color: var(--color-success); }
+.status.success { color: var(--color-primary); }
 
 .badge {
 	display: inline-block;
@@ -204,8 +204,8 @@
 	vertical-align: middle;
 }
 .badge.verified {
-	border-color: var(--color-success);
-	color: var(--color-success);
+	border-color: var(--color-primary);
+	color: var(--color-primary);
 }
 /* Staff pages: player search results and selected player */
 .results { margin: 0.5rem 0 1rem; }
@@ -241,9 +241,9 @@
 /* Staff hub: a glow shows which tier a tool belongs to.
    tile-staff = any staff member. tile-admin = owners and admins only. tile-owner = owners only. */
 .tile-link.tile-staff {
-	border-color: color-mix(in srgb, var(--color-success) 55%, var(--border-color));
-	box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-success) 20%, transparent),
-	            0 0 14px color-mix(in srgb, var(--color-success) 20%, transparent);
+	border-color: color-mix(in srgb, var(--text-primary) 55%, var(--border-color));
+	box-shadow: 0 0 0 1px color-mix(in srgb, var(--text-primary) 20%, transparent),
+	            0 0 14px color-mix(in srgb, var(--text-primary) 20%, transparent);
 }
 .tile-link.tile-admin {
 	border-color: color-mix(in srgb, var(--color-primary) 55%, var(--border-color));
@@ -927,7 +927,7 @@
 .badge.warn    { border-color: var(--color-warning); color: var(--color-warning); }
 .badge.pending { border-color: var(--text-muted);    color: var(--text-muted); }
 .badge.live    { border-color: var(--color-primary); color: var(--color-primary); }
-.badge.paid    { border-color: var(--color-success); color: var(--color-success); }
+.badge.paid    { border-color: var(--color-primary); color: var(--color-primary); }
 
 /* ── Surfaces ────────────────────────────────────────────────────────
    Anything on --bg-surface that can sit over something else blurs what is

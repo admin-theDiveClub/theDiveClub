@@ -1949,3 +1949,22 @@ These predate the log. They are recorded here because every one of them is a dec
 *Replaces:* "Only whoever set it may change it, a co-director or the club owner included" in the 9 Nov short links decision.
 *Claude's, for UV to judge:* `short_code_by` is kept and now records who changed the code last; a director who leaves loses the right with everything else in Settings, even if they changed the code last.
 *So:* migration `20261116083932_short_code_any_director.sql`, `supabase/tests/066_short_links.test.sql`, `src/scripts/short-code-field.js`; `docs/design/short-links.md`, "Who can do what"; `docs/systems/foundations.md`, "Short links".
+
+## 2026-11-16 — No orange: every state in the site's existing colours; the profile menu's order
+
+*Decided by UV:* everywhere orange was used, it follows the state colours instead, using only existing site colours. A running league is yellow, as anything under way is: its strip on the season banner, the leagues list and the search tile, its badge, and its row in the nav menu. **On break is grey** (it was yellow, which would now match running). The staff hub's any-staff tile heading is **cream**. In the profile menu, **what you're in (Matches, Leagues, Tournaments) comes above Played recently and Play most often**, and so does "You are not in anything right now" with its buttons.
+*Replaces:* "The alternate green (`--color-success`) becomes a muted orange everywhere it is used" (9 Nov); the people first in the profile menu (5 Nov).
+*Claude's, for UV to judge:* success messages and the Verified, Agreed, Sanctioned, Confirmed and Paid badges green (done or agreed, as Signed is green); a running league's menu row yellow without the glow a live match's row has (a league runs for months); `--color-success` removed rather than kept as an alias, so it cannot creep back.
+*So:* `docs/ui.md`, "State colours" and "The profile menu".
+*Touches:* no migration. `src/stylesheets/variables.css`, `league.css`, `nav.css`, `forms.css`, `design.css`, `src/scripts/nav.js`, `src/scripts/sandbox.js`, `src/sandbox/index.html`
+
+*Decided by UV, later the same day:* team names had almost no line spacing, so a name on two lines overlapped (the underline under your own team touched the next line). Every team name in the display font now uses the headings' line height, 1.32.
+*Claude's, for UV to judge:* 1.32 as the "small amount" (it was 1.1 to 1.15), chosen because headings already use it.
+*Touches:* `src/stylesheets/league.css`
+
+## 2026-11-16 — The team card's folded banner keeps the venue and the discipline; Game in its details
+
+*Decided by UV:* when the banner is folded, it shows badges for the venue and the discipline only, under the ":". The discipline is also among the banner's league details.
+*Claude's, for UV to judge:* the badges grey (they are not a state); a badge per venue when a night has more than one; the detail labelled "Game", the Season tab's and the poster's word (the match page says "Discipline"); the team card's banner taken as the only one that folds (the Season tab's and the poster's already list Game).
+*So:* `docs/systems/leagues.md`, "The folded banner's badges".
+*Touches:* `src/leagues/card/index.html`, `src/scripts/league-card.js`, `src/stylesheets/league.css`

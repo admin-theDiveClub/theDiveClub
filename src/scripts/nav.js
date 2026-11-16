@@ -358,8 +358,9 @@
 			activeSection('Leagues', '/leagues/', data.leagues || [], activeLeague),
 			activeSection('Tournaments', '/tournaments/', data.tournaments || [], activeTournament)
 		].filter(Boolean);
+		// What you're in comes first, the people after it (UV, 16 Nov).
 		if (sections.length) {
-			accountList.replaceChildren(...peopleSections, ...sections);
+			accountList.replaceChildren(...sections, ...peopleSections);
 			return;
 		}
 		const box = menuEl('section', 'nav-account-section');
@@ -367,7 +368,7 @@
 			menuRow('/matches/new/', '', 'Start a match', []),
 			menuRow('/leagues/', '', 'Find a league', []),
 			menuRow('/tournaments/', '', 'Find a tournament', []));
-		accountList.replaceChildren(...peopleSections, menuEl('p', 'nav-account-empty', 'You are not in anything right now.'), box);
+		accountList.replaceChildren(menuEl('p', 'nav-account-empty', 'You are not in anything right now.'), box, ...peopleSections);
 	}
 
 	async function loadActive() {

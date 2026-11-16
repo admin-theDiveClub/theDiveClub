@@ -50,7 +50,7 @@
 	const els = {
 		title: el('m-title'),
 		jumbo: el('jumbo'), jumboStatus: el('jumbo-status'), stateDetail: el('state-detail'), facts: el('jumbo-facts'),
-		jumboMore: el('jumbo-more'),
+		jumboMore: el('jumbo-more'), jumboTags: el('jumbo-tags'),
 		homePic: el('home-pic'), homeName: el('home-name'), awayPic: el('away-pic'), awayName: el('away-name'),
 		sideSwitch: el('side-switch'), sidePick: el('side-pick'),
 		lineups: el('lineups'), compare: el('team-compare'), teamTables: el('team-tables'),
@@ -423,6 +423,8 @@
 
 		const facts = [];
 		if (info) facts.push(['League', info.league_name + (info.name ? ' · ' + info.name : '')]);
+		// The discipline, worded as the Season tab's (UV, 16 Nov).
+		if (match.rules && match.rules.discipline) facts.push(['Game', D.DISCIPLINE[match.rules.discipline] || match.rules.discipline]);
 		if (match.scheduled_at) {
 			const d = new Date(match.scheduled_at);
 			facts.push(['Date', d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })]);
@@ -453,6 +455,13 @@
 		}));
 		const place = TDC.venueFact(venues);
 		if (place) els.facts.insertBefore(place, els.facts.children[venuesAt] || null);
+
+		// Folded, the banner keeps only the venue and the discipline, as badges
+		// under the ":" (UV, 16 Nov); the stylesheet shows them only while folded.
+		const discipline = match.rules && match.rules.discipline;
+		els.jumboTags.replaceChildren(
+			...venues.map((v) => node('span', 'badge', v.name)),
+			...(discipline ? [node('span', 'badge', D.DISCIPLINE[discipline] || discipline)] : []));
 	}
 
 	function stateDetail(locked, both) {

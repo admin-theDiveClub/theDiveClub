@@ -26,7 +26,6 @@
   --border-color: #404040;
 
   /* Status */
-  --color-success: #ff9b61;   /* a soft orange, as off-true as the primary green (UV, 9 Nov) */
   --color-warning: #ffae00;
   --color-error: #ff0000;
 
@@ -222,7 +221,6 @@
 
   --border-color: #c6bba9;
 
-  --color-success: #b8602a;
   --color-warning: #911818;
   --color-error: #ff0000;
 

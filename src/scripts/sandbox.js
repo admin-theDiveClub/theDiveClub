@@ -122,7 +122,6 @@
 			{ name: '--loader-blur',      label: 'Loader blur',    kind: 'size', unit: 'px', min: 0,    max: 80,   step: 1,     use: 'The loading screen is see-through: how strongly it blurs the page under it while the page loads' }
 		]],
 		['States', [
-			{ name: '--color-success',    label: 'Success',        kind: 'colour', use: 'Success messages, Paid badge, staff tile glow' },
 			{ name: '--color-warning',    label: 'Warning',        kind: 'colour', use: 'Warning badge, offline indicator' },
 			{ name: '--color-error',      label: 'Error',          kind: 'colour', use: 'Error messages, danger button' },
 			{ name: '--color-owner',      label: 'Owner',          kind: 'colour', use: 'Owner tile glow' },
@@ -346,7 +345,6 @@
 		['Text on button',     '--color-on-primary', '--color-primary'],
 		['Text on surface',    '--text-primary',     '--bg-surface'],
 		['Muted on surface',   '--text-muted',       '--bg-surface'],
-		['Success on page',    '--color-success',    '--bg-base'],
 		['Warning on page',    '--color-warning',    '--bg-base'],
 		['Error on page',      '--color-error',      '--bg-base'],
 		['Owner on page',      '--color-owner',      '--bg-base'],

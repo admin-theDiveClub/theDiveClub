@@ -87,7 +87,7 @@ body:not(:has(#mv-stage))::before { opacity: 0; }
 .tile-link.tile-staff,
 .tile-link.tile-admin,
 .tile-link.tile-owner { border: 0; box-shadow: var(--nm-raised); }
-.tile-link.tile-staff { color: var(--color-success); }
+.tile-link.tile-staff { color: var(--text-primary); }
 .tile-link.tile-admin { color: var(--color-primary); }
 .tile-link.tile-owner { color: var(--color-owner); }
 .tile-link .sub { color: var(--text-muted); }

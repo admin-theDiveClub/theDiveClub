@@ -382,8 +382,8 @@
 /* A season's status colour, on the row's strip and the search tile's edge.
  * The keys are TDCMatchDef.LEAGUE_STATUS; a new status needs a line here. */
 .league-status-taking_entries { --strip-color: var(--color-primary); }
-.league-status-running        { --strip-color: var(--color-success); }
-.league-status-on_break       { --strip-color: var(--color-warning); }
+.league-status-running        { --strip-color: var(--color-warning); }   /* under way: yellow, as a fixture being played (UV, 16 Nov) */
+.league-status-on_break       { --strip-color: var(--text-muted); }      /* paused: grey (UV, 16 Nov) */
 .league-status-finished       { --strip-color: var(--text-muted); }
 
 /* ── Search for a League ──
@@ -1107,7 +1107,7 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 .ms-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-3); min-width: 0; }
 .ms-row[hidden] { display: none; }
 .ms-row .team-pic { width: 2.75rem; height: 2.75rem; }
-.ms-team { min-width: 0; font-family: var(--font-display); font-size: 1.5rem; line-height: 1.1; color: var(--color-team); overflow-wrap: anywhere; }
+.ms-team { min-width: 0; font-family: var(--font-display); font-size: 1.5rem; line-height: 1.32; color: var(--color-team); overflow-wrap: anywhere; }
 .tdc-card .ls-where:empty { display: none; }
 .tdc-card .ls-where {
 	margin: 0;
@@ -1444,12 +1444,22 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .cj-name {
 	font-family: var(--font-display);
 	font-size: 1.35rem;
-	line-height: 1.15;
+	line-height: 1.32;   /* a team name on two lines never touches, the underline included: the headings' line (UV, 16 Nov) */
 	overflow-wrap: anywhere;
 }
 .cj-mid { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); }
 .cj-mid .jumbo-status { white-space: nowrap; }
 .cj-v { font-family: var(--font-display); font-size: 1.5rem; color: var(--text-muted); }
+/* Under the ":" only while the banner is folded: the venue and the
+ * discipline as badges (UV, 16 Nov). Open, the details below say both. */
+.cj-tags { display: none; }
+.card-jumbo:has(> .cj-more:not([open])) .cj-tags:not(:empty) {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--space-1);
+}
+.cj-tags .badge { max-width: 9rem; white-space: normal; text-align: center; overflow-wrap: anywhere; }
 .tdc-card .cj-detail { margin: 0; color: var(--text-muted); text-align: center; }
 .card-jumbo .jumbo-facts { text-align: left; }
 /* Room for the share icon in the corner, both sides alike so the teams stay
@@ -1978,6 +1988,7 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .lu-cmp-row:first-child { border-top: none; }
 .lu-cmp-k { text-align: center; font-size: 0.85rem; color: var(--text-muted); }
 .lu-cmp-v { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.1; color: var(--text-primary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.lu-cmp-v.lu-cmp-team { line-height: 1.32; }   /* team names: the headings' line (UV, 16 Nov) */
 .lu-cmp-home { text-align: right; }
 .lu-cmp-away { text-align: left; }
 .lu-cmp-head .lu-cmp-v { font-size: 1rem; }

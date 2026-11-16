@@ -455,8 +455,8 @@ body {
 	background: var(--strip-color);
 }
 .nav-account-row.is-go { --strip-color: var(--color-primary); }
-.nav-account-row.is-on { --strip-color: var(--color-success); }
-.nav-account-row.is-rest { --strip-color: var(--color-warning); }
+.nav-account-row.is-on { --strip-color: var(--color-warning); }
+.nav-account-row.is-rest { --strip-color: var(--text-muted); }
 .nav-account-row.is-live { --strip-color: var(--color-warning); }
 .nav-account-row.is-live::before { box-shadow: 0 0 8px var(--color-warning); }
 .nav-account-row-name { min-width: 0; overflow-wrap: anywhere; }
