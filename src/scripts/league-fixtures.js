@@ -56,6 +56,26 @@ TDCLeagueNav.panel('fixtures', () => {
 
 	const seasonId = new URLSearchParams(location.search).get('s');
 
+	// Every read that needs only the season, defined once: started together by
+	// startReads (TDC.readEarly) and each taken by its loader (TDC.read), in the
+	// order the loaders always ran (UV, 16 Nov: as fast as it can load).
+	const Q = {
+		info: () => supabaseClient.rpc('tdc_league_season_info', { p_league_season_id: seasonId }),
+		mine: () => supabaseClient.rpc('tdc_my_leagues', { p_limit: 200 }),
+		teams: () => supabaseClient.rpc('tdc_league_season_teams', { p_league_season_id: seasonId }),
+		pics: () => supabaseClient.from('tbl_teams').select('id, picture_path').eq('league_season_id', seasonId),
+		fixtures: () => supabaseClient.rpc('tdc_league_fixtures', { p_league_season_id: seasonId }),
+		readiness: () => supabaseClient.rpc('tdc_league_season_readiness', { p_league_season_id: seasonId })
+	};
+	const take = (key) => TDC.read('fixtures:' + key, Q[key]);
+	// Readiness is started too, though only the director's Schedule uses it: it
+	// costs no waiting, and is dropped unread otherwise.
+	function startReads(withInfo) {
+		const keys = ['mine', 'teams', 'pics', 'fixtures', 'readiness'];
+		if (withInfo) keys.unshift('info');
+		for (const k of keys) TDC.readEarly('fixtures:' + k, Q[k]);
+	}
+
 	// ─── State ───
 	let fixtures = [];
 	let teams = [];
@@ -190,9 +210,7 @@ TDCLeagueNav.panel('fixtures', () => {
 
 	// ─── The season ───
 	async function loadInfo() {
-		const { data, error } = await supabaseClient.rpc('tdc_league_season_info', {
-			p_league_season_id: seasonId
-		});
+		const { data, error } = await take('info');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 
 		const info = (data || [])[0];
@@ -287,9 +305,7 @@ TDCLeagueNav.panel('fixtures', () => {
 	async function loadReadiness() {
 		if (!iRunIt) return true;
 
-		const { data, error } = await supabaseClient.rpc('tdc_league_season_readiness', {
-			p_league_season_id: seasonId
-		});
+		const { data, error } = await take('readiness');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 
 		const r = (data || [])[0];
@@ -329,9 +345,9 @@ TDCLeagueNav.panel('fixtures', () => {
 	// mark their own fixtures and label the card button: the card page does
 	// its own permission checks.
 	async function loadMyTeam() {
-		const { data, error } = await supabaseClient.rpc('tdc_my_leagues', { p_limit: 200 });
+		const { data, error } = await take('mine');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
-		const mine = (data || []).find((l) => l.league_season_id === seasonId);
+		const mine =(data || []).find((l) => l.league_season_id === seasonId);
 		myTeamId = mine ? mine.my_team_id : null;
 		return true;
 	}
@@ -347,16 +363,14 @@ TDCLeagueNav.panel('fixtures', () => {
 	}
 
 	async function loadTeams() {
-		const { data, error } = await supabaseClient.rpc('tdc_league_season_teams', {
-			p_league_season_id: seasonId
-		});
+		const { data, error } = await take('teams');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		teams = data || [];
 		teamById = new Map(teams.map((t) => [t.team_id, t]));
 
 		// Each team's own picture (29 Oct), straight from tbl_teams, which every
 		// signed-in user may read; the teams function does not carry it.
-		const pics = await supabaseClient.from('tbl_teams').select('id, picture_path').eq('league_season_id', seasonId);
+		const pics = await take('pics');
 		if (pics.error) { TDC.showSupabaseError(AREA, pics.error, els.status); return false; }
 		teamPictures = new Map((pics.data || []).map((t) => [t.id, t.picture_path]));
 
@@ -371,9 +385,7 @@ TDCLeagueNav.panel('fixtures', () => {
 
 	// ─── The fixtures ───
 	async function loadFixtures() {
-		const { data, error } = await supabaseClient.rpc('tdc_league_fixtures', {
-			p_league_season_id: seasonId
-		});
+		const { data, error } = await take('fixtures');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		fixtures = data || [];
 		// A score a re-read changed fades out and in (UV, 29 Oct); not on the
@@ -1524,8 +1536,11 @@ TDCLeagueNav.panel('fixtures', () => {
 	// ─── Reading everything ───
 	// Teams first: the menus are built from them, and readiness reports how
 	// many there are.
-	async function loadAll() {
+	// started: the reads are already on their way (the start sends them with
+	// the season's info); a write's re-read or a refresh sends them fresh.
+	async function loadAll(started) {
 		const results = [];
+		if (!started) startReads(false);
 		results.push(await loadMyTeam());
 		results.push(await loadTeams());
 		results.push(await loadFixtures());
@@ -1570,8 +1585,10 @@ TDCLeagueNav.panel('fixtures', () => {
 		// fixtures are. Each dims after a moment and comes in when it is
 		// back, the dots going to whichever is still loading. A failure is
 		// the page's own to report, on its status line, as it always was.
+		// Every read sets off now, with the season's info: none of them needs it.
+		startReads(true);
 		const info = loadInfo();
-		const all = info.then((ok) => ok && (showTimesHint(), loadAll()));
+		const all = info.then((ok) => ok && (showTimesHint(), loadAll(true)));
 		if (typeof TDCDots !== 'undefined') {
 			TDCDots.track(els.name, info, { status: els.status });
 			TDCDots.track(els.planner, all, { status: els.status });

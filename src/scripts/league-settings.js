@@ -360,8 +360,17 @@ TDCLeagueNav.panel('settings', () => {
 	})(), els.docStatus));
 
 	// ─── Reading ───
+	// The reads that need only the season, started together at the start (UV,
+	// 16 Nov: as fast as it can load) and taken in their old order below; a
+	// later load (after Save) reads them fresh.
+	const Q = {
+		info: () => supabaseClient.rpc('tdc_league_season_info', { p_league_season_id: seasonId }),
+		row: () => supabaseClient.from('tbl_league_seasons').select('max_reserves, status').eq('id', seasonId).maybeSingle(),
+		mayRun: () => supabaseClient.rpc('tdc_may_run_league', { p_league_season_id: seasonId })
+	};
+	const take = (key) => TDC.read('settings:' + key, Q[key]);
 	async function load() {
-		const info = await supabaseClient.rpc('tdc_league_season_info', { p_league_season_id: seasonId });
+		const info = await take('info');
 		if (info.error) { TDC.showSupabaseError(AREA, info.error, els.status); return false; }
 		const s = (info.data || [])[0];
 		if (!s) {
@@ -377,8 +386,7 @@ TDCLeagueNav.panel('settings', () => {
 		els.end.value = savedDates.end;
 
 		// Not in tdc_league_season_info; the season row is readable directly.
-		const row = await supabaseClient
-			.from('tbl_league_seasons').select('max_reserves, status').eq('id', seasonId).maybeSingle();
+		const row = await take('row');
 		if (row.error) { TDC.showSupabaseError(AREA, row.error, els.status); return false; }
 		if (!row.data) {
 			TDC.error(AREA, 'the season\'s reserves and status could not be read.', { seasonId }, els.status);
@@ -563,9 +571,10 @@ TDCLeagueNav.panel('settings', () => {
 
 		// Settled before anything is drawn. tdc_update_league asks whether the
 		// caller may manage the league, which a season's director always may.
-		const { data: mayRun, error } = await supabaseClient.rpc('tdc_may_run_league', {
-			p_league_season_id: seasonId
-		});
+		// Everything the tab reads first sets off now, the short link with it.
+		for (const k of Object.keys(Q)) TDC.readEarly('settings:' + k, Q[k]);
+		TDC.readEarly(TDC.shortKey('season', seasonId), TDC.shortRead('season', seasonId));
+		const { data: mayRun, error } = await take('mayRun');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
 		if (!mayRun) {
 			TDC.status(els.status, 'Taking you to the season — this page is for whoever is running the league.', '');

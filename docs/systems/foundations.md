@@ -47,6 +47,14 @@
   - **Cross-cutting:** Platform (audit log, roles).
 - Commerce and Ranking never share tables. `player_id` on a transaction is nullable (cash sales with no linked member are valid).
 
+## Reading fast (16 Nov)
+Each trip to the database is about a quarter of a second from Johannesburg (eu-west-1), so **a page sends every read it can at once, and never waits for one it does not need the answer of** (UV, 16 Nov: "as fast loading as possible").
+- **`TDC.readEarly(key, make)` and `TDC.read(key, make)`** (`tdc.js`). A page starts the reads it will need together (`readEarly`); each loader takes its own (`read`) when it gets there, in the order it always ran, so what is drawn and when is unchanged: only the waiting overlaps. A read nobody started, or one older than 10 s, is made fresh, so a write's re-read never gets a stale answer. Keys are the page's own (`season:fixtures`). The usual shape, in each tab script: a `Q` object defining each read once, `take(key)`, and `startReads()` called at the start and at the top of `loadAll` (with `loadAll(true)` from the start, so they are not sent twice).
+- **A supabase query is sent only when something waits on it.** To start one early, wrap it: `Promise.resolve(supabaseClient.rpc(...))` (`readEarly` does this).
+- **Short links:** `TDC.shortKey(kind, id)` / `TDC.shortRead(kind, id)` let a page start the short link early; `TDC.shortUrl` and the short-code field take it.
+- Shared helpers ask their reads together: the venue picker (the list and the chosen venues), the standings editor (variables and columns), the card's rosters and its six card reads, the profile's balances.
+- **Done 16 Nov:** the league Season, Fixtures / Schedule, Run it and Settings tabs, the card, the profile. Measured headless at 420px, the CPU 4× slower and 220 ms added to each trip, signed in as a league director on a local copy of 8-Ball Mainstream: Season 3.9 → 1.9 s to the diver lifting, the card 4.1 → 2.1 s, Run it 3.1 → 1.5 s, Settings 2.7 → 1.7 s, the profile 2.2 → 1.0 s, Fixtures 1.8 → 1.1 s; every page's text identical before and after. The measuring script is not in the repo (it needs stand-in accounts on the local copy); `docs/STATUS.md` says what is left.
+
 ## Venues (migration `20261105200430`, 5 Nov; step 1 of 3: the database. Step 2, the picker, below. Step 3 is to come)
 
 **A competition has two kinds of venue, kept apart on purpose.**

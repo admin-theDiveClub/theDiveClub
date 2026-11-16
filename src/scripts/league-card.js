@@ -260,11 +260,14 @@
 	// requests rather than two on every redraw. They carry each player's
 	// picture too.
 	async function loadRosters() {
-		for (const id of [match.home_team_id, match.away_team_id]) {
-			if (rosters.has(id)) continue;
-			const { data, error } = await supabaseClient.rpc('tdc_team_roster', { p_team_id: id });
+		// Both asked at once (UV, 16 Nov: as fast as it can load), kept home
+		// first as before.
+		const ids = [match.home_team_id, match.away_team_id].filter((id) => !rosters.has(id));
+		const read = await Promise.all(ids.map((id) => supabaseClient.rpc('tdc_team_roster', { p_team_id: id })));
+		for (let i = 0; i < ids.length; i++) {
+			const { data, error } = read[i];
 			if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
-			rosters.set(id, data || []);
+			rosters.set(ids[i], data || []);
 			for (const r of data || []) if (r.avatar_path) pictures.set(r.player_id, r.avatar_path);
 		}
 		return true;
@@ -280,10 +283,14 @@
 			['tdc_card_state', { p_match_id: matchId }, (d) => { cardState = d || null; }]
 		];
 
-		for (const [fn, args, keep] of calls) {
-			const { data, error } = await supabaseClient.rpc(fn, args);
+		// All asked at once, with the signatures below (UV, 16 Nov: as fast as it
+		// can load), and kept in this order: the first failure is the one said.
+		const sigsRead = Promise.resolve(supabaseClient.rpc('tdc_card_signatures', { p_match_id: matchId }));   // sent now, not when awaited
+		const read = await Promise.all(calls.map(([fn, args]) => supabaseClient.rpc(fn, args)));
+		for (let i = 0; i < calls.length; i++) {
+			const { data, error } = read[i];
 			if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
-			keep(data);
+			calls[i][2](data);
 		}
 
 		// A re-read can land while L and W changes are still queued behind it
@@ -320,7 +327,7 @@
 		// league director, UV 29 Oct), join that list and the signature lines.
 		changes = [];
 		edited = new Map();
-		const sigs = await supabaseClient.rpc('tdc_card_signatures', { p_match_id: matchId });
+		const sigs = await sigsRead;
 		if (sigs.error) { TDC.showSupabaseError(AREA, sigs.error, els.status); return false; }
 		signatures = sigs.data || [];
 		if (signatures.length) {
@@ -2205,21 +2212,32 @@
 			area: AREA, status: els.status, title: () => document.title
 		});
 
+		// Who the reader is, for the player's view, asked at once: it needs only
+		// the sign-in (UV, 16 Nov: as fast as it can load). An account with no
+		// player (rare) simply never gets it, so no error is shown for one.
+		// (Promise.resolve sends it now: a supabase query waits to be awaited.)
+		const meRead = Promise.resolve(supabaseClient.from('tbl_players').select('id').eq('user_id', session.user.id).maybeSingle());
 		if (!await loadMatch()) return;
-		if (!await loadRosters()) return;
-		// Who the reader is, for the player's view. An account with no player
-		// (rare) simply never gets it, so no error is shown for one.
-		const me = await supabaseClient.from('tbl_players').select('id').eq('user_id', session.user.id).maybeSingle();
-		if (me.error) TDC.showSupabaseError(AREA, me.error, els.status);
-		else myPlayerId = me.data ? me.data.id : null;
-		await loadContext();
-
+		// The rosters, the league around the match and the reader together;
+		// none needs another. The cutoff still follows the rosters and comes
+		// before the card is read, as it always has.
+		const rostersRead = loadRosters();
+		const context = loadContext();
 		// The cutoff is evaluated when somebody opens the night, which is what
 		// makes it lazy — there is no scheduled job. It does nothing unless
 		// the cutoff has passed, and a failure here must not stop the page
 		// loading, so it is reported and then stepped over.
-		const { error } = await supabaseClient.rpc('tdc_apply_lineup_cutoff', { p_match_id: matchId });
-		if (error) TDC.showSupabaseError(AREA, error, els.status);
+		const cutoff = rostersRead.then(async (ok) => {
+			if (!ok) return;
+			const { error } = await supabaseClient.rpc('tdc_apply_lineup_cutoff', { p_match_id: matchId });
+			if (error) TDC.showSupabaseError(AREA, error, els.status);
+		});
+		const me = await meRead;
+		if (me.error) TDC.showSupabaseError(AREA, me.error, els.status);
+		else myPlayerId = me.data ? me.data.id : null;
+		if (!await rostersRead) { await context; return; }
+		await context;
+		await cutoff;
 
 		await loadAll();
 		startLive();

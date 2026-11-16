@@ -319,10 +319,14 @@ const TDCStandingsEdit = (() => {
 		});
 
 		// ─── Reading ───
+		const readColumns = () => supabaseClient.from('tbl_league_standing_columns')
+			.select('id, scope, position, name, equation, decimals, rank_priority, higher_first')
+			.eq('league_season_id', seasonId).order('position');
+		let firstColumns = null;   // the start's read, sent with the variables (UV, 16 Nov)
 		async function load() {
-			const { data, error } = await supabaseClient.from('tbl_league_standing_columns')
-				.select('id, scope, position, name, equation, decimals, rank_priority, higher_first')
-				.eq('league_season_id', seasonId).order('position');
+			const first = firstColumns;
+			firstColumns = null;
+			const { data, error } = await (first || readColumns());
 			if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 			columns = data || [];
 			renderCols();
@@ -331,6 +335,8 @@ const TDCStandingsEdit = (() => {
 		}
 
 		return (async () => {
+			// The columns set off with the variables; load() takes them below.
+			firstColumns = Promise.resolve(readColumns());
 			const v = await supabaseClient.rpc('tdc_standing_variables');
 			if (v.error) { TDC.showSupabaseError(AREA, v.error, els.status); return false; }
 			vars = v.data || [];

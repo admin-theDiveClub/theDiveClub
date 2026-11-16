@@ -56,7 +56,12 @@
 	var BAND = 300;       // the orbit's band: its width, px
 	var SPEED = 120;      // how fast it travels, px a second
 	var SHORTEST = 4000;  // the least one move takes, ms
-	var shownX = '', shownY = '';
+	var shownX = '', shownY = '', shownLX = '', shownLY = '';
+	// In use (UV, 16 Nov): while a finger or button is down, and for SETTLE ms
+	// after the last scroll, the light holds, so a tap or a scroll never waits
+	// on the whole page being restyled for a shadow.
+	var SETTLE = 400;
+	var pressed = new Set(), usedUntil = 0;
 	var root = document.documentElement;
 	var calm = window.matchMedia('(prefers-reduced-motion: reduce)');
 	var cfg, from, to, done, dur, last = 0, running = false;
@@ -115,14 +120,20 @@
 		if (y !== shownY) root.style.setProperty('--page-shadow-y', shownY = y);
 	}
 
+	// Whole pixels (UV, 16 Nov): every raised card's shadow follows these, so
+	// each write restyles the whole page (about 0.1 s on a long page on a
+	// phone). A pixel's step in a soft shadow cannot be seen, and writing only
+	// when a whole pixel changes cuts the writes several times over.
+	function px(v) { return Math.round(v) + 'px'; }
+
 	function putOrbit(p) {
 		// At rest (less motion): straight down.
-		if (p.round === undefined) { writeShadow('0.0px', cfg.offset.toFixed(1) + 'px'); return; }
+		if (p.round === undefined) { writeShadow('0px', px(cfg.offset)); return; }
 		var at = locate(p.round, p.out * BAND);
 		var vx = window.innerWidth / 2 - at.x, vy = window.innerHeight / 2 - at.y;
 		var len = Math.hypot(vx, vy) || 1;
 		var shadow = cfg.offset * (2 - p.out);
-		writeShadow((vx / len * shadow).toFixed(1) + 'px', (vy / len * shadow).toFixed(1) + 'px');
+		writeShadow(px(vx / len * shadow), px(vy / len * shadow));
 	}
 
 	// p: the light's place, x from the centre and y from the rise
@@ -131,13 +142,13 @@
 		var lx = p.x, ly = Math.max(0, cfg.rise + p.y);
 		var vx = -lx, vy = window.innerHeight / 2 + ly;   // light to the screen's centre
 		var len = Math.hypot(vx, vy) || 1;
-		root.style.setProperty('--page-light-x', lx.toFixed(1) + 'px');
-		root.style.setProperty('--page-light-y', ly.toFixed(1) + 'px');
+		var x = px(lx), y = px(ly);
+		if (x !== shownLX) root.style.setProperty('--page-light-x', shownLX = x);
+		if (y !== shownLY) root.style.setProperty('--page-light-y', shownLY = y);
 		// An inset shadow lies on the side opposite its offset, so an offset
 		// pointing away from the light puts it on the edges nearest the light,
 		// as the screen's frame would, set into the phone and lit from above
-		root.style.setProperty('--page-shadow-x', (vx / len * cfg.offset * cfg.lean).toFixed(1) + 'px');
-		root.style.setProperty('--page-shadow-y', (vy / len * cfg.offset).toFixed(1) + 'px');
+		writeShadow(px(vx / len * cfg.offset * cfg.lean), px(vy / len * cfg.offset));
 	}
 
 	function at() {
@@ -157,6 +168,7 @@
 	// Before loader.js has run, the screen is up if it is on the page and not
 	// hidden.
 	function hold() {
+		if (pressed.size || performance.now() < usedUntil) return true;   // somebody using the page (UV, 16 Nov)
 		if (performance.now() < (window.TDCLightHeldUntil || 0)) return true;   // a dropdown moving (tdc-controls.js)
 		if (typeof TDCDots !== 'undefined' && TDCDots.playing) return true;
 		if (typeof TDCLoader !== 'undefined') return TDCLoader.up;
@@ -241,6 +253,19 @@
 		window.addEventListener(type, wake, { passive: true, capture: true });
 	});
 	document.addEventListener('scroll', wake, { passive: true, capture: true });
+
+	// In use: a finger or button down holds the light until it lifts; a scroll
+	// or wheel holds it until SETTLE after the last one. Leaving the page lets
+	// go of any press it never heard lift.
+	function used() { usedUntil = performance.now() + SETTLE; }
+	window.addEventListener('pointerdown', function (e) { pressed.add(e.pointerId); }, { passive: true, capture: true });
+	['pointerup', 'pointercancel'].forEach(function (type) {
+		window.addEventListener(type, function (e) { pressed.delete(e.pointerId); used(); }, { passive: true, capture: true });
+	});
+	window.addEventListener('wheel', used, { passive: true, capture: true });
+	document.addEventListener('scroll', used, { passive: true, capture: true });
+	window.addEventListener('blur', function () { pressed.clear(); });
+	document.addEventListener('visibilitychange', function () { if (document.hidden) pressed.clear(); });
 	document.addEventListener('visibilitychange', function () {
 		if (document.hidden) { clearTimeout(timer); timer = null; return; }
 		wake();

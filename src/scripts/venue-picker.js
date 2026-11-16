@@ -104,15 +104,19 @@ const TDCVenuePicker = (() => {
 		// is for a new season, which tdc_create_league_season gives the last
 		// season's list less any venue since closed, so it is shown the same.
 		async function load(kind, id, { openOnly = false } = {}) {
-			const list = await supabaseClient.rpc('tdc_venues');
+			// Both asked at once (UV, 16 Nov: as fast as it can load), read in
+			// their old order.
+			const o = kind ? OWNERS[kind] : null;
+			const [list, own] = await Promise.all([
+				supabaseClient.rpc('tdc_venues'),
+				o ? supabaseClient.from(o.table).select('venue_id').eq(o.column, id).order('position') : null
+			]);
 			if (list.error) { TDC.showSupabaseError(area, list.error, statusEl); return false; }
 			venues = list.data || [];
 
 			let ids = [];
 			if (kind) {
-				const o = OWNERS[kind];
-				const { data, error } = await supabaseClient
-					.from(o.table).select('venue_id').eq(o.column, id).order('position');
+				const { data, error } = own;
 				if (error) { TDC.showSupabaseError(area, error, statusEl); return false; }
 				ids = (data || []).map((r) => r.venue_id);
 			}

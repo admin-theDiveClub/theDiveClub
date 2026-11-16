@@ -187,6 +187,28 @@ const TDC = (() => {
 		return spot;
 	}
 
+	// ─── Reads started early (UV, 16 Nov: every page as fast as it can load) ───
+	// A page starts the reads it is going to need all at once, so they travel to
+	// the server together instead of one after another (each trip is about a
+	// quarter of a second from Johannesburg). Each loader then takes its own with
+	// TDC.read when it gets there, in the order it always has, so what is drawn,
+	// and when, is unchanged; only the waiting overlaps. A read nobody started,
+	// or one started more than EARLY_MS ago, is made there and then, so a stale
+	// answer is never used.
+	//   TDC.readEarly(key, make)  start make() now (a supabase call)
+	//   TDC.read(key, make)       the early one if there is a fresh one, else make()
+	const early = new Map();
+	const EARLY_MS = 10000;
+	function readEarly(key, make) {
+		early.set(key, { at: Date.now(), p: Promise.resolve(make()) });
+	}
+	function read(key, make) {
+		const got = early.get(key);
+		early.delete(key);
+		if (got && Date.now() - got.at < EARLY_MS) return got.p;
+		return make();
+	}
+
 	function busy(el, work, statusEl) {
 		const p = Promise.resolve(work);
 		if (el && el.isConnected && typeof TDCDots !== 'undefined') {
@@ -580,8 +602,11 @@ const TDC = (() => {
 
 	// A short link as an address to show (UV, 9 Nov). Read each time, unlike
 	// shareButton's: a director can change the code on another tab of the page.
+	// A page may start it early with TDC.readEarly(shortKey(kind, id), shortRead(kind, id)).
+	const shortKey = (kind, id) => 'short:' + kind + ':' + id;
+	const shortRead = (kind, id) => () => supabaseClient.rpc('tdc_short_link', { p_kind: kind, p_id: id });
 	async function shortUrl(area, kind, id, statusEl) {
-		const { data, error: err } = await supabaseClient.rpc('tdc_short_link', { p_kind: kind, p_id: id });
+		const { data, error: err } = await read(shortKey(kind, id), shortRead(kind, id));
 		if (err) { showSupabaseError(area, err, statusEl); return null; }
 		return location.origin + '/' + data.code;
 	}
@@ -682,6 +707,6 @@ const TDC = (() => {
 		document.fonts.addEventListener('loadingdone', refitRuns);
 	}
 
-	return { shortUrl, shareButton, error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer,
+	return { shortUrl, shareButton, error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer, readEarly, read, shortKey, shortRead,
 		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, fullName, fullNameOf, leaguePic, teamPic, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade, runName, runWords };
 })();

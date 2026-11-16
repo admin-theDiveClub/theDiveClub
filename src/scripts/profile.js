@@ -416,8 +416,11 @@ TDCLoader.hold((async () => {
 		}
 		els.redeemVenueField.hidden = venues.length < 2;
 
-		for (const v of venues) {
-			const { data: balance, error: balErr } = await supabaseClient.rpc('tdc_my_credit_balance', { p_venue_id: v.id });
+		// Every venue's balance asked at once (UV, 16 Nov: as fast as it can
+		// load), drawn in the venues' order as before.
+		const balances = await Promise.all(venues.map((v) => supabaseClient.rpc('tdc_my_credit_balance', { p_venue_id: v.id })));
+		for (const [i, v] of venues.entries()) {
+			const { data: balance, error: balErr } = balances[i];
 			const row = document.createElement('div');
 			row.className = 'kv';
 			const label = document.createElement('span');
@@ -471,6 +474,21 @@ TDCLoader.hold((async () => {
 		}
 	});
 
+	// What the page reads after the credits, sent now with them (UV, 16 Nov).
+	const readIds = () => supabaseClient
+		.from('tbl_player_identifiers')
+		.select('id, kind, value, issuing_country, created_at')
+		.eq('player_id', player.id)
+		.in('kind', ['sa_id', 'passport'])
+		.order('created_at');
+	const readVers = () => supabaseClient
+		.from('tbl_identifier_verifications')
+		.select('identifier_id, created_at, tbl_venues ( name )')
+		.is('revoked_at', null);
+	TDC.readEarly('profile:ids', readIds);
+	TDC.readEarly('profile:vers', readVers);
+	TDC.readEarly('profile:walkin', () => supabaseClient.rpc('tdc_find_my_walk_in'));
+
 	await loadCredits();
 
 	// ─── ID verification ───
@@ -491,22 +509,18 @@ TDCLoader.hold((async () => {
 	async function loadIdentity() {
 		els.idList.textContent = '';
 
-		const { data: identifiers, error: idErr } = await supabaseClient
-			.from('tbl_player_identifiers')
-			.select('id, kind, value, issuing_country, created_at')
-			.eq('player_id', player.id)
-			.in('kind', ['sa_id', 'passport'])
-			.order('created_at');
+		// Both asked at once, and the page's first look sends them before the
+		// credits are drawn (readIdentity, TDC.read; UV, 16 Nov). Checked in
+		// their old order.
+		const [ids, vers] = await Promise.all([TDC.read('profile:ids', readIds), TDC.read('profile:vers', readVers)]);
+		const { data: identifiers, error: idErr } = ids;
 
 		if (idErr) {
 			TDC.error(AREA, 'could not load your ID details.', idErr, els.idStatus);
 			return;
 		}
 
-		const { data: verifications, error: verErr } = await supabaseClient
-			.from('tbl_identifier_verifications')
-			.select('identifier_id, created_at, tbl_venues ( name )')
-			.is('revoked_at', null);
+		const { data: verifications, error: verErr } = vers;
 
 		if (verErr) {
 			TDC.error(AREA, 'could not load your verifications.', verErr, els.idStatus);
@@ -603,7 +617,7 @@ TDCLoader.hold((async () => {
 	await loadIdentity();
 
 	// ─── Earlier walk-in record with my confirmed email ───
-	const { data: walkIns, error: findErr } = await supabaseClient.rpc('tdc_find_my_walk_in');
+	const { data: walkIns, error: findErr } = await TDC.read('profile:walkin', () => supabaseClient.rpc('tdc_find_my_walk_in'));
 	if (findErr) {
 		TDC.error(AREA, 'could not check for an earlier walk-in record.', findErr);
 		return;

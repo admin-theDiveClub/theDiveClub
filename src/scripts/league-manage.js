@@ -50,6 +50,30 @@ TDCLeagueNav.panel('manage', () => {
 
 	const seasonId = new URLSearchParams(location.search).get('s');
 
+	// Every read that needs only the season, defined once: started together by
+	// startReads (TDC.readEarly) and each taken by its loader (TDC.read), in the
+	// order the loaders always ran (UV, 16 Nov: as fast as it can load). The
+	// server answers the player list only to whoever runs the league, so reading
+	// it before tdc_may_run_league has said so shows nobody anything new.
+	const Q = {
+		info: () => supabaseClient.rpc('tdc_league_season_info', { p_league_season_id: seasonId }),
+		mayRun: () => supabaseClient.rpc('tdc_may_run_league', { p_league_season_id: seasonId }),
+		roleTypes: () => supabaseClient.from('tbl_competition_role_types').select('key, name, rank').order('rank', { ascending: false }),
+		season: () => supabaseClient.from('tbl_league_seasons')
+			.select('id, entry_mode, paid_confirms, is_listed, public_shows_players').eq('id', seasonId).maybeSingle(),
+		teams: () => supabaseClient.rpc('tdc_league_season_teams', { p_league_season_id: seasonId }),
+		players: () => supabaseClient.rpc('tdc_league_season_entrants', { p_league_season_id: seasonId }),
+		readiness: () => supabaseClient.rpc('tdc_league_season_readiness', { p_league_season_id: seasonId }),
+		officials: () => supabaseClient.rpc('tdc_league_officials', { p_league_season_id: seasonId })
+	};
+	const take = (key) => TDC.read('manage:' + key, Q[key]);
+	function startReads(all) {
+		const keys = ['season', 'teams', 'players', 'readiness', 'officials'];
+		if (all) keys.unshift('info', 'mayRun', 'roleTypes');
+		for (const k of keys) TDC.readEarly('manage:' + k, Q[k]);
+		TDC.readEarly(TDC.shortKey('season', seasonId), TDC.shortRead('season', seasonId));
+	}
+
 	// ─── State ───
 	let players = [];
 	let season = null;         // the season row, for the entry settings
@@ -80,9 +104,7 @@ TDCLeagueNav.panel('manage', () => {
 
 	// ─── The season itself ───
 	async function loadInfo() {
-		const { data, error } = await supabaseClient.rpc('tdc_league_season_info', {
-			p_league_season_id: seasonId
-		});
+		const { data, error } = await take('info');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return null; }
 
 		const info = (data || [])[0];
@@ -102,9 +124,7 @@ TDCLeagueNav.panel('manage', () => {
 
 	// ─── Readiness ───
 	async function loadReadiness() {
-		const { data, error } = await supabaseClient.rpc('tdc_league_season_readiness', {
-			p_league_season_id: seasonId
-		});
+		const { data, error } = await take('readiness');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 
 		const r = (data || [])[0];
@@ -146,11 +166,7 @@ TDCLeagueNav.panel('manage', () => {
 	};
 
 	async function loadSeason() {
-		const { data, error } = await supabaseClient
-			.from('tbl_league_seasons')
-			.select('id, entry_mode, paid_confirms, is_listed, public_shows_players')
-			.eq('id', seasonId)
-			.maybeSingle();
+		const { data, error } = await take('season');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		season = data;
 		renderEntry();
@@ -284,9 +300,7 @@ TDCLeagueNav.panel('manage', () => {
 
 	// ─── Teams ───
 	async function loadTeams() {
-		const { data, error } = await supabaseClient.rpc('tdc_league_season_teams', {
-			p_league_season_id: seasonId
-		});
+		const { data, error } = await take('teams');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		teams = data || [];
 		renderTeams();
@@ -380,9 +394,7 @@ TDCLeagueNav.panel('manage', () => {
 
 	// ─── Players ───
 	async function loadPlayers() {
-		const { data, error } = await supabaseClient.rpc('tdc_league_season_entrants', {
-			p_league_season_id: seasonId
-		});
+		const { data, error } = await take('players');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		players = data || [];
 		renderPlayers();
@@ -644,10 +656,7 @@ TDCLeagueNav.panel('manage', () => {
 	// rather than being written out here, because that table is a lookup with a
 	// rank for exactly this reason.
 	async function loadRoleTypes() {
-		const { data, error } = await supabaseClient
-			.from('tbl_competition_role_types')
-			.select('key, name, rank')
-			.order('rank', { ascending: false });
+		const { data, error } = await take('roleTypes');
 
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
 		els.officialRole.replaceChildren(...(data || []).map((r) => {
@@ -659,9 +668,7 @@ TDCLeagueNav.panel('manage', () => {
 	}
 
 	async function loadOfficials() {
-		const { data, error } = await supabaseClient.rpc('tdc_league_officials', {
-			p_league_season_id: seasonId
-		});
+		const { data, error } = await take('officials');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		officials = data || [];
 		renderOfficials();
@@ -759,8 +766,11 @@ TDCLeagueNav.panel('manage', () => {
 	// Teams first: the player rows build their team menus from them.
 	let ready = false;   // set once tdc_may_run_league has said yes
 
-	async function loadAll() {
+	// started: the reads are already on their way (the start sends them); a
+	// write's re-read or the tab shown again sends them fresh.
+	async function loadAll(started) {
 		const results = [];
+		if (!started) startReads(false);
 		results.push(await loadSeason());
 		results.push(await loadShareLink());
 		results.push(await loadTeams());
@@ -795,15 +805,15 @@ TDCLeagueNav.panel('manage', () => {
 		}
 
 
+		// Every read sets off now; each is still taken in its old order.
+		startReads(true);
 		const info = await loadInfo();
 		if (!info) return;
 
 		// Settled before anything is drawn, so the controls are never offered
 		// and then taken away. tdc_may_run_league asks the same private helper
 		// the writes ask, so the page and the database cannot disagree.
-		const { data: mayRun, error } = await supabaseClient.rpc('tdc_may_run_league', {
-			p_league_season_id: seasonId
-		});
+		const { data: mayRun, error } = await take('mayRun');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
 
 		// The director's list carries payment and private notes, so a player
@@ -817,7 +827,7 @@ TDCLeagueNav.panel('manage', () => {
 		}
 
 		await loadRoleTypes();
-		if (!await loadAll()) return;
+		if (!await loadAll(true)) return;
 
 		els.search.focus();
 	})(), 'League');

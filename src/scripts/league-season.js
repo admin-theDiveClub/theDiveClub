@@ -63,6 +63,33 @@ TDCLeagueNav.panel('season', () => {
 
 	const seasonId = new URLSearchParams(location.search).get('s');
 
+	// Every read that needs only the season, defined once: started together by
+	// startReads (TDC.readEarly) and each taken by its loader (TDC.read), in the
+	// order the loaders always ran (UV, 16 Nov: as fast as it can load).
+	const Q = {
+		info: () => supabaseClient.rpc('tdc_league_season_info', { p_league_season_id: seasonId }),
+		mine: () => supabaseClient.rpc('tdc_my_leagues', { p_limit: 200 }),
+		join: () => supabaseClient.rpc('tdc_league_join_info', { p_league_season_id: seasonId }),
+		row: () => supabaseClient.from('tbl_league_seasons').select('status, max_reserves, entry_mode, tbl_leagues(picture_path)').eq('id', seasonId).maybeSingle(),
+		fixtures: () => supabaseClient.rpc('tdc_league_fixtures', { p_league_season_id: seasonId }),
+		teams: () => supabaseClient.rpc('tdc_league_season_teams', { p_league_season_id: seasonId }),
+		pics: () => supabaseClient.from('tbl_teams').select('id, picture_path').eq('league_season_id', seasonId),
+		readiness: () => supabaseClient.rpc('tdc_league_season_readiness', { p_league_season_id: seasonId }),
+		officials: () => supabaseClient.rpc('tdc_league_officials', { p_league_season_id: seasonId }),
+		standings: () => supabaseClient.rpc('tdc_league_standings', { p_league_season_id: seasonId }),
+		columns: () => supabaseClient.from('tbl_league_standing_columns')
+			.select('id, scope, position, name, equation, decimals, rank_priority, higher_first')
+			.eq('league_season_id', seasonId).order('position')
+	};
+	const take = (key) => TDC.read('season:' + key, Q[key]);
+	// The signed-in reads, all at once. Standings is started too, though only a
+	// player uses it: it costs no waiting, and is dropped unread otherwise.
+	function startReads(withInfo) {
+		const keys = ['mine', 'join', 'row', 'fixtures', 'teams', 'pics', 'readiness', 'officials', 'standings', 'columns'];
+		if (withInfo) keys.unshift('info');
+		for (const k of keys) TDC.readEarly('season:' + k, Q[k]);
+	}
+
 	// ─── State ───
 	let info = null;
 	let mine = null;            // my row from tdc_my_leagues, or null
@@ -161,9 +188,7 @@ TDCLeagueNav.panel('season', () => {
 
 	// ─── The season ───
 	async function loadInfo() {
-		const { data, error } = await supabaseClient.rpc('tdc_league_season_info', {
-			p_league_season_id: seasonId
-		});
+		const { data, error } = await take('info');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 
 		info = (data || [])[0];
@@ -212,21 +237,19 @@ TDCLeagueNav.panel('season', () => {
 
 	// ─── Your place ───
 	async function loadMine() {
-		const { data, error } = await supabaseClient.rpc('tdc_my_leagues', { p_limit: 200 });
+		const { data, error } = await take('mine');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 
-		mine = (data || []).find((l) => l.league_season_id === seasonId) || null;
+		mine =(data || []).find((l) => l.league_season_id === seasonId) || null;
 		return true;
 	}
 
 	// Where I stand and how somebody gets in: it answers
 	// any signed-in player, in the league or not, and decides the plus.
 	async function loadJoinInfo() {
-		const { data, error } = await supabaseClient.rpc('tdc_league_join_info', {
-			p_league_season_id: seasonId
-		});
+		const { data, error } = await take('join');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
-		joinInfo = (data || [])[0] || null;
+		joinInfo =(data || [])[0] || null;
 		return true;
 	}
 
@@ -381,12 +404,7 @@ TDCLeagueNav.panel('season', () => {
 	async function loadMySeason() {
 		seasonSoFar = null;
 		if (mine && mine.my_status) {
-			const [st, cols] = await Promise.all([
-				supabaseClient.rpc('tdc_league_standings', { p_league_season_id: seasonId }),
-				supabaseClient.from('tbl_league_standing_columns')
-					.select('id, scope, position, name, equation, decimals, rank_priority, higher_first')
-					.eq('league_season_id', seasonId).order('position')
-			]);
+			const [st, cols] = await Promise.all([take('standings'), take('columns')]);
 			for (const r of [st, cols]) {
 				if (r.error) { TDC.showSupabaseError(AREA, r.error, els.status); renderMySeason(); return false; }
 			}
@@ -466,11 +484,9 @@ TDCLeagueNav.panel('season', () => {
 	// captains; for them, how many have confirmed is one of the league's
 	// numbers (UV, 24 Oct: the banner replaces "Ready to begin?").
 	async function loadReadiness() {
-		const { data, error } = await supabaseClient.rpc('tdc_league_season_readiness', {
-			p_league_season_id: seasonId
-		});
+		const { data, error } = await take('readiness');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
-		readiness = (data || [])[0] || null;
+		readiness =(data || [])[0] || null;
 		return true;
 	}
 
@@ -478,17 +494,14 @@ TDCLeagueNav.panel('season', () => {
 	// Status, reserves and how players get in are on the season, which anyone
 	// signed in may read; the rest of the banner is in the season info.
 	async function loadSeasonRow() {
-		const { data, error } = await supabaseClient
-			.from('tbl_league_seasons').select('status, max_reserves, entry_mode, tbl_leagues(picture_path)').eq('id', seasonId).maybeSingle();
+		const { data, error } = await take('row');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		seasonRow = data;
 		return true;
 	}
 
 	async function loadFixtures() {
-		const { data, error } = await supabaseClient.rpc('tdc_league_fixtures', {
-			p_league_season_id: seasonId
-		});
+		const { data, error } = await take('fixtures');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		fixtures = data || [];
 		return true;
@@ -983,15 +996,13 @@ TDCLeagueNav.panel('season', () => {
 
 	// ─── Teams ───
 	async function loadTeams() {
-		const { data, error } = await supabaseClient.rpc('tdc_league_season_teams', {
-			p_league_season_id: seasonId
-		});
+		const { data, error } = await take('teams');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		teams = data || [];
 
 		// Each team's own picture (29 Oct), straight from tbl_teams, which every
 		// signed-in user may read; the teams function does not carry it.
-		const pics = await supabaseClient.from('tbl_teams').select('id, picture_path').eq('league_season_id', seasonId);
+		const pics = await take('pics');
 		if (pics.error) { TDC.showSupabaseError(AREA, pics.error, els.status); return false; }
 		teamPictures = new Map((pics.data || []).map((p) => [p.id, p.picture_path]));
 
@@ -1291,9 +1302,7 @@ TDCLeagueNav.panel('season', () => {
 
 	// ─── Who runs it ───
 	async function loadOfficials() {
-		const { data, error } = await supabaseClient.rpc('tdc_league_officials', {
-			p_league_season_id: seasonId
-		});
+		const { data, error } = await take('officials');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		officials = data || [];
 		return true;
@@ -1355,8 +1364,12 @@ TDCLeagueNav.panel('season', () => {
 	// My row first: what the rest shows depends on whether I captain a team.
 	// The tabs are settled before the teams are drawn, so a team named in the
 	// address is opened on the tab it is on.
-	async function loadAll() {
+	// started: the reads are already on their way (the page's start sends them
+	// with the season's info); every other call (a write's re-read, the tab
+	// shown again) sends them fresh.
+	async function loadAll(started) {
 		const results = [];
+		if (!signedOut && !started) startReads(false);
 		if (signedOut) {
 			if (!await loadPublic()) return false;
 		} else {
@@ -1416,13 +1429,16 @@ TDCLeagueNav.panel('season', () => {
 			return;
 		}
 
+		// Everything this tab reads sets off now, with the season's info and
+		// before who this is is known: none of it needs either.
+		startReads(true);
 		const me = await TDC.getMyPlayer(AREA, session.user.id, els.status);
 		if (!me) return;
 		myPlayerId = me.id;
 
 		if (!await loadInfo()) return;
 		startShare();
-		await loadAll();
+		await loadAll(true);
 	})(), 'League season');
 
 	// Shown again as a tab (league-nav.js): read again in place.

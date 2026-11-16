@@ -121,7 +121,8 @@ const TDCShortCode = (() => {
 		})(), status));
 
 		async function read() {
-			const { data, error } = await supabaseClient.rpc('tdc_short_link', { p_kind: kind, p_id: id });
+			// The one a page started early, if it did (TDC.read, UV 16 Nov).
+			const { data, error } = await TDC.read(TDC.shortKey(kind, id), TDC.shortRead(kind, id));
 			if (error) { TDC.showSupabaseError(area, error, status); return false; }
 
 			current = data.code.slice(prefix.length);
