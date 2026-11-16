@@ -146,6 +146,29 @@ extraScripts:
 		color: var(--text-primary);
 		text-decoration: none;
 	}
+	/* The link takes the card but its ✕ (UV, 16 Nov), which hides it until the next
+	   visit (home.js); the ✕ as the Get the app strip's (nav.css .nav-get-app-x) */
+	.home-install-link {
+		flex: 1 1 auto;
+		min-width: 0;
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		color: inherit;
+		text-decoration: none;
+	}
+	.home-install-x {
+		flex: 0 0 auto;
+		width: 2.25rem;
+		height: 2.25rem;
+		margin-right: calc(-1 * var(--space-2));
+		padding: 0;
+		border: 0;
+		background: none;
+		color: var(--text-muted);
+		font-size: 1rem;
+		cursor: pointer;
+	}
 	.home-install-icon { width: 40px; height: 40px; flex: 0 0 auto; }
 	/* Too tall for the room above the logo (a phone on its side; home.js): one line,
 	   the icon and "Get the app" only (UV, 16 Nov) */
@@ -171,14 +194,17 @@ extraScripts:
 			<img class="for-dark" src="/resources/branding/logo-primary-dark.svg" alt="">
 			<img class="for-light" src="/resources/branding/logo-primary-light.svg" alt="">
 		</div>
-		<a class="home-install home-raised" id="home-install" href="/install/" hidden>
-			<img class="home-install-icon" src="/resources/branding/icon-primary.svg" alt="">
-			<span class="home-install-words">
-				<span class="home-install-title">Get the app</span>
-				<span class="home-install-sub">Install The Dive Club on this device</span>
-			</span>
-			<span class="home-install-go" aria-hidden="true">›</span>
-		</a>
+		<div class="home-install home-raised" id="home-install" role="region" aria-label="Get the app" hidden>
+			<a class="home-install-link" href="/install/">
+				<img class="home-install-icon" src="/resources/branding/icon-primary.svg" alt="">
+				<span class="home-install-words">
+					<span class="home-install-title">Get the app</span>
+					<span class="home-install-sub">Install The Dive Club on this device</span>
+				</span>
+				<span class="home-install-go" aria-hidden="true">›</span>
+			</a>
+			<button type="button" class="home-install-x" id="home-install-x" aria-label="Hide this">✕</button>
+		</div>
 		<div class="home-content">
 			<div class="status" id="home-cards-status" role="status"></div>
 			<div class="home-cards" id="home-cards">

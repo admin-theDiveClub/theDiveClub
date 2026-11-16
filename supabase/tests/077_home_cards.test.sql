@@ -6,7 +6,7 @@
 -- first, at most six, six and five, and never a match they only refereed.
 begin;
 \ir _helpers.psql
-select plan(16);
+select plan(17);
 
 select tests.create_user('Home Dee') as dee \gset
 select tests.create_user('Home Pat') as pat \gset
@@ -83,6 +83,8 @@ select is(jsonb_array_length(:'pat_cards'::jsonb -> 'matches'), 2, 'a player: bo
 select is(:'pat_cards'::jsonb -> 'matches' -> 0 ->> 'id', :'m_live',
 	'active first: the match being played leads, though it is older');
 select is(:'pat_cards'::jsonb -> 'matches' -> 0 ->> 'opponent_kind', 'player', 'the opponent is a player');
+-- Its badge (migration 20261116140609): a match started on its own is social
+select is(:'pat_cards'::jsonb -> 'matches' -> 0 ->> 'kind', 'social', 'a match started on its own says social');
 
 select tests.sign_in(:'ref');
 select is(jsonb_array_length(public.tdc_home_cards() -> 'matches'), 0, 'a match only refereed is not one played');

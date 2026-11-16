@@ -913,7 +913,9 @@
 	//
 	// In the installed app the strip is a one-off welcome instead: signed out,
 	// "sign in once more" (an iPhone's app keeps its own sign-in); signed in,
-	// "turn on notifications" until the phone has been asked. ✕ ends it.
+	// "turn on notifications" until the phone has been asked, its Turn on asking
+	// the phone in the tap (UV, 16 Nov; push-core.js) and naming the profile page
+	// as where they are changed. ✕ ends it.
 	//
 	// And signed in, it records once a day which device and browser this is
 	// and whether it is the app (tdc_record_device).
@@ -1017,7 +1019,29 @@
 				return;
 			}
 			if (path.startsWith('/accounts/profile')) return;   // the button is on this page
-			fill('You\'re in the app. Turn on notifications to hear about your matches.', 'Turn on', '/accounts/profile/#notifications');
+			// Turn on asks the phone there and then (UV, 16 Nov: after signing in, not
+			// waiting for the profile page), with the profile page named as where they
+			// are changed later. The flow is the profile button's (push-core.js).
+			fill('Turn on notifications to hear about your matches. You can change them any time on your profile page.',
+				'Turn on', '/accounts/profile/#notifications', () => {
+					if (typeof TDCPush === 'undefined') {
+						TDC.error(AREA, 'push-core.js is not loaded, so notifications cannot be turned on here.', null, text);
+						return;
+					}
+					TDC.busy(go, TDCPush.subscribe().then((result) => {
+						if (result.ok) {
+							store.set(WELCOMED, '1');
+							fill('Notifications are on. You can change them any time on your profile page.', 'Profile', '/accounts/profile/#notifications');
+						} else if ('Notification' in window && Notification.permission === 'denied') {
+							// The phone said no: only its own settings can undo that
+							store.set(WELCOMED, '1');
+							fill('Notifications are off on this phone. Turn them on in the phone\'s settings for this app, then on your profile page.', 'Profile', '/accounts/profile/#notifications');
+						} else {
+							console.error('[' + AREA + '] notifications could not be turned on from the welcome strip.', result.message);
+							fill(result.message, 'Profile', '/accounts/profile/#notifications');
+						}
+					}));
+				});
 		}
 
 		// Once a day per device, browser and app-or-not, for each person:

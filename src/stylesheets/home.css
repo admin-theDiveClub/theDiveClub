@@ -100,7 +100,7 @@
 .hc-matches { display: grid; gap: var(--space-2); }
 .hc-match {
 	display: grid;
-	grid-template-columns: auto auto minmax(0, 1fr) auto;
+	grid-template-columns: auto auto minmax(0, 1fr) auto auto;
 	align-items: center;
 	gap: var(--space-3);
 	min-height: 2.75rem;
@@ -135,6 +135,9 @@
 	white-space: nowrap;
 }
 .hc-right { font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; }
+/* What kind of match (UV, 16 Nov): League, Tournament or Singles, in the one list */
+.hc-kind { white-space: nowrap; }
+.hc-kind-none { display: none; }
 
 .hc-empty { margin: 0; color: var(--text-muted); }
 .hc-signin { display: block; }

@@ -2025,3 +2025,29 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to judge:* the card at most 32rem wide (it had run the cloth's whole width on a computer); centred in its band.
 *Found:* on a phone on its side (844×390) the band above the logo is 51px and the card 66px, so it was cut by the top cushion and overlapped the logo's top. *Decided by UV:* **there, a one-line card, the icon and "Get the app" only** (UV's choice of four): whenever the full card is taller than its band, it becomes one line (48px).
 *Touches:* `src/index.html`, `src/scripts/home.js`, `src/scripts/hero.js` (`heroBed.cross`, `heroBed.land`), `src/stylesheets/home.css`
+
+## 2026-11-16 — The Matches card: league and single matches in one list, each with a badge
+
+*Decided by UV:* league and single matches **in the same list, with different badges** (asked after UV's own six matches on the card turned out all to be league nights).
+*How:* `tdc_home_cards` gives each match its kind (migration `20261116140609`, the earlier function's text with one field added): `league` for a league fixture's match, `tournament` for a tournament fixture's, `social` for one started on its own.
+*Claude's, for UV to judge:* the words, League, Tournament and Singles (a match started on its own is Singles; a tournament match its own badge rather than Singles); the badges in the site's plain badge style; on a phone, the names shortened further to make room.
+*Touches:* migration `20261116140609_home_cards_match_kind.sql`, test `077_home_cards`; `src/scripts/home-cards.js`, `src/stylesheets/home.css`
+
+## 2026-11-16 — The sponsor banner: logos in the background colour, no masks, its own layer
+
+*Reported by UV:* a lot of flickering on the sponsor banner on the iPhone, seemingly when the light moves, with and without Low Power Mode.
+*Found (headless Chrome, a trace while the light moved):* every repaint of the page, about 70 a second, covered the banner, so it was drawn again each time; its icons were cut-outs made with masks, which Safari redraws and can show blank for a moment.
+*Decided by UV:* **instead of negative space, the logos in the site's background colour**; and **an inset shadow and highlight, above and below only**.
+*How:* `partners.js` draws each logo in the background colour and the banner shows that picture: no mask anywhere in the banner (the phone carousel's edge fades are grey laid over its edges). The banner is a layer of its own (`will-change: transform`); measured again, it was not repainted at all while the light moved.
+*Claude's, for UV to judge:* the shadow and highlight fixed (the shadow along the top, the highlight along the foot) rather than following the light, so the light never redraws the banner; their strength, the design's colours at half the design's blur.
+*Not checked:* on an iPhone, where the flicker was seen.
+*Touches:* `src/_includes/footer.html`, `src/scripts/partners.js`, `src/stylesheets/footer.css`, `src/resources/partners/README.md`
+
+## 2026-11-16 — Get the app card's ✕; notifications asked for in the app after signing in
+
+*Decided by UV:* **an ✕ to dismiss the home page's Get the app card**, which **hides it until the next visit** (UV's choice of two; nothing is kept). *Replaces:* "No ✕" (16 Nov, "The home page's Get the app card").
+*Decided by UV:* **in the installed app, after signing in, a prompt to turn notifications on, rather than waiting for the profile page**, with **a notice that notifications are controlled from the profile page**; **in the strip under the bar** (UV's choice of two, in keeping with no pop-up).
+*How:* the welcome strip's Turn on runs the profile button's own subscribe flow in the tap (moved, unchanged, into `scripts/push-core.js`, which both use), so the phone asks there and then. `docs/systems/foundations.md`, "Getting the app".
+*Claude's, for UV to judge:* the words ("Turn on notifications to hear about your matches. You can change them any time on your profile page."; after it, "Notifications are on…" or, refused, that only the phone's settings can undo it); the welcome ending once notifications are on or refused.
+*Not checked:* on a phone; driven headless as the installed app with a stand-in sign-in, where the flow stops at "no service worker" (none off the live site).
+*Touches:* `src/index.html`, `src/scripts/home.js`, `src/scripts/nav.js`, `src/scripts/push.js`, `src/scripts/push-core.js` (new), `src/_includes/layout.html`

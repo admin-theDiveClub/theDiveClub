@@ -3,19 +3,20 @@
      the address, the main pages and the legal line. Styles in footer.css. -->
 
 <!-- Partners and sponsors (UV, 16 Nov): a grey banner above the footer, each
-     icon cut out of it. The list is src/_data/partners.json, the icons are in
+     icon in the site's background colour (UV, 16 Nov: drawn in it, no longer a
+     cut-out). The list is src/_data/partners.json, the icons are in
      src/resources/partners/ (its README says how to add one). Only the icon's
-     shape is used, as a mask, so it shows the page's background through the
-     grey. Not drawn while the list is empty. On a phone the icons keep to one
-     row and drift as a carousel when they do not fit (scripts/partners.js). -->
+     shape is used: scripts/partners.js draws it in the background colour.
+     Not drawn while the list is empty. On a phone the icons keep to one row and
+     drift as a carousel when they do not fit (scripts/partners.js). -->
 {% if partners.size > 0 %}
 <section class="site-partners" aria-label="Partners and sponsors">
 	<div class="pt-view">
 	<ul class="pt-list">
 		{% for p in partners %}
 		<li>
-			{% if p.href %}<a class="pt-logo" href="{{ p.href }}" target="_blank" rel="noopener" aria-label="{{ p.name }}" title="{{ p.name }}" style="--pt-icon: url('/resources/partners/{{ p.file }}')"></a>
-			{% else %}<span class="pt-logo" role="img" aria-label="{{ p.name }}" title="{{ p.name }}" style="--pt-icon: url('/resources/partners/{{ p.file }}')"></span>{% endif %}
+			{% if p.href %}<a class="pt-logo" href="{{ p.href }}" target="_blank" rel="noopener" aria-label="{{ p.name }}" title="{{ p.name }}" data-pt-icon="/resources/partners/{{ p.file }}"></a>
+			{% else %}<span class="pt-logo" role="img" aria-label="{{ p.name }}" title="{{ p.name }}" data-pt-icon="/resources/partners/{{ p.file }}"></span>{% endif %}
 		</li>
 		{% endfor %}
 	</ul>

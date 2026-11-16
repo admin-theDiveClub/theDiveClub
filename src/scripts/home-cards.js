@@ -121,9 +121,14 @@
 		a.href = m.team_match ? '/leagues/card/?m=' + encodeURIComponent(m.id) : '/match/?id=' + encodeURIComponent(m.id);
 		var right = (m.my_frames + m.their_frames > 0) ? m.my_frames + '–' + m.their_frames
 			: m.status === 'in_progress' ? 'Playing' : m.status === 'scheduled' ? 'Not started' : '';
-		a.append(el('span', 'hc-strip'), opponentPic(m), el('span', 'hc-opp', m.opponent), el('span', 'hc-right', right));
+		// League and single matches in the one list, each with its badge (UV, 16 Nov)
+		var kind = KIND[m.kind] || null;
+		if (!kind) console.error('[' + AREA + '] a match on the Matches card has no kind the card knows.', m.kind);
+		a.append(el('span', 'hc-strip'), opponentPic(m), el('span', 'hc-opp', m.opponent),
+			el('span', 'badge hc-kind hc-kind-' + (m.kind || 'none'), kind || ''), el('span', 'hc-right', right));
 		return a;
 	}
+	var KIND = { league: 'League', tournament: 'Tournament', social: 'Singles' };
 
 	// An empty card says so, with the way in
 	function empty(words, href, linkWords) {

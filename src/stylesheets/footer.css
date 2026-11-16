@@ -9,12 +9,25 @@ main {
 }
 
 /* Partners and sponsors (_includes/footer.html; UV, 16 Nov): a band in the
-   site's grey above the footer, each icon a cut-out showing the page's
-   background through it. The icon file is used only as a mask, so its own
-   colours never show. */
+   site's grey above the footer, each icon in the site's background colour.
+   Only the icon's shape is used: scripts/partners.js draws it in that colour
+   and gives it to the icon as its picture (--pt-tinted). No mask anywhere in
+   the banner (UV, 16 Nov): Safari flickered the masked icons while the page's
+   light moved. */
 .site-partners {
 	position: relative;
 	background: var(--text-muted);
+	/* Sunk into the page, above and below only (UV, 16 Nov): the shadow along its top
+	   edge, the highlight along its foot, in the design's colours (--nm-dark, --nm-lit),
+	   nothing down its sides. Fixed, not following the light: a shadow that followed it
+	   would draw the banner again at every step of the light, as the masks did. */
+	box-shadow:
+		inset 0 calc(var(--nm-blur) / 2) calc(var(--nm-blur) / 2) calc(var(--nm-blur) / -2) var(--nm-dark),
+		inset 0 calc(var(--nm-blur) / -2) calc(var(--nm-blur) / 2) calc(var(--nm-blur) / -2) var(--nm-lit);
+	/* A layer of its own (UV, 16 Nov: it flickered while the light moved): the light
+	   repaints the page round it every 66ms, and without this the banner was drawn
+	   again each time (measured: every paint of the page covered it) */
+	will-change: transform;
 	/* Tight round the icons, so they fill the band (UV, 16 Nov), and a gap
 	   below it before the footer. */
 	padding: var(--space-4) var(--space-5);
@@ -35,9 +48,7 @@ main {
 	display: block;
 	width: 10rem;
 	height: 5rem;
-	background: var(--bg-base);
-	-webkit-mask: var(--pt-icon) center / contain no-repeat;
-	mask: var(--pt-icon) center / contain no-repeat;
+	background: var(--pt-tinted, none) center / contain no-repeat;
 	transition: opacity 0.15s;
 }
 a.pt-logo:hover,
@@ -63,11 +74,25 @@ a.pt-logo:focus-visible {
 		flex: 0 0 auto;
 		padding-inline: var(--space-2);
 	}
-	.pt-view.is-carousel,
-	.pt-view.is-swipe {
-		--pt-fade: var(--space-6);
-		-webkit-mask: linear-gradient(to right, transparent, #000 var(--pt-fade), #000 calc(100% - var(--pt-fade)), transparent);
-		mask: linear-gradient(to right, transparent, #000 var(--pt-fade), #000 calc(100% - var(--pt-fade)), transparent);
+	/* The fade at the edges: the banner's grey laid over them, not a mask; on the
+	   banner, so it stays put while a swiped row scrolls under it */
+	.site-partners:has(.is-carousel, .is-swipe)::before,
+	.site-partners:has(.is-carousel, .is-swipe)::after {
+		content: "";
+		position: absolute;
+		z-index: 1;
+		top: 0;
+		bottom: 0;
+		width: var(--space-6);
+		pointer-events: none;
+	}
+	.site-partners:has(.is-carousel, .is-swipe)::before {
+		left: 0;
+		background: linear-gradient(to right, var(--text-muted), transparent);
+	}
+	.site-partners:has(.is-carousel, .is-swipe)::after {
+		right: 0;
+		background: linear-gradient(to left, var(--text-muted), transparent);
 	}
 	.pt-view.is-carousel {
 		overflow: hidden;
@@ -101,8 +126,8 @@ a.pt-logo:focus-visible {
 	to { transform: translateX(-50%); }
 }
 
-/* The mask would clip an outline drawn on the icon itself, so the ring goes
-   round its list item. */
+/* The focus ring goes round the icon's list item (it was clipped by the old
+   mask; kept so it sits where it did). */
 a.pt-logo:focus-visible { outline: none; }
 .pt-list li:has(a.pt-logo:focus-visible) {
 	outline: 2px solid var(--bg-base);

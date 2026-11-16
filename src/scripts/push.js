@@ -9,15 +9,6 @@ TDCLoader.hold((async () => {
 	}
 })(), 'Notifications');
 
-const VAPID_PUBLIC_KEY = 'BENdnENh5pBAg7H09U_01mIC_PFgg3DxfS3DBsMKz0YZ1-nEhA-xid2FLLPnY7eRbImKWT851SyLwqrmBzDg_OI';
-
-function urlBase64ToUint8Array(base64String) {
-	const padding = '='.repeat((4 - base64String.length % 4) % 4);
-	const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-	const rawData = atob(base64);
-	return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
-}
-
 // The dots show it's working, on the button pressed (UV, 29 Oct: never a
 // loading message).
 //
@@ -38,76 +29,13 @@ if (typeof TDCDevice !== 'undefined' && TDCDevice.os === 'ios' && !TDCDevice.ins
 	});
 }
 
+// The subscribe flow itself is TDCPush.subscribe (push-core.js, 16 Nov), shared with the
+// installed app's welcome strip; the messages are the ones this page always showed.
 async function enableNotifications() {
 	const statusEl = document.getElementById('notif-status');
 	statusEl.textContent = '';
-	console.log('[Push] Button clicked, starting subscribe flow.');
-
-	const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-	if (sessionError) {
-		console.error('[Push] Error getting session:', sessionError);
-		statusEl.textContent = 'TDC (Error): could not check login status.';
-		return;
-	}
-	if (!session) {
-		console.warn('[Push] No active session — user is not logged in.');
-		statusEl.textContent = 'Please log in first.';
-		return;
-	}
-	console.log('[Push] Logged in as user_id:', session.user.id);
-
-	if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-		console.error('[Push] Push not supported in this browser/context.');
-		statusEl.textContent = 'TDC (Error): push not supported on this browser.';
-		return;
-	}
-
-	try {
-		// The service worker is switched off on localhost, and 'ready' would then wait forever.
-		const existing = await navigator.serviceWorker.getRegistration();
-		if (!existing) {
-			console.error('[Push] No service worker registered (it is switched off on localhost).');
-			statusEl.textContent = 'TDC (Error): no service worker. Notifications only work on the live site.';
-			return;
-		}
-		const registration = await navigator.serviceWorker.ready;
-		console.log('[Push] Service worker ready:', registration);
-
-		const subscription = await registration.pushManager.subscribe({
-			userVisibleOnly: true,
-			applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-		});
-		console.log('[Push] Browser subscription created:', subscription);
-
-		const subJson = subscription.toJSON();
-		if (!subJson.endpoint || !subJson.keys || !subJson.keys.p256dh || !subJson.keys.auth) {
-			console.error('[Push] Subscription object missing expected fields:', subJson);
-			statusEl.textContent = 'TDC (Error): incomplete subscription data.';
-			return;
-		}
-
-		// Through a function, not a direct upsert. A push endpoint belongs to the
-		// browser, so the same phone signed into a different account produces a
-		// row that already belongs to somebody else — and an upsert on endpoint
-		// is refused by the access rules in exactly that case.
-		const { error: dbError } = await supabaseClient.rpc('tdc_save_push_subscription', {
-			p_endpoint: subJson.endpoint,
-			p_p256dh: subJson.keys.p256dh,
-			p_auth: subJson.keys.auth
-		});
-
-		if (dbError) {
-			console.error('[Push] Error saving subscription to Supabase:', dbError);
-			statusEl.textContent = 'TDC (Error): ' + dbError.message;
-			return;
-		}
-
-		console.log('[Push] Subscription saved successfully.');
-		statusEl.textContent = 'Notifications enabled!';
-	} catch (err) {
-		console.error('[Push] Unexpected error in subscribe flow:', err);
-		statusEl.textContent = 'TDC (Error): ' + err.message;
-	}
+	const result = await TDCPush.subscribe();
+	statusEl.textContent = result.message;
 }
 
 async function sendNotification(title, body, icon) {

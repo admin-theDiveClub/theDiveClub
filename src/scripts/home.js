@@ -30,6 +30,9 @@
 		// The Get the app card (UV, 16 Nov): never in the installed app
 		var card = document.getElementById('home-install');
 		if (card && !runningInstalled()) card.hidden = false;
+		// Its ✕ hides it until the next visit (UV, 16 Nov): nothing is kept
+		var cardX = document.getElementById('home-install-x');
+		if (card && cardX) cardX.addEventListener('click', function () { card.hidden = true; });
 		var bed = null, lastPlace = null;
 		// The Get the app card at the top of the table (UV, 16 Nov): centred in the band from
 		// the top of what is seen of the cloth (below any banner) to the black's cross, or,
