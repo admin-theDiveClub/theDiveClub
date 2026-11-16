@@ -173,7 +173,11 @@ const TDCControls = (() => {
 		el.tdcShown = show;
 		clearTimeout(el.tdcGoing);
 		const strokes = [...el.querySelectorAll('svg [pathLength]')];
-		for (const s of strokes) s.getAnimations().forEach((a) => a.cancel());
+		// Its own draws, kept on it: asking each stroke for getAnimations()
+		// makes the browser restyle the whole page, and a long Schedule tab
+		// did that for every control as it opened (UV's trace, 16 Nov: 1.6 s).
+		if (el.tdcDraws) el.tdcDraws.forEach((a) => a.cancel());
+		el.tdcDraws = [];
 		if (first) {
 			gone(!show);
 			for (const s of strokes) s.style.strokeDashoffset = show ? '0' : '100';
@@ -187,8 +191,8 @@ const TDCControls = (() => {
 		(show ? strokes : strokes.slice().reverse()).forEach((s, i) => {
 			s.style.strokeDashoffset = show ? '0' : '100';
 			if (!ms) return;
-			s.animate([{ strokeDashoffset: show ? 100 : 0 }, { strokeDashoffset: show ? 0 : 100 }],
-				{ duration: slice, delay: i * slice, easing: 'ease-out', fill: 'backwards' });
+			el.tdcDraws.push(s.animate([{ strokeDashoffset: show ? 100 : 0 }, { strokeDashoffset: show ? 0 : 100 }],
+				{ duration: slice, delay: i * slice, easing: 'ease-out', fill: 'backwards' }));
 		});
 		if (!show) {
 			el.tdcGoing = setTimeout(() => {
@@ -1226,10 +1230,11 @@ const TDCControls = (() => {
 		const ms = timeMs(icon, '--ring-draw');
 		const strokes = [...icon.querySelectorAll('svg [pathLength]')];
 		const slice = ms / Math.max(1, strokes.length);
+		if (icon.tdcDraws) icon.tdcDraws.forEach((a) => a.cancel());   // its own, as drawIcon keeps them
+		icon.tdcDraws = [];
 		strokes.forEach((s, i) => {
-			s.getAnimations().forEach((a) => a.cancel());
-			if (ms) s.animate([{ strokeDashoffset: 100 }, { strokeDashoffset: 0 }],
-				{ duration: slice, delay: i * slice, easing: 'ease-out', fill: 'backwards' });
+			if (ms) icon.tdcDraws.push(s.animate([{ strokeDashoffset: 100 }, { strokeDashoffset: 0 }],
+				{ duration: slice, delay: i * slice, easing: 'ease-out', fill: 'backwards' }));
 		});
 	}
 
