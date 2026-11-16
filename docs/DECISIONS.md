@@ -1920,6 +1920,13 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to judge:* a stutter is a frame more than twice the usual time between frames and at least 40 ms (so a steady 30 frames in Low Power Mode is not one); once seen, the rule stands for the rest of the visit; it uses `page-light.js`'s existing hold, as the dots and the dropdown do, so the light carries on from where it stopped.
 *So:* `docs/systems/file-map.md` (`banner-table.js`, "The light"); STATUS §1 4av.
 
+## 2026-11-16 — A ball's trail is drawn on the table's surface only
+
+*Decided by UV:* no trail is drawn where a ball crosses an **inset or raised** element in the banner; the line only draws on the table surface. Every banner.
+*Rejected by UV:* the banner's sunken elements as holes balls fall into (built, then discarded the same day).
+*Claude's, for UV to judge:* "raised or sunken" is read from the look (a visible shadow on the element or its picture layer, or a hexagon or shield), so a new such part on a banner is left clear by itself; the line is cut at the part's own outline, not its shadow's reach.
+*So:* `docs/systems/file-map.md` (`banner-table.js`, "No trail over the banner's raised and sunken parts"); STATUS §1 4av.
+
 ## 2026-11-16 — League placeholders link by themselves; the yellow strip; initials in the nav
 
 *Decided by UV:* a player signing in whose confirmed email matches a league placeholder is **linked automatically**, with nothing pressed, and a **site-yellow strip** says "your account has been linked to existing stats", **above the Get the app strip**, with a ✕, **kept on this device only until ✕**, and **a button to the league they were linked to**; **tapping that button counts as ✕**. **Leagues only**: league entry is stricter than a tournament's and nobody can make a league walk-in on the site (only the import did). The strip follows `--color-warning`, so it is **dark red in the light theme**. Signed in without a picture, the nav shows **the display name's initials** instead of the generic icon, **one letter for a one-word name**, as on the profile menu and the Season tab. A home-screen link to the player's active leagues comes later; the strip is enough until then.

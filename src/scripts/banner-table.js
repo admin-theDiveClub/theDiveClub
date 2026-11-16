@@ -429,6 +429,7 @@ var TDCBannerTable = (function () {
 				if (stage.style.getPropertyValue('--banner-in-z') !== padZ) stage.style.setProperty('--banner-in-z', padZ);
 				var dX = hx - HX, dZ = hz - HZ, oldX = HX, oldZ = HZ;
 				buildTable(hx, hz);
+				shapesDirty = true;   // where the banner's raised and sunken parts lie, read again
 				if (!balls) return null;
 				if (sameBall) {
 					// The banner's top left stays where it is on the page as it opens or
@@ -613,6 +614,72 @@ var TDCBannerTable = (function () {
 				}
 				return false;
 			}
+			/* ---------- no trail over the banner's raised and sunken parts (UV, 16 Nov) ---------- */
+			// A line is drawn on the table's surface only: never over anything in the banner
+			// drawn raised or sunken (a badge, a picture's well, a team's hexagon, a league's
+			// shield). Found by their look, not a list (findShapes): a visible shadow on the
+			// element or on its picture's layer (::after; design.css, "Pictures set into the
+			// page"), or a .tdc-shaped hexagon or shield, whose clip path is read from the page
+			// so the gap is the shape exactly (TDC.teamPic, TDC.leaguePic); anything else by
+			// its box and corner radius. Looked for again when the banner's content changes;
+			// placed again (placeShapes) when it changes or the table changes size.
+			var shapeEls = [], shapeMask = null, shapesScan = true, shapesDirty = true;
+			// A shadow that shows: not none, and some colour in it not fully see-through
+			function shows(shadow) {
+				if (!shadow || shadow === 'none') return false;
+				return (shadow.match(/(rgba?|color)\([^)]*\)/g) || []).some(function (c) { return !/(,|\/)\s*0\)$/.test(c); });
+			}
+			function findShapes() {
+				shapeEls = [];
+				var all = stage.querySelectorAll('*');
+				for (var i = 0; i < all.length; i++) {
+					var el = all[i], inside = false;
+					for (var k = 0; k < shapeEls.length; k++) if (shapeEls[k].contains(el)) { inside = true; break; }
+					if (inside) continue;
+					el.tdcShape = null;
+					if (el.classList.contains('tdc-shaped')) {
+						var m = /url\(["']?#([^"')]+)/.exec(el.style.clipPath || '');
+						var clip = m && document.getElementById(m[1]), path = clip && clip.querySelector('path');
+						if (path) { el.tdcShape = path.getAttribute('d'); shapeEls.push(el); continue; }
+					}
+					if (shows(getComputedStyle(el).boxShadow) || shows(getComputedStyle(el, '::after').boxShadow)) shapeEls.push(el);
+				}
+			}
+			// A box with rounded corners, as a path (Path2D's own roundRect is newer than some phones)
+			function roundBox(p, x, y, w, h, r) {
+				r = Math.max(0, Math.min(r, w / 2, h / 2));
+				p.moveTo(x + r, y);
+				p.arcTo(x + w, y, x + w, y + h, r); p.arcTo(x + w, y + h, x, y + h, r);
+				p.arcTo(x, y + h, x, y, r); p.arcTo(x, y, x + w, y, r);
+				p.closePath();
+			}
+			// One path: the whole canvas with every part cut out of it (clipped to with evenodd)
+			function placeShapes() {
+				shapeMask = null;
+				if (!shapeEls.length) return;
+				var cr = canvas.getBoundingClientRect(), mask = new Path2D(), any = false;
+				mask.rect(-cw, -ch, cw * 3, ch * 3);
+				shapeEls.forEach(function (el) {
+					var r = el.getBoundingClientRect();
+					if (!r.width || !r.height) return;   // hidden (a folded detail)
+					var x0 = (r.left - cr.left) * dpr, y0 = (r.top - cr.top) * dpr, w = r.width * dpr, h = r.height * dpr;
+					if (el.tdcShape) {
+						// The clip's path is in a 100 box, stretched over the element (tdc.js)
+						mask.addPath(new Path2D(el.tdcShape), new DOMMatrix().translate(x0, y0).scale(w / 100, h / 100));
+					} else {
+						var rad = getComputedStyle(el).borderTopLeftRadius, rv = parseFloat(rad) || 0;
+						if (/%/.test(rad)) rv = rv / 100 * Math.min(r.width, r.height);
+						roundBox(mask, x0, y0, w, h, rv * dpr);
+					}
+					any = true;
+				});
+				if (any) shapeMask = mask;
+			}
+			// Content changes (a lineup arriving, a picture loading): look again
+			var shapeWatch = new MutationObserver(function () { shapesScan = true; shapesDirty = true; });
+			shapeWatch.observe(stage, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'hidden', 'open', 'src', 'style'] });
+			stage.addEventListener('load', function () { shapesScan = true; shapesDirty = true; }, true);
+
 			// The table at the banner's size before the balls are placed on it
 			buildTable(HX, HZ);
 			fit();
@@ -1253,6 +1320,8 @@ var TDCBannerTable = (function () {
 				ctx.save();
 				// Only on the table, its pockets included (UV, 14 Nov: nothing outside the edge)
 				ctx.clip(bedPath2D());
+				// Nor over the banner's raised and sunken parts (UV, 16 Nov; placeShapes)
+				if (shapeMask) ctx.clip(shapeMask, 'evenodd');
 				// The balls mask the trails (UV, 13 Nov): nothing is drawn where a ball is
 				ctx.beginPath(); everything(ctx);
 				balls.forEach(function (b) { var o = onScreen(b); if (o) circlePath(o.x, o.y, o.r)(ctx); });
@@ -1343,6 +1412,8 @@ var TDCBannerTable = (function () {
 					// move and push what they reach. No shot is planned or played until it has
 					// held still a moment, as the planner plays shots on a copy of the table.
 					var grew = fit();
+					if (shapesScan) { shapesScan = false; findShapes(); }
+					if (shapesDirty) { shapesDirty = false; placeShapes(); trailsShown = true; }   // the trails drawn again round them
 					resizedAgo += real;
 					if (grew) {
 						resizedAgo = 0;
@@ -1456,6 +1527,7 @@ var TDCBannerTable = (function () {
 					themeWatch.disconnect();
 					seeWatch.disconnect();
 					sizeWatch.disconnect();
+					shapeWatch.disconnect();
 					window.removeEventListener('resize', sizeMayChange);
 					unwrap();
 				}
