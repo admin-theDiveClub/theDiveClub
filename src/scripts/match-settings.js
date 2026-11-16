@@ -750,7 +750,7 @@ const TDCMatchDef = (() => {
 		WIN_CONDITION, TIME_EXPIRY, TIEBREAK, SCORE_ENTRY, APPROVAL, SIDE_TAG, SIDES,
 		GROUPS, LEAGUE_GROUPS, LEAGUE_STATUS, SETTINGS, DEFAULT_RULES, LEAGUE_DEFAULT_RULES, MAIN_KEYS,
 		control, layout, liveRuleKeys, readValue, playerPicker,
-		cyclicRotation, rotationGrid, rotationRepeats, applyRotation, tidyRules,
+		cyclicRotation, rotationFrames, rotationGrid, rotationRepeats, applyRotation, tidyRules,
 		setSideNames(fn) { sideNames = fn; }
 	};
 })();

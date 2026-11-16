@@ -53,7 +53,7 @@
 		jumboMore: el('jumbo-more'), jumboTags: el('jumbo-tags'), jumboV: el('jumbo-v'),
 		homePic: el('home-pic'), homeName: el('home-name'), awayPic: el('away-pic'), awayName: el('away-name'),
 		sideSwitch: el('side-switch'), sidePick: el('side-pick'),
-		lineups: el('lineups'), compare: el('team-compare'), teamTables: el('team-tables'),
+		lineups: el('lineups'), compare: el('team-compare'), teamTables: el('team-tables'), order: el('lineup-order'),
 		squadHint: el('squad-hint'), lockRow: el('lock-row'), lockBtn: el('lock-btn'),
 		// The managing team's table body: made once and moved into whichever
 		// table is being set up, so its listener and steppers persist.
@@ -583,6 +583,7 @@
 
 		renderCompare();
 		els.teamTables.replaceChildren(...['home', 'away'].map((side) => teamTable(side, locked, side === managing)));
+		renderOrder();
 
 		// The hint and the lock button go with the table being set up; parked
 		// out of sight in the section otherwise.
@@ -597,6 +598,48 @@
 		} else {
 			els.lineups.append(els.squadHint, els.lockRow);
 		}
+	}
+
+	// The night's numbering by position (UV, 16 Nov), under the team tables:
+	// home positions across, away positions down, and where the two cross the
+	// frame in which they meet, so a captain can place players by where they
+	// fall on the scorecard. Read from this match's own frozen rules, so a
+	// league with its own order (8-Ball Mainstream's paper scoresheet) shows
+	// that order. A table that repeats a pairing shows both frames.
+	function renderOrder() {
+		const n = teamSize();
+		els.order.hidden = !(n > 0);
+		if (els.order.hidden) return;
+
+		const meets = new Map();   // 'h-a' → [frame numbers]
+		TDCMatchDef.rotationFrames(match.rules).forEach((row, s) => row.forEach((f, j) => {
+			const key = f.h + '-' + f.a;
+			if (!meets.has(key)) meets.set(key, []);
+			meets.get(key).push(s * n + j + 1);
+		}));
+
+		const table = node('table', 'tdc-table rotation-grid rotation-scorecard lu-order-grid');
+		const head = node('tr');
+		head.append(node('th', null, ''));
+		for (let h = 1; h <= n; h++) head.append(node('th', null, 'H' + h));
+		const thead = node('thead');
+		thead.append(head);
+		const tbody = node('tbody');
+		for (let a = 1; a <= n; a++) {
+			const tr = node('tr');
+			tr.append(node('th', null, 'A' + a));
+			for (let h = 1; h <= n; h++) tr.append(node('td', null, (meets.get(h + '-' + a) || []).join(', ')));
+			tbody.append(tr);
+		}
+		table.append(thead, tbody);
+		const scroll = node('div', 'table-scroll');
+		scroll.append(table);
+
+		els.order.replaceChildren(
+			node('h2', 'lj-heading', 'The scorecard'),
+			scroll,
+			node('p', 'muted lu-hint', 'H is ' + teamName('home') + '\'s position, A is ' + teamName('away')
+				+ '\'s. Each number is the frame in which those two positions meet.'));
 	}
 
 	function ordinal(n) {
@@ -670,7 +713,9 @@
 		name.classList.toggle('is-mine', myTeamSide() === side);
 		const pic = node('span', 'team-pic lu-pic');
 		pic.append(TDC.teamPic(side === 'home' ? match.home_picture : match.away_picture));
-		head.append(pic, name);
+		// Home or away above each team (UV, 16 Nov): on a phone the team being
+		// set up comes first, so position alone does not say which is which.
+		head.append(node('span', 'badge lu-side', side === 'home' ? 'Home' : 'Away'), pic, name);
 		box.append(head);
 
 		let state;

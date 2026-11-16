@@ -118,6 +118,11 @@ extraScripts:
 		<div class="lu-compare" id="team-compare"></div>
 		<p class="muted lu-hint" id="squad-hint" hidden></p>
 		<div class="lu-teams" id="team-tables"></div>
+		{% comment %} The night's numbering by position (UV, 16 Nov): home
+		positions across, away down, the frame where they meet, from this
+		match's own frozen order, so a captain can place players by where
+		they fall on the scorecard. {% endcomment %}
+		<div class="lu-order" id="lineup-order" hidden></div>
 		<div class="btn-row lu-lock" id="lock-row">
 			<button type="button" class="btn btn-primary btn-sm" id="lock-btn">Lock the lineup</button>
 		</div>
