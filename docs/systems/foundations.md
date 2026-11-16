@@ -95,7 +95,8 @@ UV asked for prompts that guide new players to install the app. **UV's rules:** 
 | Where | What the site does | Left to the person |
 |---|---|---|
 | Android in Chrome, Samsung Internet or Edge | The browser's install offer (`beforeinstallprompt`) is held, so the browser's own banner never shows, and the strip's **Install** opens the phone's dialog | One tap: Install |
-| iPhone, any browser | No way exists for a site to install itself; `/install/` shows the steps | Share → Add to Home Screen → Add |
+| iPhone, Safari | No way exists for a site to install itself; `/install/` shows the drawn steps | Share → Add to Home Screen → Add |
+| iPhone, Chrome, Edge or Firefox | **Only Safari installs the app on an iPhone** (UV, 16 Nov): added from another browser, the icon opens the website in that browser, not the app. `/install/` says so, names the browser, offers **Copy the link**, and sends the person to Safari, where the page opens on the drawn steps; anyone who already added it from that browser is told to delete the icon and add it again from Safari | Copying the link, opening Safari, then the Safari steps |
 | Inside Instagram, Facebook, TikTok… | Nothing can be installed there. On Android, Open in Chrome (an `intent://` address); on an iPhone, the app's menu steps and Copy the link | Opening the browser, then the steps |
 | The installed app | Never prompted. A one-off welcome instead | Signing in again (iPhone), turning notifications on |
 

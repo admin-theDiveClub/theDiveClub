@@ -58,14 +58,24 @@ extraScripts:
 		<p class="install-note">The app keeps its own sign-in on an iPhone: <strong>sign in once more</strong> the first time you open it.</p>
 	</section>
 
+	{% comment %}
+		UV, 16 Nov: on an iPhone the app installs only from Safari. Added from
+		Chrome (or Edge, Firefox) the icon opens the site in that browser, not as
+		the app, so this section sends the person to Safari first and the drawn
+		Safari steps take over there.
+	{% endcomment %}
 	<section class="install-for" data-for="ios-other" hidden>
+		<p class="install-lead">On an iPhone, the app can only be installed from <strong>Safari</strong>. Added from <span id="ins-ios-browser">this browser</span>, the icon just opens the website in <span id="ins-ios-browser2">it</span>, not the app.</p>
+		<div class="install-cta">
+			<button type="button" class="install-btn install-btn-main" id="ins-ios-copy">Copy the link</button>
+			<span class="install-cta-note" id="ins-ios-copy-note">Then open it in Safari.</span>
+		</div>
 		<ol class="install-list">
-			<li><span class="st">Tap Share</span><span class="sd">The square with an arrow. In Chrome and Edge it is in the address bar at the top; in Firefox, tap ☰ first.</span></li>
-			<li><span class="st">Tap Add to Home Screen</span><span class="sd">Scroll the list down if you don't see it.</span></li>
-			<li><span class="st">Leave Open as Web App on, and tap Add</span><span class="sd">The Dive Club is now on your home screen.</span></li>
+			<li><span class="st">Copy the link</span><span class="sd">With the button above, or type thediveclub.org/install.</span></li>
+			<li><span class="st">Open Safari and paste it into the address bar</span><span class="sd">Safari is the blue compass on your home screen.</span></li>
+			<li><span class="st">Follow the steps there</span><span class="sd">This page opens again in Safari, with every step drawn out.</span></li>
 		</ol>
-		<p class="install-note">The app keeps its own sign-in on an iPhone: <strong>sign in once more</strong> the first time you open it.</p>
-		<p class="install-note">Easier to follow? Open thediveclub.org/install in Safari for the steps drawn out.</p>
+		<p class="install-note">Already added it from <span id="ins-ios-browser3">this browser</span>? That icon will always open the website there. Delete it from your home screen and add it again from Safari.</p>
 	</section>
 
 	<section class="install-for" data-for="android" hidden>

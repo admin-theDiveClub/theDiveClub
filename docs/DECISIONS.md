@@ -1879,6 +1879,15 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* `docs/systems/foundations.md`, "Getting the app"; `docs/systems/points.md`, "Using the app".
 *Touches:* `src/scripts/device.js` (new), `_includes/layout.html`, `_includes/nav.html`, `scripts/nav.js`, `stylesheets/nav.css`, `scripts/ring-status.js`, `install/index.html`, `scripts/install.js`, `stylesheets/install.css`, `accounts/profile/index.html`, `scripts/push.js`, `scripts/points-formula.js`, migration `20261113164109_player_devices.sql`, `supabase/tests/075_player_devices.test.sql`
 
+## 2026-11-16 — On an iPhone, the install page sends other browsers to Safari
+
+*Decided by UV:* on an iPhone in Chrome (and so Edge and Firefox too, the same section), `/install/` first tells the person to open the site in Safari, then the rest of the process follows there. It stresses that the app installs only through Safari, and that adding it through Chrome always opens the site in Chrome, not as the app.
+*Why:* UV found that an icon added from Chrome on an iPhone opens the website in Chrome rather than as the installed app, so the 13 Nov written steps for Chrome led to an icon that is not the app (and an iPhone's notifications reach only the installed app).
+*Rejected:* the 13 Nov written Share → Add to Home Screen steps for Chrome, Edge and Firefox (Claude's), removed.
+*Claude's, for UV to judge:* the words; **Copy the link** as the way across (no button opens Safari directly); the line telling anyone who already added it from Chrome to delete that icon and add it again from Safari.
+*So:* `docs/systems/foundations.md`, "Getting the app".
+*Touches:* `src/install/index.html`, `src/scripts/install.js`
+
 ## 2026-11-14 — The pool-table banner is the site's banner; today's banner is its reduced-motion form
 
 *Decided by UV:* the banner built on `/sandbox/banner/` (the hero's table as the banner's edge: cushions and pockets, no markings, the balls playing shots over the banner's text, frosted, the cushions following the banner as it opens and closes and pushing the balls) becomes **the normal banner, site-wide**. **The existing banner** (the sunken card with the green line inside its edge, `league.css` `.jumbo`) **stays, as the banner under reduced motion.**

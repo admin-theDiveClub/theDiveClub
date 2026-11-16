@@ -95,16 +95,28 @@
 		$('open-chrome').href = intent;
 		$('open-android').hidden = false;
 	}
-	$('copy').addEventListener('click', async () => {
-		const note = $('copy-note');
+	// Copy the link: inside another app (to any browser), and on an iPhone
+	// outside Safari (to Safari: only Safari installs the app there, UV 16 Nov).
+	const copyLink = (id, where) => $(id).addEventListener('click', async () => {
+		const note = $(id + '-note');
 		try {
 			await navigator.clipboard.writeText('https://thediveclub.org/install/');
-			note.textContent = 'Copied. Open your browser and paste it into the address bar.';
+			note.textContent = 'Copied. Open ' + where + ' and paste it into the address bar.';
 		} catch (err) {
 			console.error('[' + AREA + '] could not copy the link.', err);
-			note.textContent = 'Copying is blocked here. Type thediveclub.org/install into your browser.';
+			note.textContent = 'Copying is blocked here. Type thediveclub.org/install into ' + where + '.';
 		}
 	});
+	copyLink('copy', 'your browser');
+	copyLink('ios-copy', 'Safari');
+
+	// iPhone, not Safari: name the browser in use.
+	const iosBrowser = TDCDevice.os === 'ios' && BROWSER[TDCDevice.browser];
+	if (iosBrowser) {
+		$('ios-browser').textContent = iosBrowser;
+		$('ios-browser2').textContent = iosBrowser;
+		$('ios-browser3').textContent = iosBrowser;
+	}
 
 	show(new URLSearchParams(location.search).get('for') || TDCDevice.kind);
 })();
