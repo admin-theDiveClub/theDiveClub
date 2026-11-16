@@ -1,0 +1,140 @@
+/* The home page's cards (UV, 16 Nov): Matches, Leagues and Tournaments, on the cloth
+   under the Get the app card (scripts/home-cards.js). Raised, in the site's card
+   style, with a solid background (UV). Stacked on a phone, one row of three on a
+   computer (UV); between every card the sponsor banner's gap, --space-5 (UV). */
+
+.home-cards {
+	display: grid;
+	gap: var(--space-5);
+	margin: 0 var(--space-4) var(--space-5);
+}
+@media (min-width: 992px) {
+	.home-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+}
+
+.hc-card {
+	min-width: 0;
+	padding: var(--space-4);
+	border-radius: var(--nm-radius);
+	corner-shape: squircle;
+	background: var(--bg-base);
+	box-shadow: var(--nm-card);
+}
+
+/* The heading opens the full list */
+.hc-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--space-2);
+	margin-bottom: var(--space-3);
+	color: var(--text-primary);
+	text-decoration: none;
+}
+.hc-head h2 { margin: 0; font-size: 1.4rem; line-height: 1.32; }
+.hc-head span { font-size: 0.85rem; color: var(--text-muted); }
+
+/* While it loads, room for the dots */
+.hc-body { min-height: 3rem; }
+
+/* A state's colour (docs/ui.md, "State colours") */
+.is-on   { --hc-state: var(--color-warning); }
+.is-go   { --hc-state: var(--color-primary); }
+.is-done { --hc-state: var(--color-primary); }
+.is-rest { --hc-state: var(--text-muted); }
+.is-bad  { --hc-state: var(--color-error); }
+.is-none { --hc-state: var(--border-color); }
+
+/* ── Leagues and tournaments: badges, three to a row ── */
+.hc-badges {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: var(--space-4) var(--space-3);
+}
+.hc-badge {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	min-width: 0;
+	color: var(--text-primary);
+	text-decoration: none;
+}
+.hc-pic {
+	width: 3.5rem;
+	height: 3.5rem;
+	display: grid;
+	place-items: center;
+	color: var(--color-primary);
+}
+/* A tournament has no picture of its own: its trophy in its state's colour, in a
+   sunken circle (no ring round an icon: docs/ui.md, Icons) */
+.hc-pic-tournament {
+	border-radius: var(--radius-round);
+	box-shadow: var(--nm-sunken-small);
+	color: var(--hc-state);
+}
+.hc-pic-tournament.hc-pic svg { width: 55%; height: 55%; }
+/* The status bar, under the badge, as a league tile's strip (league.css .lt-strip) */
+.hc-bar {
+	width: 2rem;
+	height: var(--space-1);
+	margin: var(--space-2) 0 var(--space-1);
+	border-radius: var(--radius-pill);
+	background: var(--hc-state);
+}
+.is-done .hc-bar,
+.is-done .hc-strip { box-shadow: 0 0 10px color-mix(in srgb, var(--hc-state) 60%, transparent); }
+.hc-name {
+	max-width: 100%;
+	font-size: 0.85rem;
+	text-align: center;
+	line-height: 1.25;
+	overflow-wrap: anywhere;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+/* ── Matches: who I last played, one row each ── */
+.hc-matches { display: grid; gap: var(--space-2); }
+.hc-match {
+	display: grid;
+	grid-template-columns: auto auto minmax(0, 1fr) auto;
+	align-items: center;
+	gap: var(--space-3);
+	min-height: 2.75rem;
+	color: var(--text-primary);
+	text-decoration: none;
+}
+/* The strip down the left, as a fixture's (league.css .fx-state) */
+.hc-strip {
+	align-self: stretch;
+	width: var(--space-1);
+	border-radius: var(--radius-pill);
+	background: var(--hc-state);
+}
+.hc-face {
+	width: 2.25rem;
+	height: 2.25rem;
+	border-radius: var(--radius-round);
+	display: grid;
+	place-items: center;
+	overflow: hidden;
+	font-size: 0.8rem;
+	color: var(--text-muted);
+}
+/* Initials sit in a sunken circle; a chosen picture is set in by design.css; a team's
+   hexagon casts its own */
+.hc-face:not(:has(img, .tdc-shaped)) { box-shadow: var(--nm-sunken-small); }
+.hc-face img { width: 100%; height: 100%; object-fit: cover; }
+.hc-face-team { color: var(--color-primary); }
+.hc-opp {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.hc-right { font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; }
+
+.hc-empty { margin: 0; color: var(--text-muted); }
+.hc-signin { display: block; }

@@ -1997,3 +1997,26 @@ These predate the log. They are recorded here because every one of them is a dec
 *How:* the content lies under the balls, so the card is drawn in its own layer over them, clipped to the same rounded shape on the cloth as the content and moved with the content's scroll, over an empty spot of its height (`docs/systems/file-map.md`, the home page).
 *Claude's, for UV to judge:* the words ("Get the app", "Install The Dive Club on this device") and the site icon on it; the card as wide as the content (1,360px on a large screen); the glass (the page's background at 35%, a 12px blur); a finger dragged on the card not scrolling the content (the wheel does), as it sits outside the scrolling box.
 *Touches:* no migration. `src/index.html`, `src/scripts/home.js`
+
+## 2026-11-16 — The home page's three cards: Matches, Leagues, Tournaments
+
+*Decided by UV:* for everybody, three cards under the Get the app card, **raised in the site's card style with a solid background**. **Signed out:** Leagues and Tournaments show the **publicly visible** ones; Matches says **"Sign in to start a new match."** **Signed in:** my leagues, my tournaments, my recent matches. **Each league and tournament a badge with only its name under it; each match the player or team last played.** **Active first.** The **state colours**, and **status bars** where possible, as the league pages use them. **One row on a computer.** **Six badges and five matches** per card, the heading's All › for the rest; the **Get the app card full width above** the row.
+*How:* one database call, `tdc_home_cards` (migration `20261116132606`), which signed-out visitors may call. "Publicly visible" is what a venue's page already shows a stranger: a listed season (whose Season tab opens signed out) and a listed tournament with a public poster (its link). Signed in, it reads `tdc_my_leagues`, `tdc_my_tournaments` and `tdc_my_matches`, so who is "in" stays decided in one place each. `docs/systems/file-map.md`, the home page.
+*Claude's, for UV to judge:* a tournament's badge (no tournament has a picture: its trophy in its state's colour in a sunken circle, as the poster's banner has the trophy); a refereed match not counted as one played; the order of active (leagues running, taking entries, on break, finished; tournaments under way, open, draft, finished; a match being played, then the newest); a match's colours (a dispute or abandoned red, being played or waiting on a signature yellow, done green with the glow, not started green); the empty cards' words ("You are not in a league yet. Find a league", "No public leagues yet."); the cards in the order UV named them.
+*Touches:* migration `20261116132606_home_cards.sql`, test `077_home_cards`, test `069` (the new function is one a stranger may reach); `src/index.html`, `src/scripts/home-cards.js`, `src/stylesheets/home.css`, `src/stylesheets/design.css` (the two picture lists)
+
+## 2026-11-16 — Every raised card on the home page: over the balls, under the table's edge
+
+*Decided by UV:* the three cards behave like the Get the app card, **above the balls but cut off by the table's edge**; **the rule on this page for all raised cards.**
+*How (Claude's):* not the Get the app card's own layer, moved with the scroll: a finger dragged on it could not scroll the content, and three cards cover most of a phone's cloth. Instead the content's box stops being a layer of its own (absolute, no z-index), so each raised card (`.home-raised`) takes a z-index over the balls while staying in the box: it scrolls natively and the box's rounded edge clips it. The Get the app card moved onto the same rule. `docs/systems/file-map.md`, the home page, says what breaks it.
+*Replaces:* the Get the app card's own layer (`#home-over`, its empty spot, the scroll-following and wheel-forwarding in `home.js`).
+*Not checked:* on an iPhone (Safari); checked in Chrome headless, touch included.
+*Touches:* `src/index.html`, `src/scripts/home.js`
+
+## 2026-11-16 — The home page opens on the logo and the markings
+
+*Decided by UV:* above the Get the app card, **the site icon with the lettering behind it** (the full logo), **in the middle of the table, sized by the golden ratio**; **it is the only thing visible when the page opens**, the cards and the rest found by scrolling down. **The table's markings with it, one unit, scrolling up together.** The logo square, **the cloth's shorter side over 1.618** (UV's choice of two); **the balls roll over it** (UV).
+*How:* the logo's section is the cloth's visible height; the markings, which the table drew on the fixed cloth, are drawn by `hero.js` on a canvas in the content instead (`data-markings-into`), so they scroll with the logo. `docs/systems/file-map.md`, the home page.
+*Replaces:* the home page's table without markings (16 Nov, "no logo and no markings on the cloth"), for the markings only: the table itself still draws none and no logo of its own.
+*Claude's, for UV to judge:* the logo centred in what is seen below a banner when one shows (so it sits a little lower than the markings' middle then); the logo at rest, not the loader's falling diver; its own colours.
+*Touches:* `src/index.html`, `src/scripts/home.js`, `src/scripts/hero.js` (`data-markings-into`, `drawMarksInto`; `/sandbox/hero/` unchanged)

@@ -161,7 +161,8 @@ select throws_ok($$ select * from public.tbl_league_seasons $$, '42501', null, '
 select tests.sign_out();
 select is((select string_agg(object_kind || ' ' || object_name, E'\n' order by object_kind, object_name)
 		from private.tdc_audit_anon_reach()),
-	E'function public.tdc_public_league_season(p_league_season_id uuid)
+	E'function public.tdc_home_cards()
+function public.tdc_public_league_season(p_league_season_id uuid)
 function public.tdc_public_league_standings(p_league_season_id uuid)
 function public.tdc_resolve_short_code(p_code text)
 function public.tdc_short_link(p_kind text, p_id uuid)

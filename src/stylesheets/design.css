@@ -826,12 +826,12 @@ button.league-nav-item:focus-visible { outline: 2px solid var(--nm-light-colour)
    /sandbox/neumorph/'s logo well, but filling it. A box-shadow on the box would
    be painted under its <img>, so it goes on a layer over it. Initials and
    default icons stay as they were. A new picture box joins these lists. */
-:is(.nav-avatar-wrap, .nav-account-pic, .nav-account-person-pic, .person-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-person-pic, .pp-row-pic, .pp-vs-pic, .pp-c-pic, .mv-pic):has(> img:not([hidden])) {
+:is(.nav-avatar-wrap, .nav-account-pic, .nav-account-person-pic, .person-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-person-pic, .pp-row-pic, .pp-vs-pic, .pp-c-pic, .mv-pic, .hc-face):has(> img:not([hidden])) {
 	--shadow-pic: 0 0 transparent;
 	--match-mark-shadow: 0 0 transparent;
 	position: relative;
 }
-:is(.nav-avatar-wrap, .nav-account-pic, .nav-account-person-pic, .person-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-person-pic, .pp-row-pic, .pp-vs-pic, .pp-c-pic, .mv-pic):has(> img:not([hidden]))::after {
+:is(.nav-avatar-wrap, .nav-account-pic, .nav-account-person-pic, .person-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-person-pic, .pp-row-pic, .pp-vs-pic, .pp-c-pic, .mv-pic, .hc-face):has(> img:not([hidden]))::after {
 	content: "";
 	position: absolute;
 	inset: 0;
@@ -851,7 +851,7 @@ button.league-nav-item:focus-visible { outline: 2px solid var(--nm-light-colour)
    they stand in gives up its circle. The shadow is the page round the shape,
    blurred once and only moved with the light, on a layer of its own: nothing
    is blurred again at each move, so a page of them stays cheap. */
-:is(.team-pic, .jumbo-pic, .league-tile-pic, .lc-pic, .lj-pic, .lj-pic-inner):has(.tdc-shaped) {
+:is(.team-pic, .jumbo-pic, .league-tile-pic, .lc-pic, .lj-pic, .lj-pic-inner, .hc-pic, .hc-face):has(.tdc-shaped) {
 	--shadow-pic: 0 0 transparent;
 	border-radius: 0;
 	overflow: visible;
@@ -868,7 +868,7 @@ button.league-nav-item:focus-visible { outline: 2px solid var(--nm-light-colour)
 	color: var(--color-primary);
 	overflow: hidden;
 }
-:is(.jumbo-pic, .league-tile-pic, .lc-pic, .lj-pic-inner) .tdc-shaped {
+:is(.jumbo-pic, .league-tile-pic, .lc-pic, .lj-pic-inner, .hc-pic) .tdc-shaped {
 	--shade-move: 1;
 	--shade-blur: calc(var(--nm-blur) / 4);
 }

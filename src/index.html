@@ -5,9 +5,11 @@ description: The Dive Club — pool lounge in Lonehill, Fourways, Johannesburg. 
 hideFooter: true
 extraStyles:
   - /stylesheets/footer.css
+  - /stylesheets/home.css
 extraScripts:
   - /scripts/hero.js
   - /scripts/home.js
+  - /scripts/home-cards.js
 ---
 {% comment %}
 	The home page (UV, 16 Nov): the hero's pool table (scripts/hero.js) frozen in the
@@ -18,8 +20,10 @@ extraScripts:
 	outline and pockets lie over it, the balls over those. The bar always shows here
 	(UV, 16 Nov): it hides only on the page's own scroll, and this page never scrolls.
 	The site's footer is drawn here, in the box, not by the layout (hideFooter).
-	The Get the app card (UV, 16 Nov) heads the content outside the installed app, in
-	its own layer over the balls, clipped to the cloth (see its styles).
+	The logo fills the first screen of the content, alone (UV, 16 Nov).
+	Every raised card on the page (the Get the app card, then Matches, Leagues and
+	Tournaments) lies over the balls but is cut off by the table's edge (UV, 16 Nov;
+	.home-raised).
 {% endcomment %}
 <style>
 	/* Nothing scrolls but the box on the cloth */
@@ -54,10 +58,13 @@ extraScripts:
 		z-index: 99;
 	}
 	/* home.js places it on the cloth (the cushions' noses) and sets --home-under-bar,
-	   the part of it under a banner, so its first line shows below the banner */
+	   the part of it under a banner, so its first line shows below the banner.
+	   No z-index, and nothing that makes it a layer of its own (a fixed position, a
+	   transform, -webkit-overflow-scrolling): it must not gather its content into one
+	   layer, so that each raised card can rise over the balls (below) while the rest
+	   stays under the table. Absolute: the page never scrolls, so it stays put. */
 	.home-scroll {
-		position: fixed;
-		z-index: 1;
+		position: absolute;
 		left: 0;
 		top: 0;
 		width: 0;
@@ -69,34 +76,55 @@ extraScripts:
 		overflow-y: auto;
 		/* No scrolling past the footer, not even a phone's bounce (UV, 16 Nov) */
 		overscroll-behavior: none;
-		-webkit-overflow-scrolling: touch;
 		padding-top: var(--home-under-bar, 0px);
 	}
 	.home-scroll > * { flex: 0 0 auto; }
 
-	/* Get the app (UV, 16 Nov): a raised glass card at the top of the content, on any
-	   device not running the installed app. It shows above the balls but is cut off
-	   by the table's edge (UV): the content lies under the balls, so the card cannot
-	   live in it. It sits in its own layer over the balls, clipped to the same shape
-	   on the cloth as the content (home.js), and moves with the content's scroll. An
-	   empty spot of its height at the top of the content keeps its place. */
-	/* Below it, the sponsor banner's own gap to the footer (footer.css .site-partners),
-	   so every card on the page is spaced alike (UV, 16 Nov) */
-	.home-install-spot { margin: var(--space-4) var(--space-4) var(--space-5); }
-	.home-over {
-		position: fixed;
+	/* Every raised card on this page (UV, 16 Nov): over the balls, but cut off by the
+	   table's edge. It stays in the box, so it scrolls with the content (a finger
+	   dragged on it too) and the box's rounded edge on the cloth clips it; its own
+	   z-index lifts it over the balls (3), as the box gathers nothing into a layer.
+	   The rest of the content (the sponsor banner, the footer) stays under the table
+	   (2) and the balls. A new raised card on this page takes .home-raised. */
+	.home-raised {
+		position: relative;
 		z-index: 4;
-		left: 0;
-		top: 0;
-		width: 0;
-		height: 0;
-		overflow: hidden;
-		pointer-events: none;
 	}
-	.home-install {
+
+	/* The logo (UV, 16 Nov): the site's icon with the DIVE lettering behind it, the
+	   only thing on the cloth when the page opens; the cards and the rest are found
+	   by scrolling down. Its section is exactly the cloth's visible height and the
+	   logo is centred in it, square, the cloth's shorter side over the golden ratio
+	   (home.js sets both). It lies on the cloth like the footer: the table's
+	   outline and the balls go over it. */
+	/* The table's markings with it (UV, 16 Nov: "one unit", scrolling up together):
+	   hero.js draws them (data-markings-into) on this canvas, the cloth's size, laid at
+	   the top left of the box, so they lie where the table would draw them until the
+	   content scrolls, then go up with the logo. Under the table's outline and the
+	   balls, as the logo is. */
+	.home-markings {
 		position: absolute;
 		left: 0;
 		top: 0;
+		pointer-events: none;
+	}
+	.home-logo {
+		display: grid;
+		place-items: center;
+		height: var(--home-first, 100%);
+	}
+	.home-logo img {
+		display: block;
+		width: var(--home-logo-size, 0px);
+		height: var(--home-logo-size, 0px);
+	}
+
+	/* Get the app (UV, 16 Nov): a raised glass card at the top of the content, on any
+	   device not running the installed app (home.js). Below it, the sponsor banner's
+	   own gap to the footer (footer.css .site-partners), so every card on the page is
+	   spaced alike (UV, 16 Nov) */
+	.home-install {
+		margin: var(--space-4) var(--space-4) var(--space-5);
 		box-sizing: border-box;
 		display: flex;
 		align-items: center;
@@ -110,8 +138,6 @@ extraScripts:
 		box-shadow: var(--shadow-panel), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 		color: var(--text-primary);
 		text-decoration: none;
-		pointer-events: auto;
-		will-change: transform;
 	}
 	.home-install-icon { width: 40px; height: 40px; flex: 0 0 auto; }
 	.home-install-words { flex: 1 1 auto; min-width: 0; }
@@ -125,16 +151,15 @@ extraScripts:
 
 <div class="home">
 	<h1 class="visually-hidden">The Dive Club</h1>
-	<div class="hero-stage" id="hero-stage" data-logo="off" data-markings="off" data-margin="0.5" data-balls="home-balls" aria-hidden="true"></div>
+	<div class="hero-stage" id="hero-stage" data-logo="off" data-markings="off" data-margin="0.5" data-balls="home-balls" data-markings-into="home-markings" aria-hidden="true"></div>
 	<div class="home-scroll" id="home-scroll">
+		<canvas class="home-markings" id="home-markings" aria-hidden="true"></canvas>
 		<div class="status" id="hero-status" role="status"></div>
-		<div class="home-install-spot" id="home-install-spot" hidden></div>
-		<div class="home-content"></div>
-		{% include "footer.html" %}
-	</div>
-	<div class="home-balls" id="home-balls" aria-hidden="true"></div>
-	<div class="home-over" id="home-over">
-		<a class="home-install" id="home-install" href="/install/" hidden>
+		<div class="home-logo" id="home-logo">
+			<img class="for-dark" src="/resources/branding/logo-primary-dark.svg" alt="">
+			<img class="for-light" src="/resources/branding/logo-primary-light.svg" alt="">
+		</div>
+		<a class="home-install home-raised" id="home-install" href="/install/" hidden>
 			<img class="home-install-icon" src="/resources/branding/icon-primary.svg" alt="">
 			<span class="home-install-words">
 				<span class="home-install-title">Get the app</span>
@@ -142,5 +167,24 @@ extraScripts:
 			</span>
 			<span class="home-install-go" aria-hidden="true">›</span>
 		</a>
+		<div class="home-content">
+			<div class="status" id="home-cards-status" role="status"></div>
+			<div class="home-cards" id="home-cards">
+				<section class="hc-card home-raised">
+					<a class="hc-head" href="/matches/"><h2>Matches</h2><span>All ›</span></a>
+					<div class="hc-body" id="hc-matches"></div>
+				</section>
+				<section class="hc-card home-raised">
+					<a class="hc-head" href="/leagues/"><h2>Leagues</h2><span>All ›</span></a>
+					<div class="hc-body" id="hc-leagues"></div>
+				</section>
+				<section class="hc-card home-raised">
+					<a class="hc-head" href="/tournaments/"><h2>Tournaments</h2><span>All ›</span></a>
+					<div class="hc-body" id="hc-tournaments"></div>
+				</section>
+			</div>
+		</div>
+		{% include "footer.html" %}
 	</div>
+	<div class="home-balls" id="home-balls" aria-hidden="true"></div>
 </div>

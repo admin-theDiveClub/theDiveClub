@@ -440,6 +440,29 @@
 			c.restore();
 		}
 
+		// The markings on a canvas the page names (data-markings-into, UV 16 Nov: the home
+		// page's logo and markings one unit, scrolling up together). The canvas is the
+		// cloth's size (the cushions' noses), drawn as the table would draw them, from the
+		// cloth's top left; the page places it at the cloth's top left. They do not follow
+		// the light, so drawn again only when the table's size, the line or the theme changes
+		var marksCanvas = stage.dataset.markingsInto ? document.getElementById(stage.dataset.markingsInto) : null;
+		if (stage.dataset.markingsInto && !marksCanvas) throw new Error('the stage names #' + stage.dataset.markingsInto + ' for the markings, and there is none.');
+		var marksKey = '';
+		function drawMarksInto() {
+			var a = W(-HX, -HZ), b = W(HX, HZ);
+			var left = Math.min(a[0], b[0]), top = Math.min(a[1], b[1]);
+			var mw = Math.round(Math.abs(b[0] - a[0])), mh = Math.round(Math.abs(b[1] - a[1]));
+			var key = [mw, mh, dpr, S.linePx, css(C.grey)].join();
+			if (key === marksKey) return;
+			marksKey = key;
+			marksCanvas.width = mw; marksCanvas.height = mh;
+			marksCanvas.style.width = (mw / dpr) + 'px';
+			marksCanvas.style.height = (mh / dpr) + 'px';
+			var m = marksCanvas.getContext('2d');
+			m.setTransform(1, 0, 0, 1, -left, -top);
+			drawMarkings(m);
+		}
+
 		/* ---------- the table, drawn when the light moves ---------- */
 		function drawLayer() {
 			var c = lctx, L = light, B = C.blur * S.blur, lit = css(C.lit, C.litA);
@@ -452,6 +475,9 @@
 			pockets.forEach(function (pk) { pocketShade(c, pk); });
 			// The markings, chalked flat on the cloth; none on the home page (UV, 16 Nov)
 			if (stage.dataset.markings !== 'off') drawMarkings(c);
+			// Or on a canvas of the page's own (data-markings-into): the home page's content,
+			// so they scroll away with its logo (UV, 16 Nov)
+			if (marksCanvas) drawMarksInto();
 			// The logo, with the soft shadow of the match page's marks
 			if (logoImg) {
 				// As large as fits the bed's width and the space between the cross and the baulk line
