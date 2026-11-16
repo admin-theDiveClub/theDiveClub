@@ -32,11 +32,23 @@
 		     then the picture. Both are decorative: the button's aria-label
 		     is what a screen reader announces. -->
 		<span class="tdc-ring nav-ring" id="nav-profile-icon"></span>
+		<!-- Signed in with no picture: the display name's initials (UV, 16 Nov). -->
+		<span class="nav-initials" id="nav-initials" aria-hidden="true" hidden></span>
 		<span class="nav-avatar-wrap"><img class="nav-avatar" id="nav-avatar" alt="" hidden></span>
 	</button>
 
 	</div>
 </nav>
+
+<!-- Linked to your league record (16 Nov, UV; nav.js, "League records").
+     Signing in links a league placeholder with the same email by itself;
+     this says so, with a button to each league, above Get the app. Kept on
+     this device until ✕. A failed link shows its error here instead. -->
+<div class="nav-linked" id="nav-linked" role="status" hidden>
+	<span class="nav-linked-text" id="nav-linked-text"></span>
+	<span class="nav-linked-go" id="nav-linked-go"></span>
+	<button type="button" class="nav-linked-x" id="nav-linked-x" aria-label="Hide this">✕</button>
+</div>
 
 <!-- Getting the app (13 Nov; nav.js, "Getting the app"). In the page's flow,
      straight under the bar, so it pushes the page down rather than covering

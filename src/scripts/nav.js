@@ -12,8 +12,9 @@
 	const account         = document.getElementById('nav-account');
 	const profileIcon     = document.getElementById('nav-profile-icon');
 	const profileAvatar   = document.getElementById('nav-avatar');
+	const profileInitials = document.getElementById('nav-initials');
 
-	if (!menuToggle || !menu || !profileBtn || !account || !profileIcon || !profileAvatar) {
+	if (!menuToggle || !menu || !profileBtn || !account || !profileIcon || !profileAvatar || !profileInitials) {
 		TDC.error(AREA, 'nav is missing expected elements.');
 		return;
 	}
@@ -453,21 +454,30 @@
 		node.toggleAttribute('hidden', !shown);
 	}
 
+	// Signed in with no picture (or one that fails), the display name's
+	// initials, as on the profile menu's banner and the Season tab (UV, 16 Nov);
+	// signed out, or with no name to go on, the ring.
+	let navName = '';
+
 	function showNavAvatar(url) {
 		if (!url) {
 			setShown(profileAvatar, false);
 			profileAvatar.removeAttribute('src');
-			setShown(profileIcon, true);
+			const letters = navName ? menuInitials(navName) : '';
+			profileInitials.textContent = letters;
+			setShown(profileInitials, !!letters);
+			setShown(profileIcon, !letters);
 			return;
 		}
 		profileAvatar.onerror = () => {
-			console.error('[' + AREA + '] profile picture could not be loaded, using the icon.', url);
+			console.error('[' + AREA + '] profile picture could not be loaded, using the initials.', url);
 			showNavAvatar(null);
 		};
 		// Swapped only once the picture has actually loaded, so the nav never
 		// shows an empty box.
 		profileAvatar.onload = () => {
 			setShown(profileIcon, false);
+			setShown(profileInitials, false);
 			setShown(profileAvatar, true);
 		};
 		profileAvatar.src = url;
@@ -728,6 +738,11 @@
 		// on it, and a failure costs the push and nothing else.
 		TDC.flushPushes();
 
+		// A league record with this account's email becomes this account's
+		// before anything about the player is read, since the merge changes
+		// which player row is theirs.
+		await linkLeagueRecords(session);
+
 		// The player's picture and names, for the bar and the profile menu's
 		// banner. A missing player row is not worth shouting about in the nav;
 		// the generic icon simply stays.
@@ -743,8 +758,84 @@
 			return;
 		}
 		showBanner(me);
-		if (me && me.avatar_path) showNavAvatar(avatarUrlFor(me.avatar_path));
+		navName = (me && me.display_name) || '';
+		showNavAvatar(me ? avatarUrlFor(me.avatar_path) : null);
 	})(), 'Nav');
+
+	// ─── League records (UV, 16 Nov) ──────────────────────────────────
+	// A league's players were brought onto the site before they had accounts
+	// (placeholders: docs/systems/leagues.md). Signed in with the email the
+	// league has for them, tdc_link_my_league_records makes that record theirs
+	// with nothing pressed, on whichever page they open, and returns the
+	// league seasons it was in. The yellow strip above Get the app says so,
+	// with a button to each, and stays on this device until ✕. A link that
+	// fails says so in the same strip, on every page until it is sorted.
+	const LINKED = 'tdc.league-linked';   // { user, seasons: [{ id, league, season }] }
+	const linkedStrip = document.getElementById('nav-linked');
+	const linkedText  = document.getElementById('nav-linked-text');
+	const linkedGo    = document.getElementById('nav-linked-go');
+	const linkedX     = document.getElementById('nav-linked-x');
+
+	function readLinked() {
+		try { return JSON.parse(localStorage.getItem(LINKED) || 'null'); } catch (e) { return null; }
+	}
+
+	function showLinked(seasons) {
+		if (!linkedStrip || !linkedText || !linkedGo) return;
+		linkedStrip.classList.remove('is-error');
+		linkedText.textContent = 'Your account has been linked to your existing league stats.';
+		linkedGo.replaceChildren(...seasons.map((s) => {
+			const a = document.createElement('a');
+			a.href = '/leagues/season/?s=' + encodeURIComponent(s.id);
+			a.textContent = s.league;
+			// Going to the league counts as done, like ✕ (UV, 16 Nov).
+			a.addEventListener('click', forgetLinked);
+			return a;
+		}));
+		linkedStrip.hidden = false;
+	}
+
+	function showLinkError(message) {
+		if (!linkedStrip || !linkedText || !linkedGo) return;
+		linkedStrip.classList.add('is-error');
+		linkedText.textContent = message;
+		linkedGo.replaceChildren();
+		linkedStrip.hidden = false;
+	}
+
+	function forgetLinked() {
+		try { localStorage.removeItem(LINKED); } catch (e) { /* nothing kept to clear */ }
+	}
+
+	if (linkedX) linkedX.addEventListener('click', () => {
+		const wasError = linkedStrip.classList.contains('is-error');
+		linkedStrip.hidden = true;
+		if (!wasError) forgetLinked();
+	});
+
+	async function linkLeagueRecords(session) {
+		if (!linkedStrip) {
+			console.error('[' + AREA + '] the league-linked strip is missing from the nav.');
+		}
+		const kept = readLinked();
+		let seasons = kept && kept.user === session.user.id ? kept.seasons : [];
+
+		const { data, error } = await supabaseClient.rpc('tdc_link_my_league_records');
+		if (error) {
+			console.error('[' + AREA + '] could not link your league record.', error);
+			const msg = error.message || '';
+			showLinkError(msg.startsWith('TDC (Error)') ? msg : 'TDC (Error): your league record could not be linked. ' + msg);
+			return;
+		}
+		if (data && data.length) {
+			const fresh = data.map((r) => ({ id: r.league_season_id, league: r.league_name, season: r.season_name }));
+			seasons = fresh.concat(seasons.filter((s) => !fresh.some((f) => f.id === s.id)));
+			try {
+				localStorage.setItem(LINKED, JSON.stringify({ user: session.user.id, seasons }));
+			} catch (e) { /* not kept: it shows on this page only */ }
+		}
+		if (seasons.length) showLinked(seasons);
+	}
 
 	// ─── Hiding on scroll (UV, 24 Oct) ────────────────────────────────
 	// One long scroll down (SCROLL_FOR pixels without turning back up) slides

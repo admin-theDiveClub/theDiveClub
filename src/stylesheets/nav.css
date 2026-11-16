@@ -116,6 +116,24 @@
 	box-shadow: var(--shadow-pic);
 }
 
+/* Signed in with no picture: the initials, in the picture's place and size
+   (UV, 16 Nov), drawn like the profile menu's banner. */
+.nav-initials {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--nav-ring-size);
+	height: var(--nav-ring-size);
+	border-radius: var(--radius-round);
+	box-shadow: var(--shadow-pic);
+	color: var(--text-muted);
+	font-size: calc(var(--nav-ring-size) * 0.36);
+	font-weight: 600;
+	letter-spacing: 0.03em;
+	line-height: 1;
+}
+.nav-initials[hidden] { display: none; }
+
 /* Solid, over the page, with a shadow for its edge. Shut, it goes past its own shadow
    too, or that would lie down the side of the page. */
 .nav-menu {
@@ -224,6 +242,50 @@ a.nav-menu-row { text-decoration: none; }
 	font-size: 1rem;
 	cursor: pointer;
 }
+
+/* ── Linked to your league record: the yellow strip (16 Nov, UV) ─────
+ * Above Get the app, the same build: in the page's flow, scrolling away
+ * with it. The site's yellow (--color-warning; dark red in the light theme,
+ * UV), the page's background colour for its words so they read on it either
+ * way. A failed link is the same strip in the error red. */
+.nav-linked {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	padding: var(--space-2) max(var(--space-4), env(safe-area-inset-right, 0px)) var(--space-2) max(var(--space-4), env(safe-area-inset-left, 0px));
+	background: var(--color-warning);
+	color: var(--bg-base);
+	font-size: 0.9rem;
+	line-height: 1.3;
+}
+.nav-linked.is-error { background: var(--color-error); }
+.nav-linked[hidden] { display: none; }
+.nav-linked-text { flex: 1 1 auto; min-width: 0; font-weight: 600; }
+.nav-linked-go { flex: 0 1 auto; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
+.nav-linked-go:empty { display: none; }
+.nav-linked-go a {
+	padding: var(--space-1) var(--space-3);
+	border: 1.5px solid currentColor;
+	border-radius: var(--radius-pill);
+	color: inherit;
+	font-weight: 600;
+	text-decoration: none;
+	white-space: nowrap;
+}
+.nav-linked-go a:hover,
+.nav-linked-go a:focus-visible { background: var(--bg-base); color: var(--color-warning); outline: none; }
+.nav-linked-x {
+	flex: 0 0 auto;
+	width: 2.25rem;
+	height: 2.25rem;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: inherit;
+	font-size: 1rem;
+	cursor: pointer;
+}
+
 /* The ring and its pip, so the pip sits on the ring rather than the row. */
 .nav-menu-icon {
 	position: relative;
