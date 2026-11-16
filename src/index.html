@@ -2,36 +2,55 @@
 layout: layout.html
 title: Home
 description: The Dive Club — pool lounge in Lonehill, Fourways, Johannesburg. Opening soon.
+extraScripts:
+  - /scripts/hero.js
+  - /scripts/home.js
 ---
+{% comment %}
+	The home page (UV, 16 Nov): the site icon where the loading screen leaves it, its
+	portal on the loading screen's portal, so the loader fades into the page with
+	nothing moving; the hero's pool table (scripts/hero.js) covering the first screen
+	over it, its shape following the screen and its cloth holding the icon, with no
+	logo and no markings on the cloth. The table plays whatever the motion setting
+	(UV, 16 Nov). The layout is scripts/home.js.
+{% endcomment %}
 <style>
-	.wrap {
-		min-height: calc(100vh - var(--nav-total));
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		text-align: center;
-		padding: 2rem;
+	/* The table covers the first screen, edge to edge; home.js sets its height */
+	.home {
+		min-height: calc(100dvh - var(--nav-total));
 	}
-	.wrap img {
-		max-width: 240px;
-		width: 60vw;
-		height: auto;
+	/* The loading screen's box (loader.css .tdc-loader, the screen at the top of
+	   the page), drawn into as the loader draws into it, so the icon lands where
+	   the loader's does. It scrolls with the page. */
+	.home-icon {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 100dvh;
+		pointer-events: none;
 	}
-	.wrap .tagline {
-		margin-top: 1.5rem;
-		color: var(--color-primary);
+	.home-icon svg.dive {
+		display: block;
+		width: 100%;
+		height: 100%;
 	}
-	/* The site's button, as wide as its words. */
-	.wrap .account-btn {
-		width: auto;
-		margin: 2rem 0 0;
+	/* Over the icon, so the balls roll over it */
+	.home .hero-stage {
+		position: relative;
+		z-index: 1;
+		overflow: hidden;   /* never grows to fit the canvas */
+	}
+	.home .hero-stage canvas {
+		display: block;
+		width: 100%;
+		height: 100%;
 	}
 </style>
 
-<div class="wrap">
-	<img class="for-dark" src="/resources/branding/logo-primary-dark.svg" alt="The Dive Club">
-	<img class="for-light" src="/resources/branding/logo-primary-light.svg" alt="The Dive Club">
-	<p class="tagline">Lonehill, Fourways · Opening soon</p>
-	<a class="btn btn-link btn-primary account-btn" href="/accounts/profile/">My Account</a>
+<div class="home">
+	<h1 class="visually-hidden">The Dive Club</h1>
+	<div class="status" id="hero-status" role="status"></div>
+	<div class="hero-stage" id="hero-stage" data-logo="off" data-markings="off" data-margin="0.5" aria-hidden="true"></div>
 </div>
+<div class="home-icon" id="home-icon" aria-hidden="true"></div>

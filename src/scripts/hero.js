@@ -1,4 +1,5 @@
-// The hero (UV, 13 Nov; /sandbox/hero/): a pool table seen from straight above, the
+// The hero (UV, 13 Nov; the home page since 16 Nov, and /sandbox/hero/ with its sliders):
+// a pool table seen from straight above, the
 // logo mark in the middle of the cloth, a spotted cue ball and two object balls, one
 // with a stripe and one solid with the stripe cut out of it. The cue ball plays at an
 // object ball, again and again, from wherever the last shot left them, so the loop
@@ -40,11 +41,15 @@
 
 		/* ---------- table geometry (from the game) ---------- */
 		var R = 0.5;                    // ball radius
+		// The bed's size follows the stage (UV, 16 Nov: "any dimensions but based on screen
+		// size"): setTable() sets these and everything made from them, fit() chooses them.
+		// The short side keeps 18 balls of cloth, as the game's table, unless the stage
+		// asks for smaller balls (data-keep, below); the long side takes what the stage gives.
 		var HX = 9, HZ = 18;            // half-width, half-length of the bed
-		var LX = HX - R, LZ = HZ - R;   // ball-CENTRE limits at the cushions
+		var LX, LZ;                     // ball-CENTRE limits at the cushions
 		var D2 = R * 2;                 // contact distance between two balls
 		var CW = 2.0;                   // rail width (cushion and wood, as on a real table)
-		var OX = HX + CW, OZ = HZ + CW; // the table's outer edge (not drawn): past it a ball is lost
+		var OX, OZ;                     // the table's outer edge (not drawn): past it a ball is lost
 		// The pockets, from a real English 7ft table (UV, 13 Nov: the game's middle pockets
 		// stuck far out into the bed). The mouth is the gap between the cushions' noses:
 		// about 3.5in at a corner and a little wider at the middle, in 2in balls 1.8 and
@@ -60,10 +65,16 @@
 		// off any cushion. The mouth is still measured between the noses.
 		var BEVEL = 0.5;
 		// How far the table reaches, holes included: there is no rail drawn (UV, 13 Nov)
-		var EX = HX + MM - MID_LIP, EZ = HZ + CM / 2;
+		var EX, EZ;
+		// How far the pockets reach past the bed's edge: a long side's (its middle pocket's
+		// hole) and a short side's (the corners')
+		var REACH_LONG = MM - MID_LIP, REACH_SHORT = CM / 2;
 		var PIT_Y = -R - 0.75;          // a potted ball's centre, at rest in the pocket
 		var GRAV = 26, STOPV = 0.22, PMIN = 5, PMAX = 48;
-		var MARGIN = 1.6;               // round the table, for its shadows
+		// Round the table, for its shadows; the stage may set it (data-margin, in balls:
+		// the home page's table runs nearly to the screen's edges)
+		var MARGIN = parseFloat(stage.dataset.margin);
+		if (!isFinite(MARGIN)) MARGIN = 1.6;
 		var LOGO_PAD = 2.2;             // the logo fills the bed between the markings, this far in
 		var SPOT_R = 0.28;              // a spot's angular radius on the cue ball
 		var BAND = 0.40;                // half the stripe's angular width
@@ -73,8 +84,7 @@
 		// table a fifth of its length from the baulk cushion, broken at its centre and
 		// either side, with a small dot in each break; and a cross for the black's spot
 		// at the other end, a fifth of the length from the top cushion.
-		var BAULK_Z = HZ - HZ * 2 / 5;   // the baulk end is +z (the foot of the screen upright)
-		var SPOT_Z = -BAULK_Z;
+		var BAULK_Z, SPOT_Z;             // the baulk end is +z (the foot of the screen upright)
 		var BAULK_DOTS = [-2.5, 0, 2.5], BAULK_GAP = 0.45, BAULK_DOT = 0.11;
 		// The cross is longer along the table than across it (UV's photo)
 		var CROSS_LONG = 1.15, CROSS_SHORT = 0.68;
@@ -124,18 +134,30 @@
 			pk.take = isCorner ? 40 : 35;                         // the widest angle it takes, from straight in
 			return pk;
 		}
-		// Clockwise from the top left
-		var pockets = [corner(-1, -1), corner(1, -1), middle(1), corner(1, 1), corner(-1, 1), middle(-1)];
-		var JAWS = [];
-		pockets.forEach(function (pk) { pk.segs.forEach(function (j) { JAWS.push(j); }); });
+		var pockets, JAWS, BED;
 		// Where along a rail the cushion is cut away for a mouth (a middle one with its bevels)
 		var CA = CM / Math.SQRT2;
 		function mouthOnLong(z) { return z < -HZ + CA || z > HZ - CA || Math.abs(z) < MM / 2 + BEVEL; }
 		function mouthOnShort(x) { return x < -HX + CA || x > HX - CA; }
 
+		// The table for a bed of half-width hx and half-length hz (in balls)
+		function setTable(hx, hz) {
+			HX = hx; HZ = hz;
+			LX = HX - R; LZ = HZ - R;
+			OX = HX + CW; OZ = HZ + CW;
+			EX = HX + REACH_LONG; EZ = HZ + REACH_SHORT;
+			BAULK_Z = HZ - HZ * 2 / 5;
+			SPOT_Z = -BAULK_Z;
+			// Clockwise from the top left
+			pockets = [corner(-1, -1), corner(1, -1), middle(1), corner(1, 1), corner(-1, 1), middle(-1)];
+			JAWS = [];
+			pockets.forEach(function (pk) { pk.segs.forEach(function (j) { JAWS.push(j); }); });
+			BED = bedEdge();
+		}
+
 		// The bed's edge, clockwise: the cushions' noses and, at each pocket, in along one
 		// jaw, round the back of the hole and out along the other
-		var BED = (function () {
+		function bedEdge() {
 			var pts = [];
 			function ang(p, pk) { return Math.atan2(p[1] - pk.z, p[0] - pk.x); }
 			pockets.forEach(function (pk) {
@@ -157,7 +179,8 @@
 				if (pk.corner) pts.push(outJ.T, outJ.J); else pts.push(outJ.T, outJ.Q, outJ.P);
 			});
 			return pts;
-		})();
+		}
+		setTable(HX, HZ);
 
 		/* ---------- the tunables ---------- */
 		// Physics: the game's, with the cloth's grip and the swerve on sliders here
@@ -215,6 +238,22 @@
 		var lctx = layer.getContext('2d');
 		var dpr = 1, cw = 0, ch = 0, sc = 10, cx = 0, cy = 0, land = false, layerKey = '';
 
+		var KEEP_PAD = 10, KEEP_MIN = 9;   // CSS px: room round the kept box; the smallest ball it may ask for
+		// A new size of table under balls already on it (the stage resized, a phone turned):
+		// any ball now past a cushion comes back inside it, its trail is dropped, and the
+		// next shot is worked out again
+		function newTable(hx, hz) {
+			setTable(hx, hz);
+			if (typeof balls === 'undefined') return;   // the first fit, before the balls are made
+			balls.forEach(function (b) {
+				b.trail.length = 0;
+				if (b.state !== 'play') return;
+				b.x = Math.max(-LX, Math.min(LX, b.x));
+				b.z = Math.max(-LZ, Math.min(LZ, b.z));
+			});
+			planning = null;
+			if (shot) shot.next = null;
+		}
 		function fit() {
 			var w = stage.clientWidth, h = stage.clientHeight;
 			if (!w || !h) return;
@@ -224,8 +263,28 @@
 			canvas.height = layer.height = ch;
 			// The table's long side along the screen's long side
 			land = w > h;
-			var halfW = (land ? EZ : EX) + MARGIN, halfH = (land ? EX : EZ) + MARGIN;
-			sc = Math.min(cw / (2 * halfW), ch / (2 * halfH));
+			// Past the bed, on the screen's sides (left and right) and ends (top and bottom),
+			// in balls: the margin and how far that side's pockets reach
+			var padSide = MARGIN + (land ? REACH_SHORT : REACH_LONG);
+			var padEnd = MARGIN + (land ? REACH_LONG : REACH_SHORT);
+			// The ball, CSS px: 18 balls of cloth across the short side, as the game's table...
+			var ball = Math.min(w, h) / (2 * (9 + (land ? padEnd : padSide)));
+			// ...or smaller, so the cloth holds the stage's data-keep box ("left,top,right,
+			// bottom", CSS px from the stage's top left; the home page's icon) with KEEP_PAD
+			// round it. A side that would need balls under KEEP_MIN px is left out: a phone on
+			// its side, where the icon's top is under the bar and its portal 24px off the foot
+			var keep = (stage.dataset.keep || '').split(',').map(parseFloat);
+			if (keep.length === 4 && keep.every(isFinite)) {
+				[[keep[0], padSide], [w - keep[2], padSide], [keep[1], padEnd], [h - keep[3], padEnd]].forEach(function (s) {
+					var b = (s[0] - KEEP_PAD) / s[1];
+					if (b >= KEEP_MIN) ball = Math.min(ball, b);
+				});
+			}
+			// The bed fills the rest of the stage
+			var acrossW = w / (2 * ball) - padSide, acrossH = h / (2 * ball) - padEnd;
+			var hx = Math.max(4, land ? acrossH : acrossW), hz = Math.max(hx, land ? acrossW : acrossH);
+			if (Math.abs(hx - HX) > 1e-6 || Math.abs(hz - HZ) > 1e-6) newTable(hx, hz);
+			sc = ball * dpr;
 			cx = cw / 2; cy = ch / 2;
 			layerKey = '';
 			forceDraw = true;   // the canvas was cleared
@@ -305,6 +364,8 @@
 		/* ---------- the logo mark ---------- */
 		var logoImg = null, logoAr = 1, logoFor = '';
 		function loadLogo() {
+			// The home page has the site icon under the table, so none on the cloth (UV, 16 Nov)
+			if (stage.dataset.logo === 'off') return;
 			var which = root.dataset.theme === 'light' ? 'light' : 'dark';
 			if (which === logoFor) return;
 			logoFor = which;
@@ -374,8 +435,8 @@
 			insetShadow(c, bedPath, lit, -L.x, -L.y, B / 2);
 			// The pockets, sunk deeper
 			pockets.forEach(function (pk) { pocketShade(c, pk); });
-			// The markings, chalked flat on the cloth
-			drawMarkings(c);
+			// The markings, chalked flat on the cloth; none on the home page (UV, 16 Nov)
+			if (stage.dataset.markings !== 'off') drawMarkings(c);
 			// The logo, with the soft shadow of the match page's marks
 			if (logoImg) {
 				// As large as fits the bed's width and the space between the cross and the baulk line
@@ -1200,6 +1261,7 @@
 		loadLogo();
 		fit();
 		new ResizeObserver(fit).observe(stage);
+		new MutationObserver(fit).observe(stage, { attributes: true, attributeFilter: ['data-keep'] });
 		new MutationObserver(function () { readTokens(); loadLogo(); layerKey = ''; })
 			.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
 		requestAnimationFrame(frame);
