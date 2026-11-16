@@ -18,6 +18,8 @@ extraScripts:
 	outline and pockets lie over it, the balls over those. The bar always shows here
 	(UV, 16 Nov): it hides only on the page's own scroll, and this page never scrolls.
 	The site's footer is drawn here, in the box, not by the layout (hideFooter).
+	The Get the app card (UV, 16 Nov) heads the content outside the installed app, in
+	its own layer over the balls, clipped to the cloth (see its styles).
 {% endcomment %}
 <style>
 	/* Nothing scrolls but the box on the cloth */
@@ -71,6 +73,51 @@ extraScripts:
 		padding-top: var(--home-under-bar, 0px);
 	}
 	.home-scroll > * { flex: 0 0 auto; }
+
+	/* Get the app (UV, 16 Nov): a raised glass card at the top of the content, on any
+	   device not running the installed app. It shows above the balls but is cut off
+	   by the table's edge (UV): the content lies under the balls, so the card cannot
+	   live in it. It sits in its own layer over the balls, clipped to the same shape
+	   on the cloth as the content (home.js), and moves with the content's scroll. An
+	   empty spot of its height at the top of the content keeps its place. */
+	/* Below it, the sponsor banner's own gap to the footer (footer.css .site-partners),
+	   so every card on the page is spaced alike (UV, 16 Nov) */
+	.home-install-spot { margin: var(--space-4) var(--space-4) var(--space-5); }
+	.home-over {
+		position: fixed;
+		z-index: 4;
+		left: 0;
+		top: 0;
+		width: 0;
+		height: 0;
+		overflow: hidden;
+		pointer-events: none;
+	}
+	.home-install {
+		position: absolute;
+		left: 0;
+		top: 0;
+		box-sizing: border-box;
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-3) var(--space-4);
+		border: 1px solid var(--border-color);
+		border-radius: var(--radius-lg);
+		background: color-mix(in srgb, var(--bg-base) 35%, transparent);
+		-webkit-backdrop-filter: blur(12px) saturate(140%);
+		backdrop-filter: blur(12px) saturate(140%);
+		box-shadow: var(--shadow-panel), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+		color: var(--text-primary);
+		text-decoration: none;
+		pointer-events: auto;
+		will-change: transform;
+	}
+	.home-install-icon { width: 40px; height: 40px; flex: 0 0 auto; }
+	.home-install-words { flex: 1 1 auto; min-width: 0; }
+	.home-install-title { display: block; font-weight: 600; }
+	.home-install-sub { display: block; font-size: 0.85rem; color: var(--text-muted); }
+	.home-install-go { flex: 0 0 auto; font-size: 1.4rem; color: var(--text-muted); }
 	/* The page's content takes the room left, so the footer is always at the foot
 	   of the cloth, however little there is above it (UV, 16 Nov) */
 	.home-content { flex: 1 0 auto; }
@@ -81,8 +128,19 @@ extraScripts:
 	<div class="hero-stage" id="hero-stage" data-logo="off" data-markings="off" data-margin="0.5" data-balls="home-balls" aria-hidden="true"></div>
 	<div class="home-scroll" id="home-scroll">
 		<div class="status" id="hero-status" role="status"></div>
+		<div class="home-install-spot" id="home-install-spot" hidden></div>
 		<div class="home-content"></div>
 		{% include "footer.html" %}
 	</div>
 	<div class="home-balls" id="home-balls" aria-hidden="true"></div>
+	<div class="home-over" id="home-over">
+		<a class="home-install" id="home-install" href="/install/" hidden>
+			<img class="home-install-icon" src="/resources/branding/icon-primary.svg" alt="">
+			<span class="home-install-words">
+				<span class="home-install-title">Get the app</span>
+				<span class="home-install-sub">Install The Dive Club on this device</span>
+			</span>
+			<span class="home-install-go" aria-hidden="true">›</span>
+		</a>
+	</div>
 </div>

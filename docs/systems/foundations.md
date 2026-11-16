@@ -90,6 +90,8 @@ How to put the app on a home screen, shown rather than told. UV's decisions are 
 
 UV asked for prompts that guide new players to install the app. **UV's rules:** phones only; never in the installed app; the strip shows on every page from a visit to the home page until ✕, then stays away until the next visit to the home page (a first visit anywhere shows it too); a "Get the app" row always in the menu; no pop-up. The look and the words are Claude's, for UV to refine.
 
+**The home page's card (16 Nov, UV):** besides the strip, the home page heads its content with a glass card linking to `/install/`, on **any** device not running the installed app, computers included; no ✕. How it is drawn is in `docs/systems/file-map.md`, the home page.
+
 **What can be automated, and what cannot:**
 
 | Where | What the site does | Left to the person |

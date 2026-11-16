@@ -1989,3 +1989,11 @@ These predate the log. They are recorded here because every one of them is a dec
 *Replaces:* the table running under the bar and showing whole once the bar hides; the bar following the content box's scroll (`nav.js` and `data-page-scroll` are back as they were: the bar hides only on the page's own scroll, and this page never scrolls).
 *Claude's, for UV to judge:* the table not made smaller for a banner (they come and go, and a resize would move the balls); the content's first line padded below a banner instead.
 *Touches:* `src/index.html`, `src/scripts/home.js`; `src/scripts/nav.js` unchanged from before this work
+
+## 2026-11-16 — The home page's Get the app card
+
+*Decided by UV:* on the home page, a **raised glass card with a blur**, linking to `/install/`, on **any device not using the installed app** (computers too, unlike the strip, which is phones only); **never in the installed app**. **Cut off by the table's edge, but shown over the balls** ("if not possible, the balls above the card": it was possible). **At the top of the content**, scrolling away with it. **The Get the app strip stays** on the home page as well. **No ✕.**
+*Decided by UV, the same day:* **the gap below the sponsor banner is the gap between every card on the page** (`--space-5`, `footer.css` `.site-partners`), so the card has it below it too. On a screen taller than the content, the footer still keeps to the foot of the cloth, so the room left over still opens between the card and the banner (open, for UV).
+*How:* the content lies under the balls, so the card is drawn in its own layer over them, clipped to the same rounded shape on the cloth as the content and moved with the content's scroll, over an empty spot of its height (`docs/systems/file-map.md`, the home page).
+*Claude's, for UV to judge:* the words ("Get the app", "Install The Dive Club on this device") and the site icon on it; the card as wide as the content (1,360px on a large screen); the glass (the page's background at 35%, a 12px blur); a finger dragged on the card not scrolling the content (the wheel does), as it sits outside the scrolling box.
+*Touches:* no migration. `src/index.html`, `src/scripts/home.js`
