@@ -542,6 +542,21 @@ TDCLeagueNav.panel('fixtures', () => {
 		const last = keys.length ? dateOfKey(keys[keys.length - 1]) : new Date();
 		const today = keyOf(new Date());
 
+		// Each night in its state's colour, as the Season tab's calendar
+		// (league-season.js, renderNights; UV, 16 Nov): live yellow, the next
+		// glowing, a played or past night grey in a grey pill.
+		const now = Date.now();
+		const upcoming = fixtures.map((f) => f.scheduled_at && new Date(f.scheduled_at))
+			.filter((d) => d && d.getTime() >= now).sort((a, b) => a - b)[0];
+		const nextKey = upcoming ? keyOf(upcoming) : null;
+		const stateOfNight = (key, rows) => {
+			const games = rows.filter((f) => !f.is_bye);
+			const played = games.filter((f) => f.match_status === 'complete' || f.match_status === 'reopened').length;
+			if (games.some((f) => f.match_status === 'in_progress')) return 'live';
+			if (key === nextKey) return 'next';
+			return (games.length && played === games.length) || key < today ? 'done' : 'later';
+		};
+
 		const months = [];
 		for (let m = new Date(first.getFullYear(), first.getMonth(), 1);
 			m <= last; m = new Date(m.getFullYear(), m.getMonth() + 1, 1)) {
@@ -570,7 +585,7 @@ TDCLeagueNav.panel('fixtures', () => {
 				const td = tr.insertCell();
 				const rows = map.get(key);
 				if (rows) {
-					const b = node('button', 'cal-day', String(d));
+					const b = node('button', 'cal-day is-' + stateOfNight(key, rows), String(d));
 					b.type = 'button';
 					b.dataset.day = key;
 					const rounds = [...new Set(rows.map((f) => f.round))].join(' and ');

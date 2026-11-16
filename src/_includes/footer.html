@@ -8,8 +8,9 @@
      src/resources/partners/ (its README says how to add one). Only the icon's
      shape is used: scripts/partners.js draws it in the background colour.
      Not drawn while the list is empty. On a phone the icons keep to one row and
-     drift as a carousel when they do not fit (scripts/partners.js). -->
-{% if partners.size > 0 %}
+     drift as a carousel when they do not fit (scripts/partners.js).
+     On the home page only (UV, 16 Nov). -->
+{% if partners.size > 0 and page.url == "/" %}
 <section class="site-partners" aria-label="Partners and sponsors">
 	<div class="pt-view">
 	<ul class="pt-list">

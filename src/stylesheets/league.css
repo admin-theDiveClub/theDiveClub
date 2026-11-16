@@ -1431,7 +1431,7 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
 	align-items: center;
-	gap: var(--space-3);
+	gap: var(--space-2);   /* was --space-3: more for the names (UV, 16 Nov) */
 }
 .cj-team {
 	display: flex;
@@ -1445,7 +1445,7 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	font-family: var(--font-display);
 	font-size: 1.35rem;
 	line-height: 1.32;   /* the headings' line (UV, 16 Nov) */
-	/* One line, running sideways when too long, never broken inside a word (UV, 16 Nov): TDC.runName, .tdc-run in design.css */
+	/* Wrapping between words, never inside one; a word too long for the room runs sideways (UV, 16 Nov): TDC.runWords, .tdc-wrap in design.css */
 }
 .cj-mid { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); }
 .cj-mid .jumbo-status { white-space: nowrap; }
@@ -1459,12 +1459,18 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	align-items: center;
 	gap: var(--space-1);
 }
-.cj-tags .badge { max-width: 9rem; white-space: normal; text-align: center; overflow-wrap: anywhere; }
+/* Narrower than 9rem, so the middle leaves the names more room (UV, 16 Nov);
+ * a long venue wraps between its words. */
+.cj-tags .badge { max-width: 6.5rem; white-space: normal; text-align: center; overflow-wrap: anywhere; }
+.cj-tags .badge.cj-venue { color: var(--color-warning); }   /* a venue's words yellow (UV, 16 Nov) */
 .tdc-card .cj-detail { margin: 0; color: var(--text-muted); text-align: center; }
 .card-jumbo .jumbo-facts { text-align: left; }
-/* Room for the share icon in the corner, both sides alike so the teams stay
- * centred: the icon reaches 1.75rem in from the banner's padding. */
-.card-jumbo:has(> .lj-corner) .cj-head { padding-inline: 1.75rem; }
+/* The names run to the banner's padding (UV, 16 Nov: they fill more of its
+ * width); only the pictures keep clear of the share icon in the corner, moved
+ * in to where the old 1.75rem padding on the head put them (half of it), both
+ * alike so the banner stays balanced. */
+.card-jumbo:has(> .lj-corner) .cj-team:first-child .cj-pic { translate: 0.875rem 0; }
+.card-jumbo:has(> .lj-corner) .cj-team:last-child .cj-pic { translate: -0.875rem 0; }
 
 /* The result: the score big in the middle, as a fixture's (UV, 11 Nov):
  * yellow and lit while it is played; once signed the winner's green and lit,

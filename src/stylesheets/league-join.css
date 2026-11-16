@@ -352,7 +352,8 @@
 
 /* ── The nights: the fixtures planner's calendar (league.css), a night in its
  * state's colour, the next glowing as a chosen day does there. The one tapped
- * has a line round it, which can fade: the day's shadow moves with the light ── */
+ * has a line round it, which can fade: the day's shadow moves with the light.
+ * The Fixtures planner takes the same states since 16 Nov (league-fixtures.js) ── */
 .is-later,
 .is-next { --night: var(--nm-light-colour); }
 .is-live { --night: var(--color-warning); }
@@ -438,6 +439,16 @@
 .tdc-card .lj-cal .cal button.cal-day:active { background: none; box-shadow: none; }
 .lj-cal .cal th:nth-child(6),
 .lj-cal .cal td:nth-child(6) { border-left: 1px solid var(--border-color); }
+/* A played (or past) night sits in a grey pill (UV, 16 Nov), on the Season tab
+ * and the Fixtures planner alike; after the no-pill rule above so it wins. */
+.tdc-card .cal button.cal-day.is-done,
+.tdc-card .cal button.cal-day.is-done:hover,
+.tdc-card .cal button.cal-day.is-done:active {
+	background: color-mix(in srgb, var(--text-muted) 22%, transparent);
+}
+/* The planner's chosen night has the line round it as the Season tab's tapped
+ * one, since the next night now glows there too (16 Nov). */
+.tdc-card .cal button.cal-day.on[class*="is-"] { outline-color: var(--night); }
 
 .lj-teams {
 	display: flex;

@@ -66,7 +66,8 @@ extraScripts:
 			</div>
 			<div class="cj-mid">
 				<span class="badge jumbo-status" id="jumbo-status" hidden></span>
-				<span class="cj-v">:</span>
+				{% comment %} The score either side of the ":" once the match is complete (UV, 16 Nov). {% endcomment %}
+				<span class="cj-v" id="jumbo-v">:</span>
 				{% comment %} Under the ":" while the banner is folded: the venue and the discipline only (UV, 16 Nov). {% endcomment %}
 				<span class="cj-tags" id="jumbo-tags"></span>
 			</div>
@@ -159,9 +160,10 @@ extraScripts:
 	{% comment %}
 		The result and the signatures, one section in the banner's style (UV,
 		29 Oct; the result banner and the signature form were two). The
-		league and the date; the two teams with their shields either side of
-		the score; the frames; each captain's signature line under their
-		team; whether anything is disputed; the changelog; the buttons. As
+		league and the date; the two teams with their shields; the frames;
+		the teams again either side of the final score, and each captain's
+		signature line under their team (UV, 16 Nov); whether anything is
+		disputed; the changelog; the buttons. As
 		wide as it needs on a PC, the width of the page on a phone.
 	{% endcomment %}
 	<section class="jumbo card-jumbo card-summary sign-form" id="sign-panel" hidden aria-label="The result and the signatures">
@@ -174,9 +176,8 @@ extraScripts:
 				<span class="team-pic cj-pic" id="sum-home-pic"></span>
 				<span class="cj-name" id="sum-home-name">Home</span>
 			</div>
-			<div class="cj-mid">
-				<span class="cj-score"><span class="cj-num cj-num-home" id="sum-home-score">0</span><span class="cj-dash">:</span><span class="cj-num cj-num-away" id="sum-away-score">0</span></span>
-			</div>
+			{% comment %} The teams alone here; the score is above the signatures (UV, 16 Nov). {% endcomment %}
+			<div class="cj-mid"></div>
 			<div class="cj-team">
 				<span class="team-pic cj-pic" id="sum-away-pic"></span>
 				<span class="cj-name" id="sum-away-name">Away</span>
@@ -213,7 +214,25 @@ extraScripts:
 		</div>
 
 		{% comment %}
-			A line for each side's signature, under its team in the banner
+			The result, above the signatures (UV, 16 Nov): the two teams with
+			their badges either side of the final score.
+		{% endcomment %}
+		<div class="cj-head sf-result">
+			<div class="cj-team">
+				<span class="team-pic cj-pic" id="res-home-pic"></span>
+				<span class="cj-name" id="res-home-name">Home</span>
+			</div>
+			<div class="cj-mid">
+				<span class="cj-score"><span class="cj-num cj-num-home" id="sum-home-score">0</span><span class="cj-dash">:</span><span class="cj-num cj-num-away" id="sum-away-score">0</span></span>
+			</div>
+			<div class="cj-team">
+				<span class="team-pic cj-pic" id="res-away-pic"></span>
+				<span class="cj-name" id="res-away-name">Away</span>
+			</div>
+		</div>
+
+		{% comment %}
+			A line for each side's signature, under its team in the result
 			above, with its captain beneath.
 		{% endcomment %}
 		<div class="sf-sides">

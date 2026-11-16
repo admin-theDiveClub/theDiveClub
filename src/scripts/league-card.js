@@ -50,7 +50,7 @@
 	const els = {
 		title: el('m-title'),
 		jumbo: el('jumbo'), jumboStatus: el('jumbo-status'), stateDetail: el('state-detail'), facts: el('jumbo-facts'),
-		jumboMore: el('jumbo-more'), jumboTags: el('jumbo-tags'),
+		jumboMore: el('jumbo-more'), jumboTags: el('jumbo-tags'), jumboV: el('jumbo-v'),
 		homePic: el('home-pic'), homeName: el('home-name'), awayPic: el('away-pic'), awayName: el('away-name'),
 		sideSwitch: el('side-switch'), sidePick: el('side-pick'),
 		lineups: el('lineups'), compare: el('team-compare'), teamTables: el('team-tables'),
@@ -66,6 +66,7 @@
 		sumDetail: el('sum-detail'),
 		sumHomePic: el('sum-home-pic'), sumHomeName: el('sum-home-name'), sumHomeScore: el('sum-home-score'),
 		sumAwayPic: el('sum-away-pic'), sumAwayName: el('sum-away-name'), sumAwayScore: el('sum-away-score'),
+		resHomePic: el('res-home-pic'), resHomeName: el('res-home-name'), resAwayPic: el('res-away-pic'), resAwayName: el('res-away-name'),
 		signPanel: el('sign-panel'), sfLeague: el('sf-league'), sfDate: el('sf-date'),
 		sfHomeSig: el('sf-home-sig'), sfHomeCap: el('sf-home-cap'),
 		sfAwaySig: el('sf-away-sig'), sfAwayCap: el('sf-away-cap'),
@@ -106,7 +107,8 @@
 	let edited = new Map();    // frame no -> { lag, win }: which switch changed since then
 	const unsaved = new Map(); // frame no -> { fields, saves, failed }: L and W chosen, not yet read back
 	let drawnOnce = false;              // a re-read after the first draw fades what changed
-	const foldedSessions = new Set();
+	const foldedSessions = new Set();   // the player's view: closed by the reader
+	const sessionChoice = new Map();    // the captains' sessions: heading -> open, where the reader went against the usual
 	const clOpen = new Map();           // changelog group (side|time) -> open, as the reader left it   // session headings a reader has closed, kept across redraws
 	let working = null;       // the side being set up: mine, or the director's choice
 	let myPlayerId = null;    // the reader's own player, for the player's view
@@ -199,11 +201,12 @@
 		document.title = match.home_name + ' : ' + match.away_name + ' · The Dive Club';
 		for (const [pic, name, side] of [
 			[els.homePic, els.homeName, 'home'], [els.awayPic, els.awayName, 'away'],
-			[els.sumHomePic, els.sumHomeName, 'home'], [els.sumAwayPic, els.sumAwayName, 'away']]) {
+			[els.sumHomePic, els.sumHomeName, 'home'], [els.sumAwayPic, els.sumAwayName, 'away'],
+			[els.resHomePic, els.resHomeName, 'home'], [els.resAwayPic, els.resAwayName, 'away']]) {
 			// The team's own picture, or the shield (TDC.teamPic, 29 Oct).
 			const team = byId.get(side === 'home' ? data.home_team_id : data.away_team_id) || {};
 			pic.replaceChildren(TDC.teamPic(team.picture_path));
-			TDC.runName(name, teamName(side));   // one line, running when too long (UV, 16 Nov)
+			TDC.runWords(name, teamName(side));   // wrapping between words, a word too long running (UV, 16 Nov)
 		}
 
 		// The league's pages, once the match has said which season it is in.
@@ -413,12 +416,24 @@
 		// has locked and is underlined for the viewer's own team.
 		document.body.dataset.cardState = key;
 		const mine = myTeamSide();
-		for (const [name, side] of [[els.homeName, 'home'], [els.awayName, 'away'], [els.sumHomeName, 'home'], [els.sumAwayName, 'away']]) {
+		for (const [name, side] of [[els.homeName, 'home'], [els.awayName, 'away'], [els.sumHomeName, 'home'], [els.sumAwayName, 'away'],
+			[els.resHomeName, 'home'], [els.resAwayName, 'away']]) {
 			name.classList.toggle('is-locked', !!locked[side]);
 			name.classList.toggle('is-mine', mine === side);
 		}
 		els.jumboStatus.hidden = false;
 		els.jumboStatus.textContent = label;
+
+		// Once the match is complete (signed by both, or published), its score
+		// either side of the ":" (UV, 16 Nov), in the result's colours: the
+		// winner's green and lit, the loser's grey (data-lead, as the result's).
+		const complete = key === 'agreed' || key === 'approved';
+		const h = score('home'), a = score('away');
+		els.jumbo.dataset.lead = complete ? (h > a ? 'home' : a > h ? 'away' : '') : '';
+		els.jumboV.classList.toggle('cj-score', complete);
+		els.jumboV.replaceChildren(...(complete
+			? [node('span', 'cj-num cj-num-home', String(h)), node('span', 'cj-dash', ':'), node('span', 'cj-num cj-num-away', String(a))]
+			: [':']));
 		els.stateDetail.textContent = stateDetail(locked, both);
 
 		const facts = [];
@@ -460,7 +475,7 @@
 		// under the ":" (UV, 16 Nov); the stylesheet shows them only while folded.
 		const discipline = match.rules && match.rules.discipline;
 		els.jumboTags.replaceChildren(
-			...venues.map((v) => node('span', 'badge', v.name)),
+			...venues.map((v) => node('span', 'badge cj-venue', v.name)),   // yellow words (UV, 16 Nov)
 			...(discipline ? [node('span', 'badge', D.DISCIPLINE[discipline] || discipline)] : []));
 	}
 
@@ -969,14 +984,19 @@
 	// of the toggles.
 	//
 	// Each session folds (UV, 29 Oct): a folding group (set-group, so it opens
-	// and closes as every other on the site, tdc-controls.js), open unless the
-	// reader closed it, which is remembered through every redraw. Its heading
-	// carries the session's score, so a closed one still says how it went.
+	// and closes as every other on the site, tdc-controls.js). Folded unless it
+	// holds an active frame, one in Now and next (under way, or among the next
+	// up; UV, 16 Nov), so the captain sees only the sessions being played. A
+	// session the reader opened or closed against that stays so through every
+	// redraw. Its heading carries the session's score, so a closed one still
+	// says how it went.
 	function sessionBlock(heading, frames, strict, nextOpen) {
 		const block = node('details', 'cs-session set-group');
-		block.open = !foldedSessions.has(heading);
+		const active = new Set(quickFrames().map((q) => q.f.frame_no));
+		const usual = frames.some((f) => active.has(f.frame_no));
+		block.open = sessionChoice.has(heading) ? sessionChoice.get(heading) : usual;
 		block.addEventListener('toggle', () => {
-			if (block.open) foldedSessions.delete(heading); else foldedSessions.add(heading);
+			if (block.open === usual) sessionChoice.delete(heading); else sessionChoice.set(heading, block.open);
 		});
 		const won = (side) => frames.filter((f) => f.winner_side === side).length;
 		const title = node('summary', 'cs-title', heading);
@@ -1457,7 +1477,28 @@
 		});
 
 		els.h2hTables.replaceChildren(...tables);
+		fitHeadToHead();
 	}
+
+	// Each head-to-head table made smaller to fit the width, so nobody scrolls
+	// sideways to see it (UV, 16 Nov): zoomed down as a whole, the text and
+	// the marks together, to no less than 55% (past that it scrolls again).
+	// Measured against the tables' row, whose width never follows the table.
+	let h2hRoomSeen = 0;
+	function fitHeadToHead() {
+		const room = els.h2hTables.clientWidth;
+		h2hRoomSeen = room;
+		if (!room) return;   // hidden: fitted when shown
+		for (const table of els.h2hTables.querySelectorAll('.h2h-table')) {
+			table.style.zoom = '';
+			const need = table.offsetWidth;
+			if (need > room) table.style.zoom = String(Math.max(0.55, Math.floor((room / need) * 100) / 100));
+		}
+	}
+	if (typeof ResizeObserver !== 'undefined') {
+		new ResizeObserver(() => { if (els.h2hTables.clientWidth !== h2hRoomSeen) fitHeadToHead(); }).observe(els.h2hTables);
+	}
+	if (document.fonts) document.fonts.ready.then(fitHeadToHead);
 
 	// Who sat in a frame for a side, and whether they were a reserve: anybody
 	// who is not the player locked into that position (playerCell's Reserve

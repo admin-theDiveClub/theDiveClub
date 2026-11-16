@@ -971,6 +971,20 @@ html :is(.team-name, .fx-name, .team-box-name, .team-sep-name, .pp-team-name, .s
 	0%, 15% { transform: translateX(0); }
 	85%, 100% { transform: translateX(var(--run)); }
 }
+/* Wrapping between words (TDC.runWords; UV, 16 Nov, the scorecard's banner):
+ * each word a run of its own, side by side, the lines breaking only at the
+ * spaces; the underline carried into each word. */
+.tdc-wrap { display: block; min-width: 0; max-width: 100%; overflow-wrap: normal; word-break: normal; }
+.tdc-wrap > .tdc-run {
+	display: inline-block;
+	vertical-align: top;
+	/* Keep most of the underline's room below each line, so a wrapped line's
+	   underline clears the next line's letters (UV, 16 Nov) */
+	margin-bottom: -0.1em;
+	text-decoration: inherit;
+	text-decoration-thickness: inherit;
+	text-underline-offset: inherit;
+}
 [data-motion="reduce"] .tdc-run > .lj-run { display: inline; animation: none; }
 [data-motion="reduce"] .tdc-run.is-long { text-overflow: ellipsis; -webkit-mask-image: none; mask-image: none; }
 @media (prefers-reduced-motion: reduce) {

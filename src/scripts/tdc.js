@@ -649,6 +649,33 @@ const TDC = (() => {
 		fitRun(el);
 		return el;
 	}
+	// The same, wrapping between words (UV, 16 Nov, the scorecard's banner: "you
+	// may still word-wrap but do not break words"). Each word is its own run, so
+	// the name takes as many lines as it needs and a word too long for the room
+	// alone runs sideways and back. Styles: .tdc-wrap, design.css.
+	function runWords(el, text) {
+		const words = (text === undefined ? el.textContent : (text || '')).trim().split(/\s+/).filter(Boolean);
+		el.classList.remove('tdc-run', 'is-long');
+		el.classList.add('tdc-wrap');
+		el.title = words.join(' ');
+		const parts = [];
+		words.forEach((w, i) => {
+			if (i) parts.push(' ');
+			const word = document.createElement('span');
+			word.className = 'tdc-run';
+			const inner = document.createElement('span');
+			inner.className = 'lj-run';
+			inner.textContent = w;
+			word.append(inner);
+			parts.push(word);
+		});
+		el.replaceChildren(...parts);
+		for (const word of el.children) {
+			if (runRoom) { runRoom.observe(word); runRoom.observe(word.firstChild); }
+			fitRun(word);
+		}
+		return el;
+	}
 	if (document.fonts) {
 		const refitRuns = () => document.querySelectorAll('.tdc-run').forEach(fitRun);
 		document.fonts.ready.then(refitRuns);
@@ -656,5 +683,5 @@ const TDC = (() => {
 	}
 
 	return { shortUrl, shareButton, error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer,
-		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, fullName, fullNameOf, leaguePic, teamPic, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade, runName };
+		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, fullName, fullNameOf, leaguePic, teamPic, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade, runName, runWords };
 })();

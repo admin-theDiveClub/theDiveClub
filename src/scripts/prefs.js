@@ -109,10 +109,11 @@ var TDCPrefs = (function () {
 			return upright ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
 		};
 		var healTimer = 0;
+		var healFailed = false;   // once measuring again has not helped, never again on this page
 		var heal = function () {
 			var body = document.body;
 			// The light theme's bar ('default') puts the page below it, shorter on purpose
-			if (!body || editing() || !iosBar || iosBar.getAttribute('content') !== 'black-translucent') return;
+			if (!body || healFailed || editing() || !iosBar || iosBar.getAttribute('content') !== 'black-translucent') return;
 			var short = screenHeight() - window.innerHeight;
 			if (short <= 4) return;
 			var x = window.scrollX, y = window.scrollY;
@@ -122,14 +123,23 @@ var TDCPrefs = (function () {
 			void body.offsetHeight;
 			window.scrollTo(x, y);
 			var left = screenHeight() - window.innerHeight;
-			if (left > 4) console.warn('[Viewport] The page is ' + left + 'px shorter than the screen (the iOS keyboard bug), and measuring it again did not help.');
+			if (left > 4) { healFailed = true; console.warn('[Viewport] The page is ' + left + 'px shorter than the screen (the iOS keyboard bug), and measuring it again did not help; not tried again on this page.'); }
 			else console.info('[Viewport] The page was ' + short + 'px shorter than the screen (the iOS keyboard bug); measured again.');
 		};
 		var healSoon = function (ms) {
 			clearTimeout(healTimer);
 			healTimer = setTimeout(heal, ms);
 		};
-		document.addEventListener('focusout', function () { healSoon(150); });   // after the keyboard has gone
+		// After the keyboard has gone: only when a text field gives up focus (16 Nov,
+		// UV: the installed app seemed to refresh every few minutes while scrolling;
+		// hiding the page resets every scrolled box and restarts every animation, so
+		// it must not run when any button or link merely loses focus).
+		document.addEventListener('focusout', function (e) {
+			var t = e.target;
+			var typed = t && (t.isContentEditable || t.tagName === 'TEXTAREA'
+				|| (t.tagName === 'INPUT' && !/^(checkbox|radio|range|button|submit|reset|color|file|hidden|image)$/.test(t.type)));
+			if (typed) healSoon(150);
+		});
 		window.addEventListener('pageshow', function () { healSoon(0); });
 		window.addEventListener('orientationchange', function () { healSoon(400); });
 		if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { healSoon(0); });
