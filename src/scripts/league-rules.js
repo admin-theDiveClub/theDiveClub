@@ -61,7 +61,7 @@ TDCLeagueNav.panel('rules', () => {
 			return text;
 		},
 		rotation: (r) => (r.rotation
-			? 'Whoever runs the league has set its own table of who meets whom, and every session follows it.'
+			? 'Whoever runs the league has set its own table of who meets whom and the order of each session\'s frames, and every session follows it.'
 			: 'After the first session the away order moves along one place each session, so every home player meets every away player once.'),
 		strict_frame_order: (r) => (r.strict_frame_order
 			? 'Frames are played in the order on the card, and only the next frame can be entered.'

@@ -500,6 +500,13 @@ const TDCMatchDef = (() => {
 	// moving up one each session — and an array once the LD makes it their
 	// own. private.tdc_check_match_rules and private.tdc_rotation_away are the
 	// database's half of this; keep the three in step.
+	//
+	// A row may instead be [home, away] pairs in the order the frames are
+	// played (16 Nov, UV: a card that follows the league's paper scoresheet,
+	// where each session opens with a different home player). The page works
+	// on frames ({ h, a } per frame, session by session) and stores a row as
+	// numbers whenever its home players are in order, so a table that only
+	// changes who meets whom is saved exactly as before.
 	// ─────────────────────────────────────────────────────────────────
 
 	function cyclicRotation(n) {
@@ -512,13 +519,33 @@ const TDCMatchDef = (() => {
 		return grid;
 	}
 
-	// The table as it stands, written out, whichever form it is stored in.
-	function rotationGrid(rules) {
+	// The night frame by frame: one list per session of { h, a } in the order
+	// the frames are played, whichever form the table is stored in.
+	function rotationFrames(rules) {
 		const n = rules.team_size || 0;
-		if (Array.isArray(rules.rotation) && rules.rotation.length === n) {
-			return rules.rotation.map((row) => row.slice());
-		}
-		return cyclicRotation(n);
+		const rows = Array.isArray(rules.rotation) && rules.rotation.length === n
+			? rules.rotation : cyclicRotation(n);
+		return rows.map((row) => row.map((cell, j) => (Array.isArray(cell)
+			? { h: cell[0], a: cell[1] }
+			: { h: j + 1, a: cell })));
+	}
+
+	// Back to the stored form: a row of away positions when its home players
+	// are in order, pairs only where the order differs.
+	function storeRotation(frames) {
+		return frames.map((row) => (row.every((f, j) => f.h === j + 1)
+			? row.map((f) => f.a)
+			: row.map((f) => [f.h, f.a])));
+	}
+
+	// Who meets whom: row s names the away position each home position meets
+	// in session s, whichever order the frames are played in.
+	function rotationGrid(rules) {
+		return rotationFrames(rules).map((row) => {
+			const away = [];
+			row.forEach((f) => { away[f.h - 1] = f.a; });
+			return away;
+		});
 	}
 
 	// Pairings met more than once across the night. Allowed (UV, 23 Oct), but
@@ -533,24 +560,25 @@ const TDCMatchDef = (() => {
 		return [...seen.values()].filter((p) => p.sessions.length > 1);
 	}
 
-	// A change on the grid. Choosing an away player already in that session
-	// swaps the two, so a session can never hold somebody twice — design rule
-	// 1, which the database also refuses.
+	// A change on the grid: one frame's home or away player. Choosing a player
+	// already in that session swaps the two, so a session can never hold
+	// somebody twice — design rule 1, which the database also refuses.
 	function applyRotation(rules, input) {
 		if (input.dataset.rotation === 'mode') {
-			rules.rotation = input.value === 'own' ? rotationGrid(rules) : null;
+			rules.rotation = input.value === 'own' ? storeRotation(rotationFrames(rules)) : null;
 			return;
 		}
 		const s = parseInt(input.dataset.session, 10) - 1;
-		const h = parseInt(input.dataset.home, 10) - 1;
+		const j = parseInt(input.dataset.frame, 10) - 1;
+		const part = input.dataset.part === 'home' ? 'h' : 'a';
 		const v = parseInt(input.value, 10);
-		const grid = rotationGrid(rules);
-		const row = grid[s];
-		if (!row || isNaN(v)) return;
-		const other = row.indexOf(v);
-		if (other !== -1) row[other] = row[h];
-		row[h] = v;
-		rules.rotation = grid;
+		const frames = rotationFrames(rules);
+		const row = frames[s];
+		if (!row || !row[j] || isNaN(v)) return;
+		const other = row.findIndex((f) => f[part] === v);
+		if (other !== -1) row[other][part] = row[j][part];
+		row[j][part] = v;
+		rules.rotation = storeRotation(frames);
 	}
 
 	// After any change: a table that no longer fits the team size goes back to
@@ -565,6 +593,7 @@ const TDCMatchDef = (() => {
 	function rotationControl(def, rules, id) {
 		const n = rules.team_size;
 		const grid = rotationGrid(rules);
+		const frames = rotationFrames(rules);
 		const own = Array.isArray(rules.rotation);
 
 		const row = document.createElement('div');
@@ -584,16 +613,19 @@ const TDCMatchDef = (() => {
 		);
 
 		// Each cell is one frame, numbered as the card numbers them: session by
-		// session, (session − 1) × team size + home position.
-		const frameNo = (s, h) => Object.assign(document.createElement('span'),
-			{ className: 'rotation-frame', textContent: String(s * n + h + 1) });
+		// session, (session − 1) × team size + its place in the session.
+		const frameNo = (s, j) => Object.assign(document.createElement('span'),
+			{ className: 'rotation-frame', textContent: String(s * n + j + 1) });
+		const vs = () => Object.assign(document.createElement('span'), { className: 'rotation-vs', textContent: ':' });
 
 		const table = document.createElement('table');
 		table.className = own ? 'tdc-table rotation-grid' : 'tdc-table rotation-grid rotation-scorecard';
 		const head = table.createTHead().insertRow();
 		head.append(Object.assign(document.createElement('th'), { textContent: own ? 'Session' : 'Scorecard' }));
+		// The scorecard's columns are home players; the own table's are the
+		// frames of a session in the order played (16 Nov), so no heading.
 		for (let h = 1; h <= n; h++) {
-			head.append(Object.assign(document.createElement('th'), { textContent: 'H' + h }));
+			head.append(Object.assign(document.createElement('th'), { textContent: own ? '' : 'H' + h }));
 		}
 		const body = table.createTBody();
 
@@ -612,24 +644,29 @@ const TDCMatchDef = (() => {
 			}
 		}
 
-		// "My own table": one row per session, a menu per later session.
-		if (own) grid.forEach((away, s) => {
+		// "My own table": one row per session, one cell per frame in the order
+		// played, each later frame a home menu and an away menu (16 Nov).
+		if (own) frames.forEach((row, s) => {
 			const tr = body.insertRow();
 			tr.append(Object.assign(document.createElement('th'), { textContent: String(s + 1) }));
-			away.forEach((a, h) => {
+			row.forEach((f, j) => {
 				const td = tr.insertCell();
-				td.append(frameNo(s, h));
+				td.append(frameNo(s, j));
 				// Session 1 is whatever order the captains set. It is not the
 				// LD's to change, so it is shown, not offered.
-				if (s === 0) { td.append('A' + a); return; }
-				const pick = document.createElement('select');
-				pick.id = id + '-' + (s + 1) + '-' + (h + 1);
-				pick.dataset.setting = def.key;
-				pick.dataset.session = s + 1;
-				pick.dataset.home = h + 1;
-				pick.setAttribute('aria-label', `Session ${s + 1}, H${h + 1} plays`);
-				for (let v = 1; v <= n; v++) pick.append(new Option('A' + v, v, false, v === a));
-				td.append(pick);
+				if (s === 0) { td.append('H' + f.h, vs(), 'A' + f.a); return; }
+				const menu = (part, prefix, value) => {
+					const pick = document.createElement('select');
+					pick.id = id + '-' + (s + 1) + '-' + (j + 1) + '-' + part;
+					pick.dataset.setting = def.key;
+					pick.dataset.session = s + 1;
+					pick.dataset.frame = j + 1;
+					pick.dataset.part = part;
+					pick.setAttribute('aria-label', `Frame ${s * n + j + 1}, ${part === 'home' ? 'home' : 'away'} player`);
+					for (let v = 1; v <= n; v++) pick.append(new Option(prefix + v, v, false, v === value));
+					return pick;
+				};
+				td.append(menu('home', 'H', f.h), vs(), menu('away', 'A', f.a));
 			});
 		});
 
@@ -638,23 +675,23 @@ const TDCMatchDef = (() => {
 		scroll.append(table);
 
 		// The same night read as head-to-heads, H1 : A1 …: a second table with
-		// the grid's spacing, one column per session, one row per home
-		// position. Display only — the badges are not buttons.
+		// the grid's spacing, one column per session, one row per frame in the
+		// order played. Display only — the badges are not buttons.
 		const pairs = document.createElement('table');
 		pairs.className = 'tdc-table rotation-grid rotation-pairs';
 		const pairsHead = pairs.createTHead().insertRow();
-		grid.forEach((away, s) => {
+		frames.forEach((row, s) => {
 			pairsHead.append(Object.assign(document.createElement('th'), { textContent: 'Session ' + (s + 1) }));
 		});
 		const pairsBody = pairs.createTBody();
-		for (let h = 0; h < n; h++) {
+		for (let j = 0; j < n; j++) {
 			const tr = pairsBody.insertRow();
-			grid.forEach((away, s) => {
+			frames.forEach((row, s) => {
 				tr.insertCell().append(
-					frameNo(s, h),
-					Object.assign(document.createElement('span'), { className: 'badge', textContent: 'H' + (h + 1) }),
-					Object.assign(document.createElement('span'), { className: 'rotation-vs', textContent: ':' }),
-					Object.assign(document.createElement('span'), { className: 'badge', textContent: 'A' + away[h] })
+					frameNo(s, j),
+					Object.assign(document.createElement('span'), { className: 'badge', textContent: 'H' + row[j].h }),
+					vs(),
+					Object.assign(document.createElement('span'), { className: 'badge', textContent: 'A' + row[j].a })
 				);
 			});
 		}
@@ -669,7 +706,7 @@ const TDCMatchDef = (() => {
 		const hint = document.createElement('div');
 		hint.className = 'hint';
 		hint.textContent = own
-			? 'H1 is the home captain\'s first player, A1 the away captain\'s. Choosing a player already in that session swaps the two.'
+			? 'H1 is the home captain\'s first player, A1 the away captain\'s. Each frame names who plays it, in the order the frames are played. Choosing a player already in that session swaps the two.'
 			: 'H1 is the home captain\'s first player, A1 the away captain\'s. Each session the away side moves up one, so everybody meets everybody once. Choose "My own table" to change it.';
 
 		row.append(label, mode, views, hint);

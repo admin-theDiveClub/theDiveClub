@@ -169,6 +169,8 @@
 	text-align: center;
 }
 .rotation-pairs .rotation-vs { margin: 0 0.1rem; color: var(--text-muted); }
+/* My own table names both players of each frame (16 Nov): H2 : A3. */
+.rotation-grid:not(.rotation-pairs) .rotation-vs { margin: 0 0.25rem; color: var(--text-muted); }
 .rotation-grid { width: auto; margin-top: var(--space-3); }
 .rotation-grid th,
 .rotation-grid td { padding: var(--space-2) var(--space-2) var(--space-2) 0; text-align: center; white-space: nowrap; }
