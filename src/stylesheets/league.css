@@ -1107,7 +1107,7 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 .ms-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-3); min-width: 0; }
 .ms-row[hidden] { display: none; }
 .ms-row .team-pic { width: 2.75rem; height: 2.75rem; }
-.ms-team { min-width: 0; font-family: var(--font-display); font-size: 1.5rem; line-height: 1.32; color: var(--color-team); overflow-wrap: anywhere; }
+.ms-team { min-width: 0; font-family: var(--font-display); font-size: 1.5rem; line-height: 1.32; color: var(--color-team); }   /* one line, running when too long: TDC.runName (UV, 16 Nov) */
 .tdc-card .ls-where:empty { display: none; }
 .tdc-card .ls-where {
 	margin: 0;
@@ -1444,8 +1444,8 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .cj-name {
 	font-family: var(--font-display);
 	font-size: 1.35rem;
-	line-height: 1.32;   /* a team name on two lines never touches, the underline included: the headings' line (UV, 16 Nov) */
-	overflow-wrap: anywhere;
+	line-height: 1.32;   /* the headings' line (UV, 16 Nov) */
+	/* One line, running sideways when too long, never broken inside a word (UV, 16 Nov): TDC.runName, .tdc-run in design.css */
 }
 .cj-mid { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); }
 .cj-mid .jumbo-status { white-space: nowrap; }
@@ -1525,7 +1525,7 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .cs-team {
 	font-weight: 600;
 	color: var(--text-primary);
-	overflow-wrap: anywhere;
+	/* One line, running sideways when too long (UV, 16 Nov): TDC.runName */
 }
 .cs-head .cs-home { grid-column: 1; text-align: right; }
 .cs-head .cs-away { grid-column: 3; text-align: left; }
@@ -1887,6 +1887,7 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	line-height: 1.32;
 	color: var(--text-primary);
 }
+.tdc-card .sf-league .sf-sep { font-family: var(--font-body); }   /* the display face has no middle dot */
 .tdc-card .sf-date { margin: var(--space-1) 0 0; color: var(--text-muted); }
 /* Each side's line under its team in the banner's head. The two share two
  * rows (line, captain), so the lines stay level whatever wraps. */

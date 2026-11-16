@@ -203,7 +203,7 @@
 			// The team's own picture, or the shield (TDC.teamPic, 29 Oct).
 			const team = byId.get(side === 'home' ? data.home_team_id : data.away_team_id) || {};
 			pic.replaceChildren(TDC.teamPic(team.picture_path));
-			name.textContent = teamName(side);
+			TDC.runName(name, teamName(side));   // one line, running when too long (UV, 16 Nov)
 		}
 
 		// The league's pages, once the match has said which season it is in.
@@ -602,8 +602,8 @@
 		const home = team('home'), away = team('away');
 
 		const head = node('div', 'lu-cmp-row lu-cmp-head');
-		head.append(node('span', 'lu-cmp-v lu-cmp-home lu-cmp-team', match.home_name), node('span', 'lu-cmp-k'),
-			node('span', 'lu-cmp-v lu-cmp-away lu-cmp-team', match.away_name));
+		head.append(TDC.runName(node('span', 'lu-cmp-v lu-cmp-home lu-cmp-team'), match.home_name), node('span', 'lu-cmp-k'),
+			TDC.runName(node('span', 'lu-cmp-v lu-cmp-away lu-cmp-team'), match.away_name));
 		const rows = [head];
 
 		const row = (label, h, a, shown, better) => {
@@ -987,7 +987,7 @@
 
 		const grid = node('div', 'cs-grid');
 		const head = node('div', 'cs-row cs-head');
-		head.append(node('span', 'cs-team cs-home', match.home_name), node('span', 'cs-team cs-away', match.away_name));
+		head.append(TDC.runName(node('span', 'cs-team cs-home'), match.home_name), TDC.runName(node('span', 'cs-team cs-away'), match.away_name));
 		grid.append(head);
 
 		for (const f of frames) grid.append(frameRow(f, strict, nextOpen));
@@ -1246,7 +1246,7 @@
 		const grid = node('div', 'cs-grid');
 		const mySide = sideOf(frames[0]);
 		const head = node('div', 'cs-row cs-head');
-		head.append(node('span', 'cs-team cs-home', teamName(mySide)), node('span', 'cs-team cs-away', teamName(otherOf(mySide))));
+		head.append(TDC.runName(node('span', 'cs-team cs-home'), teamName(mySide)), TDC.runName(node('span', 'cs-team cs-away'), teamName(otherOf(mySide))));
 		grid.append(head);
 		for (const f of frames) {
 			const me = sideOf(f), them = otherOf(me);
@@ -1658,9 +1658,10 @@
 	function renderSignatures(both) {
 		if (els.signPanel.hidden) return;   // renderSummary decides
 
-		els.sfLeague.textContent = info
-			? [info.league_name, info.name, TDC.venueNames(venues)].filter(Boolean).join(' · ')
-			: '';
+		// The display face has no middle dot (global.css): each one is drawn in
+		// the body face (.sf-sep), or a stray mark shows in its place (16 Nov).
+		const leagueParts = info ? [info.league_name, info.name, TDC.venueNames(venues)].filter(Boolean) : [];
+		els.sfLeague.replaceChildren(...leagueParts.flatMap((p, i) => i ? [node('span', 'sf-sep', ' · '), p] : [p]));
 		els.sfDate.textContent = match.scheduled_at
 			? new Date(match.scheduled_at).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 			: 'No date set';

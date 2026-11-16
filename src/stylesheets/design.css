@@ -935,3 +935,45 @@ html :is(.team-name, .fx-name, .team-box-name, .team-sep-name, .pp-team-name, .s
 	overflow: auto hidden;
 	scrollbar-width: none;
 }
+
+/* ── A team name on one line, running sideways when too long (UV, 16 Nov) ──
+ * TDC.runName (tdc.js): never broken inside a word; one too long for its room
+ * runs sideways and back, fading at both edges, as on the Season tab's cards and
+ * the players' fixtures. Short enough, it keeps its place's own alignment. With
+ * less motion it stands still, cut at "…". The underline (your own team) is
+ * carried into the running words, which an inline-block would otherwise drop. */
+.tdc-run {
+	display: block;
+	min-width: 0;
+	max-width: 100%;
+	overflow: hidden;
+	white-space: nowrap;
+	overflow-wrap: normal;
+	text-overflow: clip;
+	/* Room inside the clip for the underline below and Safari's higher letters
+	   above, taken back outside so nothing moves */
+	padding-block: 0.15em 0.35em;
+	margin-block: -0.15em -0.35em;
+}
+.tdc-run > .lj-run {
+	display: inline-block;
+	text-decoration: inherit;
+	text-decoration-thickness: inherit;
+	text-underline-offset: inherit;
+}
+.tdc-run.is-long {
+	text-align: left;
+	-webkit-mask-image: linear-gradient(to right, transparent, #000 0.75rem, #000 calc(100% - 0.75rem), transparent);
+	mask-image: linear-gradient(to right, transparent, #000 0.75rem, #000 calc(100% - 0.75rem), transparent);
+}
+.tdc-run.is-long > .lj-run { animation: tdc-run var(--run-time) ease-in-out infinite alternate; }
+@keyframes tdc-run {
+	0%, 15% { transform: translateX(0); }
+	85%, 100% { transform: translateX(var(--run)); }
+}
+[data-motion="reduce"] .tdc-run > .lj-run { display: inline; animation: none; }
+[data-motion="reduce"] .tdc-run.is-long { text-overflow: ellipsis; -webkit-mask-image: none; mask-image: none; }
+@media (prefers-reduced-motion: reduce) {
+	:root:not([data-motion="full"]) .tdc-run > .lj-run { display: inline; animation: none; }
+	:root:not([data-motion="full"]) .tdc-run.is-long { text-overflow: ellipsis; -webkit-mask-image: none; mask-image: none; }
+}

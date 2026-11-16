@@ -53,6 +53,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
 	const req = event.request;
 
+	// The database's calls and anything else from another site, and anything
+	// but a read, are left to the browser (16 Nov): nothing here can be cached,
+	// and passing them through only wrapped a dropped connection in
+	// "FetchEvent.respondWith received an error".
+	if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
+
 	if (req.mode === 'navigate') {
 		// Page loads: always try the network first, so visitors get the
 		// current version. Fall back to cache only when offline.

@@ -1590,6 +1590,17 @@ td.edit:hover { background: color-mix(in srgb, var(--color-primary) 15%, transpa
 }
 #stage-status a,
 #stage-status button { pointer-events: auto; }
+/* The foot lies over the bottom player's name (upright), so a line with words
+   sits on its own solid pill, never mixed into the name's letters (16 Nov). */
+.stage-foot > .stage-note:not(:empty),
+.stage-foot > #stage-status:not(:empty) {
+	justify-self: center;
+	max-width: 100%;
+	padding: var(--space-1) var(--space-3);
+	border-radius: 999px;
+	background: var(--bg-base);
+	box-shadow: var(--shadow-panel);
+}
 
 /* Where the data came from, and what the page can't do with it yet: first
    below the stage. And in the settings panel, what a change did to frames

@@ -18,6 +18,9 @@
 // Chrome tells pages both; Safari tells them neither, so an iPhone is never
 // caught by it. A choice on the toggle always wins.
 //
+// Also the guard against iOS's keyboard bug in the installed app (below,
+// "The keyboard's height left cut off").
+//
 // Loaded in <head>, after the stylesheets and before page-light.js.
 // Needs: nothing.
 var TDCPrefs = (function () {
@@ -83,6 +86,55 @@ var TDCPrefs = (function () {
 		});
 	}
 	checkSaving();
+
+	// The keyboard's height left cut off (16 Nov; an iOS bug, WebKit 297779 and
+	// 301857). In an app added to an iPhone's home screen, once the keyboard has
+	// closed iOS can go on sizing the page as if it were still open, until the
+	// app is quit: everything sized to the screen (the loading screen's blur,
+	// the page's background, the footer's place) stops where the keyboard's top
+	// was, a line across the screen below it. Seen on UV's iPhone: 536 of 874
+	// points. Hiding and showing the page in one go makes iOS measure it again
+	// (the known way round it; scrolling and visualViewport do not). The app
+	// fills the screen there (black-translucent), so the right height is the
+	// screen's own; checked when a page opens or is shown again, the screen
+	// turns, and a field gives up the keyboard. Never while a field still has
+	// it, never in a browser tab, at most once per check.
+	if (navigator.standalone === true) {
+		var editing = function () {
+			var a = document.activeElement;
+			return !!a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName));
+		};
+		var screenHeight = function () {
+			var upright = !window.matchMedia || window.matchMedia('(orientation: portrait)').matches;
+			return upright ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+		};
+		var healTimer = 0;
+		var heal = function () {
+			var body = document.body;
+			// The light theme's bar ('default') puts the page below it, shorter on purpose
+			if (!body || editing() || !iosBar || iosBar.getAttribute('content') !== 'black-translucent') return;
+			var short = screenHeight() - window.innerHeight;
+			if (short <= 4) return;
+			var x = window.scrollX, y = window.scrollY;
+			body.style.display = 'none';
+			void body.offsetHeight;   // the page laid out without it, then with it
+			body.style.display = '';
+			void body.offsetHeight;
+			window.scrollTo(x, y);
+			var left = screenHeight() - window.innerHeight;
+			if (left > 4) console.warn('[Viewport] The page is ' + left + 'px shorter than the screen (the iOS keyboard bug), and measuring it again did not help.');
+			else console.info('[Viewport] The page was ' + short + 'px shorter than the screen (the iOS keyboard bug); measured again.');
+		};
+		var healSoon = function (ms) {
+			clearTimeout(healTimer);
+			healTimer = setTimeout(heal, ms);
+		};
+		document.addEventListener('focusout', function () { healSoon(150); });   // after the keyboard has gone
+		window.addEventListener('pageshow', function () { healSoon(0); });
+		window.addEventListener('orientationchange', function () { healSoon(400); });
+		if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { healSoon(0); });
+		else healSoon(0);
+	}
 
 	return {
 		get light() { return root.getAttribute('data-theme') === 'light'; },
