@@ -1486,6 +1486,9 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	font-variant-numeric: tabular-nums;
 }
 .cj-num { color: var(--card-score, var(--text-primary)); text-shadow: var(--card-score-glow, none); }
+/* A score between badges (the banner's, once complete; UV, 16 Nov): its figures
+ * fill their line, so it takes more room than the middle's gap above and below. */
+.cj-mid > .cj-score:not(:only-child) { margin-block: var(--space-2); }
 :is(.card-state-agreed, .card-state-approved)[data-lead="home"] .cj-num-away,
 :is(.card-state-agreed, .card-state-approved)[data-lead="away"] .cj-num-home { color: var(--text-muted); text-shadow: none; }
 .cj-dash { color: var(--text-muted); font-size: 2rem; }
