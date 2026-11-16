@@ -53,6 +53,12 @@
 		// on the corner point, a middle's just behind the cushion's nose line, so it comes
 		// only MID_LIP into the bed.
 		var CM = 1.8, MM = 1.9, MID_LIP = 0.15;
+		// The knuckle (UV, 16 Nov: "add in a bevel to the existing line", "only the middle
+		// pockets"): where a cushion turns into a middle pocket's jaw, the corner is cut off
+		// by a straight bevel reaching BEVEL back along the cushion and along the jaw, half a
+		// ball (UV: "bold"). The corner pockets are as they were. Balls come off a bevel as
+		// off any cushion. The mouth is still measured between the noses.
+		var BEVEL = 0.5;
 		// How far the table reaches, holes included: there is no rail drawn (UV, 13 Nov)
 		var EX = HX + MM - MID_LIP, EZ = HZ + CM / 2;
 		var PIT_Y = -R - 0.75;          // a potted ball's centre, at rest in the pocket
@@ -91,15 +97,28 @@
 		function middle(sx) {
 			var r = MM / 2;
 			return mkPocket(false, sx * (HX + r - MID_LIP), 0, r, -sx, 0,
-				[sx * HX, -MM / 2], [sx * HX, MM / 2]);
+				[sx * HX, -MM / 2], [sx * HX, MM / 2], [0, -1], [0, 1]);
 		}
-		function mkPocket(isCorner, x, z, r, ix, iz, j1, j2) {
+		// a1, a2: a middle pocket's jaws' way along their cushion, away from the mouth
+		function mkPocket(isCorner, x, z, r, ix, iz, j1, j2, a1, a2) {
 			var pk = { corner: isCorner, x: x, z: z, r: r, ix: ix, iz: iz };
 			pk.mx = (j1[0] + j2[0]) / 2; pk.mz = (j1[1] + j2[1]) / 2;
-			// A jaw runs straight back from the nose, along the pocket, to the hole
-			pk.jaws = [j1, j2].map(function (J) {
+			// A jaw runs straight back from the nose, along the pocket, to the hole; at a
+			// middle pocket the bevel cuts the nose off from P on the cushion to Q on the jaw
+			pk.jaws = [j1, j2].map(function (J, n) {
 				var t = (x - J[0]) * -ix + (z - J[1]) * -iz;
-				return { J: J, T: [J[0] - ix * t, J[1] - iz * t] };
+				var j = { J: J, T: [J[0] - ix * t, J[1] - iz * t] };
+				if (!isCorner) {
+					var a = n ? a2 : a1;
+					j.P = [J[0] + a[0] * BEVEL, J[1] + a[1] * BEVEL]; j.Q = [J[0] - ix * BEVEL, J[1] - iz * BEVEL];
+				}
+				return j;
+			});
+			// What a ball comes off: each jaw (from Q to the hole, past a bevel), and each bevel
+			pk.segs = [];
+			pk.jaws.forEach(function (j) {
+				if (isCorner) pk.segs.push({ J: j.J, T: j.T });
+				else pk.segs.push({ J: j.Q, T: j.T }, { J: j.P, T: j.Q });
 			});
 			pk.ax = pk.mx - ix * 0.3; pk.az = pk.mz - iz * 0.3;   // just inside the mouth
 			pk.take = isCorner ? 40 : 35;                         // the widest angle it takes, from straight in
@@ -108,10 +127,10 @@
 		// Clockwise from the top left
 		var pockets = [corner(-1, -1), corner(1, -1), middle(1), corner(1, 1), corner(-1, 1), middle(-1)];
 		var JAWS = [];
-		pockets.forEach(function (pk) { pk.jaws.forEach(function (j) { JAWS.push(j); }); });
-		// Where along a rail the cushion is cut away for a mouth
+		pockets.forEach(function (pk) { pk.segs.forEach(function (j) { JAWS.push(j); }); });
+		// Where along a rail the cushion is cut away for a mouth (a middle one with its bevels)
 		var CA = CM / Math.SQRT2;
-		function mouthOnLong(z) { return z < -HZ + CA || z > HZ - CA || Math.abs(z) < MM / 2; }
+		function mouthOnLong(z) { return z < -HZ + CA || z > HZ - CA || Math.abs(z) < MM / 2 + BEVEL; }
 		function mouthOnShort(x) { return x < -HX + CA || x > HX - CA; }
 
 		// The bed's edge, clockwise: the cushions' noses and, at each pocket, in along one
@@ -125,7 +144,7 @@
 				while (da <= -Math.PI) da += 2 * Math.PI;
 				while (da > Math.PI) da -= 2 * Math.PI;
 				var inJ = da > 0 ? a : b, outJ = da > 0 ? b : a;   // met first going clockwise
-				pts.push(inJ.J, inJ.T);
+				if (pk.corner) pts.push(inJ.J, inJ.T); else pts.push(inJ.P, inJ.Q, inJ.T);
 				// Round the back of the hole: whichever way passes away from the table
 				var a0 = ang(inJ.T, pk), a1 = ang(outJ.T, pk), back = Math.atan2(-pk.iz, -pk.ix);
 				var up = a1; while (up <= a0) up += 2 * Math.PI;
@@ -135,7 +154,7 @@
 					var t = a0 + (end - a0) * i / 16;
 					pts.push([pk.x + pk.r * Math.cos(t), pk.z + pk.r * Math.sin(t)]);
 				}
-				pts.push(outJ.T, outJ.J);
+				if (pk.corner) pts.push(outJ.T, outJ.J); else pts.push(outJ.T, outJ.Q, outJ.P);
 			});
 			return pts;
 		})();
@@ -169,8 +188,9 @@
 			var v = parseFloat(getComputedStyle(root).getPropertyValue(name));
 			return isFinite(v) ? v : fallback;
 		}
-		var C = {};
+		var C = {}, tokVer = 0;   // tokVer: counts the reads, so a ball painted in old colours is painted again
 		function readTokens() {
+			tokVer++;
 			C.bg = rgba('var(--bg-base)');
 			C.teal = rgba('var(--color-primary)');
 			C.cream = rgba('var(--text-primary)');
@@ -208,6 +228,7 @@
 			sc = Math.min(cw / (2 * halfW), ch / (2 * halfH));
 			cx = cw / 2; cy = ch / 2;
 			layerKey = '';
+			forceDraw = true;   // the canvas was cleared
 		}
 		// The table to the screen (device px). Upright: x right, z down. On its side:
 		// z right, x up.
@@ -383,8 +404,9 @@
 
 		/* ---------- the balls ---------- */
 		function mkBall(kind, name) {
-			var body = document.createElement('canvas'), feat = document.createElement('canvas');
+			var body = document.createElement('canvas'), feat = document.createElement('canvas'), glow = document.createElement('canvas');
 			return { kind: kind, name: name, body: body, feat: feat, bctx: body.getContext('2d'), fctx: feat.getContext('2d'), size: 0,
+				glow: glow, gctx: glow.getContext('2d'), gm: 0,
 				x: 0, y: 0, z: 0, vx: 0, vz: 0, vy: 0, sx: 0, sz: 0, wy: 0, hit: false, state: 'play', pk: null, t: 0,
 				q: randomQuat(), trail: [] };
 		}
@@ -863,61 +885,109 @@
 		// The ball pixel by pixel, into two small canvases: its body, see-through (UV,
 		// 13 Nov: where a ball was the background colour it is transparent) but for a
 		// glow from its edge inward, as a chosen toggle's; and its features (spots or
-		// stripe), which are drawn with a glow of their own
+		// stripe), which are drawn with a glow of their own. Painted again only when the
+		// ball has turned or changed size or colour (16 Nov: a ball at rest was painted
+		// pixel by pixel every frame)
 		function paintBall(b, rp) {
 			var size = Math.ceil(rp * 2) + 4;
-			if (b.size !== size) {
-				b.body.width = b.body.height = b.feat.width = b.feat.height = size;
-				b.size = size;
-				b.bodyData = b.bctx.createImageData(size, size);
-				b.featData = b.fctx.createImageData(size, size);
+			var same = b.size === size && b.prp === rp && b.pv === tokVer && b.pg === S.glow && b.pd === dpr;
+			if (same && b.pq === b.q && b.pl === land) return;
+			var fd, half = size / 2, px, n = size * size;
+			if (!same) {
+				if (b.size !== size) {
+					b.body.width = b.body.height = b.feat.width = b.feat.height = size;
+					b.size = size;
+					b.bodyData = b.bctx.createImageData(size, size);
+					b.featData = b.fctx.createImageData(size, size);
+					b.gU = new Float64Array(n); b.gV = new Float64Array(n); b.gNz = new Float64Array(n);
+					b.gCov = new Float64Array(n); b.gEw = new Float64Array(n);
+				}
+				// Where each pixel lies on the sphere, and the body, which looks the same
+				// however the ball has turned: worked out once per size and colour, not
+				// every frame (16 Nov)
+				var bd = b.bodyData.data, rimK = 0.6 * S.glow * C.glow[3], gl = C.glow;
+				for (var j0 = 0; j0 < size; j0++) {
+					var v0 = (j0 + 0.5 - half) / rp;
+					for (var i0 = 0; i0 < size; i0++) {
+						var u0 = (i0 + 0.5 - half) / rp, o0 = (j0 * size + i0) * 4;
+						px = j0 * size + i0;
+						var d2 = u0 * u0 + v0 * v0, cov0 = clamp01((1 - Math.sqrt(d2)) * rp + 0.5);
+						b.gCov[px] = cov0;
+						if (cov0 <= 0) { bd[o0 + 3] = 0; continue; }
+						var nzA = Math.sqrt(Math.max(0, 1 - d2));   // towards the camera
+						b.gU[px] = u0; b.gV[px] = v0; b.gNz[px] = nzA;
+						b.gEw[px] = 1 / (rp * Math.max(nzA, 0.2));     // a pixel, as an angle on the ball
+						var rim = rimK * Math.pow(1 - nzA, 2);
+						bd[o0] = gl[0]; bd[o0 + 1] = gl[1]; bd[o0 + 2] = gl[2];
+						bd[o0 + 3] = 255 * cov0 * rim;
+					}
+				}
+				b.bctx.putImageData(b.bodyData, 0, 0);
 			}
-			var bd = b.bodyData.data, fd = b.featData.data, half = size / 2;
+			fd = b.featData.data;
 			// The world to the ball's own frame: the rotation of its conjugate
 			var x = -b.q[0], y = -b.q[1], z = -b.q[2], w = b.q[3];
 			var m00 = 1 - 2 * (y * y + z * z), m01 = 2 * (x * y - z * w), m02 = 2 * (x * z + y * w);
 			var m10 = 2 * (x * y + z * w), m11 = 1 - 2 * (x * x + z * z), m12 = 2 * (y * z - x * w);
 			var m20 = 2 * (x * z - y * w), m21 = 2 * (y * z + x * w), m22 = 1 - 2 * (x * x + y * y);
 			var fc = b.kind === 'spots' ? C.yellow : C.teal;
-			var rimK = 0.6 * S.glow * C.glow[3];
-			var gl = C.glow;
 			for (var j = 0; j < size; j++) {
-				var v = (j + 0.5 - half) / rp;
 				for (var i = 0; i < size; i++) {
-					var u = (i + 0.5 - half) / rp, o = (j * size + i) * 4;
-					var d2 = u * u + v * v, cov = clamp01((1 - Math.sqrt(d2)) * rp + 0.5);
-					if (cov <= 0) { bd[o + 3] = 0; fd[o + 3] = 0; continue; }
-					var nz0 = Math.sqrt(Math.max(0, 1 - d2));   // towards the camera
+					var o = (j * size + i) * 4;
+					px = j * size + i;
+					var cov = b.gCov[px];
+					if (cov <= 0) { fd[o + 3] = 0; continue; }
+					var u = b.gU[px], v = b.gV[px], nz0 = b.gNz[px], ew = b.gEw[px];
 					// The surface's normal on the table: up is +y
 					var nx, ny = nz0, nz;
 					if (land) { nx = -v; nz = u; } else { nx = u; nz = v; }
 					var bx = m00 * nx + m01 * ny + m02 * nz;
 					var by = m10 * nx + m11 * ny + m12 * nz;
 					var bz = m20 * nx + m21 * ny + m22 * nz;
-					var ew = 1 / (rp * Math.max(nz0, 0.2));     // a pixel, as an angle on the ball
 					var f;
 					if (b.kind === 'spots') {
+						// The nearest of the six spots: only one axis can be 0.85 or more
+						// (16 Nov: was a new list of all six for every pixel)
 						f = 0;
-						var comps = [bx, -bx, by, -by, bz, -bz];
-						for (var c = 0; c < 6; c++) {
-							if (comps[c] < 0.85) continue;
-							var ang = Math.acos(Math.min(1, comps[c]));
-							f = Math.max(f, clamp01((SPOT_R - ang) / ew + 0.5));
-						}
+						var axis = Math.max(Math.abs(bx), Math.abs(by), Math.abs(bz));
+						if (axis >= 0.85) f = clamp01((SPOT_R - Math.acos(Math.min(1, axis))) / ew + 0.5);
 					} else {
 						var lat = Math.asin(Math.max(-1, Math.min(1, by)));
 						f = clamp01((BAND - Math.abs(lat)) / ew + 0.5);
 						if (b.kind === 'solid') f = 1 - f;
 					}
-					var rim = rimK * Math.pow(1 - nz0, 2);
-					bd[o] = gl[0]; bd[o + 1] = gl[1]; bd[o + 2] = gl[2];
-					bd[o + 3] = 255 * cov * rim;
 					fd[o] = fc[0]; fd[o + 1] = fc[1]; fd[o + 2] = fc[2];
 					fd[o + 3] = 255 * cov * f;
 				}
 			}
-			b.bctx.putImageData(b.bodyData, 0, 0);
 			b.fctx.putImageData(b.featData, 0, 0);
+			b.pq = b.q; b.prp = rp; b.pv = tokVer; b.pg = S.glow; b.pd = dpr; b.pl = land;
+			// The features with their glow, in a picture of their own, made once per
+			// painting rather than blurred onto the table every frame (16 Nov). A
+			// blur reaches 1.5 times its size, so the picture has that much room round it.
+			var gb = 8 * S.glow * dpr, m = Math.ceil(gb * 1.5) + 2, gs = size + 2 * m, g = b.gctx;
+			if (b.glow.width !== gs) b.glow.width = b.glow.height = gs; else g.clearRect(0, 0, gs, gs);
+			b.gm = m;
+			if (S.glow > 0) setShadow(g, css(b === cue ? C.yellowGlow : C.glow, S.glow), 0, 0, 8 * S.glow);
+			g.drawImage(b.feat, m, m);
+			noShadow(g);
+		}
+
+		// A ball's shadow on the cloth as a picture, blurred once for its size and the
+		// page's blur and drawn at the shadow's strength (16 Nov: it was blurred afresh
+		// for every ball on every frame). Black at full strength; drawImage's
+		// globalAlpha gives the strength, as the shadow colour's alpha did.
+		var shC = document.createElement('canvas'), shR = -1, shB = -1;
+		function shadowSprite() {
+			var r = R * sc, bl = (C.blur * S.blur / 2) * dpr;
+			if (r === shR && bl === shB) return shC;
+			shR = r; shB = bl;
+			var m = Math.ceil(bl * 1.5) + 2, s = 2 * (Math.ceil(r) + m), g;
+			shC.width = shC.height = s;
+			g = shC.getContext('2d');
+			g.shadowColor = '#000'; g.shadowBlur = bl; g.shadowOffsetX = 4 * s; g.shadowOffsetY = 0;
+			g.beginPath(); g.arc(s / 2 - 4 * s, s / 2, r, 0, Math.PI * 2); g.fillStyle = '#000'; g.fill();
+			return shC;
 		}
 
 		// A shadow alone, the shape itself drawn off the canvas
@@ -946,7 +1016,12 @@
 				var h = b.y, off = 0.6 + h * 0.12;
 				ctx.save();
 				ctx.beginPath(); everything(ctx); circlePath(p[0], p[1], rp)(ctx); ctx.clip('evenodd');
-				shadowOnly(ctx, p0[0], p0[1], R * sc, dark(alpha / (1 + h * 0.08)), L.x * off, L.y * off, (B / 2) * (1 + h * 0.1));
+				if (h === 0) {
+					// On the cloth: the ready-made shadow (shadowSprite)
+					var spr = shadowSprite();
+					ctx.globalAlpha = clamp01(C.darkA * S.shadow * alpha);
+					ctx.drawImage(spr, p0[0] + L.x * off * dpr - spr.width / 2, p0[1] + L.y * off * dpr - spr.height / 2);
+				} else shadowOnly(ctx, p0[0], p0[1], R * sc, dark(alpha / (1 + h * 0.08)), L.x * off, L.y * off, (B / 2) * (1 + h * 0.1));
 				ctx.restore();
 			}
 			ctx.save();
@@ -954,9 +1029,7 @@
 			// Through the hole: the table hides whatever is not over it
 			if (under && b.pk) { ctx.beginPath(); pocketPath(b.pk)(ctx); ctx.clip(); }
 			ctx.drawImage(b.body, p[0] - b.size / 2, p[1] - b.size / 2);
-			if (S.glow > 0) setShadow(ctx, css(b === cue ? C.yellowGlow : C.glow, S.glow), 0, 0, 8 * S.glow);
-			ctx.drawImage(b.feat, p[0] - b.size / 2, p[1] - b.size / 2);
-			noShadow(ctx);
+			ctx.drawImage(b.glow, p[0] - b.size / 2 - b.gm, p[1] - b.size / 2 - b.gm);
 			ctx.restore();
 		}
 
@@ -1008,6 +1081,26 @@
 		// copy used to plan a shot plays out the same
 		var STEP = 1 / 480, acc = 0;
 		var last = performance.now(), failed = false;
+		var LIGHT_MS = 200, layerLight = '', layerAt = -1e9, drawnFade = -1;
+		var DRAW_ORDER = ['drop', 'play', 'fall'];
+		// What the balls look like, as numbers: the canvas is drawn again only when one
+		// differs. forceDraw: the canvas was cleared by a new size (fit).
+		var sigNow = [], sigWas = [], forceDraw = true;
+		function ballsChanged() {
+			var s = sigNow, n = 0;
+			s[n++] = light.x; s[n++] = light.y; s[n++] = tokVer; s[n++] = S.glow; s[n++] = S.shadow; s[n++] = S.blur;
+			s[n++] = sc; s[n++] = cx; s[n++] = cy; s[n++] = dpr; s[n++] = land ? 1 : 0;
+			for (var i = 0; i < balls.length; i++) {
+				var b = balls[i];
+				s[n++] = ['play', 'drop', 'gone', 'fall'].indexOf(b.state); s[n++] = b.x; s[n++] = b.z; s[n++] = b.y;
+				s[n++] = b.q[0]; s[n++] = b.q[1]; s[n++] = b.q[2]; s[n++] = b.q[3];
+			}
+			s.length = n;
+			var changed = forceDraw || n !== sigWas.length;
+			for (var k = 0; !changed && k < n; k++) if (s[k] !== sigWas[k]) changed = true;
+			sigNow = sigWas; sigWas = s; forceDraw = false;
+			return changed;
+		}
 		function frame(now) {
 			if (failed) return;
 			try {
@@ -1051,15 +1144,29 @@
 				}
 
 				readLight();
-				var key = [light.x, light.y, cw, ch, S.linePx, S.shadow, S.blur, S.glow, logoImg ? logoFor : ''].join();
-				if (key !== layerKey) { layerKey = key; drawLayer(); }
-				ctx.clearRect(0, 0, cw, ch);
-				ctx.drawImage(layer, 0, 0);
-				drawTrails();
-				// Balls going into the void first, then those on the table, then any falling
-				['drop', 'play', 'fall'].forEach(function (st) {
-					balls.filter(function (b) { return b.state === st; }).forEach(drawBall);
-				});
+				// The table: at once for a new size or look; for the light alone at most
+				// every LIGHT_MS (16 Nov: its blurs were drawn again for every half pixel
+				// the drifting light moved)
+				var key = [cw, ch, S.linePx, S.shadow, S.blur, S.glow, logoImg ? logoFor : ''].join(), lk = light.x + ',' + light.y;
+				var newLayer = false;
+				if (key !== layerKey || (lk !== layerLight && now - layerAt >= LIGHT_MS)) {
+					layerKey = key; layerLight = lk; layerAt = now;
+					drawLayer();
+					newLayer = true;
+				}
+				// Drawn again only when something on it has changed (16 Nov: at rest, with
+				// the trails gone, the same picture was drawn afresh every frame)
+				var changed = ballsChanged() || newLayer || trailFade !== drawnFade;
+				if (changed) {
+					drawnFade = trailFade;
+					ctx.clearRect(0, 0, cw, ch);
+					ctx.drawImage(layer, 0, 0);
+					drawTrails();
+					// Balls going into the void first, then those on the table, then any falling
+					for (var si = 0; si < DRAW_ORDER.length; si++) {
+						for (var bi = 0; bi < balls.length; bi++) if (balls[bi].state === DRAW_ORDER[si]) drawBall(balls[bi]);
+					}
+				}
 				requestAnimationFrame(frame);
 			} catch (e) {
 				failed = true;
