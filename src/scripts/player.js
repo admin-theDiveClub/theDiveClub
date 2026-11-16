@@ -669,8 +669,8 @@
 		const note = (box && box.querySelector('[data-note]')) || els.status;
 		TDC.status(note, b.dataset.unbuilt + ' is not built yet.', '');
 	});
-	// The hero's buttons: each a ring icon (ring-status.js) that draws itself
-	// in once the page is shown, as the fixtures page's buttons do.
+	// The hero's buttons: each a ring icon (ring-status.js), shown already
+	// drawn: a page load draws nothing in (UV, 16 Nov).
 	function wakeIcons() {
 		for (const b of els.actions.querySelectorAll('.pp-icon:not([hidden])')) {
 			if (b.tdcRing) continue;
@@ -682,13 +682,11 @@
 				b.tdcRing = new TDCRing.RingStatus(face, {
 					icons: [icon],
 					labels: { [icon]: b.getAttribute('aria-label'), empty: b.getAttribute('aria-label') },
-					initial: 'empty'
+					initial: icon
 				});
 			} catch (err) {
 				TDC.error(AREA, 'an icon could not be drawn: ' + icon, err, els.status);
-				continue;
 			}
-			b.tdcRing.drawTo(icon);
 		}
 	}
 

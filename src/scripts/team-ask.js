@@ -16,7 +16,6 @@
 // Needs: tdc.js, ring-status.js.
 
 const TDCTeamAsk = (() => {
-	const drawn = new Set();
 
 	function ring(t, asked, area, statusEl) {
 		const id = t.team_id;
@@ -40,13 +39,11 @@ const TDCTeamAsk = (() => {
 		face.innerHTML = TDCRing.svg();
 		b.append(face);
 		try {
-			const first = !drawn.has(id + icon);
-			const r = new TDCRing.RingStatus(face, {
+			new TDCRing.RingStatus(face, {
 				icons: [icon],
 				labels: { [icon]: label, empty: label },
-				initial: first ? 'empty' : icon
+				initial: icon
 			});
-			if (first) { drawn.add(id + icon); r.drawTo(icon); }
 		} catch (err) {
 			TDC.error(area, 'the ring to ask to join ' + t.name + ' could not be drawn.', err, statusEl);
 		}

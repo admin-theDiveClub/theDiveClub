@@ -814,11 +814,10 @@ TDCLeagueNav.panel('fixtures', () => {
 	}
 
 	// ─── Icon buttons ───
-	// A round button with a ring icon: the icon draws itself in the first time
-	// the button appears, and a redraw of the page leaves one already showing
-	// as it is (only what is new moves). The ring is made once the button is
-	// on the page (wakeIcons).
-	const iconsSeen = new Set();
+	// A round button with a ring icon, shown already drawn: a page load or a
+	// redraw draws nothing in (UV, 16 Nov; it once drew in, a few hundred at a
+	// time on a long Schedule). The ring is made once the button is on the
+	// page (wakeIcons).
 	function iconButton(icon, label, tone, data, key) {
 		const b = node('button', 'fx-icon' + (tone ? ' fx-icon-' + tone : ''));
 		b.type = 'button';
@@ -835,20 +834,16 @@ TDCLeagueNav.panel('fixtures', () => {
 		for (const b of root.querySelectorAll('.fx-icon:not([data-awake])')) {
 			b.dataset.awake = 'yes';
 			const icon = b.dataset.icon;
-			const seen = iconsSeen.has(b.dataset.iconKey + ':' + icon);
-			iconsSeen.add(b.dataset.iconKey + ':' + icon);
 			const face = b.querySelector('.tdc-ring');
 			try {
 				b.tdcRing = new TDCRing.RingStatus(face, {
 					icons: [icon],
 					labels: { [icon]: b.getAttribute('aria-label'), empty: b.getAttribute('aria-label'), loading: 'Working' },
-					initial: seen ? icon : 'empty'
+					initial: icon
 				});
 			} catch (err) {
 				TDC.error(AREA, 'an icon could not be drawn: ' + icon, err);
-				continue;
 			}
-			if (!seen) b.tdcRing.drawTo(icon);
 		}
 	}
 

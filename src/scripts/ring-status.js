@@ -17,7 +17,9 @@
 //     stylesheet's own transition draws the strokes on and off
 //   .drawTo(state)  the same, the new icon drawn in stroke by stroke, in
 //     order, in --ring-draw: for an icon that changes with no call (the menu
-//     turning into a cross) or appears (a page opening, a field shown)
+//     turning into a cross) or a tap shows (a folding group opened). Never
+//     for a page load: a ring made then takes its icon as `initial` and shows
+//     it at once (UV, 16 Nov; the Schedule tab drew a few hundred at a time)
 //   .drawIn()  draw the icon showing in again, stroke by stroke
 //   .say(state)  the live text alone ('loading' while a call is out)
 //

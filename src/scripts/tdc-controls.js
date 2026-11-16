@@ -157,19 +157,16 @@ const TDCControls = (() => {
 	const motionMs = (el) => timeMs(el, '--control-motion');
 
 	// ─── Icons draw themselves ───
-	// Every icon in a control draws in stroke by stroke when it appears (the
-	// page opens, a chevron comes back from its limit, the date's cross once
-	// there is a date) and undraws when it goes, in the ring's draw time,
-	// straight away (UV, 24 Oct). Each stroke (an SVG part with pathLength
-	// 100) takes its own slice of the time, in order; undrawing runs them
-	// backwards. gone(true / false) is the control's own way of hiding it.
+	// Every icon in a control draws in stroke by stroke when it appears (a
+	// chevron comes back from its limit, the date's cross once there is a
+	// date) and undraws when it goes, in the ring's draw time, straight away
+	// (UV, 24 Oct). Each stroke (an SVG part with pathLength 100) takes its
+	// own slice of the time, in order; undrawing runs them backwards.
+	// gone(true / false) is the control's own way of hiding it.
 	//
-	// Only what the person's own input changes moves (UV, 24 Oct). A page
-	// that rebuilds its form after every change makes every control again,
-	// so an icon is remembered by its field (data-icon-key, from the field's
-	// id): a rebuilt one that was showing before shows at once, and draws in
-	// only if it was not.
-	const iconSeen = new Map();   // key -> shown
+	// Only what the person's own input changes moves (UV, 24 Oct). A control's
+	// first look, a page opening or a form rebuilt, shows its icons at once
+	// (UV, 16 Nov: rings and icons move for a tap, never for a page load).
 	function drawIcon(el, show, gone) {
 		if (el.tdcShown === show) return;
 		const first = el.tdcShown === undefined;
@@ -177,12 +174,7 @@ const TDCControls = (() => {
 		clearTimeout(el.tdcGoing);
 		const strokes = [...el.querySelectorAll('svg [pathLength]')];
 		for (const s of strokes) s.getAnimations().forEach((a) => a.cancel());
-		const key = el.dataset.iconKey;
-		const before = key ? iconSeen.get(key) : undefined;
-		// Only a control on the page says what its field's icons show; one the
-		// page has thrown away must not tell its replacement otherwise.
-		if (key && el.isConnected) iconSeen.set(key, show);
-		if (first && (!show || before === true)) {
+		if (first) {
 			gone(!show);
 			for (const s of strokes) s.style.strokeDashoffset = show ? '0' : '100';
 			return;
@@ -1206,8 +1198,6 @@ const TDCControls = (() => {
 			if (it.parent && !now.has(it.parent)) continue;   // goes with its section
 			const el = it.el;                                // thrown away by the page, still whole
 			if (el.isConnected) continue;
-			// Its icons are forgotten, so if it comes back they draw in again.
-			for (const i of el.querySelectorAll('[data-icon-key]')) iconSeen.delete(i.dataset.iconKey);
 			if (!ms) continue;
 			const above = it.prev && ((now.get(it.prev) || {}).el || fading.get(it.prev));
 			const below = it.next && (now.get(it.next) || {}).el;

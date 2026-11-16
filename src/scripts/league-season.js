@@ -585,7 +585,7 @@ TDCLeagueNav.panel('season', () => {
 		wakeIcon(els.interestBtn);
 	}
 
-	// An icon draws itself in the first time its button shows.
+	// An icon shows already drawn: a page load draws nothing in (UV, 16 Nov).
 	function wakeIcon(b) {
 		if (b.tdcRing) return;
 		const icon = b.dataset.icon;
@@ -596,9 +596,8 @@ TDCLeagueNav.panel('season', () => {
 			b.tdcRing = new TDCRing.RingStatus(face, {
 				icons: [icon],
 				labels: { [icon]: label, empty: label, loading: 'Working' },
-				initial: 'empty'
+				initial: icon
 			});
-			b.tdcRing.drawTo(icon);
 		} catch (err) {
 			TDC.error(AREA, 'an icon could not be drawn: ' + icon, err, els.status);
 		}

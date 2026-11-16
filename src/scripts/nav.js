@@ -82,7 +82,8 @@
 
 	// ─── Ring icons (UV, 24 Oct) ──────────────────────────────────────
 	// Every button on the bar is a ring icon (ring-status.js, UV's design):
-	// each draws itself in as the page opens, and the menu turns into a cross
+	// each shown already drawn (UV, 16 Nov: nothing draws in for a page load),
+	// and the menu turns into a cross
 	// and back, with no dots: nothing is waited for. A press that waits on
 	// something (the list reading, sign-in, a reload) is served by the site's
 	// one set of dots (scripts/dots.js, 26 Oct) until it is done; they trace
@@ -104,10 +105,9 @@
 			const ring = new TDCRing.RingStatus(face, {
 				icons,
 				labels: Object.assign({ empty: ' ', loading: 'Working' }, labels),
-				initial: 'empty'
+				initial: icons[0]   // shown at once: a page load draws nothing in (UV, 16 Nov)
 			});
 			rings[name] = ring;
-			drawTo(ring, icons[0]);
 			return ring;
 		} catch (err) {
 			TDC.error(AREA, 'the ' + name + ' icon could not be drawn.', err);

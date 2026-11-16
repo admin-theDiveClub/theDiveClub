@@ -49,7 +49,6 @@ const TDCStandingsEdit = (() => {
 		let vars = [];             // tdc_standing_variables
 		let tokens = [];           // the new column's equation so far
 		const rankSaves = new Map();
-		const iconsSeen = new Set();
 
 		const node = (tag, cls, text) => {
 			const n = document.createElement(tag);
@@ -80,20 +79,15 @@ const TDCStandingsEdit = (() => {
 			for (const b of root.querySelectorAll('.fx-icon:not([data-awake])')) {
 				b.dataset.awake = 'yes';
 				const icon = b.dataset.icon;
-				const key = b.dataset.col + ':' + b.dataset.act;
-				const seen = iconsSeen.has(key);
-				iconsSeen.add(key);
 				try {
 					b.tdcRing = new TDCRing.RingStatus(b.querySelector('.tdc-ring'), {
 						icons: [icon],
 						labels: { [icon]: b.getAttribute('aria-label'), empty: b.getAttribute('aria-label'), loading: 'Working' },
-						initial: seen ? icon : 'empty'
+						initial: icon
 					});
 				} catch (err) {
 					TDC.error(AREA, 'an icon could not be drawn: ' + icon, err, els.status);
-					continue;
 				}
-				if (!seen) b.tdcRing.drawTo(icon);
 			}
 		}
 

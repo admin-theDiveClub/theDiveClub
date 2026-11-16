@@ -2191,14 +2191,13 @@
 			return;
 		}
 
-		// The share icon draws itself in, as the Season tab's.
+		// The share icon, shown already drawn: a page load draws nothing in (UV, 16 Nov).
 		try {
 			const face = els.share.querySelector('.tdc-ring');
 			face.innerHTML = TDCRing.svg();
-			const ring = new TDCRing.RingStatus(face, {
-				icons: ['share'], labels: { share: 'Share', empty: 'Share', loading: 'Working' }, initial: 'empty'
+			new TDCRing.RingStatus(face, {
+				icons: ['share'], labels: { share: 'Share', empty: 'Share', loading: 'Working' }, initial: 'share'
 			});
-			ring.drawTo('share');
 		} catch (err) {
 			TDC.error(AREA, 'the share icon could not be drawn.', err, els.status);
 		}

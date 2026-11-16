@@ -191,9 +191,8 @@ TDCLeagueNav.panel('standings', () => {
 
 	// ─── Team Rankings ───
 	// The + / – is a ring icon button like the fixtures page's (.fx-icon):
-	// it draws itself in when it first appears, and swaps plus for minus.
+	// shown already drawn (UV, 16 Nov), it draws plus to minus when tapped.
 	// The site's dots come to it when pressed, as to every button.
-	const iconsSeen = new Set();
 	function toggleButton(team, open) {
 		const b = node('button', 'fx-icon sd-toggle');
 		b.type = 'button';
@@ -212,19 +211,15 @@ TDCLeagueNav.panel('standings', () => {
 		for (const b of root.querySelectorAll('.sd-toggle:not([data-awake])')) {
 			b.dataset.awake = 'yes';
 			const icon = b.getAttribute('aria-expanded') === 'true' ? 'minus' : 'plus';
-			const seen = iconsSeen.has(b.dataset.team);
-			iconsSeen.add(b.dataset.team);
 			try {
 				b.tdcRing = new TDCRing.RingStatus(b.querySelector('.tdc-ring'), {
 					icons: ['plus', 'minus'],
 					labels: { plus: 'Open', minus: 'Close', empty: b.getAttribute('aria-label'), loading: 'Working' },
-					initial: seen ? icon : 'empty'
+					initial: icon
 				});
 			} catch (err) {
 				TDC.error(AREA, 'an icon could not be drawn.', err, els.status);
-				continue;
 			}
-			if (!seen) b.tdcRing.drawTo(icon);
 		}
 	}
 
