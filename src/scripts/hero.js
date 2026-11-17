@@ -72,7 +72,7 @@
 		// hole) and a short side's (the corners')
 		var REACH_LONG = MM - MID_LIP, REACH_SHORT = CM / 2;
 		var PIT_Y = -R - 0.75;          // a potted ball's centre, at rest in the pocket
-		var GRAV = 26, STOPV = 0.22, PMIN = 5, PMAX = 48;
+		var GRAV = 26, STOPV = 0.22, PMIN = 5, PMAX = 120;   // PMAX 48 -> 120 (UV, 17 Nov: long tables and doubles fell short); a quarter of a ball a step at STEP
 		var SWERVE_FADE = 2;   // balls a second: slower than this, swerve fades with the speed
 		// Round the table, for its shadows; the stage may set it (data-margin, in balls:
 		// the home page's table runs nearly to the screen's edges)

@@ -145,7 +145,7 @@ var TDCBannerTable = (function () {
 			var FIT_GAP = 0;                // EDGE_PX in balls, set by fit
 			var POCKET_MAX = 32;            // CSS px: the widest a pocket may be (UV, 14 Nov)
 			var PIT_Y = -R - 0.75;          // a potted ball's centre, at rest in the pocket
-			var GRAV = 26, STOPV = 0.22, PMIN = 5, PMAX = 48;
+			var GRAV = 26, STOPV = 0.22, PMIN = 5, PMAX = 120;   // PMAX 48 -> 120 (UV, 17 Nov: long tables and doubles fell short); a quarter of a ball a step at STEP
 			var SWERVE_FADE = 2;   // balls a second: slower than this, swerve fades with the speed
 			var SPOT_R = 0.28;              // a spot's angular radius on the cue ball
 			var BAND = 0.40;                // half the stripe's angular width

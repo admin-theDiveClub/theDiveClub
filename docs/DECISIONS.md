@@ -2308,3 +2308,9 @@ These predate the log. They are recorded here because every one of them is a dec
 *Example:* a ball 3 off the side cushion and 4 off the end, a pocket 18 off the side and 2 off the end: the ball is sent about 3 along for each 1 across, and comes back off the second cushion on a parallel line into the pocket.
 *Claude's, for UV to judge:* only the two cushions meeting at a corner (where the parallel shift holds whatever the cushion loss); weighted 0.2 of a direct pot (`BANK2_WEIGHT`), below one cushion's 0.35, so they come up rarely (1 in 59 shots in a test).
 *So:* `scripts/banner-table.js` and `scripts/hero.js` (`doubles2On`); `docs/systems/file-map.md`; STATUS §1 4ci.
+
+## 2026-11-17 — The pool tables strike up to 120 balls a second
+
+*Decided by UV:* the cap on a shot's strength raised (from 48), as balls fell short of the pockets on large screens and on doubles; UV first asked for no cap, then a higher one.
+*Claude's, for UV to judge:* 120 balls a second, the most at which the physics step (1/480 s) moves a ball no more than a quarter of a ball; past that a ball would sink into another before the contact is seen and leave at a wrong angle.
+*So:* `PMAX` in `scripts/banner-table.js` and `scripts/hero.js`; STATUS §1 4ci.
