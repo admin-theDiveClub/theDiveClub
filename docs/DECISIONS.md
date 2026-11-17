@@ -2174,3 +2174,8 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* in Now and next the frame's number moves up beside the session ("Session 1 · F3"); in the sessions it is removed, so under a player only the position ("H1").
 *So:* `playerCell` no longer adds the F; `quickPill`'s top line carries it. **Then (UV):** the position centred under the player's name: the name and the position share a box (`.cs-namebox`), the picture beside it, so on a computer the picture sits level with the pair **Then (UV): a name on two lines is centred on every screen** (on a phone only since 12 Nov): the scorecard's players (sessions, Now and next, Your frames) and, by the same rule, the head to head's player column (Claude's reading of "all screens"). Your frames (the player's own rows) unchanged: "Session 1 · F1" there already.
 *Touches:* `src/scripts/league-card.js`; `docs/systems/leagues.md`
+
+## 2026-11-17 — The light moves as smoothly as before 16 Nov
+*Decided by UV:* **the light smooth enough not to be noticed, without going far; the cost can be afforded.** This revises "The light steps by the screen's own pixels…" (the same day), which stuttered, and the whole pixels of 16 Nov, which jumped.
+*So:* `page-light.js` writes to a tenth of a pixel on its 66 ms timer, as it did before 16 Nov, which nobody saw stutter. Kept from 16 Nov: a value is written only when it changes, and the light holds while a finger is down and for 0.4 s after a scroll. The 3 Nov timer (battery) stays; Claude tried every frame and dropped it as more than was asked.
+*Touches:* `src/scripts/page-light.js`

@@ -34,12 +34,11 @@
 //
 // Loaded in <head>, after the stylesheets, so the first paint already has the
 // light where it is. Its place is kept for the session (sessionStorage), so
-// moving between pages carries on the drift rather than jumping. Written on
-// every frame (UV, 17 Nov: smooth, the cost afforded), to a hundredth of a
-// pixel: a timer every STEP ms (3 Nov: battery), then whole pixels (16 Nov),
-// then the screen's own pixels, all showed as steps. Every write restyles
-// the page and repaints the shadows, so it still writes only on a change,
-// rests after REST and stops while the page is hidden. With
+// moving between pages carries on the drift rather than jumping. Written
+// every STEP ms, by a timer rather than on every frame (3 Nov: battery), so
+// nothing runs between writes: it moves a few pixels a second, and every
+// write restyles the page and repaints the shadows, so only a change is
+// written. With
 // reduced motion the light rests at the centre: the device's setting, unless
 // the profile menu's toggle or the phone saving power has put its own on
 // <html> (data-motion, prefs.js).
@@ -122,11 +121,11 @@
 		if (y !== shownY) root.style.setProperty('--page-shadow-y', shownY = y);
 	}
 
-	// A hundredth of a pixel (UV, 17 Nov): every raised card's shadow follows
-	// these. Whole CSS pixels (16 Nov) jumped, two or three of a phone's pixels
-	// at once; the screen's own pixels then stuttered, a soft shadow's edge
-	// showing each step. Finer than the screen, the blur moves smoothly.
-	function px(v) { return +v.toFixed(2) + 'px'; }
+	// A tenth of a pixel, as before 16 Nov (UV, 17 Nov: smooth enough not to
+	// be noticed, the cost afforded). Every raised card's shadow follows these:
+	// whole CSS pixels (16 Nov) jumped, two or three of a phone's pixels at
+	// once, and the screen's own pixels still showed as a stutter.
+	function px(v) { return v.toFixed(1) + 'px'; }
 
 	function putOrbit(p) {
 		// At rest (less motion): straight down.
@@ -184,7 +183,7 @@
 		var now = performance.now();
 		// Nobody has touched the page for REST: no timer until somebody does
 		if (now - touched >= REST) { resting = true; return; }
-		timer = requestAnimationFrame(tick);
+		timer = setTimeout(tick, STEP);
 		// Held, it carries on from where it was once let go
 		if (hold()) { last = now; return; }
 		// Time counts only while the page is shown, a step at most STEP*2, so
@@ -205,7 +204,7 @@
 	function go() {
 		if (!running || timer || resting || document.hidden) return;
 		last = performance.now();
-		timer = requestAnimationFrame(tick);
+		timer = setTimeout(tick, STEP);
 	}
 
 	function start() {
@@ -218,7 +217,7 @@
 
 	function still() {
 		running = false;
-		cancelAnimationFrame(timer);
+		clearTimeout(timer);
 		timer = null;
 		read();
 		put({ x: 0, y: 0 });
@@ -269,7 +268,7 @@
 	window.addEventListener('blur', function () { pressed.clear(); });
 	document.addEventListener('visibilitychange', function () { if (document.hidden) pressed.clear(); });
 	document.addEventListener('visibilitychange', function () {
-		if (document.hidden) { cancelAnimationFrame(timer); timer = null; return; }
+		if (document.hidden) { clearTimeout(timer); timer = null; return; }
 		wake();
 		go();
 	});
