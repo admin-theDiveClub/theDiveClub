@@ -496,7 +496,10 @@ input:is([type="date"], [type="time"], [type="datetime-local"]):where(:not(table
 	border-radius: var(--radius-pill);
 }
 .tdc-tri-knob::after { opacity: var(--lit); }
-.tdc-tri-knob .tdc-ring { padding: 15%; box-sizing: border-box; }
+/* The L and W icons fill the knob (UV, 17 Nov; 15% in from its edge before),
+   their lines thinned to match so they are no bolder than before (5 × 0.7). */
+.tdc-tri-knob .tdc-ring { padding: 0; box-sizing: border-box; }
+.tdc-tri-knob .tdc-ring svg { stroke-width: 3.5; }
 .tdc-tri[data-tone="warning"] { --nm-knob-glow: color-mix(in srgb, var(--color-warning) 40%, transparent); }
 
 /* ── No rings round icons (UV, 7 Nov) ──────────────────────────────── */

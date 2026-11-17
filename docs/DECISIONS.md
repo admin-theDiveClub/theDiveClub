@@ -2143,3 +2143,16 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* `tdc_league_season_rosters(season)` (`20261117041517`): `tdc_team_roster`'s select for the whole season plus `team_id`, the same order within a team, signed in only through the grant as before. The Season tab sends it with its first batch and splits the rows by team. `tdc_team_roster` stays for the card.
 *Example:* opening 8-Ball Mainstream's Season tab as a league director at phone speed, locally: 1.95 s → 1.3–1.5 s to the diver lifting; the page's text, folded rosters included, identical.
 *Touches:* `supabase/migrations/20261117041517_league_season_rosters.sql`, `supabase/tests/079_league_season_rosters.test.sql`, `src/scripts/league-season.js`; `docs/systems/foundations.md`, `docs/systems/leagues.md`
+
+## 2026-11-17 — Head to head at full size with the players' column frozen; bigger L and W icons
+*Decided by UV:* **the head-to-head tables' text back to its size before 16 Nov** (16 Nov's "text smaller so the whole table fits", above, is undone); **the players in the first column frozen** while the rest scrolls sideways; **those names in cream**; **bigger icons in the L and W switches**.
+*So:* `fitHeadToHead` (CSS `zoom` down to 55%) removed; `th.h2h-when` and `th.h2h-row` are `position: sticky; left: 0` on `--bg-base`, the names `--text-primary`. The three-way switch's icon (used only by L and W) fills its knob: padding 15% → 0, about 40% larger.
+*Claude's, for UV to judge:* the date in the corner frozen with the column; the icons' lines thinned (stroke 5 → 3.5) so the tick is no bolder than before, as the no-bold-icons rule asks; the cue ball's spots and outline keep their own widths, so they grow with it; no line or shadow marking the frozen column's edge.
+*Touches:* `src/scripts/league-card.js`, `src/stylesheets/league.css`, `src/stylesheets/design.css`; `docs/systems/leagues.md`, `docs/ui.md`
+
+## 2026-11-17 — The light steps by the screen's own pixels, not whole CSS pixels
+*Decided by UV:* **the light less severe, site-wide: no big jumps, the amount it moves kept as it is.** This revises "The light moves in whole pixels…" (16 Nov); the hold while a finger is down or the page scrolls stays.
+*Why:* every raised card's shadow follows the light, and with whole CSS pixels each step moved every shadow on the page by one at once: on a phone that is two or three of the screen's pixels, a jump that caught the eye.
+*So:* `page-light.js` rounds to one screen pixel (`devicePixelRatio`), the smallest step a shadow can be drawn at, still writing only when a value changes. Its range, speed and timing are unchanged.
+*Measured (Claude):* headless at an iPhone's density (3) on Home, Season, Run it and Schedule: about 16 writes in 5 s against about 11 with whole pixels (both vary a lot with where the light is in its move); the work after a page appears within the same run-to-run noise. Not seen on a phone.
+*Touches:* `src/scripts/page-light.js`

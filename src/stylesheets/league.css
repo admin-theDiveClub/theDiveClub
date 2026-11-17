@@ -1761,7 +1761,17 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .card-players.h2h-table th.cp-player { min-width: 3rem; padding-left: var(--space-1); padding-right: var(--space-1); white-space: normal; }
 .h2h-table .cp-name { font-size: 0.85rem; }
 .card-players th.h2h-row { min-width: 6rem; text-align: left; white-space: normal; text-transform: none; letter-spacing: normal; font-weight: 600; }
-.h2h-row .card-person-name { font-size: 0.85rem; }
+.h2h-row .card-person-name { font-size: 0.85rem; color: var(--text-primary); }   /* cream (UV, 17 Nov) */
+/* The players' column stays put while the frames scroll sideways under it
+ * (UV, 17 Nov): the date over it too, on the page's own colour so nothing
+ * shows through. */
+.h2h-table th.h2h-when,
+.h2h-table th.h2h-row {
+	position: sticky;
+	left: 0;
+	z-index: 1;
+	background: var(--bg-base);
+}
 .h2h-row .cp-pos { margin-left: calc(1.4rem + var(--space-2)); }
 .card-players td.h2h-cell { vertical-align: middle; white-space: nowrap; padding-left: var(--space-1); padding-right: var(--space-1); }
 .card-players td.h2h-cell.is-none,

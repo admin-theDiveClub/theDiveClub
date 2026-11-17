@@ -1528,29 +1528,10 @@
 			return block;
 		});
 
+		// Full size, scrolling sideways when too wide, the players' column
+		// frozen at the left (UV, 17 Nov; it was zoomed down to fit on 16 Nov).
 		els.h2hTables.replaceChildren(...tables);
-		fitHeadToHead();
 	}
-
-	// Each head-to-head table made smaller to fit the width, so nobody scrolls
-	// sideways to see it (UV, 16 Nov): zoomed down as a whole, the text and
-	// the marks together, to no less than 55% (past that it scrolls again).
-	// Measured against the tables' row, whose width never follows the table.
-	let h2hRoomSeen = 0;
-	function fitHeadToHead() {
-		const room = els.h2hTables.clientWidth;
-		h2hRoomSeen = room;
-		if (!room) return;   // hidden: fitted when shown
-		for (const table of els.h2hTables.querySelectorAll('.h2h-table')) {
-			table.style.zoom = '';
-			const need = table.offsetWidth;
-			if (need > room) table.style.zoom = String(Math.max(0.55, Math.floor((room / need) * 100) / 100));
-		}
-	}
-	if (typeof ResizeObserver !== 'undefined') {
-		new ResizeObserver(() => { if (els.h2hTables.clientWidth !== h2hRoomSeen) fitHeadToHead(); }).observe(els.h2hTables);
-	}
-	if (document.fonts) document.fonts.ready.then(fitHeadToHead);
 
 	// Who sat in a frame for a side, and whether they were a reserve: anybody
 	// who is not the player locked into that position (playerCell's Reserve

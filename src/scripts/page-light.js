@@ -120,11 +120,17 @@
 		if (y !== shownY) root.style.setProperty('--page-shadow-y', shownY = y);
 	}
 
-	// Whole pixels (UV, 16 Nov): every raised card's shadow follows these, so
-	// each write restyles the whole page (about 0.1 s on a long page on a
-	// phone). A pixel's step in a soft shadow cannot be seen, and writing only
-	// when a whole pixel changes cuts the writes several times over.
-	function px(v) { return Math.round(v) + 'px'; }
+	// The screen's own pixels (UV, 17 Nov): every raised card's shadow follows
+	// these, so each write restyles the whole page (about 0.1 s on a long page
+	// on a phone), and writing only when a value changes keeps the writes few.
+	// Whole CSS pixels (16 Nov) were too coarse: on a phone one is two or three
+	// of the screen's, and every shadow on the page jumped by it at once. One
+	// screen pixel is the smallest step a shadow can be drawn at, so no write is
+	// wasted and no step is seen.
+	function px(v) {
+		var d = window.devicePixelRatio || 1;
+		return +(Math.round(v * d) / d).toFixed(3) + 'px';
+	}
 
 	function putOrbit(p) {
 		// At rest (less motion): straight down.
