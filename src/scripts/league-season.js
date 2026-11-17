@@ -74,6 +74,9 @@ TDCLeagueNav.panel('season', () => {
 		fixtures: () => supabaseClient.rpc('tdc_league_fixtures', { p_league_season_id: seasonId }),
 		teams: () => supabaseClient.rpc('tdc_league_season_teams', { p_league_season_id: seasonId }),
 		pics: () => supabaseClient.from('tbl_teams').select('id, picture_path').eq('league_season_id', seasonId),
+		// Every team's roster in one call, sent with the rest (20261117041517):
+		// one per team had to wait for the team list first.
+		rosters: () => supabaseClient.rpc('tdc_league_season_rosters', { p_league_season_id: seasonId }),
 		readiness: () => supabaseClient.rpc('tdc_league_season_readiness', { p_league_season_id: seasonId }),
 		officials: () => supabaseClient.rpc('tdc_league_officials', { p_league_season_id: seasonId }),
 		standings: () => supabaseClient.rpc('tdc_league_standings', { p_league_season_id: seasonId }),
@@ -85,7 +88,7 @@ TDCLeagueNav.panel('season', () => {
 	// The signed-in reads, all at once. Standings is started too, though only a
 	// player uses it: it costs no waiting, and is dropped unread otherwise.
 	function startReads(withInfo) {
-		const keys = ['mine', 'join', 'row', 'fixtures', 'teams', 'pics', 'readiness', 'officials', 'standings', 'columns'];
+		const keys = ['mine', 'join', 'row', 'fixtures', 'teams', 'pics', 'rosters', 'readiness', 'officials', 'standings', 'columns'];
 		if (withInfo) keys.unshift('info');
 		for (const k of keys) TDC.readEarly('season:' + k, Q[k]);
 	}
@@ -1014,10 +1017,14 @@ TDCLeagueNav.panel('season', () => {
 		}
 
 		// Every team's roster, again after every write, so a card opens at once.
-		const read = await Promise.all(teams.map((t) => supabaseClient.rpc('tdc_team_roster', { p_team_id: t.team_id })));
-		const failed = read.find((r) => r.error);
-		if (failed) { TDC.showSupabaseError(AREA, failed.error, els.status); return false; }
-		rosters = new Map(teams.map((t, i) => [t.team_id, read[i].data || []]));
+		// One call for them all (20261117041517), each team's rows in
+		// tdc_team_roster's order.
+		const read = await take('rosters');
+		if (read.error) { TDC.showSupabaseError(AREA, read.error, els.status); return false; }
+		rosters = new Map(teams.map((t) => [t.team_id, []]));
+		for (const r of read.data || []) {
+			if (rosters.has(r.team_id)) rosters.get(r.team_id).push(r);
+		}
 		renderTeams();
 		return true;
 	}

@@ -2136,3 +2136,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Measured (Claude):* 1 to 6 writes in 5 s instead of 17 to 33; work after the page appears Season 0.6–1.1 → 0.1 s, Run it 0.75 → 0.26 s, Schedule 0.75–1.0 → 0.1–0.2 s. The hold during a touch or scroll is not driven headless.
 *Claude's, for UV to judge:* 0.4 s after a scroll before it moves again; a mouse button held on a computer counts as a finger.
 *Touches:* `src/scripts/page-light.js`
+
+## 2026-11-17 — The Season tab reads every roster in one call
+*Decided by UV:* **one database call for every team's roster on the Season tab** (asked after the finding below).
+*Why:* the tab read the team list, waited for it, then asked `tdc_team_roster` once per team (12 calls): a second trip on every load and every re-read after a save. Read-only on production the same day, every call costs about 0.2 s however little work it does (the trip to eu-west-1); `tdc_league_fixtures`, 1.8 s in UV's 16 Nov trace, does 40 ms of work and is 0.23 s typical, so it needed no change.
+*So:* `tdc_league_season_rosters(season)` (`20261117041517`): `tdc_team_roster`'s select for the whole season plus `team_id`, the same order within a team, signed in only through the grant as before. The Season tab sends it with its first batch and splits the rows by team. `tdc_team_roster` stays for the card.
+*Example:* opening 8-Ball Mainstream's Season tab as a league director at phone speed, locally: 1.95 s → 1.3–1.5 s to the diver lifting; the page's text, folded rosters included, identical.
+*Touches:* `supabase/migrations/20261117041517_league_season_rosters.sql`, `supabase/tests/079_league_season_rosters.test.sql`, `src/scripts/league-season.js`; `docs/systems/foundations.md`, `docs/systems/leagues.md`
