@@ -2254,3 +2254,8 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* three line icons in the ring set (`globe`, `instagram`, `facebook`, `ring-status.js`), drawn as rings' from the footer's marks, in the Links cell as the banner's other icons; each opens its link in a new tab, its name as its label.
 *Claude's, not asked:* they stay in the Links cell rather than joining Maps, Call, WhatsApp and Email under the name, so the row there stays the ways to reach the club; a globe for the website.
 *Touches:* `src/scripts/ring-status.js`, `src/scripts/venue.js`, `src/stylesheets/venue.css`; `docs/systems/foundations.md`
+
+## 2026-11-17 — No names screen after signing in
+*Decided by UV:* **remove the prompt after signing in that asks for a first name and surname.** This reverses 10 Nov's "asked again at each sign-in until both are in". The sign-up form's optional name boxes stay.
+*So:* `/accounts/names/` and `account-names.js` deleted; `auth.js` goes straight to the next page after any sign-in. A player with a name missing (a Google sign-up, or the form's boxes left blank) adds it on their profile; without both they have no short link, as before.
+*Touches:* `src/scripts/auth.js`; deleted `src/accounts/names/index.html`, `src/scripts/account-names.js`; `docs/systems/foundations.md`, `docs/systems/file-map.md`

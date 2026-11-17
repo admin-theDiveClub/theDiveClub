@@ -30,15 +30,13 @@
 	// Back here and on to next, after Google or the link in a sign-up email.
 	const returnTo = location.origin + '/accounts/' + (next !== '/' ? '?next=' + encodeURIComponent(next) : '');
 
-	// Signed in: on to the next page, by way of /accounts/names/ while either name
-	// is missing (UV, 10 Nov). Once only, as signing in also fires the listener below.
+	// Signed in: on to the next page. Once only, as signing in also fires the
+	// listener below. (No names screen after signing in: UV, 17 Nov.)
 	let goingOn = false;
-	async function goOn(userId) {
+	function goOn() {
 		if (goingOn) return;
 		goingOn = true;
-		const me = await TDC.getMyPlayer(AREA, userId, statusEl);
-		if (!me) return;   // the error is on the page
-		location.replace(me.first_name && me.last_name ? next : '/accounts/names/?next=' + encodeURIComponent(next));
+		location.replace(next);
 	}
 
 	let mode = 'login'; // or 'signup'
@@ -138,7 +136,7 @@
 					return;
 				}
 
-				await goOn(data.user.id);
+				goOn();
 			}
 		} catch (err) {
 			TDC.error(AREA, 'unexpected problem while ' + (mode === 'signup' ? 'signing up.' : 'logging in.'), err, statusEl);
@@ -164,10 +162,7 @@
 
 	// Already logged in (including coming back from Google or an email link): go on to the next page.
 	supabaseClient.auth.onAuthStateChange((event, session) => {
-		if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
-			// After this callback: a database call from inside it never comes back.
-			setTimeout(() => goOn(session.user.id), 0);
-		}
+		if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) goOn();
 	});
 
 	updateModeUI();
