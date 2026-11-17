@@ -54,6 +54,11 @@ const TDCRing = (() => {
 		// A handset and a speech bubble: the venue page's Call and WhatsApp (17 Nov).
 		phone: { label: 'Call',    strokes: ['M40 30L46 41L41 46C44 53 47 56 54 59L59 54L70 60L70 65C70 68 68 70 65 70C46 69 31 54 30 35C30 32 32 30 35 30L40 30'] },
 		chat:  { label: 'Message', strokes: ['M37 65A20 20 0 1 0 31 58L28 70L37 65'] },
+		// A globe, Instagram's rounded square and Facebook's f, as line drawings:
+		// the venue page's links (17 Nov). The footer's own marks, redrawn as rings'.
+		globe: { label: 'Website', strokes: ['M50 32A18 18 0 1 1 50 68A18 18 0 1 1 50 32', 'M50 32C42 40 42 60 50 68C58 60 58 40 50 32', 'M32 50L68 50'] },
+		instagram: { label: 'Instagram', widths: [5, 5, 7], strokes: ['M41 32L59 32A9 9 0 0 1 68 41L68 59A9 9 0 0 1 59 68L41 68A9 9 0 0 1 32 59L32 41A9 9 0 0 1 41 32', 'M50 42A8 8 0 1 1 50 58A8 8 0 1 1 50 42', 'M61 38.5A0.5 0.5 0 1 1 61 39.5A0.5 0.5 0 1 1 61 38.5'] },
+		facebook: { label: 'Facebook', strokes: ['M53 70L53 44C53 37 56 33 64 33', 'M44 50L62 50'] },
 		pin:   { label: 'Located', strokes: [
 			'M50 72C38 58 34 52 34 44C34 35 41 29 50 29',
 			'M50 72C62 58 66 52 66 44C66 35 59 29 50 29'] },

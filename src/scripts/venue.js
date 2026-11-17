@@ -264,16 +264,15 @@
 		// An address has no spaces to wrap at: it runs sideways and back, never split.
 		if (v.email) facts.push(fact('Email', TDC.runName(node('span'), v.email)));
 
-		const links = [['Website', v.website_url], ['Instagram', v.instagram_url], ['Facebook', v.facebook_url]]
-			.filter(([, href]) => href)
-			.map(([text, href]) => {
-				const a = node('a', 'venue-link', text);
-				a.href = href;
-				a.target = '_blank';
-				a.rel = 'noopener';
-				return a;
-			});
-		if (links.length) facts.push(fact('Links', ...links));
+		// Icons, as the banner's others (UV, 17 Nov; words until then).
+		const links = [['globe', 'Website', v.website_url], ['instagram', 'Instagram', v.instagram_url], ['facebook', 'Facebook', v.facebook_url]]
+			.filter(([, , href]) => href)
+			.map(([icon, label, href]) => iconLink(icon, label, href));
+		if (links.length) {
+			const row = node('span', 'venue-link-icons');
+			row.append(...links);
+			facts.push(fact('Links', row));
+		}
 
 		// Who runs it: the owner for everybody, the rest for somebody signed in.
 		// Not .lj-people: the Season tab's lines key on it and expect its badges row.

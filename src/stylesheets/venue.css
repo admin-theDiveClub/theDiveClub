@@ -74,9 +74,9 @@
 }
 .venue-people dd { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
 .venue-fact-note { display: block; font-size: 0.85rem; color: var(--text-muted); }
-/* Each link whole, wrapping only between them. */
-.venue-facts dd .venue-link { display: inline-block; margin-right: var(--space-3); white-space: nowrap; }
-.venue-facts dd .venue-link:last-child { margin-right: 0; }
+/* Website and the socials as the banner's icons (UV, 17 Nov), the first one's
+ * ring lined up with the words of the cells above it. */
+.venue-link-icons { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-left: calc(var(--space-2) * -1); }
 
 /* ── The sections under it ── */
 #v-about-box,

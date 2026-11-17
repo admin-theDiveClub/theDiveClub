@@ -2248,3 +2248,9 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, not asked:* the page's heading is "Affiliate Clubs" too, matching the menu (the venue's own page keeps its name); the list lives at `/venues/` with no venue named, which said "Nothing here" until now; alphabetical; a count of 0 shows no badge; the search filters in the browser with no call; the pill runs sideways when it does not fit, with the site's shared helper.
 *So:* migration `20261117082425_venues_list.sql`: `tdc_venues` also sends address, table note, phone, timezone, hours and the two counts, counted by `tdc_venue_competitions` so the card and the venue's page agree. `docs/systems/foundations.md`, "Affiliate Clubs".
 *Touches:* `supabase/migrations/20261117082425_venues_list.sql`, `supabase/tests/082_venues_list.test.sql` (new), `src/_data/navLinks.json`, `src/venues/index.html`, `src/scripts/venue.js`, `src/stylesheets/venue.css`
+
+## 2026-11-17 — A venue's website and socials as icons
+*Decided by UV:* **the website, Instagram and Facebook links show as icons, not words.** This replaces this morning's "Website and socials as words in a Links cell" (chosen because the site's icon set had no such marks).
+*So:* three line icons in the ring set (`globe`, `instagram`, `facebook`, `ring-status.js`), drawn as rings' from the footer's marks, in the Links cell as the banner's other icons; each opens its link in a new tab, its name as its label.
+*Claude's, not asked:* they stay in the Links cell rather than joining Maps, Call, WhatsApp and Email under the name, so the row there stays the ways to reach the club; a globe for the website.
+*Touches:* `src/scripts/ring-status.js`, `src/scripts/venue.js`, `src/stylesheets/venue.css`; `docs/systems/foundations.md`
