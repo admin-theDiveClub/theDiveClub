@@ -2314,3 +2314,16 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* the cap on a shot's strength raised (from 48), as balls fell short of the pockets on large screens and on doubles; UV first asked for no cap, then a higher one.
 *Claude's, for UV to judge:* 120 balls a second, the most at which the physics step (1/480 s) moves a ball no more than a quarter of a ball; past that a ball would sink into another before the contact is seen and leave at a wrong angle.
 *So:* `PMAX` in `scripts/banner-table.js` and `scripts/hero.js`; STATUS §1 4ci.
+
+## 2026-11-17 — The Season tab's team names smaller
+
+*Decided by UV:* the team names on the Season tab's team cards smaller.
+*Claude's, for UV to judge:* 1rem on a computer (was 1.15rem), 0.95rem on a phone (was 1.1rem); other team names untouched.
+*So:* `.lj-teams .team-box-name` in `league-join.css`; `docs/ui.md`.
+
+## 2026-11-17 — Pull down at the top to reload, on every page
+
+*Decided by UV:* a pull down from the top of a page reloads it, as in a phone's browser. **Everywhere**: the browser's own pull is switched off and the site's is used on every phone, browser and installed app alike. **What shows is the site's dots, playing the waiting moves one after another, round and round.** **Every page, a universal function** (UV chose this over leaving out the match page, the draw and the owner board).
+*Example:* on the install page at the top, a finger drags down: the page moves down with it and the dots open out, in the space above it, on a ring that grows as the finger goes on; past the reach, letting go reloads the page (a new version looked for first, as the menu's Reload does) and the dots carry on until it goes; let go short and they gather into the ring's middle and vanish.
+*Claude's, for UV to judge:* the dots in cream on a 48px ring with a 3px line (the Reload button's colour); 80px of pull to reload, at most 128, the pull stiffening towards it; each move 3 s, solo moves then group moves, where the list got to kept in this browser so each pull carries on from the last; the page (its content and footer) moves down with the finger and the dots play in the space opened above it (UV, the same day: "pulled down to reveal the dots animation in its own space rather than above the existing content"); the bar, the light and the loading screen stay put, and anything fixed inside the content moves with it while pulled. To stay universal without breaking the pages that already use the finger, a pull only starts where nothing else could take it: the page and every box the finger is in that scrolls at its top, nothing under the finger with a `touch-action` that stops the page panning up and down (the draw, the board's drags, sliders), no typing field or dropdown, one finger, not zoomed in, and mostly downwards. `data-pull="off"` turns it off for anything else. Touch only: a mouse has the browser's own reload. The update-then-reload steps moved from `nav.js` into `TDC.freshReload` so the button and the pull share them.
+*So:* `scripts/pull-refresh.js`, `stylesheets/pull-refresh.css` (both in `layout.html`), `--pull-*` in `variables.css`, `overscroll-behavior-y: none` on `html, body` in `global.css`, `TDC.freshReload` in `tdc.js`; `docs/ui.md`; `docs/systems/file-map.md`; STATUS §1 4cj.

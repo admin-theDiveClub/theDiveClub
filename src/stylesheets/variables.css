@@ -123,6 +123,11 @@
   --dots-busy-dim: 0.1;           /* how faint a target is while it waits */
   --dots-busy-fill: 0.45;         /* how faint a filled button or green pill is while it waits and is traced */
   --dots-dim: 0.2s;               /* a target dimming as it goes busy */
+  /* The pull down at the top to reload (pull-refresh.css, scripts/pull-refresh.js) */
+  --pull-ring: 48px;              /* the ring the dots run on, at full pull */
+  --pull-line: 3px;               /* its line: the dots' size */
+  --pull-colour: var(--control-line);   /* its line's colour: the dots' colour (cream, as the Reload button's) */
+  --pull-ease: 0.25s;             /* the ring settling or going back up when the finger lifts */
   --dots-reveal: 1s;          /* fade time: the target (its ring) fading in after the trace; the dots fade only after */
   --dots-pulse: 2s;               /* reduced motion: one breath of a tapped target while it waits */
   --dots-pulse-peak: 0.5;         /* reduced motion: how bright it gets at the top of each breath */

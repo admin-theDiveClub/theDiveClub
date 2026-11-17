@@ -54,6 +54,10 @@
 html, body {
 	margin: 0;
 	padding: 0;
+	/* The browser's own pull to refresh off (UV, 17 Nov): the site's own
+	   (scripts/pull-refresh.js) is the one, the same on every phone. Also
+	   stops iOS's bounce past the top and foot of the page. */
+	overscroll-behavior-y: none;
 }
 body {
 	background: var(--bg-base);

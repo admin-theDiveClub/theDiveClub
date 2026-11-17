@@ -715,6 +715,30 @@ const TDC = (() => {
 		document.fonts.addEventListener('loadingdone', refitRuns);
 	}
 
-	return { shortUrl, shareButton, error, status, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer, readEarly, read, shortKey, shortRead,
+	// Reload onto the current deploy (17 Nov; moved here from nav.js's Reload
+	// button so the pull down at the top, pull-refresh.js, does the same).
+	// Asks the service worker to look for a new version first, so a stale
+	// install gets the latest files rather than redrawing the old ones. Never
+	// allowed to hold the reload up: a slow or missing worker must not leave
+	// somebody waiting on a page that never goes.
+	async function freshReload() {
+		try {
+			if ('serviceWorker' in navigator) {
+				const reg = await Promise.race([
+					navigator.serviceWorker.getRegistration(),
+					new Promise((done) => setTimeout(() => done(null), 1500))
+				]);
+				if (reg) await Promise.race([
+					reg.update(),
+					new Promise((done) => setTimeout(done, 1500))
+				]);
+			}
+		} catch (err) {
+			console.error('[Reload] could not check for a new version before reloading.', err);
+		}
+		location.reload();
+	}
+
+	return { shortUrl, shareButton, error, status, freshReload, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer, readEarly, read, shortKey, shortRead,
 		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, fullName, fullNameOf, leaguePic, teamPic, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade, runName, runWords };
 })();

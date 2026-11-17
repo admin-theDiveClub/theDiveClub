@@ -1,0 +1,31 @@
+/* The pull down at the top to reload (UV, 17 Nov; scripts/pull-refresh.js).
+   The ring the dots run on while a finger pulls the page down from its top.
+   It is never seen itself: the dots draw it (dots.js serves it with `line`,
+   so they run on its border and take its width and colour). Under reduced
+   motion the dots never come and dots.css breathes the ring instead, so it
+   shows then. The script moves it with --pull-y (how far down) and --pull-s
+   (how big, growing to full size as the pull nears its reach). */
+.tdc-pull {
+	position: fixed;
+	top: var(--nav-total, 0px);
+	left: 50%;
+	width: var(--pull-ring);
+	height: var(--pull-ring);
+	margin-left: calc(var(--pull-ring) / -2);
+	border: var(--pull-line) solid var(--pull-colour);
+	border-radius: 50%;
+	opacity: 0;
+	pointer-events: none;
+	/* Over the page and the nav (100), under the loading screen (900) */
+	z-index: 800;
+	transform: translateY(var(--pull-y, -100%)) scale(var(--pull-s, 0.4));
+}
+.tdc-pull.is-easing {
+	transition: transform var(--pull-ease) ease;
+}
+/* Reduced motion: no dots, so the ring itself is what breathes (dots.css's
+   calm pulse on its opacity); its line stays drawn, where dots.css would
+   hide a waiting target's border. As specific as that rule and later. */
+.tdc-pull[data-dots="busy"][data-dots-calm]:not([data-dots-ring]) {
+	border-color: var(--pull-colour) !important;
+}
