@@ -24,6 +24,7 @@
 	const accountPic     = document.getElementById('nav-account-pic');
 	const accountDisplay = document.getElementById('nav-account-display');
 	const accountFull    = document.getElementById('nav-account-full');
+	const accountPlayer  = document.getElementById('nav-account-player');
 	const prefTheme      = document.getElementById('nav-pref-theme');
 	const prefMotion     = document.getElementById('nav-pref-motion');
 
@@ -514,6 +515,13 @@
 			accountFull.hidden = !full;
 		}
 		showBannerPic(me ? avatarUrlFor(me.avatar_path) : null);
+		// The player icon opens your player profile (UV, 17 Nov); with no
+		// player row there is none to open, so it is not shown.
+		if (accountPlayer) {
+			if (me && me.id) accountPlayer.href = '/players/?p=' + encodeURIComponent(me.id);
+			else accountPlayer.removeAttribute('href');
+			accountPlayer.hidden = !(me && me.id);
+		}
 	}
 
 	// The profile page fires this after a picture is changed or removed, so the
@@ -749,7 +757,7 @@
 		// the generic icon simply stays.
 		const { data: me, error: playerErr } = await supabaseClient
 			.from('tbl_players')
-			.select('avatar_path, display_name, first_name, last_name')
+			.select('id, avatar_path, display_name, first_name, last_name')
 			.eq('user_id', session.user.id)
 			.maybeSingle();
 

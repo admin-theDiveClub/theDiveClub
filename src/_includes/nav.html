@@ -111,13 +111,23 @@
      opens the profile), the middle, set into the screen, and the toggles on a
      flat bar. -->
 <aside class="nav-account" id="nav-account" aria-label="Your profile menu">
-	<a href="/accounts/profile/" class="nav-account-banner">
-		<span class="nav-account-pic" id="nav-account-pic" aria-hidden="true"></span>
-		<span class="nav-account-names">
-			<span class="nav-account-display" id="nav-account-display"></span>
-			<span class="nav-account-full" id="nav-account-full" hidden></span>
-		</span>
-	</a>
+	<!-- Two links side by side (UV, 17 Nov): the picture and names open the
+	     account's profile, as the whole banner did; the player icon at the
+	     right opens your player profile (/players/?p=, set by nav.js). The icon
+	     is UV's icon_player.svg cleaned up: each part one shape, back to front,
+	     an even gap cut round it by the mask. Green with a glow. -->
+	<div class="nav-account-banner">
+		<a href="/accounts/profile/" class="nav-account-banner-main">
+			<span class="nav-account-pic" id="nav-account-pic" aria-hidden="true"></span>
+			<span class="nav-account-names">
+				<span class="nav-account-display" id="nav-account-display"></span>
+				<span class="nav-account-full" id="nav-account-full" hidden></span>
+			</span>
+		</a>
+		<a class="nav-account-player" id="nav-account-player" aria-label="Your player profile" hidden>
+			<svg viewBox="0 0 135.47 135.47" aria-hidden="true"><mask id="nav-player-cut" maskUnits="userSpaceOnUse" x="0" y="0" width="135.47" height="135.47"><path d="M70 79.6L135.47 79.6L135.47 102.5L70 102.5Z" fill="#fff"/><path d="M59.8 102.5L74.1 102.5L74.1 104L72.4 104L72.2 121.3L73.3 121.3L73.3 123.1L71.4 123.1L71.3 135.47L63.3 135.47L62.9 123.1L61.4 123.1L61.4 121.3L62.6 121.3L62.4 104L59.8 104Z" fill="#fff"/><path d="M40.1 90L53.2 90L53.1 128A6.55 6.55 0 0 1 40.1 128Z" fill="#000" stroke="#000" stroke-width="4.4" stroke-linejoin="round"/><path d="M40.1 90L53.2 90L53.1 128A6.55 6.55 0 0 1 40.1 128Z" fill="#fff"/><path d="M55 27L64 31.5L80.4 47.6L72.4 63.6L60 70L40.1 80L40.1 63L47 49.2Z" fill="#000" stroke="#000" stroke-width="4.4" stroke-linejoin="round"/><path d="M39.5 9.5L32.5 31L52 31.5" fill="none" stroke="#000" stroke-width="12.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M62.82 42.36L109.25 77.62A2.75 2.75 0 0 0 112.75 73.38L69.18 34.64A5 5 0 0 0 62.82 42.36Z" fill="#000" stroke="#000" stroke-width="4.4" stroke-linejoin="round"/><path d="M55 27L64 31.5L80.4 47.6L72.4 63.6L60 70L40.1 80L40.1 63L47 49.2Z" fill="#fff"/><path d="M39.5 9.5L32.5 31L52 31.5" fill="none" stroke="#fff" stroke-width="8.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M62.82 42.36L109.25 77.62A2.75 2.75 0 0 0 112.75 73.38L69.18 34.64A5 5 0 0 0 62.82 42.36Z" fill="#fff"/><path d="M42.20 94.31L84.01 76.45A5.25 5.25 0 0 0 79.99 66.75L37.80 83.69A5.75 5.75 0 0 0 42.20 94.31Z" fill="#000" stroke="#000" stroke-width="4.4" stroke-linejoin="round"/><path d="M42.20 94.31L84.01 76.45A5.25 5.25 0 0 0 79.99 66.75L37.80 83.69A5.75 5.75 0 0 0 42.20 94.31Z" fill="#fff"/><path d="M50.99 19.97L118.78 77.51A0.8 0.8 0 0 0 119.82 76.29L53.01 17.63A1.55 1.55 0 0 0 50.99 19.97Z" fill="#000" stroke="#000" stroke-width="4.4" stroke-linejoin="round"/><path d="M30.32 2.56L118.78 77.51A0.8 0.8 0 0 0 119.82 76.29L32.68 -0.16A1.8 1.8 0 0 0 30.32 2.56Z" fill="#fff"/><circle cx="77.6" cy="26.3" r="12" fill="#000" stroke="#000" stroke-width="4.4"/><circle cx="77.6" cy="26.3" r="12" fill="#fff"/></mask><rect width="135.47" height="135.47" fill="currentColor" mask="url(#nav-player-cut)"/></svg>
+		</a>
+	</div>
 
 	<!-- The middle: what you're in, one tap from each (nav.js, tdc_my_active). -->
 	<div class="nav-account-middle">

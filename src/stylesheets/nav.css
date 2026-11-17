@@ -104,9 +104,13 @@
 }
 
 
+/* Signed in, the picture (or the initials) glows green (UV, 17 Nov). Still:
+   not a --nm-* value, so the moving light never restarts it. */
+.nav-profile { --nav-signed-glow: 0 0 10px color-mix(in srgb, var(--color-primary) 65%, transparent); }
+
 /* The signed-in player's picture, shown in place of the ring, the same size.
-   In a box of its own, which holds the inset shadow (design.css). */
-.nav-avatar-wrap { display: block; border-radius: var(--radius-round); line-height: 0; }
+   In a box of its own, which holds the inset shadow (design.css) and the glow. */
+.nav-avatar-wrap { display: block; border-radius: var(--radius-round); line-height: 0; box-shadow: var(--nav-signed-glow); }
 .nav-avatar-wrap:has(> img[hidden]) { display: none; }
 .nav-avatar {
 	width: var(--nav-ring-size);
@@ -125,7 +129,7 @@
 	width: var(--nav-ring-size);
 	height: var(--nav-ring-size);
 	border-radius: var(--radius-round);
-	box-shadow: var(--shadow-pic);
+	box-shadow: var(--shadow-pic), var(--nav-signed-glow);
 	color: var(--text-muted);
 	font-size: calc(var(--nav-ring-size) * 0.36);
 	font-weight: 600;
@@ -332,10 +336,18 @@ body {
 	.nav-account { width: 100%; }
 }
 
-/* The player banner: picture, display name, full name. The whole of it is
-   the link to the profile page. */
+/* The player banner: picture, display name, full name, then the player icon.
+   Two links side by side (UV, 17 Nov): the main one (picture and names, out
+   to the banner's edges) opens the account's profile page; the icon, with
+   its own padding, opens the player profile. */
 .nav-account-banner {
 	flex: 0 0 auto;
+	display: flex;
+	align-items: stretch;
+}
+.nav-account-banner-main {
+	flex: 1 1 auto;
+	min-width: 0;
 	display: grid;
 	grid-template-columns: auto 1fr;
 	align-items: center;
@@ -345,8 +357,8 @@ body {
 	text-decoration: none;
 	-webkit-tap-highlight-color: transparent;
 }
-.nav-account-banner:hover,
-.nav-account-banner:focus-visible { background: var(--hover-wash); outline: none; }
+.nav-account-banner-main:hover,
+.nav-account-banner-main:focus-visible { background: var(--hover-wash); outline: none; }
 .nav-account-pic {
 	width: var(--account-pic);
 	height: var(--account-pic);
@@ -383,6 +395,30 @@ body {
 	overflow-wrap: anywhere;
 }
 .nav-account-full[hidden] { display: none; }
+/* The player icon at the banner's right (UV, 17 Nov), the link to the player
+   profile: green, with a glow as the fixtures' glowing icons have
+   (.fx-icon-glow), in the brand colour; brighter under the pointer. */
+.nav-account-player {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	padding: 0 var(--space-5) 0 var(--space-3);
+	line-height: 0;
+	color: var(--color-primary);
+	filter: drop-shadow(0 0 5px color-mix(in srgb, var(--color-primary) 70%, transparent));
+	-webkit-tap-highlight-color: transparent;
+}
+.nav-account-player[hidden] { display: none; }
+.nav-account-player:hover,
+.nav-account-player:focus-visible {
+	outline: none;
+	filter: drop-shadow(0 0 9px var(--color-primary));
+}
+.nav-account-player svg {
+	display: block;
+	width: calc(var(--account-pic) * 0.75);
+	height: calc(var(--account-pic) * 0.75);
+}
 
 /* The middle, sunk into the panel: what you're in (nav.js, tdc_my_active). */
 .nav-account-middle {
