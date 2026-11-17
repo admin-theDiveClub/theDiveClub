@@ -1,16 +1,17 @@
 -- Venues, step 1 (migration venues_details_and_places, 5 Nov).
 --
 --   the venue a competition belongs to gives rights and is guarded: a league
---     takes an owner or admin, a tournament staff as well
---   the venues it is played at give no rights to anybody, and whoever runs it
---     may list any active one
+--     or a tournament takes an owner or admin (staff no longer, 17 Nov)
+--   the venues it is played at give no rights to anybody; whoever runs it may
+--     list an active one only if they own or admin it (17 Nov, migration
+--     venue_owners_choose), and one already listed may stay
 --   a season's list follows to the next season; a fixture names its own venue
 --     or takes the season's, and never touches the match's venue
 --   signed out, a venue's display details are readable through the functions
 --     and nowhere else; its owner or admin edits them
 begin;
 \ir _helpers.psql
-select plan(62);
+select plan(72);
 
 select tests.create_user('Ven Owner') as owner \gset
 select tests.create_user('Ven Admin') as admin \gset
@@ -35,6 +36,9 @@ select is((select area from public.tbl_venues where slug = 'billiard-cafe-randpa
 select is((public.tdc_venue((select id from public.tbl_venues where slug = 'billiard-cafe-randpark-ridge'))->'hours'->0)::text,
 	'{"day": 1, "opens": "15:00", "closes": "22:30"}', 'its Monday is the short day');
 select is((select count(*)::integer from public.tbl_venue_hours h join public.tbl_venues v on v.id = h.venue_id where v.slug = 'billiard-cafe-randpark-ridge'), 7, 'it has all seven days');
+select is((select array_agg(slug) from public.tbl_venues where sells_credits), array['the-dive-club'],
+	'only The Dive Club sells credits (17 Nov)');
+select is((select sells_credits from public.tbl_venues where id = :'one'), false, 'a new venue does not');
 
 
 -- ─── Who may tie a competition to a venue ───
@@ -48,30 +52,60 @@ select lives_ok(format($$ select public.tdc_create_league('Admin League', tests.
 select tests.sign_in(:'staff');
 select throws_ok(format($$ select public.tdc_create_league('Staff League', tests.rules('{"team_size": 2}'), %L) $$, :'one'),
 	'Only an owner or admin of that venue can run a league there.', 'staff may no longer tie a league to the venue');
-select lives_ok(format($$ select public.tdc_create_tournament('Staff Night', tests.rules(), 'single_elimination', %L) $$, :'one'),
-	'staff may still tie a tournament to the venue');
+select throws_ok(format($$ select public.tdc_create_tournament('Staff Night', tests.rules(), 'single_elimination', %L) $$, :'one'),
+	'Only an owner or admin of that venue can run a tournament there.', 'staff may no longer tie a tournament to the venue');
+select tests.sign_in(:'admin');
+select lives_ok(format($$ select public.tdc_create_tournament('Admin Night', tests.rules(), 'single_elimination', %L) $$, :'one'),
+	'an admin may tie a tournament to the venue');
 select tests.sign_in(:'stranger');
 select throws_ok(format($$ select public.tdc_create_league('Stranger League', tests.rules('{"team_size": 2}'), %L) $$, :'one'),
 	'Only an owner or admin of that venue can run a league there.', 'a stranger may not tie a league to the venue');
 select throws_ok(format($$ select public.tdc_create_tournament('Stranger Night', tests.rules(), 'single_elimination', %L) $$, :'one'),
-	'Only staff at that venue can run a tournament there.', 'a stranger may not tie a tournament to the venue');
+	'Only an owner or admin of that venue can run a tournament there.', 'a stranger may not tie a tournament to the venue');
 select lives_ok($$ select public.tdc_create_league('Still Open', tests.rules('{"team_size": 2}')) $$,
 	'with no venue anyone may still run a league');
 
 
--- ─── Played at: whoever runs it lists any active venue, and gains nothing ───
+-- ─── Played at: only a venue's owner or admin lists it, and gains nothing ───
 
 select public.tdc_create_league('Travelling', tests.rules('{"team_size": 2}')) as league \gset
 select public.tdc_create_league_season(:'league', 'Spring') as season \gset
 select public.tdc_create_tournament('Travelling Night', tests.rules()) as tourn \gset
 
+select throws_ok(format($$ select public.tdc_set_league_season_venues(%L, array[%L]::uuid[]) $$, :'season', :'one'),
+	'Only an owner or admin of a venue can choose it.', 'whoever runs a season may not list a venue with no role at it');
+select throws_ok(format($$ select public.tdc_set_tournament_venues(%L, array[%L]::uuid[]) $$, :'tourn', :'one'),
+	'Only an owner or admin of a venue can choose it.', 'nor whoever runs a tournament');
+
+select tests.sign_in(:'staff');
+select public.tdc_create_tournament('Staff Own Night', tests.rules()) as staff_tourn \gset
+select throws_ok(format($$ select public.tdc_set_tournament_venues(%L, array[%L]::uuid[]) $$, :'staff_tourn', :'one'),
+	'Only an owner or admin of a venue can choose it.', 'the venue''s staff may not list it either');
+select tests.sign_in(:'admin');
+select public.tdc_create_tournament('Admin Own Night', tests.rules()) as admin_tourn \gset
+select lives_ok(format($$ select public.tdc_set_tournament_venues(%L, array[%L]::uuid[]) $$, :'admin_tourn', :'one'),
+	'the venue''s admin may list it');
+select throws_ok(format($$ select public.tdc_set_tournament_venues(%L, array[%L, %L]::uuid[]) $$, :'admin_tourn', :'one', :'two'),
+	'Only an owner or admin of a venue can choose it.', 'but not another club''s');
+
+-- The stranger owns Club Two; Club One was listed on their season before the
+-- rule (as the Rivonia import's was), so it may stay.
+select tests.sign_out();
+insert into public.tbl_venue_staff (venue_id, user_id, role) values (:'two', :'stranger', 'owner');
+insert into public.tbl_league_season_venues (league_season_id, venue_id, position) values (:'season', :'one', 1);
+insert into public.tbl_tournament_venues (tournament_id, venue_id, position) values (:'tourn', :'one', 1);
+select tests.sign_in(:'stranger');
+
 select lives_ok(format($$ select public.tdc_set_league_season_venues(%L, array[%L, %L]::uuid[]) $$, :'season', :'two', :'one'),
-	'whoever runs a season may list venues with no role at them');
+	'an owner adds their own venue, and one already listed stays');
 select is((select array_agg(venue_id::text order by position) from public.tbl_league_season_venues where league_season_id = :'season'),
 	array[:'two', :'one'], 'the list keeps the order given');
 select lives_ok(format($$ select public.tdc_set_tournament_venues(%L, array[%L]::uuid[]) $$, :'tourn', :'one'),
-	'whoever runs a tournament may list a venue with no role at it');
+	'a tournament keeps a venue already listed');
 select is((select venue_id::text from public.tbl_tournament_venues where tournament_id = :'tourn'), :'one', 'the tournament''s list is saved');
+select public.tdc_set_tournament_venues(:'tourn', '{}');
+select throws_ok(format($$ select public.tdc_set_tournament_venues(%L, array[%L]::uuid[]) $$, :'tourn', :'one'),
+	'Only an owner or admin of a venue can choose it.', 'once taken off, it cannot be put back by someone without a role');
 
 select throws_ok(format($$ select public.tdc_set_league_season_venues(%L, array[%L]::uuid[]) $$, :'season', :'closed'),
 	'That venue is not open on the platform.', 'a closed venue cannot be listed');
@@ -114,6 +148,8 @@ select is((select count(*)::integer from public.tbl_league_season_venues where l
 	0, 'an empty list clears it');
 select is((select count(*)::integer from public.tbl_league_season_venues where league_season_id = :'season'),
 	2, 'changing one season leaves the other alone');
+select throws_ok(format($$ select public.tdc_set_league_season_venues(%L, array[%L]::uuid[]) $$, :'summer', :'one'),
+	'Only an owner or admin of a venue can choose it.', 'a venue on last season''s list is not the new season''s to add back');
 
 select tests.sign_out();
 update public.tbl_venues set active = true where id = :'two';

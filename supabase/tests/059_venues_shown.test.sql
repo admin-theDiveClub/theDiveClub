@@ -20,6 +20,8 @@ insert into public.tbl_venues (name, slug) values ('Club Two', 'club-two') retur
 insert into public.tbl_venues (name, slug) values ('Club Three', 'club-three') returning id as three \gset
 insert into public.tbl_venues (name, slug, active) values ('Closed Club', 'closed-club', false) returning id as closed \gset
 insert into public.tbl_venue_staff (venue_id, user_id, role) values (:'three', :'owner', 'owner');
+-- Only a venue's owner or admin may list it as played at (17 Nov).
+insert into public.tbl_venue_staff (venue_id, user_id, role) values (:'one', :'owner', 'admin'), (:'two', :'owner', 'admin');
 
 
 -- ─── A tournament ───

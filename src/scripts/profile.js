@@ -386,8 +386,8 @@ TDCLoader.hold((async () => {
 	});
 
 	// ─── Credits ───
-	// Every active venue you could hold credits at. Today there's one venue, but this works for more later:
-	// a venue picker only appears once there's a choice to make.
+	// Every active venue that sells credits (tbl_venues.sells_credits; UV, 17 Nov: The Dive Club only,
+	// no other club shown here yet). A venue picker only appears once there's a choice to make.
 	async function loadCredits() {
 		els.creditsList.textContent = '';
 
@@ -395,6 +395,7 @@ TDCLoader.hold((async () => {
 			.from('tbl_venues')
 			.select('id, name')
 			.eq('active', true)
+			.eq('sells_credits', true)
 			.order('name');
 
 		if (venErr) {

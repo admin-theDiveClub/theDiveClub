@@ -2,8 +2,11 @@
 // pill, on the two create pages and the two Settings tabs (UV, 5 Nov; venues
 // step 2). The search looks like the referee's (TDCMatchDef.playerPicker).
 //
-// Played at only. It gives a venue's staff no rights and needs no approval, so
-// anyone running a competition may add any open venue. The venue a competition
+// Played at only. It gives a venue's staff no rights, but only a venue's owner or
+// admin may choose it (UV, 17 Nov; reversing 5 Nov's "any open venue"), so the
+// search finds only the person's own venues; private.tdc_check_venue_list says
+// the same in the database. A venue already on the list keeps its pill and may
+// be removed by anyone running the competition. The venue a competition
 // BELONGS to is tbl_leagues.venue_id and tbl_tournaments.venue_id, which decide
 // staff rights and are not chosen here (docs/systems/foundations.md, "Venues").
 //
@@ -42,6 +45,7 @@ const TDCVenuePicker = (() => {
 
 	function create(root, area, statusEl) {
 		let venues = [];   // tdc_venues: every open venue, by name
+		let mine = [];     // the ids of open venues this person owns or admins
 		let was = [];      // the ids as read, in order, to send only a change
 		let chosen = [];   // the ids chosen now, in order
 
@@ -76,10 +80,10 @@ const TDCVenuePicker = (() => {
 		function search() {
 			const term = input.value.trim().toLowerCase();
 			if (!term) { results.replaceChildren(); return; }
-			const found = venues.filter((v) => !chosen.includes(v.id)
+			const found = venues.filter((v) => mine.includes(v.id) && !chosen.includes(v.id)
 				&& (v.name + ' ' + place(v)).toLowerCase().includes(term));
 			if (!found.length) {
-				results.replaceChildren(el('p', 'muted', 'No other open venue by that name.'));
+				results.replaceChildren(el('p', 'muted', 'None of your other venues is called that.'));
 				return;
 			}
 			results.replaceChildren(...found.map((v) => {
@@ -107,12 +111,19 @@ const TDCVenuePicker = (() => {
 			// Both asked at once (UV, 16 Nov: as fast as it can load), read in
 			// their old order.
 			const o = kind ? OWNERS[kind] : null;
-			const [list, own] = await Promise.all([
+			const session = await TDC.getSession(area);
+			if (!session) { TDC.status(statusEl, 'TDC (Error): sign in to choose venues.', 'error'); return false; }
+			const [list, own, roles] = await Promise.all([
 				supabaseClient.rpc('tdc_venues'),
-				o ? supabaseClient.from(o.table).select('venue_id').eq(o.column, id).order('position') : null
+				o ? supabaseClient.from(o.table).select('venue_id').eq(o.column, id).order('position') : null,
+				// Owners and admins also see their venue's other staff, hence the user filter.
+				supabaseClient.from('tbl_venue_staff').select('venue_id')
+					.eq('user_id', session.user.id).in('role', ['owner', 'admin'])
 			]);
 			if (list.error) { TDC.showSupabaseError(area, list.error, statusEl); return false; }
+			if (roles.error) { TDC.showSupabaseError(area, roles.error, statusEl); return false; }
 			venues = list.data || [];
+			mine = (roles.data || []).map((r) => r.venue_id).filter((x) => venues.some((v) => v.id === x));
 
 			let ids = [];
 			if (kind) {
@@ -126,8 +137,8 @@ const TDCVenuePicker = (() => {
 			chosen = ids.slice();
 			input.value = '';
 			// The field always shows, and says so when there is nothing to find.
-			input.disabled = !venues.length;
-			input.placeholder = venues.length ? 'Search venues' : 'No venues are open yet';
+			input.disabled = !mine.length;
+			input.placeholder = mine.length ? 'Search your venues' : 'You don\'t own or run a venue';
 			drawPills();
 			search();
 			return true;
