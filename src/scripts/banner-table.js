@@ -28,8 +28,9 @@
 // 18 x 36), the pockets, the slip model of spin, the cushion and ball-to-ball rules
 // and the trails. Changed for the hero (UV, 13 Nov, "spin more apparent, nice arcs"):
 // side spin lasts longer and turns a cushion's angle more. The defaults are UV's, set
-// on the sliders on an iPad (14 Nov): cloth speed 4.5, cloth spin 35, cushion speed
-// 0.25, cushion spin 0.9, ball-ball 0.04, no swerve; shadow 1, blur 1.2, no misses. Before its
+// on the sliders on an iPad (14 Nov), retuned on /sandbox/banner/ (17 Nov): cloth speed 2,
+// cloth spin 45, cushion speed
+// 0.25, cushion spin 0.9, ball-ball 0.35, swerve 0.1; shadow 1, blur 1.2, no misses. Before its
 // first contact the cue ball still runs straight (UV's rule in the game), which is
 // also what lets the shot picker aim.
 //
@@ -62,6 +63,24 @@ var TDCBannerTable = (function () {
 		if (changes) Object.keys(changes).forEach(function (k) { if (k in Q) Q[k] = changes[k]; });
 		live.forEach(function (t) { t.qualityChanged(); });
 		return Q;
+	}
+
+	/* ---------- the tunables ---------- */
+	// Physics: the game's, with the cloth's grip and the swerve on sliders. Shared by every
+	// table on the page; only /sandbox/banner/ changes them (tune(), sandbox-banner-controls.js,
+	// UV 17 Nov), and only in memory, so a reload is back to these.
+	var P = { cs: 2, cg: 45, ks: 0.25, kg: 0.9, bb: 0.35, sw: 0.1, side: 0.35, wyKeep: 0.03 };   // UV's, 17 Nov
+	var S = { speed: 1, linePx: 2, shadow: 1, blur: 1.2, glow: 1, miss: 0 };                     // UV's, 14 Nov
+	function tune(changes) {
+		if (changes) Object.keys(changes).forEach(function (k) {
+			if (k in P) P[k] = changes[k];
+			else if (k in S) S[k] = changes[k];
+		});
+		live.forEach(function (t) { t.tuned(); });
+		var all = {};
+		Object.keys(P).forEach(function (k) { all[k] = P[k]; });
+		Object.keys(S).forEach(function (k) { all[k] = S[k]; });
+		return all;
 	}
 
 	// The table and balls round one banner (stage). They are drawn in a wrapper put round
@@ -260,10 +279,7 @@ var TDCBannerTable = (function () {
 				});
 			}
 
-			/* ---------- the tunables ---------- */
-			// Physics: the game's, with the cloth's grip and the swerve on sliders here
-			var P = { cs: 4.5, cg: 35, ks: 0.25, kg: 0.9, bb: 0.04, sw: 0, side: 0.35, wyKeep: 0.03 };   // UV's, 14 Nov
-			var S = { speed: 1, linePx: 2, shadow: 1, blur: 1.2, glow: 1, miss: 0 };                     // UV's, 14 Nov
+			// The tunables (P, S) are the script's, above: shared by every table
 
 			/* ---------- colours and sizes, from the site's tokens ---------- */
 			var probe = document.createElement('canvas');
@@ -1523,6 +1539,7 @@ var TDCBannerTable = (function () {
 			function qualityChanged() { applyFrost(); sizeMayChange(); forceDraw = true; }
 			var me = {
 				qualityChanged: qualityChanged,
+				tuned: function () { forceDraw = true; },   // a slider on the sandbox moved
 				awakeChanged: awakeChanged,
 				stop: function () {
 					live.splice(live.indexOf(me), 1);
@@ -1561,5 +1578,5 @@ var TDCBannerTable = (function () {
 	new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ['data-motion'] });
 	matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', sync);
 
-	return { attach: attach, sync: sync, quality: quality };
+	return { attach: attach, sync: sync, quality: quality, tune: tune };
 })();

@@ -2288,3 +2288,9 @@ These predate the log. They are recorded here because every one of them is a dec
 *Example:* the Season tab's "8-BALL MAINSTREAM" is 18px tall on every screen, where it was 29–40px; "CHEEKY TIGER" on a scorecard banner on a computer is 18px, where it was 22px.
 *Claude's, for UV to judge:* a name already under 1.15rem is kept, not raised to it ("smaller than they are now"): the scorecard banner's names and the team cards at 1.1rem on a phone, the players' fixtures at 1.05 / 0.95rem, and every team name in body text (fixture tables, sessions, standings, the lineup page, the profile) at about 1rem.
 *Touches:* `src/stylesheets/league-join.css`, `src/stylesheets/league.css`; `docs/ui.md`
+
+## 2026-11-17 — The tables' physics retuned
+
+*Decided by UV:* from the physics sliders put back on `/sandbox/banner/` the same day: **cloth speed 2, cloth spin 45, ball–ball 0.35, swerve 0.1**, the rest unchanged (cushion speed 0.25, cushion spin 0.9, side off cushions 0.35, side fades 0.03). **Everywhere:** every banner and the home page's table alike.
+*Example:* a ball now rolls more than twice as far on the same pace (the cloth takes 2 a second from its speed, not 4.5), and an object ball leaves a contact with about two thirds of what a full hit gave it before.
+*So:* `scripts/banner-table.js` and `scripts/hero.js`, `P`; `docs/systems/file-map.md`; STATUS §1 4ci.

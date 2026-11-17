@@ -839,3 +839,12 @@ body:has(.nm-layout) .sandbox h1 { overflow-wrap: anywhere; }   /* one long word
 	font-variant-numeric: tabular-nums;
 }
 .banner-controls { margin-top: var(--space-3); }
+/* The physics sliders (UV, 17 Nov), laid out as the hero's */
+.banner-physics {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) 3.5em;
+	gap: var(--space-2) var(--space-3);
+	align-items: center;
+	margin-top: var(--space-3);
+}
+.banner-physics output { text-align: right; font-variant-numeric: tabular-nums; }

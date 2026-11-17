@@ -37,4 +37,25 @@
 		TDCBannerTable.quality(q);
 	}
 	take();
+
+	// The physics and look sliders (UV, 17 Nov): each starts at the site's value
+	// (TDCBannerTable.tune) and changes this page only, in memory; a reload is back to
+	// the site's values.
+	var values = TDCBannerTable.tune();
+	document.querySelectorAll('[data-banner-tune]').forEach(function (input) {
+		var key = input.dataset.bannerTune, out = document.getElementById(input.id + '-out');
+		if (!(key in values)) {
+			TDC.error(AREA, 'the slider "' + key + '" has no value in the table\'s script.', null, statusEl);
+			return;
+		}
+		function show() { if (out) out.textContent = key === 'miss' ? Math.round(input.value * 100) + '%' : input.value; }
+		input.value = values[key];
+		show();
+		input.addEventListener('input', function () {
+			var c = {};
+			c[key] = parseFloat(input.value);
+			TDCBannerTable.tune(c);
+			show();
+		});
+	});
 })();

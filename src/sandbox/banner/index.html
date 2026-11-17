@@ -65,6 +65,72 @@ extraScripts:
 	<p class="muted banner-shot" id="banner-shot" aria-live="polite">Lining up the first shot…</p>
 
 	{% comment %}
+		The physics and look on sliders (UV, 17 Nov: "add the sliders with current values
+		back"), as the page had them on 14 Nov. Each starts at the site's value
+		(banner-table.js, P and S) and changes this page only, in memory: a reload is back
+		to the site's values, and real pages never read them.
+	{% endcomment %}
+	<h2>Physics</h2>
+	<p class="muted">Each slider starts at the site's value. Changes last until the page is reloaded and reach no other page.</p>
+	<div class="banner-physics">
+		<label for="bt-speed">Speed</label>
+		<input type="range" id="bt-speed" data-banner-tune="speed" min="0.25" max="2" step="0.05">
+		<output id="bt-speed-out"></output>
+
+		<label for="bt-cs">Cloth speed</label>
+		<input type="range" id="bt-cs" data-banner-tune="cs" min="1" max="18" step="0.5">
+		<output id="bt-cs-out"></output>
+
+		<label for="bt-cg">Cloth spin</label>
+		<input type="range" id="bt-cg" data-banner-tune="cg" min="2" max="60" step="1">
+		<output id="bt-cg-out"></output>
+
+		<label for="bt-ks">Cushion speed</label>
+		<input type="range" id="bt-ks" data-banner-tune="ks" min="0" max="0.8" step="0.01">
+		<output id="bt-ks-out"></output>
+
+		<label for="bt-kg">Cushion spin</label>
+		<input type="range" id="bt-kg" data-banner-tune="kg" min="0" max="1" step="0.01">
+		<output id="bt-kg-out"></output>
+
+		<label for="bt-side">Side off cushions</label>
+		<input type="range" id="bt-side" data-banner-tune="side" min="0" max="1" step="0.01">
+		<output id="bt-side-out"></output>
+
+		<label for="bt-wykeep">Side fades</label>
+		<input type="range" id="bt-wykeep" data-banner-tune="wyKeep" min="0" max="0.2" step="0.005">
+		<output id="bt-wykeep-out"></output>
+
+		<label for="bt-bb">Ball–ball</label>
+		<input type="range" id="bt-bb" data-banner-tune="bb" min="0" max="0.5" step="0.01">
+		<output id="bt-bb-out"></output>
+
+		<label for="bt-sw">Swerve</label>
+		<input type="range" id="bt-sw" data-banner-tune="sw" min="0" max="0.6" step="0.01">
+		<output id="bt-sw-out"></output>
+
+		<label for="bt-miss">Misses</label>
+		<input type="range" id="bt-miss" data-banner-tune="miss" min="0" max="1" step="0.05">
+		<output id="bt-miss-out"></output>
+
+		<label for="bt-linepx">Lines (px)</label>
+		<input type="range" id="bt-linepx" data-banner-tune="linePx" min="1" max="4" step="0.25">
+		<output id="bt-linepx-out"></output>
+
+		<label for="bt-shadow">Shadow</label>
+		<input type="range" id="bt-shadow" data-banner-tune="shadow" min="0" max="1" step="0.05">
+		<output id="bt-shadow-out"></output>
+
+		<label for="bt-blur">Blur</label>
+		<input type="range" id="bt-blur" data-banner-tune="blur" min="0" max="2" step="0.05">
+		<output id="bt-blur-out"></output>
+
+		<label for="bt-glow">Glow</label>
+		<input type="range" id="bt-glow" data-banner-tune="glow" min="0" max="2" step="0.05">
+		<output id="bt-glow-out"></output>
+	</div>
+
+	{% comment %}
 		The speed-ups that change the look (UV, 16 Nov: "implement all and let me decide"),
 		for UV to try on his phone in Low Power Mode. Each starts as the site has it; real
 		pages keep the site's look until UV chooses (banner-table.js, Q). Kept in this
