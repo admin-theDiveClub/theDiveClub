@@ -211,7 +211,7 @@
 .points-person-name { font-size: 0.85rem; color: var(--text-muted); }
 .points-total { display: flex; align-items: baseline; gap: var(--space-1); }
 .points-total-label { font-size: 0.85rem; color: var(--text-muted); }
-.points-total-value { font-family: var(--font-display); font-size: 1.8rem; line-height: 1; color: var(--color-primary); }
+.points-total-value { font-family: var(--font-display); font-size: 1.8rem; line-height: 1.32; color: var(--color-primary); }
 .points-would { font-size: 0.85rem; text-align: center; color: var(--color-warning); }
 
 .points-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 0 var(--space-3); }

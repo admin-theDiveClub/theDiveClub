@@ -4,14 +4,14 @@
 // shows it large; Challenge, Follow, Share and More as ring icons), then a
 // toggle between three tabs:
 //   • Profile: teams with each team's place, form (the last 10 frames),
-//     stats over a period, the frame difference per night, competitions
-//     (league and tournament matches) and recent matches a page at a time,
-//     about.
+//     stats over a period, competitions (league and tournament matches) and
+//     recent matches a page at a time, about. The frame difference per night
+//     is on Compare only (UV, 17 Nov).
 //   • Head to head: your meetings. Only frames the two of you played against
 //     each other count (tdc_head_to_head).
-//   • Compare: both profiles side by side, you on the left, either side of a
-//     centre line, each half headed by its player's picture and names, which
-//     stay at the top as the page scrolls (UV, 5 Nov).
+//   • Compare: both profiles side by side, you on the left, each half headed
+//     by its player's picture and names, which stay at the top as the page
+//     scrolls (UV, 5 Nov); no sunken halves (UV, 17 Nov).
 // Your own profile has no toggle and no buttons for others.
 //
 // Each Profile section is drawn by one function for a "view": a player and
@@ -348,19 +348,31 @@
 		// The opponent's picture opens their profile, the row their match (UV, 5 Nov).
 		const pic = m.team_match ? node('span', 'team-pic pp-row-pic') : TDC.profilePic(avatar(m.opponent_avatar, m.opponent), m.opponent_player_id);
 		if (m.team_match) pic.append(TDC.teamPic(m.opponent_team_picture));
-		const names = node('span', 'pp-row-names');
-		names.append(node('span', 'pp-row-name', 'vs ' + m.opponent), node('span', 'muted pp-row-sub', [kindLabel(m), day(m.played_at), TDC.venueNames(m.venues)].filter(Boolean).join(' · ')));
-		// The score once a frame is in; the win or loss only once finished.
-		const score = node('span', 'pp-score');
-		if (m.status !== 'complete' && !m.mine && !m.theirs) score.append(node('span', 'muted', '–'));
-		else {
-			const a = node('span', m.mine > m.theirs ? 'pp-primary' : null, String(m.mine));
-			const b = node('span', m.theirs > m.mine ? null : 'muted', String(m.theirs));
-			score.append(a, document.createTextNode('–'), b);
-		}
-		const end = m.status === 'complete' ? resultDot(result(m)) : node('span', 'pp-dot');
-		row.append(strip, pic, names, score, end);
+		row.append(strip, pic, rowNames('vs ' + m.opponent, m),
+			// The score once a frame is in.
+			m.status !== 'complete' && !m.mine && !m.theirs ? node('span', 'pp-score muted', '–') : scoreNode('pp-score', m.mine, m.theirs));
 		return row;
+	}
+
+	// A match row's words, a line each (UV, 17 Nov): who, the league or
+	// tournament, the venue; no date.
+	function rowNames(who, m) {
+		const names = node('span', 'pp-row-names');
+		names.append(node('span', 'pp-row-name', who), node('span', 'muted pp-row-sub', kindLabel(m)));
+		const venue = TDC.venueNames(m.venues);
+		if (venue) names.append(node('span', 'muted pp-row-sub', venue));
+		return names;
+	}
+
+	// A score as "9 : 16" (UV, 17 Nov), no win or loss dot: won, yours green
+	// and theirs grey; lost, both grey; drawn, both cream.
+	function scoreNode(cls, mine, theirs) {
+		const s = node('span', cls);
+		const won = mine > theirs, lost = mine < theirs;
+		s.append(node('span', won ? 'pp-primary' : lost ? 'muted' : null, String(mine)),
+			node('span', 'muted pp-colon', ':'),
+			node('span', won || lost ? 'muted' : null, String(theirs)));
+		return s;
 	}
 
 	// A list a page at a time, its page number the stepper on its side in the
@@ -462,7 +474,7 @@
 
 	// Everything that hangs on the period, in every view.
 	function renderPeriod() {
-		for (const v of views) { renderStats(v); renderBars(v); }
+		for (const v of views) { renderStats(v); if (v.vertical) renderBars(v); }   // the bars on Compare only (UV, 17 Nov)
 	}
 
 	function renderProfile() {
@@ -493,7 +505,7 @@
 
 		const mid = node('div', 'pp-vs-mid');
 		const score = node('div', 'pp-vs-score');
-		score.append(node('span', 'pp-primary', String(won)), node('span', 'muted pp-vs-colon', ' : '), node('span', null, String(lost)));
+		score.append(node('span', 'pp-primary', String(won)), node('span', 'muted pp-colon', ':'), node('span', null, String(lost)));
 		mid.append(node('span', 'muted pp-vs-kicker', 'Head to head'), score, node('span', 'muted pp-sub', ms.length === 1 ? 'meeting' : 'meetings'));
 		els.vs.replaceChildren(versusSide(mine.player, 'You', true), mid, versusSide(them.player, name));
 
@@ -512,7 +524,7 @@
 		}
 		els.vsLine.replaceChildren();
 		const f = node('span');
-		f.append(document.createTextNode('Frames '), node('b', 'pp-primary', String(fMine)), document.createTextNode(' – '), node('b', null, String(fTheirs)));
+		f.append(document.createTextNode('Frames '), node('b', 'pp-primary', String(fMine)), node('span', 'muted pp-colon', ':'), node('b', null, String(fTheirs)));
 		els.vsLine.append(f, node('span', 'muted', '|'), node('span', null, 'Streak ' + (by ? by + ' ' + streak : '–')));
 
 		// The last meeting, frame by frame.
@@ -523,7 +535,7 @@
 			const head = node('div', 'pp-panel-head');
 			head.append(node('span', 'pp-panel-title', 'Last meeting'), node('span', 'muted pp-sub', day(m.played_at) + ' · ' + kindLabel(m)));
 			const line = node('div', 'pp-panel-score');
-			line.append(node('b', null, 'You'), node('span', 'pp-score pp-score-big', m.mine + ' – ' + m.theirs), node('b', null, name));
+			line.append(node('b', null, 'You'), scoreNode('pp-score pp-score-big', m.mine, m.theirs), node('b', null, name));
 			const strip = node('div', 'pp-strip');
 			for (const fr of m.frames) {
 				const s = node('span', 'pp-strip-frame' + (fr.won ? ' pp-strip-mine' : ''));
@@ -540,10 +552,8 @@
 		const rowsM = list.map((m) => {
 			const a2 = node('a', 'pp-meet');
 			a2.href = matchHref(m);
-			const names = node('span', 'pp-row-names');
-			const what = m.team_match && m.home_team ? kindLabel(m) + ' · ' + m.home_team + ' v ' + m.away_team : kindLabel(m);
-			names.append(node('span', 'pp-row-name', what), node('span', 'muted pp-row-sub', day(m.played_at)));
-			a2.append(resultDot(result(m)), names, node('span', 'pp-score', m.mine + '–' + m.theirs));
+			const who = m.team_match && m.home_team ? m.home_team + ' v ' + m.away_team : 'vs ' + name;
+			a2.append(rowNames(who, m), scoreNode('pp-score', m.mine, m.theirs));
 			return a2;
 		});
 		if (ms.length > 3) {

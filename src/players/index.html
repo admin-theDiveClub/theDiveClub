@@ -116,12 +116,7 @@ extraScripts:
 				<div class="pp-grid" data-part="grid"></div>
 			</section>
 
-			<section class="pp-section">
-				<h2>Frame difference per night</h2>
-				<p class="muted pp-sub">Last 15 nights in the period · frames won minus frames lost</p>
-				<div class="pp-bars" data-part="bars"></div>
-				<div class="pp-bar-labels muted" data-part="barLabels"></div>
-			</section>
+			<!-- Frame difference per night is on Compare only (UV, 17 Nov). -->
 
 			<!-- Match lists a page at a time (UV, 5 Nov): each page number is a
 			     stepper on its side at the right of its heading; each match has a
@@ -176,8 +171,7 @@ extraScripts:
 		</div>
 
 		<!-- Compare (UV, 5 Nov): the two profiles side by side, you on the left,
-		     either side of a centre line drawn as the match stage draws its halves
-		     (each set in with the page's inner shadow). Each player's picture and
+		     on the card itself (no sunken halves, UV 17 Nov). Each player's picture and
 		     names head their half, as on the stage, and stay at the top while the
 		     page scrolls. Every Profile section, both sides drawn by the same
 		     functions as the Profile tab (player.js, compareViews); one period for
@@ -219,21 +213,24 @@ extraScripts:
 				</div>
 
 				<h2 class="pp-c-h">Competitions</h2>
-				<!-- Leagues and Tournaments each a row of their own, so their headings line up. -->
+				<!-- Leagues and Tournaments each one heading across both halves (UV, 17 Nov),
+				     each side's page number under it. -->
+				<h3 class="pp-h3 pp-c-wide">Leagues</h3>
 				<div data-side="mine">
-					<div class="pp-head"><h3 class="pp-h3">Leagues</h3><input type="number" data-part="page-league" data-stepper="across" min="1" max="1" value="1" aria-label="Your leagues: page"></div>
+					<div class="pp-head pp-head-solo"><input type="number" data-part="page-league" data-stepper="across" min="1" max="1" value="1" aria-label="Your leagues: page"></div>
 					<div data-part="league"></div>
 				</div>
 				<div data-side="them">
-					<div class="pp-head"><h3 class="pp-h3">Leagues</h3><input type="number" data-part="page-league" data-stepper="across" min="1" max="1" value="1" aria-label="Their leagues: page"></div>
+					<div class="pp-head pp-head-solo"><input type="number" data-part="page-league" data-stepper="across" min="1" max="1" value="1" aria-label="Their leagues: page"></div>
 					<div data-part="league"></div>
 				</div>
-				<div class="pp-c-next" data-side="mine">
-					<div class="pp-head"><h3 class="pp-h3">Tournaments</h3><input type="number" data-part="page-tournament" data-stepper="across" min="1" max="1" value="1" aria-label="Your tournaments: page"></div>
+				<h3 class="pp-h3 pp-c-wide">Tournaments</h3>
+				<div data-side="mine">
+					<div class="pp-head pp-head-solo"><input type="number" data-part="page-tournament" data-stepper="across" min="1" max="1" value="1" aria-label="Your tournaments: page"></div>
 					<div data-part="tournament"></div>
 				</div>
-				<div class="pp-c-next" data-side="them">
-					<div class="pp-head"><h3 class="pp-h3">Tournaments</h3><input type="number" data-part="page-tournament" data-stepper="across" min="1" max="1" value="1" aria-label="Their tournaments: page"></div>
+				<div data-side="them">
+					<div class="pp-head pp-head-solo"><input type="number" data-part="page-tournament" data-stepper="across" min="1" max="1" value="1" aria-label="Their tournaments: page"></div>
 					<div data-part="tournament"></div>
 				</div>
 

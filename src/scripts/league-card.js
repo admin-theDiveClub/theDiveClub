@@ -2279,6 +2279,8 @@
 		liveChannel = supabaseClient.channel('card:' + matchId)
 			.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tbl_matches', filter: 'id=eq.' + matchId }, onLive)
 			.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tbl_match_events', filter: 'match_id=eq.' + matchId }, onLive)
+			// A discrepancy accepted (20261117060737): the tick and the glow go on every phone.
+			.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tbl_frame_change_accept', filter: 'match_id=eq.' + matchId }, onLive)
 			.subscribe((status) => {
 				if (status === 'SUBSCRIBED') return;
 				// Not fatal: the card still works and is read again when shown,

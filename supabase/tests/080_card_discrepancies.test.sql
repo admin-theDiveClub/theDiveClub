@@ -2,6 +2,7 @@
 --
 --   a player's own entry, changed by themselves: none
 --   the opponent changes it: the player's, on their side, by the opponent
+--   (the league's lag setting is a lag every frame, as a real league's)
 --   only the person, their captain or the LD may accept; accepting clears it,
 --     and a second accept finds nothing
 --   put back: now the opponent's
@@ -10,10 +11,11 @@
 --   a side's signature clears its side's; the other side's signature does not
 --   a change after a signature overrules the signer, even on an empty frame
 --   the LD may accept anybody's
+--   acceptances go out live, readable by anybody signed in
 --   the merge carries the acceptances
 begin;
 \ir _helpers.psql
-select plan(20);
+select plan(22);
 
 select tests.create_user('Dis LD') as dee \gset
 select tests.create_user('Dis H1') as h1 \gset
@@ -26,7 +28,7 @@ select tests.player_of(:'a1') as pa1 \gset
 select tests.player_of(:'a2') as pa2 \gset
 
 select tests.sign_in(:'dee');
-select public.tdc_create_league('Dis League', tests.rules('{"team_size": 2}')) as league \gset
+select public.tdc_create_league('Dis League', tests.rules('{"team_size": 2, "break_determination": "lag_each_frame"}')) as league \gset
 select public.tdc_create_league_season(:'league', 'Spring') as season \gset
 select public.tdc_create_team(:'season', 'Hosts') as th \gset
 select public.tdc_create_team(:'season', 'Guests') as ta \gset
@@ -161,6 +163,15 @@ select tests.sign_out();
 select tests.sign_in(:'dee');
 select ok(public.tdc_accept_frame_change(:'m', :'other', 'result'), 'the LD can accept anybody''s');
 select is(tests.dis_open(:'m'), '', 'and it is gone');
+select tests.sign_out();
+
+-- ─── Live (20261117060737) ───
+
+select ok(exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime'
+	and schemaname = 'public' and tablename = 'tbl_frame_change_accept'), 'acceptances go out live');
+select tests.sign_in(:'h2');
+select ok((select count(*) from public.tbl_frame_change_accept where match_id = :'m') > 0,
+	'a signed-in player can read them, which realtime needs');
 select tests.sign_out();
 
 -- ─── The merge ───

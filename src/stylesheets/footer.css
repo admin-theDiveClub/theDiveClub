@@ -241,7 +241,7 @@ a.pt-logo:focus-visible { outline: none; }
 .site-footer h2 {
 	font-family: var(--font-display);
 	font-size: 1.15rem;
-	line-height: 1;
+	line-height: 1.32;
 	letter-spacing: 0.04em;
 	color: var(--color-primary);
 	margin: 0 0 var(--space-4);

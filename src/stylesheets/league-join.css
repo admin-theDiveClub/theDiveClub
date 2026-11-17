@@ -60,7 +60,7 @@
 	font-family: var(--font-display);
 	font-weight: 400;
 	font-size: clamp(1.5rem, 7vw, 2.5rem);   /* the screen's width, not a breakpoint: a long word must fit beside the picture */
-	line-height: 1.2;   /* the capitals stand 1.08 tall, so less and two lines touch */
+	line-height: 1.32;   /* the capitals stand 1.08 tall, so less and two lines touch */
 	text-align: left;
 	overflow-wrap: break-word;
 	text-wrap: balance;
@@ -221,7 +221,7 @@
 	font-family: var(--font-display);
 	font-weight: 400;
 	font-size: 1.9rem;
-	line-height: 1.1;
+	line-height: 1.32;
 	text-transform: none;
 	letter-spacing: normal;
 	overflow-wrap: break-word;
@@ -296,7 +296,7 @@
 .lj-num-value {
 	font-family: var(--font-display);
 	font-size: 1.85rem;
-	line-height: 1;
+	line-height: 1.32;
 	font-variant-numeric: tabular-nums;
 	color: var(--color-primary);
 }
@@ -462,6 +462,7 @@
 .lj-team-places { position: relative; top: 0.125rem; display: flex; align-items: baseline; gap: 0.25em; line-height: 1.25rem; }
 .lj-team-places-n {
 	font-family: var(--font-display);
+	line-height: 1.32;
 	font-size: 1.05rem;
 	color: var(--color-primary);
 }

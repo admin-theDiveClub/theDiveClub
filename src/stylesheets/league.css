@@ -1119,7 +1119,7 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 	font-family: var(--font-display);
 	font-weight: 400;
 	font-size: 1.4rem;
-	line-height: 1.1;
+	line-height: 1.32;
 	text-transform: none;
 	letter-spacing: normal;
 	text-wrap: balance;
@@ -1454,7 +1454,7 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 }
 .cj-mid { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); }
 .cj-mid .jumbo-status { white-space: nowrap; }
-.cj-v { font-family: var(--font-display); font-size: 1.5rem; color: var(--text-muted); }
+.cj-v { font-family: var(--font-display); line-height: 1.32; font-size: 1.5rem; color: var(--text-muted); }
 /* Under the ":" only while the banner is folded: the venue and the
  * discipline as badges (UV, 16 Nov). Open, the details below say both. */
 .cj-tags { display: none; }
@@ -1487,7 +1487,7 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	gap: var(--space-3);
 	font-family: var(--font-display);
 	font-size: 3rem;
-	line-height: 1;
+	line-height: 1.32;
 	font-variant-numeric: tabular-nums;
 }
 .cj-num { color: var(--card-score, var(--text-primary)); text-shadow: var(--card-score-glow, none); }
@@ -2009,7 +2009,7 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	padding-bottom: var(--space-1);
 	border-bottom: 1px solid var(--text-muted);
 }
-.sf-signed { font-family: var(--font-display); font-size: 1.2rem; color: var(--color-primary); }
+.sf-signed { font-family: var(--font-display); line-height: 1.32; font-size: 1.2rem; color: var(--color-primary); }
 .sf-when { font-size: 0.85rem; color: var(--text-muted); }
 .sf-line.is-stale .sf-signed { color: var(--color-warning); }
 .sf-cap { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: var(--space-1) var(--space-2); font-size: 0.85rem; }
@@ -2083,7 +2083,7 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 }
 .lu-cmp-row:first-child { border-top: none; }
 .lu-cmp-k { text-align: center; font-size: 0.85rem; color: var(--text-muted); }
-.lu-cmp-v { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.1; color: var(--text-primary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.lu-cmp-v { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.32; color: var(--text-primary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .lu-cmp-v.lu-cmp-team { line-height: 1.32; }   /* team names: the headings' line (UV, 16 Nov) */
 .lu-cmp-home { text-align: right; }
 .lu-cmp-away { text-align: left; }
@@ -2107,7 +2107,7 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .lu-head { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); text-align: center; }
 .lu-head .team-pic { width: 3rem; height: 3rem; }
 .lu-head .lu-side { text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.7rem; color: var(--color-warning); }   /* yellow words, as the venue badge (UV, 16 Nov) */
-.tdc-card .lu-name { margin: 0; font-family: var(--font-display); font-size: 1.25rem; color: var(--text-primary); overflow-wrap: anywhere; }
+.tdc-card .lu-name { margin: 0; font-family: var(--font-display); line-height: 1.32; font-size: 1.25rem; color: var(--text-primary); overflow-wrap: anywhere; }
 .tdc-card .lu-name.is-locked { color: var(--color-warning); }
 .lu-name.is-mine { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.2em; }
 .tdc-card .lu-state { margin: var(--space-1) 0 var(--space-3); text-align: center; font-size: 0.85rem; color: var(--text-muted); }
