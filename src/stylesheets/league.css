@@ -1515,6 +1515,51 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
  * 11 Nov); the score only while it is folded, beside the arrow: open, the
  * totals under the frames say it. */
 .cs-session.set-group > summary.cs-title { width: 100%; }
+/* Each session its own inset pill (UV, 17 Nov): folded, a pill round the
+ * heading, the score and the arrow; opened, the pill grows down round the
+ * frames (the fold grows the details itself, tdc-controls.js). Its ends are
+ * round while folded and stay that radius as it grows. */
+.cs-session.set-group {
+	padding: 0 var(--space-3);
+	border-radius: calc(var(--nm-field) / 2 + var(--space-1));
+	box-shadow: var(--nm-sunken);
+}
+.cs-session.set-group > summary.cs-title { padding-left: var(--space-2); padding-right: calc(1.75rem + var(--space-2)); }
+.cs-session.set-group > summary.cs-title::after { right: var(--space-2); }
+.cs-session.set-group > .cs-grid:last-child { margin-bottom: var(--space-3); }
+/* A session holding a frame in Now (under way, or assumed to be) glows
+ * yellow inside (UV, 17 Nov), as the lag and a fixture being played do. */
+.cs-session.set-group.is-active {
+	box-shadow: var(--nm-sunken), inset 0 0 14px color-mix(in srgb, var(--color-warning) 35%, transparent);
+}
+/* A team session's heading (UV, 17 Nov): the title centred on a row as tall
+ * as a field, the arrow level with it at the right; folded, a second row
+ * under it, the teams either side of the session's score in the session's
+ * own type. Padded the same both sides so the title is truly centred. */
+.cs-session:not(.cs-mine) > summary.cs-title {
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 0;
+	padding: 0 calc(1.75rem + var(--space-2));
+}
+.cs-session:not(.cs-mine) > summary.cs-title::after,
+.cs-session:not(.cs-mine) > summary.cs-title > .group-dots { top: calc(var(--nm-field) / 2); }
+.cs-title-text { display: flex; align-items: center; justify-content: center; flex: 0 0 100%; min-height: var(--nm-field); text-align: center; }
+.cs-fold {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+	align-items: center;
+	gap: var(--space-3);
+	flex: 0 0 calc(100% + 2 * (1.75rem + var(--space-2)));   /* the pill's full width, out past the arrow's room */
+	margin: 0 calc(-1 * (1.75rem + var(--space-2)));
+	padding-bottom: var(--space-2);
+	font-family: var(--font-body);
+}
+.cs-fold .cs-home { text-align: right; }
+.cs-fold .cs-away { text-align: left; }
+.cs-fold-score { display: flex; align-items: baseline; gap: var(--space-2); }
+.cs-fold .cs-colon { color: var(--text-muted); }
+.cs-session[open]:not(.is-closing) > summary .cs-fold { display: none; }
 .cs-title-score { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--card-score, var(--text-muted)); text-shadow: var(--card-score-glow, none); }
 .cs-session[open]:not(.is-closing) > summary .cs-title-score { display: none; }
 /* The one place the switches are smaller than a field: a frame has two, a night
@@ -1565,6 +1610,17 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 }
 .cs-player.cs-home .cs-seat,
 .cs-player.cs-home .card-person { flex-direction: row-reverse; }
+/* The name and its position in one box, the position centred under the name
+ * (UV, 17 Nov; it was under the picture and name together, at the side's
+ * end). The name keeps its side's alignment. */
+.cs-namebox { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-1); min-width: 0; }
+.cs-namebox > .cs-sub { align-self: center; text-align: center; }
+/* A name on two lines is centred, on every screen (UV, 17 Nov; on a phone
+ * only since 12 Nov): the scorecard's players and the head to head's player
+ * column. A name on one line is as wide as its box, so it does not move. */
+.cs-player .card-person-name,
+.cs-player .cs-empty,
+.h2h-row .card-person-name { text-align: center; }
 .cs-seat.is-pickable { padding: 2px var(--space-2) 2px 2px; cursor: pointer; transition: background-color 0.2s ease; }
 .cs-player.cs-home .cs-seat.is-pickable { padding: 2px 2px 2px var(--space-2); }
 .cs-seat.is-pickable:hover { background: var(--hover-wash); }
@@ -1666,14 +1722,23 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	.cj-mid .jumbo-status { white-space: normal; text-align: center; }
 }
 
-/* On a PC the sessions sit two to a row (UV, 28 Oct): 1 and 2, then 3 and
- * 4. A phone keeps one under another. */
+/* On a PC the sessions sit in two columns (UV, 28 Oct), each placed by
+ * placeSessions() (league-card.js) in the shorter column, on rows of 4px it
+ * spans as many of as it is tall (UV, 17 Nov). A phone keeps one under
+ * another. */
 @media (min-width: 992px) {
 	#session-list {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
+		grid-auto-rows: 4px;
 		gap: 0 var(--space-5);
 		align-items: start;
+	}
+	/* A session alone in its row, both columns level above it, centred at a
+	 * column's width (UV, 17 Nov). */
+	#session-list > .cs-session.is-lone {
+		justify-self: center;
+		width: calc((100% - var(--space-5)) / 2);
 	}
 }
 
@@ -1911,8 +1976,14 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	line-height: 1.32;
 	color: var(--text-primary);
 }
-.tdc-card .sf-league .sf-sep { font-family: var(--font-body); }   /* the display face has no middle dot */
+/* Under the league's name a line each (UV, 17 Nov): the season cream, the
+ * venue a green link as in the banner, the date grey, the round green; the
+ * league's shield above them all, as the Season tab's banner has it. */
+.sf-pic { width: 4.5rem; height: 4.5rem; margin: 0 auto var(--space-3); }
+.tdc-card .sf-season { margin: var(--space-1) 0 0; color: var(--text-primary); }
+.tdc-card .sf-venue { margin: var(--space-1) 0 0; }
 .tdc-card .sf-date { margin: var(--space-1) 0 0; color: var(--text-muted); }
+.tdc-card .sf-round { margin: var(--space-1) 0 0; color: var(--color-primary); }
 /* Each side's line under its team in the banner's head. The two share two
  * rows (line, captain), so the lines stay level whatever wraps. */
 .sf-sides {
@@ -2064,7 +2135,7 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 
 /* ── Now and next (UV, 12 Nov) ───────────────────────────────────────
  * At the top of the scorecard: an inset pill per frame, the session's
- * row inside it, in two ringed groups. Pills are spaced by a margin, not a
+ * row inside it, in two groups, each under a line. Pills are spaced by a margin, not a
  * gap, so a leaving one can fold its space away (the list lifts) before it
  * goes. */
 #quick { margin-top: var(--space-5); }
@@ -2078,20 +2149,30 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	box-shadow: var(--nm-sunken);
 }
 .qv-pill + .qv-pill { margin-top: var(--space-3); }
-/* The two groups as rings (UV, 12 Nov): Now (under way) yellow and lit, as
- * the lag and a fixture being played are; Next grey. Spaced by a margin so a
- * group that empties can fold its space away too. */
-.qv-group {
-	padding: var(--space-2);
-	border-radius: calc(var(--nm-field-radius) + var(--space-2));
-	border: 2px solid var(--border-color);
+/* A line between two groups, in the colour of the one above it (UV, 17 Nov;
+ * rings round them since 12 Nov): under Under way yellow and lit, as the lag
+ * and a fixture being played are; under Now grey. Next, always last, has
+ * none. */
+.qv-line {
+	display: block;
+	height: 2px;
+	margin-top: var(--space-4);
+	border-radius: 1px;
+	background: var(--text-muted);
 }
-.qv-group.qv-now {
-	border-color: var(--color-warning);
-	box-shadow: 0 0 10px color-mix(in srgb, var(--color-warning) 45%, transparent), inset 0 0 10px color-mix(in srgb, var(--color-warning) 20%, transparent);
+.qv-live-group .qv-line {
+	background: var(--color-warning);
+	box-shadow: 0 0 8px color-mix(in srgb, var(--color-warning) 60%, transparent);
 }
-.qv-group.qv-next { border-color: var(--text-muted); }
 .qv-group:not([hidden]) ~ .qv-group:not([hidden]) { margin-top: var(--space-4); }
+/* A line between Now and next and the sessions under it (UV, 17 Nov). */
+#quick::after {
+	content: "";
+	display: block;
+	height: 1px;
+	margin: var(--space-5) 0;
+	background: var(--border-color);
+}
 .qv-pill .cs-row { border-bottom: none; padding-top: var(--space-1); }
 .qv-top { display: flex; justify-content: center; align-items: baseline; gap: var(--space-2); font-size: 0.8rem; color: var(--text-muted); }
 .qv-live { font-weight: 700; color: var(--color-warning); text-shadow: 0 0 8px color-mix(in srgb, var(--color-warning) 55%, transparent); }

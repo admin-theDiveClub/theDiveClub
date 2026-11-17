@@ -68,6 +68,7 @@
 		sumAwayPic: el('sum-away-pic'), sumAwayName: el('sum-away-name'), sumAwayScore: el('sum-away-score'),
 		resHomePic: el('res-home-pic'), resHomeName: el('res-home-name'), resAwayPic: el('res-away-pic'), resAwayName: el('res-away-name'),
 		signPanel: el('sign-panel'), sfLeague: el('sf-league'), sfDate: el('sf-date'),
+		sfPic: el('sf-pic'), sfSeason: el('sf-season'), sfVenue: el('sf-venue'), sfRound: el('sf-round'),
 		sfHomeSig: el('sf-home-sig'), sfHomeCap: el('sf-home-cap'),
 		sfAwaySig: el('sf-away-sig'), sfAwayCap: el('sf-away-cap'),
 		sfDispute: el('sf-dispute'),
@@ -220,7 +221,7 @@
 	async function loadContext() {
 		const [season, row, fx, places, st, cols] = await Promise.all([
 			supabaseClient.rpc('tdc_league_season_info', { p_league_season_id: match.league_season_id }),
-			supabaseClient.from('tbl_league_seasons').select('max_reserves').eq('id', match.league_season_id).maybeSingle(),
+			supabaseClient.from('tbl_league_seasons').select('max_reserves, tbl_leagues(picture_path)').eq('id', match.league_season_id).maybeSingle(),
 			supabaseClient.from('tbl_league_fixtures').select('round, table_numbers').eq('match_id', matchId).maybeSingle(),
 			supabaseClient.rpc('tdc_match_venue_list', { p_match_id: matchId }),
 			// The lineup page's numbers (UV, 12 Nov): the Standings tab's reads
@@ -844,9 +845,12 @@
 	}
 
 	// ─── Now and next (UV, 12 Nov) ───
-	// Two groups. **Now**, in a yellow ring: every frame shown that is under
-	// way (a frame is under way from the moment its lag is in), any outside
-	// the night's order first. **Next**, in a grey ring: the rest. What is
+	// Three groups (UV, 17 Nov; two in rings until then): **Under way**, every
+	// frame shown whose lag is in, any outside the night's order first; a
+	// yellow line; **Now**, the frames assumed to be playing, filling the
+	// tables the frames under way leave (quickFrames); a grey line; **Next**,
+	// the rest. A line shows only between two groups that are both there, in
+	// the colour of the group above it. What is
 	// shown is the next frames without a result in the night's order, twice
 	// as many as the fixture has tables, or four with no tables set (UV),
 	// and any frame under way beyond them, so a captain who strays from the
@@ -854,31 +858,56 @@
 	// its L and W, live for the captains and the league director only (UV),
 	// greyed for everybody else, players included.
 	//
-	// Motion (UV): a frame that leaves a group (its result is in, or its lag
-	// moved it from Next to Now) fades out completely, the cards below lift
-	// into its place, and only then does it, or the next frame, fade in where
-	// it belongs. A group with nothing left folds away the same way; one
-	// that gains its first frame fades in. A redraw during that waits for it
-	// and then draws once from the latest card.
+	// Motion (UV, 17 Nov; until then every frame that changed group faded out
+	// and back in): only a frame that has left the list (its result is in)
+	// fades out, where it is. Then every other frame slides from where it was
+	// to where it now belongs: one whose lag is in glides up into Under way,
+	// the rest close the gaps, and the list's height follows so what is below
+	// moves with it. Only then does a new frame fade in. A group left with
+	// nothing fades with its last frame (or simply goes, when that frame moved
+	// to another group); a line fades in when it starts to show. A redraw
+	// during that waits for it and then draws once from the latest card.
 	let quickRun = null;
 	let quickAgain = false;
 	let quickDrawn = false;
-	const quickGroups = { now: node('div', 'qv-group qv-now'), next: node('div', 'qv-group qv-next') };
-	quickGroups.now.setAttribute('aria-label', 'Under way');
+	const quickGroups = { live: node('div', 'qv-group qv-live-group'), now: node('div', 'qv-group qv-now'), next: node('div', 'qv-group qv-next') };
+	quickGroups.live.setAttribute('aria-label', 'Under way');
+	quickGroups.now.setAttribute('aria-label', 'Now');
 	quickGroups.next.setAttribute('aria-label', 'Next');
-	for (const g of Object.values(quickGroups)) { g.hidden = true; els.quickList.append(g); }
+	// Each group's line at its foot, in its colour (UV, 17 Nov; a ring round
+	// it before), a real element so it can fade on its own; shown only while a
+	// later group is there (syncQuick).
+	for (const [key, g] of Object.entries(quickGroups)) {
+		g.hidden = true;
+		g.dataset.key = key;
+		g.qvLine = node('span', 'qv-line');
+		g.qvLine.hidden = true;
+		g.append(g.qvLine);
+		els.quickList.append(g);
+	}
 
-	// Twice the fixture's tables, else four (UV, 12 Nov).
-	const quickCount = () => (fixture && fixture.table_numbers && fixture.table_numbers.length ? 2 * fixture.table_numbers.length : 4);
+	// Twice the fixture's tables, else four (UV, 12 Nov): the tables, else two.
+	const quickTables = () => (fixture && fixture.table_numbers && fixture.table_numbers.length ? fixture.table_numbers.length : 2);
+	const quickCount = () => 2 * quickTables();
 
-	// Each frame shown, with its group, in the order drawn.
+	// Each frame shown, with its group, in the order drawn. Under way and Now
+	// together hold as many frames as there are tables (UV, 17 Nov): every
+	// frame under way, then in Now the first in the night's order without a
+	// lag, assumed to be on the other tables. A lag on a frame further down
+	// moves it to Under way and takes one of those places, so the last
+	// assumed frame goes back to Next. More frames under way than tables: all
+	// of them, and Now is empty.
 	function quickFrames() {
 		const open = card.filter((f) => f.status !== 'complete');   // the card is in frame order
 		const ahead = open.slice(0, quickCount());
 		const inAhead = new Set(ahead.map((f) => f.frame_no));
 		const strays = open.filter((f) => f.break_side && !inAhead.has(f.frame_no));
-		return strays.concat(ahead.filter((f) => f.break_side)).map((f) => ({ f, group: 'now' }))
-			.concat(ahead.filter((f) => !f.break_side).map((f) => ({ f, group: 'next' })));
+		const live = strays.concat(ahead.filter((f) => f.break_side));
+		const waiting = ahead.filter((f) => !f.break_side);
+		const assumed = waiting.slice(0, Math.max(0, quickTables() - live.length));
+		return live.map((f) => ({ f, group: 'live' }))
+			.concat(assumed.map((f) => ({ f, group: 'now' })))
+			.concat(waiting.slice(assumed.length).map((f) => ({ f, group: 'next' })));
 	}
 
 	function renderQuick(both) {
@@ -900,78 +929,91 @@
 	async function syncQuick(list, animate) {
 		const want = new Map(list.map((x) => [String(x.f.frame_no), x]));
 		const pills = [...els.quickList.querySelectorAll('.qv-pill')];
-		// A pill that stays in its group is drawn again in place, as every
-		// frame row is. One that left the list goes; so does one that changed
-		// group, to come back in its new place.
-		const stays = (r) => want.has(r.dataset.frame) && want.get(r.dataset.frame).group === r.dataset.group;
-		for (const r of pills) if (stays(r)) r.replaceChildren(...quickPill(want.get(r.dataset.frame).f));
-		const leaving = pills.filter((r) => !stays(r));
-
-		// A group left with nothing folds away whole, its pills with it.
+		const motion = animate && !lessMotion();
+		// Every pill still in the list is drawn again where it is, as every
+		// frame row is; it moves below if its group or place changed. One no
+		// longer in the list (its result is in) is the only one that fades.
+		for (const r of pills) if (want.has(r.dataset.frame)) r.replaceChildren(...quickPill(want.get(r.dataset.frame).f));
+		const gone = pills.filter((r) => !want.has(r.dataset.frame));
 		const wanted = (g) => list.some((x) => x.group === g);
-		const emptying = Object.entries(quickGroups).filter(([g, el]) => !el.hidden && !wanted(g)).map(([, el]) => el);
-		const alone = leaving.filter((r) => !emptying.includes(r.parentElement));
-		await Promise.all([
-			...alone.map((r) => (animate ? quickLeave(r) : r.remove())),
-			...emptying.map((el) => (animate ? quickLeave(el, true) : Promise.resolve()))
-		]);
-		for (const el of emptying) { el.replaceChildren(); el.hidden = true; }
+		const emptying = Object.values(quickGroups).filter((el) => !el.hidden && !wanted(el.dataset.key));
 
-		const have = new Map([...els.quickList.querySelectorAll('.qv-pill')].map((r) => [r.dataset.frame, r]));
+		// 1. The finished frames fade out in place; a group they leave empty
+		// fades with them, unless one of its frames is moving to the other.
+		const fading = gone.concat(emptying.filter((el) => [...el.querySelectorAll('.qv-pill')].every((r) => gone.includes(r))));
+		for (const r of fading) r.style.pointerEvents = 'none';
+		if (motion) await Promise.all(fading.map((el) => quickFade(el, 1, 0, 'forwards')));
+
+		// 2. The new layout, laid out at once; where everything was is kept,
+		// so it can slide there from it.
+		const before = new Map(pills.filter((r) => !gone.includes(r)).map((r) => [r, r.getBoundingClientRect()]));
+		const fromHeight = els.quickList.offsetHeight;
+		for (const r of gone) r.remove();
+		const have = new Map(pills.map((r) => [r.dataset.frame, r]));
 		const fresh = [];
 		const appearing = [];
 		for (const { f, group } of list) {
 			const box = quickGroups[group];
 			if (box.hidden) { box.hidden = false; appearing.push(box); }
 			let r = have.get(String(f.frame_no));
-			if (!r) {
+			if (!r || gone.includes(r)) {
 				r = node('div', 'qv-pill');
 				r.dataset.frame = String(f.frame_no);
-				r.dataset.group = group;
 				r.replaceChildren(...quickPill(f));
-				if (!appearing.includes(box)) fresh.push(r);   // a new group fades in whole
+				fresh.push(r);
 			}
-			box.append(r);   // in the list's order within its group
+			r.dataset.group = group;
+			box.insertBefore(r, box.qvLine);   // in the list's order within its group, above its line
 		}
-		if (animate) await Promise.all(fresh.concat(appearing).map(quickEnter));
+		for (const el of emptying) {
+			el.hidden = true;   // before its fade is cleared, or it shows again for a frame
+			for (const a of el.getAnimations()) a.cancel();
+			el.style.pointerEvents = '';
+		}
+		// A group's line shows while a later group is there; one newly shown fades in.
+		const groups = Object.values(quickGroups);
+		const linesOn = [];
+		groups.forEach((g, i) => {
+			const on = !g.hidden && groups.slice(i + 1).some((later) => !later.hidden);
+			if (on && g.qvLine.hidden) linesOn.push(g.qvLine);
+			g.qvLine.hidden = !on;
+		});
+		if (!motion) return;
+
+		// 3. Each frame slides from where it was, and the list's height with
+		// it; the new frames wait unseen, then fade in.
+		for (const r of fresh) r.style.opacity = '0';
+		const ease = { duration: QUICK_MOVE_MS, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' };
+		const moves = [];
+		for (const [r, was] of before) {
+			const now = r.getBoundingClientRect();
+			const dx = was.left - now.left, dy = was.top - now.top;
+			if (dx || dy) moves.push(r.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], ease));
+		}
+		const toHeight = els.quickList.offsetHeight;
+		if (toHeight !== fromHeight) {
+			if (toHeight > fromHeight) els.quickList.style.overflow = 'hidden';   // growing: nothing shows past it meanwhile
+			moves.push(els.quickList.animate([{ height: fromHeight + 'px' }, { height: toHeight + 'px' }], ease));
+		}
+		for (const line of linesOn) moves.push(line.animate([{ opacity: 0 }, { opacity: 1 }], ease));
+		await Promise.all(moves.map(done));
+		els.quickList.style.overflow = '';
+		for (const r of fresh) r.style.opacity = '';
+		await Promise.all(fresh.map((r) => quickFade(r, 0, 1, 'backwards')));
 	}
 
-	// Less motion (the person's choice, else the device's): no fading.
+	// Less motion (the person's choice, else the device's): nothing moves.
 	const lessMotion = () => {
 		const m = document.documentElement.dataset.motion;
 		return m === 'reduce' || (m !== 'full' && matchMedia('(prefers-reduced-motion: reduce)').matches);
 	};
-	const QUICK_FADE_MS = 280, QUICK_LIFT_MS = 260;
+	const QUICK_FADE_MS = 280, QUICK_MOVE_MS = 380;
 	const done = (a) => a.finished.catch(() => { /* cancelled: nothing to wait for */ });
-
-	// A pill, or a whole group (keep: it is hidden afterwards, not removed,
-	// and its motion and styles are cleared so it can come back).
-	async function quickLeave(r, keep = false) {
-		const finish = () => {
-			if (!keep) { r.remove(); return; }
-			r.hidden = true;   // before the motion is cleared, or it shows again for a frame
-			for (const a of r.getAnimations()) a.cancel();
-			r.style.pointerEvents = r.style.overflow = '';
-		};
-		if (lessMotion()) { finish(); return; }
-		r.style.pointerEvents = 'none';
-		await done(r.animate([{ opacity: 1 }, { opacity: 0 }], { duration: QUICK_FADE_MS, easing: 'ease-out', fill: 'forwards' }));
-		const cs = getComputedStyle(r);
-		r.style.overflow = 'hidden';
-		await done(r.animate([
-			{ height: r.offsetHeight + 'px', marginTop: cs.marginTop, paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom, opacity: 0 },
-			{ height: '0px', marginTop: '0px', paddingTop: '0px', paddingBottom: '0px', opacity: 0 }
-		], { duration: QUICK_LIFT_MS, easing: 'ease-in-out', fill: 'forwards' }));
-		finish();
-	}
-
-	function quickEnter(r) {
-		if (lessMotion()) return Promise.resolve();
-		return done(r.animate([{ opacity: 0 }, { opacity: 1 }], { duration: QUICK_FADE_MS, easing: 'ease-in', fill: 'backwards' }));
-	}
+	const quickFade = (el, from, to, fill) =>
+		done(el.animate([{ opacity: from }, { opacity: to }], { duration: QUICK_FADE_MS, easing: to ? 'ease-in' : 'ease-out', fill }));
 
 	// One pill: the session, "Under way" once the lag is in, then the frame
-	// as a session row draws it (its F and positions under the names).
+	// as a session row draws it (the positions under the names).
 	function quickPill(f) {
 		const lockedCard = cardState && (cardState.state === 'agreed' || cardState.state === 'approved');
 		const strict = !!(match.rules && match.rules.strict_frame_order);
@@ -981,7 +1023,9 @@
 			&& !!f.home_player_id && !!f.away_player_id && (!strict || f.frame_no === nextOpen);
 
 		const top = node('div', 'qv-top');
-		top.append(node('span', 'qv-where', 'Session ' + (f.session || 1)));   // the frame's F is under the home player
+		// The session and the frame together, "Session 1 · F3" (UV, 17 Nov; the
+		// F was under the home player). F1, not Frame 1 (UV, 12 Nov).
+		top.append(node('span', 'qv-where', 'Session ' + (f.session || 1) + ' · F' + f.frame_no));
 		if (f.break_side) top.append(node('span', 'qv-live', 'Under way'));
 		const row = node('div', 'cs-row cs-frame');
 		row.append(playerCell(f, 'home', lockedCard), toggles(f, mayEnter, 'home', 'quick'), playerCell(f, 'away', lockedCard));
@@ -1029,6 +1073,43 @@
 			blocks.push(sessionBlock(bySession.size > 1 ? 'Session ' + s : 'The frames', frames, strict, nextOpen));
 		}
 		els.sessions.replaceChildren(...blocks);
+		for (const b of blocks) sessionSizes.observe(b);
+		placeSessions();
+	}
+
+	// On a PC the sessions sit in two columns (UV, 28 Oct), each going into
+	// the shorter column (UV, 17 Nov): with one open, the folded ones after it
+	// stack in the other column beside it rather than below it. All folded,
+	// that is still 1 and 2, then 3 and 4. A last session with both columns
+	// level is alone in its row and centred (UV, 17 Nov). The grid's rows are
+	// 4px, each session spanning as many as it is tall, and placed again
+	// whenever one changes size (a fold, a redraw), so it follows a fold as it
+	// grows. A phone keeps one under another, unplaced.
+	const SESSION_ROW = 4;
+	const twoColumns = matchMedia('(min-width: 992px)');
+	let placing = 0;
+	const sessionSizes = typeof ResizeObserver !== 'undefined'
+		? new ResizeObserver(() => { if (!placing) placing = requestAnimationFrame(() => { placing = 0; placeSessions(); }); })
+		: { observe() {} };
+	twoColumns.addEventListener('change', () => placeSessions());
+	function placeSessions() {
+		const blocks = [...els.sessions.children].filter((b) => b.matches('.cs-session'));
+		for (const b of blocks) { b.style.gridColumn = b.style.gridRow = ''; b.classList.remove('is-lone'); }
+		if (!twoColumns.matches) return;
+		const tall = [0, 0];   // each column's height so far, in rows
+		blocks.forEach((b, i) => {
+			const rows = Math.ceil((b.offsetHeight + parseFloat(getComputedStyle(b).marginBottom || 0)) / SESSION_ROW);
+			if (i === blocks.length - 1 && tall[0] === tall[1]) {
+				b.classList.add('is-lone');
+				b.style.gridColumn = '1 / -1';
+				b.style.gridRow = (tall[0] + 1) + ' / span ' + rows;
+				return;
+			}
+			const col = tall[1] < tall[0] ? 1 : 0;
+			b.style.gridColumn = String(col + 1);
+			b.style.gridRow = (tall[col] + 1) + ' / span ' + rows;
+			tall[col] += rows;
+		});
 	}
 
 	// Three tracks: home player, the frame's L and W in the middle, away
@@ -1044,17 +1125,33 @@
 	// says how it went.
 	function sessionBlock(heading, frames, strict, nextOpen) {
 		const block = node('details', 'cs-session set-group');
-		const active = new Set(quickFrames().map((q) => q.f.frame_no));
+		const shown = quickFrames();
+		const active = new Set(shown.map((q) => q.f.frame_no));
 		const usual = frames.some((f) => active.has(f.frame_no));
 		block.open = sessionChoice.has(heading) ? sessionChoice.get(heading) : usual;
 		block.addEventListener('toggle', () => {
 			if (block.open === usual) sessionChoice.delete(heading); else sessionChoice.set(heading, block.open);
 		});
+		// A yellow glow inside the pill while it holds a frame in Now, under
+		// way or assumed to be (UV, 17 Nov).
+		const now = new Set(shown.filter((q) => q.group !== 'next').map((q) => q.f.frame_no));
+		block.classList.toggle('is-active', frames.some((f) => now.has(f.frame_no)));
+		// The heading centred with its arrow; folded, a second row under it:
+		// the teams either side of the session's score, as the session's own
+		// head and totals draw them (UV, 17 Nov).
 		const won = (side) => frames.filter((f) => f.winner_side === side).length;
-		const title = node('summary', 'cs-title', heading);
-		const sesScore = node('span', 'cs-title-score', won('home') + ' : ' + won('away'));
-		sesScore.dataset.live = 'ses|' + heading;
-		title.append(sesScore);
+		const title = node('summary', 'cs-title');
+		title.append(node('span', 'cs-title-text', heading));
+		const fold = node('span', 'cs-fold');
+		const sesScore = (side) => {
+			const value = node('span', 'cs-tot-value', String(won(side)));
+			value.dataset.live = 'ses|' + heading + '|' + side;
+			return value;
+		};
+		const mid = node('span', 'cs-fold-score');
+		mid.append(sesScore('home'), node('span', 'cs-colon', ':'), sesScore('away'));
+		fold.append(TDC.runName(node('span', 'cs-team cs-home'), match.home_name), mid, TDC.runName(node('span', 'cs-team cs-away'), match.away_name));
+		title.append(fold);
 		block.append(title);
 
 		const grid = node('div', 'cs-grid');
@@ -1121,11 +1218,16 @@
 		}
 		cell.append(seat);
 
+		// The position alone (UV, 17 Nov): the frame's number left the sessions,
+		// and in Now and next it sits beside the session (quickPill). Centred
+		// under the name (UV, 17 Nov): the two share a box, the picture beside it.
 		const sub = [];
-		if (side === 'home') sub.push('F' + f.frame_no);   // F1, not Frame 1 (UV, 12 Nov)
 		if (pos) sub.push((side === 'home' ? 'H' : 'A') + pos);
 		if (f.result_event === 'default' && f.winner_side === side) sub.push('Walkover');
-		cell.append(node('span', 'cs-sub', sub.join(' · ')));
+		const label = seat.querySelector('.card-person-name, .cs-empty');
+		const box = node('span', 'cs-namebox');
+		label.replaceWith(box);
+		box.append(label, node('span', 'cs-sub', sub.join(' · ')));
 		return cell;
 	}
 
@@ -1472,7 +1574,6 @@
 	// filled an empty position counts as a reserve too: they were not in the
 	// order.
 	function renderHeadToHead(range) {
-		const at = when(match.scheduled_at) || 'No date';
 		const seats = { home: seatsOf('home', range), away: seatsOf('away', range) };
 
 		const tables = ['home', 'away'].map((side) => {
@@ -1483,7 +1584,7 @@
 			const table = node('table', 'tdc-table card-players h2h-table');
 			const thead = node('thead');
 			const head = node('tr');
-			head.append(node('th', 'cp-label h2h-when', at));
+			head.append(node('th', 'cp-label h2h-when'));   // empty (UV, 17 Nov; the match's date before)
 			for (const c of seats[other]) head.append(c.reserve ? reserveHead(c) : positionHead(other, c.pos));
 			head.append(node('th', 'cp-sep h2h-won', 'Won'));
 			thead.append(head);
@@ -1732,13 +1833,21 @@
 	function renderSignatures(both) {
 		if (els.signPanel.hidden) return;   // renderSummary decides
 
-		// The display face has no middle dot (global.css): each one is drawn in
-		// the body face (.sf-sep), or a stray mark shows in its place (16 Nov).
-		const leagueParts = info ? [info.league_name, info.name, TDC.venueNames(venues)].filter(Boolean) : [];
-		els.sfLeague.replaceChildren(...leagueParts.flatMap((p, i) => i ? [node('span', 'sf-sep', ' · '), p] : [p]));
+		// The league's shield, its name, then a line each for the season, the
+		// venues (links, as in the banner), the date and the round (UV, 17 Nov;
+		// one line joined by dots before).
+		els.sfPic.replaceChildren(TDC.leaguePic(seasonRow && seasonRow.tbl_leagues && seasonRow.tbl_leagues.picture_path, ''));
+		els.sfLeague.textContent = info ? info.league_name : '';
+		els.sfSeason.textContent = (info && info.name) || '';
+		els.sfSeason.hidden = !els.sfSeason.textContent;
+		els.sfVenue.replaceChildren();
+		venues.forEach((v, i) => { if (i) els.sfVenue.append(', '); els.sfVenue.append(TDC.venueLink(v)); });
+		els.sfVenue.hidden = !venues.length;
 		els.sfDate.textContent = match.scheduled_at
 			? new Date(match.scheduled_at).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 			: 'No date set';
+		els.sfRound.textContent = fixture && fixture.round ? 'Round ' + fixture.round : '';
+		els.sfRound.hidden = !els.sfRound.textContent;
 
 		const sides = (cardState && cardState.sides) || {};
 		const sigLine = (side, line, cap) => {

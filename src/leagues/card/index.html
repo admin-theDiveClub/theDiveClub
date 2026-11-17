@@ -134,8 +134,9 @@ extraScripts:
 		frame out of that order whose lag is in (a frame is under way from
 		its lag). Each is an inset pill with the frame's L and W, live for
 		the captains and the league director, greyed for everybody else. A
-		frame that gets its result fades out, the list lifts, and the next
-		fades in at the bottom.
+		frame that gets its result fades out, the rest slide into place (a
+		frame whose lag goes in glides up into Now), and the next fades in
+		at the bottom (UV, 17 Nov).
 	{% endcomment %}
 	<section id="quick" hidden aria-label="Frames being played and next">
 		<h2 class="lj-heading">Now and next</h2>
@@ -172,9 +173,18 @@ extraScripts:
 		wide as it needs on a PC, the width of the page on a phone.
 	{% endcomment %}
 	<section class="jumbo card-jumbo card-summary sign-form" id="sign-panel" hidden aria-label="The result and the signatures">
+		{% comment %}
+			The league's shield over its name, then each detail on its own line in
+			its own style (UV, 17 Nov): the season cream, the venue a green link as
+			in the banner, the date grey, the round green.
+		{% endcomment %}
 		<div class="sf-top">
+			<span class="lj-pic sf-pic"><span class="lj-pic-inner" id="sf-pic"></span></span>
 			<p class="sf-league" id="sf-league"></p>
+			<p class="sf-season" id="sf-season" hidden></p>
+			<p class="sf-venue" id="sf-venue" hidden></p>
 			<p class="sf-date" id="sf-date"></p>
+			<p class="sf-round" id="sf-round" hidden></p>
 		</div>
 		<div class="cj-head">
 			<div class="cj-team">

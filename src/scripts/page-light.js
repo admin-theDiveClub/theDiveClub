@@ -34,10 +34,12 @@
 //
 // Loaded in <head>, after the stylesheets, so the first paint already has the
 // light where it is. Its place is kept for the session (sessionStorage), so
-// moving between pages carries on the drift rather than jumping. Written
-// every STEP ms, by a timer rather than on every frame (3 Nov: battery), so
-// nothing runs between writes: it moves a few pixels a second, and every
-// write repaints the background and the blurred surfaces over it. With
+// moving between pages carries on the drift rather than jumping. Written on
+// every frame (UV, 17 Nov: smooth, the cost afforded), to a hundredth of a
+// pixel: a timer every STEP ms (3 Nov: battery), then whole pixels (16 Nov),
+// then the screen's own pixels, all showed as steps. Every write restyles
+// the page and repaints the shadows, so it still writes only on a change,
+// rests after REST and stops while the page is hidden. With
 // reduced motion the light rests at the centre: the device's setting, unless
 // the profile menu's toggle or the phone saving power has put its own on
 // <html> (data-motion, prefs.js).
@@ -120,17 +122,11 @@
 		if (y !== shownY) root.style.setProperty('--page-shadow-y', shownY = y);
 	}
 
-	// The screen's own pixels (UV, 17 Nov): every raised card's shadow follows
-	// these, so each write restyles the whole page (about 0.1 s on a long page
-	// on a phone), and writing only when a value changes keeps the writes few.
-	// Whole CSS pixels (16 Nov) were too coarse: on a phone one is two or three
-	// of the screen's, and every shadow on the page jumped by it at once. One
-	// screen pixel is the smallest step a shadow can be drawn at, so no write is
-	// wasted and no step is seen.
-	function px(v) {
-		var d = window.devicePixelRatio || 1;
-		return +(Math.round(v * d) / d).toFixed(3) + 'px';
-	}
+	// A hundredth of a pixel (UV, 17 Nov): every raised card's shadow follows
+	// these. Whole CSS pixels (16 Nov) jumped, two or three of a phone's pixels
+	// at once; the screen's own pixels then stuttered, a soft shadow's edge
+	// showing each step. Finer than the screen, the blur moves smoothly.
+	function px(v) { return +v.toFixed(2) + 'px'; }
 
 	function putOrbit(p) {
 		// At rest (less motion): straight down.
@@ -188,7 +184,7 @@
 		var now = performance.now();
 		// Nobody has touched the page for REST: no timer until somebody does
 		if (now - touched >= REST) { resting = true; return; }
-		timer = setTimeout(tick, STEP);
+		timer = requestAnimationFrame(tick);
 		// Held, it carries on from where it was once let go
 		if (hold()) { last = now; return; }
 		// Time counts only while the page is shown, a step at most STEP*2, so
@@ -209,7 +205,7 @@
 	function go() {
 		if (!running || timer || resting || document.hidden) return;
 		last = performance.now();
-		timer = setTimeout(tick, STEP);
+		timer = requestAnimationFrame(tick);
 	}
 
 	function start() {
@@ -222,7 +218,7 @@
 
 	function still() {
 		running = false;
-		clearTimeout(timer);
+		cancelAnimationFrame(timer);
 		timer = null;
 		read();
 		put({ x: 0, y: 0 });
@@ -273,7 +269,7 @@
 	window.addEventListener('blur', function () { pressed.clear(); });
 	document.addEventListener('visibilitychange', function () { if (document.hidden) pressed.clear(); });
 	document.addEventListener('visibilitychange', function () {
-		if (document.hidden) { clearTimeout(timer); timer = null; return; }
+		if (document.hidden) { cancelAnimationFrame(timer); timer = null; return; }
 		wake();
 		go();
 	});
