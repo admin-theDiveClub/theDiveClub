@@ -59,7 +59,9 @@
 	margin: 0;
 	font-family: var(--font-display);
 	font-weight: 400;
-	font-size: clamp(1.5rem, 7vw, 2.5rem);   /* the screen's width, not a breakpoint: a long word must fit beside the picture */
+	/* Every banner's main heading at the Standings line's size (UV, 17 Nov;
+	   was clamp(1.5rem, 7vw, 2.5rem)): the Season tab, a venue, the poster */
+	font-size: 1.15rem;
 	line-height: 1.32;   /* the capitals stand 1.08 tall, so less and two lines touch */
 	text-align: left;
 	overflow-wrap: break-word;
@@ -491,7 +493,8 @@
 	transition: transform 0.35s ease;
 }
 .lj-teams .team-box[open] .lj-team-arrow { transform: rotate(180deg); }
-.lj-teams .team-box-name { min-width: 0; font-family: var(--font-display); font-size: 1.35rem; font-weight: 400; line-height: 1.32; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* Team names at the banners' heading size (UV, 17 Nov; was 1.35rem, 1.1rem on a phone) */
+.lj-teams .team-box-name { min-width: 0; font-family: var(--font-display); font-size: 1.15rem; font-weight: 400; line-height: 1.32; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 /* A name too long for its card runs sideways and back (UV, 10 Nov; fitName in
  * league-season.js sets how far). With less motion it stops at "…". */
 .lj-run { display: inline-block; }
@@ -517,7 +520,7 @@
 	.lj-teams .team-box[open] { flex-basis: 100%; }
 	.lj-teams .team-box > summary { flex-direction: column; flex-wrap: nowrap; gap: var(--space-2); padding: var(--space-3); }
 	.lj-teams .lj-team-head { flex: none; flex-direction: column; gap: var(--space-2); max-width: 100%; text-align: center; }
-	.lj-teams .team-box-name { font-size: 1.1rem; }
+	.lj-teams .team-box-name { font-size: 1.1rem; }   /* already under 1.15rem: kept (UV, 17 Nov) */
 	.lj-team-line { margin-left: 0; }
 	.lj-teams .team-box > :not(summary) { margin-right: var(--space-4); margin-left: var(--space-4); }
 }

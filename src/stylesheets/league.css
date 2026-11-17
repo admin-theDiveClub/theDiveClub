@@ -1112,7 +1112,7 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 .ms-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-3); min-width: 0; }
 .ms-row[hidden] { display: none; }
 .ms-row .team-pic { width: 2.75rem; height: 2.75rem; }
-.ms-team { min-width: 0; font-family: var(--font-display); font-size: 1.5rem; line-height: 1.32; color: var(--color-team); }   /* one line, running when too long: TDC.runName (UV, 16 Nov) */
+.ms-team { min-width: 0; font-family: var(--font-display); font-size: 1.15rem;   /* the banners' heading size (UV, 17 Nov; was 1.5rem) */ line-height: 1.32; color: var(--color-team); }   /* one line, running when too long: TDC.runName (UV, 16 Nov) */
 .tdc-card .ls-where:empty { display: none; }
 .tdc-card .ls-where {
 	margin: 0;
@@ -1448,7 +1448,7 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .card-jumbo .cj-pic { width: 4.5rem; height: 4.5rem; }
 .cj-name {
 	font-family: var(--font-display);
-	font-size: 1.35rem;
+	font-size: 1.15rem;   /* every banner's main heading at the Standings line's size (UV, 17 Nov; was 1.35rem) */
 	line-height: 1.32;   /* the headings' line (UV, 16 Nov) */
 	/* Wrapping between words, never inside one; a word too long for the room runs sideways (UV, 16 Nov): TDC.runWords, .tdc-wrap in design.css */
 }
@@ -1500,7 +1500,7 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 
 @media (max-width: 30rem) {
 	.card-jumbo .cj-pic { width: 3.25rem; height: 3.25rem; }
-	.cj-name { font-size: 1.1rem; }
+	.cj-name { font-size: 1.1rem; }   /* already under the banners' heading size: kept, never enlarged (UV, 17 Nov) */
 	.cj-score { font-size: 2.4rem; }
 }
 
