@@ -30,8 +30,13 @@
 	width: 100%;
 }
 .pp-id .pp-pic-wrap { justify-self: end; }
-/* The names stand on the picture's foot (UV, 5 Nov). */
-.pp-names { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; align-self: end; }
+/* The picture as tall as the names, all in a row (UV, 17 Nov): the names trimmed to
+ * the display name's capitals and the full name's baseline, so the picture's top and
+ * foot meet them; player.js (sizePic) sets the picture to the names' height. */
+.pp-names { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; align-self: center; }
+.pp-names h1,
+.pp-names .pp-full { text-box: trim-both cap alphabetic; }
+.tdc-card .pp-names .pp-full { margin: 0; }   /* over the card's paragraph margin, or the picture is 24px too tall */
 /* Against the line, over forms.css's centred page heading and its line. */
 .tdc-card .pp-names h1,
 .tdc-card .pp-names h1 + p { text-align: left; }
@@ -39,8 +44,8 @@
 /* A plain circle (UV, 7 Nov: no ring round a picture). Narrower on the narrowest
    screens, where half the card is less than its width. */
 .pp-pic {
-	width: min(8.25rem, 38vw);
-	height: min(8.25rem, 38vw);
+	width: var(--pp-pic-size, min(8.25rem, 38vw));
+	height: var(--pp-pic-size, min(8.25rem, 38vw));
 	border-radius: var(--radius-round);
 	box-shadow: var(--shadow-pic);
 }
@@ -52,7 +57,7 @@
 	border-radius: var(--radius-round);
 	overflow: hidden;
 	color: var(--text-primary);
-	font-size: 2.75rem;
+	font-size: calc(var(--pp-pic-size, 8.25rem) * 0.33);   /* the initials with the picture */
 	font-weight: 700;
 }
 .pp-pic-inner img { width: 100%; height: 100%; object-fit: cover; }

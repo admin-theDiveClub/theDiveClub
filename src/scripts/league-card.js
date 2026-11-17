@@ -380,15 +380,22 @@
 		renderSwitch(both);
 		renderLineups(locked, both, canSet);
 		renderQuick(both);
-		// A player sees their own frames in place of every session.
-		if (asPlayer()) { els.grid.hidden = true; renderMine(both); }
-		else { els.mine.hidden = true; renderSessions(both); }
+		// A player sees their own frames in place of every session; once the
+		// card is completed, their table above the sessions, which everybody
+		// sees then as plain tables (UV, 17 Nov).
+		const player = asPlayer();
+		if (player) renderMine(both); else els.mine.hidden = true;
+		if (!player || cardDone()) renderSessions(both); else els.grid.hidden = true;
 		renderSummary(both);
 		renderPlayers(both);
 		renderSignatures(both);
 	}
 
 	const score = (side) => card.filter((f) => f.winner_side === side).length;
+	// A completed card (UV, 17 Nov): signed by both, or published. Every
+	// switch greys then, so the sessions are drawn as plain tables and a
+	// player sees only their own table.
+	const cardDone = () => !!cardState && (cardState.state === 'agreed' || cardState.state === 'approved');
 	const teamSize = () => (match.rules && match.rules.team_size) || 0;
 
 	// The card's state, as the banner's badge. Each key has a colour in
@@ -1051,7 +1058,8 @@
 		// A note under the sessions, only when there is something to say:
 		// the strict order, seats still empty, and a side with no reserve.
 		const empty = card.filter((f) => f.status === 'pending' && (!f.home_player_id || !f.away_player_id)).length;
-		const hint = ((strict ? 'Frames must be played in order, so only frame ' + (nextOpen || '—') + ' can be entered.' : '')
+		// Nothing left to enter on a completed card, so no note.
+		const hint = cardDone() ? '' : ((strict ? 'Frames must be played in order, so only frame ' + (nextOpen || '—') + ' can be entered.' : '')
 			+ (empty
 				? ' ' + empty + (empty === 1 ? ' frame has' : ' frames have') + ' an empty seat: put a reserve or a latecomer in, or it is a walkover when the card is signed.'
 				: '')
@@ -1068,8 +1076,10 @@
 			bySession.get(s).push(f);
 		}
 		const blocks = [];
+		const done = cardDone();
 		for (const [s, frames] of bySession) {
-			blocks.push(sessionBlock(bySession.size > 1 ? 'Session ' + s : 'The frames', frames, strict, nextOpen));
+			const heading = bySession.size > 1 ? 'Session ' + s : 'The frames';
+			blocks.push(done ? sessionTable(heading, frames) : sessionBlock(heading, frames, strict, nextOpen));
 		}
 		els.sessions.replaceChildren(...blocks);
 		for (const b of blocks) sessionSizes.observe(b);
@@ -1092,7 +1102,7 @@
 		: { observe() {} };
 	twoColumns.addEventListener('change', () => placeSessions());
 	function placeSessions() {
-		const blocks = [...els.sessions.children].filter((b) => b.matches('.cs-session'));
+		const blocks = [...els.sessions.children].filter((b) => b.matches('.cs-session, .cs-done'));
 		for (const b of blocks) { b.style.gridColumn = b.style.gridRow = ''; b.classList.remove('is-lone'); }
 		if (!twoColumns.matches) return;
 		const tall = [0, 0];   // each column's height so far, in rows
@@ -1172,6 +1182,52 @@
 		total.append(both);
 		grid.append(total);
 		block.append(grid);
+		return block;
+	}
+
+	// A session on a completed card (UV, 17 Nov): a plain table, always open,
+	// no pill. Its heading with the session's score; the teams over the name
+	// columns; a row per frame, home player · home mark · away mark · away
+	// player, the marks as Head to head draws them (frameMark), no pictures.
+	// Each name keeps to one line and runs sideways when too long.
+	function sessionTable(heading, frames) {
+		const block = node('section', 'cs-done');
+		const won = (side) => frames.filter((f) => f.winner_side === side).length;
+		const title = node('h3', 'cs-done-title lj-heading');
+		const sc = node('span', 'cs-done-score');
+		for (const side of ['home', 'away']) {
+			const value = node('span', 'cs-tot-value', String(won(side)));
+			value.dataset.live = 'ses|' + heading + '|' + side;
+			sc.append(value);
+			if (side === 'home') sc.append(node('span', 'cs-colon', ':'));
+		}
+		title.append(node('span', 'cs-done-text', heading), sc);
+		block.append(title);
+
+		const table = node('table', 'tdc-table card-players cs-done-table');
+		const thead = node('thead'), head = node('tr');
+		head.append(TDC.runName(node('th', 'cs-done-name cs-done-home cp-team'), match.home_name),
+			node('th', 'cs-done-mark'), node('th', 'cs-done-mark'),
+			TDC.runName(node('th', 'cs-done-name cs-done-away cp-team'), match.away_name));
+		thead.append(head);
+		const tbody = node('tbody');
+		for (const f of frames) {
+			const tr = node('tr');
+			const name = (side) => {
+				const td = node('td', 'cs-done-name cs-done-' + side);
+				return TDC.runName(td, (side === 'home' ? f.home_player : f.away_player) || 'Empty seat');
+			};
+			const mark = (side) => {
+				const td = node('td', 'cp-cell cs-done-mark');
+				td.append(frameMark(f, side));
+				markEdited(td, [f]);
+				return td;
+			};
+			tr.append(name('home'), mark('home'), mark('away'), name('away'));
+			tbody.append(tr);
+		}
+		table.append(thead, tbody);
+		block.append(table);
 		return block;
 	}
 
@@ -1402,6 +1458,13 @@
 		const nextOpen = strict ? (card.find((f) => f.status === 'pending') || {}).frame_no : null;
 		const lockedCard = cardState && (cardState.state === 'agreed' || cardState.state === 'approved');
 
+		// Live, the frames block alone; completed, the table alone, headed
+		// Your Frames (UV, 17 Nov).
+		const done = cardDone();
+		els.mineFrames.hidden = done;
+		els.mineSessions.hidden = !done;
+		if (done) { renderMineTables(frames, sideOf(frames[0])); return; }
+
 		// One block, as a session is drawn: a row per frame, the player at
 		// the left with the session and frame under their name, their L and
 		// W (their end the left), the opponent at the right.
@@ -1434,7 +1497,6 @@
 		}
 		block.append(grid);
 		els.mineFrames.replaceChildren(block);
-		renderMineTables(frames, mySide);
 	}
 
 	// One seat on a player's row: the picture and name, a line under it.
@@ -1487,7 +1549,7 @@
 			box.append(scroll);
 			return box;
 		};
-		els.mineSessions.replaceChildren(wrap('By session', bySes));
+		els.mineSessions.replaceChildren(wrap('Your Frames', bySes));
 	}
 
 	// ─── Every player's frames ───

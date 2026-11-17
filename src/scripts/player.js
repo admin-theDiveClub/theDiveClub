@@ -178,6 +178,16 @@
 			const size = parseFloat(getComputedStyle(h).fontSize);
 			h.style.fontSize = Math.floor(size * room / h.scrollWidth) + 'px';
 		}
+		sizePic();
+	}
+
+	// The picture as tall as the names beside it (UV, 17 Nov), never wider than
+	// its half of the hero.
+	function sizePic() {
+		const names = els.name.parentElement, id = names.parentElement;
+		const half = (id.clientWidth - parseFloat(getComputedStyle(id).columnGap || 0)) / 2;
+		const size = Math.min(names.offsetHeight, half);
+		if (size > 0) els.pic.style.setProperty('--pp-pic-size', Math.round(size) + 'px');
 	}
 	document.fonts.ready.then(() => { if (them) fitName(); });
 	addEventListener('resize', () => { if (them) fitName(); });

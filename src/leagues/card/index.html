@@ -143,17 +143,13 @@ extraScripts:
 		<div class="qv-list" id="quick-list"></div>
 	</section>
 
-	<div id="grid" hidden>
-		<div id="session-list"></div>
-		<p class="muted card-hint" id="grid-hint" hidden></p>
-	</div>
-
 	{% comment %}
 		The player's view (UV, 29 Oct), in place of the sessions for
 		somebody who plays tonight and is neither captain nor league
 		director: their own frames, their name always at the left with the
-		session and frame under it, only their own L and W live; then their
-		own table, by session (its head-to-head twin removed, UV, 12 Nov).
+		session and frame under it, only their own L and W live. Once the
+		card is completed (UV, 17 Nov): their own table alone, headed Your
+		Frames, above the sessions, which they then see as everybody does.
 		The result and signatures below are everybody's, read-only for them.
 	{% endcomment %}
 	<div id="mine" hidden>
@@ -161,6 +157,15 @@ extraScripts:
 		<div class="mine-tables">
 			<div id="mine-sessions"></div>
 		</div>
+	</div>
+
+	{% comment %}
+		The sessions: folding pills with the L and W switches; on a completed
+		card (signed by both, or published) a plain table each (UV, 17 Nov).
+	{% endcomment %}
+	<div id="grid" hidden>
+		<div id="session-list"></div>
+		<p class="muted card-hint" id="grid-hint" hidden></p>
 	</div>
 
 	{% comment %}

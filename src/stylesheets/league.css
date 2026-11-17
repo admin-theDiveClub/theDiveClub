@@ -1728,11 +1728,40 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	}
 	/* A session alone in its row, both columns level above it, centred at a
 	 * column's width (UV, 17 Nov). */
-	#session-list > .cs-session.is-lone {
+	#session-list > .cs-session.is-lone,
+	#session-list > .cs-done.is-lone {
 		justify-self: center;
 		width: calc((100% - var(--space-5)) / 2);
 	}
 }
+
+/* A session on a completed card (UV, 17 Nov): a plain table, always open,
+ * no pill. Its heading a grey line each side with the session's score; the
+ * teams over the name columns; a row per frame, home player · mark · mark ·
+ * away player, every name on one line (running sideways when too long, as
+ * TDC.runName does), the home name and team against the marks on the
+ * right, the away ones on the left, so a row reads across the middle. */
+.cs-done { min-width: 0; margin-bottom: var(--space-5); }
+.tdc-card .cs-done-title { margin: 0 0 var(--space-2); font-size: 1rem; color: var(--text-primary); }
+.cs-done-text { font-family: var(--font-display); font-weight: 400; white-space: nowrap; }
+.cs-done-score { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cs-done-score .cs-tot-value { font-size: 1rem; }
+.cs-done-score .cs-colon { margin: 0 var(--space-1); color: var(--text-muted); }
+.card-players.cs-done-table { width: 100%; table-layout: fixed; }
+.card-players.cs-done-table th,
+.card-players.cs-done-table td { padding-top: var(--space-1); padding-bottom: var(--space-1); vertical-align: middle; }
+.card-players.cs-done-table .cs-done-mark { width: 2.25rem; padding-left: var(--space-1); padding-right: var(--space-1); }
+.card-players.cs-done-table .cs-done-name { display: table-cell; font-size: 0.9rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+.card-players.cs-done-table th.cs-done-name { color: var(--text-muted); text-transform: none; letter-spacing: normal; }
+/* No line between the teams and the players (UV, 17 Nov). */
+.card-players.cs-done-table thead th { border-bottom: none; }
+/* No cross for a lost frame here (UV, 17 Nov): the winner's dot says it;
+ * the lag's ring stays. Head to head and By session keep their crosses. */
+.cs-done-table .h2h-mark.is-lost::before { content: none; }
+.card-players.cs-done-table .cs-done-home { text-align: right; }
+.card-players.cs-done-table .cs-done-away { text-align: left; }
+.cs-done-table .h2h-mark { width: 1.3rem; height: 1.3rem; }
+.cs-done-table .h2h-mark.is-won::before { width: 0.65rem; height: 0.65rem; }
 
 .tdc-card .card-hint { margin: 0 0 var(--space-4); font-size: 0.85rem; text-align: center; }
 
@@ -1965,6 +1994,9 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	margin-top: var(--space-5);
 }
 .mine-tables > div { min-width: 0; max-width: 100%; }
+/* Live, the frames block alone; completed, the table alone (UV, 17 Nov). */
+.mine-tables:not(:has(> :not([hidden]))) { display: none; }
+#mine-frames[hidden] + .mine-tables { margin-top: 0; margin-bottom: var(--space-5); }
 .mine-table td.mine-opp { text-align: left; }
 /* The league over the result in the display face, cream, as a banner's name
  * on the Season tab (UV, 11 Nov; it was green). */
