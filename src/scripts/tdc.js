@@ -308,7 +308,9 @@ const TDC = (() => {
 	// the EXIF block, and with it a phone photo's GPS position. Returns a
 	// Blob, or null having said why (a HEIC the browser cannot read is the
 	// likely failure). Shared by the profile page and league settings.
-	async function preparePicture(file, size, area, statusEl) {
+	// whole: keep the whole picture, its longer side shrunk to size, rather
+	// than the middle square (a venue's, UV 17 Nov: shown in full).
+	async function preparePicture(file, size, area, statusEl, { whole = false } = {}) {
 		let bitmap;
 		try {
 			// from-image so a photo taken sideways is not saved sideways.
@@ -319,17 +321,23 @@ const TDC = (() => {
 		}
 
 		const side = Math.min(bitmap.width, bitmap.height);
+		// Whole: never enlarged, so a small picture is not blurred up to size.
+		const scale = whole ? Math.min(1, size / Math.max(bitmap.width, bitmap.height)) : 1;
 		const canvas = document.createElement('canvas');
-		canvas.width = size;
-		canvas.height = size;
+		canvas.width = whole ? Math.max(1, Math.round(bitmap.width * scale)) : size;
+		canvas.height = whole ? Math.max(1, Math.round(bitmap.height * scale)) : size;
 		const ctx = canvas.getContext('2d');
 		if (!ctx) {
 			error(area, 'this browser would not give us a canvas to resize the picture.', null, statusEl);
 			return null;
 		}
-		ctx.drawImage(bitmap,
-			(bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side,
-			0, 0, size, size);
+		if (whole) {
+			ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+		} else {
+			ctx.drawImage(bitmap,
+				(bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side,
+				0, 0, size, size);
+		}
 		if (bitmap.close) bitmap.close();
 
 		// toBlob quietly falls back to PNG for a type it does not know, so the

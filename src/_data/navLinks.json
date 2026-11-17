@@ -16,6 +16,10 @@
     "url": "/leagues/"
   },
   {
+    "label": "Affiliate Clubs",
+    "url": "/venues/"
+  },
+  {
     "label": "Players",
     "url": "/players/"
   }

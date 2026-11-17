@@ -51,6 +51,9 @@ const TDCRing = (() => {
 		bolt:  { label: 'Power',   strokes: ['M56 28L40 54L56 54', 'M44 72L56 54'] },
 		home:  { label: 'Home',    strokes: ['M30 50L50 32L70 50', 'M36 46L36 68L64 68L64 46'] },
 		mail:  { label: 'Mail',    strokes: ['M28 64L28 36L72 36L72 64L28 64', 'M28 36L50 54L72 36'] },
+		// A handset and a speech bubble: the venue page's Call and WhatsApp (17 Nov).
+		phone: { label: 'Call',    strokes: ['M40 30L46 41L41 46C44 53 47 56 54 59L59 54L70 60L70 65C70 68 68 70 65 70C46 69 31 54 30 35C30 32 32 30 35 30L40 30'] },
+		chat:  { label: 'Message', strokes: ['M37 65A20 20 0 1 0 31 58L28 70L37 65'] },
 		pin:   { label: 'Located', strokes: [
 			'M50 72C38 58 34 52 34 44C34 35 41 29 50 29',
 			'M50 72C62 58 66 52 66 44C66 35 59 29 50 29'] },

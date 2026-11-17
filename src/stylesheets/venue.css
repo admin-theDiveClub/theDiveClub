@@ -1,23 +1,162 @@
-/* A venue's page (/venues/, scripts/venue.js; UV, 5 Nov). Loaded after league.css
- * and league-join.css, whose banner, ring and notes it uses. Tokens only. */
+/* A venue's page (/venues/, scripts/venue.js; UV, 5 Nov; restyled 17 Nov in the
+ * Season tab's language). Loaded after league.css and league-join.css, whose
+ * banner, corner icons, people, headings, notes and the Leagues page's tiles
+ * it uses. Tokens only. */
 
-.venue-links {
+/* ── The banner ── */
+
+/* Maps, Call, WhatsApp and Email: the corner's icons (league-join.css, .lj-icon),
+ * in a row under the names. Four in the corner took the name's first line on a
+ * phone and broke it inside a word. */
+.venue-actions {
 	display: flex;
 	flex-wrap: wrap;
-	gap: var(--space-3);
-	margin-top: var(--space-4);
-}
-/* They are links, so their words are centred here rather than by a button's own. */
-.venue-links .btn {
-	display: inline-flex;
-	align-items: center;
+	gap: var(--space-1);
+	margin: var(--space-2) 0 0 calc(var(--space-2) * -1);
 }
 
+/* The venue's picture stands plain (UV, 17 Nov): no shadow round it and no
+ * sunken inset over it (design.css, "Pictures set into the page"), in the
+ * banner and on Settings. The ids outrank that rule's :is() list. */
+.venue-hero .lj-pic,
+.venue-pic-preview { box-shadow: none; }
+#v-pic::after,
+#vs-pic::after { content: none; }
+/* Shown in full (UV, 17 Nov): no circle, the whole picture fitted in its box. */
+.venue-hero .lj-pic,
+.venue-pic-preview,
+#v-pic,
+#vs-pic { border-radius: 0; overflow: visible; }
+#v-pic img,
+#vs-pic img { object-fit: contain; }
+
+/* The status strip says whether it is open: green, or grey when closed. */
+.venue-hero.venue-is-open { --strip-color: var(--color-primary); }
+.venue-hero.venue-is-closed { --strip-color: var(--text-muted); }
+.tdc-card .venue-open { margin: var(--space-1) 0 0; font-size: 0.9rem; color: var(--text-muted); text-align: left; }
+.tdc-card .venue-open.is-open { color: var(--color-primary); }
+
+/* The details with grey lines between them only, never above or below, as the
+ * scorecard banner's (league.css, .card-jumbo): two across on a phone, four from
+ * 48rem; a line down fills its row, a line across runs the whole width and shows
+ * only where the details have wrapped; the outer ones are clipped. Who runs it
+ * takes a row of its own, last. */
+.lj-hero .venue-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 0; overflow-x: clip; }
+.venue-facts > * { position: relative; padding-block: var(--space-2); }
+.venue-facts > *::before,
+.venue-facts > :nth-child(n+3)::after,
+.venue-facts > .venue-people:not(:first-child)::after {
+	content: "";
+	position: absolute;
+	pointer-events: none;
+}
+.venue-facts > *::before {
+	top: 0;
+	bottom: 0;
+	left: calc(var(--space-5) / -2);
+	border-left: 1px solid var(--border-color);
+}
+.venue-facts > :nth-child(n+3)::after,
+.venue-facts > .venue-people:not(:first-child)::after {
+	top: 0;
+	right: -100vw;
+	left: -100vw;
+	border-top: 1px solid var(--border-color);
+}
+.venue-facts > .venue-people { grid-column: 1 / -1; }
+/* An odd one out takes its row, so no line runs down beside nothing. */
+.venue-facts > :nth-child(odd):has(+ .venue-people) { grid-column: 1 / -1; }
+@media (min-width: 48rem) {
+	.lj-hero .venue-facts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+	.venue-facts > :nth-child(odd):has(+ .venue-people) { grid-column: auto; }
+	.venue-facts > :nth-child(n+3):not(.venue-people)::after { content: none; }
+	.venue-facts > :nth-child(n+5):not(.venue-people)::after { content: ""; }
+}
+.venue-people dd { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
+.venue-fact-note { display: block; font-size: 0.85rem; color: var(--text-muted); }
+/* Each link whole, wrapping only between them. */
+.venue-facts dd .venue-link { display: inline-block; margin-right: var(--space-3); white-space: nowrap; }
+.venue-facts dd .venue-link:last-child { margin-right: 0; }
+
+/* ── The sections under it ── */
+#v-about-box,
+#v-hours-box { margin-top: var(--space-5); }
+
+/* The week, sunk into the card as the notes are; today in green. */
 .venue-hours {
 	display: grid;
 	grid-template-columns: max-content minmax(0, 1fr);
-	gap: var(--space-1) var(--space-4);
-	margin: 0 0 var(--space-2);
+	gap: var(--space-2) var(--space-5);
+	max-width: 24rem;
+	margin: 0 auto var(--space-2);
+	padding: var(--space-4) var(--nm-pad);
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-sunken);
+	box-sizing: border-box;
 }
+.venue-hours-row { display: contents; }
 .venue-hours dt { color: var(--text-muted); }
-.venue-hours dd { margin: 0; }
+.venue-hours dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.venue-hours-row.is-closed dd { color: var(--text-muted); }
+.venue-hours-row.is-today :is(dt, dd) { color: var(--color-primary); font-weight: 600; }
+.tdc-card .venue-hours-note { margin: 0 0 var(--space-2); font-size: 0.85rem; color: var(--text-muted); text-align: center; }
+
+/* Leagues and tournaments: the Leagues page's tiles. A tournament's strip in
+ * its state's colour, as the home page's: yellow under way, green open, grey
+ * otherwise. */
+.venue-tiles { margin-top: 0; }
+.tournament-status-open        { --strip-color: var(--color-primary); }
+.tournament-status-in_progress { --strip-color: var(--color-warning); }
+.tournament-status-draft,
+.tournament-status-complete,
+.tournament-status-cancelled   { --strip-color: var(--text-muted); }
+/* A tournament's bare trophy only: a league's shield draws its shading as svg
+ * layers inside .tdc-shaped, which must keep their own size. */
+.venue-tiles .league-tile-pic > svg { width: 55%; height: 55%; }
+
+/* ── Settings ── */
+#settings .lj-heading { margin-top: var(--space-6); }
+.venue-pic-preview { width: 4.5rem; height: 4.5rem; flex: none; }
+.vs-no-pic { font-size: 0.8rem; color: var(--text-muted); }
+
+/* The hours: a row a day, the day's name, its times, and the button to add one. */
+.tdc-card .vs-hours-hint { margin-top: 0; }
+.vs-hours { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-5); }
+.vs-day {
+	display: grid;
+	grid-template-columns: 6.5rem minmax(0, 1fr) auto;
+	align-items: center;
+	gap: var(--space-2) var(--space-3);
+}
+.vs-day-name { font-weight: 600; }
+.vs-spans { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.vs-closed { color: var(--text-muted); }
+.vs-span { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.vs-span input[type="time"] { width: auto; min-width: 0; flex: 0 1 7.5rem; margin: 0; }
+.vs-to { color: var(--text-muted); font-size: 0.85rem; }
+.tdc-card .vs-span-x,
+.tdc-card .vs-add { margin: 0; }
+@media (max-width: 30rem) {
+	.vs-day { grid-template-columns: minmax(0, 1fr) auto; }
+	.vs-spans { grid-column: 1 / -1; grid-row: 2; }
+}
+
+/* ── Affiliate Clubs: every venue (/venues/ with no venue named; UV, 17 Nov) ──
+ * The Leagues page's wide cards (league.css, .lc), the strip green open and
+ * grey closed; the picture whole and plain, as on the venue's own page. */
+.venue-search { margin-bottom: var(--space-5); }
+.venue-card.venue-is-open { --strip-color: var(--color-primary); }
+.venue-card.venue-is-closed { --strip-color: var(--text-muted); }
+.venue-card-pic {
+	flex: none;
+	display: grid;
+	place-items: center;
+	width: 5rem;
+	height: 5rem;
+	color: var(--color-primary);
+}
+.venue-card-pic img { width: 100%; height: 100%; object-fit: contain; }
+.venue-card-pic svg { width: 60%; height: 60%; }
+.tdc-card .venue-card .venue-open { margin-top: var(--space-1); text-align: left; }
+.venue-pill .venue-pill-run { flex: 1 1 auto; font-size: 0.85rem; color: var(--text-muted); }
+.tdc-card .venue-none { text-align: center; }

@@ -10,6 +10,7 @@ extraStyles:
 extraScripts:
   - /scripts/banner-table.js
   - /scripts/match-settings.js
+  - /scripts/venue-settings.js
   - /scripts/venue.js
 ---
 {% comment %}
@@ -17,12 +18,40 @@ extraScripts:
 	a venue is named. It renders without a session, as the poster does, because
 	the poster links here.
 
+	Restyled 17 Nov (UV) in the Season tab's language: the banner with the
+	venue's picture, Maps, Call, WhatsApp and Email as icons under the names, every
+	detail with grey lines between them, and who runs it (the owner for
+	everybody, admins and staff for somebody signed in). Leagues and tournaments
+	as the Leagues page's tiles.
+
+	Its owner or admin, or the site owner, gets two tabs at the top (Venue, and
+	Settings in the second pill, as a league's), at &tab=settings: every detail,
+	the picture and the hours. Nobody else sees the bar.
+
 	Reads tdc_venue and tdc_venue_competitions, both open to anybody: display
 	details only, and only the leagues and tournaments their directors have made
 	public. Only what the venue has filled in is shown.
 {% endcomment %}
 
 <div class="tdc-card wide lj-page">
+	<nav class="league-nav" id="venue-nav" hidden></nav>
+	<nav class="league-nav league-nav-admin" id="venue-nav-admin" hidden></nav>
+
+	{% comment %}
+		With no venue named: every active venue (UV, 17 Nov), as the Leagues
+		page lists its seasons, one wide card each, with a search over name,
+		area and city in the browser. "Affiliate Clubs" in the menu (UV).
+		tdc_venues, one call, signed out too.
+	{% endcomment %}
+	<div id="list" hidden>
+		<h1>Affiliate Clubs</h1>
+		<div class="field venue-search">
+			<input type="search" id="venue-search" autocomplete="off" placeholder="Name, area or city" aria-label="Find a club">
+		</div>
+		<div class="league-cards venue-cards" id="venue-list"></div>
+		<p class="muted venue-none" id="venue-none" hidden></p>
+	</div>
+
 	<div id="nothing" hidden>
 		<h1>Nothing here</h1>
 		<p class="muted">This venue is not on the platform, or the link is wrong.</p>
@@ -33,35 +62,142 @@ extraScripts:
 	</div>
 
 	<div id="venue" hidden>
-		<section class="jumbo lj-hero" id="v-hero" data-banner-table>
+		<section class="jumbo lj-hero venue-hero" id="v-hero" data-banner-table>
 			<div class="lj-id">
 				<span class="lj-pic"><span class="lj-pic-inner" id="v-pic"></span></span>
 				<div class="lj-names">
 					<h1 id="v-name">Venue</h1>
 					<p class="lj-season" id="v-place"></p>
+					<p class="venue-open" id="v-open" hidden></p>
+					<div class="venue-actions" id="v-corner" hidden></div>
 				</div>
 			</div>
-			<dl class="jumbo-facts" id="v-facts"></dl>
+			<dl class="jumbo-facts venue-facts" id="v-facts"></dl>
 		</section>
 
-		<div class="venue-links" id="v-links" hidden></div>
-
 		<div class="lj-notes-box" id="v-about-box" hidden>
-			<h2>About</h2>
+			<h2 class="lj-heading">About</h2>
 			<p class="lj-notes" id="v-about"></p>
 		</div>
 
 		<div id="v-hours-box" hidden>
-			<h2>Hours</h2>
+			<h2 class="lj-heading">Hours</h2>
 			<dl class="venue-hours" id="v-hours"></dl>
-			<p class="muted" id="v-hours-note" hidden></p>
+			<p class="venue-hours-note" id="v-hours-note" hidden></p>
 		</div>
 
-		<h2>Leagues</h2>
-		<div id="v-leagues"></div>
+		<h2 class="lj-heading">Leagues <span class="badge" id="v-league-count" hidden></span></h2>
+		<div class="league-tiles scroll-x venue-tiles" id="v-leagues"></div>
 
-		<h2>Tournaments</h2>
-		<div id="v-tournaments"></div>
+		<h2 class="lj-heading">Tournaments <span class="badge" id="v-tournament-count" hidden></span></h2>
+		<div class="league-tiles scroll-x venue-tiles" id="v-tournaments"></div>
+	</div>
+
+	{% comment %}
+		The Settings tab (venue-settings.js). The picture is saved the moment it
+		is chosen, as a league's is; everything else with Save, which sends the
+		details (tdc_update_venue) and then the week's hours (tdc_set_venue_hours),
+		and the page reads everything again. The name is not here: it stays in
+		migrations (UV, 17 Nov).
+	{% endcomment %}
+	<div id="settings" hidden>
+		<h1>Venue Settings</h1>
+		<p class="muted" id="vs-meta"></p>
+
+		<div class="field league-pic-field">
+			<label for="vs-pic-choose">Venue picture</label>
+			<div class="league-pic-row">
+				<span class="lj-pic venue-pic-preview"><span class="lj-pic-inner" id="vs-pic"></span></span>
+				<div class="btn-row">
+					<button type="button" class="btn btn-secondary btn-sm" id="vs-pic-choose">Choose a picture</button>
+					<button type="button" class="btn btn-danger btn-sm" id="vs-pic-remove" hidden>Remove</button>
+				</div>
+			</div>
+			<input type="file" id="vs-pic-file" accept="image/*" hidden>
+			<div class="hint">Shown in full in the banner, and saved as soon as you choose it.</div>
+			<div class="status" id="vs-pic-status"></div>
+		</div>
+
+		<h2 class="lj-heading">About</h2>
+		<div class="field">
+			<label for="vs-description">About the venue</label>
+			<textarea id="vs-description" maxlength="500" rows="4"></textarea>
+			<div class="hint">A few lines for the venue's page. 500 characters at most.</div>
+		</div>
+
+		<h2 class="lj-heading">Where</h2>
+		<div class="field">
+			<label for="vs-address">Address</label>
+			<input type="text" id="vs-address" maxlength="200" autocomplete="off">
+			<div class="hint">The street address without the area or city, e.g. "C5, The Gantry".</div>
+		</div>
+		<div class="field">
+			<label for="vs-area">Area</label>
+			<input type="text" id="vs-area" maxlength="100" autocomplete="off">
+			<div class="hint">The part of town, e.g. "Lonehill, Fourways".</div>
+		</div>
+		<div class="field">
+			<label for="vs-city">City</label>
+			<input type="text" id="vs-city" maxlength="100" autocomplete="off">
+		</div>
+		<div class="field">
+			<label for="vs-maps">Maps link</label>
+			<input type="url" id="vs-maps" maxlength="500" autocomplete="off" placeholder="https://">
+			<div class="hint">From Google Maps: Share, then Copy link. The pin in the banner opens it.</div>
+		</div>
+
+		<h2 class="lj-heading">Tables</h2>
+		<div class="field">
+			<label for="vs-table-count">Number of tables</label>
+			<input type="number" id="vs-table-count" min="0" max="200" step="1" inputmode="numeric">
+		</div>
+		<div class="field">
+			<label for="vs-table-note">About the tables</label>
+			<input type="text" id="vs-table-note" maxlength="200" autocomplete="off">
+			<div class="hint">What they are, in words, e.g. "6 x 9ft, 1 snooker".</div>
+		</div>
+
+		<h2 class="lj-heading">Contact</h2>
+		<div class="field">
+			<label for="vs-phone">Phone</label>
+			<input type="tel" id="vs-phone" maxlength="21" autocomplete="off">
+			<div class="hint">Digits and spaces, with a leading + if you like. The handset in the banner dials it.</div>
+		</div>
+		<div class="field">
+			<label for="vs-whatsapp">WhatsApp</label>
+			<input type="tel" id="vs-whatsapp" maxlength="21" autocomplete="off">
+			<div class="hint">With the country code, e.g. +27 82 123 4567, or the banner cannot open a chat.</div>
+		</div>
+		<div class="field">
+			<label for="vs-email">Email</label>
+			<input type="email" id="vs-email" maxlength="200" autocomplete="off">
+		</div>
+
+		<h2 class="lj-heading">Links</h2>
+		<div class="field">
+			<label for="vs-website">Website</label>
+			<input type="url" id="vs-website" maxlength="500" autocomplete="off" placeholder="https://">
+		</div>
+		<div class="field">
+			<label for="vs-instagram">Instagram</label>
+			<input type="url" id="vs-instagram" maxlength="500" autocomplete="off" placeholder="https://">
+		</div>
+		<div class="field">
+			<label for="vs-facebook">Facebook</label>
+			<input type="url" id="vs-facebook" maxlength="500" autocomplete="off" placeholder="https://">
+		</div>
+
+		<h2 class="lj-heading">Hours</h2>
+		<p class="hint vs-hours-hint">A day with no times is closed. A closing time earlier than the opening time is the next morning.</p>
+		<div class="vs-hours" id="vs-hours"></div>
+		<div class="field">
+			<label for="vs-hours-note">Note about the hours</label>
+			<input type="text" id="vs-hours-note" maxlength="200" autocomplete="off">
+			<div class="hint">Anything the times cannot say, e.g. "Closed on public holidays".</div>
+		</div>
+
+		<button type="button" class="btn-primary" id="vs-save">Save</button>
+		<div class="status" id="vs-status"></div>
 	</div>
 
 	<div class="status" id="page-status"></div>
