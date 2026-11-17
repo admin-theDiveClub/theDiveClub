@@ -2301,3 +2301,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Example:* with only a 70° cut on, a straight double usually wins; with a 20° cut on, the cut does.
 *Claude's, for UV to judge:* a double weighted at 0.35 of a direct pot of the same cut and length (`BANK_WEIGHT`); the cushion point aimed allowing for the cushion's loss (1 − ks); swerve fading in proportion to the speed below 2 balls a second (`SWERVE_FADE`), from UV's reading of the sticking glitch, which it did not cure (STATUS §3).
 *So:* `scripts/banner-table.js` and `scripts/hero.js` (`doublesOn`, `paceFor`, `startPlanning`, the shot readout); STATUS §1 4ci and §3.
+
+## 2026-11-17 — Two-cushion doubles by parallel shift
+
+*Decided by UV:* the planner also tries doubles off two cushions, aimed by parallel shift. Every banner and the home page's table.
+*Example:* a ball 3 off the side cushion and 4 off the end, a pocket 18 off the side and 2 off the end: the ball is sent about 3 along for each 1 across, and comes back off the second cushion on a parallel line into the pocket.
+*Claude's, for UV to judge:* only the two cushions meeting at a corner (where the parallel shift holds whatever the cushion loss); weighted 0.2 of a direct pot (`BANK2_WEIGHT`), below one cushion's 0.35, so they come up rarely (1 in 59 shots in a test).
+*So:* `scripts/banner-table.js` and `scripts/hero.js` (`doubles2On`); `docs/systems/file-map.md`; STATUS §1 4ci.

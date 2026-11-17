@@ -989,6 +989,64 @@ var TDCBannerTable = (function () {
 				return out;
 			}
 
+			// Two-cushion doubles (UV, 17 Nov: "use parallel shift"): off the two cushions that meet
+			// at a corner. Each takes 1 - ks off the speed into it and the two are square to each
+			// other, so each part of the speed is cut once and the ball leaves the second cushion
+			// parallel to the way it came in: the parallel shift. From a ball a and b off the two
+			// cushions to a pocket A and B off them, the line runs (A + e a) / (B + e b) along the
+			// side for each one along the end (e = 1 is the plain double mirror); which cushion
+			// comes first follows from it. Weighted below one cushion's (BANK2_WEIGHT); the copy of
+			// the table checks each. d2 is the leg between the cushions, k2 the speed kept off the
+			// second (for paceFor).
+			var BANK2_WEIGHT = 0.2;
+			function doubles2On(obj, fx, fz) {
+				var out = [], e = Math.max(0.05, 1 - P.ks);
+				[[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(function (c) {
+					var sx = c[0], sz = c[1];
+					var a = LX - obj.x * sx, b = LZ - obj.z * sz;   // the ball off the side and end cushions, in the corner's frame
+					if (a < 0.3 || b < 0.3) return;
+					pockets.forEach(function (pk) {
+						var A = LX - pk.ax * sx, B = LZ - pk.az * sz;
+						if (A < 1 && B < 1) return;   // the corner's own pocket
+						var r = (A + e * a) / (B + e * b), n = Math.hypot(r, 1), ux = r / n, uz = 1 / n;   // towards the corner
+						var p1, p2, k1, sideFirst = a < r * b;
+						if (sideFirst) {
+							p1 = [LX, LZ - b + uz * a / ux];
+							p2 = [LX - e * ux * (b / uz - a / ux), LZ];
+							k1 = Math.sqrt(uz * uz + e * e * ux * ux);
+						} else {
+							p1 = [LX - a + ux * b / uz, LZ];
+							p2 = [LX, LZ - e * uz * (a / ux - b / uz)];
+							k1 = Math.sqrt(ux * ux + e * e * uz * uz);
+						}
+						if (p2[0] < -LX || p2[1] < -LZ) return;   // across the table before the second cushion
+						var b1x = p1[0] * sx, b1z = p1[1] * sz, b2x = p2[0] * sx, b2z = p2[1] * sz;   // back to the table's frame
+						// No cushion where a pocket's mouth is: the first on the side, then the end, or the other way
+						if (sideFirst ? (mouthOnX(b1z - 0.5) || mouthOnX(b1z + 0.5) || mouthOnZ(b2x - 0.5) || mouthOnZ(b2x + 0.5))
+							: (mouthOnZ(b1x - 0.5) || mouthOnZ(b1x + 0.5) || mouthOnX(b2z - 0.5) || mouthOnX(b2z + 0.5))) return;
+						var d1 = Math.hypot(b1x - obj.x, b1z - obj.z), d2 = Math.hypot(b2x - b1x, b2z - b1z), d3 = Math.hypot(pk.ax - b2x, pk.az - b2z);
+						if (d1 < 0.5 || d2 < 0.5 || d3 < 0.5) return;
+						var wx = ux * sx, wz = uz * sz;   // the first leg's way, in the table's frame
+						var vx = (pk.ax - b2x) / d3, vz = (pk.az - b2z) / d3;
+						if (vx * wx + vz * wz > -0.98) return;   // the pocket is not on the parallel line back
+						if (-(vx * pk.ix + vz * pk.iz) < Math.cos(rad(pk.take))) return;
+						var gx = obj.x - wx * D2, gz = obj.z - wz * D2;   // the ghost ball
+						if (Math.abs(gx) > LX || Math.abs(gz) > LZ) return;
+						var cx2 = gx - fx, cz2 = gz - fz, dCG = Math.hypot(cx2, cz2);
+						if (dCG < 0.4) return;
+						var ax = cx2 / dCG, az = cz2 / dCG, cut = ax * wx + az * wz;
+						if (cut < Math.cos(rad(72))) return;
+						if (!pathClear(fx, fz, gx, gz, [cue, obj])) return;
+						if (!pathClear(obj.x, obj.z, b1x, b1z, [cue, obj])) return;
+						if (!pathClear(b1x, b1z, b2x, b2z, [cue, obj])) return;
+						if (!pathClear(b2x, b2z, pk.ax, pk.az, [cue, obj])) return;
+						var score = BANK2_WEIGHT * cut * cut / (1 + 0.05 * (d1 + d2 + d3 + dCG));
+						out.push({ obj: obj, pk: pk, ax: ax, az: az, cut: cut, dOP: d3, d2: d2, k2: e / k1, d1: d1, k: k1, dCG: dCG, score: score, bank: true, rails: 2 });
+					});
+				});
+				return out;
+			}
+
 			// The next shot's line (UV, 13 Nov): the other ball into a pocket, and the spot on
 			// that line, SPOT_BACK behind the ball (nearer if the table runs out), where the
 			// cue ball is meant to stop for it
@@ -1023,6 +1081,7 @@ var TDCBannerTable = (function () {
 			// on the way to it.
 			function paceFor(plan, arrive) {
 				var need = arrive * arrive + 2 * P.cs * (plan.dOP + 0.8);   // on into the hole
+				if (plan.rails === 2) need = need / (plan.k2 * plan.k2) + 2 * P.cs * plan.d2;   // two cushions: the second's loss, then the leg between
 				if (plan.bank) need = need / (plan.k * plan.k) + 2 * P.cs * plan.d1;   // a double: what the cushion takes, then the way to it
 				var v0 = 7 / 5 * Math.sqrt(need);
 				var vc = v0 / (Math.max(0.25, plan.cut) * (1 - P.bb));
@@ -1095,7 +1154,7 @@ var TDCBannerTable = (function () {
 				}
 				var other = objs.filter(function (o) { return o !== target; })[0] || null;
 				var next = other && other.state === 'play' ? nextLine(other) : null;
-				var all = potsOn(target, cue.x, cue.z).concat(doublesOn(target, cue.x, cue.z));   // pots and doubles together (UV, 17 Nov)
+				var all = potsOn(target, cue.x, cue.z).concat(doublesOn(target, cue.x, cue.z), doubles2On(target, cue.x, cue.z));   // pots and doubles together (UV, 17 Nov)
 				var options = all.slice().sort(function (a, b) { return b.score - a.score; }).slice(0, 3);
 				var queue = [];
 				for (var i = 0; options.length && i < PLAN_WIDE; i++) queue.push(randomTry(options[i % options.length]));
@@ -1159,7 +1218,7 @@ var TDCBannerTable = (function () {
 
 				shots++;
 				var words = 'Shot ' + shots + ': ';
-				if (plan.bank) words += 'a double on ' + plan.obj.name + ' to a ' + (plan.pk.corner ? 'corner' : 'middle pocket') + (miss ? ', meant to miss' : '');
+				if (plan.bank) words += 'a ' + (plan.rails === 2 ? 'two-cushion ' : '') + 'double on ' + plan.obj.name + ' to a ' + (plan.pk.corner ? 'corner' : 'middle pocket') + (miss ? ', meant to miss' : '');
 				else if (plan.pk) words += 'a ' + Math.round(Math.acos(Math.min(1, plan.cut)) * 180 / Math.PI) + '° cut on ' + plan.obj.name + ' to a ' + (plan.pk.corner ? 'corner' : 'middle pocket') + (miss ? ', meant to miss' : '');
 				else words += 'no pot on, a thin hit on ' + plan.obj.name;
 				words += (tipY > 0.4 ? ', follow' : tipY < -0.4 ? ', draw' : '') + (tipX > 0.1 ? ', right side' : tipX < -0.1 ? ', left side' : '');
