@@ -82,6 +82,11 @@
 					<option value="complete">Finished</option>
 				</select>
 			</div>
+			{% comment %}
+				Expand or collapse every round at once (UV, 17 Nov): + or –,
+				drawn and kept by league-fixtures.js (showFoldAll).
+			{% endcomment %}
+			<button type="button" class="fx-icon fx-fold-all" id="fold-all" title="Expand all" aria-label="Expand all" aria-expanded="false" hidden><span class="tdc-ring"></span></button>
 		</div>
 
 		<div id="all-view">

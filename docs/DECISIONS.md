@@ -2259,3 +2259,17 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* **remove the prompt after signing in that asks for a first name and surname.** This reverses 10 Nov's "asked again at each sign-in until both are in". The sign-up form's optional name boxes stay.
 *So:* `/accounts/names/` and `account-names.js` deleted; `auth.js` goes straight to the next page after any sign-in. A player with a name missing (a Google sign-up, or the form's boxes left blank) adds it on their profile; without both they have no short link, as before.
 *Touches:* `src/scripts/auth.js`; deleted `src/accounts/names/index.html`, `src/scripts/account-names.js`; `docs/systems/foundations.md`, `docs/systems/file-map.md`
+
+## 2026-11-17 — All fixtures: each round a folding pill, and the Fixtures tab's heading
+*Decided by UV:* on the Fixtures tab's **All fixtures**, **each round's pill folds**, **its heading (the round and its date) inside the pill**, the pill growing down round the fixtures when opened; **all folded by default**; **a button beside the filters expands or collapses them all**. **The tab's heading:** the league's name smaller, the season's name under it in cream in the normal (body) face, the venue as the link it was.
+*So:* each round is a folding group (`details.set-group.fx-round`) whose sunken pill is the round itself, opened by the site's fold, as the scorecard's sessions are. The button is + while any round is folded and – once all are open, the plus and minus rings Standings uses to open a team. The heading follows the scorecard signatures' header: the league in the display face at 1.35rem, the season in the body face, both cream.
+*Example:* 8-Ball Mainstream's All fixtures opens as six folded pills, "ROUND 1 · 04/11/26 · 19:30" and so on; + opens all six and turns to –; folding Round 1 by hand turns it back to +.
+*Claude's, not asked:* a round the reader opened stays open through a filter change, for that visit only; the button at the end of the filters row; the league at 1.35rem.
+*Touches:* `src/scripts/league-fixtures.js`, `src/_includes/league/fixtures.html`, `src/stylesheets/league.css`; `docs/systems/leagues.md`
+
+## 2026-11-17 — Every link underlined
+*Decided by UV:* **enforce, site-wide, all links underlined.**
+*So:* the base `a` rule in `global.css` underlines every link, a thin line 0.25em below the letters in the link's own colour (as the footer's links). Links drawn as something else (buttons, cards and tiles, icons, logos, menu rows) carry none, because their shape already says they can be tapped; the kinds that never set that themselves are listed beside the rule. The footer's own underline is unchanged.
+*Example:* the venue link under a league's heading, "Sign in to start a new match." on the home page and the Rules tab's document link are underlined now; the menu's rows, the leagues' cards and "Create a League" are not.
+*Claude's, not asked:* the thickness and gap (1px, 0.25em); which kinds count as controls rather than links.
+*Touches:* `src/stylesheets/global.css`; `docs/ui.md`

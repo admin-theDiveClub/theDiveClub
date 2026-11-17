@@ -43,6 +43,7 @@ TDCLeagueNav.panel('fixtures', () => {
 		addPanel: el('add-panel'), addTo: el('add-to'),
 		addHome: el('add-home'), addAway: el('add-away'), addBtn: el('add-btn'),
 		fFrom: el('f-from'), fTo: el('f-to'), fTeam: el('f-team'), fStatus: el('f-status'), allCards: el('all-cards'),
+		foldAll: el('fold-all'),
 		views: el('fx-views'), allGroup: el('all-group'),
 		allView: el('all-view'), allTable: el('all-table'), empty: el('fixtures-empty'), allNone: el('all-none'),
 		status: el('fx-status')
@@ -219,7 +220,10 @@ TDCLeagueNav.panel('fixtures', () => {
 			return false;
 		}
 
-		els.name.textContent = info.league_name + ' — ' + info.name;
+		// The heading (UV, 17 Nov): the league in the display face, smaller than
+		// a page's title; the season under it, cream, in the body face; the
+		// venue under that, a link as before.
+		els.name.replaceChildren(node('span', 'fx-h-league', info.league_name), node('span', 'fx-h-season', info.name));
 		TDC.venueHeading(els.meta, '', info.venues);
 		mayRun = !!info.i_run_it;
 		applyMode();
@@ -1162,6 +1166,7 @@ TDCLeagueNav.panel('fixtures', () => {
 			return;
 		}
 		els.allCards.replaceChildren();
+		showFoldAll();
 
 		const out = [];
 		let group = null;
@@ -1185,8 +1190,13 @@ TDCLeagueNav.panel('fixtures', () => {
 		wakeIcons(els.allTable);
 	}
 
-	// A player's fixtures (UV, 10 Nov): each round's in an inset card as wide as
-	// its rows need, its date as a heading outside the card, as on the Season tab.
+	// A player's fixtures (UV, 10 Nov): each round's in an inset card the tab's
+	// width. Each round folds (UV, 17 Nov): one sunken pill, its heading inside
+	// (the round left, its date and time right, the arrow after), growing down
+	// round its fixtures when opened, as the scorecard's sessions do. All folded
+	// to begin with; one the reader opened stays open through a filter change,
+	// for this visit only.
+	const openRounds = new Set();   // round keys the reader opened
 	function renderRoundCards(rows) {
 		const groups = [];
 		for (const f of rows) {
@@ -1194,8 +1204,14 @@ TDCLeagueNav.panel('fixtures', () => {
 			if (!groups.length || groups[groups.length - 1].g !== g) groups.push({ g, f, rows: [] });
 			groups[groups.length - 1].rows.push(f);
 		}
-		els.allCards.replaceChildren(...groups.flatMap(({ f, rows: inRound }) => {
-			const head = node('h2', 'fx-round-label');
+		els.allCards.replaceChildren(...groups.map(({ g, f, rows: inRound }) => {
+			const box = node('details', 'set-group fx-round');
+			box.open = openRounds.has(g);
+			box.addEventListener('toggle', () => {
+				if (box.open) openRounds.add(g); else openRounds.delete(g);
+				showFoldAll();
+			});
+			const head = node('summary', 'fx-round-label');
 			roundLabel(head, 'Round ' + f.round, f.scheduled_at
 				? shortDate(new Date(f.scheduled_at)) + ' · ' + time24(new Date(f.scheduled_at))
 				: 'No date');
@@ -1203,11 +1219,53 @@ TDCLeagueNav.panel('fixtures', () => {
 			const table = node('table', 'fx-table');
 			table.append(...inRound.flatMap((x) => fixtureRows(x, 'all')));
 			card.append(table);
-			return [head, card];
+			box.append(head, card);
+			return box;
 		}));
 		wakeIcons(els.allCards);
 		refitNames();
+		showFoldAll();
 	}
+
+	// Beside the filters, one button folds or opens every round (UV, 17 Nov):
+	// – while every round is open, + otherwise; hidden with no round listed.
+	// Each round is folded as a tap on its heading would (tdc-controls.js), so
+	// it moves as it always does.
+	const rounds = () => [...els.allCards.querySelectorAll(':scope > .fx-round')];
+	const allOpen = () => rounds().every((r) => r.open && !r.classList.contains('is-closing'));
+	function showFoldAll() {
+		const b = els.foldAll;
+		b.hidden = iRunIt || !rounds().length;
+		const open = !b.hidden && allOpen();
+		const label = open ? 'Collapse all' : 'Expand all';
+		b.title = label;
+		b.setAttribute('aria-label', label);
+		b.setAttribute('aria-expanded', open ? 'true' : 'false');
+		if (!b.tdcRing) {
+			try {
+				const face = b.querySelector('.tdc-ring');
+				face.innerHTML = TDCRing.svg();
+				b.tdcRing = new TDCRing.RingStatus(face, {
+					icons: ['plus', 'minus'],
+					labels: { plus: 'Expand all', minus: 'Collapse all', empty: label, loading: 'Working' },
+					initial: open ? 'minus' : 'plus'
+				});
+			} catch (err) {
+				TDC.error(AREA, 'an icon could not be drawn: expand all.', err, els.status);
+			}
+		} else if (b.tdcShows !== (open ? 'minus' : 'plus')) {
+			b.tdcRing.drawTo(open ? 'minus' : 'plus');
+		}
+		b.tdcShows = open ? 'minus' : 'plus';
+	}
+	els.foldAll.addEventListener('click', () => {
+		const opening = !allOpen();
+		for (const r of rounds()) {
+			const isOpen = r.open && !r.classList.contains('is-closing');
+			if (isOpen !== opening) r.querySelector(':scope > summary').click();
+		}
+		showFoldAll();
+	});
 
 	for (const f of [els.fFrom, els.fTo, els.fTeam, els.fStatus]) {
 		f.addEventListener('change', () => fade([els.allView], renderAll));

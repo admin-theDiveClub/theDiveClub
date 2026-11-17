@@ -2709,6 +2709,43 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	text-align: left;
 	color: var(--text-muted);
 }
+/* The Fixtures tab's heading (UV, 17 Nov): the league in the display face,
+ * smaller than a page's title (the size of the scorecard signatures' league),
+ * the season under it in the body face, cream; the venue link below as before. */
+.tdc-card #fx-name { margin-bottom: var(--space-2); }
+#fx-name .fx-h-league { display: block; font-size: 1.35rem; color: var(--text-primary); }
+#fx-name .fx-h-season { display: block; margin-top: var(--space-1); font-family: var(--font-body); font-size: 1rem; line-height: 1.4; letter-spacing: normal; color: var(--text-primary); }
+/* Each round folds (UV, 17 Nov): the sunken pill is the round's own folding
+ * group, its heading inside it with the arrow at the right end; opened, the
+ * pill grows down round the fixtures (the fold grows the details itself,
+ * tdc-controls.js), as the scorecard's sessions do. The card inside lies flat
+ * in it. Its ends round while folded, keeping that radius as it grows. */
+.fx-player .fx-round.set-group {
+	margin: 0 0 var(--space-4);
+	padding: 0;
+	border-radius: calc(var(--nm-field) / 2 + var(--space-1));
+	box-shadow: var(--nm-sunken);
+}
+.tdc-card .fx-player .fx-round > summary.fx-round-label {
+	display: flex;
+	box-sizing: border-box;
+	width: 100%;
+	max-width: none;
+	margin: 0;
+	padding: var(--space-2) calc(1.25rem + 2 * var(--space-3)) var(--space-2) var(--space-3);
+	cursor: pointer;
+}
+.fx-player .fx-round > summary::after { right: var(--space-3); }
+.fx-player .fx-round > summary > .group-dots { right: calc(var(--space-3) - 0.2rem); }
+.fx-player .fx-round > .fx-card {
+	margin: 0;
+	padding-top: 0;
+	border-radius: 0;
+	box-shadow: none;
+}
+/* Expand or collapse every round, at the end of the filters, as tall as they are. */
+.tdc-card .fx-filters button.fx-fold-all { align-self: center; width: 2.25rem; height: 2.25rem; }
+.fx-fold-all[hidden] { display: none; }
 /* Too narrow for a picture beside a name: above it (UV, 10 Nov). */
 @container (max-width: 34rem) {
 	.fx-player .fx-card { padding-block: var(--space-1); }

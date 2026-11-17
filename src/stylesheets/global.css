@@ -145,8 +145,18 @@ body::after {
 	cursor: pointer;
 }
 
+/* Every link is underlined, site-wide (UV, 17 Nov), a thin line clear of the
+   letters, as the footer's. A link drawn as something else (a button, a card
+   or tile, an icon, a logo, a row) says what it is by its shape and has none:
+   each such kind sets its own text-decoration: none, and those that never did
+   are listed here. A new kind of link drawn as a control joins this list. */
 a {
 	color: var(--color-primary);
+	text-decoration: underline;
+	text-decoration-thickness: 1px;
+	text-underline-offset: 0.25em;
+}
+a:is(.btn, .btn-link, .tile-link, .lj-icon, .lj-btn, .ls-btn, .nav-logo, .pt-logo, .nav-account-player, .sb-hovered) {
 	text-decoration: none;
 }
 
