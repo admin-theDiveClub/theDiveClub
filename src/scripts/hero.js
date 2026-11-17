@@ -73,6 +73,7 @@
 		var REACH_LONG = MM - MID_LIP, REACH_SHORT = CM / 2;
 		var PIT_Y = -R - 0.75;          // a potted ball's centre, at rest in the pocket
 		var GRAV = 26, STOPV = 0.22, PMIN = 5, PMAX = 48;
+		var SWERVE_FADE = 2;   // balls a second: slower than this, swerve fades with the speed
 		// Round the table, for its shadows; the stage may set it (data-margin, in balls:
 		// the home page's table runs nearly to the screen's edges)
 		var MARGIN = parseFloat(stage.dataset.margin);
@@ -634,8 +635,10 @@
 					// Swerve from side spin, after contact only
 					sp = Math.hypot(b.vx, b.vz);
 					if (sp > 0.05 && Math.abs(b.wy) > 0.01) {
-						var px = b.vz / sp, pz = -b.vx / sp;
-						b.vx += P.sw * b.wy * px * dt; b.vz += P.sw * b.wy * pz * dt;
+						// Fading out below SWERVE_FADE (UV, 17 Nov): a push of one strength at any
+						// speed turned a slow ball on the spot, round another ball when touching it
+						var px = b.vz / sp, pz = -b.vx / sp, fade = Math.min(1, sp / SWERVE_FADE);
+						b.vx += P.sw * b.wy * fade * px * dt; b.vz += P.sw * b.wy * fade * pz * dt;
 					}
 					b.wy *= Math.exp(-(P.cg * P.wyKeep) * dt);
 				}
@@ -797,6 +800,50 @@
 			return out;
 		}
 
+		// Every double on offer on obj (UV, 17 Nov): off one cushion into a pocket, competing
+		// with the direct pots (a straight double outscores a thin cut, never an easy pot;
+		// BANK_WEIGHT). The point on the cushion is a mirror's, but with the cushion taking
+		// 1 - ks of the speed into it, so the ball comes off flatter: from a balls off the
+		// line to a pocket b off it, the cushion is met a / (a + b / e) of the way along.
+		// 4 cushions x 6 pockets of sums, no simulation; the copy of the table then checks
+		// each as it does a pot. dOP is the leg after the cushion, d1 the leg to it, k the
+		// share of speed kept off it (for paceFor). The same as banner-table.js's.
+		var BANK_WEIGHT = 0.35;
+		function doublesOn(obj, fx, fz) {
+			var out = [], e = Math.max(0.05, 1 - P.ks);
+			[[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (n) {
+				var side = !!n[0], s = n[0] || n[1], lim = side ? LX : LZ;   // the cushion where a ball's centre meets it
+				var a = lim - (side ? obj.x : obj.z) * s;
+				if (a < 0.3) return;
+				pockets.forEach(function (pk) {
+					var b = lim - (side ? pk.ax : pk.az) * s;
+					if (b < 1) return;   // a pocket on this cushion
+					var f = a / (a + b / e);
+					var bx = side ? lim * s : obj.x + (pk.ax - obj.x) * f;
+					var bz = side ? obj.z + (pk.az - obj.z) * f : lim * s;
+					var along = side ? bz : bx, mouth = side ? mouthOnLong : mouthOnShort;
+					if (mouth(along - 0.5) || mouth(along + 0.5)) return;   // no cushion there
+					var d1 = Math.hypot(bx - obj.x, bz - obj.z), d2 = Math.hypot(pk.ax - bx, pk.az - bz);
+					if (d1 < 0.5 || d2 < 0.5) return;
+					var ux = (bx - obj.x) / d1, uz = (bz - obj.z) / d1, vx = (pk.ax - bx) / d2, vz = (pk.az - bz) / d2;
+					if (-(vx * pk.ix + vz * pk.iz) < Math.cos(rad(pk.take))) return;
+					var gx = obj.x - ux * D2, gz = obj.z - uz * D2;   // the ghost ball
+					if (Math.abs(gx) > LX || Math.abs(gz) > LZ) return;
+					var cx2 = gx - fx, cz2 = gz - fz, dCG = Math.hypot(cx2, cz2);
+					if (dCG < 0.4) return;
+					var ax = cx2 / dCG, az = cz2 / dCG, cut = ax * ux + az * uz;
+					if (cut < Math.cos(rad(72))) return;
+					if (!pathClear(fx, fz, gx, gz, [cue, obj])) return;
+					if (!pathClear(obj.x, obj.z, bx, bz, [cue, obj])) return;
+					if (!pathClear(bx, bz, pk.ax, pk.az, [cue, obj])) return;
+					var into = Math.abs(side ? ux : uz), k = Math.sqrt(1 - into * into + e * e * into * into);
+					var score = BANK_WEIGHT * cut * cut / (1 + 0.05 * (d1 + d2 + dCG));
+					out.push({ obj: obj, pk: pk, ax: ax, az: az, cut: cut, dOP: d2, d1: d1, k: k, dCG: dCG, score: score, bank: true });
+				});
+			});
+			return out;
+		}
+
 		// The next shot's line (UV, 13 Nov): the other ball into a pocket, and the spot on
 		// that line, SPOT_BACK behind the ball (nearer if the table runs out), where the
 		// cue ball is meant to stop for it
@@ -830,7 +877,9 @@
 		// down to 5/7 of its speed, then rolls to a stop at cs; the cue ball slows at cs
 		// on the way to it.
 		function paceFor(plan, arrive) {
-			var v0 = 7 / 5 * Math.sqrt(arrive * arrive + 2 * P.cs * (plan.dOP + 0.8));   // on into the hole
+			var need = arrive * arrive + 2 * P.cs * (plan.dOP + 0.8);   // on into the hole
+			if (plan.bank) need = need / (plan.k * plan.k) + 2 * P.cs * plan.d1;   // a double: what the cushion takes, then the way to it
+			var v0 = 7 / 5 * Math.sqrt(need);
 			var vc = v0 / (Math.max(0.25, plan.cut) * (1 - P.bb));
 			return Math.sqrt(vc * vc + 2 * P.cs * plan.dCG);
 		}
@@ -901,10 +950,11 @@
 			}
 			var other = objs.filter(function (o) { return o !== target; })[0] || null;
 			var next = other && other.state === 'play' ? nextLine(other) : null;
-			var options = potsOn(target, cue.x, cue.z).sort(function (a, b) { return b.score - a.score; }).slice(0, 3);
+			var all = potsOn(target, cue.x, cue.z).concat(doublesOn(target, cue.x, cue.z));   // pots and doubles together (UV, 17 Nov)
+			var options = all.slice().sort(function (a, b) { return b.score - a.score; }).slice(0, 3);
 			var queue = [];
 			for (var i = 0; options.length && i < PLAN_WIDE; i++) queue.push(randomTry(options[i % options.length]));
-			return { target: target, other: other, next: next, options: options, queue: queue, tried: [], round: 0, all: potsOn(target, cue.x, cue.z) };
+			return { target: target, other: other, next: next, options: options, queue: queue, tried: [], round: 0, all: all };
 		}
 		function planStep(pl) {
 			var t0 = performance.now();
@@ -965,7 +1015,8 @@
 
 			shots++;
 			var words = 'Shot ' + shots + ': ';
-			if (plan.pk) words += 'a ' + Math.round(Math.acos(Math.min(1, plan.cut)) * 180 / Math.PI) + '° cut on ' + plan.obj.name + ' to a ' + (plan.pk.corner ? 'corner' : 'middle pocket') + (miss ? ', meant to miss' : '');
+			if (plan.bank) words += 'a double on ' + plan.obj.name + ' to a ' + (plan.pk.corner ? 'corner' : 'middle pocket') + (miss ? ', meant to miss' : '');
+			else if (plan.pk) words += 'a ' + Math.round(Math.acos(Math.min(1, plan.cut)) * 180 / Math.PI) + '° cut on ' + plan.obj.name + ' to a ' + (plan.pk.corner ? 'corner' : 'middle pocket') + (miss ? ', meant to miss' : '');
 			else words += 'no pot on, a thin hit on ' + plan.obj.name;
 			words += (tipY > 0.4 ? ', follow' : tipY < -0.4 ? ', draw' : '') + (tipX > 0.1 ? ', right side' : tipX < -0.1 ? ', left side' : '');
 			if (next) words += ', for position on ' + other.name;

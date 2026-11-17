@@ -2294,3 +2294,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* from the physics sliders put back on `/sandbox/banner/` the same day: **cloth speed 2, cloth spin 45, ball–ball 0.35, swerve 0.1**, the rest unchanged (cushion speed 0.25, cushion spin 0.9, side off cushions 0.35, side fades 0.03). **Everywhere:** every banner and the home page's table alike.
 *Example:* a ball now rolls more than twice as far on the same pace (the cloth takes 2 a second from its speed, not 4.5), and an object ball leaves a contact with about two thirds of what a full hit gave it before.
 *So:* `scripts/banner-table.js` and `scripts/hero.js`, `P`; `docs/systems/file-map.md`; STATUS §1 4ci.
+
+## 2026-11-17 — Doubles in the pool tables' shot planner
+
+*Decided by UV:* the planner tries doubles (a pot off one cushion), and **they compete with hard direct cuts** rather than only being tried when no pot works. Every banner and the home page's table.
+*Example:* with only a 70° cut on, a straight double usually wins; with a 20° cut on, the cut does.
+*Claude's, for UV to judge:* a double weighted at 0.35 of a direct pot of the same cut and length (`BANK_WEIGHT`); the cushion point aimed allowing for the cushion's loss (1 − ks); swerve fading in proportion to the speed below 2 balls a second (`SWERVE_FADE`), from UV's reading of the sticking glitch, which it did not cure (STATUS §3).
+*So:* `scripts/banner-table.js` and `scripts/hero.js` (`doublesOn`, `paceFor`, `startPlanning`, the shot readout); STATUS §1 4ci and §3.
