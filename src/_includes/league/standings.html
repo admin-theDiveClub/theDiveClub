@@ -12,39 +12,42 @@
 	Individual table's columns, ranked within the team.
 {% endcomment %}
 
-	<h1 id="sd-title">Standings</h1>
-	<p class="muted" id="sd-venues" hidden></p>
-	<p class="muted" id="sd-meta"></p>
-
-	<div class="cp-views" id="sd-views" role="group" aria-label="Which standings">
-		<button type="button" class="cp-view" data-sd-view="player" aria-pressed="true">Individual Rankings</button>
-		<button type="button" class="cp-view" data-sd-view="team" aria-pressed="false">Team Rankings</button>
-	</div>
-
 	{% comment %}
-		Live (UV, 29 Oct): off, only nights signed by both captains count and
-		the tables are read when the tab is shown. On, a night still being
-		played counts too, and the tables follow every frame as it is
-		recorded. Kept per device.
-	{% endcomment %}
-	<div class="field-row sd-switches">
-		<div class="field">
-			<label for="sd-live">Live</label>
-			<input type="checkbox" id="sd-live">
-			<div class="hint">Count nights still being played, and follow every frame as it is recorded.</div>
-		</div>
-		{% comment %}
-			Display name (off, the default) or first and last name (UV, 29 Oct),
-			kept per device. A player with neither keeps their display name.
-		{% endcomment %}
-		<div class="field">
-			<label for="sd-full-names">Full names</label>
-			<input type="checkbox" id="sd-full-names">
-			<div class="hint">Off shows each player's display name.</div>
-		</div>
-	</div>
+		One board, at most a screen tall (UV, 17 Nov): two rows over the table
+		that read as part of it, the table, and the key under it. Only the
+		table's own box scrolls (both ways, its heading row frozen), so the two
+		rows above and the key below stay on the screen with it.
 
-	<div id="sd-player"></div>
-	<div id="sd-team" hidden></div>
+		Row 1: the league, the season and the venue on one line with short
+		separators, running sideways and back when they don't fit.
+	{% endcomment %}
+	<div class="sd-board">
+		<h1 class="sd-line" id="sd-title">Standings</h1>
+
+		{% comment %}
+			Row 2: which standings, then the two switches, kept per device.
+			Live (UV, 29 Oct): off, only nights signed by both captains count;
+			on, a night still being played counts too and the tables follow
+			every frame. Full names (UV, 29 Oct): off, each player's display
+			name. No hints (UV, 17 Nov: they need no explanation). The switches
+			are hidden for somebody signed out.
+		{% endcomment %}
+		<div class="sd-controls">
+			<div class="cp-views" id="sd-views" role="group" aria-label="Which standings">
+				<button type="button" class="cp-view" data-sd-view="player" aria-pressed="true">Individual</button>
+				<button type="button" class="cp-view" data-sd-view="team" aria-pressed="false">Team</button>
+			</div>
+			<div class="sd-switches">
+				<span class="sd-switch"><label for="sd-live">Live</label><input type="checkbox" id="sd-live"></span>
+				<span class="sd-switch"><label for="sd-full-names">Full names</label><input type="checkbox" id="sd-full-names"></span>
+			</div>
+		</div>
+
+		<div class="sd-view" id="sd-player"></div>
+		<div class="sd-view" id="sd-team" hidden></div>
+
+		{% comment %}The key (UV, 17 Nov): what decides the order, for the view shown.{% endcomment %}
+		<p class="sd-key" id="sd-key"></p>
+	</div>
 
 	<div class="status" id="sd-status"></div>

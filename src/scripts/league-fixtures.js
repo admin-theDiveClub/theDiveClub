@@ -1197,6 +1197,22 @@ TDCLeagueNav.panel('fixtures', () => {
 	// to begin with; one the reader opened stays open through a filter change,
 	// for this visit only.
 	const openRounds = new Set();   // round keys the reader opened
+	// A round's heading in its state's colour (UV, 17 Nov), from its fixtures'
+	// own states (playerState), byes left out. All finished (or abandoned, one
+	// at least finished): complete (green). Otherwise a round that is under way
+	// or incomplete is active, playing (yellow; UV: nights played whose scores
+	// are missing are still active): any being played, any finished, or its
+	// night come. Otherwise one ahead: any open for lineups, lineups (cream, as
+	// those names); else scheduled (grey).
+	function roundState(inRound) {
+		const states = inRound.map(playerState).filter((s) => s !== 'bye');
+		if (states.includes('complete') && states.every((s) => s === 'complete' || s === 'abandoned')) return 'complete';
+		const at = inRound[0].scheduled_at;
+		const nightCome = !!at && dayKey(at) <= keyOf(new Date());
+		if (nightCome || states.includes('playing') || states.includes('complete')) return 'playing';
+		if (states.includes('lineups')) return 'lineups';
+		return 'scheduled';
+	}
 	function renderRoundCards(rows) {
 		const groups = [];
 		for (const f of rows) {
@@ -1211,7 +1227,7 @@ TDCLeagueNav.panel('fixtures', () => {
 				if (box.open) openRounds.add(g); else openRounds.delete(g);
 				showFoldAll();
 			});
-			const head = node('summary', 'fx-round-label');
+			const head = node('summary', 'fx-round-label fx-r-' + roundState(inRound));
 			roundLabel(head, 'Round ' + f.round, f.scheduled_at
 				? shortDate(new Date(f.scheduled_at)) + ' · ' + time24(new Date(f.scheduled_at))
 				: 'No date');

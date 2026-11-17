@@ -2242,8 +2242,88 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .sd-table .sd-name a { color: var(--text-primary); text-decoration: none; }
 .sd-table .sd-name a:hover,
 .sd-table .sd-name a:focus-visible { color: var(--color-primary); outline: none; }
-.tdc-card .sd-by { text-align: center; font-size: 0.85rem; margin-top: calc(-1 * var(--space-3)); }
-.sd-switches { margin-bottom: var(--space-4); }
+/* ── The board (UV, 17 Nov) ──
+   Row 1 (league · season · venue), row 2 (the pill and the two switches),
+   the table, the key: one column at most a screen tall, edge to edge (the
+   card's side padding taken back; UV: no side padding on the table). Only
+   the table's box scrolls, so the two rows and the key stay on the screen
+   with its frozen heading. The rows and the key keep a little room at the
+   sides so their words don't touch the screen's edge. */
+.tdc-card .sd-board {
+	display: flex;
+	flex-direction: column;
+	max-height: 100vh;
+	max-height: 100dvh;
+	margin-left: calc(-1 * var(--space-5));
+	margin-right: calc(-1 * var(--space-5));
+}
+/* The card's side padding on a phone (design.css, .tdc-card), so the board
+   ends at the card's edges, never past them. */
+@media (max-width: 36rem) {
+	.tdc-card .sd-board { margin-left: calc(-1 * var(--space-3)); margin-right: calc(-1 * var(--space-3)); }
+}
+.sd-board > * { flex: 0 0 auto; }
+/* The table's box takes what is left and scrolls both ways. Not when
+   hidden: display would outweigh [hidden]. */
+.sd-board > .sd-view:not([hidden]) { display: flex; flex-direction: column; flex: 0 1 auto; min-height: 0; }
+.sd-board > .sd-view > .table-scroll.sd-scroll { flex: 0 1 auto; min-height: 0; max-height: none; margin: 0; }
+.sd-board > .sd-view > .empty { margin: var(--space-3) var(--space-2); }
+
+/* Row 1: one line, running sideways and back when too long (.tdc-run). The
+   league in the display face; the season cream and the venue its green
+   link, both in the body face; short separators between them. */
+.tdc-card h1.sd-line {
+	margin: 0;
+	padding: var(--space-2) var(--space-2) var(--space-1);
+	font-size: 1.15rem;
+	line-height: 1.3;
+	text-align: center;
+}
+.sd-line .sd-l-season,
+.sd-line .sd-l-venue {
+	font-family: var(--font-body);
+	font-size: 0.9rem;
+	letter-spacing: normal;
+	color: var(--text-primary);
+}
+.sd-line .sd-l-sep {
+	display: inline-block;
+	width: 1px;
+	height: 0.85em;
+	margin: 0 var(--space-3);
+	vertical-align: -0.05em;
+	background: var(--border-color);
+}
+
+/* Row 2: the pill at the left, the switches at the right; the switches
+   drop under it when there is no room. Compact: both 2rem tall. */
+.sd-controls {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-2);
+	padding: var(--space-1) var(--space-2) var(--space-2);
+}
+.sd-controls .cp-views { height: 2rem; margin: 0; padding: 2px; }
+.tdc-card .sd-controls button.cp-view { padding: 0 var(--space-2); font-size: 0.85rem; }
+.sd-switches { display: flex; align-items: center; gap: var(--space-3); margin-left: auto; }
+.sd-switches[hidden] { display: none; }
+.sd-switch { display: inline-flex; align-items: center; gap: var(--space-1); }
+.tdc-card .sd-switch label { margin: 0; font-size: 0.85rem; font-weight: 600; white-space: nowrap; }
+.sd-switch .tdc-switch { --switch-width: 3rem; --switch-height: 1.75rem; --nm-knob: 1.25rem; }
+
+/* The key: a full-width row under the table, its hairline closing it. */
+.tdc-card .sd-key {
+	margin: 0;
+	padding: var(--space-2);
+	font-size: 0.8rem;
+	line-height: 1.35;
+	text-align: center;
+	color: var(--text-muted);
+	box-shadow: inset 0 1px 0 var(--border-color);
+}
+.sd-key:empty { display: none; }
 
 /* The names at the table's own size, stated, and the phone told not to
    enlarge the text in this wide box itself (Chrome's font boosting on
@@ -2337,10 +2417,6 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	border-radius: 0;
 	overflow: auto;
 	box-shadow: none;
-}
-.tdc-card .league-panel > div > .table-scroll.sd-scroll { margin-left: 0; margin-right: 0; }
-@media (max-width: 24rem) {
-	.tdc-card .league-panel > div > .table-scroll.sd-scroll { margin-left: 0; margin-right: 0; }
 }
 .sd-table > thead > tr > th {
 	position: sticky;
@@ -2736,6 +2812,13 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	cursor: pointer;
 }
 .fx-player .fx-round > summary::after { right: var(--space-3); }
+/* The heading in the round's state colour (UV, 17 Nov; roundState in
+ * league-fixtures.js): all finished green; under way or incomplete (its night
+ * come, or part finished) yellow; ahead and open for lineups cream; else grey. */
+.tdc-card .fx-player .fx-round > summary.fx-r-playing { color: var(--color-warning); }
+.tdc-card .fx-player .fx-round > summary.fx-r-lineups { color: var(--text-primary); }
+.tdc-card .fx-player .fx-round > summary.fx-r-complete { color: var(--color-primary); }
+.tdc-card .fx-player .fx-round > summary.fx-r-scheduled { color: var(--text-muted); }
 .fx-player .fx-round > summary > .group-dots { right: calc(var(--space-3) - 0.2rem); }
 .fx-player .fx-round > .fx-card {
 	margin: 0;

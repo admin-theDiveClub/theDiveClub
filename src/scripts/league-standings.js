@@ -34,8 +34,8 @@ TDCLeagueNav.panel('standings', () => {
 
 	const el = (id) => document.getElementById(id);
 	const els = {
-		title: el('sd-title'), venues: el('sd-venues'), meta: el('sd-meta'), views: el('sd-views'), live: el('sd-live'), fullNames: el('sd-full-names'),
-		player: el('sd-player'), team: el('sd-team'), status: el('sd-status')
+		title: el('sd-title'), views: el('sd-views'), live: el('sd-live'), fullNames: el('sd-full-names'),
+		player: el('sd-player'), team: el('sd-team'), key: el('sd-key'), status: el('sd-status')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -84,7 +84,6 @@ TDCLeagueNav.panel('standings', () => {
 		if (text !== undefined) n.textContent = text;
 		return n;
 	};
-	const plural = (n, one, many) => (n === 1 ? '1 ' + one : n + ' ' + (many || one + 's'));
 	const colsFor = (scope) => columns.filter((c) => c.scope === scope);
 
 	// A player's picture, from the public player-avatars bucket, or their
@@ -104,7 +103,26 @@ TDCLeagueNav.panel('standings', () => {
 		return box;
 	}
 
-	// "Ranked by Frames Won, then Win %."
+	// Row 1 (UV, 17 Nov): the league · the season · the venue on one line,
+	// short separators between them, running sideways and back when too long
+	// for the width (TDC.runName's run, holding these parts in place of a
+	// name). The league in the display face, the season cream, the venue its
+	// green link, as the Fixtures tab's heading.
+	function drawLine(league, season, venues) {
+		const parts = [node('span', 'sd-l-league', league)];
+		const sep = () => { const s = node('span', 'sd-l-sep'); s.setAttribute('aria-hidden', 'true'); return s; };
+		if (season) parts.push(sep(), node('span', 'sd-l-season', season));
+		if ((venues || []).length) {
+			const where = node('span', 'sd-l-venue');
+			venues.forEach((v, i) => { if (i) where.append(', '); where.append(TDC.venueLink(v)); });
+			parts.push(sep(), where);
+		}
+		TDC.runName(els.title, '');
+		els.title.firstChild.replaceChildren(...parts);
+		els.title.title = [league, season, ...(venues || []).map((v) => v.name)].filter(Boolean).join(' · ');
+	}
+
+	// The key, under the table (UV, 17 Nov): "Ranked by Frames Won, then Win %."
 	function rankedBy(cols) {
 		const by = cols.filter((c) => c.rank_priority).sort((a, b) => a.rank_priority - b.rank_priority);
 		if (!by.length) return 'Not ranked yet: the league director chooses what decides the order, on the Settings tab.';
@@ -182,11 +200,12 @@ TDCLeagueNav.panel('standings', () => {
 	}
 
 	function renderPlayers() {
-		const cols = colsFor('player');
-		els.player.replaceChildren(
-			playerTable(leagueRanked(), 'p'),
-			node('p', 'muted sd-by', rankedBy(cols))
-		);
+		els.player.replaceChildren(playerTable(leagueRanked(), 'p'));
+	}
+
+	// The key says what orders the view shown.
+	function drawKey() {
+		els.key.textContent = data ? rankedBy(colsFor(view)) : '';
 	}
 
 	// ─── Team Rankings ───
@@ -274,7 +293,7 @@ TDCLeagueNav.panel('standings', () => {
 		table.append(body);
 		const wrap = node('div', 'table-scroll sd-scroll');
 		wrap.append(table);
-		els.team.replaceChildren(wrap, node('p', 'muted sd-by', rankedBy(cols)));
+		els.team.replaceChildren(wrap);
 		wakeIcons(els.team);
 	}
 
@@ -394,6 +413,7 @@ TDCLeagueNav.panel('standings', () => {
 		}
 		els.player.hidden = view !== 'player';
 		els.team.hidden = view !== 'team';
+		drawKey();
 		if (fade) fadeIn(view === 'player' ? els.player : els.team);
 	}
 
@@ -408,21 +428,11 @@ TDCLeagueNav.panel('standings', () => {
 	function render(first) {
 		const root = els.player.parentElement;
 		const snap = first ? null : TDC.liveSnapshot(root);
-		const n = data.matches_counted || 0;
-		const unsigned = data.matches_unsigned || 0;
-		if (live) {
-			els.meta.textContent = !n
-				? 'Live: nothing counted yet. A night counts from its first finished frame.'
-				: !unsigned
-					? 'Live: counted from ' + plural(n, 'signed night') + '. Nothing is being played right now.'
-					: 'Live: counted from ' + plural(n - unsigned, 'signed night') + ' and ' + plural(unsigned, 'night') + ' not yet signed by both captains.';
-		} else {
-			els.meta.textContent = n
-				? 'Counted from ' + plural(n, 'signed night') + '. A night counts once both captains have signed it.'
-				: 'Nothing counted yet. A night counts once both captains have signed it.';
-		}
+		// No "Counted from … signed nights" line any more (UV, 17 Nov: the key
+		// is "Ranked by" only).
 		renderPlayers();
 		renderTeams();
+		drawKey();
 		if (pinned) light(pinnedCell());
 		if (!first) TDC.liveFade(root, snap);
 	}
@@ -455,8 +465,7 @@ TDCLeagueNav.panel('standings', () => {
 		}
 		data = st.data;
 		columns = cols.data || [];
-		els.title.textContent = info.league_name + ' — Standings';
-		TDC.venueHeading(els.venues, '', info.venues);
+		drawLine(info.league_name, info.name, info.venues);
 		render(first);
 		if (live) watchLive(data.watch_match_ids || []); else stopLive();
 		return true;
@@ -464,15 +473,25 @@ TDCLeagueNav.panel('standings', () => {
 
 	// Not Visible to public, or no such season: it answers nothing, and the
 	// visitor signs in and comes back here. A row's key is not a player's id.
+	// The standings read has no season name, so the first load also asks the
+	// Season tab's public read for it (row 1); once, kept for every re-read.
+	let publicSeasonName = null;
 	async function loadPublic(first) {
-		const { data: got, error } = await supabaseClient.rpc('tdc_public_league_standings', { p_league_season_id: seasonId });
+		const [st, season] = await Promise.all([
+			supabaseClient.rpc('tdc_public_league_standings', { p_league_season_id: seasonId }),
+			publicSeasonName === null ? supabaseClient.rpc('tdc_public_league_season', { p_league_season_id: seasonId }) : null
+		]);
+		const { data: got, error } = st;
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		if (!got) { await TDC.requireSession(AREA); return false; }
+		if (season) {
+			if (season.error) { TDC.showSupabaseError(AREA, season.error, els.status); return false; }
+			publicSeasonName = (season.data && season.data.name) || '';
+		}
 		showsPlayers = got.shows_players;
 		data = Object.assign({}, got, { players: got.players.map((p) => Object.assign({ player_id: 'row' + p.key }, p)) });
 		columns = got.columns;
-		els.title.textContent = got.league_name + ' — Standings';
-		TDC.venueHeading(els.venues, '', got.venues);
+		drawLine(got.league_name, publicSeasonName, got.venues);
 		render(first);
 		return true;
 	}
