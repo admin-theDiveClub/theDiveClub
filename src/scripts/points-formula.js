@@ -115,6 +115,8 @@ const TDCPoints = (() => {
 			['me.has_account', 'yes/no', 'Has an account; a guest or walk-in has none'],
 			['me.signed', 'yes/no', 'This person signed or approved the result'],
 			['me.earlier_this_week', 'number', 'Earlier social matches v this opponent this week'],
+			['me.overruled', 'number', 'Their lag or result entries changed by somebody else, on a team card'],
+			['me.accepted', 'number', 'Changes to others\' entries they accepted (the blue tick), on a team card'],
 			['me.roles.td', 'yes/no', 'Tournament director here'],
 			['me.roles.ld', 'yes/no', 'League director here'],
 			['me.roles.captain', 'yes/no', 'Captain here'],
@@ -307,6 +309,8 @@ const TDCPoints = (() => {
 		has_account: p.has_account !== false,
 		signed: !!p.signed,
 		earlier_this_week: asNumber(p.earlier_this_week),
+		overruled: asNumber(p.overruled),
+		accepted: asNumber(p.accepted),
 		roles: {
 			td: !!(p.roles && p.roles.td),
 			ld: !!(p.roles && p.roles.ld),
@@ -532,6 +536,8 @@ const TDCPoints = (() => {
 			has_account: person.has_account,
 			signed: person.signed,
 			earlier_this_week: person.earlier_this_week,
+			overruled: person.overruled,
+			accepted: person.accepted,
 			roles: person.roles,
 			profile: person.profile,
 			history: person.history

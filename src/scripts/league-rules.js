@@ -97,6 +97,7 @@ TDCLeagueNav.panel('rules', () => {
 	const SIGNING_CLAUSES = [
 		['Signing the card', 'A match is finished when both captains have signed the same card. Signing means this is the final card, so it may be signed with frames unplayed, and those frames count for nobody. If a captain will not sign, the league director can sign for that side.'],
 		['Changes after signing', 'If a frame is changed after the card is signed, both signatures stop counting and the match is re-opened until both captains sign again. Every change is listed on the card, with who made it.'],
+		['Changed entries', 'If somebody changes a lag or a result that somebody else entered, or that a captain had signed, the person whose entry it was, their captain and the league director can accept the change or put the entry back. A change never stops a captain signing: signing accepts the card as it stands, changes included.'],
 		['Disputes', 'A captain who disagrees with the card can raise a dispute, which re-opens it.'],
 		['The standings', 'Standings are counted from matches both captains have signed. The Live switch on the Standings tab also shows matches still being played, and those are not final.']
 	];

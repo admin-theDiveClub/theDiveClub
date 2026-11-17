@@ -1682,14 +1682,6 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	text-shadow: 0 0 8px color-mix(in srgb, var(--color-warning) 75%, transparent);
 }
 
-/* Changed since this person last signed (UV, 29 Oct): the switch's outer
- * bar turns the edited blue with a soft glow; the knob and its icon are left
- * as they are. It was the knob's ring (28 Oct). */
-.cs-tog.is-edited .tdc-tri-track,
-.cs-tog.is-edited .tdc-tri:hover .tdc-tri-track {
-	box-shadow: inset 0 0 10px color-mix(in srgb, var(--color-edited) 80%, transparent), var(--nm-sunken-small);
-}
-
 /* The totals, either side of the middle, under each team's end. */
 .cs-total { border-bottom: none; }
 .cs-tots {
@@ -1841,14 +1833,14 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .card-players td.h2h-cell { vertical-align: middle; white-space: nowrap; padding-left: var(--space-1); padding-right: var(--space-1); }
 .card-players td.h2h-cell.is-none,
 .card-players td.cp-cell.is-none { background: var(--hover-wash); }
-/* A frame changed since a captain signed: the edited blue round the cell. */
-/* A changed frame's cells glow blue inside (UV, 29 Oct; a hard border before). */
+/* A frame with an open discrepancy (UV, 17 Nov; a change after signing is
+ * one): its cells glow blue inside, for everybody (29 Oct; a hard border before). */
 .card-players td.is-edited { box-shadow: inset 0 0 10px color-mix(in srgb, var(--color-edited) 70%, transparent); }
 .card-players .h2h-won { font-weight: 700; }
 
-/* A frame's mark: a green dot for a win, a yellow ring for the lag, round
- * the dot or on its own; a dash while it is not played. A frame lost
- * without the lag is the empty space. */
+/* A frame's mark: a green dot for a win, a grey cross for a loss (UV,
+ * 17 Nov; the empty space before), a yellow ring for the lag round either;
+ * a dash while it is not played. */
 .h2h-mark {
 	display: inline-flex;
 	align-items: center;
@@ -1872,6 +1864,14 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	box-shadow: 0 0 6px color-mix(in srgb, var(--color-warning) 55%, transparent);
 }
 .h2h-mark.is-open::before { content: '–'; color: var(--text-muted); line-height: 1; }
+/* Two thin grey strokes, the size of the win's dot. */
+.h2h-mark.is-lost::before {
+	content: '';
+	width: 0.6rem;
+	height: 0.6rem;
+	--x-line: transparent calc(50% - 0.75px), var(--text-muted) calc(50% - 0.75px), var(--text-muted) calc(50% + 0.75px), transparent calc(50% + 0.75px);
+	background: linear-gradient(45deg, var(--x-line)), linear-gradient(-45deg, var(--x-line));
+}
 /* A break & finish or a golden break: BF or GB in the win's green, glowing
  * as the dot does, in place of it (UV, 29 Oct); the lag's ring still round
  * it. */

@@ -105,7 +105,9 @@
 	let cardState = null;
 	let signatures = [];       // every signature, newest first: side, by_name, signed_as, at
 	let changes = [];          // every change since the first signature
-	let edited = new Map();    // frame no -> { lag, win }: which switch changed since then
+	let discrepancies = [];    // tdc_card_discrepancies: entries overruled by somebody else, not yet accepted (UV, 17 Nov)
+	let edited = new Map();    // frame no -> { lag, win }: an open discrepancy, the blue glow in the tables for everybody
+	let toAccept = new Set();  // 'frame|lag' / 'frame|win': one this reader may accept, the blue tick on the switch
 	const unsaved = new Map(); // frame no -> { fields, saves, failed }: L and W chosen, not yet read back
 	let drawnOnce = false;              // a re-read after the first draw fades what changed
 	const foldedSessions = new Set();   // the player's view: closed by the reader
@@ -281,7 +283,8 @@
 			['tdc_match_lineup', { p_match_id: matchId }, (d) => { lineup = d || []; }],
 			['tdc_match_squad', { p_match_id: matchId }, (d) => { squad = d || []; }],
 			['tdc_match_card', { p_match_id: matchId }, (d) => { card = d || []; }],
-			['tdc_card_state', { p_match_id: matchId }, (d) => { cardState = d || null; }]
+			['tdc_card_state', { p_match_id: matchId }, (d) => { cardState = d || null; }],
+			['tdc_card_discrepancies', { p_match_id: matchId }, (d) => { discrepancies = d || []; }]
 		];
 
 		// All asked at once, with the signatures below (UV, 16 Nov: as fast as it
@@ -319,15 +322,32 @@
 			if (lockedNow[working] && !lockedNow[other]) working = other;
 		}
 
-		// Every change made after either captain first signed (UV, 28 Oct),
-		// for everybody to see: listed under the signatures and marked on the
-		// frames in blue. A signature is an append-only event, so the first
-		// one is still there after a side signs again. An edit is stamped with
-		// the version it changed, hence one below the signed version. The
-		// signatures themselves, with who signed and as what (captain or
-		// league director, UV 29 Oct), join that list and the signature lines.
-		changes = [];
+		// Discrepancies (UV, 17 Nov): somebody's lag or result changed by
+		// somebody else, a captain's signature counting as their entry, so a
+		// change after signing is one too. The database works them out
+		// (tdc_card_discrepancies). One blue for all of it: the cells glow for
+		// everybody; the switch's blue tick only for whoever may accept it,
+		// the person overruled, their captain and the league director.
 		edited = new Map();
+		toAccept = new Set();
+		for (const d of discrepancies) {
+			const key = d.thing === 'lag' ? 'lag' : 'win';
+			const e = edited.get(d.frame_no) || { lag: false, win: false };
+			e[key] = true;
+			edited.set(d.frame_no, e);
+			if (lineupState.i_run_it
+				|| (myPlayerId && d.owner_player_id === myPlayerId)
+				|| (lineupState.my_side && d.owner_side === lineupState.my_side)) toAccept.add(d.frame_no + '|' + key);
+		}
+
+		// Every change made after either captain first signed (UV, 28 Oct),
+		// listed under the signatures. A signature is an append-only event, so
+		// the first one is still there after a side signs again. An edit is
+		// stamped with the version it changed, hence one below the signed
+		// version. The signatures themselves, with who signed and as what
+		// (captain or league director, UV 29 Oct), join that list and the
+		// signature lines.
+		changes = [];
 		const sigs = await sigsRead;
 		if (sigs.error) { TDC.showSupabaseError(AREA, sigs.error, els.status); return false; }
 		signatures = sigs.data || [];
@@ -338,28 +358,6 @@
 			});
 			if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 			changes = (data || []).filter((c) => c.changed);
-			// Blue marks only what this person has not yet put their name to
-			// (UV, 29 Oct): a captain who signs approves the card as it stands,
-			// their own changes and the other side's alike. A captain looks
-			// from their side's latest signature. Anybody else (the league
-			// director included) sees what both sides have not yet agreed:
-			// from the older of the two sides' latest signatures that no
-			// longer stand. A signature that stands means the card is what
-			// was signed, so nothing is blue from it.
-			const sides = (cardState && cardState.sides) || {};
-			const latest = (side) => signatures.find((g) => g.side === side);
-			const stale = (g) => g && !(sides[g.side] && sides[g.side].current);
-			// A captain who has not signed yet looks as anybody else does.
-			const mineSide = !lineupState.i_run_it && lineupState.my_side && latest(lineupState.my_side) && lineupState.my_side;
-			const ref = mineSide
-				? [latest(mineSide)].filter(stale)[0]
-				: [latest('home'), latest('away')].filter(stale).sort((a, b) => new Date(a.at) - new Date(b.at))[0];
-			for (const c of ref ? changes.filter((x) => x.card_version >= ref.card_version) : []) {
-				const e = edited.get(c.frame_no) || { lag: false, win: false };
-				if (/\bbreak_side /.test(c.changed)) e.lag = true;
-				if (/\b(winner_side|result_event|status) /.test(c.changed)) e.win = true;
-				edited.set(c.frame_no, e);
-			}
 		}
 
 		// Text a re-read changed fades out and in (UV, 29 Oct); not on the
@@ -1251,14 +1249,12 @@
 			['lag', 'L', f.break_side, 'won the lag'],
 			['win', 'W', f.winner_side, 'won the frame']]) {
 			const line = node('span', 'cs-tog cs-tog-' + action);
-			// Changed since this person last signed: the switch's bar turns
-			// blue (UV, 29 Oct; it was the knob's ring).
-			if ((edited.get(f.frame_no) || {})[action]) {
-				line.classList.add('is-edited');
-				line.title = 'Changed after the card was signed';
-			}
 			const pick = document.createElement('select');
 			pick.dataset.control = 'tri';
+			// A discrepancy this reader may accept (UV, 17 Nov): a blue tick
+			// where the middle dot is. Tapping it accepts; tapping an end
+			// still sets that end (tdc-controls.js, data-accept).
+			if (mayEnter && toAccept.has(f.frame_no + '|' + action)) pick.dataset.accept = '';
 			// The lag in the warning colour with a spotted cue ball (UV, 24 Oct),
 			// so it never reads as the result.
 			if (action === 'lag') { pick.dataset.icon = 'cue'; pick.dataset.tone = 'warning'; }
@@ -1530,17 +1526,18 @@
 	}
 
 	// One frame, marked for one side (UV, 28 Oct): a green dot if they won it,
-	// a yellow ring if they won the lag (round the dot, or on its own when
-	// they won the lag and lost the frame), a dash while it is not played.
-	// Both tables use it.
+	// a grey cross if they lost it (UV, 17 Nov; empty before), a yellow ring
+	// if they won the lag (round the dot or the cross), a dash while it is
+	// not played. Both tables use it.
 	function frameMark(f, side) {
 		const done = f.status === 'complete';
 		const win = done && f.winner_side === side;
+		const lost = done && !win;
 		const lag = f.break_side === side;
 		// A break & finish, a golden break or a reverse break & finish: its
 		// letters in place of the dot (UV, 29 Oct).
 		const special = win && RESULT_MARK[f.result_event];
-		const mark = node('span', 'h2h-mark' + (win ? ' is-won' : '') + (special ? ' is-special' : '') + (lag ? ' is-lag' : '') + (done ? '' : ' is-open'), special || undefined);
+		const mark = node('span', 'h2h-mark' + (win ? ' is-won' : '') + (lost ? ' is-lost' : '') + (special ? ' is-special' : '') + (lag ? ' is-lag' : '') + (done ? '' : ' is-open'), special || undefined);
 		const who = (side === 'home' ? f.home_player : f.away_player) || 'Empty seat';
 		const words = 'Frame ' + f.frame_no + ': ' + who + ' '
 			+ (win ? (f.result_event === 'default' ? 'won (walkover)' : special ? 'won (' + D.RESULT_EVENT[f.result_event].toLowerCase() + ')' : 'won') : done ? 'lost' : 'not played yet')
@@ -1552,12 +1549,11 @@
 	}
 	const wonBy = (f, side) => f.status === 'complete' && f.winner_side === side;
 
-	// A table cell holding a frame changed since a captain signed gets the
-	// edited blue as its border (UV, 28 Oct).
+	// A table cell holding a frame with an open discrepancy glows blue inside,
+	// for everybody (UV, 17 Nov; a change after signing is one).
 	function markEdited(td, frames) {
 		if (!frames.some((f) => edited.has(f.frame_no))) return;
 		td.classList.add('is-edited');
-		td.title = (td.title ? td.title + '. ' : '') + 'Changed after the card was signed';
 	}
 
 	// ─── Head to head (UV, 28 Oct) ───
@@ -2183,6 +2179,21 @@
 	els.sessions.addEventListener('change', onFrameChange);
 	els.mineFrames.addEventListener('change', onFrameChange);
 	els.quickList.addEventListener('change', onFrameChange);
+
+	// The blue tick tapped (UV, 17 Nov): the change is accepted and the frame
+	// stands as it is. Nothing on the frame is written, so no signature is
+	// lost. The re-read clears the tick and the glow.
+	const onAccept = (e) => {
+		const tri = e.target.closest('select[data-action="lag"], select[data-action="win"]');
+		if (!tri) return;
+		const frameNo = parseInt(tri.dataset.frame, 10);
+		write('Accepting frame ' + frameNo, () => supabaseClient.rpc('tdc_accept_frame_change', {
+			p_match_id: matchId, p_frame_no: frameNo, p_thing: tri.dataset.action === 'lag' ? 'lag' : 'result'
+		}));
+	};
+	els.sessions.addEventListener('tdc-accept', onAccept);
+	els.mineFrames.addEventListener('tdc-accept', onAccept);
+	els.quickList.addEventListener('tdc-accept', onAccept);
 
 	// The view toggle. Nothing is saved to the database, so the dots stay
 	// the 0.2 s every control gets (docs/systems/dots.md §8).

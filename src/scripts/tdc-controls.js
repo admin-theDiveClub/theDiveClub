@@ -40,7 +40,9 @@
 //            tick). Click an end to choose it, the same end again or the
 //            middle for the middle. data-icon picks the ring's icon (a tick
 //            by default) and data-tone its colour (warning). The team card's
-//            lag (a cue ball, warning) and win.
+//            lag (a cue ball, warning) and win. data-accept (UV, 17 Nov: a
+//            discrepancy) puts a blue tick in the middle; a tap there sends
+//            tdc-accept (bubbling) instead of choosing the middle.
 //   slide    <input type="range">, data-control="slide" only. A pill with a
 //            cream knob at the max end holding an undo arrow, and the words
 //            from data-label. Drag the knob all the way to the min end and the
@@ -725,7 +727,13 @@ const TDCControls = (() => {
 		face.innerHTML = TDCRing.svg();
 		const knob = node('span', 'tdc-tri-knob');
 		knob.append(face);
-		wrap.append(node('span', 'tdc-tri-track'), stops, knob);
+		// The blue tick of a discrepancy (data-accept), over the middle stop,
+		// or over the knob when that rests in the middle. Shown by CSS.
+		const accept = node('span', 'tdc-tri-accept');
+		accept.setAttribute('aria-hidden', 'true');
+		accept.innerHTML = '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">'
+			+ TDCRing.ICONS.tick.strokes.map((d) => '<path d="' + d + '"/>').join('') + '</svg>';
+		wrap.append(node('span', 'tdc-tri-track'), stops, knob, accept);
 
 		// --p runs 0 (left) to 1 (right); --lit is how far from the middle,
 		// which lights the track as the knob reaches an end (status.css).
@@ -772,6 +780,16 @@ const TDCControls = (() => {
 			const r = wrap.getBoundingClientRect();
 			const third = Math.max(0, Math.min(2, Math.floor(3 * (e.clientX - r.left) / r.width)));
 			const now = c.sel.selectedIndex < 0 ? 1 : c.sel.selectedIndex;
+			// The blue tick: the page accepts; the value stays. Served by the
+			// dots as a change is, the knob staying where it is.
+			if (third === 1 && 'accept' in c.sel.dataset) {
+				const m = saveMark();
+				c.changing = true;
+				liveTris.set(c.key, c);
+				c.sel.dispatchEvent(new Event('tdc-accept', { bubbles: true }));
+				setTimeout(() => serveChange(c, liveTris, m, show), 0);
+				return;
+			}
 			// The chosen end again, on a switch that cycles: the page's turn.
 			if (third === now && third !== 1 && CYCLE.length) { announce(c.sel); return; }
 			const next = third === 1 || third === now ? 1 : third;
@@ -789,6 +807,7 @@ const TDCControls = (() => {
 			sel.classList.add('tdc-tri-native');
 			wrap.append(sel);
 			wrap.classList.toggle('is-disabled', sel.disabled);
+			wrap.classList.toggle('has-accept', 'accept' in sel.dataset);
 			// Set from a script: show it, no animation. Not while a save is
 			// out: the dots show the answer.
 			onPropSet(sel, ['value', 'selectedIndex'], () => {

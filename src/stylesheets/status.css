@@ -191,6 +191,25 @@ table .tdc-check { --rs: var(--ring-size-table); }
 	transform: translateX(calc(var(--p) * (var(--tri-width) - var(--tri-height))));
 	will-change: transform;
 }
+/* A discrepancy (data-accept, UV 17 Nov): a blue tick in place of the middle
+   dot, or over the knob when that rests in the middle; a tap there accepts.
+   Its lines as thin as the knob's own icons. */
+.tdc-tri-accept {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	display: none;
+	width: var(--nm-knob, calc(var(--tri-height) * 0.8125));
+	height: var(--nm-knob, calc(var(--tri-height) * 0.8125));
+	transform: translate(-50%, -50%);
+	color: var(--color-edited);
+	filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-edited) 80%, transparent));
+	pointer-events: none;
+}
+.tdc-tri-accept svg { display: block; width: 100%; height: 100%; stroke-width: 3.5; }
+.tdc-tri.has-accept .tdc-tri-accept { display: block; }
+.tdc-tri.has-accept .tdc-tri-stops i:nth-child(2),
+.tdc-tri.has-accept[data-at="middle"] .tdc-tri-knob .tdc-ring { opacity: 0; }
 .tdc-tri > select.tdc-tri-native {
 	position: absolute;
 	inset: 0;

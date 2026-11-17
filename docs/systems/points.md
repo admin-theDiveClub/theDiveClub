@@ -54,6 +54,8 @@ The full list is `DATA` in the module, which the page will show. A test checks t
 
 **Using the app (13 Nov; migration `20261113164109_player_devices`):** `me.profile.uses_app` (has opened the installed app on any device) and `me.profile.app_days` (the days they did) are in `DATA` and `fillPerson`. They will be read from `tbl_player_devices`: any row with `installed` true, and the sum of those rows' `days_seen`. Recording started with that migration and nothing before it can be recovered. No formula uses them yet, and the real read is not built.
 
+**Discrepancies on a team card (17 Nov; migration `20261117054351_card_discrepancies`):** `me.overruled` (how many of their lag or result entries somebody else changed, a captain's signature counting as an entry) and `me.accepted` (how many changes to their entries, or their side's, they accepted with the blue tick) are in `DATA` and `fillPerson`. They will be read from `tdc_card_discrepancies`' rule over `tbl_frame_edit` and from `tbl_frame_change_accept`. No formula uses them yet, and the real read is not built.
+
 ## Rules in the engine, not in a formula
 
 | Rule | How |
