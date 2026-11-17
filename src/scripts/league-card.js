@@ -1016,8 +1016,9 @@
 		const lockedCard = cardState && (cardState.state === 'agreed' || cardState.state === 'approved');
 		const strict = !!(match.rules && match.rules.strict_frame_order);
 		const nextOpen = strict ? (card.find((x) => x.status === 'pending') || {}).frame_no : null;
-		const captain = !!(lineupState.i_run_it || lineupState.my_side);
-		const mayEnter = captain && f.result_event !== 'default' && !lockedCard
+		// As in the sessions (UV, 17 Nov; was captains and the LD only, 12 Nov):
+		// a captain or the director any frame, a player their own.
+		const mayEnter = canRecord(f) && f.result_event !== 'default' && !lockedCard
 			&& !!f.home_player_id && !!f.away_player_id && (!strict || f.frame_no === nextOpen);
 
 		const top = node('div', 'qv-top');
