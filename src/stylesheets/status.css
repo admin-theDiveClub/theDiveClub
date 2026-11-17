@@ -208,6 +208,12 @@ table .tdc-check { --rs: var(--ring-size-table); }
 }
 .tdc-tri-accept svg { display: block; width: 100%; height: 100%; stroke-width: 3.5; }
 .tdc-tri.has-accept .tdc-tri-accept { display: block; }
+/* The team card's switch with an open discrepancy (UV, 17 Nov): its track
+   glows blue inside, for everybody, as the frame's cells do. */
+.cs-tog.is-edited .tdc-tri-track,
+.cs-tog.is-edited .tdc-tri:hover .tdc-tri-track {
+	box-shadow: inset 0 0 10px color-mix(in srgb, var(--color-edited) 80%, transparent), var(--nm-sunken-small);
+}
 .tdc-tri.has-accept .tdc-tri-stops i:nth-child(2),
 .tdc-tri.has-accept[data-at="middle"] .tdc-tri-knob .tdc-ring { opacity: 0; }
 .tdc-tri > select.tdc-tri-native {

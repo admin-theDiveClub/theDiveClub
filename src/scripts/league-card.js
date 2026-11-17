@@ -1250,6 +1250,9 @@
 			['lag', 'L', f.break_side, 'won the lag'],
 			['win', 'W', f.winner_side, 'won the frame']]) {
 			const line = node('span', 'cs-tog cs-tog-' + action);
+			// An open discrepancy: the track glows blue inside, for everybody,
+			// as the frame's cells in the tables do (UV, 17 Nov).
+			if ((edited.get(f.frame_no) || {})[action]) line.classList.add('is-edited');
 			const pick = document.createElement('select');
 			pick.dataset.control = 'tri';
 			// A discrepancy this reader may accept (UV, 17 Nov): a blue tick
