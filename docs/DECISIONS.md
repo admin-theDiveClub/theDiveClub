@@ -2448,3 +2448,8 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* the Get the app strip under the bar no longer follows the person to every page. It shows on the home page only, at every visit, as before; its ✕ hides it for that visit. This replaces the 13 Nov rule ("on every page from a visit to the home page until ✕").
 *Unchanged:* the home page's glass card, the menu's Get the app row, `/install/`, and the installed app's one-off welcome (still on any page).
 *How:* `nav.js` ("Getting the app": the strip returns unless on the home page; the `tdc.get-app-off` key dropped), the comment in `nav.html`. `docs/systems/foundations.md`; STATUS §1 4cs.
+
+## 2026-11-18 — The league director opens on Standings; Manage yellow
+
+*Decided by UV:* **opening a league lands the LD on Standings, as everyone else**, not on Run it: the Leagues list, the home page's league cards and the site menu no longer add `&tab=manage` for whoever runs the league. Creating a new season still goes to Run it (`league-new.js`), as setting it up is the next job. **Manage's icon and word in the bottom bar are yellow** (`--color-warning`, the live pill's yellow), replacing grey; still green while one of its pages is open.
+*How:* `card()` in `leagues.js`, `leagueBadge()` in `home-cards.js`, `activeLeague()` in `nav.js`; `.league-tab-admin` in `league.css`. `docs/ui.md`; STATUS §1 4ck, 4co.

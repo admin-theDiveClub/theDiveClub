@@ -158,9 +158,8 @@
 		const box = document.createElement('a');
 		box.className = 'lc league-status-' + l.status;
 		const needsYou = l.my_status === 'active' && !l.confirmed_at;
-		box.href = '/leagues/season/?s='
-			+ encodeURIComponent(l.league_season_id)
-			+ (l.i_run_it ? '&tab=manage' : '');
+		// Everybody, the LD included, lands on Standings (UV, 18 Nov).
+		box.href = '/leagues/season/?s=' + encodeURIComponent(l.league_season_id);
 
 		const pic = el('div', 'lc-pic');
 		pic.append(TDC.leaguePic(pictures.get(l.league_season_id)));

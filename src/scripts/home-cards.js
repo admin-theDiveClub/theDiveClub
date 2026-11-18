@@ -68,8 +68,8 @@
 	}
 
 	function leagueBadge(l, signedIn) {
-		// As the profile menu: whoever runs it lands on Run it
-		var href = '/leagues/season/?s=' + encodeURIComponent(l.league_season_id) + (signedIn && l.i_run_it ? '&tab=manage' : '');
+		// Everybody, the LD included, lands on Standings (UV, 18 Nov)
+		var href = '/leagues/season/?s=' + encodeURIComponent(l.league_season_id);
 		return badge(href, TDC.leaguePic(l.picture_path), l.name, LEAGUE[l.status] || ['is-none', l.status], 'hc-pic-league');
 	}
 

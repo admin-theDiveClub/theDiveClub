@@ -3084,9 +3084,9 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 		text-shadow: 0 0 10px color-mix(in srgb, var(--color-warning) 60%, transparent);
 	}
 	.league-livepill-state { font-weight: 400; }   /* "Playing:" lighter than the name */
-	/* Manage grey (UV, 18 Nov); green like the others while one of its pages is open. */
-	.league-tabbar .league-tab-admin { color: var(--text-muted); }
-	.league-tabbar .league-tab-admin .league-tab-icon { --ring-accent: var(--text-muted); }
+	/* Manage yellow (UV, 18 Nov; was grey); green like the others while one of its pages is open. */
+	.league-tabbar .league-tab-admin { color: var(--color-warning); }
+	.league-tabbar .league-tab-admin .league-tab-icon { --ring-accent: var(--color-warning); }
 	/* A green line inside the bar's pill, as a banner's (UV, 18 Nov), round the
 	   four tabs only: with Manage, it stops short of its fifth. The pill's
 	   padding grows to leave the line room outside the thumb. */

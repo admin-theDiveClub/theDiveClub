@@ -255,8 +255,8 @@
 	}
 
 	function activeLeague(l) {
-		// As /leagues/: whoever runs it lands on Run it.
-		const href = '/leagues/season/?s=' + encodeURIComponent(l.league_season_id) + (l.i_run_it ? '&tab=manage' : '');
+		// As /leagues/: everybody, the LD included, lands on Standings (UV, 18 Nov).
+		const href = '/leagues/season/?s=' + encodeURIComponent(l.league_season_id);
 		const inIt = l.my_status === 'active';
 		return menuRow(href, LEAGUE_STRIP[l.status], l.league_name, [
 			LEAGUE_SAID[l.status] || l.status,
