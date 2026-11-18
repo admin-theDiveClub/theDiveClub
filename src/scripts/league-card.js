@@ -712,8 +712,8 @@
 	// A table this reader cannot change, on Scorecard: one row per position
 	// (its players' positions are not known to the reader). Its picture and
 	// Player columns are hidden on Scorecard (UV, 18 Nov: the positions only),
-	// so the names filled in here, where tdc_match_lineup reveals the order,
-	// show nowhere for now.
+	// except on your own team once it has locked (shows-names), where the
+	// names filled in here, from what tdc_match_lineup reveals, show.
 	function positionRows(side, roster, posFor) {
 		const mine = side === 'home' ? 'H' : 'A';
 		const byId = new Map(roster.map((r) => [r.player_id, r]));
@@ -843,6 +843,10 @@
 		}
 		box.append(views);
 		box.dataset.view = shown;
+		// Your own team once locked (UV, 18 Nov): its Scorecard shows the
+		// players beside their positions, as Stats does. The opposition's stays
+		// positions only; its order is sealed until both lock.
+		box.classList.toggle('shows-names', !manage && side === own && posFor.size > 0);
 
 		// The first column, frozen at the left with the picture and name: the
 		// position (the pill while it is being set, the letter and number once

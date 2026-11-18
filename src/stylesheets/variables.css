@@ -124,7 +124,7 @@
   --dots-busy-fill: 0.45;         /* how faint a filled button or green pill is while it waits and is traced */
   --dots-dim: 0.2s;               /* a target dimming as it goes busy */
   /* The pull down at the top to reload (pull-refresh.css, scripts/pull-refresh.js) */
-  --pull-ring: 48px;              /* the ring the dots run on, at full pull */
+  --pull-ring: 48px;              /* the ring the dots run on, before scaling: it grows to fill the pull */
   --pull-line: 3px;               /* its line: the dots' size */
   --pull-colour: var(--color-primary);  /* its line's colour: the dots' colour (the site green, UV 17 Nov) */
   --pull-ease: 0.25s;             /* the ring settling or going back up when the finger lifts */

@@ -55,10 +55,10 @@
 			var mid = (under + foot) / 2;
 			// Too tall for its band (a phone on its side): one line, the icon and "Get the
 			// app" only (UV, 16 Nov); your match, the face and the name
-			c.classList.remove('is-compact', 'is-row');
+			// Two matches are always one below the other (UV, 18 Nov: side by side, the
+			// names had no room and vanished)
+			c.classList.remove('is-compact');
 			if (c.offsetHeight > foot - under) c.classList.add('is-compact');
-			// Two matches still too tall on one line each: side by side (Claude's)
-			if (c === live && c.offsetHeight > foot - under) c.classList.add('is-row');
 			c.style.left = Math.round((box.clientWidth - c.offsetWidth) / 2) + 'px';
 			c.style.top = Math.round(mid - c.offsetHeight / 2) + 'px';
 			if (c.offsetHeight > foot - under) console.error('[' + AREA + '] the ' + (c === live ? 'live match' : 'Get the app') + ' card (' + c.offsetHeight + 'px) is taller than the room above the ' + (bed.land ? 'logo' : 'cross') + ' (' + Math.round(foot - under) + 'px); it is centred there all the same.');

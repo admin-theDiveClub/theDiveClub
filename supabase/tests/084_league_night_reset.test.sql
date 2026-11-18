@@ -9,9 +9,11 @@
 --   the night can be set up and played again, and the old signatures do not
 --     come back when the same results are entered
 --   a fixture with no match is refused
+--   a night taken off its fixture leaves the profile menu and the live card
+--     (migration 20261118122114)
 begin;
 \ir _helpers.psql
-select plan(18);
+select plan(21);
 
 select tests.create_user('Reset LD') as dee \gset
 select tests.create_user('Reset H1') as h1 \gset
@@ -115,12 +117,27 @@ from public.tbl_frames f where f.match_id = :'m';
 select isnt(private.tdc_card_state(:'m')->>'state', 'agreed',
 	'the same results entered again do not bring back the old signatures');
 
--- ─── A fixture with no match ───
+-- ─── Taken off the schedule (migration 20261118122114) ───
 
+select tests.sign_out();
+select tests.sign_in(:'h2');
+select ok(public.tdc_my_active()->'matches' @> jsonb_build_array(jsonb_build_object('id', :'m')),
+	'on its fixture, the night is in a team player''s profile menu');
+select tests.sign_out();
+
+select tests.sign_in(:'dee');
+select public.tdc_reset_league_match(:'fx');
 select public.tdc_detach_league_match(:'fx');
 select throws_ok(format($$ select public.tdc_reset_league_match(%L) $$, :'fx'),
 	'P0001', 'This fixture has not been started, so there is nothing to reset.',
 	'a fixture with no match is refused');
+select tests.sign_out();
+
+select tests.sign_in(:'h2');
+select ok(not (public.tdc_my_active()->'matches' @> jsonb_build_array(jsonb_build_object('id', :'m'))),
+	'taken off its fixture, it leaves the profile menu');
+select ok(not (public.tdc_my_live_matches() @> jsonb_build_array(jsonb_build_object('id', :'m'))),
+	'and the home page''s live card');
 select tests.sign_out();
 
 select * from finish();

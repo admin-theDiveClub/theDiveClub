@@ -4,7 +4,8 @@
    so they run on its border and take its width and colour). Under reduced
    motion the dots never come and dots.css breathes the ring instead, so it
    shows then. The script moves it with --pull-y (how far down) and --pull-s
-   (how big, growing to full size as the pull nears its reach). */
+   (how big: it grows to fill the space the pull opens, so --pull-ring is
+   only the size it is scaled from). */
 .tdc-pull {
 	position: fixed;
 	top: var(--nav-total, 0px);

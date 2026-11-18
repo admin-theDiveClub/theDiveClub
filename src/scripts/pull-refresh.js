@@ -2,7 +2,7 @@
 // browser and the installed app alike: a finger pulling the page down from
 // its very top moves the page down under the bar, and the site's dots play
 // in the space that opens above it (UV, 17 Nov: their own space, not over
-// the content), on a ring that grows as the pull goes on; let go past REACH
+// the content), on a ring that grows to fill that space; let go past REACH
 // and the page reloads
 // onto the current deploy (TDC.freshReload, as the menu's Reload button
 // does), the dots carrying on until it goes; let go before and they gather
@@ -33,10 +33,11 @@
 
 (() => {
 	const AREA = 'Pull';
-	const START = 10;     // px the finger moves down before it counts as a pull
+	const START = 40;     // px the finger moves down before it counts as a pull (UV, 18 Nov: was 10, too easy to set off)
 	const REACH = 80;     // px the page must come down to reload
-	const MAX = 128;      // px it can come down at most; the pull stiffens towards it
-	const STEP = 3000;    // ms each waiting move plays while pulling
+	const MAX = 200;      // px it can come down at most; the pull stiffens towards it (UV, 18 Nov: was 128)
+	const GAP = 12;       // px kept clear above and below the ring as it fills the space
+	const STEP = 3000;   // ms each waiting move plays while pulling
 	const MOVE_KEY = 'tdc.pull.move';
 	const LEAVE_MS = 60000;   // as nav.js: how long a page may take to go
 
@@ -89,7 +90,10 @@
 	const pageParts = () => document.querySelectorAll('body > main, body > footer, body > .site-footer');
 
 	function place(el, y, parts) {
-		const s = 0.4 + 0.6 * Math.min(1, y / REACH);
+		// The ring fills the space opened above the content, GAP clear of it top
+		// and bottom (UV, 18 Nov: the dots grow to fill the pull). The dots keep
+		// their own size: they read the ring's size on the screen, not its line.
+		const s = Math.max(0.2, (y - 2 * GAP) / el.offsetHeight);
 		// The ring centred in the space opened above the content.
 		el.style.setProperty('--pull-y', (y / 2 - el.offsetHeight / 2).toFixed(1) + 'px');
 		el.style.setProperty('--pull-s', s.toFixed(3));

@@ -2222,7 +2222,7 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
  * no picture or Player column on Scorecard, only the positions. */
 .tdc-card .lu-table td.lu-col-sc { color: var(--text-muted); }
 .tdc-card .lu-table td.lu-col-sc .lu-f-last { color: var(--color-primary); }   /* the last session green (UV, 18 Nov) */
-.lu-team[data-view="scorecard"]:not(.is-managing) .lu-table :is(.sd-pic, .sd-name) { display: none; }
+.lu-team[data-view="scorecard"]:not(.is-managing):not(.shows-names) .lu-table :is(.sd-pic, .sd-name) { display: none; }   /* your own locked team keeps its names (UV, 18 Nov) */
 .lu-team[data-view="stats"] .sd-table.lu-table.lead-sc-only { --sd-w-rank: 0rem; }
 .lu-team.is-managing .sd-table.lu-table { --sd-w-rank: 4rem; }   /* the pill is about 3.25rem */
 /* The position pill (UV, 18 Nov): the stepper's look, an up arrow on the left
