@@ -2374,3 +2374,7 @@ These predate the log. They are recorded here because every one of them is a dec
 ## 2026-11-18 — The bottom bar: a raised, solid pill alone
 
 *Decided by UV:* the bottom bar's pill is **raised, not sunken**, with **a solid background**, and **the bar behind it is gone** (no background, no shadow): only the pill and its shadow show. Replaces Claude's first look in "The league tabs' bottom bar" above. *How:* `.league-tabbar` in `league.css` (see-through, taps passing through round the pill); `docs/ui.md`; STATUS §1 4co.
+
+## 2026-11-18 — The league director's pages in the bottom bar
+
+*Decided by UV:* where the bottom bar shows (a phone), **the league director's tab selector joins it**: **a new icon** that opens **a menu rising above it** with the pages they can go to. *Claude's:* the button is called **Manage** with a **sliders** icon (three upright lines with a knob each), last in the bar; the menu holds Run it, Schedule, Settings and New season as rows in a raised, solid panel at the bar's right end, the page open green and lit; Manage is marked while one of them is open; the menu shuts on a choice, a tap elsewhere, Escape or a scroll; the top admin pill is hidden on a phone. *How:* `bottomBar`, `setMenu` and `mark()` in `league-nav.js`, `sliders` in `ring-status.js`, `.league-tabmenu` and `body.has-league-tabmenu` in `league.css`. `docs/ui.md`; STATUS §1 4co.

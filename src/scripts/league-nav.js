@@ -91,7 +91,13 @@ const TDCLeagueNav = (() => {
 				if (item.dataset.tab === key) item.setAttribute('aria-current', 'page');
 				else item.removeAttribute('aria-current');
 			}
-			const here = nav.querySelector('[aria-current]');
+			// The bottom bar's Manage stands for the second pill's pages (UV, 18 Nov).
+			const admin = nav.querySelector('.league-tab-admin');
+			if (admin) {
+				if (tabOf(key) && tabOf(key)[2]) admin.setAttribute('aria-current', 'page');
+				else admin.removeAttribute('aria-current');
+			}
+			const here = nav.querySelector('.league-nav-track [aria-current]');
 			const track = nav.querySelector('.league-nav-track');
 			if (here && track) track.scrollLeft = here.offsetLeft - (track.clientWidth - here.offsetWidth) / 2;
 		}
@@ -200,7 +206,7 @@ const TDCLeagueNav = (() => {
 		nav.replaceChildren(pill(false));
 		nav.setAttribute('aria-label', 'This league’s pages');
 		nav.hidden = false;
-		bottomBar(s, tabs);
+		bottomBar(s, tabs, info);
 
 		const admin = document.getElementById('league-nav-admin');
 		if (admin && info.i_run_it) {
@@ -230,7 +236,29 @@ const TDCLeagueNav = (() => {
 	// the site's bar (nav.js; league.css follows .site-nav.is-hidden). Its
 	// items are the pill's: the same tabs, links on the card, the same thumb
 	// (tdc-controls.js, by .league-nav-track) and the same clicks.
-	function bottomBar(s, tabs) {
+	//
+	// For whoever runs the league (UV, 18 Nov) a fifth button, Manage (the
+	// sliders), opens a menu above it with the second pill's pages (Run it,
+	// Schedule, Settings, New season), and the second pill is hidden on a
+	// phone too. Manage is marked while one of those pages is open; the menu
+	// shuts on a choice, a tap elsewhere, Escape or the bar sliding away.
+	function icon(face, name, label) {
+		// Shown already drawn: a page load draws nothing in (UV, 16 Nov).
+		try {
+			face.innerHTML = TDCRing.svg();
+			new TDCRing.RingStatus(face, { icons: [name], labels: { [name]: label, empty: label, loading: 'Working' }, initial: name });
+		} catch (err) {
+			TDC.error(AREA, 'the bottom bar’s icon for ' + label + ' could not be drawn.', err);
+		}
+	}
+	function setMenu(bar, open) {
+		const menu = bar.querySelector('.league-tabmenu');
+		const btn = bar.querySelector('.league-tab-admin');
+		if (!menu || !btn) return;
+		menu.classList.toggle('is-open', open);
+		btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+	}
+	function bottomBar(s, tabs, info) {
 		let bar = document.getElementById('league-tabbar');
 		if (!bar) {
 			bar = document.createElement('nav');
@@ -259,30 +287,89 @@ const TDCLeagueNav = (() => {
 			word.className = 'league-tab-word';
 			word.textContent = label;
 			item.append(face, word);
-			// Shown already drawn: a page load draws nothing in (UV, 16 Nov).
-			try {
-				face.innerHTML = TDCRing.svg();
-				new TDCRing.RingStatus(face, { icons: [ICON[key]], labels: { [ICON[key]]: label, empty: label, loading: 'Working' }, initial: ICON[key] });
-			} catch (err) {
-				TDC.error(AREA, 'the bottom bar’s icon for ' + label + ' could not be drawn.', err);
-			}
+			icon(face, ICON[key], label);
 			track.append(item);
 		}
-		bar.replaceChildren(track);
+		const parts = [track];
+		if (info && info.i_run_it) {
+			const btn = document.createElement('button');
+			btn.type = 'button';
+			btn.className = 'league-nav-item league-tab league-tab-admin';
+			btn.setAttribute('aria-haspopup', 'true');
+			btn.setAttribute('aria-expanded', 'false');
+			btn.setAttribute('aria-controls', 'league-tabmenu');
+			const face = document.createElement('span');
+			face.className = 'tdc-ring league-tab-icon';
+			const word = document.createElement('span');
+			word.className = 'league-tab-word';
+			word.textContent = 'Manage';
+			btn.append(face, word);
+			icon(face, 'sliders', 'Manage');
+			track.append(btn);
+
+			const menu = document.createElement('div');
+			menu.className = 'league-tabmenu';
+			menu.id = 'league-tabmenu';
+			for (const [key, label, runners] of TABS) {
+				if (!runners) continue;
+				let item;
+				if (tabs) {
+					item = document.createElement('button');
+					item.type = 'button';
+				} else {
+					item = document.createElement('a');
+					item.href = tabUrl(s, key);
+				}
+				item.className = 'league-tabmenu-item';
+				item.dataset.tab = key;
+				item.textContent = label;
+				menu.append(item);
+			}
+			const fresh = document.createElement('a');
+			fresh.className = 'league-tabmenu-item';
+			fresh.href = newSeasonUrl(info);
+			fresh.textContent = 'New season';
+			menu.append(fresh);
+			parts.push(menu);
+		}
+		bar.replaceChildren(...parts);
 		bar.hidden = false;
 		document.body.classList.add('has-league-tabbar');
+		document.body.classList.toggle('has-league-tabmenu', !!(info && info.i_run_it));
 	}
 	function hideBar() {
 		const bar = document.getElementById('league-tabbar');
 		if (bar) bar.hidden = true;
-		document.body.classList.remove('has-league-tabbar');
+		document.body.classList.remove('has-league-tabbar', 'has-league-tabmenu');
 	}
 
 	document.addEventListener('click', (e) => {
+		const bar = document.getElementById('league-tabbar');
+		// Manage opens and shuts its menu; any other tap shuts it.
+		const toggle = e.target.closest('#league-tabbar .league-tab-admin');
+		if (bar) {
+			const opened = bar.querySelector('.league-tabmenu.is-open');
+			if (toggle) { setMenu(bar, !opened); return; }
+			if (opened) setMenu(bar, false);
+		}
 		const item = e.target.closest('#league-nav button[data-tab], #league-nav-admin button[data-tab], #league-tabbar button[data-tab]');
 		if (!item) return;
-		open(item.dataset.tab, { push: true, tab: item });
+		// A page chosen in the menu: the dots on Manage, as the menu has shut.
+		const fromMenu = item.closest('.league-tabmenu');
+		open(item.dataset.tab, { push: true, tab: fromMenu ? bar.querySelector('.league-tab-admin') : item });
 	});
+	document.addEventListener('keydown', (e) => {
+		const bar = document.getElementById('league-tabbar');
+		if (e.key !== 'Escape' || !bar || !bar.querySelector('.league-tabmenu.is-open')) return;
+		setMenu(bar, false);
+		bar.querySelector('.league-tab-admin').focus();
+	});
+	// Scrolling shuts it, so it never rides away with the bar or hangs over
+	// a page that has moved on.
+	window.addEventListener('scroll', () => {
+		const bar = document.getElementById('league-tabbar');
+		if (bar && bar.querySelector('.league-tabmenu.is-open')) setMenu(bar, false);
+	}, { passive: true });
 
 	// Back and forward between tabs.
 	window.addEventListener('popstate', () => { if (tabbed()) open(tabInAddress()); });

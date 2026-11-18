@@ -2924,7 +2924,49 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
  * with the site's bar. The page keeps clear of it at its foot. */
 .league-tabbar { display: none; }
 @media (max-width: 47.99rem) {
-	body.has-league-tabbar #league-nav { display: none; }
+	body.has-league-tabbar #league-nav,
+	body.has-league-tabmenu #league-nav-admin { display: none; }
+	/* Manage's menu (UV, 18 Nov): the second pill's pages in a raised, solid
+	   panel rising from the bar's right end, a row each; the page open is
+	   green and lit. It fades and lifts in; the bar itself takes no taps. */
+	.league-tabmenu {
+		position: absolute;
+		right: var(--space-3);
+		bottom: calc(100% - var(--space-1));
+		min-width: 12rem;
+		padding: var(--space-2);
+		border-radius: var(--nm-field-radius);
+		background: var(--bg-base);
+		box-shadow: var(--nm-raised);
+		opacity: 0;
+		visibility: hidden;
+		transform: translateY(var(--space-2));
+		transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0.2s;
+		pointer-events: auto;
+	}
+	.league-tabmenu.is-open { opacity: 1; visibility: visible; transform: none; transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s; }
+	.league-tabmenu-item,
+	.league-tabbar button.league-tabmenu-item {
+		display: flex;
+		align-items: center;
+		width: 100%;
+		min-height: 2.75rem;
+		margin: 0;
+		padding: 0 var(--nm-pad);
+		border: 0;
+		border-radius: var(--radius-pill);
+		background: none;
+		color: var(--text-primary);
+		font-family: inherit;
+		font-size: 1rem;
+		font-weight: 600;
+		text-align: left;
+		text-decoration: none;
+		cursor: pointer;
+		-webkit-tap-highlight-color: transparent;
+	}
+	.league-tabmenu-item + .league-tabmenu-item { border-top: 1px solid var(--border-color); border-radius: 0; }
+	.league-tabmenu-item[aria-current] { color: var(--color-primary); text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 60%, transparent); }
 	body.has-league-tabbar { padding-bottom: var(--tabbar-total); }
 	.league-tabbar:not([hidden]) {
 		display: block;
@@ -2979,4 +3021,11 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	.league-tabbar .league-tab[aria-current] { color: var(--color-primary); text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 60%, transparent); }
 	.league-tabbar .league-tab[aria-current] .league-tab-icon { --ring-accent: var(--color-primary); }
 }
-@media (prefers-reduced-motion: reduce) { .league-tabbar { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .league-tabbar, .league-tabmenu, .league-tabmenu.is-open { transition: none; } }
+/* With the pill gone from the top, the page's card no deeper at its top than
+   at its sides (UV, 18 Nov): the extra was room above the pill. A phone's
+   card has --space-3 at its sides (design.css); from 36rem it is even all
+   round already. */
+@media (max-width: 36rem) {
+	body.has-league-tabbar .tdc-card { padding-top: var(--space-3); }
+}

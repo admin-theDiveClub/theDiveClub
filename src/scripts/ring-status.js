@@ -72,6 +72,8 @@ const TDCRing = (() => {
 		// (Fixtures is the calendar).
 		podium: { label: 'Standings', strokes: ['M30 70L30 56L42 56L42 70', 'M42 70L42 42L58 42L58 70', 'M58 70L58 61L70 61L70 70', 'M26 70L74 70'] },
 		shield: { label: 'Season', strokes: ['M50 28L68 34L68 50C68 61 60 68 50 72C40 68 32 61 32 50L32 34L50 28'] },
+		// The bar's button for whoever runs the league, opening their pages (UV, 18 Nov).
+		sliders: { label: 'Manage', strokes: ['M36 30L36 70', 'M50 30L50 70', 'M64 30L64 70', 'M30 58L42 58M44 40L56 40M58 52L70 52'] },
 		document: { label: 'Rules', strokes: ['M37 28L57 28L65 36L65 72L37 72L37 28', 'M57 28L57 36L65 36', 'M44 49L58 49', 'M44 59L58 59'] },
 		calendar: { label: 'Moved', strokes: ['M30 36L70 36L70 70L30 70L30 36', 'M30 47L70 47', 'M40 29L40 40', 'M60 29L60 40'] },
 		minus: { label: 'Taken off', strokes: ['M30 50L70 50'] },
