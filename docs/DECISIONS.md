@@ -2370,3 +2370,7 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* on a league season's page **the live match cards sit above the page's content card**, no longer under the pill inside it (replacing "under the pill" of the earlier entry today); **the site's card shadow** on the live match card wherever it shows.
 *Claude's:* the box keeps the content card's width at every size; on every tab as before.
 *How:* `#league-live` moved before `.tdc-card` in `leagues/season/index.html`; `.league-live` in `live-match.css` copies `.tdc-card.wide`'s widths, and hides when `hidden` (`.live-cards`' flex otherwise beat it); `.live-card`'s shadow `--nm-card` in place of the switched-off `--shadow-panel`. `docs/systems/file-map.md`.
+
+## 2026-11-18 — The bottom bar: a raised, solid pill alone
+
+*Decided by UV:* the bottom bar's pill is **raised, not sunken**, with **a solid background**, and **the bar behind it is gone** (no background, no shadow): only the pill and its shadow show. Replaces Claude's first look in "The league tabs' bottom bar" above. *How:* `.league-tabbar` in `league.css` (see-through, taps passing through round the pill); `docs/ui.md`; STATUS §1 4co.

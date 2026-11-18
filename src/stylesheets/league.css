@@ -2917,9 +2917,10 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
  * Season and Rules, sit in a bar fixed to the foot of the screen, an icon
  * over each word, within a thumb's reach; the top pill is hidden there and
  * the second pill (Run it, Schedule, Settings) stays at the top. Wider, the
- * bar is hidden and the top pill is as before. The bar stands over the page
- * as the footer does: solid, its shadow cast upward; inside it the same
- * sunken pill and sliding thumb as the top pill. It slides away and back
+ * bar is hidden and the top pill is as before. The bar itself is see-through
+ * with no shadow; only its pill shows, raised, with the top pill's sliding
+ * thumb (UV, 18 Nov; first built sunken on a solid bar with the footer's
+ * shadow). It slides away and back
  * with the site's bar. The page keeps clear of it at its foot. */
 .league-tabbar { display: none; }
 @media (max-width: 47.99rem) {
@@ -2933,8 +2934,7 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 		left: 0;
 		z-index: 100;
 		padding: var(--space-2) var(--space-3) calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
-		background: var(--bg-base);
-		box-shadow: 0 -12px 24px -8px rgba(0, 0, 0, var(--sunken-alpha));
+		pointer-events: none;   /* see-through (UV, 18 Nov): only the pill takes a tap */
 		transition: transform var(--nav-slide) ease;
 	}
 	/* Slid away with the site's bar (nav.js), past its own shadow. */
@@ -2946,7 +2946,9 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 		padding: var(--space-1);
 		overflow: visible;
 		border-radius: var(--nm-field-radius);
-		box-shadow: var(--nm-sunken);
+		background: var(--bg-base);     /* solid, so the page does not show through (UV, 18 Nov) */
+		box-shadow: var(--nm-raised);   /* a raised pill on its own, no bar behind it (UV, 18 Nov) */
+		pointer-events: auto;
 	}
 	.league-tabbar .league-nav-item.league-tab {
 		position: relative;
