@@ -14,7 +14,8 @@
 // the shorter side of that over the golden ratio (UV, 16 Nov), so it is alone on opening.
 // Every raised card (.home-raised, index.html) lies over the balls while staying in the
 // box, so it scrolls with it and is clipped by it; nothing here moves them. The Get the
-// app card shows only outside the installed app.
+// app card shows only outside the installed app. Your live match card (UV, 18 Nov;
+// filled by home-cards.js) takes its place when there is one, on any device.
 (function () {
 	'use strict';
 	var AREA = 'Home';
@@ -33,6 +34,13 @@
 		// Its ✕ hides it until the next visit (UV, 16 Nov): nothing is kept
 		var cardX = document.getElementById('home-install-x');
 		if (card && cardX) cardX.addEventListener('click', function () { card.hidden = true; });
+		// Your live match (UV, 18 Nov; home-cards.js fills it and hides Get the app): it
+		// takes the Get the app card's place, so whichever shows is the one placed
+		var live = document.getElementById('home-live');
+		function shown() {
+			if (live && !live.hidden) return live;
+			return card && !card.hidden ? card : null;
+		}
 		var bed = null, lastPlace = null;
 		// The Get the app card at the top of the table (UV, 16 Nov): centred in the band from
 		// the top of what is seen of the cloth (below any banner) to the black's cross, or,
@@ -40,17 +48,20 @@
 		// coordinates, so it scrolls away with the logo and the markings
 		function placeCard(under, seen, logo) {
 			lastPlace = [under, seen, logo];
-			if (!card || card.hidden) return;
+			var c = shown();
+			if (!c) return;
 			under = Math.max(0, Math.ceil(under));
 			var foot = bed.land || !bed.cross ? under + (seen - logo) / 2 : bed.cross.top - bed.top;
 			var mid = (under + foot) / 2;
 			// Too tall for its band (a phone on its side): one line, the icon and "Get the
-			// app" only (UV, 16 Nov)
-			card.classList.remove('is-compact');
-			if (card.offsetHeight > foot - under) card.classList.add('is-compact');
-			card.style.left = Math.round((box.clientWidth - card.offsetWidth) / 2) + 'px';
-			card.style.top = Math.round(mid - card.offsetHeight / 2) + 'px';
-			if (card.offsetHeight > foot - under) console.error('[' + AREA + '] the Get the app card (' + card.offsetHeight + 'px) is taller than the room above the ' + (bed.land ? 'logo' : 'cross') + ' (' + Math.round(foot - under) + 'px); it is centred there all the same.');
+			// app" only (UV, 16 Nov); your match, the face and the name
+			c.classList.remove('is-compact', 'is-row');
+			if (c.offsetHeight > foot - under) c.classList.add('is-compact');
+			// Two matches still too tall on one line each: side by side (Claude's)
+			if (c === live && c.offsetHeight > foot - under) c.classList.add('is-row');
+			c.style.left = Math.round((box.clientWidth - c.offsetWidth) / 2) + 'px';
+			c.style.top = Math.round(mid - c.offsetHeight / 2) + 'px';
+			if (c.offsetHeight > foot - under) console.error('[' + AREA + '] the ' + (c === live ? 'live match' : 'Get the app') + ' card (' + c.offsetHeight + 'px) is taller than the room above the ' + (bed.land ? 'logo' : 'cross') + ' (' + Math.round(foot - under) + 'px); it is centred there all the same.');
 		}
 		function place() {
 			if (!bed) return;
@@ -92,7 +103,10 @@
 		var watch = new ResizeObserver(place);
 		strips.forEach(function (el) { watch.observe(el); });
 		// The card's words wrapping differently, or the font arriving, changes its height
-		if (card) new ResizeObserver(function () { if (bed && lastPlace) placeCard.apply(null, lastPlace); }).observe(card);
+		// (and your live match's arriving, or its rows changing, likewise)
+		var again = new ResizeObserver(function () { if (bed && lastPlace) placeCard.apply(null, lastPlace); });
+		if (card) again.observe(card);
+		if (live) again.observe(live);
 		bed = stage.heroBed || null;
 		if (!bed) console.error('[' + AREA + '] the table has not said where its cloth is yet; the content waits for it.');
 		place();

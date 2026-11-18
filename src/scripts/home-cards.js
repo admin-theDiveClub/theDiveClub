@@ -141,9 +141,42 @@
 		return p;
 	}
 
+	// Your live match (UV, 18 Nov; migration 20261118062033): a glass card with a yellow
+	// glow inside for each match waiting on you, in the Get the app card's place (that one
+	// hidden while it shows; home.js places it). It names the other side, what is waiting
+	// (Lineups, or Playing with the frames so far) and the league or tournament, and opens
+	// the scorecard: a team night's card, else the match page.
+	function liveCard(m) {
+		var a = el('a', 'home-install home-live-card');
+		a.href = m.team_match ? '/leagues/card/?m=' + encodeURIComponent(m.id) : '/match/?id=' + encodeURIComponent(m.id);
+		var words = el('span', 'home-install-words');
+		var what = m.state === 'lineups' ? 'Lineups' : 'Playing';
+		if (m.state !== 'lineups' && m.my_frames + m.their_frames > 0) what += ' · ' + m.my_frames + '–' + m.their_frames;
+		if (m.competition) what += ' · ' + m.competition;
+		words.append(el('span', 'home-install-title', m.opponent), el('span', 'home-install-sub', what));
+		var go = el('span', 'home-install-go', '›');
+		go.setAttribute('aria-hidden', 'true');
+		a.append(opponentPic(m), words, go);
+		return a;
+	}
+	function drawLive(d) {
+		var box = document.getElementById('home-live');
+		if (!box || !d.signed_in) return;
+		if (!Array.isArray(d.live)) {
+			TDC.error(AREA, 'your live match could not be shown: the database has not been updated (tdc_home_cards sends no live list).', d, statusEl);
+			return;
+		}
+		if (!d.live.length) { box.hidden = true; return; }
+		box.replaceChildren.apply(box, d.live.map(liveCard));
+		var install = document.getElementById('home-install');
+		if (install) install.hidden = true;
+		box.hidden = false;
+	}
+
 	function draw(d) {
 		var signedIn = !!d.signed_in;
 		var leagues = d.leagues || [], tournaments = d.tournaments || [], matches = d.matches || [];
+		drawLive(d);
 
 		if (!signedIn) {
 			var a = el('a', 'hc-signin', 'Sign in to start a new match.');
