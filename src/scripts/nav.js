@@ -919,9 +919,8 @@
 	// ─── Getting the app (13 Nov) ─────────────────────────────────────
 	// docs/systems/foundations.md, "Getting the app". UV's rules:
 	//   - Phones only, never in the installed app.
-	//   - The strip shows on every page from a visit to the home page until ✕;
-	//     ✕ hides it until the next visit to the home page. A first visit
-	//     anywhere shows it too.
+	//   - The strip shows on the home page only (UV, 18 Nov; it used to follow
+	//     the person to every page until ✕). ✕ hides it for that visit.
 	//   - "Get the app" in the menu is always there on a phone in a browser.
 	// On Android, where the browser offers a one-tap install (device.js), the
 	// strip's button installs directly; everywhere else it opens /install/.
@@ -946,7 +945,6 @@
 		const x     = document.getElementById('nav-get-app-x');
 		const row   = document.getElementById('nav-get-app-row');
 
-		const OFF = 'tdc.get-app-off';        // ✕ pressed since the last visit to the home page
 		const WELCOMED = 'tdc.app-welcomed';  // the app's welcome is over
 		const SEEN = 'tdc.device-seen';       // the last day's record, so it is sent once a day
 		const store = {
@@ -956,7 +954,6 @@
 		};
 		const path = location.pathname;
 		const onHome = path === '/' || path === '/index.html';
-		const onInstall = path.startsWith('/install');
 
 		let onGo = null;   // what the strip's button does, when it is not a plain link
 		function fill(words, label, href, action) {
@@ -987,8 +984,9 @@
 				row.hidden = false;
 				makeRing('install', 'nav-get-app-ring', ['install'], { install: 'Get the app' });
 			}
-			if (onHome) store.del(OFF);
-			if (onInstall || store.get(OFF)) return;
+			// The strip on the home page only (UV, 18 Nov): every visit there
+			// shows it, ✕ hides it for that visit; no other page offers it.
+			if (!onHome) return;
 
 			const offer = () => {
 				if (D.canInstall) {
@@ -1015,7 +1013,7 @@
 
 		if (x) x.addEventListener('click', () => {
 			hide();
-			store.set(D.installed ? WELCOMED : OFF, '1');
+			if (D.installed) store.set(WELCOMED, '1');
 		});
 
 		function welcome(session) {

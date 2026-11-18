@@ -2442,3 +2442,9 @@ These predate the log. They are recorded here because every one of them is a dec
 
 *Decided by UV:* on the home page two live match cards are always stacked, never side by side. Side by side (Claude's, from "The home page's live match card"), each card was too narrow and the opponent's name vanished.
 *How:* `home.js` (`placeCard`: no `is-row`), `index.html` (the `.home-live.is-row` rules removed). When even two one-line cards are taller than the room above the black's cross, they are centred there and overlap the markings a little; `home.js` already logs that as a console error. STATUS §1 4cr.
+
+## 2026-11-18 — Get the app on the home page only
+
+*Decided by UV:* the Get the app strip under the bar no longer follows the person to every page. It shows on the home page only, at every visit, as before; its ✕ hides it for that visit. This replaces the 13 Nov rule ("on every page from a visit to the home page until ✕").
+*Unchanged:* the home page's glass card, the menu's Get the app row, `/install/`, and the installed app's one-off welcome (still on any page).
+*How:* `nav.js` ("Getting the app": the strip returns unless on the home page; the `tdc.get-app-off` key dropped), the comment in `nav.html`. `docs/systems/foundations.md`; STATUS §1 4cs.
