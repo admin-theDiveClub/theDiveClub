@@ -646,7 +646,12 @@
 		// season under both (the markup's order).
 		const first = managing || myTeamSide() || 'home';
 		const sides = first === 'home' ? ['home', 'away'] : ['away', 'home'];
-		const own = managing || myTeamSide() || null;   // whose side the reader is on, for the opposition's view
+		// Whose side the reader is on, for which view each table opens on. A
+		// player on either team's roster counts (UV, 18 Nov), not only a
+		// captain: before the frames exist myTeamSide() knows captains alone.
+		const onRoster = (s) => !!myPlayerId
+			&& (rosters.get(s === 'home' ? match.home_team_id : match.away_team_id) || []).some((r) => r.player_id === myPlayerId);
+		const own = managing || myTeamSide() || (onRoster('home') ? 'home' : onRoster('away') ? 'away' : null);
 		els.teamTables.replaceChildren(...sides.map((side) => teamTable(side, locked, side === managing, own)));
 
 		// The lock button goes with the table being set up; parked out of
@@ -831,9 +836,11 @@
 			if (drag) endDrag(false);      // a live update redraws the rows under it
 		}
 
-		// Scorecard · Stats (UV, 18 Nov), Scorecard first and chosen on opening,
-		// except the opposition's table, which opens on Stats (UV).
-		const shown = luView.get(side) || (own && side !== own ? 'stats' : 'scorecard');
+		// Scorecard · Stats (UV, 18 Nov): a player in the match opens their own
+		// team's table on Scorecard (a captain's too, once locked) and the
+		// opposition's on Stats; anybody not in the match, the league director
+		// not setting a side included, opens both on Stats (UV, 18 Nov).
+		const shown = luView.get(side) || (side === own ? 'scorecard' : 'stats');
 		const views = node('div', 'cp-views lu-views');
 		views.setAttribute('role', 'group');
 		views.setAttribute('aria-label', 'Scorecard or stats');
