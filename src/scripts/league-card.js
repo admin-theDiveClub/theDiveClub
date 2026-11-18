@@ -52,11 +52,10 @@
 		jumboMore: el('jumbo-more'), jumboTags: el('jumbo-tags'), jumboV: el('jumbo-v'),
 		homePic: el('home-pic'), homeName: el('home-name'), awayPic: el('away-pic'), awayName: el('away-name'),
 		sideSwitch: el('side-switch'), sidePick: el('side-pick'),
-		lineups: el('lineups'), compare: el('team-compare'), teamTables: el('team-tables'), order: el('lineup-order'),
+		lineups: el('lineups'), compare: el('team-compare'), teamTables: el('team-tables'),
 		squadHint: el('squad-hint'), lockRow: el('lock-row'), lockBtn: el('lock-btn'),
 		// The managing team's table body: made once and moved into whichever
 		// table is being set up, so its listener and steppers persist.
-		squadList: document.createElement('tbody'),
 		quick: el('quick'), quickList: el('quick-list'),
 		grid: el('grid'), sessions: el('session-list'), gridHint: el('grid-hint'),
 		mine: el('mine'), mineFrames: el('mine-frames'), mineSessions: el('mine-sessions'),
@@ -549,27 +548,73 @@
 	// No "here tonight" (UV, 18 Nov): every active player is available every
 	// night, so a captain only gives positions; everybody else on the team is
 	// a reserve. The database's squad is sent as the players given a position.
-	const pendingPos = new Map();    // player -> { at: position or null, n: order chosen }
-	let chosen = 0;
+	//
+	// The lineup is one ordered list (UV, 18 Nov, later): the first n players
+	// (n = the night's positions) are positions 1 to n, everybody below them a
+	// reserve. A captain moves a player up or down with the arrows, or drags
+	// them. A position is null only when the team has fewer active players
+	// than positions; away and withdrawn players are never in the list.
+	const pendingOrder = new Map();   // side -> [player id or null], kept until the lock
 
-	// Who is in which position, as this page should show it: the database's,
-	// with the choices on their way laid over. A position chosen here empties
-	// whoever held it, as the database will; of two chosen for one position,
-	// the later stands.
-	function lineupShown() {
-		const saved = new Map(lineup.filter((l) => l.side === working && l.player_id).map((l) => [l.player_id, l.lineup_slot]));
-		const claim = new Map();   // position -> { id, n } latest chosen
-		for (const [id, p] of pendingPos) {
-			if (p.at != null && !(claim.get(p.at) && claim.get(p.at).n > p.n)) claim.set(p.at, { id, n: p.n });
+	const positionsOf = (side) => lineup.filter((l) => l.side === side).length;
+	const statOf = (id) => (standings && standings.players.get(id)) || null;
+
+	// A team's players in league order (the Standings ranks, as the league's
+	// rules rank them), then name order for anybody not ranked yet.
+	function byRank(roster) {
+		return roster.slice().sort((a, b) => {
+			const x = statOf(a.player_id), y = statOf(b.player_id);
+			const rx = x && x.rank !== null ? x.rank : Infinity, ry = y && y.rank !== null ? y.rank : Infinity;
+			return rx - ry || String(a.display_name).localeCompare(String(b.display_name));
+		});
+	}
+
+	// The first n entries padded to n, nobody past them but players.
+	function normalised(list, n) {
+		const head = list.slice(0, n);
+		while (head.length < n) head.push(null);
+		return head.concat(list.slice(n).filter(Boolean));
+	}
+
+	// The order a captain starts from (UV, 18 Nov): the players as they stand
+	// in the league, the strongest in the night's last frame (the decider),
+	// the next strongest in the frame before it, and so on back through the
+	// last session, read from this match's own frozen scorecard (8-Ball
+	// Mainstream's paper order included). Anybody beyond the positions is a
+	// reserve, in league order. A lineup the database already holds for this
+	// side (saved before 12 Nov) is kept instead.
+	function suggestedOrder(side) {
+		const n = positionsOf(side);
+		const teamId = side === 'home' ? match.home_team_id : match.away_team_id;
+		const active = byRank(rosters.get(teamId) || []).filter((r) => r.status === 'active').map((r) => r.player_id);
+		const order = Array(n).fill(null);
+		const saved = lineup.filter((l) => l.side === side && l.player_id && active.includes(l.player_id));
+		if (saved.length) {
+			for (const l of saved) if (l.lineup_slot >= 1 && l.lineup_slot <= n) order[l.lineup_slot - 1] = l.player_id;
+		} else {
+			const rows = TDCMatchDef.rotationFrames(match.rules) || [];
+			const last = rows.length ? rows[rows.length - 1] : [];
+			const key = side === 'home' ? 'h' : 'a';
+			const strongestFirst = last.slice().reverse().map((f) => f[key]);
+			active.slice(0, n).forEach((id, k) => {
+				let p = strongestFirst[k];
+				if (!(p >= 1 && p <= n) || order[p - 1] !== null) p = order.lastIndexOf(null) + 1;   // no scorecard: from the bottom
+				order[p - 1] = id;
+			});
 		}
-		const pos = (id) => {
-			if (pendingPos.has(id)) {
-				const p = pendingPos.get(id);
-				return p.at != null && claim.get(p.at).id === id ? p.at : null;
-			}
-			const at = saved.get(id);
-			return at != null && !claim.has(at) ? at : null;
-		};
+		return normalised(order.concat(active.filter((id) => !order.includes(id))), n);
+	}
+
+	function orderFor(side) {
+		if (!pendingOrder.has(side)) pendingOrder.set(side, suggestedOrder(side));
+		return pendingOrder.get(side);
+	}
+
+	// Who is in which position, as this page shows it.
+	function lineupShown() {
+		const n = positionsOf(working);
+		const list = orderFor(working);
+		const pos = (id) => { const i = list.indexOf(id); return i >= 0 && i < n ? i + 1 : null; };
 		return { pos };
 	}
 
@@ -580,7 +625,12 @@
 	// the director chose) has the position steppers in its table, the
 	// hint above it and Lock the lineup under it; everybody else sees the
 	// tables read-only. Players never see this page once the lineups are in.
-	const LINEUP_HINT = 'Give each player in the first session their position. Each keeps their position all night; the rest follows from the rotation. Everybody else on the team is a reserve and can come into a frame at any time until the card is signed, an empty position included. Nothing is sent until you lock the lineup.';
+	//
+	// Every team table has Scorecard · Stats (UV, 18 Nov; Scorecard first and
+	// chosen on opening): Scorecard is the night's grid with this team down
+	// the side, Stats the Standings table. The choice is kept per side across
+	// redraws; switching shows the other view in place, so the thumb slides.
+	const luView = new Map();   // side -> 'scorecard' | 'stats'
 
 	function renderLineups(locked, both, canSet) {
 		els.lineups.hidden = both;
@@ -593,64 +643,92 @@
 		// season under both (the markup's order).
 		const first = managing || myTeamSide() || 'home';
 		const sides = first === 'home' ? ['home', 'away'] : ['away', 'home'];
-		els.teamTables.replaceChildren(...sides.map((side) => teamTable(side, locked, side === managing)));
-		renderOrder();
+		const own = managing || myTeamSide() || null;   // whose side the reader is on, for the opposition's view
+		els.teamTables.replaceChildren(...sides.map((side) => teamTable(side, locked, side === managing, own)));
 
-		// The hint and the lock button go with the table being set up; parked
-		// out of sight in the section otherwise.
-		els.squadHint.hidden = els.lockRow.hidden = !managing;
+		// The lock button goes with the table being set up; parked out of
+		// sight in the section otherwise. No hint any more (UV, 18 Nov: the
+		// grey words under the team's name gave way to Scorecard · Stats).
+		els.squadHint.hidden = true;
+		els.lockRow.hidden = !managing;
 		if (managing) {
-			const box = els.teamTables.querySelector('.lu-team[data-side="' + managing + '"]');
-			const roster = rosters.get(managing === 'home' ? match.home_team_id : match.away_team_id) || [];
-			els.squadHint.textContent = roster.length ? LINEUP_HINT : 'Nobody is on this team yet.';
-			box.querySelector('.lu-state').after(els.squadHint);
-			box.append(els.lockRow);
+			els.teamTables.querySelector('.lu-team[data-side="' + managing + '"]').append(els.lockRow);
 			showLockCount();
 		} else {
-			els.lineups.append(els.squadHint, els.lockRow);
+			els.lineups.append(els.lockRow);
 		}
 	}
 
-	// The night's numbering by position (UV, 16 Nov), under the team tables:
-	// home positions across, away positions down, and where the two cross the
-	// frame in which they meet, so a captain can place players by where they
-	// fall on the scorecard. Read from this match's own frozen rules, so a
-	// league with its own order (8-Ball Mainstream's paper scoresheet) shows
-	// that order. A table that repeats a pairing shows both frames.
-	function renderOrder() {
+	// Scorecard · Stats (UV, 18 Nov; it replaced the scorecard at the foot of
+	// the page): one table, the position, picture and name always, and to
+	// their right either the Standings columns (Stats) or the other team's
+	// positions (Scorecard), each cell the frame in which this row's position
+	// meets that one, in the same table and the same look. Read from this
+	// match's own frozen rules, so a league with its own order (8-Ball
+	// Mainstream's paper scoresheet) shows that order; a table that repeats a
+	// pairing shows both frames. The team box's data-view says which columns
+	// show (league.css), so switching moves nothing else.
+	function framesFor(side) {
 		const n = teamSize();
-		els.order.hidden = !(n > 0);
-		if (els.order.hidden) return;
-
 		const meets = new Map();   // 'h-a' → [frame numbers]
-		TDCMatchDef.rotationFrames(match.rules).forEach((row, s) => row.forEach((f, j) => {
-			const key = f.h + '-' + f.a;
-			if (!meets.has(key)) meets.set(key, []);
-			meets.get(key).push(s * n + j + 1);
-		}));
-
-		const table = node('table', 'tdc-table rotation-grid rotation-scorecard lu-order-grid');
-		const head = node('tr');
-		head.append(node('th', null, ''));
-		for (let h = 1; h <= n; h++) head.append(node('th', null, 'H' + h));
-		const thead = node('thead');
-		thead.append(head);
-		const tbody = node('tbody');
-		for (let a = 1; a <= n; a++) {
-			const tr = node('tr');
-			tr.append(node('th', null, 'A' + a));
-			for (let h = 1; h <= n; h++) tr.append(node('td', null, (meets.get(h + '-' + a) || []).join(', ')));
-			tbody.append(tr);
+		if (n > 0) {
+			TDCMatchDef.rotationFrames(match.rules).forEach((row, s) => row.forEach((f, j) => {
+				const key = f.h + '-' + f.a;
+				if (!meets.has(key)) meets.set(key, []);
+				meets.get(key).push(s * n + j + 1);
+			}));
 		}
-		table.append(thead, tbody);
-		const scroll = node('div', 'table-scroll');
-		scroll.append(table);
+		return (p, q) => (side === 'home' ? meets.get(p + '-' + q) : meets.get(q + '-' + p)) || [];
+	}
 
-		els.order.replaceChildren(
-			node('h2', 'lj-heading', 'The scorecard'),
-			scroll,
-			node('p', 'muted lu-hint', 'H is ' + teamName('home') + '\'s position, A is ' + teamName('away')
-				+ '\'s. Each number is the frame in which those two positions meet.'));
+	// The Scorecard columns for one row: the frame against each of the other
+	// team's positions where this row has a position, blanks where it does not.
+	function scCells(side, position) {
+		const n = teamSize();
+		const frames = framesFor(side);
+		const cells = [];
+		// Written F1, F6 …, grey; the last session's frames green (UV, 18 Nov).
+		for (let q = 1; q <= n; q++) {
+			const td = node('td', 'num lu-col-sc');
+			if (position) {
+				frames(position, q).forEach((f, k) => {
+					if (k) td.append(', ');
+					td.append(node('span', f > (n - 1) * n ? 'lu-f-last' : null, 'F' + f));
+				});
+			}
+			cells.push(td);
+		}
+		return cells;
+	}
+
+	// Their headings: the other team's positions.
+	function scHeads(side) {
+		const theirs = side === 'home' ? 'A' : 'H';
+		const heads = [];
+		for (let q = 1; q <= teamSize(); q++) heads.push(node('th', 'num lu-col-sc', theirs + q));
+		return heads;
+	}
+
+	// A table this reader cannot change, on Scorecard: one row per position
+	// (its players' positions are not known to the reader). Its picture and
+	// Player columns are hidden on Scorecard (UV, 18 Nov: the positions only),
+	// so the names filled in here, where tdc_match_lineup reveals the order,
+	// show nowhere for now.
+	function positionRows(side, roster, posFor) {
+		const mine = side === 'home' ? 'H' : 'A';
+		const byId = new Map(roster.map((r) => [r.player_id, r]));
+		const idAt = new Map([...posFor].map(([id, p]) => [p, id]));
+		const rows = [];
+		for (let p = 1; p <= teamSize(); p++) {
+			const r = byId.get(idAt.get(p));
+			const tr = node('tr', 'lu-row-sc');
+			const pic = node('td', 'sd-pic');
+			if (r) pic.append(avatar(r.player_id, r.display_name));
+			tr.append(node('td', 'sd-rank lu-ctl lu-pos', mine + p), pic,
+				node('td', 'sd-name' + (r ? '' : ' lu-empty-name'), r ? r.display_name : '–'), ...scCells(side, p));
+			rows.push(tr);
+		}
+		return rows;
 	}
 
 	function ordinal(n) {
@@ -701,15 +779,12 @@
 	}
 
 	// One team's table: its players in league order (the Standings ranks),
-	// then name order for anybody not ranked yet.
-	function teamTable(side, locked, manage) {
+	// then name order for anybody not ranked yet. The table being set up is
+	// in lineup order instead (lineupRows). The rank sits after the name and
+	// the position first (UV, 18 Nov).
+	function teamTable(side, locked, manage, own) {
 		const teamId = side === 'home' ? match.home_team_id : match.away_team_id;
-		const stat = (id) => (standings && standings.players.get(id)) || null;
-		const roster = (rosters.get(teamId) || []).slice().sort((a, b) => {
-			const x = stat(a.player_id), y = stat(b.player_id);
-			const rx = x && x.rank !== null ? x.rank : Infinity, ry = y && y.rank !== null ? y.rank : Infinity;
-			return rx - ry || String(a.display_name).localeCompare(String(b.display_name));
-		});
+		const roster = byRank(rosters.get(teamId) || []);
 		const cols = standings ? standings.playerCols : [];
 		const theirs = lineup.filter((l) => l.side === side);
 		// The order, where this reader may see it (tdc_match_lineup decides).
@@ -736,82 +811,77 @@
 		head.append(node('span', 'badge lu-side', side === 'home' ? 'Home' : 'Away'), pic, name);
 		box.append(head);
 
-		let state;
-		if (manage) state = 'Setting up tonight\'s lineup.';
-		else if (locked[side]) {
-			const filled = theirs.filter((l) => l.player_id || l.hidden).length;
-			state = 'Locked: ' + filled + ' of ' + theirs.length + ' positions filled.'
-				+ (!posFor.size && theirs.some((l) => l.hidden) ? ' The order is sealed until both lineups are in.' : '');
-		} else state = 'Still choosing.';
-		const stateLine = node('p', 'lu-state' + (locked[side] ? ' is-locked' : ''), state);
-		box.append(stateLine);
+		// The state line on a table this reader cannot change (UV, 18 Nov: kept
+		// there, the only sign the other side has locked; gone from the table
+		// being set up, with the hint, for Scorecard · Stats).
+		if (!manage) {
+			let state;
+			if (locked[side]) {
+				const filled = theirs.filter((l) => l.player_id || l.hidden).length;
+				state = 'Locked: ' + filled + ' of ' + theirs.length + ' positions filled.'
+					+ (!posFor.size && theirs.some((l) => l.hidden) ? ' The order is sealed until both lineups are in.' : '');
+			} else state = 'Still choosing.';
+			box.append(node('p', 'lu-state' + (locked[side] ? ' is-locked' : ''), state));
+		}
+		if (manage) {
+			box.dataset.pull = 'off';      // a drag here must not reload the page
+			if (drag) endDrag(false);      // a live update redraws the rows under it
+		}
 
-		const table = node('table', 'tdc-table sd-table lu-table');
+		// Scorecard · Stats (UV, 18 Nov), Scorecard first and chosen on opening,
+		// except the opposition's table, which opens on Stats (UV).
+		const shown = luView.get(side) || (own && side !== own ? 'stats' : 'scorecard');
+		const views = node('div', 'cp-views lu-views');
+		views.setAttribute('role', 'group');
+		views.setAttribute('aria-label', 'Scorecard or stats');
+		for (const [key, label] of [['scorecard', 'Scorecard'], ['stats', 'Stats']]) {
+			const b = node('button', 'cp-view', label);
+			b.type = 'button';
+			b.dataset.luView = key;
+			b.setAttribute('aria-pressed', key === shown ? 'true' : 'false');
+			views.append(b);
+		}
+		box.append(views);
+		box.dataset.view = shown;
+
+		// The first column, frozen at the left with the picture and name: the
+		// position (the pill while it is being set, the letter and number once
+		// it can be read). On a table this reader cannot change, Scorecard
+		// always shows it (its rows are the positions), Stats only once the
+		// order can be read.
+		const table = node('table', 'tdc-table sd-table lu-table has-lead' + (manage || showPos ? '' : ' lead-sc-only'));
 		const thead = node('thead'), htr = node('tr');
 		const picHead = node('th', 'sd-pic');
 		picHead.setAttribute('aria-label', 'Picture');
-		htr.append(node('th', 'num sd-rank', '#'), picHead, node('th', 'sd-name', 'Player'));
-		if (manage) htr.append(node('th', 'lu-ctl', 'Position'));
-		if (showPos) htr.append(node('th', 'lu-ctl', 'Position'));
-		for (const c of cols) htr.append(node('th', 'num', c.name));
+		htr.append(node('th', 'sd-rank lu-ctl lu-lead', 'Position'), picHead, node('th', 'sd-name', 'Player'),
+			node('th', 'num lu-rank lu-col-stats', 'Rank'));
+		for (const c of cols) htr.append(node('th', 'num lu-col-stats', c.name));
+		htr.append(...scHeads(side));
 		thead.append(htr);
 
-		const body = manage ? els.squadList : node('tbody');
-		const { pos } = manage ? lineupShown() : { pos: null };
-		const max = theirs.length || 1;
-		body.replaceChildren(...roster.map((r, i) => {
-			const id = r.player_id;
-			const st = stat(id);
-			const tr = node('tr', i % 2 ? 'sd-alt' : null);
-			if (myPlayerId && id === myPlayerId) tr.classList.add('sd-me');
-			tr.append(node('td', 'num sd-rank', st && st.rank !== null ? String(st.rank) : '–'));
-			const pic = node('td', 'sd-pic');
-			pic.append(avatar(id, r.display_name));
-			const who = node('td', 'sd-name');
-			who.append(node('span', 'lu-player', r.display_name));
-			if (r.is_captain) who.append(node('span', 'badge live lu-badge', 'Captain'));
-			if (r.status !== 'active') who.append(node('span', 'lu-sub', r.status === 'withdrawn' ? 'Withdrawn' : 'Away'));
-			tr.append(pic, who);
-
-			if (manage) {
-				// The position alone (UV, 18 Nov; a "here tonight" switch beside
-				// it until then), kept on the page until the lock (UV, 12 Nov).
-				const at = document.createElement('input');
-				at.type = 'number';      // a stepper
-				at.dataset.stepper = 'across';   // on its side: a row of small numbers, one per player
-				at.dataset.control = 'stepper';  // asked for by name: nothing inside a table is taken otherwise
-				at.id = 'pos-' + id;
-				at.min = '1';
-				at.max = String(max);
-				at.step = '1';
-				at.placeholder = '–';
-				at.value = pos(id) == null ? '' : String(pos(id));
-				at.dataset.was = at.value;   // where a step came from (choosePos)
-				// The database refuses anybody not active (away or withdrawn);
-				// saying so here spares a pointless tap. Confirmation is not asked
-				// for, and has not been since 23 Oct.
-				at.disabled = r.status !== 'active';
-				at.dataset.action = 'pos';
-				at.dataset.player = id;
-				at.setAttribute('aria-label', 'Position for ' + r.display_name);
-
-				const cell = node('td', 'lu-ctl');
-				cell.append(at);
-				tr.append(cell);
-			}
-			if (showPos) {
-				const p = posFor.get(id);
-				tr.append(node('td', 'lu-ctl lu-pos', p ? (side === 'home' ? 'H' : 'A') + p : ''));
-			}
-			for (const c of cols) tr.append(node('td', 'num', TDCStandings.shown(st ? st.values[c.id] : null, c.decimals)));
-			return tr;
-		}));
+		const body = node('tbody');
+		if (manage) {
+			// The same rows on both: Scorecard changes only the columns.
+			body.replaceChildren(...lineupRows(side, roster, cols));
+		} else {
+			const statRows = roster.map((r) => {
+				const p = posFor.get(r.player_id);
+				const tr = playerRow(r, cols, node('td', 'sd-rank lu-ctl lu-pos lu-lead', p ? (side === 'home' ? 'H' : 'A') + p : ''));
+				tr.classList.add('lu-row-stats');
+				return tr;
+			});
+			body.replaceChildren(...statRows);
+			stripe({ rows: statRows });
+			const scRows = positionRows(side, roster, posFor);
+			stripe({ rows: scRows });
+			body.append(...scRows);
+		}
 		if (!roster.length) {
 			const tr = node('tr');
 			const td = node('td', 'empty', 'Nobody on this team yet.');
-			td.colSpan = 3 + cols.length + (manage ? 1 : 0);
+			td.colSpan = 4 + cols.length + teamSize();
 			tr.append(td);
-			body.append(tr);
+			body.replaceChildren(tr);
 		}
 		table.append(thead, body);
 		const scroll = node('div', 'table-scroll sd-scroll');
@@ -820,19 +890,132 @@
 		return box;
 	}
 
+	// One player's row: the first cell if there is one, the picture, the
+	// name, the league rank (after the name, UV 18 Nov), the league's columns
+	// (Stats), then any Scorecard cells.
+	function playerRow(r, cols, first, scs = []) {
+		const id = r.player_id;
+		const st = statOf(id);
+		const tr = node('tr');
+		if (myPlayerId && id === myPlayerId) tr.classList.add('sd-me');
+		if (first) tr.append(first);
+		const pic = node('td', 'sd-pic');
+		pic.append(avatar(id, r.display_name));
+		const who = node('td', 'sd-name');
+		who.append(node('span', 'lu-player', r.display_name));
+		if (r.is_captain) who.append(node('span', 'badge live lu-badge', 'Captain'));
+		if (r.status !== 'active') who.append(node('span', 'lu-sub', r.status === 'withdrawn' ? 'Withdrawn' : 'Away'));
+		tr.append(pic, who, node('td', 'num lu-rank lu-col-stats', st && st.rank !== null ? String(st.rank) : '–'));
+		for (const c of cols) tr.append(node('td', 'num lu-col-stats', TDCStandings.shown(st ? st.values[c.id] : null, c.decimals)));
+		tr.append(...scs);
+		return tr;
+	}
+
+	const stripe = (body) => [...body.rows].forEach((tr, i) => tr.classList.toggle('sd-alt', i % 2 === 1));
+
+	// The table being set up, in lineup order: positions 1 to n (an empty one
+	// as a row of its own, only when the team is short), the reserves under
+	// them, then anybody away or withdrawn, who cannot be moved.
+	function lineupRows(side, roster, cols) {
+		const n = positionsOf(side);
+		const list = orderFor(side);
+		const byId = new Map(roster.map((r) => [r.player_id, r]));
+		const rows = list.map((id, i) => {
+			const pill = movePill(i, n, list.length, id ? byId.get(id).display_name : null);
+			const first = node('td', 'sd-rank lu-ctl lu-move-cell');
+			first.append(pill);
+			const scs = scCells(side, i < n ? i + 1 : null);   // a reserve has no frames
+			if (!id) {
+				const tr = node('tr', 'lu-empty-row lu-order-row');
+				tr.dataset.key = 'empty-' + i;
+				const who = node('td', 'sd-name lu-empty-name', 'Nobody yet');
+				tr.append(first, node('td', 'sd-pic'), who, node('td', 'num lu-rank lu-col-stats', ''));
+				for (let c = 0; c < cols.length; c++) tr.append(node('td', 'num lu-col-stats', ''));
+				tr.append(...scs);
+				return tr;
+			}
+			const tr = playerRow(byId.get(id), cols, first, scs);
+			tr.dataset.key = tr.dataset.player = id;
+			tr.classList.add('lu-order-row');
+			return tr;
+		});
+		for (const r of roster) {
+			if (list.includes(r.player_id)) continue;
+			const first = node('td', 'sd-rank lu-ctl lu-move-cell');
+			first.append(movePill(-1, n, 0, r.display_name));
+			const tr = playerRow(r, cols, first, scCells(side, null));
+			tr.dataset.key = r.player_id;
+			tr.classList.add('lu-out-row');
+			rows.push(tr);
+		}
+		stripe({ rows });
+		// "Reserves" between the last position and the first reserve (UV,
+		// 18 Nov), when there are any. Not a place in the order: arrows and
+		// drag pass over it.
+		if (list.length > n) {
+			const label = node('tr', 'lu-reserve-row');
+			label.dataset.key = 'reserves';
+			const td = node('td', 'lu-reserve-label', 'Reserves');
+			td.colSpan = 4 + cols.length + teamSize();
+			label.append(td);
+			rows.splice(n, 0, label);
+		}
+		return rows;
+	}
+
+	// The position pill (UV, 18 Nov): the stepper's look, an up arrow on the
+	// left and a down arrow on the right, each moving the player one place in
+	// the order. The number is the position, "–" for a reserve. At = -1:
+	// somebody who cannot be moved (away or withdrawn), the pill greyed.
+	const ARROW = '<svg viewBox="0 0 24 24" aria-hidden="true"><path pathLength="100" d="M12 20V4"/><path pathLength="100" d="M5 11l7-7 7 7"/></svg>';
+	function movePill(at, n, length, name) {
+		const pill = node('span', 'tdc-stepper is-across lu-move' + (at < 0 || !name ? ' is-disabled' : ''));
+		const btn = (dir, label) => {
+			const b = node('button', 'tdc-chevron lu-move-' + dir);
+			b.type = 'button';
+			b.innerHTML = ARROW;
+			b.dataset.action = 'move-' + dir;
+			b.setAttribute('aria-label', name ? 'Move ' + name + ' ' + label : label);
+			b.addEventListener('pointerdown', (e) => { if (e.button === 0) e.preventDefault(); });   // keep focus, no selection
+			return b;
+		};
+		const up = btn('up', 'up'), down = btn('down', 'down');
+		// An arrow with nowhere to go is made invisible and switched off, not
+		// hidden: a hidden one took more room than a shown one, so pills with
+		// one arrow came out wider (UV, 18 Nov).
+		const off = (b, isOff) => { b.disabled = isOff; b.classList.toggle('is-off', isOff); if (isOff) b.setAttribute('aria-hidden', 'true'); };
+		off(up, !name || at <= 0);
+		off(down, !name || at < 0 || at >= length - 1);
+		const view = node('span', 'tdc-stepper-window');
+		view.append(node('span', 'lu-move-num' + (at >= 0 && at < n ? '' : ' is-reserve'), at >= 0 && at < n ? String(at + 1) : '–'));
+		pill.style.setProperty('--chars', String(Math.max(1, String(n).length)));
+		pill.append(up, view, down);
+		return pill;
+	}
+
+	// A change to the order: drawn again in place, every row that moved
+	// sliding from where it was (unless the reader asked for less motion).
+	function setOrder(list) {
+		const n = positionsOf(working);
+		const managedRows = () => [...els.teamTables.querySelectorAll('.lu-team.is-managing tr[data-key]')];
+		const before = new Map(managedRows().map((tr) => [tr.dataset.key, tr.getBoundingClientRect().top]));
+		pendingOrder.set(working, normalised(list, n));
+		render();
+		if (lessMotion()) return;
+		for (const tr of managedRows()) {
+			const was = before.get(tr.dataset.key);
+			const dy = was === undefined ? 0 : was - tr.getBoundingClientRect().top;
+			if (Math.abs(dy) > 1) tr.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], { duration: 220, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' });
+		}
+	}
+
 	// The lineup as it will be sent: who is here, and the player for each
-	// position (null for an empty one), from the page's choices.
+	// position (null for an empty one), from the page's order.
 	function lineupToSend() {
 		const teamId = working === 'home' ? match.home_team_id : match.away_team_id;
-		const roster = rosters.get(teamId) || [];
-		const { pos } = lineupShown();
-		// Only active players: the database refuses anybody away or withdrawn,
-		// and their stepper is disabled, so one left in an earlier save is dropped.
-		const order = lineup.filter((l) => l.side === working).map(() => null);
-		for (const r of roster) {
-			const at = r.status === 'active' ? pos(r.player_id) : null;
-			if (at != null && at <= order.length) order[at - 1] = r.player_id;
-		}
+		const active = new Set((rosters.get(teamId) || []).filter((r) => r.status === 'active').map((r) => r.player_id));
+		// Only active players: the database refuses anybody away or withdrawn.
+		const order = orderFor(working).slice(0, positionsOf(working)).map((id) => (id && active.has(id) ? id : null));
 		// The squad the database keeps is the players given a position (UV,
 		// 18 Nov): there is no "here tonight" to ask for any more.
 		return { here: order.filter(Boolean), order };
@@ -2026,85 +2209,119 @@
 		await loadAll();
 	});
 
-	// A position, one row per player (UV, 29 Oct; the "here tonight" switch
-	// beside it gone, UV 18 Nov). Not sent: kept on the page (lineupShown)
-	// until the lock (UV, 12 Nov).
-	els.squadList.addEventListener('change', (e) => {
-		const at = e.target.closest('input[data-action="pos"]');
-		if (at) choosePos(at);
+	// The arrows (UV, 18 Nov): up swaps a player with the one above, down with
+	// the one below, across the line between positions and reserves too.
+	// Nothing is sent until the lock (UV, 12 Nov). And Scorecard · Stats (UV,
+	// 18 Nov): switched in place, so the thumb slides and nothing is redrawn.
+	els.teamTables.addEventListener('click', (e) => {
+		const v = e.target.closest('button[data-lu-view]');
+		if (v) {
+			const box = v.closest('.lu-team');
+			if (drag) endDrag(false);
+			luView.set(box.dataset.side, v.dataset.luView);
+			box.dataset.view = v.dataset.luView;
+			for (const b of box.querySelectorAll('button[data-lu-view]')) b.setAttribute('aria-pressed', b === v ? 'true' : 'false');
+			return;
+		}
+		const b = e.target.closest('.lu-team.is-managing button[data-action^="move-"]');
+		if (!b) return;
+		const id = b.closest('tr').dataset.player;
+		const list = orderFor(working).slice();
+		const i = list.indexOf(id);
+		const j = i + (b.dataset.action === 'move-up' ? -1 : 1);
+		if (i < 0 || j < 0 || j >= list.length) return;
+		[list[i], list[j]] = [list[j], list[i]];
+		setOrder(list);
 	});
 
-	// A position somebody else holds is skipped, not taken (UV, 29 Oct):
-	// stepping onto one carries on in the same direction to the next free
-	// position, rolling through the held ones on the way so it is seen. With
-	// none free that way, it goes back to where it was.
-	const SKIP_MS = 140;   // each held position rolled past
-	function choosePos(field) {
-		const id = field.dataset.player;
-		clearTimeout(field.skipTimer);
-		field.skipTimer = 0;
-		const was = field.dataset.was ? Number(field.dataset.was) : null;
-		const v = field.value === '' ? null : Math.round(Number(field.value));
-		if (v == null) { acceptPos(field, null); return; }
-		const max = lineup.filter((l) => l.side === working).length;
-		const held = takenBesides(id);
-		if (!held.has(v)) { acceptPos(field, v); return; }
+	// Dragging a player through the order (UV, 18 Nov): a green line shows
+	// where they will land. A mouse drags at once; a finger holds still for a
+	// moment first (DRAG_HOLD_MS), so a swipe across the table still scrolls
+	// the page. Dropped, the player is taken out and put in at the line.
+	const DRAG_HOLD_MS = 280;
+	const DRAG_SLOP = 8;   // px a finger may wander while holding; a mouse moves this far to start
+	let drag = null;       // { id, row, x, y0 (where it started), y (now), pointer, active, timer, gap }
 
-		const dir = was == null || v > was ? 1 : -1;
-		const path = [];
-		let n = v + dir;
-		while (n >= 1 && n <= max && held.has(n)) { path.push(n); n += dir; }
-		path.push(n >= 1 && n <= max ? n : was);
-		const next = () => {
-			const to = path.shift();
-			field.value = to == null ? '' : String(to);
-			if (path.length) field.skipTimer = setTimeout(next, SKIP_MS);
-			else { field.skipTimer = 0; acceptPos(field, to); }
-		};
-		field.skipTimer = setTimeout(next, SKIP_MS);
+	const movableRows = () => [...els.teamTables.querySelectorAll('.lu-team.is-managing tr.lu-order-row')];
+
+	function endDrag(drop) {
+		if (!drag) return;
+		const d = drag;
+		drag = null;
+		clearTimeout(d.timer);
+		for (const tr of els.teamTables.querySelectorAll('tr')) tr.classList.remove('is-dragging', 'lu-drop-before', 'lu-drop-after');
+		document.documentElement.classList.remove('lu-dragging');
+		if (!d.active) return;
+		// The click that ends a drag must not open the profile of the picture
+		// it started on. Taken off again at once if no click comes, so the
+		// next real tap is never eaten.
+		const eat = (e) => { e.stopPropagation(); e.preventDefault(); };
+		window.addEventListener('click', eat, { capture: true, once: true });
+		setTimeout(() => window.removeEventListener('click', eat, { capture: true }), 60);
+		if (!drop || d.gap === undefined) return;
+		const list = orderFor(working).slice();
+		const i = list.indexOf(d.id);
+		if (i < 0 || d.gap === i || d.gap === i + 1) return;
+		list.splice(i, 1);
+		list.splice(d.gap > i ? d.gap - 1 : d.gap, 0, d.id);
+		setOrder(list);
 	}
 
-	// The positions held by everybody else, as the page shows them.
-	function takenBesides(id) {
-		const { pos } = lineupShown();
-		const held = new Set();
-		for (const f of els.squadList.querySelectorAll('input[data-action="pos"]')) {
-			const other = f.dataset.player;
-			if (other !== id && pos(other) != null) held.add(pos(other));
+	// Where the player would land: the gap before the row whose middle is
+	// below the pointer (the gap after the last row if none is).
+	function showDrop(y) {
+		const rows = movableRows();
+		let gap = rows.length;
+		for (let k = 0; k < rows.length; k++) {
+			const r = rows[k].getBoundingClientRect();
+			if (y < r.top + r.height / 2) { gap = k; break; }
 		}
-		return held;
+		const from = rows.findIndex((tr) => tr.dataset.player === drag.id);
+		for (const tr of rows) tr.classList.remove('lu-drop-before', 'lu-drop-after');
+		drag.gap = gap;
+		if (gap === from || gap === from + 1) return;   // where they are already
+		// At the Reserves label the line goes where the player will land: from
+		// above they become the last position (the line over the label), from
+		// below they stay the first reserve (under it).
+		const n = positionsOf(working);
+		if (gap === n && n < rows.length && from < n) rows[n - 1].classList.add('lu-drop-after');
+		else if (gap < rows.length) rows[gap].classList.add('lu-drop-before');
+		else rows[rows.length - 1].classList.add('lu-drop-after');
 	}
 
-	function acceptPos(field, at) {
-		field.dataset.was = at == null ? '' : String(at);
-		setPos(field.dataset.player, at);
+	function startDrag() {
+		drag.active = true;
+		drag.row.classList.add('is-dragging');
+		document.documentElement.classList.add('lu-dragging');
+		if (navigator.vibrate && drag.pointer === 'touch') { try { navigator.vibrate(10); } catch { /* not allowed: no matter */ } }
+		showDrop(drag.y);
 	}
 
-	// The page is put right in place rather than drawn again: a stepper held
-	// down would be thrown away under the finger. The card's re-read once the
-	// saves are back draws it all from lineupShown.
-	//
-	// Every other stepper set to what lineupShown says. A held position is
-	// skipped now (choosePos), so this puts right only what a re-read or a
-	// race moved.
-	function showPositions(except) {
-		const { pos } = lineupShown();
-		for (const f of els.squadList.querySelectorAll('input[data-action="pos"]')) {
-			if (f.dataset.player === except || f.skipTimer) continue;   // mid-roll: choosePos lands it
-			const v = pos(f.dataset.player);
-			const want = v == null ? '' : String(v);
-			if (f.value !== want) f.value = want;
-			f.dataset.was = want;
+	els.teamTables.addEventListener('pointerdown', (e) => {
+		if (e.button !== 0 || drag) return;
+		const tr = e.target.closest('.lu-team.is-managing tr.lu-order-row[data-player]');
+		if (!tr || tr.classList.contains('lu-out-row') || e.target.closest('.lu-move')) return;
+		drag = { id: tr.dataset.player, row: tr, x: e.clientX, y: e.clientY, y0: e.clientY, pointer: e.pointerType, active: false, timer: 0 };
+		if (e.pointerType === 'mouse') e.preventDefault();   // no text selection
+		else drag.timer = setTimeout(() => { if (drag) startDrag(); }, DRAG_HOLD_MS);
+	});
+	window.addEventListener('pointermove', (e) => {
+		if (!drag) return;
+		drag.y = e.clientY;
+		const far = Math.abs(e.clientX - drag.x) > DRAG_SLOP || Math.abs(e.clientY - drag.y0) > DRAG_SLOP;
+		if (!drag.active) {
+			if (!far) return;
+			if (drag.pointer === 'mouse') startDrag();
+			else { endDrag(false); return; }   // a finger that moves before the hold is scrolling
 		}
-	}
-
-	function setPos(id, at) {
-		const max = lineup.filter((l) => l.side === working).length;
-		if (at != null && !(at >= 1 && at <= max)) at = null;
-		pendingPos.set(id, { at, n: ++chosen });
-		showPositions(id);
-		showLockCount();
-	}
+		showDrop(e.clientY);
+	});
+	window.addEventListener('pointerup', () => endDrag(true));
+	window.addEventListener('pointercancel', () => endDrag(false));
+	window.addEventListener('keydown', (e) => { if (e.key === 'Escape') endDrag(false); });
+	// While a finger drags, the page must not scroll under it.
+	els.teamTables.addEventListener('touchmove', (e) => { if (drag && drag.active) e.preventDefault(); }, { passive: false });
+	els.teamTables.addEventListener('contextmenu', (e) => { if (drag) e.preventDefault(); });
 
 	// The lineup goes in here, in one call, with the lock (UV, 12 Nov). A
 	// refusal saves nothing, and the choices stay on the page to put right.
@@ -2122,16 +2339,11 @@
 		}), 'Lineup locked.');
 		if (ok) {
 			// Sent and locked: the database holds it now.
-			for (const id of [...pendingPos.keys()]) if (isOnSide(id, side)) pendingPos.delete(id);
+			pendingOrder.delete(side);
 			render();
 		}
 	});
 
-	// Whether a player is on a side's team tonight, by the rosters.
-	function isOnSide(id, side) {
-		const teamId = side === 'home' ? match.home_team_id : match.away_team_id;
-		return (rosters.get(teamId) || []).some((r) => r.player_id === id);
-	}
 
 	// The reserve pickers and the L and W switches, inside the sessions, and
 	// a player's own L and W in their frames.

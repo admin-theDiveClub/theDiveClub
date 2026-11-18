@@ -169,9 +169,6 @@
 	text-align: center;
 }
 .rotation-pairs .rotation-vs { margin: 0 0.1rem; color: var(--text-muted); }
-/* The lineup page's numbering by position (16 Nov): the settings page's
- * scorecard grid, centred under the team tables. */
-.lu-order-grid { margin-left: auto; margin-right: auto; }
 /* My own table names both players of each frame (16 Nov): H2 : A3. */
 .rotation-grid:not(.rotation-pairs) .rotation-vs { margin: 0 0.25rem; color: var(--text-muted); }
 .rotation-grid { width: auto; margin-top: var(--space-3); }
@@ -2202,6 +2199,80 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .tdc-card .lu-table td.lu-ctl { text-align: center; }
 .lu-table td { vertical-align: middle; }
 .lu-table .lu-pos { font-weight: 600; color: var(--text-muted); }
+/* The rank after the name (UV, 18 Nov), no longer frozen; the frozen first
+ * column (the Standings table's rank slot, .sd-rank) is the position instead:
+ * none on a team with no position to show, a letter and number once it can
+ * be read, the arrow pill on the team being set up. */
+.lu-table .lu-rank { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.tdc-card .lu-table td.lu-rank { font-size: var(--sd-name-size); }
+.sd-table.lu-table { --sd-w-rank: 0rem; }
+.sd-table.lu-table.has-lead { --sd-w-rank: 3rem; }
+/* Scorecard · Stats (UV, 18 Nov): one table, the team box's data-view
+ * choosing its right-hand columns (and, on a table this reader cannot
+ * change, its rows: positions on Scorecard, players on Stats). The pill at
+ * the Dates · Calendar selector's size. */
+.lu-views { height: 2rem; padding: 2px; margin: var(--space-3) auto var(--space-3); }   /* a small gap above it too (UV, 18 Nov) */
+.tdc-card .lu-views button.cp-view { padding: 0 var(--space-2); font-size: 0.85rem; }
+.lu-team[data-view="scorecard"] .lu-col-stats,
+.lu-team[data-view="scorecard"] .lu-row-stats,
+.lu-team[data-view="stats"] .lu-col-sc,
+.lu-team[data-view="stats"] .lu-row-sc { display: none; }
+.lu-team[data-view="stats"] .lead-sc-only .lu-lead { display: none; }
+/* The frame numbers grey (UV, 18 Nov); a table this reader cannot change has
+ * no picture or Player column on Scorecard, only the positions. */
+.tdc-card .lu-table td.lu-col-sc { color: var(--text-muted); }
+.tdc-card .lu-table td.lu-col-sc .lu-f-last { color: var(--color-primary); }   /* the last session green (UV, 18 Nov) */
+.lu-team[data-view="scorecard"]:not(.is-managing) .lu-table :is(.sd-pic, .sd-name) { display: none; }
+.lu-team[data-view="stats"] .sd-table.lu-table.lead-sc-only { --sd-w-rank: 0rem; }
+.lu-team.is-managing .sd-table.lu-table { --sd-w-rank: 4rem; }   /* the pill is about 3.25rem */
+/* The position pill (UV, 18 Nov): the stepper's look, an up arrow on the left
+ * and a down arrow on the right; the number is the position, "–" for a reserve. */
+.lu-move .lu-move-num {
+	display: block;
+	color: var(--color-primary);
+	font-size: var(--sn);
+	font-weight: 700;
+	line-height: 1.2;
+	text-align: center;
+	font-variant-numeric: tabular-nums;
+}
+.lu-move .lu-move-num.is-reserve { color: var(--text-muted); font-weight: 400; }
+/* At the Dates · Calendar selector's size (UV, 18 Nov): 2rem tall, 2px
+ * inside, its 0.85rem text. */
+.lu-table .lu-move.tdc-stepper.is-across { height: 2rem; padding: 0 2px; --sn: 0.85rem; --chevron: 0.75rem; }
+.lu-table .lu-move.tdc-stepper.is-across > .tdc-chevron { padding: 0 var(--space-1); }
+.lu-table .lu-move.tdc-stepper.is-across .tdc-stepper-window { flex: 0 0 auto; width: calc(var(--chars, 1) * 0.6rem + var(--space-2)); }   /* a digit or "–", the same width */
+.lu-move > .lu-move-down svg { transform: rotate(180deg); }
+.lu-move > .tdc-chevron.is-off { visibility: hidden; pointer-events: none; }   /* nowhere to go: kept in place, so every pill is the same width */
+.lu-table .lu-empty-name { font-weight: 400; color: var(--text-muted); }
+/* "Reserves" between the last position and the first reserve (UV, 18 Nov). */
+.tdc-card .lu-table td.lu-reserve-label {
+	padding: var(--space-2) var(--space-2) var(--space-1);
+	text-align: left;
+	font-size: 0.7rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--text-muted);
+	background-color: var(--bg-base);
+}
+/* Dragging a player (UV, 18 Nov): the row is the handle, the pill aside. A
+ * finger holds first, so no text selection or callout while it does. The row
+ * being dragged fades; a green line with a glow shows where it will land. */
+.lu-team.is-managing tbody tr[data-player] > td:not(.lu-move-cell) {
+	cursor: grab;
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
+}
+.lu-dragging, .lu-dragging * { cursor: grabbing !important; }
+.lu-table tr.is-dragging > td { opacity: 0.4; }
+.lu-table tr.lu-drop-before > td {
+	box-shadow: inset 0 2px 0 var(--color-primary), inset 0 10px 8px -8px color-mix(in srgb, var(--color-primary) 70%, transparent);
+}
+.lu-table tr.lu-drop-after > td {
+	box-shadow: inset 0 -2px 0 var(--color-primary), inset 0 -10px 8px -8px color-mix(in srgb, var(--color-primary) 70%, transparent);
+}
 /* The switch and the stepper at a table row's size (as the points page's
  * rows): the row is a player, not a setting. */
 .lu-table .tdc-switch { --switch-width: 3.5rem; --switch-height: 2rem; --nm-knob: 1.5rem; }

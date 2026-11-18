@@ -878,8 +878,12 @@ TDCLeagueNav.panel('fixtures', () => {
 		const items = [];
 		// Signed by both captains, a night is locked: the card is all that is
 		// left (UV, 25 Oct), and the whole fixture is its link, so no buttons.
-		// Moving it is for the LD's approvals page.
-		if (signed(f)) return items;
+		// Moving it is for the LD's approvals page. The one exception is Reset,
+		// for whoever runs it (UV, 18 Nov): a signed night may be reset too.
+		if (signed(f)) {
+			if (iRunIt) items.push(['reset', 'undo', 'Reset the night', 'danger']);
+			return items;
+		}
 		// The card is for whoever is playing, not only for the director: a
 		// captain sets their lineup on it. It opens for anybody signed in and
 		// decides for itself what they may do once they are there.
@@ -890,6 +894,8 @@ TDCLeagueNav.panel('fixtures', () => {
 		if (!iRunIt) return items;
 		if (!f.is_bye && !f.match_id) items.push(['start', 'play', 'Start the match', '']);
 		if (f.match_id) items.push(['detach', 'minus', 'Take the match off', '']);
+		// Back to lineups, still on the schedule (UV, 18 Nov).
+		if (f.match_id) items.push(['reset', 'undo', 'Reset the night', 'danger']);
 		const open = moving && moving.endsWith(':' + f.fixture_id);
 		items.push(['move', open ? 'cross' : 'calendar', open ? 'Close the move' : 'Move it', '']);
 		if (!f.match_id) items.push(['remove', 'cross', 'Remove it', 'danger']);
@@ -1522,7 +1528,9 @@ TDCLeagueNav.panel('fixtures', () => {
 	// opens it, as on a link.
 	document.addEventListener('keydown', (e) => {
 		if (e.key !== 'Enter') return;
-		const card = e.target.closest && e.target.closest('.fx-table tr[data-card]');
+		// Enter on a button in the row is the button's (Reset on a signed night).
+		if (e.target.closest && e.target.closest('button')) return;
+		const card =e.target.closest && e.target.closest('.fx-table tr[data-card]');
 		if (card) openCard(card.dataset.card);
 	});
 
@@ -1608,6 +1616,19 @@ TDCLeagueNav.panel('fixtures', () => {
 				if (!confirm('Take the match off this fixture?\n\nThe match and any frames on it are kept — it just stops being part of the schedule.')) return;
 				write('Taking it off', () => supabaseClient.rpc('tdc_detach_league_match', { p_fixture_id: id }), null, dotsFor(button));
 				return;
+			case 'reset': {
+				// A signed night is asked about more firmly, naming its score (UV,
+				// 18 Nov). The server keeps a record of the score cleared.
+				const score = (f.home_frames || 0) + ' : ' + (f.away_frames || 0);
+				const what = 'Every frame, both lineups and any signatures are cleared, and the night goes back to lineups. It stays on the schedule.\n\nThis cannot be undone.';
+				const ask = signed(f)
+					? `${fixtureName(f)} was signed ${score}.\n\nReset it anyway? ${what}`
+					: `Reset ${fixtureName(f)}${f.home_frames || f.away_frames ? ' (' + score + ')' : ''}?\n\n${what}`;
+				if (!confirm(ask)) return;
+				write('Resetting', () => supabaseClient.rpc('tdc_reset_league_match', { p_fixture_id: id }),
+					() => 'Reset: the night is back at lineups.', dotsFor(button));
+				return;
+			}
 			case 'remove':
 				if (!confirm(`Remove ${fixtureName(f)} from the schedule?`)) return;
 				write('Removing', () => supabaseClient.rpc('tdc_remove_league_fixture', { p_fixture_id: id }), null, dotsFor(button));

@@ -56,6 +56,8 @@ The full list is `DATA` in the module, which the page will show. A test checks t
 
 **Discrepancies on a team card (17 Nov; migration `20261117054351_card_discrepancies`):** `me.overruled` (how many of their lag or result entries somebody else changed, a captain's signature counting as an entry) and `me.accepted` (how many changes to their entries, or their side's, they accepted with the blue tick) are in `DATA` and `fillPerson`. They will be read from `tdc_card_discrepancies`' rule over `tbl_frame_edit` and from `tbl_frame_change_accept`. No formula uses them yet, and the real read is not built.
 
+**A league night reset (18 Nov; migration `20261118120357_league_night_reset`):** `match.resets` (how many times the league director reset the night back to lineups) is in `DATA`, `fillScenario` and the match view. It will be read as the count of the match's rows in `tbl_league_match_resets`. No formula uses it yet, and the real read is not built.
+
 ## Rules in the engine, not in a formula
 
 | Rule | How |

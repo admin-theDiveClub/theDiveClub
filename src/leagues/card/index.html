@@ -115,6 +115,10 @@ extraScripts:
 		Nothing about tonight's order is shown that tdc_match_lineup does
 		not already reveal to this reader.
 
+		Each team table has Scorecard · Stats (UV, 18 Nov): the same table,
+		its right-hand columns either the frame against each of the other
+		team's positions or the Standings columns.
+
 		Since 18 Nov (UV) the team tables come first, your own team before the
 		other (league-card.js orders them), then This season, so the lineup
 		is the first thing under the folded banner.
@@ -124,11 +128,9 @@ extraScripts:
 		<div class="lu-teams" id="team-tables"></div>
 		<h2 class="lj-heading lu-season-head">This season</h2>
 		<div class="lu-compare" id="team-compare"></div>
-		{% comment %} The night's numbering by position (UV, 16 Nov): home
-		positions across, away down, the frame where they meet, from this
-		match's own frozen order, so a captain can place players by where
-		they fall on the scorecard. {% endcomment %}
-		<div class="lu-order" id="lineup-order" hidden></div>
+		{% comment %} The night's numbering by position (UV, 16 Nov) was a
+		section here; since 18 Nov (UV) it is each team table's Scorecard
+		view (league-card.js, Scorecard · Stats). {% endcomment %}
 		<div class="btn-row lu-lock" id="lock-row">
 			<button type="button" class="btn btn-primary btn-sm" id="lock-btn">Lock the lineup</button>
 		</div>
