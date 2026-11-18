@@ -1,7 +1,9 @@
 -- What a person is in, for the profile menu (tdc_my_active, UV 5 Nov).
 --
 --   a team night shows for a captain before any lineup, marked Needs you
---     until their side locks; for a player once in the squad, never before
+--     until their side locks; for every active player on either team from
+--     the start, with nothing to set (UV, 18 Nov: no "here tonight", every
+--     player a reserve); not for a player marked away
 --   somebody running a league but not playing has the league, not the night
 --   a singles match shows, with its score, until it is finished or abandoned
 --   a finished league and one the person withdrew from are gone
@@ -10,7 +12,7 @@
 --   a stranger has three empty lists; anon may not call it
 begin;
 \ir _helpers.psql
-select plan(26);
+select plan(28);
 
 select tests.create_user('Active LD') as dee \gset
 select tests.create_user('Active H1') as h1 \gset
@@ -61,7 +63,8 @@ select is(pg_temp.match_row(:'m')->>'set_lineup', 'true', 'their lineup is wante
 select is(pg_temp.match_row(:'m')->>'needs_me', 'true', 'so it needs them');
 
 select tests.sign_in(:'h2');
-select is(pg_temp.match_row(:'m'), null, 'a player out of the squad does not have it');
+select is(pg_temp.match_row(:'m')->>'team_match', 'true', 'a player on the team has it before any lineup');
+select is(pg_temp.match_row(:'m')->>'set_lineup', 'false', 'with nothing to set');
 
 select tests.sign_in(:'dee');
 select is(pg_temp.match_row(:'m'), null, 'nor does somebody running the league but not playing');
@@ -76,7 +79,14 @@ select is(pg_temp.match_row(:'m')->>'set_lineup', 'false', 'a player in the squa
 select is(pg_temp.match_row(:'m')->>'needs_me', 'false', 'and it does not need them');
 
 select tests.sign_in(:'a2');
-select is(pg_temp.match_row(:'m'), null, 'the other team''s squad says nothing to their players');
+select is(pg_temp.match_row(:'m')->>'opponent', 'Hosts', 'a player on the other team has it too, their way round');
+
+select tests.sign_in(:'dee');
+select public.tdc_set_team_player_active(:'ta', :'pa2', false);
+select tests.sign_in(:'a2');
+select is(pg_temp.match_row(:'m'), null, 'a player marked away does not');
+select tests.sign_in(:'dee');
+select public.tdc_set_team_player_active(:'ta', :'pa2', true);
 
 select tests.sign_in(:'h1');
 select public.tdc_set_lineup_slot(:'m', 1, :'ph1', 'home');

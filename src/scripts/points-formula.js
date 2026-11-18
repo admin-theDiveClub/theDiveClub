@@ -204,7 +204,7 @@ const TDCPoints = (() => {
 			['match.approved', 'yes/no', 'The card was approved'],
 			['match.lineup_by_captain', 'yes/no', 'This side\'s lineup was locked by its captain'],
 			['match.lineup_by_cutoff', 'yes/no', 'This side\'s lineup was locked by the cutoff'],
-			['match.in_squad', 'yes/no', 'This person was in the night\'s squad'],
+			['match.in_squad', 'yes/no', 'This person was in the night\'s lineup or came in as a reserve'],
 			['match.frames', 'number', 'Complete frames in the match'],
 			['match.side_frames_won', 'number', 'Frames this side won (a director\'s score, if entered)'],
 			['match.side_frames_lost', 'number', 'Frames this side lost (a director\'s score, if entered)'],

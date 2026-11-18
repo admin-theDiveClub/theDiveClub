@@ -9,8 +9,7 @@
 //   tdc_match_lineup   — every position of both sides, the opponent's names
 //                        withheld until both have locked. The blind exchange is
 //                        enforced there, not here, so this page cannot leak it.
-//   tdc_match_squad    — who is available tonight
-//   tdc_match_card     — every frame with its two players, its session and
+//   tdc_match_card    — every frame with its two players, its session and
 //                        the two positions it seats
 //   tdc_card_state     — the two signatures and whether each still matches
 //   tdc_card_signatures — every signature, who and as what; from the first
@@ -98,8 +97,7 @@
 	let standings = null;      // the season so far (signed nights): { players, teams, playerCols, teamCols } (UV, 12 Nov)
 	let lineupState = null;
 	let lineup = [];
-	let squad = [];
-	let rosters = new Map();   // team id -> its players, for the squad and reserve pickers
+	let rosters = new Map();   // team id -> its players, for the lineup and reserve pickers
 	let pictures = new Map();  // player id -> avatar path, from the two rosters
 	let card = [];
 	let cardState = null;
@@ -258,7 +256,7 @@
 		else venues = places.data || [];
 	}
 
-	// ─── The rosters behind the squad picker ───
+	// ─── The rosters behind the lineup ───
 	// Read once: a roster does not change during a night, and this is two
 	// requests rather than two on every redraw. They carry each player's
 	// picture too.
@@ -281,7 +279,6 @@
 		const calls = [
 			['tdc_lineup_state', { p_match_id: matchId }, (d) => { lineupState = (d || [])[0] || null; }],
 			['tdc_match_lineup', { p_match_id: matchId }, (d) => { lineup = d || []; }],
-			['tdc_match_squad', { p_match_id: matchId }, (d) => { squad = d || []; }],
 			['tdc_match_card', { p_match_id: matchId }, (d) => { card = d || []; }],
 			['tdc_card_state', { p_match_id: matchId }, (d) => { cardState = d || null; }],
 			['tdc_card_discrepancies', { p_match_id: matchId }, (d) => { discrepancies = d || []; }]
@@ -542,30 +539,30 @@
 	}
 
 	// ─── The lineup's choices, kept on the page (UV, 12 Nov) ───
-	// Nothing is sent while a captain goes down the list: each switch and
-	// position is kept here, laid over what the database holds (anything
-	// saved by the page before 12 Nov), and the lot goes in one call when
-	// Lock the lineup is pressed (tdc_submit_lineup). A redraw in between, a
-	// live update from the other side, shows what they chose. A reload loses
-	// it (accepted by UV, 12 Nov).
-	const pendingHere = new Map();   // player -> here or not
+	// Nothing is sent while a captain goes down the list: each position is
+	// kept here, laid over what the database holds (anything saved by the
+	// page before 12 Nov), and the lot goes in one call when Lock the lineup
+	// is pressed (tdc_submit_lineup). A redraw in between, a live update from
+	// the other side, shows what they chose. A reload loses it (accepted by
+	// UV, 12 Nov).
+	//
+	// No "here tonight" (UV, 18 Nov): every active player is available every
+	// night, so a captain only gives positions; everybody else on the team is
+	// a reserve. The database's squad is sent as the players given a position.
 	const pendingPos = new Map();    // player -> { at: position or null, n: order chosen }
 	let chosen = 0;
 
-	// Who is here and who is in which position, as this page should show it:
-	// the database's, with the choices on their way laid over. A position
-	// chosen here empties whoever held it, as the database will; of two
-	// chosen for one position, the later stands.
+	// Who is in which position, as this page should show it: the database's,
+	// with the choices on their way laid over. A position chosen here empties
+	// whoever held it, as the database will; of two chosen for one position,
+	// the later stands.
 	function lineupShown() {
-		const inSquad = new Set(squad.filter((s) => s.side === working).map((s) => s.player_id));
 		const saved = new Map(lineup.filter((l) => l.side === working && l.player_id).map((l) => [l.player_id, l.lineup_slot]));
-		const here = (id) => (pendingHere.has(id) ? pendingHere.get(id) : inSquad.has(id));
 		const claim = new Map();   // position -> { id, n } latest chosen
 		for (const [id, p] of pendingPos) {
-			if (p.at != null && here(id) && !(claim.get(p.at) && claim.get(p.at).n > p.n)) claim.set(p.at, { id, n: p.n });
+			if (p.at != null && !(claim.get(p.at) && claim.get(p.at).n > p.n)) claim.set(p.at, { id, n: p.n });
 		}
 		const pos = (id) => {
-			if (!here(id)) return null;
 			if (pendingPos.has(id)) {
 				const p = pendingPos.get(id);
 				return p.at != null && claim.get(p.at).id === id ? p.at : null;
@@ -573,17 +570,17 @@
 			const at = saved.get(id);
 			return at != null && !claim.has(at) ? at : null;
 		};
-		return { here, pos };
+		return { pos };
 	}
 
 	// ─── The lineup page (UV, 12 Nov) ───
 	// Until both lineups are in: the two teams' season so far as a football
 	// head-to-head, then each team in a table of its own with the league's
 	// Standings columns. The team being set up (a captain's own, or the side
-	// the director chose) has the switch and the stepper in its table, the
+	// the director chose) has the position steppers in its table, the
 	// hint above it and Lock the lineup under it; everybody else sees the
 	// tables read-only. Players never see this page once the lineups are in.
-	const LINEUP_HINT = 'Switch on everybody who is here and give each player in the first session their position. Each keeps their position all night; the rest follows from the rotation. A position left empty can still be filled by a reserve or a latecomer until the card is signed. Nothing is sent until you lock the lineup.';
+	const LINEUP_HINT = 'Give each player in the first session their position. Each keeps their position all night; the rest follows from the rotation. Everybody else on the team is a reserve and can come into a frame at any time until the card is signed, an empty position included. Nothing is sent until you lock the lineup.';
 
 	function renderLineups(locked, both, canSet) {
 		els.lineups.hidden = both;
@@ -754,13 +751,13 @@
 		const picHead = node('th', 'sd-pic');
 		picHead.setAttribute('aria-label', 'Picture');
 		htr.append(node('th', 'num sd-rank', '#'), picHead, node('th', 'sd-name', 'Player'));
-		if (manage) htr.append(node('th', 'lu-ctl', 'Here'), node('th', 'lu-ctl', 'Position'));
+		if (manage) htr.append(node('th', 'lu-ctl', 'Position'));
 		if (showPos) htr.append(node('th', 'lu-ctl', 'Position'));
 		for (const c of cols) htr.append(node('th', 'num', c.name));
 		thead.append(htr);
 
 		const body = manage ? els.squadList : node('tbody');
-		const { here, pos } = manage ? lineupShown() : { here: null, pos: null };
+		const { pos } = manage ? lineupShown() : { pos: null };
 		const max = theirs.length || 1;
 		body.replaceChildren(...roster.map((r, i) => {
 			const id = r.player_id;
@@ -777,20 +774,8 @@
 			tr.append(pic, who);
 
 			if (manage) {
-				// Here tonight and the position (UV, 29 Oct), as they were in
-				// the list: kept on the page until the lock (UV, 12 Nov).
-				const box = document.createElement('input');
-				box.type = 'checkbox';   // a switch
-				box.id = 'here-' + id;
-				box.checked = here(id);
-				// The database refuses anybody not active (away or withdrawn);
-				// saying so here spares a pointless tap. Confirmation is not asked
-				// for, and has not been since 23 Oct.
-				box.disabled = r.status !== 'active';
-				box.dataset.action = 'squad';
-				box.dataset.player = id;
-				box.setAttribute('aria-label', 'Here tonight: ' + r.display_name);
-
+				// The position alone (UV, 18 Nov; a "here tonight" switch beside
+				// it until then), kept on the page until the lock (UV, 12 Nov).
 				const at = document.createElement('input');
 				at.type = 'number';      // a stepper
 				at.dataset.stepper = 'across';   // on its side: a row of small numbers, one per player
@@ -802,15 +787,17 @@
 				at.placeholder = '–';
 				at.value = pos(id) == null ? '' : String(pos(id));
 				at.dataset.was = at.value;   // where a step came from (choosePos)
-				at.disabled = !here(id);
+				// The database refuses anybody not active (away or withdrawn);
+				// saying so here spares a pointless tap. Confirmation is not asked
+				// for, and has not been since 23 Oct.
+				at.disabled = r.status !== 'active';
 				at.dataset.action = 'pos';
 				at.dataset.player = id;
 				at.setAttribute('aria-label', 'Position for ' + r.display_name);
 
-				const c1 = node('td', 'lu-ctl'), c2 = node('td', 'lu-ctl');
-				c1.append(box);
-				c2.append(at);
-				tr.append(c1, c2);
+				const cell = node('td', 'lu-ctl');
+				cell.append(at);
+				tr.append(cell);
 			}
 			if (showPos) {
 				const p = posFor.get(id);
@@ -822,7 +809,7 @@
 		if (!roster.length) {
 			const tr = node('tr');
 			const td = node('td', 'empty', 'Nobody on this team yet.');
-			td.colSpan = 3 + cols.length + (manage ? 2 : 0);
+			td.colSpan = 3 + cols.length + (manage ? 1 : 0);
 			tr.append(td);
 			body.append(tr);
 		}
@@ -838,13 +825,17 @@
 	function lineupToSend() {
 		const teamId = working === 'home' ? match.home_team_id : match.away_team_id;
 		const roster = rosters.get(teamId) || [];
-		const { here, pos } = lineupShown();
+		const { pos } = lineupShown();
 		// Only active players: the database refuses anybody away or withdrawn,
-		// and their switch is disabled, so one left in an earlier save is dropped.
-		const ids = roster.filter((r) => r.status === 'active').map((r) => r.player_id).filter(here);
+		// and their stepper is disabled, so one left in an earlier save is dropped.
 		const order = lineup.filter((l) => l.side === working).map(() => null);
-		for (const id of ids) { const at = pos(id); if (at != null && at <= order.length) order[at - 1] = id; }
-		return { here: ids, order };
+		for (const r of roster) {
+			const at = r.status === 'active' ? pos(r.player_id) : null;
+			if (at != null && at <= order.length) order[at - 1] = r.player_id;
+		}
+		// The squad the database keeps is the players given a position (UV,
+		// 18 Nov): there is no "here tonight" to ask for any more.
+		return { here: order.filter(Boolean), order };
 	}
 
 	// The button counts the positions filled on the page, so it moves as the
@@ -2021,7 +2012,7 @@
 	}
 
 	// ─── Writing ───
-	// Queued, never refused (TDC.writer): a captain ticking down a squad or
+	// Queued, never refused (TDC.writer): a captain going down a lineup or
 	// recording frame after frame is never told to wait. The card is read
 	// again once a burst has saved; a failed save's error is shown after it.
 	const cardWriter = TDC.writer({
@@ -2035,12 +2026,10 @@
 		await loadAll();
 	});
 
-	// Here tonight and a position, one row per player (UV, 29 Oct). Neither
-	// is sent: each is kept on the page (lineupShown) until the lock (UV,
-	// 12 Nov).
+	// A position, one row per player (UV, 29 Oct; the "here tonight" switch
+	// beside it gone, UV 18 Nov). Not sent: kept on the page (lineupShown)
+	// until the lock (UV, 12 Nov).
 	els.squadList.addEventListener('change', (e) => {
-		const box = e.target.closest('input[data-action="squad"]');
-		if (box) { setHere(box.dataset.player, box.checked); return; }
 		const at = e.target.closest('input[data-action="pos"]');
 		if (at) choosePos(at);
 	});
@@ -2075,13 +2064,13 @@
 		field.skipTimer = setTimeout(next, SKIP_MS);
 	}
 
-	// The positions held by everybody else here, as the page shows them.
+	// The positions held by everybody else, as the page shows them.
 	function takenBesides(id) {
-		const { here, pos } = lineupShown();
+		const { pos } = lineupShown();
 		const held = new Set();
 		for (const f of els.squadList.querySelectorAll('input[data-action="pos"]')) {
 			const other = f.dataset.player;
-			if (other !== id && here(other) && pos(other) != null) held.add(pos(other));
+			if (other !== id && pos(other) != null) held.add(pos(other));
 		}
 		return held;
 	}
@@ -2094,8 +2083,7 @@
 	// The page is put right in place rather than drawn again: a stepper held
 	// down would be thrown away under the finger. The card's re-read once the
 	// saves are back draws it all from lineupShown.
-	const posField = (id) => document.getElementById('pos-' + id);
-
+	//
 	// Every other stepper set to what lineupShown says. A held position is
 	// skipped now (choosePos), so this puts right only what a re-read or a
 	// race moved.
@@ -2108,27 +2096,6 @@
 			if (f.value !== want) f.value = want;
 			f.dataset.was = want;
 		}
-	}
-
-	function setHere(id, on) {
-		pendingHere.set(id, on);
-		const f = posField(id);
-		if (f) f.disabled = !on;
-		// Here: the first free position, given at once (UV, 29 Oct); the
-		// captain adjusts from there. None free: left empty.
-		if (on && f && f.value === '') {
-			const held = takenBesides(id);
-			const max = lineup.filter((l) => l.side === working).length;
-			let n = 1;
-			while (n <= max && held.has(n)) n++;
-			if (n <= max) { f.value = String(n); acceptPos(f, n); }
-		}
-		if (!on) {
-			// Out of the squad is out of the order (the database does it too).
-			pendingPos.set(id, { at: null, n: ++chosen });
-			if (f) { clearTimeout(f.skipTimer); f.value = ''; f.dataset.was = ''; }
-		}
-		showLockCount();
 	}
 
 	function setPos(id, at) {
@@ -2155,7 +2122,7 @@
 		}), 'Lineup locked.');
 		if (ok) {
 			// Sent and locked: the database holds it now.
-			for (const m of [pendingHere, pendingPos]) for (const id of [...m.keys()]) if (isOnSide(id, side)) m.delete(id);
+			for (const id of [...pendingPos.keys()]) if (isOnSide(id, side)) pendingPos.delete(id);
 			render();
 		}
 	});

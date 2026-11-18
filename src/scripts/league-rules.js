@@ -84,14 +84,15 @@ TDCLeagueNav.panel('rules', () => {
 	const lineupClauses = () => {
 		const size = info.rules && info.rules.team_size;
 		return [
-			['Naming a lineup', 'Each captain says who is available for the night and sets the order for the first session.'
-				+ (size ? ' Every later session follows from that order.' : '')],
+			['Naming a lineup', 'Every active player on a team is taken to be available every night. Each captain sets the order for the first session.'
+				+ (size ? ' Every later session follows from that order.' : '')
+				+ ' Everybody else on the team is a reserve.'],
 			['Blind exchange', 'Neither captain can see the other team’s order until both have locked theirs.'],
 			['Once locked', 'When both lineups are locked the frames are made, and the order can no longer change. Only a reserve coming in can change who plays a frame.']
 		];
 	};
 	const reserveClause = () => (reserves
-		? ['Reserves', 'A reserve replaces a player for one frame at a time and never changes the number of frames. No player may play more than one frame in a session, a player in the lineup stays in the same position every session, and a reserve may not face the same opponent twice.']
+		? ['Reserves', 'Any active player on the team who is not in the lineup can come in as a reserve at any time until the card is signed. A reserve replaces a player for one frame at a time and never changes the number of frames. No player may play more than one frame in a session, a player in the lineup stays in the same position every session, and a reserve may not face the same opponent twice.']
 		: ['Reserves', 'This season has no reserves.']);
 	const SEAT_CLAUSE = ['Empty seats', 'A seat left empty can be filled by a reserve or a latecomer until the card is signed. A frame with a seat still empty then is a walkover to the side that turned up.'];
 	const SIGNING_CLAUSES = [
