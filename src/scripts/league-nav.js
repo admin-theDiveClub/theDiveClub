@@ -251,12 +251,82 @@ const TDCLeagueNav = (() => {
 			TDC.error(AREA, 'the bottom bar’s icon for ' + label + ' could not be drawn.', err);
 		}
 	}
-	function setMenu(bar, open) {
-		const menu = bar.querySelector('.league-tabmenu');
-		const btn = bar.querySelector('.league-tab-admin');
+	// The bar's two menus: Manage's, and the match pill's when more than one
+	// match is live. One open at a time.
+	const MENUS = { admin: ['#league-tabmenu', '.league-tab-admin'], live: ['#league-livemenu', '.league-livepill'] };
+	function setMenu(bar, which, open) {
+		const [menuSel, btnSel] = MENUS[which];
+		const menu = bar.querySelector(menuSel);
+		const btn = bar.querySelector(btnSel);
 		if (!menu || !btn) return;
 		menu.classList.toggle('is-open', open);
 		btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+	}
+	const openMenu = (bar) => Object.keys(MENUS).find((k) => bar.querySelector(MENUS[k][0] + '.is-open')) || null;
+	function shutMenus(bar) { for (const k of Object.keys(MENUS)) setMenu(bar, k, false); }
+
+	// ─── The match pill (UV, 18 Nov) ───
+	// While one of your matches in this league is live (the yellow card under
+	// the pill shows, live-match.js), a pill sits on the bar's top edge,
+	// centred, apart from the tabs: the other side's name in yellow words, or
+	// "2 matches" with more than one (UV, 18 Nov). One match: a tap opens
+	// it. Two or more: a tap opens a menu, a row per match. It stays when the
+	// card's ✕ is pressed; live-match.js hands over its rows once read, and the
+	// bar may be drawn before or after, so both draw it.
+	let liveRows = [];
+	function live(rows) {
+		liveRows = rows || [];
+		const bar = document.getElementById('league-tabbar');
+		if (bar) drawLive(bar);
+	}
+	function drawLive(bar) {
+		for (const old of bar.querySelectorAll('.league-livepill, #league-livemenu')) old.remove();
+		if (!liveRows.length || typeof TDCLiveMatch === 'undefined') return;
+		const first = liveRows[0];
+		const many = liveRows.length > 1;
+		const pill = document.createElement(many ? 'button' : 'a');
+		pill.className = 'league-livepill';
+		if (many) {
+			pill.type = 'button';
+			pill.setAttribute('aria-haspopup', 'true');
+			pill.setAttribute('aria-expanded', 'false');
+			pill.setAttribute('aria-controls', 'league-livemenu');
+			pill.setAttribute('aria-label', 'Your matches');
+		} else {
+			pill.href = TDCLiveMatch.href(first);
+			pill.setAttribute('aria-label', 'Your match: v ' + first.opponent + ', ' + TDCLiveMatch.waiting(first));
+		}
+		// The other side's name, in words alone (UV, 18 Nov; it was the
+		// clipboard or play icon); with several, how many.
+		const text = document.createElement('span');
+		text.className = 'league-livepill-text';
+		if (many) text.textContent = liveRows.length + ' matches';
+		else {
+			// Its state before the name (UV, 18 Nov): "Playing: Cheeky Tiger".
+			const state = document.createElement('span');
+			state.className = 'league-livepill-state';
+			state.textContent = (first.state === 'lineups' ? 'Lineups' : 'Playing') + ': ';
+			text.append(state, first.opponent);
+		}
+		pill.append(text);
+		bar.append(pill);
+		if (!many) return;
+		const menu = document.createElement('div');
+		menu.className = 'league-tabmenu league-livemenu';
+		menu.id = 'league-livemenu';
+		for (const m of liveRows) {
+			const a = document.createElement('a');
+			a.className = 'league-tabmenu-item league-livemenu-item';
+			a.href = TDCLiveMatch.href(m);
+			const who = document.createElement('span');
+			who.textContent = 'v ' + m.opponent;
+			const what = document.createElement('span');
+			what.className = 'league-livemenu-sub';
+			what.textContent = TDCLiveMatch.waiting(m);
+			a.append(who, what);
+			menu.append(a);
+		}
+		bar.append(menu);
 	}
 	function bottomBar(s, tabs, info) {
 		let bar = document.getElementById('league-tabbar');
@@ -306,6 +376,8 @@ const TDCLeagueNav = (() => {
 			btn.append(face, word);
 			icon(face, 'sliders', 'Manage');
 			track.append(btn);
+			// The green line goes round the four tabs, not Manage (UV, 18 Nov).
+			track.classList.add('has-admin');
 
 			const menu = document.createElement('div');
 			menu.className = 'league-tabmenu';
@@ -333,6 +405,7 @@ const TDCLeagueNav = (() => {
 			parts.push(menu);
 		}
 		bar.replaceChildren(...parts);
+		drawLive(bar);
 		bar.hidden = false;
 		document.body.classList.add('has-league-tabbar');
 		document.body.classList.toggle('has-league-tabmenu', !!(info && info.i_run_it));
@@ -345,12 +418,18 @@ const TDCLeagueNav = (() => {
 
 	document.addEventListener('click', (e) => {
 		const bar = document.getElementById('league-tabbar');
-		// Manage opens and shuts its menu; any other tap shuts it.
-		const toggle = e.target.closest('#league-tabbar .league-tab-admin');
+		// Manage and the match pill (with more than one match) open and shut
+		// their menus; any other tap shuts whichever is open.
+		const toggle = e.target.closest('#league-tabbar .league-tab-admin, #league-tabbar button.league-livepill');
 		if (bar) {
-			const opened = bar.querySelector('.league-tabmenu.is-open');
-			if (toggle) { setMenu(bar, !opened); return; }
-			if (opened) setMenu(bar, false);
+			const was = openMenu(bar);
+			if (toggle) {
+				const which = toggle.classList.contains('league-livepill') ? 'live' : 'admin';
+				shutMenus(bar);
+				if (was !== which) setMenu(bar, which, true);
+				return;
+			}
+			if (was) shutMenus(bar);
 		}
 		const item = e.target.closest('#league-nav button[data-tab], #league-nav-admin button[data-tab], #league-tabbar button[data-tab]');
 		if (!item) return;
@@ -360,15 +439,16 @@ const TDCLeagueNav = (() => {
 	});
 	document.addEventListener('keydown', (e) => {
 		const bar = document.getElementById('league-tabbar');
-		if (e.key !== 'Escape' || !bar || !bar.querySelector('.league-tabmenu.is-open')) return;
-		setMenu(bar, false);
-		bar.querySelector('.league-tab-admin').focus();
+		const was = e.key === 'Escape' && bar && openMenu(bar);
+		if (!was) return;
+		shutMenus(bar);
+		bar.querySelector(MENUS[was][1]).focus();
 	});
 	// Scrolling shuts it, so it never rides away with the bar or hangs over
 	// a page that has moved on.
 	window.addEventListener('scroll', () => {
 		const bar = document.getElementById('league-tabbar');
-		if (bar && bar.querySelector('.league-tabmenu.is-open')) setMenu(bar, false);
+		if (bar && openMenu(bar)) shutMenus(bar);
 	}, { passive: true });
 
 	// Back and forward between tabs.
@@ -382,5 +462,5 @@ const TDCLeagueNav = (() => {
 		if (typeof TDCLoader !== 'undefined') TDCLoader.hold(bar, 'the league’s tabs');
 	});
 
-	return { show, panel, open, managing };
+	return { show, panel, open, managing, live };
 })();

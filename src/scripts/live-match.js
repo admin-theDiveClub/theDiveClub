@@ -53,12 +53,20 @@ const TDCLiveMatch = (() => {
 		return box;
 	}
 
+	// Where a match opens, and what is waiting, as the card says it; the league tabs'
+	// bottom bar uses both for its match pill (league-nav.js, UV 18 Nov).
+	const href = (m) => (m.team_match ? '/leagues/card/?m=' + encodeURIComponent(m.id) : '/match/?id=' + encodeURIComponent(m.id));
+	function waiting(m) {
+		let what = m.state === 'lineups' ? 'Lineups' : 'Playing';
+		if (m.state !== 'lineups' && m.my_frames + m.their_frames > 0) what += ' · ' + m.my_frames + '–' + m.their_frames;
+		return what;
+	}
+
 	function card(m, onGone) {
 		const wrap = el('div', 'live-card');
 		const a = el('a', 'live-card-link');
-		a.href = m.team_match ? '/leagues/card/?m=' + encodeURIComponent(m.id) : '/match/?id=' + encodeURIComponent(m.id);
-		let what = m.state === 'lineups' ? 'Lineups' : 'Playing';
-		if (m.state !== 'lineups' && m.my_frames + m.their_frames > 0) what += ' · ' + m.my_frames + '–' + m.their_frames;
+		a.href = href(m);
+		let what = waiting(m);
 		if (m.competition) what += ' · ' + m.competition;
 		const words = el('span', 'live-card-words');
 		words.append(el('span', 'live-card-title', m.opponent), el('span', 'live-card-sub', what));
@@ -97,6 +105,9 @@ const TDCLiveMatch = (() => {
 			const { data, error } = await supabaseClient.rpc('tdc_my_live_matches', { p_league_season_id: seasonId });
 			if (error) { TDC.showSupabaseError(AREA, error, box); box.hidden = false; return; }
 			fill(box, data || []);
+			// The bottom bar's match pill (UV, 18 Nov): from the same read, and kept
+			// when the card's ✕ is pressed.
+			if (typeof TDCLeagueNav !== 'undefined') TDCLeagueNav.live(data || []);
 		} catch (e) {
 			box.hidden = false;
 			TDC.error(AREA, 'your live match could not be read.', e, box);
@@ -108,5 +119,5 @@ const TDCLiveMatch = (() => {
 		if (box) league(box);
 	});
 
-	return { fill };
+	return { fill, href, waiting };
 })();

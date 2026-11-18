@@ -2378,3 +2378,27 @@ These predate the log. They are recorded here because every one of them is a dec
 ## 2026-11-18 — The league director's pages in the bottom bar
 
 *Decided by UV:* where the bottom bar shows (a phone), **the league director's tab selector joins it**: **a new icon** that opens **a menu rising above it** with the pages they can go to. *Claude's:* the button is called **Manage** with a **sliders** icon (three upright lines with a knob each), last in the bar; the menu holds Run it, Schedule, Settings and New season as rows in a raised, solid panel at the bar's right end, the page open green and lit; Manage is marked while one of them is open; the menu shuts on a choice, a tap elsewhere, Escape or a scroll; the top admin pill is hidden on a phone. *How:* `bottomBar`, `setMenu` and `mark()` in `league-nav.js`, `sliders` in `ring-status.js`, `.league-tabmenu` and `body.has-league-tabmenu` in `league.css`. `docs/ui.md`; STATUS §1 4co.
+
+## 2026-11-18 — The bottom bar's match pill
+
+*Decided by UV:* wherever the bottom bar shows and **one of your matches is live (the yellow card shows)**, a quick link to it joins the bar, **not among the tabs but as a pill attached to the bar**. UV chose: **on the bar's top edge, centred**; its icon **follows the state**, the fixtures' yellow clipboard while lineups are open and the yellow play once being played; **it stays when the card's ✕ is pressed**; **with two or more live, a tap opens a small menu**, a row per match.
+*Claude's:* the pill is shaped as a tab on a folder (round on top, flat where it meets the bar), solid and raised with the yellow inner glow of a session under way; with several, its icon is the first match's (the database's order, playing first); each menu row reads "v <other side>" over what is waiting ("Lineups", "Playing · 3–2") in yellow.
+*How:* `live()` and `drawLive()` in `league-nav.js`, fed by `live-match.js` from its one read (`tdc_my_live_matches`), which now also gives `href` and `waiting`; the two menus share `setMenu`; `.league-livepill` and `.league-livemenu` in `league.css`. `docs/ui.md`; STATUS §1 4co.
+
+## 2026-11-18 — The bottom bar: the match pill as a name strip, Manage grey, a green line round the tabs
+
+*Decided by UV:* the match pill shows **the other side's name in words alone, no icon**, yellow and lit as the icon was; it is **as wide as the bar's pill and only as tall as its line of words**; it is **never cut off**: a whole pill whose lower part lies behind the bar's pill, and **the bar's shadow does not fall on it**. **Manage's icon and word are grey.** The bar's pill has **a green inner line, round the four tabs only** (Manage outside it). UV chose **"2 matches"** as the pill's words with more than one live, and **Manage green while one of its pages is open**.
+*Claude's:* the pill lies in front of the bar's shadow and is clipped exactly at the bar's top edge, so it still looks tucked behind; the line is the banner's (2px, its own small shadows), and the pill's padding went from 4px to 8px to give the line room outside the thumb, the bar 3.75rem → 4rem to keep the words clear of it.
+*How:* `drawLive` in `league-nav.js` (words, not an icon; `has-admin` on the track), `.league-livepill`, `.league-livepill-text`, `.league-tab-admin` and the track's `::after` in `league.css`, `--livepill-height` and `--livepill-tuck` in `variables.css`. `docs/ui.md`; STATUS §1 4co.
+
+## 2026-11-18 — The match pill as a card behind the bar
+
+*Decided by UV:* the match pill **grows down so its foot is level with the bar's foot**, reading as **a card behind the nav bar**, which **can be tapped only above the bar**. Replaces the clipped strip of the entry above. *How (Claude's):* the bar's pill's raised shadow moved to `.league-tabbar::before` at the pill's place, so the layers run shadow, match card, pill, and the bar's shadow still never falls on the card; the card is `--livepill-height` + `--tabbar-height` tall (`--livepill-tuck` gone). `docs/ui.md`; STATUS §1 4co.
+
+## 2026-11-18 — The match card behind the bar in glass
+
+*Decided by UV:* the match card behind the bottom bar is **glass, with a blur**. *How (Claude's):* the yellow live card's own glass (`live-match.css` `.live-card`: 35% of the page's colour, a 12px blur with 140% saturation, a fine border, its top highlight and yellow inner glow); since it is see-through, the bar's shadow layer is clipped at the bar's top edge while the card is there, or it would show through the strip. `docs/ui.md`.
+
+## 2026-11-18 — The match card's state before the name
+
+*Decided by UV:* the match card behind the bottom bar says **its state before the other side's name**, "Playing: Cheeky Tiger". *Claude's:* "Lineups:" while lineups are open, "Playing:" once it is being played (the yellow live card's words); the state in the regular weight, the name bold; with two or more still "2 matches". `drawLive` in `league-nav.js`, `.league-livepill-state` in `league.css`.
