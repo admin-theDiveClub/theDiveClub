@@ -6,9 +6,11 @@ hideFooter: true
 extraStyles:
   - /stylesheets/footer.css
   - /stylesheets/home.css
+  - /stylesheets/live-match.css
 extraScripts:
   - /scripts/hero.js
   - /scripts/home.js
+  - /scripts/live-match.js
   - /scripts/home-cards.js
 ---
 {% comment %}
@@ -184,31 +186,19 @@ extraScripts:
 	   tdc_home_cards' 'live'). The Get the app card's glass with a yellow glow inside,
 	   in its place (home.js places whichever shows; while this shows, Get the app is
 	   hidden, UV). One card per match, stacked, playing first. Each opens the scorecard. */
+	/* The card itself is shared with the league page (live-match.js, live-match.css). */
 	.home-live.home-raised {
 		position: absolute;
 		left: 0;
 		top: 0;
 		width: min(calc(100% - 2 * var(--space-4)), 32rem);
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-2);
 	}
-	.home-live-card {
-		box-shadow: var(--shadow-panel), inset 0 1px 0 rgba(255, 255, 255, 0.08),
-			inset 0 0 14px color-mix(in srgb, var(--color-warning) 35%, transparent);
-	}
-	.home-live-card .hc-face { width: 40px; height: 40px; flex: 0 0 auto; }
-	.home-live-card .home-install-title {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-	.home-live.is-compact .home-live-card { padding: var(--space-2) var(--space-3); }
-	.home-live.is-compact .hc-face { width: 28px; height: 28px; }
-	.home-live.is-compact .home-install-sub { display: none; }
+	.home-live.is-compact .live-card { padding: var(--space-2) var(--space-3); }
+	.home-live.is-compact .live-face { width: 28px; height: 28px; }
+	.home-live.is-compact .live-card-sub { display: none; }
 	/* Two matches too tall even on one line each (a phone on its side): side by side */
 	.home-live.is-row { flex-direction: row; }
-	.home-live.is-row .home-live-card { flex: 1 1 0; min-width: 0; }
+	.home-live.is-row .live-card { flex: 1 1 0; }
 	/* The page's content takes the room left, so the footer is always at the foot
 	   of the cloth, however little there is above it (UV, 16 Nov) */
 	.home-content { flex: 1 0 auto; }
@@ -235,7 +225,7 @@ extraScripts:
 			</a>
 			<button type="button" class="home-install-x" id="home-install-x" aria-label="Hide this">✕</button>
 		</div>
-		<div class="home-live home-raised" id="home-live" role="region" aria-label="Your match" hidden></div>
+		<div class="home-live live-cards home-raised" id="home-live" role="region" aria-label="Your match" hidden></div>
 		<div class="home-content">
 			<div class="status" id="home-cards-status" role="status"></div>
 			<div class="home-cards" id="home-cards">

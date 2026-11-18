@@ -3,10 +3,11 @@
 -- tdc_home_cards 'live': a team night for a team you play for, from the moment
 -- the match exists ('lineups') to both sides locked or under way ('playing');
 -- a singles match only while it is being played; never a finished one, never
--- someone else's, nothing signed out.
+-- someone else's, nothing signed out. tdc_my_live_matches (migration
+-- 20261118073452) gives the same list, or one league season's nights only.
 begin;
 \ir _helpers.psql
-select plan(14);
+select plan(18);
 
 select tests.create_user('Live Dee') as dee \gset
 select tests.create_user('Live H1') as h1 \gset
@@ -52,6 +53,14 @@ select is(:'h2_live'::jsonb -> 0 ->> 'competition', 'Live League', 'and the leag
 
 select tests.sign_in(:'a2');
 select is(public.tdc_home_cards() -> 'live' -> 0 ->> 'opponent', 'Hosts', 'the away side sees the home team');
+-- The league page's call (migration 20261118073452): that league's nights only
+select is(public.tdc_my_live_matches(:'season') -> 0 ->> 'id', :'m', 'on this league''s page: the night');
+select is(jsonb_array_length(public.tdc_my_live_matches(gen_random_uuid())), 0, 'on another league''s page: nothing');
+select is(public.tdc_my_live_matches(), public.tdc_home_cards() -> 'live', 'no league: the home page''s list');
+select tests.sign_out();
+
+select tests.sign_in_anon();
+select throws_ok($$ select public.tdc_my_live_matches() $$, '42501', null, 'signed out: refused');
 select tests.sign_out();
 
 select tests.sign_in(:'outsider');
