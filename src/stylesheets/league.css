@@ -2430,13 +2430,16 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	justify-content: space-between;
-	gap: var(--space-2);
+	/* Centred (UV, 18 Nov): the pill and the switches together in the middle;
+	 * when they wrap on a phone, each line is centred. */
+	justify-content: center;
+	column-gap: var(--space-4);
+	row-gap: var(--space-2);
 	padding: var(--space-1) var(--space-2) var(--space-2);
 }
 .sd-controls .cp-views { height: 2rem; margin: 0; padding: 2px; }
 .tdc-card .sd-controls button.cp-view { padding: 0 var(--space-2); font-size: 0.85rem; }
-.sd-switches { display: flex; align-items: center; gap: var(--space-3); margin-left: auto; }
+.sd-switches { display: flex; align-items: center; justify-content: center; gap: var(--space-3); }
 .sd-switches[hidden] { display: none; }
 .sd-switch { display: inline-flex; align-items: center; gap: var(--space-1); }
 .tdc-card .sd-switch label { margin: 0; font-size: 0.85rem; font-weight: 600; white-space: nowrap; }

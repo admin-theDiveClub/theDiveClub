@@ -2453,3 +2453,8 @@ These predate the log. They are recorded here because every one of them is a dec
 
 *Decided by UV:* **opening a league lands the LD on Standings, as everyone else**, not on Run it: the Leagues list, the home page's league cards and the site menu no longer add `&tab=manage` for whoever runs the league. Creating a new season still goes to Run it (`league-new.js`), as setting it up is the next job. **Manage's icon and word in the bottom bar are yellow** (`--color-warning`, the live pill's yellow), replacing grey; still green while one of its pages is open.
 *How:* `card()` in `leagues.js`, `leagueBadge()` in `home-cards.js`, `activeLeague()` in `nav.js`; `.league-tab-admin` in `league.css`. `docs/ui.md`; STATUS §1 4ck, 4co.
+
+## 2026-11-18 — The Standings tab's row 2 centred
+
+*Decided by UV:* **the Individual · Team pill and the Live / Full names switches are centred** on the Standings tab, no longer pill at the left and switches at the right. They sit together in the middle; when they don't fit one line (a phone), the pill and the switches each take a centred line. Signed out, the pill alone, centred.
+*How:* `.sd-controls` and `.sd-switches` in `league.css`. The Fixtures tab's row 2 (`.fx-controls`) was already centred. Replaces the left/right placement in "The Standings tab as one board" (17 Nov).
