@@ -72,7 +72,7 @@
 		// hole) and a short side's (the corners')
 		var REACH_LONG = MM - MID_LIP, REACH_SHORT = CM / 2;
 		var PIT_Y = -R - 0.75;          // a potted ball's centre, at rest in the pocket
-		var GRAV = 26, STOPV = 0.22, PMIN = 5, PMAX = 120;   // PMAX 48 -> 120 (UV, 17 Nov: long tables and doubles fell short); a quarter of a ball a step at STEP
+		var GRAV = 26, STOPV = 0.22, PMIN = 5, PMAX = 80;   // PMAX 48 -> 120 (UV, 17 Nov: long tables and doubles fell short), 120 -> 80 (UV, 18 Nov: lower); a quarter of a ball a step at 120
 		var SWERVE_FADE = 2;   // balls a second: slower than this, swerve fades with the speed
 		// Round the table, for its shadows; the stage may set it (data-margin, in balls:
 		// the home page's table runs nearly to the screen's edges)
@@ -187,7 +187,7 @@
 
 		/* ---------- the tunables ---------- */
 		// Physics: the game's, with the cloth's grip and the swerve on sliders here
-		var P = { cs: 2, cg: 45, ks: 0.25, kg: 0.9, bb: 0.35, sw: 0.1, side: 0.35, wyKeep: 0.03 };   // UV's, 17 Nov
+		var P = { cs: 3, cg: 10, ks: 0.5, kg: 0.2, bb: 0.1, sw: 0.15, side: 0.8, wyKeep: 0.1 };   // UV's, 18 Nov (second set; ks 0.1 -> 0.5 after)
 		var S = { speed: 1, linePx: 2, shadow: 1, blur: 1.2, glow: 1, miss: 0 };                     // UV's, 14 Nov
 
 		/* ---------- colours and sizes, from the site's tokens ---------- */
@@ -808,7 +808,7 @@
 		// 4 cushions x 6 pockets of sums, no simulation; the copy of the table then checks
 		// each as it does a pot. dOP is the leg after the cushion, d1 the leg to it, k the
 		// share of speed kept off it (for paceFor). The same as banner-table.js's.
-		var BANK_WEIGHT = 0.35;
+		var BANK_WEIGHT = 0.7;   // 0.35 -> 0.7 (UV, 18 Nov: doubles more often, about twice)
 		function doublesOn(obj, fx, fz) {
 			var out = [], e = Math.max(0.05, 1 - P.ks);
 			[[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (n) {
@@ -853,7 +853,7 @@
 		// comes first follows from it. Weighted below one cushion's (BANK2_WEIGHT); the copy of
 		// the table checks each. d2 is the leg between the cushions, k2 the speed kept off the
 		// second (for paceFor).
-		var BANK2_WEIGHT = 0.2;
+		var BANK2_WEIGHT = 0.5;   // 0.2 -> 0.5 (UV, 18 Nov: two-cushion doubles more often)
 		function doubles2On(obj, fx, fz) {
 			var out = [], e = Math.max(0.05, 1 - P.ks);
 			[[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(function (c) {
@@ -902,6 +902,95 @@
 			return out;
 		}
 
+		// Kicks (UV, 18 Nov): when a ball is in the cue ball's way to the target, the cue ball
+		// goes off one or two cushions to it. routesTo gives the cue ball's ways from (fx, fz)
+		// to a point (gx, gz) by the doubles' own geometry: one cushion met a / (a + b / e) of
+		// the way along, two cushions at a corner by parallel shift. Every leg clear of the
+		// balls; only the last may end against obj. legs are the lengths, keeps the share of
+		// speed each cushion leaves (for paceFor), (vx, vz) the way the cue ball arrives.
+		var KICK_WEIGHT = 0.5, KICK2_WEIGHT = 0.35;
+		function routesTo(fx, fz, gx, gz, obj) {
+			var out = [], e = Math.max(0.05, 1 - P.ks);
+			function route(pts, keeps) {
+				var legs = [], len = 0, n = pts.length;
+				for (var i = 0; i + 1 < n; i++) {
+					var d = Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]);
+					if (d < 0.5) return;
+					if (!pathClear(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], i + 2 === n ? [cue, obj] : [cue])) return;
+					legs.push(d); len += d;
+				}
+				out.push({ ax: (pts[1][0] - pts[0][0]) / legs[0], az: (pts[1][1] - pts[0][1]) / legs[0],
+					vx: (pts[n - 1][0] - pts[n - 2][0]) / legs[n - 2], vz: (pts[n - 1][1] - pts[n - 2][1]) / legs[n - 2],
+					legs: legs, keeps: keeps, len: len, rails: n - 2 });
+			}
+			// One cushion
+			[[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (nn) {
+				var side = !!nn[0], s = nn[0] || nn[1], lim = side ? LX : LZ;
+				var a = lim - (side ? fx : fz) * s, b = lim - (side ? gx : gz) * s;
+				if (a < 0.3 || b < 0.3) return;
+				var f = a / (a + b / e);
+				var bx = side ? lim * s : fx + (gx - fx) * f, bz = side ? fz + (gz - fz) * f : lim * s;
+				var along = side ? bz : bx, mouth = side ? mouthOnLong : mouthOnShort;
+				if (mouth(along - 0.5) || mouth(along + 0.5)) return;   // no cushion there
+				var d1 = Math.hypot(bx - fx, bz - fz) || 1, into = Math.abs(side ? (bx - fx) / d1 : (bz - fz) / d1);
+				route([[fx, fz], [bx, bz], [gx, gz]], [Math.sqrt(1 - into * into + e * e * into * into)]);
+			});
+			// Two cushions meeting at a corner (as doubles2On)
+			[[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(function (c) {
+				var sx = c[0], sz = c[1];
+				var a = LX - fx * sx, b = LZ - fz * sz, A = LX - gx * sx, B = LZ - gz * sz;
+				if (a < 0.3 || b < 0.3 || A < 0.3 || B < 0.3) return;
+				var r = (A + e * a) / (B + e * b), n = Math.hypot(r, 1), ux = r / n, uz = 1 / n;   // towards the corner
+				var p1, p2, k1, sideFirst = a < r * b;
+				if (sideFirst) {
+					p1 = [LX, LZ - b + uz * a / ux];
+					p2 = [LX - e * ux * (b / uz - a / ux), LZ];
+					k1 = Math.sqrt(uz * uz + e * e * ux * ux);
+				} else {
+					p1 = [LX - a + ux * b / uz, LZ];
+					p2 = [LX, LZ - e * uz * (a / ux - b / uz)];
+					k1 = Math.sqrt(ux * ux + e * e * uz * uz);
+				}
+				if (p2[0] < -LX || p2[1] < -LZ) return;   // across the table before the second cushion
+				var b1x = p1[0] * sx, b1z = p1[1] * sz, b2x = p2[0] * sx, b2z = p2[1] * sz;
+				if (sideFirst ? (mouthOnLong(b1z - 0.5) || mouthOnLong(b1z + 0.5) || mouthOnShort(b2x - 0.5) || mouthOnShort(b2x + 0.5))
+					: (mouthOnShort(b1x - 0.5) || mouthOnShort(b1x + 0.5) || mouthOnLong(b2z - 0.5) || mouthOnLong(b2z + 0.5))) return;
+				var d3 = Math.hypot(gx - b2x, gz - b2z) || 1;
+				if (((gx - b2x) * ux * sx + (gz - b2z) * uz * sz) / d3 > -0.98) return;   // the point is not on the parallel line back
+				route([[fx, fz], [b1x, b1z], [b2x, b2z], [gx, gz]], [k1, e / k1]);
+			});
+			return out;
+		}
+		// Kicks that pot obj: the cue ball off the cushions onto the ghost ball, arriving at a
+		// cut it can make. Offered only when obj is blocked (startPlanning)
+		function kicksOn(obj, fx, fz) {
+			var out = [];
+			pockets.forEach(function (pk) {
+				var px = pk.ax - obj.x, pz = pk.az - obj.z, dOP = Math.hypot(px, pz);
+				if (dOP < 0.5) return;
+				var ux = px / dOP, uz = pz / dOP;
+				if (-(ux * pk.ix + uz * pk.iz) < Math.cos(rad(pk.take))) return;
+				var gx = obj.x - ux * D2, gz = obj.z - uz * D2;   // the ghost ball
+				if (Math.abs(gx) > LX || Math.abs(gz) > LZ) return;
+				if (!pathClear(obj.x, obj.z, pk.ax, pk.az, [cue, obj])) return;
+				routesTo(fx, fz, gx, gz, obj).forEach(function (rt) {
+					var cut = rt.vx * ux + rt.vz * uz;
+					if (cut < Math.cos(rad(72))) return;
+					var score = (rt.rails === 2 ? KICK2_WEIGHT : KICK_WEIGHT) * cut * cut / (1 + 0.05 * (dOP + rt.len));
+					out.push({ obj: obj, pk: pk, ax: rt.ax, az: rt.az, cut: cut, dOP: dOP, dCG: rt.legs[rt.legs.length - 1], kick: rt, score: score });
+				});
+			});
+			return out;
+		}
+		// No pot on and obj blocked: a kick that simply reaches it, full on, instead of a
+		// thin hit straight through the ball in the way. One cushion preferred, shorter preferred
+		function kickToHit(obj) {
+			var rts = routesTo(cue.x, cue.z, obj.x, obj.z, obj);
+			if (!rts.length) return null;
+			var rt = pick(rts, function (o) { return (o.rails === 2 ? 0.5 : 1) / (1 + 0.05 * o.len); });
+			return { obj: obj, pk: null, ax: rt.ax, az: rt.az, cut: 0.5, dOP: 8, dCG: rt.legs[rt.legs.length - 1], kick: rt };
+		}
+
 		// The next shot's line (UV, 13 Nov): the other ball into a pocket, and the spot on
 		// that line, SPOT_BACK behind the ball (nearer if the table runs out), where the
 		// cue ball is meant to stop for it
@@ -940,6 +1029,11 @@
 			if (plan.bank) need = need / (plan.k * plan.k) + 2 * P.cs * plan.d1;   // a double: what the cushion takes, then the way to it
 			var v0 = 7 / 5 * Math.sqrt(need);
 			var vc = v0 / (Math.max(0.25, plan.cut) * (1 - P.bb));
+			if (plan.kick) {   // a kick: back along the cue ball's legs, through each cushion's loss
+				var cn = vc * vc, L = plan.kick.legs, K = plan.kick.keeps;
+				for (var i = L.length - 1; i >= 0; i--) { cn += 2 * P.cs * L[i]; if (i > 0) cn /= K[i - 1] * K[i - 1]; }
+				return Math.sqrt(cn);
+			}
 			return Math.sqrt(vc * vc + 2 * P.cs * plan.dCG);
 		}
 		function strike(c, ax, az, power, tipX, tipY) {
@@ -999,7 +1093,7 @@
 		// nearest the spot on the next shot's line.
 		var planning = null, PLAN_MS = 5, PLAN_WIDE = 48, PLAN_NEAR = 24;
 		function randomTry(plan) {
-			return { plan: plan, tipY: Math.random() * 1.6 - 0.8, tipX: Math.random() < 0.4 ? Math.random() - 0.5 : 0, arrive: 1 + Math.random() * 8 };
+			return { plan: plan, tipY: Math.random() * 1.6 - 0.8, tipX: !plan.kick && Math.random() < 0.4 ? Math.random() - 0.5 : 0, arrive: 1 + Math.random() * 8 };   // no side on a kick: it would throw the cue ball off its cushions
 		}
 		function startPlanning() {
 			if (!target || target.state !== 'play') {
@@ -1009,11 +1103,13 @@
 			}
 			var other = objs.filter(function (o) { return o !== target; })[0] || null;
 			var next = other && other.state === 'play' ? nextLine(other) : null;
-			var all = potsOn(target, cue.x, cue.z).concat(doublesOn(target, cue.x, cue.z), doubles2On(target, cue.x, cue.z));   // pots and doubles together (UV, 17 Nov)
+			var blocked = !pathClear(cue.x, cue.z, target.x, target.z, [cue, target]);   // a ball in the cue ball's straight way to the target (UV, 18 Nov)
+			var all = potsOn(target, cue.x, cue.z).concat(doublesOn(target, cue.x, cue.z), doubles2On(target, cue.x, cue.z),
+				blocked ? kicksOn(target, cue.x, cue.z) : []);   // pots, doubles and, when blocked, kicks together (UV, 17 and 18 Nov)
 			var options = all.slice().sort(function (a, b) { return b.score - a.score; }).slice(0, 3);
 			var queue = [];
 			for (var i = 0; options.length && i < PLAN_WIDE; i++) queue.push(randomTry(options[i % options.length]));
-			return { target: target, other: other, next: next, options: options, queue: queue, tried: [], round: 0, all: all };
+			return { target: target, other: other, next: next, options: options, queue: queue, tried: [], round: 0, all: all, blocked: blocked };
 		}
 		function planStep(pl) {
 			var t0 = performance.now();
@@ -1053,6 +1149,10 @@
 				// None came off in the copy: the likeliest pot, with spin at random
 				var r0 = randomTry(pick(options, function (o) { return o.score; }));
 				plan = r0.plan; power = paceFor(plan, r0.arrive); tipX = r0.tipX; tipY = r0.tipY;
+			} else if (pl.blocked && (plan = kickToHit(pl.target))) {
+				// No pot on and a ball in the way: kick off the cushions onto the target (UV, 18 Nov)
+				power = paceFor(plan, 3);
+				tipY = (Math.random() * 2 - 1) * 0.5; tipX = 0;
 			} else {
 				// No pot on: a thin hit on the ball, to move things on
 				var fx = pl.target.x - cue.x, fz = pl.target.z - cue.z, f = Math.hypot(fx, fz) || 1;
@@ -1074,7 +1174,8 @@
 
 			shots++;
 			var words = 'Shot ' + shots + ': ';
-			if (plan.bank) words += 'a ' + (plan.rails === 2 ? 'two-cushion ' : '') + 'double on ' + plan.obj.name + ' to a ' + (plan.pk.corner ? 'corner' : 'middle pocket') + (miss ? ', meant to miss' : '');
+			if (plan.kick) words += 'a ' + (plan.kick.rails === 2 ? 'two' : 'one') + '-cushion kick ' + (plan.pk ? 'on ' + plan.obj.name + ' to a ' + (plan.pk.corner ? 'corner' : 'middle pocket') + (miss ? ', meant to miss' : '') : 'to hit ' + plan.obj.name + ', a ball in the way');
+			else if (plan.bank) words += 'a ' + (plan.rails === 2 ? 'two-cushion ' : '') + 'double on ' + plan.obj.name + ' to a ' + (plan.pk.corner ? 'corner' : 'middle pocket') + (miss ? ', meant to miss' : '');
 			else if (plan.pk) words += 'a ' + Math.round(Math.acos(Math.min(1, plan.cut)) * 180 / Math.PI) + '° cut on ' + plan.obj.name + ' to a ' + (plan.pk.corner ? 'corner' : 'middle pocket') + (miss ? ', meant to miss' : '');
 			else words += 'no pot on, a thin hit on ' + plan.obj.name;
 			words += (tipY > 0.4 ? ', follow' : tipY < -0.4 ? ', draw' : '') + (tipX > 0.1 ? ', right side' : tipX < -0.1 ? ', left side' : '');

@@ -2475,3 +2475,35 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* on the lineup page, anybody who is not playing in the match (another league player, the league director when not setting a side) opens **both** team tables on **Stats**. **Players in the match are unchanged**: their own team's table opens on Scorecard and the opposition's on Stats, and a captain's own table **stays on Scorecard after they lock** (UV, asked).
 *Found while building it:* the server's `my_side` names captains only, so before the frames exist a teammate who is not captain looked like an outsider (both tables on Scorecard until now). The page now also counts the reader as in the match when their player is on either team's roster.
 *How:* `renderLineups` and the toggle in `teamTable` in `league-card.js`. `docs/systems/leagues.md`; STATUS §1 4cw.
+
+## 2026-11-18 — The tables' physics retuned again
+
+*Decided by UV:* from the physics sliders on `/sandbox/banner/`: **cloth spin 60, side off cushions 0.7, side fades 0.2, ball–ball 0.42, swerve 0.3**; the rest unchanged (speed 1, cloth speed 2, cushion speed 0.25, cushion spin 0.9). **Everywhere:** every banner and the home page's table. Read from UV's screenshot of the sliders (the readouts were not in it); cloth spin and side fades are at the top of their sliders.
+*Example:* a ball with side now comes off a cushion with twice the turn it had, and its side lasts longer on the cloth.
+*So:* `scripts/banner-table.js` and `scripts/hero.js`, `P`; `docs/systems/file-map.md`; STATUS §1 4cx.
+
+## 2026-11-18 — Doubles more often, and kicks when a ball is in the way
+
+*Decided by UV:* **doubles about twice as often**: one cushion weighted 0.7 of a direct pot (was 0.35), two cushions 0.5 (was 0.2). **When a ball blocks the cue ball's straight way to the target, the cue ball plays a one- or two-cushion kick**: first kicks that also pot the target (checked on the copy of the table like every shot), and with no pot on at all, a kick that simply hits it, in place of the thin hit that went through the ball in the way. **Doubles get no extra weight when the other ball blocks a pocket's direct route** (UV, asked): that pot drops out and the doubles compete as on every shot.
+*Example:* a straight double now beats a direct cut of about 35° or more (was about 55°); the white behind the striped ball with the solid ball beyond it goes off the side cushion onto the solid ball.
+*Claude's, for UV to judge:* kick pots weighted 0.5 (one cushion) and 0.35 (two); "blocked" is the cue ball's straight line to the target's centre not clear of another ball; a kick is played with no side; a kick to hit takes one cushion over two (twice as likely) and the shorter way; a kick to hit is not tried on the copy of the table first.
+*So:* `routesTo`, `kicksOn`, `kickToHit`, `paceFor`, `startPlanning`, `shoot` in `scripts/banner-table.js` and `scripts/hero.js` (identical); `docs/systems/file-map.md`; STATUS §1 4cx.
+
+## 2026-11-18 — The banner sandbox's sliders explained
+
+*Decided by UV:* under every Physics slider on `/sandbox/banner/`, **a line on what it does, its two ends, and (for the physics) a live line on what the value means now**; and **four labels renamed** to say what they do: Cloth spin → Cloth grip, Cushion speed → Cushion soaks up, Cushion spin → Cushion strips spin, Side fades → Side wears off. Sandbox only; the keys in `banner-table.js` keep their names.
+*Example:* under Side wears off at 0.2: "Now: half the side is gone after 0.06 s, nearly all of it after 0.23 s."
+*Claude's, for UV to judge:* the wording of every line and end label, and the examples chosen for the live lines (a ball rolling at 4 balls a second; a ball skidding at 4 balls a second).
+*So:* `src/sandbox/banner/index.html`, `scripts/sandbox-banner-controls.js`, `.bp-*` in `sandbox.css`; `docs/systems/file-map.md`; STATUS §1 4cy.
+
+## 2026-11-18 — The tables' physics, a third set
+
+*Decided by UV:* from the explained sliders on `/sandbox/banner/`: **cloth speed 3, cloth grip 10, cushion soaks up 0.1, cushion strips spin 0.2, side off cushions 0.8, side wears off 0.1, ball–ball 0.1, swerve 0.15**; speed 1. **Everywhere:** every banner and the home page's table. Replaces the values set earlier the same day.
+*Example:* a full hit now leaves the white with 10% of its speed (it kept 42%), and side spin lasts long enough to show off a cushion (half gone after 0.69 s, where it was 0.06 s).
+*So:* `scripts/banner-table.js` and `scripts/hero.js`, `P`; `docs/systems/file-map.md`; STATUS §1 4cz.
+
+## 2026-11-18 — Cushions deader, shots softer
+
+*Decided by UV:* **cushion soaks up 0.5** (was 0.1 an hour earlier), and **the strongest shot 80 balls a second** (was 120; 48 before 17 Nov). Every banner and the home page's table.
+*Example:* a ball keeps half its speed into a cushion; the hardest shot on a large screen is two thirds of what it was.
+*So:* `P.ks` and `PMAX` in `scripts/banner-table.js` and `scripts/hero.js`; STATUS §1 4cz.

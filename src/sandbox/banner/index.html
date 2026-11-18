@@ -71,63 +71,98 @@ extraScripts:
 		to the site's values, and real pages never read them.
 	{% endcomment %}
 	<h2>Physics</h2>
-	<p class="muted">Each slider starts at the site's value. Changes last until the page is reloaded and reach no other page.</p>
+	<p class="muted">Each slider starts at the site's value. Changes last until the page is reloaded and reach no other page. Under each: what it does, which way is which, and (for the physics) what the value means right now.</p>
+	{% comment %}
+		What each slider does (UV, 18 Nov: "so I can better understand what each is doing"):
+		under each, a line on what it does, its two ends, and for the physics a live line
+		(data-banner-now, filled by sandbox-banner-controls.js) saying what the value means
+		now. Four labels renamed to say what they do; the keys in banner-table.js keep their
+		names (cg grip, ks the cushion's loss, kg the spin it strips, wyKeep side's decay).
+	{% endcomment %}
 	<div class="banner-physics">
 		<label for="bt-speed">Speed</label>
-		<input type="range" id="bt-speed" data-banner-tune="speed" min="0.25" max="2" step="0.05">
+		<input type="range" id="bt-speed" data-banner-tune="speed" min="0.25" max="2" step="0.05" aria-describedby="bt-speed-help">
 		<output id="bt-speed-out"></output>
+		<div class="bp-ends" aria-hidden="true"><span>← slower</span><span>faster →</span></div>
+		<p class="bp-help" id="bt-speed-help">How fast time runs on the table. 1 is real time. <span class="bp-now" data-banner-now="speed"></span></p>
 
 		<label for="bt-cs">Cloth speed</label>
-		<input type="range" id="bt-cs" data-banner-tune="cs" min="1" max="18" step="0.5">
+		<input type="range" id="bt-cs" data-banner-tune="cs" min="1" max="18" step="0.5" aria-describedby="bt-cs-help">
 		<output id="bt-cs-out"></output>
+		<div class="bp-ends" aria-hidden="true"><span>← rolls far</span><span>stops soon →</span></div>
+		<p class="bp-help" id="bt-cs-help">How quickly a rolling ball slows down on the cloth. <span class="bp-now" data-banner-now="cs"></span></p>
 
-		<label for="bt-cg">Cloth spin</label>
-		<input type="range" id="bt-cg" data-banner-tune="cg" min="2" max="60" step="1">
+		<label for="bt-cg">Cloth grip</label>
+		<input type="range" id="bt-cg" data-banner-tune="cg" min="2" max="60" step="1" aria-describedby="bt-cg-help">
 		<output id="bt-cg-out"></output>
+		<div class="bp-ends" aria-hidden="true"><span>← long skids, wide curves</span><span>takes hold at once →</span></div>
+		<p class="bp-help" id="bt-cg-help">The cloth's grip on a skidding ball: how soon draw, follow and swerve take hold and the ball starts rolling. Also how fast side wears off, with "Side wears off" below. Only after the ball's first contact. <span class="bp-now" data-banner-now="cg"></span></p>
 
-		<label for="bt-ks">Cushion speed</label>
-		<input type="range" id="bt-ks" data-banner-tune="ks" min="0" max="0.8" step="0.01">
+		<label for="bt-ks">Cushion soaks up</label>
+		<input type="range" id="bt-ks" data-banner-tune="ks" min="0" max="0.8" step="0.01" aria-describedby="bt-ks-help">
 		<output id="bt-ks-out"></output>
+		<div class="bp-ends" aria-hidden="true"><span>← lively</span><span>dead →</span></div>
+		<p class="bp-help" id="bt-ks-help">The share of the speed into a cushion that the cushion soaks up. <span class="bp-now" data-banner-now="ks"></span></p>
 
-		<label for="bt-kg">Cushion spin</label>
-		<input type="range" id="bt-kg" data-banner-tune="kg" min="0" max="1" step="0.01">
+		<label for="bt-kg">Cushion strips spin</label>
+		<input type="range" id="bt-kg" data-banner-tune="kg" min="0" max="1" step="0.01" aria-describedby="bt-kg-help">
 		<output id="bt-kg-out"></output>
+		<div class="bp-ends" aria-hidden="true"><span>← keeps spin</span><span>kills spin →</span></div>
+		<p class="bp-help" id="bt-kg-help">The share of a ball's spin (side, draw, follow) that each cushion strips off. What it leaves is all "Side off cushions" has to work with. <span class="bp-now" data-banner-now="kg"></span></p>
 
 		<label for="bt-side">Side off cushions</label>
-		<input type="range" id="bt-side" data-banner-tune="side" min="0" max="1" step="0.01">
+		<input type="range" id="bt-side" data-banner-tune="side" min="0" max="1" step="0.01" aria-describedby="bt-side-help">
 		<output id="bt-side-out"></output>
+		<div class="bp-ends" aria-hidden="true"><span>← none</span><span>a lot →</span></div>
+		<p class="bp-help" id="bt-side-help">How far side spin bends the angle a ball comes off a cushion, after the cushion has stripped its share. <span class="bp-now" data-banner-now="side"></span></p>
 
-		<label for="bt-wykeep">Side fades</label>
-		<input type="range" id="bt-wykeep" data-banner-tune="wyKeep" min="0" max="0.2" step="0.005">
+		<label for="bt-wykeep">Side wears off</label>
+		<input type="range" id="bt-wykeep" data-banner-tune="wyKeep" min="0" max="0.2" step="0.005" aria-describedby="bt-wykeep-help">
 		<output id="bt-wykeep-out"></output>
+		<div class="bp-ends" aria-hidden="true"><span>← lasts</span><span>gone quickly →</span></div>
+		<p class="bp-help" id="bt-wykeep-help">How fast side spin wears off on the cloth once the ball has hit something, as a share of the cloth's grip. Higher is faster. <span class="bp-now" data-banner-now="wyKeep"></span></p>
 
 		<label for="bt-bb">Ball–ball</label>
-		<input type="range" id="bt-bb" data-banner-tune="bb" min="0" max="0.5" step="0.01">
+		<input type="range" id="bt-bb" data-banner-tune="bb" min="0" max="0.5" step="0.01" aria-describedby="bt-bb-help">
 		<output id="bt-bb-out"></output>
+		<div class="bp-ends" aria-hidden="true"><span>← lively</span><span>soft →</span></div>
+		<p class="bp-help" id="bt-bb-help">The share of the push lost when two balls meet. <span class="bp-now" data-banner-now="bb"></span></p>
 
 		<label for="bt-sw">Swerve</label>
-		<input type="range" id="bt-sw" data-banner-tune="sw" min="0" max="0.6" step="0.01">
+		<input type="range" id="bt-sw" data-banner-tune="sw" min="0" max="0.6" step="0.01" aria-describedby="bt-sw-help">
 		<output id="bt-sw-out"></output>
+		<div class="bp-ends" aria-hidden="true"><span>← straight</span><span>curves →</span></div>
+		<p class="bp-help" id="bt-sw-help">How hard side spin curves a moving ball, from its first contact on, while it still has side. It fades out below 2 balls a second. <span class="bp-now" data-banner-now="sw"></span></p>
 
 		<label for="bt-miss">Misses</label>
-		<input type="range" id="bt-miss" data-banner-tune="miss" min="0" max="1" step="0.05">
+		<input type="range" id="bt-miss" data-banner-tune="miss" min="0" max="1" step="0.05" aria-describedby="bt-miss-help">
 		<output id="bt-miss-out"></output>
+		<div class="bp-ends" aria-hidden="true"><span>← never</span><span>always →</span></div>
+		<p class="bp-help" id="bt-miss-help">The share of pots aimed a little off on purpose, so not every shot goes in. <span class="bp-now" data-banner-now="miss"></span></p>
 
 		<label for="bt-linepx">Lines (px)</label>
-		<input type="range" id="bt-linepx" data-banner-tune="linePx" min="1" max="4" step="0.25">
+		<input type="range" id="bt-linepx" data-banner-tune="linePx" min="1" max="4" step="0.25" aria-describedby="bt-linepx-help">
 		<output id="bt-linepx-out"></output>
+		<div class="bp-ends" aria-hidden="true"><span>← thin</span><span>thick →</span></div>
+		<p class="bp-help" id="bt-linepx-help">How thick the table's cushion lines are drawn.</p>
 
 		<label for="bt-shadow">Shadow</label>
-		<input type="range" id="bt-shadow" data-banner-tune="shadow" min="0" max="1" step="0.05">
+		<input type="range" id="bt-shadow" data-banner-tune="shadow" min="0" max="1" step="0.05" aria-describedby="bt-shadow-help">
 		<output id="bt-shadow-out"></output>
+		<div class="bp-ends" aria-hidden="true"><span>← none</span><span>full →</span></div>
+		<p class="bp-help" id="bt-shadow-help">How dark the balls' and cushions' shadows are.</p>
 
 		<label for="bt-blur">Blur</label>
-		<input type="range" id="bt-blur" data-banner-tune="blur" min="0" max="2" step="0.05">
+		<input type="range" id="bt-blur" data-banner-tune="blur" min="0" max="2" step="0.05" aria-describedby="bt-blur-help">
 		<output id="bt-blur-out"></output>
+		<div class="bp-ends" aria-hidden="true"><span>← sharp</span><span>soft →</span></div>
+		<p class="bp-help" id="bt-blur-help">How soft the shadows' edges are.</p>
 
 		<label for="bt-glow">Glow</label>
-		<input type="range" id="bt-glow" data-banner-tune="glow" min="0" max="2" step="0.05">
+		<input type="range" id="bt-glow" data-banner-tune="glow" min="0" max="2" step="0.05" aria-describedby="bt-glow-help">
 		<output id="bt-glow-out"></output>
+		<div class="bp-ends" aria-hidden="true"><span>← none</span><span>strong →</span></div>
+		<p class="bp-help" id="bt-glow-help">The glow round the balls and the table's lines.</p>
 	</div>
 
 	{% comment %}
