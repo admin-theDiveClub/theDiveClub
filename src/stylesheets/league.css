@@ -3152,7 +3152,9 @@ body.has-league-tabmenu #league-nav-admin { display: none; }
 .league-livemenu-sub { font-size: 0.85rem; font-weight: 400; color: var(--color-warning); }
 .league-tabmenu-item + .league-tabmenu-item { border-top: 1px solid var(--border-color); border-radius: 0; }
 .league-tabmenu-item[aria-current] { color: var(--color-primary); text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 60%, transparent); }
-body.has-league-tabbar { padding-bottom: var(--tabbar-total); }
+/* No room kept for the bar at the page's foot (UV, 18 Nov): it slides away
+   on the long scroll down that reaches the footer, so the room was only an
+   empty band below it. */
 .league-tabbar:not([hidden]) {
 	display: block;
 	position: fixed;
