@@ -51,6 +51,8 @@ const TDCLeagueNav = (() => {
 		['schedule', 'Schedule', true, 'fixtures'],
 		['settings', 'Settings', true]
 	];
+	// The bottom bar's icon for each of the first pill's tabs (UV, 18 Nov).
+	const ICON = { standings: 'podium', fixtures: 'calendar', season: 'shield', rules: 'document' };
 	const tabOf = (key) => TABS.find(([k]) => k === key);
 	const panelOf = (key) => (tabOf(key) && tabOf(key)[3]) || key;
 	// The tab the page opens on with no &tab= in the address (UV, 18 Nov:
@@ -84,7 +86,7 @@ const TDCLeagueNav = (() => {
 
 	// The tab in the green pill, wherever the bar has got to drawing.
 	function mark(key) {
-		for (const nav of document.querySelectorAll('#league-nav, #league-nav-admin')) {
+		for (const nav of document.querySelectorAll('#league-nav, #league-nav-admin, #league-tabbar')) {
 			for (const item of nav.querySelectorAll('[data-tab]')) {
 				if (item.dataset.tab === key) item.setAttribute('aria-current', 'page');
 				else item.removeAttribute('aria-current');
@@ -161,7 +163,7 @@ const TDCLeagueNav = (() => {
 	async function show(seasonId) {
 		const nav = document.getElementById('league-nav');
 		if (!nav) return;
-		if (!seasonId) { nav.hidden = true; return; }
+		if (!seasonId) { nav.hidden = true; hideBar(); return; }
 
 		// Signed out (UV, 10 Nov): the three tabs anybody is shown, and nothing
 		// read; each tab says for itself whether that visitor may see it.
@@ -170,7 +172,7 @@ const TDCLeagueNav = (() => {
 			const { data, error } = await supabaseClient.rpc('tdc_league_season_info', { p_league_season_id: seasonId });
 			if (error) { TDC.showSupabaseError(AREA, error, document.getElementById('page-status')); return; }
 			info = (data || [])[0];
-			if (!info) { nav.hidden = true; return; }   // the page itself says the season is not there
+			if (!info) { nav.hidden = true; hideBar(); return; }   // the page itself says the season is not there
 		}
 
 		const s = encodeURIComponent(seasonId);
@@ -198,6 +200,7 @@ const TDCLeagueNav = (() => {
 		nav.replaceChildren(pill(false));
 		nav.setAttribute('aria-label', 'This league’s pages');
 		nav.hidden = false;
+		bottomBar(s, tabs);
 
 		const admin = document.getElementById('league-nav-admin');
 		if (admin && info.i_run_it) {
@@ -217,8 +220,66 @@ const TDCLeagueNav = (() => {
 		if (tabs && !info.i_run_it && current === 'schedule') open('fixtures');
 	}
 
+	// ─── The bottom bar (UV, 18 Nov) ───
+	// On a phone the first pill's tabs (Standings, Fixtures, Season, Rules)
+	// are a bar fixed to the foot of the screen, an icon over each word, so a
+	// thumb reaches them; the stylesheet hides the top pill there, and the
+	// bar above 48rem. The second pill (Run it, Schedule, Settings) stays at
+	// the top. The bar is the body's own child, not the card's: a fixed box
+	// inside the card could be clipped by it. It slides away and back with
+	// the site's bar (nav.js; league.css follows .site-nav.is-hidden). Its
+	// items are the pill's: the same tabs, links on the card, the same thumb
+	// (tdc-controls.js, by .league-nav-track) and the same clicks.
+	function bottomBar(s, tabs) {
+		let bar = document.getElementById('league-tabbar');
+		if (!bar) {
+			bar = document.createElement('nav');
+			bar.id = 'league-tabbar';
+			bar.className = 'league-tabbar';
+			bar.setAttribute('aria-label', 'This league’s pages');
+			document.body.append(bar);
+		}
+		const track = document.createElement('div');
+		track.className = 'league-nav-track';
+		for (const [key, label, runners] of TABS) {
+			if (runners) continue;
+			let item;
+			if (tabs) {
+				item = document.createElement('button');
+				item.type = 'button';
+			} else {
+				item = document.createElement('a');
+				item.href = tabUrl(s, key);
+			}
+			item.className = 'league-nav-item league-tab';
+			item.dataset.tab = key;
+			const face = document.createElement('span');
+			face.className = 'tdc-ring league-tab-icon';
+			const word = document.createElement('span');
+			word.className = 'league-tab-word';
+			word.textContent = label;
+			item.append(face, word);
+			// Shown already drawn: a page load draws nothing in (UV, 16 Nov).
+			try {
+				face.innerHTML = TDCRing.svg();
+				new TDCRing.RingStatus(face, { icons: [ICON[key]], labels: { [ICON[key]]: label, empty: label, loading: 'Working' }, initial: ICON[key] });
+			} catch (err) {
+				TDC.error(AREA, 'the bottom bar’s icon for ' + label + ' could not be drawn.', err);
+			}
+			track.append(item);
+		}
+		bar.replaceChildren(track);
+		bar.hidden = false;
+		document.body.classList.add('has-league-tabbar');
+	}
+	function hideBar() {
+		const bar = document.getElementById('league-tabbar');
+		if (bar) bar.hidden = true;
+		document.body.classList.remove('has-league-tabbar');
+	}
+
 	document.addEventListener('click', (e) => {
-		const item = e.target.closest('#league-nav button[data-tab], #league-nav-admin button[data-tab]');
+		const item = e.target.closest('#league-nav button[data-tab], #league-nav-admin button[data-tab], #league-tabbar button[data-tab]');
 		if (!item) return;
 		open(item.dataset.tab, { push: true, tab: item });
 	});

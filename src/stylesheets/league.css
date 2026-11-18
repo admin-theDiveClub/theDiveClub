@@ -788,7 +788,8 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
 .tdc-card button.fx-icon:focus-visible { outline: 2px solid var(--nm-light-colour); outline-offset: 2px; }
 .fx-icon-danger .tdc-ring .mark { stroke: var(--color-error); }
 .fx-icon-danger .tdc-ring .dots { fill: var(--color-error); }
-.fx-icon .sr {
+.fx-icon .sr,
+.league-tabbar .sr {
 	position: absolute;
 	width: 1px;
 	height: 1px;
@@ -2910,3 +2911,70 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
  * scrolls clips what rises above it: the first round's labels, in the display
  * face whose capitals sit high, lost their tops (UV, 11 Nov). */
 .fx-player #all-view { overflow: visible; }
+
+/* ── The league tabs' bottom bar (UV, 18 Nov; league-nav.js) ─────────
+ * On a phone (below 48rem) the first pill's tabs, Standings, Fixtures,
+ * Season and Rules, sit in a bar fixed to the foot of the screen, an icon
+ * over each word, within a thumb's reach; the top pill is hidden there and
+ * the second pill (Run it, Schedule, Settings) stays at the top. Wider, the
+ * bar is hidden and the top pill is as before. The bar stands over the page
+ * as the footer does: solid, its shadow cast upward; inside it the same
+ * sunken pill and sliding thumb as the top pill. It slides away and back
+ * with the site's bar. The page keeps clear of it at its foot. */
+.league-tabbar { display: none; }
+@media (max-width: 47.99rem) {
+	body.has-league-tabbar #league-nav { display: none; }
+	body.has-league-tabbar { padding-bottom: var(--tabbar-total); }
+	.league-tabbar:not([hidden]) {
+		display: block;
+		position: fixed;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		z-index: 100;
+		padding: var(--space-2) var(--space-3) calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
+		background: var(--bg-base);
+		box-shadow: 0 -12px 24px -8px rgba(0, 0, 0, var(--sunken-alpha));
+		transition: transform var(--nav-slide) ease;
+	}
+	/* Slid away with the site's bar (nav.js), past its own shadow. */
+	body:has(.site-nav.is-hidden) .league-tabbar { transform: translateY(calc(100% + var(--space-7))); }
+	.league-tabbar .league-nav-track {
+		display: flex;
+		gap: 0;
+		height: var(--tabbar-height);
+		padding: var(--space-1);
+		overflow: visible;
+		border-radius: var(--nm-field-radius);
+		box-shadow: var(--nm-sunken);
+	}
+	.league-tabbar .league-nav-item.league-tab {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		flex: 1 1 0;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 2px;
+		min-width: 0;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		border-radius: var(--radius-pill);
+		background: none;
+		color: var(--text-primary);
+		font-family: inherit;
+		font-size: 0.75rem;
+		font-weight: 600;
+		line-height: 1.1;
+		cursor: pointer;
+		-webkit-tap-highlight-color: transparent;
+	}
+	.league-tab-icon { display: block; width: 1.9rem; height: 1.9rem; --ring-accent: var(--text-primary); }
+	.league-tab-word { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	/* The tab showing: its icon and word in the site's green, lit, over the thumb. */
+	.league-tabbar .league-tab[aria-current] { color: var(--color-primary); text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 60%, transparent); }
+	.league-tabbar .league-tab[aria-current] .league-tab-icon { --ring-accent: var(--color-primary); }
+}
+@media (prefers-reduced-motion: reduce) { .league-tabbar { transition: none; } }

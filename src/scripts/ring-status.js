@@ -68,6 +68,11 @@ const TDCRing = (() => {
 		user:  { label: 'Profile', strokes: ['M50 31A9 9 0 1 1 50 49A9 9 0 1 1 50 31', 'M31 70C31 58 40 54 50 54C60 54 69 58 69 70'] },
 		smile: { label: 'Happy',   strokes: ['M36 56C42 66 58 66 64 56', 'M40 37L40 42', 'M60 37L60 42'] },
 		// Added 24 Oct for the league fixtures' buttons (Move, Take match off).
+		// The league tabs' bottom bar (UV, 18 Nov): Standings, Season, Rules
+		// (Fixtures is the calendar).
+		podium: { label: 'Standings', strokes: ['M30 70L30 56L42 56L42 70', 'M42 70L42 42L58 42L58 70', 'M58 70L58 61L70 61L70 70', 'M26 70L74 70'] },
+		shield: { label: 'Season', strokes: ['M50 28L68 34L68 50C68 61 60 68 50 72C40 68 32 61 32 50L32 34L50 28'] },
+		document: { label: 'Rules', strokes: ['M37 28L57 28L65 36L65 72L37 72L37 28', 'M57 28L57 36L65 36', 'M44 49L58 49', 'M44 59L58 59'] },
 		calendar: { label: 'Moved', strokes: ['M30 36L70 36L70 70L30 70L30 36', 'M30 47L70 47', 'M40 29L40 40', 'M60 29L60 40'] },
 		minus: { label: 'Taken off', strokes: ['M30 50L70 50'] },
 		// Added 11 Nov for the fixtures' Open the card (UV): a scorecard, its
