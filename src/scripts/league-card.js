@@ -49,7 +49,7 @@
 	const els = {
 		title: el('m-title'),
 		jumbo: el('jumbo'), jumboStatus: el('jumbo-status'), stateDetail: el('state-detail'), facts: el('jumbo-facts'),
-		jumboMore: el('jumbo-more'), jumboTags: el('jumbo-tags'), jumboV: el('jumbo-v'),
+		jumboMore: el('jumbo-more'), moreBtn: el('jumbo-more-btn'), cardLine: el('card-line'), jumboV: el('jumbo-v'),
 		homePic: el('home-pic'), homeName: el('home-name'), awayPic: el('away-pic'), awayName: el('away-name'),
 		sideSwitch: el('side-switch'), sidePick: el('side-pick'),
 		lineups: el('lineups'), compare: el('team-compare'), teamTables: el('team-tables'),
@@ -476,12 +476,15 @@
 		const place = TDC.venueFact(venues);
 		if (place) els.facts.insertBefore(place, els.facts.children[venuesAt] || null);
 
-		// Folded, the banner keeps only the venue and the discipline, as badges
-		// under the ":" (UV, 16 Nov); the stylesheet shows them only while folded.
-		const discipline = match.rules && match.rules.discipline;
-		els.jumboTags.replaceChildren(
-			...venues.map((v) => node('span', 'badge cj-venue', v.name)),   // yellow words (UV, 16 Nov)
-			...(discipline ? [node('span', 'badge', D.DISCIPLINE[discipline] || discipline)] : []));
+		// Above the banner, the Standings and Fixtures tabs' heading (UV, 18 Nov):
+		// the league's shield, the league · the season · the venue. The folded
+		// banner's venue and discipline badges went with it.
+		if (info) {
+			TDC.leagueLine(els.cardLine, {
+				picture: seasonRow && seasonRow.tbl_leagues && seasonRow.tbl_leagues.picture_path,
+				league: info.league_name, season: info.name, venues,
+			});
+		}
 	}
 
 	function stateDetail(locked, both) {
@@ -2212,6 +2215,12 @@
 		working = els.sidePick.value;
 		await loadAll();
 	});
+
+	// The banner's arrow, under the ":" in the teams' row (UV, 18 Nov): it
+	// presses the details' own heading, so the site's fold (tdc-controls.js)
+	// opens and closes them as before; that heading stays, with no height.
+	els.moreBtn.addEventListener('click', () => els.jumboMore.querySelector(':scope > summary').click());
+	els.jumboMore.addEventListener('toggle', () => els.moreBtn.setAttribute('aria-expanded', String(els.jumboMore.open)));
 
 	// The arrows (UV, 18 Nov): up swaps a player with the one above, down with
 	// the one below, across the line between positions and reserves too.

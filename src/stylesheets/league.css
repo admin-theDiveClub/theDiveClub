@@ -1451,6 +1451,55 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .jumbo .cj-more > summary > .group-dots { right: auto; left: 50%; transform: translate(-50%, -50%); }
 .jumbo .cj-more > :not(summary) { margin-top: var(--space-4); }
 .jumbo .cj-more > :not(summary):last-child { margin-bottom: 0; }
+/* The scorecard's arrow is in the teams' row, directly under the ":" (UV,
+ * 18 Nov): a button (league-card.js) that presses the details' heading. The
+ * heading stays for the fold to measure from, with no height, no arrow and no
+ * tap of its own; the fold's dots still show at its middle, just under the
+ * arrow. Folded, the details take no room, the banner's row gap taken back
+ * (the opened contents' own margin gives it again). */
+.card-jumbo > .cj-more > summary {
+	height: 0;
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	pointer-events: none;
+}
+.card-jumbo > .cj-more > summary::after { content: none; }
+/* Taken back on the teams' row, not on the details: an empty grid row keeps
+ * the gap above it whatever its own margin. */
+.card-jumbo > .cj-head:has(+ .cj-more) { margin-bottom: calc(-1 * var(--space-4)); }
+/* Less room under the teams (UV, 18 Nov): the content a --space-2 from the
+ * table's bottom cushion on every screen, where the top keeps its own gap
+ * (banner-table.css: --banner-pad less --space-2, 16px on a phone, 32px wider). */
+.banner-wrap > .jumbo.card-jumbo { padding-bottom: calc(var(--space-2) + var(--banner-in-z, var(--space-2))); }
+@media (max-width: 30rem) {
+	.card-jumbo > .cj-head:has(+ .cj-more) { margin-bottom: calc(-1 * var(--space-3)); }
+}
+.tdc-card button.cj-more-btn {
+	display: grid;
+	place-items: center;
+	width: 2.75rem;
+	min-height: 0;
+	height: 1.75rem;
+	margin: calc(-1 * var(--space-1)) 0 0;
+	padding: 0;
+	border-radius: var(--radius-pill);
+	background: none;
+	box-shadow: none;
+}
+.tdc-card button.cj-more-btn:focus-visible { outline: 2px solid var(--nm-light-colour); outline-offset: 2px; }
+.cj-more-btn::after {
+	content: "";
+	width: 1.25rem;
+	height: 1.25rem;
+	background: var(--nm-arrow) center / contain no-repeat;
+	transition: transform 0.35s ease;
+}
+.card-jumbo:has(> .cj-more[open]:not(.is-closing)) .cj-more-btn::after { transform: rotate(180deg); }
+[data-motion="reduce"] .cj-more-btn::after { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+	:root:not([data-motion="full"]) .cj-more-btn::after { transition: none; }
+}
 .cj-head {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -1467,34 +1516,23 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .card-jumbo .cj-pic { width: 4.5rem; height: 4.5rem; }
 .cj-name {
 	font-family: var(--font-display);
-	font-size: 1.15rem;   /* every banner's main heading at the Standings line's size (UV, 17 Nov; was 1.35rem) */
+	font-size: 1rem;   /* smaller, for a more compact banner (UV, 18 Nov; 1.15rem from 17 Nov, 1.35rem before) */
 	line-height: 1.32;   /* the headings' line (UV, 16 Nov) */
 	/* Wrapping between words, never inside one; a word too long for the room runs sideways (UV, 16 Nov): TDC.runWords, .tdc-wrap in design.css */
 }
 .cj-mid { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); }
 .cj-mid .jumbo-status { white-space: nowrap; }
 .cj-v { font-family: var(--font-display); line-height: 1.32; font-size: 1.5rem; color: var(--text-muted); }
-/* Under the ":" only while the banner is folded: the venue and the
- * discipline as badges (UV, 16 Nov). Open, the details below say both. */
-.cj-tags { display: none; }
-.card-jumbo:has(> .cj-more:not([open])) .cj-tags:not(:empty) {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: var(--space-1);
-}
-/* Narrower than 9rem, so the middle leaves the names more room (UV, 16 Nov);
- * a long venue wraps between its words. */
-.cj-tags .badge { max-width: 6.5rem; white-space: normal; text-align: center; overflow-wrap: anywhere; }
-.cj-tags .badge.cj-venue { color: var(--color-warning); }   /* a venue's words yellow (UV, 16 Nov) */
+/* The folded banner's venue and discipline badges under the ":" (16 Nov)
+ * are gone (UV, 18 Nov): the heading above the banner says the venue, the
+ * details below the discipline. The heading's room before the banner: */
+.tdc-card .card-line { margin-bottom: var(--space-3); }
+.tdc-card .card-line:empty { display: none; }
 .tdc-card .cj-detail { margin: 0; color: var(--text-muted); text-align: center; }
 .card-jumbo .jumbo-facts { text-align: left; }
 /* The names run to the banner's padding (UV, 16 Nov: they fill more of its
- * width); only the pictures keep clear of the share icon in the corner, moved
- * in to where the old 1.75rem padding on the head put them (half of it), both
- * alike so the banner stays balanced. */
-.card-jumbo:has(> .lj-corner) .cj-team:first-child .cj-pic { translate: 0.875rem 0; }
-.card-jumbo:has(> .lj-corner) .cj-team:last-child .cj-pic { translate: -0.875rem 0; }
+ * width). Each picture centred over its name (UV, 18 Nov; until then moved
+ * 0.875rem in, clear of the share icon in the corner). */
 
 /* The result: the score big in the middle, as a fixture's (UV, 11 Nov):
  * yellow and lit while it is played; once signed the winner's green and lit,
@@ -1519,7 +1557,6 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 
 @media (max-width: 30rem) {
 	.card-jumbo .cj-pic { width: 3.25rem; height: 3.25rem; }
-	.cj-name { font-size: 1.1rem; }   /* already under the banners' heading size: kept, never enlarged (UV, 17 Nov) */
 	.cj-score { font-size: 2.4rem; }
 }
 

@@ -53,7 +53,14 @@ extraScripts:
 		The page's heading is the banner's two team names; the h1 says it for
 		a screen reader without a second, visible title above them.
 	{% endcomment %}
-	<h1 class="card-sr" id="m-title">Team Card</h1>
+	{% comment %}
+		Above the banner, the Standings and Fixtures tabs' heading (UV, 18 Nov),
+		their h1 and its look: the league's shield, the league (in the display
+		face) · the season · the venue on one line (TDC.leagueLine; styles
+		h1.sd-line, league.css). The two teams follow for a screen reader.
+	{% endcomment %}
+	<h1 class="sd-line card-line" id="card-line"></h1>
+	<p class="card-sr" id="m-title">Team Card</p>
 
 	<section class="jumbo card-jumbo" id="jumbo" data-banner-table>
 		{% comment %} Share in the banner's corner, an icon alone, as the Season tab's (UV, 11 Nov). {% endcomment %}
@@ -69,8 +76,9 @@ extraScripts:
 				<span class="badge jumbo-status" id="jumbo-status" hidden></span>
 				{% comment %} The score either side of the ":" once the match is complete (UV, 16 Nov). {% endcomment %}
 				<span class="cj-v" id="jumbo-v">:</span>
-				{% comment %} Under the ":" while the banner is folded: the venue and the discipline only (UV, 16 Nov). {% endcomment %}
-				<span class="cj-tags" id="jumbo-tags"></span>
+				{% comment %} The details' arrow, here under the ":" in the teams' row (UV, 18 Nov); it works the fold below (league-card.js). {% endcomment %}
+				<button type="button" class="cj-more-btn" id="jumbo-more-btn" aria-controls="jumbo-more" aria-expanded="false" aria-label="The night's details" data-no-dots></button>
+				{% comment %} No venue or discipline badges under the ":" when folded (UV, 18 Nov; added 16 Nov): the heading above and the details below say both. {% endcomment %}
 			</div>
 			<div class="cj-team">
 				<span class="team-pic cj-pic" id="away-pic"></span>
@@ -83,8 +91,9 @@ extraScripts:
 			default; until then open before the lineups were in), so the
 			lineups are the first thing under it. The site's folding group.
 		{% endcomment %}
+		{% comment %} Its heading has no height or arrow since 18 Nov: the arrow is the button under the ":" above. {% endcomment %}
 		<details class="set-group cj-more" id="jumbo-more">
-			<summary class="cj-more-arrow" aria-label="The night's details"></summary>
+			<summary class="cj-more-arrow" tabindex="-1" aria-hidden="true"></summary>
 			<p class="cj-detail" id="state-detail"></p>
 			<dl class="jumbo-facts" id="jumbo-facts"></dl>
 		</details>
