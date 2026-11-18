@@ -25,10 +25,11 @@ extraScripts:
 ---
 {% comment %}
 	A league season's one page (UV, 29 Oct), and since 10 Nov the one a director
-	shares: the join page was folded into its Season tab. Season, Fixtures, Standings
+	shares: the join page was folded into its Season tab. Standings, Fixtures, Season
 	and Rules as tabs that switch in place (league-nav.js), with Run it, Schedule and
 	Settings in a second pill for whoever runs it, at
-	/leagues/season/?s=<league season id>&tab=<fixtures|standings|rules|manage|schedule|settings>.
+	/leagues/season/?s=<league season id>&tab=<fixtures|season|rules|manage|schedule|settings>.
+	No &tab= opens Standings (UV, 18 Nov); &team= with no &tab= opens Season.
 	Each tab's panel is its own include in _includes/league/, written as the
 	page it used to be, and each panel's script starts the first time its tab
 	is opened. The ids the old pages shared are prefixed in the panels that

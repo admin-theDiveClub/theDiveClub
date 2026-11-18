@@ -48,6 +48,7 @@ TDCLeagueNav.panel('standings', () => {
 
 	// ─── State ───
 	let info = null;
+	let leaguePicture;           // tbl_leagues.picture_path, read once (undefined until then)
 	let data = null;             // tdc_league_standings
 	let columns = [];            // the season's columns, by position
 	const openTeams = new Set(); // teams opened, kept through every re-read
@@ -107,9 +108,13 @@ TDCLeagueNav.panel('standings', () => {
 	// short separators between them, running sideways and back when too long
 	// for the width (TDC.runName's run, holding these parts in place of a
 	// name). The league in the display face, the season cream, the venue its
-	// green link, as the Fixtures tab's heading.
+	// green link, as the Fixtures tab's heading. The league's picture before
+	// its name (UV, 18 Nov): its shield, or the empty one (TDC.leaguePic).
 	function drawLine(league, season, venues) {
-		const parts = [node('span', 'sd-l-league', league)];
+		const pic = node('span', 'sd-l-pic');
+		pic.setAttribute('aria-hidden', 'true');
+		pic.append(TDC.leaguePic(leaguePicture));
+		const parts = [pic, node('span', 'sd-l-league', league)];
 		const sep = () => { const s = node('span', 'sd-l-sep'); s.setAttribute('aria-hidden', 'true'); return s; };
 		if (season) parts.push(sep(), node('span', 'sd-l-season', season));
 		if ((venues || []).length) {
@@ -439,7 +444,7 @@ TDCLeagueNav.panel('standings', () => {
 
 	async function load(first) {
 		if (signedOut) return loadPublic(first);
-		const [inf, st, cols] = await Promise.all([
+		const [inf, st, cols, pic] = await Promise.all([
 			supabaseClient.rpc('tdc_league_season_info', { p_league_season_id: seasonId }),
 			// p_live only when on: off is the call 20261029162031 made, so the
 			// tab does not depend on 20261029194712 unless Live is used (UV hit
@@ -449,11 +454,16 @@ TDCLeagueNav.panel('standings', () => {
 				: { p_league_season_id: seasonId }),
 			supabaseClient.from('tbl_league_standing_columns')
 				.select('id, scope, position, name, equation, decimals, rank_priority, higher_first')
-				.eq('league_season_id', seasonId).order('position')
+				.eq('league_season_id', seasonId).order('position'),
+			// The league's picture for row 1, as the Season tab reads it; once.
+			leaguePicture === undefined
+				? supabaseClient.from('tbl_league_seasons').select('tbl_leagues(picture_path)').eq('id', seasonId).maybeSingle()
+				: null
 		]);
-		for (const r of [inf, st, cols]) {
-			if (r.error) { TDC.showSupabaseError(AREA, r.error, els.status); return false; }
+		for (const r of [inf, st, cols, pic]) {
+			if (r && r.error) { TDC.showSupabaseError(AREA, r.error, els.status); return false; }
 		}
+		if (pic) leaguePicture = (pic.data && pic.data.tbl_leagues && pic.data.tbl_leagues.picture_path) || null;
 		info = (inf.data || [])[0];
 		if (!info) {
 			TDC.error(AREA, 'no league season with that id. Check the link.', { seasonId }, els.status);
@@ -487,6 +497,7 @@ TDCLeagueNav.panel('standings', () => {
 		if (season) {
 			if (season.error) { TDC.showSupabaseError(AREA, season.error, els.status); return false; }
 			publicSeasonName = (season.data && season.data.name) || '';
+			leaguePicture = (season.data && season.data.picture_path) || null;
 		}
 		showsPlayers = got.shows_players;
 		data = Object.assign({}, got, { players: got.players.map((p) => Object.assign({ player_id: 'row' + p.key }, p)) });

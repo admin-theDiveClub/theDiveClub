@@ -43,9 +43,9 @@ const TDCLeagueNav = (() => {
 
 	// [key, label, only for the people running it, the panel if not its own]
 	const TABS = [
-		['season', 'Season', false],
-		['fixtures', 'Fixtures', false],
 		['standings', 'Standings', false],
+		['fixtures', 'Fixtures', false],
+		['season', 'Season', false],
 		['rules', 'Rules', false],
 		['manage', 'Run it', true],
 		['schedule', 'Schedule', true, 'fixtures'],
@@ -53,7 +53,11 @@ const TDCLeagueNav = (() => {
 	];
 	const tabOf = (key) => TABS.find(([k]) => k === key);
 	const panelOf = (key) => (tabOf(key) && tabOf(key)[3]) || key;
-	const tabUrl = (s, key) => '/leagues/season/?s=' + s + (key === 'season' ? '' : '&tab=' + key);
+	// The tab the page opens on with no &tab= in the address (UV, 18 Nov:
+	// Standings, first in the pill; until then Season). An address with
+	// &team= is a team's link on the Season tab, so it opens Season.
+	const DEFAULT_TAB = 'standings';
+	const tabUrl = (s, key) => '/leagues/season/?s=' + s + (key === DEFAULT_TAB ? '' : '&tab=' + key);
 	const newSeasonUrl = (info) => '/leagues/new/?l=' + encodeURIComponent(info.league_id);
 
 	const starts = new Map();    // key -> the panel's start(), registered as its script loads
@@ -68,8 +72,9 @@ const TDCLeagueNav = (() => {
 	// Whether the tab showing is one of the second pill's.
 	const managing = () => !!(tabOf(current) && tabOf(current)[2]);
 	const tabInAddress = () => {
-		const t = new URLSearchParams(location.search).get('tab');
-		return known(t) ? t : 'season';
+		const q = new URLSearchParams(location.search);
+		const t = q.get('tab');
+		return known(t) ? t : (q.has('team') ? 'season' : DEFAULT_TAB);
 	};
 
 	function panel(key, start) {
@@ -98,7 +103,8 @@ const TDCLeagueNav = (() => {
 		if (!target) { TDC.error(AREA, `this page has no "${key}" tab.`); return; }
 		if (push && key !== current) {
 			const u = new URL(location.href);
-			if (key === 'season') u.searchParams.delete('tab'); else u.searchParams.set('tab', key);
+			if (key === DEFAULT_TAB) u.searchParams.delete('tab'); else u.searchParams.set('tab', key);
+			if (key !== 'season') u.searchParams.delete('team');
 			history.pushState({ tab: key }, '', u);
 		}
 		const was = current;

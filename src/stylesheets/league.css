@@ -2286,6 +2286,14 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	letter-spacing: normal;
 	color: var(--text-primary);
 }
+/* The league's shield before its name (UV, 18 Nov), as tall as the line. */
+.sd-line .sd-l-pic {
+	display: inline-block;
+	width: 1.32em;
+	height: 1.5em;
+	margin-right: var(--space-2);
+	vertical-align: middle;
+}
 .sd-line .sd-l-sep {
 	display: inline-block;
 	width: 1px;
