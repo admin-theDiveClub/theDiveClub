@@ -42,11 +42,12 @@ extraScripts:
 	fixtures are out).
 {% endcomment %}
 
+<!-- Your live match in this league (UV, 18 Nov; live-match.js): above the page's card, on every tab -->
+<div class="league-live live-cards" id="league-live" role="region" aria-label="Your match" hidden></div>
+
 <div class="tdc-card wide">
 	<nav class="league-nav" id="league-nav" data-page="season" hidden></nav>
 	<nav class="league-nav league-nav-admin" id="league-nav-admin" hidden></nav>
-	<!-- Your live match in this league (UV, 18 Nov; live-match.js): under the pill, on every tab -->
-	<div class="league-live live-cards" id="league-live" role="region" aria-label="Your match" hidden></div>
 
 	<div class="league-panel" data-tab="season" data-title="League Season" hidden>
 {% include "league/season.html" %}

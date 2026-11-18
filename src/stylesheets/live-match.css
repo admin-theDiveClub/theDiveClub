@@ -1,7 +1,7 @@
 /* Your live match card (UV, 18 Nov; scripts/live-match.js): the home page's Get the
    app card's glass with a yellow glow inside, the glow of an active scorecard session
    (league.css .cs-session.is-active). On the home page (index.html places its box) and
-   under the pill on every tab of a league season's page (#league-live). */
+   above the page's card on every tab of a league season's page (#league-live). */
 
 .live-card {
 	box-sizing: border-box;
@@ -80,5 +80,24 @@
 	gap: var(--space-2);
 }
 
-/* The league page: under the pill, before the tab's content */
-.league-live { margin: var(--space-3) 0; }
+/* The league page: above the page's card, as wide as it (UV, 18 Nov). The widths
+   follow .tdc-card.wide's (forms.css, design.css); change them together. The card's
+   own top margin is the gap between them. */
+.league-live {
+	box-sizing: border-box;
+	width: calc(100% - 2 * var(--space-4));
+	max-width: 860px;
+	margin: var(--space-4) auto 0;
+}
+/* .live-cards' flex beats the hidden attribute; with no live match its margin would
+   push the page's card down */
+.league-live[hidden] { display: none; }
+@media (max-width: 991px) and (orientation: landscape) {
+	.league-live {
+		max-width: none;
+		width: calc(100% - 2 * max(var(--space-4), env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)));
+	}
+}
+@media (min-width: 992px) {
+	.league-live { max-width: none; width: calc(100% * 10 / 12); }
+}

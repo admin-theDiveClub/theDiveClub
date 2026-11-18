@@ -8,7 +8,7 @@
 // Which matches is decided by the database alone: public.tdc_my_live_matches
 // (migration 20261118073452), which the home page reads through tdc_home_cards.
 // Drawn on the home page (home-cards.js, in the Get the app card's place) and on every
-// tab of a league season's page (#league-live, under the pill), that league's nights
+// tab of a league season's page (#league-live, above the page's card), that league's nights
 // only (UV). Styles in stylesheets/live-match.css.
 const TDCLiveMatch = (() => {
 	'use strict';
@@ -87,7 +87,7 @@ const TDCLiveMatch = (() => {
 		return true;
 	}
 
-	// A league season's page: #league-live under the pill, that league's nights only,
+	// A league season's page: #league-live above the page's card, that league's nights only,
 	// read once on opening, signed in only
 	async function league(box) {
 		const seasonId = new URLSearchParams(location.search).get('s');
