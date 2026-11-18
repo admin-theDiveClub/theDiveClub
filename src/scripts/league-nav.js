@@ -229,9 +229,9 @@ const TDCLeagueNav = (() => {
 	// ─── The bottom bar (UV, 18 Nov) ───
 	// On a phone the first pill's tabs (Standings, Fixtures, Season, Rules)
 	// are a bar fixed to the foot of the screen, an icon over each word, so a
-	// thumb reaches them; the stylesheet hides the top pill there, and the
-	// bar above 48rem. The second pill (Run it, Schedule, Settings) stays at
-	// the top. The bar is the body's own child, not the card's: a fixed box
+	// thumb reaches them; since UV's later word the same day, at every screen
+	// size (league.css hides the top pill; wider than a phone the bar keeps a
+	// phone's width, centred). The bar is the body's own child, not the card's: a fixed box
 	// inside the card could be clipped by it. It slides away and back with
 	// the site's bar (nav.js; league.css follows .site-nav.is-hidden). Its
 	// items are the pill's: the same tabs, links on the card, the same thumb
@@ -239,8 +239,7 @@ const TDCLeagueNav = (() => {
 	//
 	// For whoever runs the league (UV, 18 Nov) a fifth button, Manage (the
 	// sliders), opens a menu above it with the second pill's pages (Run it,
-	// Schedule, Settings, New season), and the second pill is hidden on a
-	// phone too. Manage is marked while one of those pages is open; the menu
+	// Schedule, Settings, New season), and the second pill is hidden. Manage is marked while one of those pages is open; the menu
 	// shuts on a choice, a tap elsewhere, Escape or the bar sliding away.
 	function icon(face, name, label) {
 		// Shown already drawn: a page load draws nothing in (UV, 16 Nov).

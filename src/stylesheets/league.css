@@ -2987,212 +2987,215 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .fx-player #all-view { overflow: visible; }
 
 /* ── The league tabs' bottom bar (UV, 18 Nov; league-nav.js) ─────────
- * On a phone (below 48rem) the first pill's tabs, Standings, Fixtures,
- * Season and Rules, sit in a bar fixed to the foot of the screen, an icon
- * over each word, within a thumb's reach; the top pill is hidden there and
- * the second pill (Run it, Schedule, Settings) stays at the top. Wider, the
- * bar is hidden and the top pill is as before. The bar itself is see-through
+ * At every screen size (UV, 18 Nov; first built for a phone only, below
+ * 48rem) the first pill's tabs, Standings, Fixtures, Season and Rules, sit
+ * in a bar fixed to the foot of the screen, an icon over each word, within
+ * a thumb's reach; the top pill is hidden, and for whoever runs the league
+ * the second pill's pages are in Manage's menu. Wider than a phone the bar
+ * keeps a phone's width (30rem), centred (UV). The bar itself is see-through
  * with no shadow; only its pill shows, raised, with the top pill's sliding
  * thumb (UV, 18 Nov; first built sunken on a solid bar with the footer's
  * shadow). It slides away and back
  * with the site's bar. The page keeps clear of it at its foot. */
 .league-tabbar { display: none; }
-@media (max-width: 47.99rem) {
-	body.has-league-tabbar #league-nav,
-	body.has-league-tabmenu #league-nav-admin { display: none; }
-	/* Manage's menu (UV, 18 Nov): the second pill's pages in a raised, solid
-	   panel rising from the bar's right end, a row each; the page open is
-	   green and lit. It fades and lifts in; the bar itself takes no taps. */
-	.league-tabmenu {
-		position: absolute;
-		right: var(--space-3);
-		bottom: calc(100% - var(--space-1));
-		min-width: 12rem;
-		padding: var(--space-2);
-		border-radius: var(--nm-field-radius);
-		background: var(--bg-base);
-		box-shadow: var(--nm-raised);
-		opacity: 0;
-		visibility: hidden;
-		transform: translateY(var(--space-2));
-		transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0.2s;
-		pointer-events: auto;
-	}
-	.league-tabmenu.is-open { opacity: 1; visibility: visible; transform: none; transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s; }
-	.league-tabmenu-item,
-	.league-tabbar button.league-tabmenu-item {
-		display: flex;
-		align-items: center;
-		width: 100%;
-		min-height: 2.75rem;
-		margin: 0;
-		padding: 0 var(--nm-pad);
-		border: 0;
-		border-radius: var(--radius-pill);
-		background: none;
-		color: var(--text-primary);
-		font-family: inherit;
-		font-size: 1rem;
-		font-weight: 600;
-		text-align: left;
-		text-decoration: none;
-		cursor: pointer;
-		-webkit-tap-highlight-color: transparent;
-	}
-	/* The match pill (UV, 18 Nov): on the bar's top edge, centred, apart from
-	   the tabs, as a tab on a folder: round on top, flat where it meets the
-	   bar, solid, raised, glowing yellow inside as a session under way does,
-	   its icon yellow. Its menu (two or more matches) rises centred above it. */
-	.league-livepill {
-		position: absolute;
-		/* A card behind the bar's pill (UV, 18 Nov): as wide as it, its foot
-		   level with the pill's foot, a line of words showing above it. The
-		   layers, back to front: the bar's shadow (.league-tabbar::before),
-		   this card, the bar's pill; so the bar's shadow never falls on it
-		   (UV) and only the part above the bar can be tapped. */
-		bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
-		right: var(--space-3);
-		left: var(--space-3);
-		z-index: 1;
-		display: flex;
-		align-items: flex-start;
-		justify-content: center;
-		height: calc(var(--livepill-height) + var(--tabbar-height));
-		margin: 0;
-		padding: 0 var(--space-4) var(--tabbar-height);
-		box-sizing: border-box;
-		border-radius: var(--nm-field-radius);
-		/* Glass, as the yellow live card above the page (UV, 18 Nov; live-match.css .live-card). */
-		border: 1px solid var(--border-color);
-		background: color-mix(in srgb, var(--bg-base) 35%, transparent);
-		-webkit-backdrop-filter: blur(12px) saturate(140%);
-		backdrop-filter: blur(12px) saturate(140%);
-		box-shadow: var(--nm-raised), inset 0 1px 0 rgba(255, 255, 255, 0.08),
-			inset 0 0 14px color-mix(in srgb, var(--color-warning) 35%, transparent);
-		text-decoration: none;
-		cursor: pointer;
-		pointer-events: auto;
-		-webkit-tap-highlight-color: transparent;
-	}
-	/* The other side's name, in words alone, yellow and lit as the icon was (UV, 18 Nov). */
-	.league-livepill-text {
-		min-width: 0;
-		line-height: var(--livepill-height);
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		color: var(--color-warning);
-		font-size: 0.85rem;
-		font-weight: 600;
-		text-shadow: 0 0 10px color-mix(in srgb, var(--color-warning) 60%, transparent);
-	}
-	.league-livepill-state { font-weight: 400; }   /* "Playing:" lighter than the name */
-	/* Manage yellow (UV, 18 Nov; was grey); green like the others while one of its pages is open. */
-	.league-tabbar .league-tab-admin { color: var(--color-warning); }
-	.league-tabbar .league-tab-admin .league-tab-icon { --ring-accent: var(--color-warning); }
-	/* A green line inside the bar's pill, as a banner's (UV, 18 Nov), round the
-	   four tabs only: with Manage, it stops short of its fifth. The pill's
-	   padding grows to leave the line room outside the thumb. */
-	.league-tabbar .league-nav-track::after {
-		content: "";
-		position: absolute;
-		inset: 3px;
-		z-index: 2;
-		border: 2px solid var(--color-primary);
-		border-radius: calc(var(--nm-field-radius) - 3px);
-		box-shadow: var(--nm-raised-small), var(--nm-sunken-small);
-		pointer-events: none;
-	}
-	.league-tabbar .league-nav-track.has-admin::after { right: calc(var(--space-2) + (100% - 2 * var(--space-2)) / 5); }
-	.league-tabmenu.league-livemenu {
-		right: auto;
-		left: 50%;
-		translate: -50% 0;
-		bottom: calc(100% - var(--space-2) + var(--livepill-height) + var(--space-1));
-	}
-	.league-livemenu-item,
-	.league-tabmenu-item.league-livemenu-item { flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; padding-block: var(--space-1); }
-	.league-livemenu-sub { font-size: 0.85rem; font-weight: 400; color: var(--color-warning); }
-	.league-tabmenu-item + .league-tabmenu-item { border-top: 1px solid var(--border-color); border-radius: 0; }
-	.league-tabmenu-item[aria-current] { color: var(--color-primary); text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 60%, transparent); }
-	body.has-league-tabbar { padding-bottom: var(--tabbar-total); }
-	.league-tabbar:not([hidden]) {
-		display: block;
-		position: fixed;
-		right: 0;
-		bottom: 0;
-		left: 0;
-		z-index: 100;
-		padding: var(--space-2) var(--space-3) calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
-		pointer-events: none;   /* see-through (UV, 18 Nov): only the pill takes a tap */
-		transition: transform var(--nav-slide) ease;
-	}
-	/* The bar's pill's raised shadow, on a layer of its own at the pill's
-	   place, so the match card can lie between it and the pill (UV, 18 Nov). */
-	.league-tabbar::before {
-		content: "";
-		position: absolute;
-		top: var(--space-2);
-		right: var(--space-3);
-		bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
-		left: var(--space-3);
-		z-index: 0;
-		border-radius: var(--nm-field-radius);
-		box-shadow: var(--nm-raised);
-		pointer-events: none;
-	}
-	/* With the glass match card over it, that shadow stops at the pill's top
-	   edge, or it would show through the card's strip (UV, 18 Nov). */
-	.league-tabbar:has(.league-livepill)::before { clip-path: inset(0 -3rem -3rem -3rem); }
-	/* Slid away with the site's bar (nav.js), past its own shadow. */
-	body:has(.site-nav.is-hidden) .league-tabbar { transform: translateY(calc(100% + var(--space-7))); }
-	.league-tabbar .league-nav-track {
-		display: flex;
-		gap: 0;
-		height: var(--tabbar-height);
-		padding: var(--space-2);   /* room for the green line outside the thumb (UV, 18 Nov) */
-		overflow: visible;
-		border-radius: var(--nm-field-radius);
-		background: var(--bg-base);     /* solid, so the page does not show through (UV, 18 Nov) */
-		/* Raised on its own, no bar behind it (UV, 18 Nov); the shadow is drawn
-		   by .league-tabbar::before, behind the match card. */
-		z-index: 2;
-		pointer-events: auto;
-	}
-	.league-tabbar .league-nav-item.league-tab {
-		position: relative;
-		z-index: 1;
-		display: flex;
-		flex: 1 1 0;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: 2px;
-		min-width: 0;
-		margin: 0;
-		padding: 0;
-		border: 0;
-		border-radius: var(--radius-pill);
-		background: none;
-		color: var(--text-primary);
-		font-family: inherit;
-		font-size: 0.75rem;
-		font-weight: 600;
-		line-height: 1.1;
-		cursor: pointer;
-		-webkit-tap-highlight-color: transparent;
-	}
-	.league-tab-icon { display: block; width: 1.9rem; height: 1.9rem; --ring-accent: var(--text-primary); }
-	.league-tab-word { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-	/* The tab showing: its icon and word in the site's green, lit, over the thumb. */
-	.league-tabbar .league-tab[aria-current] { color: var(--color-primary); text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 60%, transparent); }
-	.league-tabbar .league-tab[aria-current] .league-tab-icon { --ring-accent: var(--color-primary); }
+body.has-league-tabbar #league-nav,
+body.has-league-tabmenu #league-nav-admin { display: none; }
+/* Manage's menu (UV, 18 Nov): the second pill's pages in a raised, solid
+   panel rising from the bar's right end, a row each; the page open is
+   green and lit. It fades and lifts in; the bar itself takes no taps. */
+.league-tabmenu {
+	position: absolute;
+	right: var(--space-3);
+	bottom: calc(100% - var(--space-1));
+	min-width: 12rem;
+	padding: var(--space-2);
+	border-radius: var(--nm-field-radius);
+	background: var(--bg-base);
+	box-shadow: var(--nm-raised);
+	opacity: 0;
+	visibility: hidden;
+	transform: translateY(var(--space-2));
+	transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0.2s;
+	pointer-events: auto;
 }
+.league-tabmenu.is-open { opacity: 1; visibility: visible; transform: none; transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s; }
+.league-tabmenu-item,
+.league-tabbar button.league-tabmenu-item {
+	display: flex;
+	align-items: center;
+	width: 100%;
+	min-height: 2.75rem;
+	margin: 0;
+	padding: 0 var(--nm-pad);
+	border: 0;
+	border-radius: var(--radius-pill);
+	background: none;
+	color: var(--text-primary);
+	font-family: inherit;
+	font-size: 1rem;
+	font-weight: 600;
+	text-align: left;
+	text-decoration: none;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+}
+/* The match pill (UV, 18 Nov): on the bar's top edge, centred, apart from
+   the tabs, as a tab on a folder: round on top, flat where it meets the
+   bar, solid, raised, glowing yellow inside as a session under way does,
+   its icon yellow. Its menu (two or more matches) rises centred above it. */
+.league-livepill {
+	position: absolute;
+	/* A card behind the bar's pill (UV, 18 Nov): as wide as it, its foot
+	   level with the pill's foot, a line of words showing above it. The
+	   layers, back to front: the bar's shadow (.league-tabbar::before),
+	   this card, the bar's pill; so the bar's shadow never falls on it
+	   (UV) and only the part above the bar can be tapped. */
+	bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
+	right: var(--space-3);
+	left: var(--space-3);
+	z-index: 1;
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	height: calc(var(--livepill-height) + var(--tabbar-height));
+	margin: 0;
+	padding: 0 var(--space-4) var(--tabbar-height);
+	box-sizing: border-box;
+	border-radius: var(--nm-field-radius);
+	/* Glass, as the yellow live card above the page (UV, 18 Nov; live-match.css .live-card). */
+	border: 1px solid var(--border-color);
+	background: color-mix(in srgb, var(--bg-base) 35%, transparent);
+	-webkit-backdrop-filter: blur(12px) saturate(140%);
+	backdrop-filter: blur(12px) saturate(140%);
+	box-shadow: var(--nm-raised), inset 0 1px 0 rgba(255, 255, 255, 0.08),
+		inset 0 0 14px color-mix(in srgb, var(--color-warning) 35%, transparent);
+	text-decoration: none;
+	cursor: pointer;
+	pointer-events: auto;
+	-webkit-tap-highlight-color: transparent;
+}
+/* The other side's name, in words alone, yellow and lit as the icon was (UV, 18 Nov). */
+.league-livepill-text {
+	min-width: 0;
+	line-height: var(--livepill-height);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--color-warning);
+	font-size: 0.85rem;
+	font-weight: 600;
+	text-shadow: 0 0 10px color-mix(in srgb, var(--color-warning) 60%, transparent);
+}
+.league-livepill-state { font-weight: 400; }   /* "Playing:" lighter than the name */
+/* Manage yellow (UV, 18 Nov; was grey); green like the others while one of its pages is open. */
+.league-tabbar .league-tab-admin { color: var(--color-warning); }
+.league-tabbar .league-tab-admin .league-tab-icon { --ring-accent: var(--color-warning); }
+/* A green line inside the bar's pill, as a banner's (UV, 18 Nov), round the
+   four tabs only: with Manage, it stops short of its fifth. The pill's
+   padding grows to leave the line room outside the thumb. */
+.league-tabbar .league-nav-track::after {
+	content: "";
+	position: absolute;
+	inset: 3px;
+	z-index: 2;
+	border: 2px solid var(--color-primary);
+	border-radius: calc(var(--nm-field-radius) - 3px);
+	box-shadow: var(--nm-raised-small), var(--nm-sunken-small);
+	pointer-events: none;
+}
+.league-tabbar .league-nav-track.has-admin::after { right: calc(var(--space-2) + (100% - 2 * var(--space-2)) / 5); }
+.league-tabmenu.league-livemenu {
+	right: auto;
+	left: 50%;
+	translate: -50% 0;
+	bottom: calc(100% - var(--space-2) + var(--livepill-height) + var(--space-1));
+}
+.league-livemenu-item,
+.league-tabmenu-item.league-livemenu-item { flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; padding-block: var(--space-1); }
+.league-livemenu-sub { font-size: 0.85rem; font-weight: 400; color: var(--color-warning); }
+.league-tabmenu-item + .league-tabmenu-item { border-top: 1px solid var(--border-color); border-radius: 0; }
+.league-tabmenu-item[aria-current] { color: var(--color-primary); text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 60%, transparent); }
+body.has-league-tabbar { padding-bottom: var(--tabbar-total); }
+.league-tabbar:not([hidden]) {
+	display: block;
+	position: fixed;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	max-width: 30rem;        /* a phone's width, centred, on a wider screen (UV, 18 Nov) */
+	margin-inline: auto;
+	z-index: 100;
+	padding: var(--space-2) var(--space-3) calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
+	pointer-events: none;   /* see-through (UV, 18 Nov): only the pill takes a tap */
+	transition: transform var(--nav-slide) ease;
+}
+/* The bar's pill's raised shadow, on a layer of its own at the pill's
+   place, so the match card can lie between it and the pill (UV, 18 Nov). */
+.league-tabbar::before {
+	content: "";
+	position: absolute;
+	top: var(--space-2);
+	right: var(--space-3);
+	bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
+	left: var(--space-3);
+	z-index: 0;
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-raised);
+	pointer-events: none;
+}
+/* With the glass match card over it, that shadow stops at the pill's top
+   edge, or it would show through the card's strip (UV, 18 Nov). */
+.league-tabbar:has(.league-livepill)::before { clip-path: inset(0 -3rem -3rem -3rem); }
+/* Slid away with the site's bar (nav.js), past its own shadow. */
+body:has(.site-nav.is-hidden) .league-tabbar { transform: translateY(calc(100% + var(--space-7))); }
+.league-tabbar .league-nav-track {
+	display: flex;
+	gap: 0;
+	height: var(--tabbar-height);
+	padding: var(--space-2);   /* room for the green line outside the thumb (UV, 18 Nov) */
+	overflow: visible;
+	border-radius: var(--nm-field-radius);
+	background: var(--bg-base);     /* solid, so the page does not show through (UV, 18 Nov) */
+	/* Raised on its own, no bar behind it (UV, 18 Nov); the shadow is drawn
+	   by .league-tabbar::before, behind the match card. */
+	z-index: 2;
+	pointer-events: auto;
+}
+.league-tabbar .league-nav-item.league-tab {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	flex: 1 1 0;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: var(--radius-pill);
+	background: none;
+	color: var(--text-primary);
+	font-family: inherit;
+	font-size: 0.75rem;
+	font-weight: 600;
+	line-height: 1.1;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+}
+.league-tab-icon { display: block; width: 1.9rem; height: 1.9rem; --ring-accent: var(--text-primary); }
+.league-tab-word { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The tab showing: its icon and word in the site's green, lit, over the thumb. */
+.league-tabbar .league-tab[aria-current] { color: var(--color-primary); text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 60%, transparent); }
+.league-tabbar .league-tab[aria-current] .league-tab-icon { --ring-accent: var(--color-primary); }
 @media (prefers-reduced-motion: reduce) { .league-tabbar, .league-tabmenu, .league-tabmenu.is-open { transition: none; } }
 /* With the pill gone from the top, the page's card no deeper at its top than
-   at its sides (UV, 18 Nov): the extra was room above the pill. A phone's
-   card has --space-3 at its sides (design.css); from 36rem it is even all
-   round already. */
+   at its sides (UV, 18 Nov): the extra was room above the pill. design.css
+   gives it --space-6 at the top and --space-5 at the sides, and --space-3 at
+   the sides on a phone; the top follows the sides at every size now the bar
+   shows at every size (UV). */
+body.has-league-tabbar .tdc-card { padding-top: var(--space-5); }
 @media (max-width: 36rem) {
 	body.has-league-tabbar .tdc-card { padding-top: var(--space-3); }
 }

@@ -2458,3 +2458,8 @@ These predate the log. They are recorded here because every one of them is a dec
 
 *Decided by UV:* **the Individual · Team pill and the Live / Full names switches are centred** on the Standings tab, no longer pill at the left and switches at the right. They sit together in the middle; when they don't fit one line (a phone), the pill and the switches each take a centred line. Signed out, the pill alone, centred.
 *How:* `.sd-controls` and `.sd-switches` in `league.css`. The Fixtures tab's row 2 (`.fx-controls`) was already centred. Replaces the left/right placement in "The Standings tab as one board" (17 Nov).
+
+## 2026-11-18 — The league tabs' bottom bar at every screen size
+
+*Decided by UV:* **the bottom bar shows at every screen size**, a computer included, replacing "a computer keeps the top pill" in "The league tabs' bottom bar" above; the top pill and the admin pill are hidden everywhere, Manage's menu holding the director's pages. UV chose **a phone's width, centred** on a wider screen (30rem), over the card's width or the full width. **The content card's top margin is corrected at every size** (UV): its top padding equals its sides, the extra having been room above the pill.
+*How:* the `max-width: 47.99rem` media query round the bar's rules in `league.css` removed; `max-width: 30rem` and `margin-inline: auto` on `.league-tabbar`; `body.has-league-tabbar .tdc-card` padding-top `--space-5` (the sides, design.css), `--space-3` below 36rem as before. `docs/ui.md`; `docs/systems/leagues.md`; STATUS §1 4cu.
