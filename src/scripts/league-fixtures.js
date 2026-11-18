@@ -31,13 +31,13 @@ TDCLeagueNav.panel('fixtures', () => {
 
 	const el = (id) => document.getElementById(id);
 	const els = {
-		name: el('fx-name'), meta: el('fx-meta'),
+		name: el('fx-name'),
 		generatePanel: el('generate-panel'), generateState: el('generate-state'),
 		timesPlayed: el('times-played'), timesHint: el('times-hint'),
 		firstRound: el('first-round'), firstHour: el('first-hour'), firstMinute: el('first-minute'),
 		daysBetween: el('days-between'), perRound: el('per-round'), tablesPer: el('tables-per'), tablesAvailable: el('tables-available'),
 		generateBtn: el('generate-btn'), clearBtn: el('clear-btn'),
-		planner: el('planner'), calGroup: el('cal-group'), cal: el('cal'), undated: el('undated'),
+		planner: el('planner'), calViews: el('cal-views'), dates: el('dates'), cal: el('cal'), undated: el('undated'),
 		dayView: el('day-view'), dayActions: el('day-actions'), dayMove: el('day-move'),
 		dayTitle: el('day-title'), dayTable: el('day-table'), dayEmpty: el('day-empty'),
 		addPanel: el('add-panel'), addTo: el('add-to'),
@@ -62,6 +62,7 @@ TDCLeagueNav.panel('fixtures', () => {
 	// order the loaders always ran (UV, 16 Nov: as fast as it can load).
 	const Q = {
 		info: () => supabaseClient.rpc('tdc_league_season_info', { p_league_season_id: seasonId }),
+		leaguePic: () => supabaseClient.from('tbl_league_seasons').select('tbl_leagues(picture_path)').eq('id', seasonId).maybeSingle(),
 		mine: () => supabaseClient.rpc('tdc_my_leagues', { p_limit: 200 }),
 		teams: () => supabaseClient.rpc('tdc_league_season_teams', { p_league_season_id: seasonId }),
 		pics: () => supabaseClient.from('tbl_teams').select('id, picture_path').eq('league_season_id', seasonId),
@@ -73,7 +74,7 @@ TDCLeagueNav.panel('fixtures', () => {
 	// costs no waiting, and is dropped unread otherwise.
 	function startReads(withInfo) {
 		const keys = ['mine', 'teams', 'pics', 'fixtures', 'readiness'];
-		if (withInfo) keys.unshift('info');
+		if (withInfo) keys.unshift('info', 'leaguePic');
 		for (const k of keys) TDC.readEarly('fixtures:' + k, Q[k]);
 	}
 
@@ -220,11 +221,13 @@ TDCLeagueNav.panel('fixtures', () => {
 			return false;
 		}
 
-		// The heading (UV, 17 Nov): the league in the display face, smaller than
-		// a page's title; the season under it, cream, in the body face; the
-		// venue under that, a link as before.
-		els.name.replaceChildren(node('span', 'fx-h-league', info.league_name), node('span', 'fx-h-season', info.name));
-		TDC.venueHeading(els.meta, '', info.venues);
+		// The heading as the Standings tab's (UV, 18 Nov): the league's shield,
+		// the league · the season · the venue on one line (TDC.leagueLine). The
+		// picture is read with the info, as the Standings tab reads it.
+		const pic = await take('leaguePic');
+		if (pic.error) { TDC.showSupabaseError(AREA, pic.error, els.status); return false; }
+		const picture = (pic.data && pic.data.tbl_leagues && pic.data.tbl_leagues.picture_path) || null;
+		TDC.leagueLine(els.name, { picture, league: info.league_name, season: info.name, venues: info.venues });
 		mayRun = !!info.i_run_it;
 		applyMode();
 		return true;
@@ -572,6 +575,8 @@ TDCLeagueNav.panel('fixtures', () => {
 			if (key === nextKey) return 'next';
 			return (games.length && played === games.length) || key < today ? 'done' : 'later';
 		};
+		const states = new Map(keys.map((k) => [k, stateOfNight(k, map.get(k))]));
+		renderDates(keys, states);
 
 		const months = [];
 		for (let m = new Date(first.getFullYear(), first.getMonth(), 1);
@@ -601,7 +606,7 @@ TDCLeagueNav.panel('fixtures', () => {
 				const td = tr.insertCell();
 				const rows = map.get(key);
 				if (rows) {
-					const b = node('button', 'cal-day is-' + stateOfNight(key, rows), String(d));
+					const b = node('button', 'cal-day is-' + states.get(key), String(d));
 					b.type = 'button';
 					b.dataset.day = key;
 					const rounds = [...new Set(rows.map((f) => f.round))].join(' and ');
@@ -627,14 +632,66 @@ TDCLeagueNav.panel('fixtures', () => {
 		centreCal = false;
 	}
 
-	// The calendar folds, closed on opening (UV, 18 Nov). Folded it has no
-	// width to centre in, so the chosen night's month is brought into view
-	// each time it is opened.
-	els.calGroup.addEventListener('toggle', () => {
-		if (!els.calGroup.open) return;
-		const on = els.cal.querySelector('.cal-day.on');
-		const month = on && on.closest('.cal-month');
-		if (month) els.cal.scrollLeft = month.offsetLeft - (els.cal.clientWidth - month.offsetWidth) / 2;
+	// ─── The dates ───
+	// Every night as a short date in a sideways pill (UV, 18 Nov), each in its
+	// state's colour as on the calendar; the chosen one carries the pill's
+	// thumb (tdc-controls.js). A new set of nights builds a new pill, so the
+	// controls see it arrive with its buttons and give it a thumb; a new
+	// choice only moves aria-pressed, so the thumb slides.
+	function renderDates(keys, states) {
+		const sig = keys.map((k) => k + states.get(k)).join(',');
+		let bar = els.dates.firstElementChild;
+		if (!bar || bar.dataset.sig !== sig) {
+			if (!keys.length) { els.dates.replaceChildren(); return; }
+			bar = node('div', 'cp-views fx-dates');
+			bar.setAttribute('role', 'group');
+			bar.setAttribute('aria-label', 'Nights');
+			bar.dataset.sig = sig;
+			bar.append(...keys.map((key) => {
+				const b = node('button', 'cp-view fx-date-pill is-' + states.get(key), shortDate(dateOfKey(key)));
+				b.type = 'button';
+				b.dataset.day = key;
+				b.setAttribute('aria-label', longDate(key));
+				return b;
+			}));
+			els.dates.replaceChildren(bar);
+		}
+		let on = null;
+		for (const b of bar.querySelectorAll('[data-day]')) {
+			const pressed = b.dataset.day === selected.day;
+			b.setAttribute('aria-pressed', pressed ? 'true' : 'false');
+			if (pressed) on = b;
+		}
+		if (centreCal && on) centreIn(bar, on);
+	}
+
+	// Brings a chosen item to the middle of its sideways scroller.
+	function centreIn(scroller, item) {
+		scroller.scrollLeft = item.offsetLeft - (scroller.clientWidth - item.offsetWidth) / 2;
+	}
+
+	// Dates or Calendar (UV, 18 Nov), Dates on opening. Hidden, the other has
+	// no width to centre in, so the chosen night is brought into view each
+	// time one is shown.
+	function showCalView(next) {
+		for (const b of els.calViews.querySelectorAll('[data-cal-view]')) {
+			b.setAttribute('aria-pressed', b.dataset.calView === next ? 'true' : 'false');
+		}
+		els.dates.hidden = next !== 'dates';
+		els.cal.hidden = next !== 'calendar';
+		if (next === 'calendar') {
+			const on = els.cal.querySelector('.cal-day.on');
+			const month = on && on.closest('.cal-month');
+			if (month) centreIn(els.cal, month);
+		} else {
+			const bar = els.dates.firstElementChild;
+			const on = bar && bar.querySelector('[aria-pressed="true"]');
+			if (on) centreIn(bar, on);
+		}
+	}
+	els.calViews.addEventListener('click', (e) => {
+		const b = e.target.closest('[data-cal-view]');
+		if (b && b.getAttribute('aria-pressed') !== 'true') showCalView(b.dataset.calView);
 	});
 
 	// Rounds with no date, and a new round for the director, under the

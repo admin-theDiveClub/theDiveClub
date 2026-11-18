@@ -709,8 +709,39 @@ const TDC = (() => {
 		}
 		return el;
 	}
+	// A league tab's heading line (UV, 17 Nov on Standings; 18 Nov, Fixtures the
+	// same): the league · the season · the venue on one line, short separators
+	// between them, running sideways and back when too long (runName's run,
+	// holding these parts in place of a name). The league in the display face,
+	// the season cream, the venue its green link. The league's picture before
+	// its name (UV, 18 Nov): its shield, or the empty one (leaguePic). Styles:
+	// h1.sd-line, league.css.
+	function leagueLine(el, { picture, league, season, venues }) {
+		const node = (cls, text) => {
+			const s = document.createElement('span');
+			s.className = cls;
+			if (text !== undefined) s.textContent = text;
+			return s;
+		};
+		const pic = node('sd-l-pic');
+		pic.setAttribute('aria-hidden', 'true');
+		pic.append(leaguePic(picture));
+		const parts = [pic, node('sd-l-league', league)];
+		const sep = () => { const s = node('sd-l-sep'); s.setAttribute('aria-hidden', 'true'); return s; };
+		if (season) parts.push(sep(), node('sd-l-season', season));
+		if ((venues || []).length) {
+			const where = node('sd-l-venue');
+			venues.forEach((v, i) => { if (i) where.append(', '); where.append(venueLink(v)); });
+			parts.push(sep(), where);
+		}
+		runName(el, '');
+		el.firstChild.replaceChildren(...parts);
+		el.title = [league, season, ...(venues || []).map((v) => v.name)].filter(Boolean).join(' · ');
+		return el;
+	}
+
 	if (document.fonts) {
-		const refitRuns = () => document.querySelectorAll('.tdc-run').forEach(fitRun);
+		const refitRuns =() => document.querySelectorAll('.tdc-run').forEach(fitRun);
 		document.fonts.ready.then(refitRuns);
 		document.fonts.addEventListener('loadingdone', refitRuns);
 	}
@@ -740,5 +771,5 @@ const TDC = (() => {
 	}
 
 	return { shortUrl, shareButton, error, status, freshReload, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer, readEarly, read, shortKey, shortRead,
-		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, fullName, fullNameOf, leaguePic, teamPic, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade, runName, runWords };
+		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, fullName, fullNameOf, leaguePic, teamPic, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade, runName, runWords, leagueLine };
 })();

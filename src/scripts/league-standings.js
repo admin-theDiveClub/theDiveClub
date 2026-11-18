@@ -105,26 +105,9 @@ TDCLeagueNav.panel('standings', () => {
 	}
 
 	// Row 1 (UV, 17 Nov): the league · the season · the venue on one line,
-	// short separators between them, running sideways and back when too long
-	// for the width (TDC.runName's run, holding these parts in place of a
-	// name). The league in the display face, the season cream, the venue its
-	// green link, as the Fixtures tab's heading. The league's picture before
-	// its name (UV, 18 Nov): its shield, or the empty one (TDC.leaguePic).
+	// drawn by TDC.leagueLine, which the Fixtures tab shares (18 Nov).
 	function drawLine(league, season, venues) {
-		const pic = node('span', 'sd-l-pic');
-		pic.setAttribute('aria-hidden', 'true');
-		pic.append(TDC.leaguePic(leaguePicture));
-		const parts = [pic, node('span', 'sd-l-league', league)];
-		const sep = () => { const s = node('span', 'sd-l-sep'); s.setAttribute('aria-hidden', 'true'); return s; };
-		if (season) parts.push(sep(), node('span', 'sd-l-season', season));
-		if ((venues || []).length) {
-			const where = node('span', 'sd-l-venue');
-			venues.forEach((v, i) => { if (i) where.append(', '); where.append(TDC.venueLink(v)); });
-			parts.push(sep(), where);
-		}
-		TDC.runName(els.title, '');
-		els.title.firstChild.replaceChildren(...parts);
-		els.title.title = [league, season, ...(venues || []).map((v) => v.name)].filter(Boolean).join(' · ');
+		TDC.leagueLine(els.title, { picture: leaguePicture, league, season, venues });
 	}
 
 	// The key, under the table (UV, 17 Nov): "Ranked by Frames Won, then Win %."

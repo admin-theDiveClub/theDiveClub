@@ -18,8 +18,12 @@
 	Reached as /leagues/fixtures/?s=<league season id>.
 {% endcomment %}
 
-	<h1 id="fx-name">Fixtures</h1>
-	<p class="muted" id="fx-meta"></p>
+	{% comment %}
+		The heading as the Standings tab's (UV, 18 Nov): row 1 the league, the
+		season and the venue on one line (TDC.leagueLine), row 2 the pill,
+		compact (.sd-controls) but centred, as the Dates · Calendar pill is.
+	{% endcomment %}
+	<h1 class="sd-line" id="fx-name">Fixtures</h1>
 
 	{% comment %}
 		The planner (UV, 24 Oct). The months side by side, every night the
@@ -30,8 +34,8 @@
 		night's own buttons act on every fixture in it. Open from the start
 		(UV, 25 Oct): it is what the page is for.
 	{% endcomment %}
-	<div class="lj-views-row">
-		<div class="cp-views ls-views" id="fx-views" role="group" aria-label="Planner or all fixtures" hidden>
+	<div class="sd-controls fx-controls">
+		<div class="cp-views" id="fx-views" role="group" aria-label="Planner or all fixtures" hidden>
 			<button type="button" class="cp-view" data-fx-view="planner" aria-pressed="true">Planner</button>
 			<button type="button" class="cp-view" data-fx-view="all" aria-pressed="false">All fixtures</button>
 		</div>
@@ -41,13 +45,19 @@
 		<summary>Planner</summary>
 
 		{% comment %}
-			The calendar folds, closed on opening (UV, 18 Nov): the chosen
-			night (the next one) shows under it either way.
+			Dates or Calendar, a pill of two tabs, Dates first (UV, 18 Nov: the
+			top of the page compact, so the night's fixtures show sooner).
+			Dates is every night in a sideways pill, short dates, each in its
+			state's colour as on the calendar (league-fixtures.js, renderDates);
+			Calendar is the months as before. The chosen night shows under
+			either.
 		{% endcomment %}
-		<details class="set-group fx-cal-group" id="cal-group">
-			<summary>Calendar</summary>
-			<div class="cal-months scroll-x" id="cal"></div>
-		</details>
+		<div class="cp-views fx-cal-views" id="cal-views" role="group" aria-label="Dates or calendar">
+			<button type="button" class="cp-view" data-cal-view="dates" aria-pressed="true">Dates</button>
+			<button type="button" class="cp-view" data-cal-view="calendar" aria-pressed="false">Calendar</button>
+		</div>
+		<div class="fx-dates-wrap" id="dates"></div>
+		<div class="cal-months scroll-x" id="cal" hidden></div>
 		<div class="undated-rounds" id="undated"></div>
 
 		<div id="day-view">

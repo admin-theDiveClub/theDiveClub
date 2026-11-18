@@ -595,6 +595,25 @@
 	margin-bottom: var(--space-4);
 }
 
+/* Dates or Calendar (UV, 18 Nov): the standings' pill, closer to what follows
+ * so the night's fixtures come sooner. The dates are the same pill, scrolling
+ * sideways inside itself, each night in its state's colour (--night, from
+ * league-join.css: green, live yellow, played grey); the chosen one carries
+ * the thumb. */
+.fx-cal-views,
+.fx-dates { margin-bottom: var(--space-3); }
+/* Centred on a phone too (UV, 18 Nov): the narrow screen's side margins for
+ * a group holding a fixtures table (below) would otherwise push it left. */
+#planner > .fx-cal-views { margin-left: auto; margin-right: auto; }
+/* Compact, as the Planner · All fixtures pill above it (.sd-controls; UV, 18 Nov). */
+#planner > .fx-cal-views { height: 2rem; padding: 2px; }
+.tdc-card .fx-cal-views button.cp-view { padding: 0 var(--space-2); font-size: 0.85rem; }
+.tdc-card .fx-dates button.cp-view[class*="is-"] {
+	color: var(--night);
+	font-size: 0.9rem;
+	font-variant-numeric: tabular-nums;
+}
+
 .fx-day-title { text-align: center; margin: var(--space-3) 0; }
 /* A heading holding a date is in the body face for now (UV, 11 Nov), as the
  * calendar's month names and the director's date rows are. */
@@ -2699,7 +2718,9 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
  * is its set width, the two sides share the rest equally. */
 .fx-player .fx-card > .fx-table { width: 100%; margin: 0; table-layout: fixed; }
 .fx-player .fx-table td.fx-side { width: auto; }
-.fx-player .fx-table td.fx-mid { box-sizing: border-box; width: calc(6.5rem + 2 * var(--space-3)); }
+/* The pictures close to the middle (UV, 18 Nov): its side padding the narrow
+ * screen's on every screen. */
+.fx-player .fx-table td.fx-mid { box-sizing: border-box; padding-inline: var(--space-1); width: calc(6.5rem + 2 * var(--space-1)); }
 /* Below this the page is the Season tab's: the display face, cream, your team blue. */
 .fx-player #planner,
 .fx-player #all-group { container-type: inline-size; }
@@ -2823,12 +2844,12 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	text-align: left;
 	color: var(--text-muted);
 }
-/* The Fixtures tab's heading (UV, 17 Nov): the league in the display face,
- * smaller than a page's title (the size of the scorecard signatures' league),
- * the season under it in the body face, cream; the venue link below as before. */
-.tdc-card #fx-name { margin-bottom: var(--space-2); }
-#fx-name .fx-h-league { display: block; font-size: 1.35rem; color: var(--text-primary); }
-#fx-name .fx-h-season { display: block; margin-top: var(--space-1); font-family: var(--font-body); font-size: 1rem; line-height: 1.4; letter-spacing: normal; color: var(--text-primary); }
+/* The Fixtures tab's heading is the Standings tab's (UV, 18 Nov): h1.sd-line
+ * and .sd-controls above. Its row 2 goes when the pill is hidden (the
+ * director's Schedule), and leaves room before the planner. */
+.fx-controls { justify-content: center; margin-bottom: var(--space-3); }
+/* Centred on every screen (UV, 18 Nov), as the Dates · Calendar pill is. */
+.fx-controls:has(> .cp-views[hidden]) { display: none; }
 /* Each round folds (UV, 17 Nov): the sunken pill is the round's own folding
  * group, its heading inside it with the arrow at the right end; opened, the
  * pill grows down round the fixtures (the fold grows the details itself,

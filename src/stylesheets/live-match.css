@@ -15,7 +15,8 @@
 	background: color-mix(in srgb, var(--bg-base) 35%, transparent);
 	-webkit-backdrop-filter: blur(12px) saturate(140%);
 	backdrop-filter: blur(12px) saturate(140%);
-	box-shadow: var(--shadow-panel), inset 0 1px 0 rgba(255, 255, 255, 0.08),
+	/* The site's card shadow, cast by the page light (UV, 18 Nov) */
+	box-shadow: var(--nm-card), inset 0 1px 0 rgba(255, 255, 255, 0.08),
 		inset 0 0 14px color-mix(in srgb, var(--color-warning) 35%, transparent);
 	color: var(--text-primary);
 }
