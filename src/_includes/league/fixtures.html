@@ -40,7 +40,14 @@
 	<details class="set-group" id="planner" open>
 		<summary>Planner</summary>
 
-		<div class="cal-months scroll-x" id="cal"></div>
+		{% comment %}
+			The calendar folds, closed on opening (UV, 18 Nov): the chosen
+			night (the next one) shows under it either way.
+		{% endcomment %}
+		<details class="set-group fx-cal-group" id="cal-group">
+			<summary>Calendar</summary>
+			<div class="cal-months scroll-x" id="cal"></div>
+		</details>
 		<div class="undated-rounds" id="undated"></div>
 
 		<div id="day-view">

@@ -78,10 +78,11 @@ extraScripts:
 		</div>
 		{% comment %}
 			The rest folds under an arrow centred below the teams (UV, 12 Nov):
-			closed once both lineups are in, so the banner is compact while the
-			night is played, and open before. The site's folding group.
+			closed from the start (UV, 18 Nov: every league banner collapsed by
+			default; until then open before the lineups were in), so the
+			lineups are the first thing under it. The site's folding group.
 		{% endcomment %}
-		<details class="set-group cj-more" id="jumbo-more" open>
+		<details class="set-group cj-more" id="jumbo-more">
 			<summary class="cj-more-arrow" aria-label="The night's details"></summary>
 			<p class="cj-detail" id="state-detail"></p>
 			<dl class="jumbo-facts" id="jumbo-facts"></dl>
@@ -112,12 +113,16 @@ extraScripts:
 		read-only. Once both lineups are in this gives way to the scorecard.
 		Nothing about tonight's order is shown that tdc_match_lineup does
 		not already reveal to this reader.
+
+		Since 18 Nov (UV) the team tables come first, your own team before the
+		other (league-card.js orders them), then This season, so the lineup
+		is the first thing under the folded banner.
 	{% endcomment %}
 	<section id="lineups" hidden>
-		<h2 class="lj-heading">This season</h2>
-		<div class="lu-compare" id="team-compare"></div>
 		<p class="muted lu-hint" id="squad-hint" hidden></p>
 		<div class="lu-teams" id="team-tables"></div>
+		<h2 class="lj-heading lu-season-head">This season</h2>
+		<div class="lu-compare" id="team-compare"></div>
 		{% comment %} The night's numbering by position (UV, 16 Nov): home
 		positions across, away down, the frame where they meet, from this
 		match's own frozen order, so a captain can place players by where

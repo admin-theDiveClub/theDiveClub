@@ -37,7 +37,7 @@ TDCLeagueNav.panel('fixtures', () => {
 		firstRound: el('first-round'), firstHour: el('first-hour'), firstMinute: el('first-minute'),
 		daysBetween: el('days-between'), perRound: el('per-round'), tablesPer: el('tables-per'), tablesAvailable: el('tables-available'),
 		generateBtn: el('generate-btn'), clearBtn: el('clear-btn'),
-		planner: el('planner'), cal: el('cal'), undated: el('undated'),
+		planner: el('planner'), calGroup: el('cal-group'), cal: el('cal'), undated: el('undated'),
 		dayView: el('day-view'), dayActions: el('day-actions'), dayMove: el('day-move'),
 		dayTitle: el('day-title'), dayTable: el('day-table'), dayEmpty: el('day-empty'),
 		addPanel: el('add-panel'), addTo: el('add-to'),
@@ -626,6 +626,16 @@ TDCLeagueNav.panel('fixtures', () => {
 		}
 		centreCal = false;
 	}
+
+	// The calendar folds, closed on opening (UV, 18 Nov). Folded it has no
+	// width to centre in, so the chosen night's month is brought into view
+	// each time it is opened.
+	els.calGroup.addEventListener('toggle', () => {
+		if (!els.calGroup.open) return;
+		const on = els.cal.querySelector('.cal-day.on');
+		const month = on && on.closest('.cal-month');
+		if (month) els.cal.scrollLeft = month.offsetLeft - (els.cal.clientWidth - month.offsetWidth) / 2;
+	});
 
 	// Rounds with no date, and a new round for the director, under the
 	// calendar: a night with no date cannot be marked on it.

@@ -31,7 +31,15 @@
 				<p class="lj-season" id="l-meta"></p>
 			</div>
 		</div>
-		<dl class="jumbo-facts" id="jumbo-facts"></dl>
+		{% comment %}
+			The details fold under an arrow centred below the name, closed on
+			opening (UV, 18 Nov: every league banner collapsed by default), as
+			the scorecard's banner does. The site's folding group.
+		{% endcomment %}
+		<details class="set-group cj-more" id="jumbo-more">
+			<summary class="cj-more-arrow" aria-label="The league's details"></summary>
+			<dl class="jumbo-facts" id="jumbo-facts"></dl>
+		</details>
 	</section>
 
 	<div class="status" id="page-status"></div>

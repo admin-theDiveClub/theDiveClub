@@ -1415,9 +1415,11 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .card-jumbo { grid-template-columns: minmax(0, 1fr); text-align: center; }
 /* Its details fold under an arrow centred below the teams (UV, 12 Nov): the
  * site's folding group, with nothing of its heading but the arrow. Inside,
- * the line and the details keep the banner's spacing. */
-.card-jumbo .cj-more { margin: 0; padding: 0; border: 0; }
-.card-jumbo .cj-more > summary {
+ * the line and the details keep the banner's spacing. The Season tab's
+ * banner folds the same way (UV, 18 Nov), so these are .jumbo's, not only
+ * the card's; both start closed. */
+.jumbo .cj-more { margin: 0; padding: 0; border: 0; min-width: 0; }
+.jumbo .cj-more > summary {
 	justify-content: center;
 	width: 2.75rem;
 	min-height: 0;
@@ -1427,11 +1429,11 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	border-radius: var(--radius-pill);
 	cursor: pointer;
 }
-.card-jumbo .cj-more > summary::after { position: static; transform: none; }
-.card-jumbo .cj-more[open]:not(.is-closing) > summary::after { transform: rotate(180deg); }
-.card-jumbo .cj-more > summary > .group-dots { right: auto; left: 50%; transform: translate(-50%, -50%); }
-.card-jumbo .cj-more > :not(summary) { margin-top: var(--space-4); }
-.card-jumbo .cj-more > :not(summary):last-child { margin-bottom: 0; }
+.jumbo .cj-more > summary::after { position: static; transform: none; }
+.jumbo .cj-more[open]:not(.is-closing) > summary::after { transform: rotate(180deg); }
+.jumbo .cj-more > summary > .group-dots { right: auto; left: 50%; transform: translate(-50%, -50%); }
+.jumbo .cj-more > :not(summary) { margin-top: var(--space-4); }
+.jumbo .cj-more > :not(summary):last-child { margin-bottom: 0; }
 .cj-head {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -2132,9 +2134,37 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	border-radius: var(--nm-field-radius);
 	box-shadow: var(--nm-sunken);
 }
-/* On a phone the team being set up comes first. */
-@media (max-width: 47.99rem) {
-	.lu-team.is-managing { order: -1; }
+/* Your own team comes first at every width: league-card.js draws them in
+ * that order (UV, 18 Nov; until then a phone moved the managed one up here).
+ * This season sits under both. */
+.lu-teams + .lu-season-head { margin-top: var(--space-6); }
+/* The table being set up (UV, 18 Nov: more obvious for a captain than for a
+ * player): the banner's green line just inside its edge, a green inner glow,
+ * and a line in words at the top, since a captain may never see the plain
+ * look to compare. */
+.lu-team.is-managing {
+	position: relative;
+	padding-inline: calc(var(--space-2) + var(--space-3));   /* the table clear of the line */
+	box-shadow: var(--nm-sunken), inset 0 0 16px color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+.lu-team.is-managing::before {
+	content: "";
+	position: absolute;
+	inset: var(--space-2);
+	border: 2px solid var(--color-primary);
+	border-radius: calc(var(--nm-field-radius) - var(--space-2));
+	box-shadow: var(--nm-raised-small), var(--nm-sunken-small);
+	pointer-events: none;
+}
+.tdc-card .lu-yours {
+	margin: 0 0 var(--space-3);
+	text-align: center;
+	font-size: 0.85rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--color-primary);
+	text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 60%, transparent);
 }
 .lu-head { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); text-align: center; }
 .lu-head .team-pic { width: 3rem; height: 3rem; }

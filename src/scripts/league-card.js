@@ -414,16 +414,12 @@
 
 	// ─── The banner ───
 	// Both teams, the state as a badge, a line on what happens next, and the
-	// fixture's details as label and value pairs.
-	// Which way the banner's details were last set by the page: closed once
-	// both lineups are in, open before (UV, 12 Nov). Set again only when that
-	// changes, so the reader's own opening or closing survives every redraw.
-	let bannerSetFor = null;
-
+	// fixture's details as label and value pairs. The details start folded
+	// (UV, 18 Nov; the markup has no open) and the page never opens or closes
+	// them, so the reader's choice survives every redraw.
 	function renderBanner(locked, both) {
 		const [key, label] = stateOf(both);
 		els.jumbo.className = 'jumbo card-jumbo card-state-' + key;
-		if (bannerSetFor !== both) { els.jumboMore.open = !both; bannerSetFor = both; }
 		// The page speaks a fixture's colours (UV, 11 Nov): the state on the
 		// body colours every score; a banner name turns yellow once its side
 		// has locked and is underlined for the viewer's own team.
@@ -595,7 +591,12 @@
 		const managing = canSet && working && !locked[working] ? working : null;
 
 		renderCompare();
-		els.teamTables.replaceChildren(...['home', 'away'].map((side) => teamTable(side, locked, side === managing)));
+		// Your own team first, at every width (UV, 18 Nov): the one being set
+		// up, else the reader's team, else home; the other team next, and This
+		// season under both (the markup's order).
+		const first = managing || myTeamSide() || 'home';
+		const sides = first === 'home' ? ['home', 'away'] : ['away', 'home'];
+		els.teamTables.replaceChildren(...sides.map((side) => teamTable(side, locked, side === managing)));
 		renderOrder();
 
 		// The hint and the lock button go with the table being set up; parked
@@ -726,8 +727,15 @@
 		name.classList.toggle('is-mine', myTeamSide() === side);
 		const pic = node('span', 'team-pic lu-pic');
 		pic.append(TDC.teamPic(side === 'home' ? match.home_picture : match.away_picture));
-		// Home or away above each team (UV, 16 Nov): on a phone the team being
-		// set up comes first, so position alone does not say which is which.
+		// The table being set up says so in words, above everything in it (UV,
+		// 18 Nov: a captain may never see the read-only look, so its green frame
+		// alone would not tell them): a captain's own team, or the side the
+		// league director chose.
+		if (manage) {
+			box.append(node('p', 'lu-yours', side === lineupState.my_side ? 'Your lineup · set it here' : 'You are setting this lineup'));
+		}
+		// Home or away above each team (UV, 16 Nov): your own team comes first,
+		// so position alone does not say which is which.
 		head.append(node('span', 'badge lu-side', side === 'home' ? 'Home' : 'Away'), pic, name);
 		box.append(head);
 
