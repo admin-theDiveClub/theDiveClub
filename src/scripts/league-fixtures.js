@@ -67,6 +67,8 @@ TDCLeagueNav.panel('fixtures', () => {
 		teams: () => supabaseClient.rpc('tdc_league_season_teams', { p_league_season_id: seasonId }),
 		pics: () => supabaseClient.from('tbl_teams').select('id, picture_path').eq('league_season_id', seasonId),
 		fixtures: () => supabaseClient.rpc('tdc_league_fixtures', { p_league_season_id: seasonId }),
+		// A singles league's players, each in their team of one's place (19 Nov).
+		rosters: () => supabaseClient.rpc('tdc_league_season_rosters', { p_league_season_id: seasonId }),
 		readiness: () => supabaseClient.rpc('tdc_league_season_readiness', { p_league_season_id: seasonId })
 	};
 	const take = (key) => TDC.read('fixtures:' + key, Q[key]);
@@ -86,6 +88,10 @@ TDCLeagueNav.panel('fixtures', () => {
 	let mayRun = false;
 	let iRunIt = false;
 	let myTeamId = null;        // so a captain can find their own night
+	// A singles league (team size 1, 19 Nov): each team is one player, shown
+	// by their name and face, and a night is a singles match on /match/.
+	let singles = false;
+	let singlesPlayer = new Map(); // team id -> { player_id, display_name, avatar_path }
 	let selected = null;        // { day: 'YYYY-MM-DD' } or { round: n } (a round with no date)
 	let moving = null;          // '<where>:<fixture id>', the one fixture being moved
 	let movingNight = false;    // the chosen night's own Move is open
@@ -229,6 +235,7 @@ TDCLeagueNav.panel('fixtures', () => {
 		const picture = (pic.data && pic.data.tbl_leagues && pic.data.tbl_leagues.picture_path) || null;
 		TDC.leagueLine(els.name, { picture, league: info.league_name, season: info.name, venues: info.venues });
 		mayRun = !!info.i_run_it;
+		singles = !!(info.rules && info.rules.team_size === 1);
 		applyMode();
 		return true;
 	}
@@ -381,7 +388,19 @@ TDCLeagueNav.panel('fixtures', () => {
 		if (pics.error) { TDC.showSupabaseError(AREA, pics.error, els.status); return false; }
 		teamPictures = new Map((pics.data || []).map((t) => [t.id, t.picture_path]));
 
-		const named = teams.map((t) => [t.team_id, t.name]);
+		// Singles: each team's player, the active one first (a season switched
+		// from teams may still have a team of several until the director
+		// sorts it out; the database refuses to start such a night).
+		singlesPlayer = new Map();
+		if (singles) {
+			const r = await take('rosters');
+			if (r.error) { TDC.showSupabaseError(AREA, r.error, els.status); return false; }
+			for (const p of (r.data || []).filter((x) => x.status !== 'withdrawn').sort((a, b) => (a.status === 'active' ? 0 : 1) - (b.status === 'active' ? 0 : 1))) {
+				if (!singlesPlayer.has(p.team_id)) singlesPlayer.set(p.team_id, p);
+			}
+		}
+
+		const named = teams.map((t) => [t.team_id, sideName(t.team_id, t.name)]);
 		if (iRunIt) {
 			fillSelect(els.addHome, named, named.length ? named[0][0] : '');
 			fillSelect(els.addAway, named.concat([['', 'Bye']]), named.length > 1 ? named[1][0] : '');
@@ -859,14 +878,16 @@ TDCLeagueNav.panel('fixtures', () => {
 		const team = node(linked ? 'a' : 'span', 'fx-team');
 		if (linked) team.href = '/leagues/season/?s=' + encodeURIComponent(seasonId) + '&team=' + encodeURIComponent(teamId);
 		const pic = node('span', 'team-pic');
-		pic.append(TDC.teamPic(teamPictures.get(teamId)));
+		const player = singles && singlesPlayer.get(teamId);
+		if (player) name = player.display_name;
+		pic.append(player ? TDC.playerTeamPic(player.avatar_path, name) : TDC.teamPic(teamPictures.get(teamId)));
 		const names = node('span', 'fx-names');
 		const label = node('span', 'fx-name' + (teamId === myTeamId ? ' is-mine' : '') + (locked ? ' is-locked' : ''));
 		label.append(node('span', 'lj-run', name));
 		names.append(label);
 		if (!iRunIt) { nameRoom.observe(label); nameRoom.observe(label.firstChild); }
 		const t = teamById.get(teamId);
-		if (t && iRunIt) names.append(node('span', 'fx-sub', plural(t.active_players, 'player')));
+		if (t && iRunIt && !singles) names.append(node('span', 'fx-sub', plural(t.active_players, 'player')));
 		team.append(pic, names);
 		td.append(team);
 		return td;
@@ -889,7 +910,7 @@ TDCLeagueNav.panel('fixtures', () => {
 		// decides for itself what they may do once they are there.
 		if (f.match_id) {
 			const mine = myTeamId && (f.home_team_id === myTeamId || f.away_team_id === myTeamId);
-			items.push(['open', 'scorecard', mine ? 'Open my card' : 'Open the card', '']);
+			items.push(['open', 'scorecard', singles ? (mine ? 'Open my match' : 'Open the match') : (mine ? 'Open my card' : 'Open the card'), '']);
 		}
 		if (!iRunIt) return items;
 		if (!f.is_bye && !f.match_id) items.push(['start', 'play', 'Start the match', '']);
@@ -956,7 +977,15 @@ TDCLeagueNav.panel('fixtures', () => {
 		};
 	}
 
-	const fixtureName = (f) => f.is_bye ? f.home_name + '’s bye' : f.home_name + ' : ' + f.away_name;
+	// A team's name, or in singles its player's name as it is now (the team
+	// keeps the name it was given when it was made).
+	function sideName(teamId, name) {
+		const p = singles && singlesPlayer.get(teamId);
+		return p ? p.display_name : name;
+	}
+	const fixtureName = (f) => f.is_bye
+		? sideName(f.home_team_id, f.home_name) + '’s bye'
+		: sideName(f.home_team_id, f.home_name) + ' : ' + sideName(f.away_team_id, f.away_name);
 
 	// ─── A player's fixture says its state (UV, 11 Nov) ───
 	// Scheduled (no match yet): a grey lock between grey names. Open for
@@ -971,7 +1000,8 @@ TDCLeagueNav.panel('fixtures', () => {
 		if (!f.match_id) return 'scheduled';
 		if (f.match_status === 'complete') return 'complete';
 		if (f.match_status === 'abandoned') return 'abandoned';
-		if (f.match_status === 'in_progress' || f.match_status === 'reopened' || (f.home_locked && f.away_locked)) return 'playing';
+		// A singles night has no lineups: once its match is made it is ready to play.
+		if (singles || f.match_status === 'in_progress' || f.match_status === 'reopened' || (f.home_locked && f.away_locked)) return 'playing';
 		return 'lineups';
 	}
 
@@ -1000,7 +1030,7 @@ TDCLeagueNav.panel('fixtures', () => {
 		} else if (state === 'lineups') {
 			line.append(open('checklist', 'Lineups being set, open the card'));
 		} else if (state === 'playing') {
-			line.append(liveScore(f, 'home'), open('play', 'Being played, open the card'), liveScore(f, 'away'));
+			line.append(liveScore(f, 'home'), open('play', singles ? 'Open the match' : 'Being played, open the card'), liveScore(f, 'away'));
 		} else if (state === 'complete' || (state === 'abandoned' && hasFrames)) {
 			const home = liveScore(f, 'home');
 			const away = liveScore(f, 'away');
@@ -1031,7 +1061,7 @@ TDCLeagueNav.panel('fixtures', () => {
 			linkUp(tr);
 			tr.tabIndex = 0;
 			tr.setAttribute('role', 'link');
-			tr.setAttribute('aria-label', 'Open the card: ' + fixtureName(f) + ', ' + (f.home_frames || 0) + ' : ' + (f.away_frames || 0));
+			tr.setAttribute('aria-label', (singles ? 'Open the match: ' : 'Open the card: ') + fixtureName(f) + ', ' + (f.home_frames || 0) + ' : ' + (f.away_frames || 0));
 		}
 
 		// The strip runs the fixture's whole height: its row and the tables
@@ -1534,7 +1564,10 @@ TDCLeagueNav.panel('fixtures', () => {
 		if (card) openCard(card.dataset.card);
 	});
 
-	const openCard = (matchId) => { location.href = '/leagues/card/?m=' + encodeURIComponent(matchId); };
+	// A singles night is scored on the match page, a team night on its card.
+	const openCard = (matchId) => {
+		location.href = (singles ? '/match/?id=' : '/leagues/card/?m=') + encodeURIComponent(matchId);
+	};
 
 	// The chosen night's own buttons, on every fixture in it.
 	function actNight(what, button) {
@@ -1547,7 +1580,7 @@ TDCLeagueNav.panel('fixtures', () => {
 				if (!confirm(`Start ${plural(todo.length, 'match')} on this night?`)) return;
 				for (const f of todo) {
 					write('Starting', () => supabaseClient.rpc('tdc_create_league_match', { p_fixture_id: f.fixture_id }),
-						() => 'Matches created. Open a card to set its lineups.', Object.assign({ single: 'start-' + f.fixture_id }, dotsFor(button)));
+						() => singles ? 'Matches created. Open one to score it.' : 'Matches created. Open a card to set its lineups.', Object.assign({ single: 'start-' + f.fixture_id }, dotsFor(button)));
 				}
 				return;
 			}
@@ -1610,7 +1643,7 @@ TDCLeagueNav.panel('fixtures', () => {
 			case 'start':
 				// Said plainly: the lineups come next, on the card.
 				write('Starting', () => supabaseClient.rpc('tdc_create_league_match', { p_fixture_id: id }),
-					() => 'Match created. Open the card to set the lineups.', Object.assign({ single: 'start-' + id }, dotsFor(button)));
+					() => singles ? 'Match created. Open it to score it.' : 'Match created. Open the card to set the lineups.', Object.assign({ single: 'start-' + id }, dotsFor(button)));
 				return;
 			case 'detach':
 				if (!confirm('Take the match off this fixture?\n\nThe match and any frames on it are kept — it just stops being part of the schedule.')) return;

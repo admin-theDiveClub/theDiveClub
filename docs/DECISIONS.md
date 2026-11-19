@@ -2601,4 +2601,11 @@ These predate the log. They are recorded here because every one of them is a dec
 *Found while building:* nothing was needed for the result rule. `private.tdc_match_competition` knows only tournaments, so a league match is never "published", and a singles card's approval setting has no effect: it settles by agreement or the dispute window.
 *So:* migration `20261119122128_singles_leagues`, tests `085_singles_leagues`; `docs/systems/leagues.md`. The pages are steps 2 and 3 (`docs/STATUS.md` §3, 1a).
 
+## 2026-11-19 — A singles player in a team's place: their photo in a circle
+
+*Decided by UV:* **where a team's hexagon or shield sits (Fixtures, the Season tab, Standings), a singles league shows the player's photo in a circle, or their initials in the circle without one.** Rejected: the photo inside the team hexagon.
+*Claude's, within that:* the name shown is the player's display name as it is now, not the name their team of one was given when it was made.
+*Example:* on Fixtures, "Cas 0 ▷ 0 Ann" with "C" and "A" in circles while neither has a photo.
+*So:* `TDC.playerTeamPic` (`tdc.js`), `.team-initials` (`league.css`); `docs/systems/leagues.md`.
+
 ---

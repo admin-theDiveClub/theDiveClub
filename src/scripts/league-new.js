@@ -81,6 +81,9 @@
 		// not in Team play.
 		const size = live.find((d) => d.key === 'team_size');
 		els.sizeRow.replaceChildren(...(size ? [control(size)] : []), els.reservesField);
+		// A singles team is its one player: no reserves (19 Nov). The value
+		// is still sent; the database ignores it in singles.
+		els.reservesField.hidden = rules.team_size === 1;
 
 		els.rest.replaceChildren();
 		// The league pages are the only ones that show the Team play group:
@@ -130,7 +133,7 @@
 	// season is the database's question, asked when they press the button.
 	async function showSeasonOnly() {
 		const { data, error } = await supabaseClient
-			.from('tbl_leagues').select('id, name').eq('id', leagueId).maybeSingle();
+			.from('tbl_leagues').select('id, name, rules').eq('id', leagueId).maybeSingle();
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		if (!data) {
 			TDC.error(AREA, 'no league with that id. Check the link.', { leagueId }, els.status);
@@ -144,6 +147,8 @@
 		els.rulesPart.hidden = true;
 		// The team size is the league's rule, not the season's to change.
 		els.sizeRow.replaceChildren(els.reservesField);
+		// A singles league has no reserves (19 Nov).
+		els.reservesField.hidden = !!(data.rules && data.rules.team_size === 1);
 		els.create.textContent = 'Create Season';
 		return true;
 	}

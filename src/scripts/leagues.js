@@ -102,8 +102,10 @@
 		out.push(['', statusSaid(l.status)]);
 		if (l.season_name && l.season_name !== l.name) out.push(['', l.season_name]);
 		if (l.discipline) out.push(['', disciplineSaid(l.discipline)]);
-		if (l.team_size) out.push(['', 'Teams of ' + l.team_size]);
-		out.push(['', l.team_count === 1 ? '1 team' : l.team_count + ' teams']);
+		// A singles league's teams are its players, so it has no team count (19 Nov).
+		if (l.team_size === 1) out.push(['', 'Singles']);
+		else if (l.team_size) out.push(['', 'Teams of ' + l.team_size]);
+		if (l.team_size !== 1) out.push(['', l.team_count === 1 ? '1 team' : l.team_count + ' teams']);
 		out.push(['', l.player_count === 1 ? '1 player' : l.player_count + ' players']);
 		out.push(...rulesInUse(seasonRules.get(l.league_season_id) || {}));
 		return out;

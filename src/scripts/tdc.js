@@ -563,6 +563,31 @@ const TDC = (() => {
 		return shaped('hexagon', svg);
 	}
 
+	// A singles league's player in a team's place (19 Nov): their own photo,
+	// or their initials, in a circle (UV). Goes in the same .team-pic box as
+	// teamPic, which is a circle until it holds a shaped picture, so the
+	// photo is round by itself. A photo that will not load falls back to the
+	// initials and says so in the console.
+	function playerTeamPic(path, name) {
+		const initials = () => {
+			const s = document.createElement('span');
+			s.className = 'team-initials';
+			s.textContent = (name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+			return s;
+		};
+		const url = pictureUrl('player-avatars', path);
+		if (!url) return initials();
+		const img = document.createElement('img');
+		img.alt = '';
+		img.loading = 'lazy';
+		img.onerror = () => {
+			console.error('[Leagues] a player\'s picture could not be loaded, using the initials.', url);
+			img.replaceWith(initials());
+		};
+		img.src = url;
+		return img;
+	}
+
 	// ─── Text that changed, faded (UV, 29 Oct) ───
 	// A page that draws itself again with data it has re-read (a live update,
 	// a tab shown again) shows what moved: before drawing it takes
@@ -771,5 +796,5 @@ const TDC = (() => {
 	}
 
 	return { shortUrl, shareButton, error, status, freshReload, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer, readEarly, read, shortKey, shortRead,
-		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, fullName, fullNameOf, leaguePic, teamPic, SHAPES, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade, runName, runWords, leagueLine };
+		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, fullName, fullNameOf, leaguePic, teamPic, playerTeamPic, SHAPES, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade, runName, runWords, leagueLine };
 })();

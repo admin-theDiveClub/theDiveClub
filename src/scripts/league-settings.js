@@ -126,6 +126,9 @@ TDCLeagueNav.panel('settings', () => {
 		// not in Team play.
 		const size = live.find((d) => d.key === 'team_size');
 		els.sizeRow.replaceChildren(...(size ? [control(size)] : []), els.reservesField);
+		// A singles team is its one player: no reserves (19 Nov). The value
+		// is still saved as it stands; the database ignores it in singles.
+		els.reservesField.hidden = rules.team_size === 1;
 
 		els.rest.replaceChildren();
 		for (const group of D.GROUPS.concat(D.LEAGUE_GROUPS)) {

@@ -758,6 +758,10 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
  * icon stands alone. */
 .team-pic img { width: 100%; height: 100%; object-fit: cover; }
 .team-pic:has(img) { box-shadow: var(--shadow-pic); }
+/* A singles player's initials in their team's place (TDC.playerTeamPic, 19 Nov):
+ * sized to the circle, whichever page's size it is. */
+.team-pic:has(.team-initials) { container-type: size; box-shadow: var(--shadow-pic); color: var(--text); }
+.team-initials { font-size: 38cqmin; font-weight: 600; line-height: 1; }
 
 /* A fixture's buttons, side by side in the middle column: Start, Move,
  * Remove (or the card and Take off once there is a match), each an icon

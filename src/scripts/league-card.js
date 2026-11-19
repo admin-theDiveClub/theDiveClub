@@ -177,6 +177,12 @@
 			return false;
 		}
 		if (data.home_side_kind !== 'team' || data.away_side_kind !== 'team') {
+			// A singles match, a singles league's night among them (19 Nov), is
+			// scored on the match page: a link here goes on there.
+			if (data.home_side_kind === 'player' && data.away_side_kind === 'player') {
+				location.replace('/match/?id=' + encodeURIComponent(matchId));
+				return false;
+			}
 			TDC.error(AREA, 'this is not a team match. A singles match is scored on the match page.', null, els.status);
 			return false;
 		}
