@@ -1,0 +1,41 @@
+/* The shop page (/shop/, UV 19 Nov). Laid out by league.css's policy look
+   (.lr-*); this file adds only the item lists, the section notes and the
+   pricing note. No shadows of its own: the whole page sits in one sunken
+   panel (.lr-doc), and the items are rows with hairlines, as long lists are
+   site-wide (docs/ui.md, "Long lists"). */
+
+/* Under way, so yellow (docs/ui.md, "State colours"): prices not set yet. */
+.tdc-card .shop-pricing {
+	margin: var(--space-4) 0 0;
+	padding: var(--space-3) 0;
+	border-top: 1px solid var(--border-color);
+	border-bottom: 1px solid var(--border-color);
+	line-height: 1.55;
+}
+.shop-pricing strong {
+	display: block;
+	color: var(--color-warning);
+}
+
+.tdc-card .shop-note {
+	margin: 0 0 var(--space-2);
+	color: var(--text-muted);
+	line-height: 1.55;
+}
+
+/* Two columns from a phone up; one only when the screen is very narrow. */
+.shop-items,
+.shop-policies {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+	column-gap: var(--space-4);
+}
+.shop-items li,
+.shop-policies li {
+	padding: var(--space-3) 0;
+	border-top: 1px solid var(--border-color);
+	line-height: 1.4;
+}

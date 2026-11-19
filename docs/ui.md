@@ -37,6 +37,7 @@
 | The nav | `_includes/nav.html`, `nav.css`, `scripts/nav.js` | Menu at the left, the logo centred on the bar, offline tag and account at the right (`.nav-right`). **The account opens the profile menu (31 Oct)**, replacing the dropdown: see §2, "The profile menu". **The buttons are ring icons (24 Oct).** **Notifications and reload are rows in the slide-out menu (29 Oct)**: Notifications at the top (its list unfolds under it), the links, Reload at the foot (installed only); the unread pip is on the bell and on the menu button |
 | The footer | `_includes/footer.html`, `footer.css` | **Every page but the match page (3 Nov)**: see §2, "The footer" |
 | 404, privacy, terms | — | **Stubs, 42–49 bytes. Real content needed** |
+| `/shop/` | `shop/index.html`, `shop.css`, `league.css` | **The Shop page** (UV, 19 Nov): what the club offers, for PayFast's onboarding review. A listing only, nothing bought here yet. The words in its front matter, as the policy pages; drawn in their look (`.lr-*`) with items as rows with hairlines, the Pricing note yellow (prices not set yet), links to the four policies and `policy/details.html`. In the menu (`_data/navLinks.json`) and the footer. Never lists restricted products |
 
 ### Styling
 

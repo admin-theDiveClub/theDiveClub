@@ -1,0 +1,111 @@
+---
+layout: layout.html
+permalink: "/shop/"
+title: Shop
+description: "What The Dive Club offers: credits for pool, games, arcade, driving simulators, leagues, tournaments and events; café items; apparel; pool accessories; design, 3D printing and laser work; and art."
+extraStyles:
+  - /stylesheets/league.css
+  - /stylesheets/shop.css
+updated: "19 November 2026"
+intro:
+  - "The Dive Club is a pool lounge and sports club at C5, The Gantry, Lonehill, Fourways. This page lists everything we offer, at the venue and through this site."
+  - "Play is paid for in credits, a prepaid balance bought online through PayFast or at the venue. Prices are in South African rand."
+pricing: "Prices have not been set yet. We are getting ready to open, and prices will be published on this page before we start trading."
+sections:
+  - title: "Play credits"
+    note: "One credit balance for the whole club. The price per credit varies by activity, day and time."
+    items:
+      - "Pool table time"
+      - "Games and activities"
+      - "Tournament entries"
+      - "League entries"
+      - "Arcade games"
+      - "Driving simulators"
+      - "Event entries"
+  - title: "Café"
+    note: "Bought and enjoyed at the venue."
+    items:
+      - "Non-alcoholic drinks"
+      - "Coffee and tea"
+      - "Sweets"
+      - "Snacks"
+  - title: "Apparel"
+    note: "Club and custom designs."
+    items:
+      - "Socks"
+      - "Team shirts"
+  - title: "Pool accessories"
+    items:
+      - "Chalk"
+      - "Cues"
+      - "Cue cases"
+      - "Gloves"
+      - "Balls"
+  - title: "Studio services"
+    note: "Made to order and quoted per job before work starts."
+    items:
+      - "Design work"
+      - "3D printing"
+      - "Laser cutting"
+      - "Laser engraving"
+  - title: "Art"
+    note: "Commissioned pieces are quoted before work starts."
+    items:
+      - "Custom commissioned art"
+      - "Original works"
+policies:
+  - label: "Terms and Conditions"
+    url: "/termsofservice.html"
+  - label: "Privacy Policy"
+    url: "/privacypolicy.html"
+  - label: "Refunds and Cancellations"
+    url: "/refunds/"
+  - label: "Delivery"
+    url: "/delivery/"
+---
+{% comment %}
+	The shop page (UV, 19 Nov): what the club offers, for players and for
+	PayFast's onboarding review, which asked for an active page showing the
+	product offering. A listing only: nothing is bought here yet (payments are
+	STATUS P4, the shop's stock P5). The words are in the front matter above,
+	as on the policy pages, so they can be checked without reading markup.
+	Drawn in the policy pages' look (league.css, .lr-*), with shop.css for the
+	item pills and the pricing note. Ends with links to the four policies and
+	the same company block (policy/details.html). Never list restricted
+	products here (UV, 14 Nov). In the nav menu as "Shop" (_data/navLinks.json).
+{% endcomment %}
+<div class="tdc-card wide">
+	<article class="lr-doc">
+		<header class="lr-head">
+			<h1>{{ title }}</h1>
+			<p class="lr-league">The Dive Club · Products and services</p>
+		</header>
+		<div class="lr-intro">
+			{%- for p in intro %}
+			<p>{{ p }}</p>
+			{%- endfor %}
+		</div>
+		<p class="shop-pricing" role="note"><strong>Pricing</strong> {{ pricing }}</p>
+		{%- for s in sections %}
+		<section class="lr-section">
+			<h2>{{ forloop.index }}. {{ s.title }}</h2>
+			{%- if s.note %}<p class="shop-note">{{ s.note }}</p>{% endif %}
+			<ul class="shop-items">
+				{%- for i in s.items %}
+				<li>{{ i }}</li>
+				{%- endfor %}
+			</ul>
+		</section>
+		{%- endfor %}
+		<section class="lr-section">
+			<h2>Our policies</h2>
+			<p class="shop-note">Buying from The Dive Club is covered by these policies.</p>
+			<ul class="shop-policies">
+				{%- for p in policies %}
+				<li><a href="{{ p.url }}">{{ p.label }}</a></li>
+				{%- endfor %}
+			</ul>
+		</section>
+{% include "policy/details.html" %}
+	</article>
+</div>

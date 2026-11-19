@@ -22,5 +22,9 @@
   {
     "label": "Players",
     "url": "/players/"
+  },
+  {
+    "label": "Shop",
+    "url": "/shop/"
   }
 ]
