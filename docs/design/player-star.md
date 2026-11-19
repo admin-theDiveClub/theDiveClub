@@ -47,6 +47,10 @@ Two players on one star, picked from the page's players (league players once add
 - The line only, no dots at the corners; the standard ring grey.
 - The break result comes from `tdc_player_profile` since migration `20261119142114`.
 
+## On a league (UV, 19 Nov)
+
+The same star on each league's row on the profile and each `/leagues/` card: that league's frames only, every spoke starting with the most frames the player could play in it (their team's non-bye fixtures × frames a player plays a night; singles by the win condition), and solidity = matches played ÷ matches scheduled. Details: `docs/systems/players.md`, "The league star".
+
 ## Unsettled: tried on the sandbox, not decided
 
 | Question | What the sandbox offers |

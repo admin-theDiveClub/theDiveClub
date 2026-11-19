@@ -12,7 +12,7 @@
 // tiles that scrolls sideways.
 //
 // Needs: tdc.js, match-settings.js (discipline and status names),
-// league-standings-def.js (the ranking).
+// league-standings-def.js (the ranking), player-star.js (the star).
 
 (() => {
 	const AREA = 'Leagues';
@@ -153,6 +153,8 @@
 			rules.track_breaks && ['Lags', count('lags_won')]
 		].filter(Boolean);
 		if (specials.length) box(specials, 'lc-counts');
+		const star = stars.get(l.league_season_id);
+		if (star) out.append(star);
 		return out;
 	}
 
@@ -303,12 +305,14 @@
 	// ─── Where this person stands ───
 	// As the Standings tab counts it: tdc_league_standings and the season's
 	// columns, ranked by TDCStandings. Only for seasons they are active in.
+	let mePlayer = null;     // this person's player record, once read
 	let ranks = new Map();   // league season id -> { counted, player, playerCount, team, teamCount, stats }
 	async function loadRanks(rows, session) {
 		const mine = rows.filter((l) => l.my_status === 'active');
 		if (!mine.length) return;
 		const me = await TDC.getMyPlayer(AREA, session.user.id, els.status);
 		if (!me) return;
+		mePlayer = me;
 		const ids = mine.map((l) => l.league_season_id);
 		const [cols, ...counts] = await Promise.all([
 			supabaseClient.from('tbl_league_standing_columns')
@@ -338,6 +342,32 @@
 				stats: mineHere ? mineHere.stats : null
 			});
 		});
+	}
+
+	// The star on each card (UV, 19 Nov; docs/design/player-star.md): this
+	// person's frames in that league only, every spoke starting with the most
+	// frames they could play in it (TDCStar.leagueSettings). Read after the
+	// ranks and the rules, which it needs.
+	let stars = new Map();   // league season id -> the star's element
+	async function loadStars(rows) {
+		const mine = rows.filter((l) => ranks.has(l.league_season_id));
+		if (!mine.length || !mePlayer) return;
+		const { data, error } = await supabaseClient.rpc('tdc_player_profile', { p_player_id: mePlayer.id });
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+		if (!data || !Array.isArray(data.matches) || !Array.isArray(data.frames)) {
+			TDC.error(AREA, 'your frames came back in a shape this page does not know.', data, els.status);
+			return;
+		}
+		await Promise.all(mine.map(async (l) => {
+			const rules = Object.assign({}, seasonRules.get(l.league_season_id) || {}, { team_size: l.team_size });
+			const got = await TDCStar.leagueSettings(supabaseClient, l.league_season_id, l.my_team_id, rules);
+			if (got.error) { TDC.showSupabaseError(AREA, got.error, els.status); return; }
+			const counts = TDCStar.count(TDCStar.leagueFrames(data, l.league_season_id), got.set.walkovers);
+			const { svg } = TDCStar.draw('Your star in ' + l.league_name, [{ counts, certain: TDCStar.leagueSolid(data, l.league_season_id, got.scheduled) }], got.set);
+			const box = el('div', 'lc-star');
+			box.append(svg);
+			stars.set(l.league_season_id, box);
+		}));
 	}
 
 	// The rules each season plays under, the league's with its own changes

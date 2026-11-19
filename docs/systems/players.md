@@ -82,6 +82,13 @@ Five spokes (win rate, own break, their break, break in, B&F), each measured aga
 
 **Checked:** rendered headless at 420 on the local copy, seeded through the real functions (two players, two finished matches with break results, one dry, one scratch, one not recorded), signed in through the local auth: your own profile (star and dashed raw star, Break in counted 5 of 6), someone else's Profile tab, Compare (one star, both colours, no raw). The no-data label checked on the sandbox. Not on a phone, not against production.
 
+**The league star (UV, 19 Nov; migration `20261119180000`, test `088_player_profile_league_star`).** The same star on **each Leagues row of a profile** (`.pp-team-star`, both halves of Compare) and on **each `/leagues/` card you are active in** (`.lc-star`, under the stat boxes; `leagues.js` `loadStars`). It is one player's frames in that league only, so the Stats period does not apply and there is no raw dashed star. Two differences from the profile star, both UV's:
+
+- **Starting frames** are one number for all five spokes: the most frames that player could play in the league (`TDCStar.leagueSettings`). Their team's non-bye fixtures, counted from `tbl_league_fixtures`, times the frames a player plays a night: `team_size` on a team night (the night is `team_size²` frames, each player plays `team_size`); in singles, 2N−1 for race to N, N for best of N or fixed frames N. Meetings ("Rounds") are not stored on a season, so the made schedule is the source. With no schedule yet, or a timed or free-play singles league, the fixed starting frames stay.
+- **How solid it is** is matches played ÷ matches scheduled (`TDCStar.leagueSolid`): the player's finished singles matches in that season over their team's non-bye fixtures. Without a schedule it falls back to frames over 200.
+
+`tdc_player_profile` gained `matches[].league_season_id` and `teams[].rules` (two lines, patched) so frames can be tied to a season. "Matches played" is the player's own matches (UV, 19 Nov), so a team night they sat out lowers their star's solidity. Not rendered yet: checked only by the logic and the database test.
+
 ### Follow (UV, 5 Nov; migration `20261105205913`, test `061_player_follows`)
 
 **One-way, no approval, and private** (UV): a tap follows, a second tap stops, and only you can see who you follow. No follower lists, no counts, no notification. Private can be opened up later; once people have seen who follows whom it cannot be taken back.

@@ -342,6 +342,10 @@
 }
 .pp-team:hover,
 .pp-team:focus-visible { background: var(--hover-wash); outline: none; }
+.pp-team { flex-wrap: wrap; }
+/* A league's star (UV, 19 Nov), under the row's names. */
+.pp-team-star { flex: 0 0 100%; }
+.pp-team-star .star-svg { max-width: 15rem; }
 .pp-team-pic { width: 2.75rem; height: 2.75rem; border-radius: var(--radius-md); }
 .pp-team-names,
 .pp-row-names { display: flex; flex: 1; flex-direction: column; min-width: 0; }

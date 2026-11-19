@@ -330,7 +330,23 @@
 		return places;
 	}
 
-	function renderTeams(v, places) {
+	// Each league's star (UV, 19 Nov): its starting frames come from the league's
+	// own schedule, so they are read once per team and season, for both sides of
+	// Compare. Keyed season + team; a team with none read has no entry.
+	async function leagueSets() {
+		const teams = them.teams.concat(mine ? mine.teams : []).filter((t) => t.team_id);
+		const sets = {};
+		await Promise.all(teams.map(async (t) => {
+			const key = t.league_season_id + t.team_id;
+			if (sets[key]) return;
+			const got = await TDCStar.leagueSettings(supabaseClient, t.league_season_id, t.team_id, t.rules);
+			if (got.error) { TDC.showSupabaseError(AREA, got.error, els.status); return; }
+			sets[key] = { set: got.set, scheduled: got.scheduled };
+		}));
+		return sets;
+	}
+
+	function renderTeams(v, places, sets) {
 		const box = v.part('teams');
 		if (!v.p.teams.length) { box.replaceChildren(node('p', 'muted pp-empty', 'Not in a league yet.')); return; }
 		box.replaceChildren(...v.p.teams.map((t) => {
@@ -346,6 +362,16 @@
 			right.append(node('span', 'pp-team-place' + (place === 1 || place === 2 ? ' pp-primary' : ''), place ? ordinal(place) : '–'),
 				node('span', 'muted pp-team-role', t.is_captain ? 'Captain' : 'Player'));
 			a.append(pic, names, right);
+			const got = sets && t.team_id ? sets[t.league_season_id + t.team_id] : null;
+			if (got) {
+				const set = got.set;
+				const certain = TDCStar.leagueSolid(v.p, t.league_season_id, got.scheduled);
+				const counts = TDCStar.count(TDCStar.leagueFrames(v.p, t.league_season_id), set.walkovers);
+				const { svg } = TDCStar.draw('Star for ' + v.p.player.display_name + ' in ' + t.league_name, [{ counts, certain }], set);
+				const star = node('span', 'pp-team-star');
+				star.append(svg);
+				a.append(star);
+			}
 			return a;
 		}));
 	}
@@ -1062,7 +1088,7 @@
 		els.body.hidden = false;
 		fitName();   // measured once it is shown
 		if (them.player.is_me) wakeIcons(); else drawFollow();
-		const places = await teamPlaces();
-		for (const v of views) renderTeams(v, places);
+		const [places, sets] = await Promise.all([teamPlaces(), leagueSets()]);
+		for (const v of views) renderTeams(v, places, sets);
 	})(), 'The player');
 })();

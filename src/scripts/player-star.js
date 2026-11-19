@@ -12,7 +12,7 @@
 // The standard is the grey ring halfway out. Ratio: shown ÷ standard, twice
 // the standard at the edge. Points: shown − standard, `range` points at the
 // edge (above) or the centre (below). How solid a star is follows frames
-// played. A spoke with no chances sits on the standard, its label greyed with
+// played (a league's star: matches played out of scheduled). A spoke with no chances sits on the standard, its label greyed with
 // "no data" (UV, 19 Nov). No dots at the corners: the line only (UV, 19 Nov).
 
 const TDCStar = (() => {
@@ -31,11 +31,12 @@ const TDCStar = (() => {
 			help: 'Break & finish or golden break, out of the frames they broke.' }
 	];
 
-	// A fresh copy of UV's settings; the sandbox changes its own.
-	function defaults() {
+	// A fresh copy of UV's settings; the sandbox changes its own. A league's
+	// star gives one starting-frames number for every spoke (see expectedFrames).
+	function defaults(startAll) {
 		return {
 			std: Object.fromEntries(SPOKES.map((s) => [s.key, s.std])),
-			start: Object.fromEntries(SPOKES.map((s) => [s.key, s.start])),
+			start: Object.fromEntries(SPOKES.map((s) => [s.key, startAll === undefined ? s.start : startAll])),
 			solid: 200,
 			mode: 'ratio',
 			range: 25,
@@ -65,6 +66,61 @@ const TDCStar = (() => {
 			}
 		}
 		return c;
+	}
+
+	// ─── A league's star (UV, 19 Nov) ───
+	// One player's frames in one league season, and every spoke starting with
+	// the most frames that player could play in it: the nights their team plays
+	// (its fixtures with an opponent, byes left out) times the most frames one
+	// player plays a night. A team night has team_size frames each (the night is
+	// team_size squared, each player plays team_size of them). A singles match
+	// (team_size 1) holds at most 2N-1 frames in a race to N, N in a best of N or
+	// a fixed N; timed and free play have no maximum (null).
+	function framesPerNight(rules) {
+		const size = Number(rules && rules.team_size) || 0;
+		if (size > 1) return size;
+		const n = Number(rules && rules.win_condition_target) || 0;
+		switch (rules && rules.win_condition_type) {
+			case 'race_to': return n > 0 ? 2 * n - 1 : null;
+			case 'best_of':
+			case 'fixed_frames': return n > 0 ? n : null;
+			default: return null;
+		}
+	}
+
+	// The settings for a league's star, read from the made schedule. error is
+	// set when the schedule could not be read (the caller says so); with no
+	// schedule yet, or no maximum for the format, the fixed starting frames stay.
+	async function leagueSettings(client, seasonId, teamId, rules) {
+		const set = defaults();
+		const per = framesPerNight(rules);
+		if (!teamId || !per) return { set };
+		const { data, error } = await client.from('tbl_league_fixtures').select('id')
+			.eq('league_season_id', seasonId).not('away_team_id', 'is', null)
+			.or('home_team_id.eq.' + teamId + ',away_team_id.eq.' + teamId);
+		if (error) return { set, error };
+		if (!data.length) return { set };
+		return { set: defaults(data.length * per), max: data.length * per, scheduled: data.length };
+	}
+
+	// A profile's counted frames in one league season: finished matches of that
+	// season, doubles left out (as the profile counts).
+	function leagueMatchIds(profile, seasonId) {
+		return new Set(profile.matches
+			.filter((m) => m.league_season_id === seasonId && m.status === 'complete' && !m.doubles)
+			.map((m) => m.match_id));
+	}
+	function leagueFrames(profile, seasonId) {
+		const ids = leagueMatchIds(profile, seasonId);
+		return profile.frames.filter((f) => ids.has(f.match_id));
+	}
+
+	// How solid a league's star is (UV, 19 Nov): the player's matches played out
+	// of the matches their team has scheduled, not frames out of `solid`.
+	// undefined with no schedule, so the star falls back to frames.
+	function leagueSolid(profile, seasonId, scheduled) {
+		if (!scheduled) return undefined;
+		return Math.min(1, leagueMatchIds(profile, seasonId).size / scheduled);
 	}
 
 	// One spoke from the counts: the raw and shown rates (0–1), or null with no chances.
@@ -129,7 +185,7 @@ const TDCStar = (() => {
 		svg.append(g);
 		const rows = SPOKES.map((s) => spoke(c, s, set));
 		const shape = (pick) => rows.map((v, i) => at(i, v ? reach(pick(v), SPOKES[i], set) : 0.5).join(',')).join(' ');
-		const certain = Math.min(1, (Number(c.fp) || 0) / set.solid);
+		const certain = o.certain !== undefined ? o.certain : Math.min(1, (Number(c.fp) || 0) / set.solid);
 		const shown = svgEl('polygon', { points: shape((v) => v.shown), class: 'star-shown' });
 		shown.style.fillOpacity = (0.08 + 0.42 * certain).toFixed(2);
 		shown.style.strokeOpacity = (0.35 + 0.65 * certain).toFixed(2);
@@ -162,5 +218,5 @@ const TDCStar = (() => {
 		return { svg, layers: out };
 	}
 
-	return { SPOKES, defaults, count, spoke, reach, frame, layer, markNoData, draw };
+	return { SPOKES, defaults, framesPerNight, leagueSettings, leagueFrames, leagueSolid, count, spoke, reach, frame, layer, markNoData, draw };
 })();

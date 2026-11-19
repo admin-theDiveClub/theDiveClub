@@ -363,9 +363,13 @@
    longer fits drifts as the pill does. */
 .lc-stats {
 	display: flex;
+	flex-wrap: wrap;
 	gap: var(--space-2);
 	padding: 0 var(--nm-pad) var(--space-4) var(--space-5);
 }
+/* The star under the stat boxes (UV, 19 Nov), one line of its own. */
+.lc-star { flex: 0 0 100%; }
+.lc-star .star-svg { max-width: 15rem; }
 .lc-pill.lc-stat {
 	flex: 1 1 auto;
 	height: auto;
