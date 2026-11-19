@@ -405,6 +405,15 @@ TDCLeagueNav.panel('standings', () => {
 		if (fade) fadeIn(view === 'player' ? els.player : els.team);
 	}
 
+	// A singles league (team size 1, 19 Nov): its teams are its players, so
+	// only the individual table, and no Individual · Team pill.
+	let singles = false;
+	function applySingles(is) {
+		singles = !!is;
+		els.views.hidden = singles;
+		if (singles && view !== 'player') showView('player', false);
+	}
+
 	els.views.addEventListener('click', (e) => {
 		const b = e.target.closest('[data-sd-view]');
 		if (!b || b.dataset.sdView === view) return;
@@ -458,6 +467,7 @@ TDCLeagueNav.panel('standings', () => {
 		}
 		data = st.data;
 		columns = cols.data || [];
+		applySingles(info.rules && info.rules.team_size === 1);
 		drawLine(info.league_name, info.name, info.venues);
 		render(first);
 		if (live) watchLive(data.watch_match_ids || []); else stopLive();
@@ -481,6 +491,7 @@ TDCLeagueNav.panel('standings', () => {
 			if (season.error) { TDC.showSupabaseError(AREA, season.error, els.status); return false; }
 			publicSeasonName = (season.data && season.data.name) || '';
 			leaguePicture = (season.data && season.data.picture_path) || null;
+			applySingles(season.data && season.data.rules && season.data.rules.team_size === 1);
 		}
 		showsPlayers = got.shows_players;
 		data = Object.assign({}, got, { players: got.players.map((p) => Object.assign({ player_id: 'row' + p.key }, p)) });

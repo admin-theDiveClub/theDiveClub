@@ -77,8 +77,52 @@ TDCLeagueNav.panel('rules', () => {
 		})[r.score_entry_mode]
 	});
 	const ownValue = (def, r) => (def.key === 'team_size'
-		? r.team_size + ' a side' + (reserves ? ', up to ' + plural(reserves, 'reserve') : '')
+		? (r.team_size === 1 ? 'Singles' : r.team_size + ' a side' + (reserves ? ', up to ' + plural(reserves, 'reserve') : ''))
 		: null);
+
+	// ─── A singles league (team size 1, 19 Nov) ───
+	// Each player is their own team and a night is a singles match on the
+	// match page, which ends when a player reaches the target. Its card
+	// settles as any singles card does (UV, 19 Nov): it counts once submitted,
+	// then the opponent agrees or the dispute window passes; with no approval
+	// set, submitting settles it (tdc_submit_card, private.tdc_card_state).
+	// The league's approval has no coordinator step: a league match is never
+	// published (private.tdc_match_competition knows only tournaments).
+	const singlesWords = Object.assign(R.sharedWords({
+		sides: 'players', runner: 'the league', onExpiry: 'the frame being played is finished'
+	}), {
+		win_condition_type: (r) => ({
+			race_to: 'The first player to ' + r.win_condition_target + ' frames wins the match.',
+			best_of: 'The player who wins the majority of ' + r.win_condition_target + ' frames wins the match.',
+			fixed_frames: 'The player who wins more of the ' + r.win_condition_target + ' frames wins the match.',
+			timed: 'The player ahead when time is called wins the match.',
+			free_play: 'There is no target. Frames are counted and no winner is declared.'
+		})[r.win_condition_type],
+		team_size: () => 'This is a singles league: every player plays for themselves, and each match is one player against another.',
+		score_entry_mode: (r) => ({
+			players: 'The two players enter the frames of their own match. Whoever runs the league may enter any frame.',
+			scorer: 'Scores are entered by a scorer, a referee or whoever runs the league.',
+			referee: 'Scores are entered by a referee or whoever runs the league.',
+			td_only: 'Only whoever runs the league enters scores.'
+		})[r.score_entry_mode]
+	});
+	const SINGLES_MATCH_CLAUSES = [
+		['Starting a match', 'Whoever runs the league starts each match. It is then scored on the match page. A player marked away cannot have a match started until they are back.']
+	];
+	const singlesSigningClauses = (r) => {
+		const hours = r.dispute_window_hours;
+		const settles = r.approval_mode === 'none'
+			? ['Settling the result', 'Submitting settles the result: the other player does not need to agree.']
+			: ['Settling the result', 'The other player agrees, or disputes it.'
+				+ (hours > 0 ? ' A result nobody answers stands once ' + plural(hours, 'hour') + ' have passed.' : ' A result stands once the other player agrees.')];
+		return [
+			['Submitting the result', 'When the match is over, either player, or whoever runs the league, submits the result.'],
+			settles,
+			['Disputes', 'A dispute re-opens the match, so the frames can be corrected and the result submitted again.'],
+			['Resetting a match', 'The league director can reset a match. Every frame and the submitted result are cleared, and the match goes back to being unplayed on the same date. The score that was cleared is kept on record.'],
+			['The standings', 'Standings count a match from the moment its result is submitted. The Live switch on the Standings tab also shows matches still being played, and those are not final.']
+		];
+	};
 
 	// ─── Clauses that hold in every league ───
 	const lineupClauses = () => {
@@ -150,6 +194,22 @@ TDCLeagueNav.panel('rules', () => {
 		if (!showRules) {
 			els.intro.replaceChildren();
 			els.body.replaceChildren();
+		} else if (rules.team_size === 1) {
+		// Singles (19 Nov): no lineups, reserves or signatures.
+		els.intro.replaceChildren(...R.intro([
+			'These rules apply to every match played in ' + info.league_name + ', ' + info.name + ': every player, every night and every frame.',
+			'Whoever runs the league sets them, and each match keeps its own copy from the moment it is created. If the rules change during the season, matches not yet under way follow the change. A match with a frame on it or a submitted result keeps the rules it began with, so nothing already played is ever rescored.'
+		]));
+		els.body.replaceChildren(...R.sections([
+			{ title: 'Format', keys: ['discipline', 'win_condition_type', 'draws_allowed'] },
+			{ title: 'The match', keys: ['team_size'], after: SINGLES_MATCH_CLAUSES },
+			{ title: 'At the table', keys: ['track_breaks', 'break_determination', 'break_finish_enabled', 'golden_break_enabled', 'reverse_break_finish_enabled', 'break_finish_requires_breaker', 'referee_required'] },
+			{ title: 'Timing', keys: ['max_match_minutes', 'shot_clock_enabled'] },
+			{ title: 'Scores and results', keys: ['score_entry_mode'], after: singlesSigningClauses(rules) }
+		], rules, {
+			words: singlesWords, ownValue,
+			leftOut: ['approval_mode', 'dispute_window_hours', 'lineup_cutoff_hours', 'rotation', 'strict_frame_order']
+		}));
 		} else {
 		els.intro.replaceChildren(...R.intro([
 			'These rules apply to every match played in ' + info.league_name + ', ' + info.name + ': every team, every night and every frame.',
