@@ -338,7 +338,9 @@
 	function carriedLineup(side) {
 		const last = MATCH.frames[MATCH.frames.length - 1];
 		if (last && last[side + '_players'] && last[side + '_players'].length) return last[side + '_players'].slice();
-		return MATCH[side].players.length === 1 ? MATCH[side].players.slice() : [];
+		// A side of players is fixed for the match, singles or doubles (UV, 19
+		// Nov: the pairs do not change), so a new frame goes to all of them.
+		return MATCH[side].players.slice();
 	}
 
 	// The break event saved for the frame in play (MATCH.break_in_play,
@@ -683,7 +685,8 @@
 				text = Math.max(text, whoRange.getBoundingClientRect().width);
 			}
 			const cs = getComputedStyle(person);
-			const pic = person.querySelector('.mv-pic');
+			// A doubles side's pictures are one row (.mv-pics), measured whole.
+			const pic = person.querySelector('.mv-pics, .mv-pic');
 			const across = (pic ? pic.getBoundingClientRect().width : 0) + (parseFloat(cs.columnGap) || 0) + text;
 			const room = parseFloat(cs.maxWidth);
 			if (across > 0 && room > 0) caps.push(room * h / across);
@@ -778,16 +781,21 @@
 	// p is a player as loadPlayers() keeps them (display_name, full_name,
 	// avatar_url).
 	function paintWho(node, p) {
-		const pic = div('mv-pic');
-		const url = p.avatar_url;
-		if (url) {
-			const img = document.createElement('img');
-			img.src = url;
-			img.alt = '';
-			pic.append(img);
-		} else {
-			pic.textContent = (p.display_name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+		// Doubles (20261119124608): a list of the side's players. Their
+		// pictures overlap in one row (.mv-pics, which fitWho measures as it
+		// measures one picture) and each name is a line of its own.
+		if (Array.isArray(p)) {
+			if (p.length === 1) { paintWho(node, p[0]); return; }
+			const pics = div('mv-pics');
+			pics.append(...p.map(whoPic));
+			const lines = div('mv-names');
+			lines.append(...p.map((x) => div('mv-name', x.display_name)));
+			const pair = div('mv-person mv-pair');
+			pair.append(pics, lines);
+			node.replaceChildren(pair);
+			return;
 		}
+		const pic = whoPic(p);
 		const names = div('mv-names');
 		names.append(div('mv-name', p.display_name));
 		const full = p.full_name;
@@ -799,6 +807,22 @@
 		const person = div('mv-person');
 		person.append(pic, names);
 		node.replaceChildren(person);
+	}
+
+	// One player's picture, or their initials (paintWho's, moved out so a
+	// doubles side can draw two).
+	function whoPic(p) {
+		const pic = div('mv-pic');
+		const url = p.avatar_url;
+		if (url) {
+			const img = document.createElement('img');
+			img.src = url;
+			img.alt = '';
+			pic.append(img);
+		} else {
+			pic.textContent = (p.display_name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+		}
+		return pic;
 	}
 
 	// ─── The break event (UV, 30 Oct) ─────────────────────────────────
@@ -1581,15 +1605,17 @@
 		paintScore(els.scoreHome, framesWon('home'), digits);
 		paintScore(els.scoreAway, framesWon('away'), digits);
 		paintBreaker(draft.break_side);
-		const who = ['home', 'away'].map((s) => JSON.stringify(player(MATCH[s].players[0]))).join('|');
+		// Doubles (20261119124608): every player of the side, not only the first.
+		const who = ['home', 'away'].map((s) => JSON.stringify(MATCH[s].players.map(player))).join('|');
 		if (who !== whoDrawn) {
 			whoDrawn = who;
-			paintWho(els.whoHome, player(MATCH.home.players[0]));
-			paintWho(els.whoAway, player(MATCH.away.players[0]));
+			paintWho(els.whoHome, MATCH.home.players.map(player));
+			paintWho(els.whoAway, MATCH.away.players.map(player));
 			// On the stage a picture opens the player's profile (UV, 5 Nov);
 			// the More pop-up's walkover boxes are buttons and keep theirs.
-			TDC.profilePic(els.whoHome.querySelector('.mv-pic'), MATCH.home.players[0]);
-			TDC.profilePic(els.whoAway.querySelector('.mv-pic'), MATCH.away.players[0]);
+			for (const [who, side] of [[els.whoHome, 'home'], [els.whoAway, 'away']]) {
+				who.querySelectorAll('.mv-pic').forEach((pic, i) => TDC.profilePic(pic, MATCH[side].players[i]));
+			}
 			placeWho();   // sized to the new names (fitWho)
 		}
 		const winnable = !matchOver() && canEdit && !resultDisabled('win');
@@ -2535,7 +2561,7 @@
 		const box = (side) => {
 			const s = div('mv-more-side');
 			const who = div('mv-more-who');
-			paintWho(who, player(MATCH[side].players[0]));
+			paintWho(who, MATCH[side].players.map(player));
 			s.append(who, mbtn('Walkover', 'result', { act: 'walkover', side }, matchOver()));
 			return s;
 		};
@@ -3370,6 +3396,21 @@
 
 		if (framesError) { TDC.showSupabaseError(AREA, framesError, els.stageStatus); return null; }
 
+		// Doubles (20261119124608): every seat of each side, in order. Empty for
+		// singles, whose one player a side is home_player_id / away_player_id.
+		const { data: seatRows, error: seatsError } = await supabaseClient
+			.from('tbl_match_side_players')
+			.select('side, seat, player_id')
+			.eq('match_id', id)
+			.order('seat');
+		if (seatsError) { TDC.showSupabaseError(AREA, seatsError, els.stageStatus); return null; }
+		const seatsOf = (side, one) => {
+			const list = (seatRows || []).filter((s) => s.side === side).map((s) => s.player_id);
+			return list.length ? list : [one];
+		};
+		const homeIds = seatsOf('home', m.home_player_id);
+		const awayIds = seatsOf('away', m.away_player_id);
+
 		const frames = rows.map((f) => {
 			// play_order is null in singles, so sort on it only when it is set.
 			const side = (want) => (f.tbl_frame_participants || [])
@@ -3396,7 +3437,7 @@
 		});
 
 		const players = await loadPlayers([
-			m.home_player_id, m.away_player_id, m.referee_player_id,
+			m.home_player_id, m.away_player_id, m.referee_player_id, ...homeIds, ...awayIds,
 			...rows.flatMap((f) => (f.tbl_frame_participants || []).map((p) => p.player_id)),
 			...rows.map((f) => f.referee_player_id)
 		]);
@@ -3433,8 +3474,9 @@
 				// name is in players like everybody else's.
 				referee: m.referee_player_id,
 				first_break_side: m.first_break_side,
-				home: { name: nameOf(m.home_player_id), crest_url: null, players: [m.home_player_id] },
-				away: { name: nameOf(m.away_player_id), crest_url: null, players: [m.away_player_id] },
+				// Doubles (20261119124608): "Alice & Bob", both seats in order.
+				home: { name: homeIds.map(nameOf).join(' & '), crest_url: null, players: homeIds },
+				away: { name: awayIds.map(nameOf).join(' & '), crest_url: null, players: awayIds },
 				rules: m.rules,
 				// The break event tapped for the frame in play (20261030155332),
 				// only while the card is as it was when it was tapped: any frame
@@ -3555,7 +3597,10 @@
 		// to answer it. The scorecard panel lives on the stage, and the stage is
 		// not on screen any more.
 		const waiting = cardState.state === 'awaiting';
-		const mine = cardState.submitted_by && cardState.submitted_by === myPlayerId;
+		// Doubles (20261119124608): a card my partner sent is my side's too, so
+		// it is the other side's to answer; only the sender may Withdraw it.
+		const sentIt = cardState.submitted_by && cardState.submitted_by === myPlayerId;
+		const mine = submittedByUs();
 		const myTurn = waiting && myPlayerId && !mine;
 		// A published result is settled. There is nothing to agree to, so the
 		// only thing a player can still do is say it is wrong, and only while
@@ -3620,7 +3665,7 @@
 			actions.push(...(disputing
 				? [mbtn('Send', 'result', { act: 'disputesend' }), mbtn('Cancel', '', { act: 'disputecancel' })]
 				: [mbtn('Something is wrong', '', { act: 'disputecard' })]));
-		} else if (canEdit && !MATCH.sanctioned && (!waiting || mine)) {
+		} else if (canEdit && !MATCH.sanctioned && (!waiting || sentIt)) {
 			// While a card is waiting, only the person who sent it can take it
 			// back. The other player's way in is to say what is wrong.
 			if (confirmingDelete && canDelete) {
@@ -3656,7 +3701,7 @@
 		els.cardPanel.hidden = false;
 
 		const state = cardState.state;
-		const mine = cardState.submitted_by && cardState.submitted_by === myPlayerId;
+		const mine = submittedByUs();   // doubles: or by my partner (20261119124608)
 		const other = MATCH[otherSide(mySide() || 'home')];
 		const rows = [];
 
@@ -3761,6 +3806,16 @@
 	}
 
 	// Which side am I on? Only meaningful in a singles match for now.
+	// The card was sent by this player or, in doubles, by their partner
+	// (20261119124608): either way the other side answers it.
+	function submittedByUs() {
+		const by = cardState && cardState.submitted_by;
+		if (!by || !myPlayerId) return false;
+		if (by === myPlayerId) return true;
+		const side = mySide();
+		return !!side && MATCH[side].players.includes(by);
+	}
+
 	function mySide() {
 		if (!myPlayerId) return null;
 		if (MATCH.home.players.includes(myPlayerId)) return 'home';

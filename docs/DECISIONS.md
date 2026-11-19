@@ -2624,3 +2624,22 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* `league-season.js`, `season.html`, `league-manage.js`, `manage.html`, `league-fixtures.js`; `docs/systems/leagues.md`.
 
 ---
+
+## 2026-11-19 — Doubles matches
+
+*Decided by UV (19 Nov):* a social match can have more than one player a side, built for 2 v 2 and shaped for X v X, started from New Match with a 1 v 1 / 2 v 2 toggle and seats to fill, as padel apps do.
+- **The pairs are fixed for the whole match.**
+- **Any player on the other side may agree to or dispute the card; the first answer settles it.** The submitter's partner may not answer.
+- **Break tracking records the side only**, as in singles.
+- **Doubles is listed but kept out of singles numbers, head to head and points for now.**
+- **The lists, the profile and the home cards show both names in this job.**
+
+*Claude's, for UV to correct:*
+- Seat 1 stays in `home_player_id` / `away_player_id` and a new table holds every seat, rather than a new side kind, so every existing reader keeps working and shows at least the first name.
+- Two to four a side in the database; the page offers 2 v 2 only.
+- A new or deleted doubles match also notifies the partner; every other card notification goes to the other side.
+- The seats layout on New Match (yours left, a ringed empty seat that the search fills next) and the stage's overlapping pictures with a name a line.
+- Doubles numbers of their own on the profile are not built.
+
+*Example:* Alice starts a 2 v 2 with Bob against Carol and Dan. Bob scores frame 1 on his phone; it is credited to all four. Alice submits; Bob sees "Submitted. Waiting for Carol & Dan", Dan taps Looks right and it is settled. Alice's profile lists "with Bob vs Carol & Dan" and her win rate does not move.
+*So:* migration `20261119124608_doubles_matches`, test `086_doubles_matches`; `match-new.js`, `src/matches/new/index.html`, `match.js`, `player.js`, `home-cards.js`, `live-match.js`, `points-formula.js`, `forms.css`, `match.css`, `notify-card`; `docs/systems/matches.md`, `players.md`, `points.md`.

@@ -24,7 +24,10 @@
 		clear: el('opponent-clear'),
 		main: el('settings-main'), rest: el('settings-rest'),
 		when: el('match-when'),
-		create: el('create-btn'), status: el('create-status')
+		create: el('create-btn'), status: el('create-status'),
+		// Doubles (UV, 19 Nov)
+		format: el('match-format'), doubles: el('doubles'),
+		dblHome: el('dbl-home'), dblAway: el('dbl-away')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -41,12 +44,25 @@
 	const openGroups = new Set();   // which collapsed groups the person has opened
 	let me = null;
 
+	// Doubles (UV, 19 Nov; migration 20261119124608). 'singles' or 'doubles';
+	// in doubles each side is a list of seats, you in the first home seat, and
+	// `target` is the seat the search fills next. Built for 2 v 2 (SEATS), the
+	// database takes up to four a side.
+	const SEATS = 2;
+	let format = 'singles';
+	const seats = { home: Array(SEATS).fill(null), away: Array(SEATS).fill(null) };
+	let target = { side: 'home', i: 1 };
+
+	const sideName = (side) => seats[side].map((p) => (p ? p.display_name : null)).filter(Boolean).join(' & ');
+
 	// The creator is always home, so the lag winner reads as two names rather
 	// than "home" and "away".
-	D.setSideNames(() => ({
-		home: me ? me.display_name : 'You',
-		away: opponent ? opponent.display_name : 'Your opponent'
-	}));
+	D.setSideNames(() => (format === 'doubles'
+		? { home: sideName('home') || 'Your side', away: sideName('away') || 'Your opponents' }
+		: {
+			home: me ? me.display_name : 'You',
+			away: opponent ? opponent.display_name : 'Your opponent'
+		}));
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -186,8 +202,109 @@
 		if (again) again.focus({ preventScroll: true });
 	}
 
+	// ─── Singles or doubles ───
+	// The pill's two buttons; switching keeps whoever was chosen on both, so
+	// going back and forth loses nothing.
+	function setFormat(f) {
+		format = f;
+		for (const b of els.format.querySelectorAll('[data-format]')) b.setAttribute('aria-pressed', String(b.dataset.format === f));
+		els.doubles.hidden = f !== 'doubles';
+		els.search.value = '';
+		els.results.replaceChildren();
+		if (f === 'doubles') renderSeats(); else showChosen();
+	}
+
+	els.format.addEventListener('click', (e) => {
+		const b = e.target.closest('[data-format]');
+		if (b && b.dataset.format !== format) setFormat(b.dataset.format);
+	});
+
+	// A picture in its circle: the photo, or the first letter.
+	function paintAvatar(box, p) {
+		box.textContent = (p.display_name || '?').trim().charAt(0).toUpperCase();
+		box.style.backgroundImage = '';
+		if (p.avatar_path) {
+			const { data } = supabaseClient.storage.from('player-avatars').getPublicUrl(p.avatar_path);
+			if (data) {
+				box.style.backgroundImage = `url("${data.publicUrl}")`;
+				box.textContent = '';
+			}
+		}
+	}
+
+	const allSeated = () => ['home', 'away'].every((s) => seats[s].every(Boolean));
+	const firstEmpty = () => {
+		for (const side of ['home', 'away']) {
+			const i = seats[side].findIndex((p) => !p);
+			if (i >= 0) return { side, i };
+		}
+		return null;
+	};
+
+	// The two sides as seats. You hold the first home seat and cannot leave it;
+	// every other seat is a tap to fill (the search below points at it) or,
+	// once filled, the player with Remove.
+	function renderSeats() {
+		seats.home[0] = me;
+		if (target && seats[target.side][target.i]) target = firstEmpty();
+		if (!target) target = firstEmpty();
+
+		for (const side of ['home', 'away']) {
+			const box = side === 'home' ? els.dblHome : els.dblAway;
+			box.replaceChildren(...seats[side].map((p, i) => {
+				const seat = node('div', 'dbl-seat');
+				const pic = node('span', 'chosen-avatar');
+
+				if (p) {
+					paintAvatar(pic, p);
+					TDC.profilePic(pic, p.id);   // opens their profile, as singles does
+					seat.append(pic, node('span', 'dbl-name', p === me ? 'You' : p.display_name));
+					if (p !== me) {
+						const rm = node('button', 'link', 'Remove');
+						rm.type = 'button';
+						rm.addEventListener('click', () => {
+							seats[side][i] = null;
+							target = { side, i };
+							renderSeats();
+							els.search.focus();
+						});
+						seat.append(rm);
+					}
+				} else {
+					seat.classList.add('dbl-empty');
+					if (target && target.side === side && target.i === i) seat.classList.add('is-target');
+					pic.textContent = '+';
+					const label = side === 'home' ? 'Add partner' : 'Add player';
+					const pick = node('button', 'dbl-pick');
+					pick.type = 'button';
+					pick.append(pic);
+					seat.append(pick);
+					pick.setAttribute('aria-label', label);
+					pick.addEventListener('click', () => {
+						target = { side, i };
+						renderSeats();
+						els.search.focus();
+					});
+					seat.append(node('span', 'dbl-name', label));
+				}
+				return seat;
+			}));
+		}
+
+		// The search stays only while a seat is empty, labelled for that seat.
+		els.chosen.hidden = true;
+		els.field.hidden = !target;
+		const label = els.field.querySelector('label');
+		if (label) label.textContent = !target ? 'Opponent' : target.side === 'home' ? 'Your partner' : 'Opponent';
+		if (!target) els.results.replaceChildren();
+		els.create.disabled = !allSeated();
+		renderSettings();   // the lag winner's options are the two sides
+	}
+
 	// ─── Opponent ───
 	function showChosen() {
+		const label = els.field.querySelector('label');
+		if (label) label.textContent = 'Opponent';
 		els.chosen.hidden = !opponent;
 		els.field.hidden = !!opponent;
 		els.results.replaceChildren();
@@ -219,12 +336,18 @@
 		if (run !== searchRun) return;   // a later keystroke has overtaken this one
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
 
-		if (!data.length) {
-			els.results.replaceChildren(node('p', 'muted', 'Nobody by that name. They need an account to be played against here.'));
+		// Doubles: somebody already in a seat is not offered again.
+		const seated = new Set(format === 'doubles' ? [...seats.home, ...seats.away].filter(Boolean).map((p) => p.id) : []);
+		const found = data.filter((p) => !seated.has(p.id));
+
+		if (!found.length) {
+			els.results.replaceChildren(node('p', 'muted', data.length
+				? 'Everybody by that name is already in this match.'
+				: 'Nobody by that name. They need an account to be played against here.'));
 			return;
 		}
 
-		els.results.replaceChildren(...data.map((p) => {
+		els.results.replaceChildren(...found.map((p) => {
 			const b = node('button', 'result');
 			b.type = 'button';
 			b.append(node('span', 'result-name', p.display_name));
@@ -233,7 +356,19 @@
 				sub.append(TDC.fullName(p.full_name, p.surname));
 				b.append(sub);
 			}
-			b.addEventListener('click', () => { opponent = p; els.search.value = ''; showChosen(); });
+			b.addEventListener('click', () => {
+				els.search.value = '';
+				if (format === 'doubles') {
+					if (!target) return;
+					seats[target.side][target.i] = p;
+					target = firstEmpty();   // on to the next empty seat
+					els.results.replaceChildren();
+					renderSeats();
+					if (target) els.search.focus();
+					return;
+				}
+				opponent = p; showChosen();
+			});
 			return b;
 		}));
 	}
@@ -253,18 +388,32 @@
 	// The dots stay on the button through every call (UV, 29 Oct: never a
 	// loading message).
 	els.create.addEventListener('click', () => TDC.busy(els.create, (async () => {
-		if (!opponent) { TDC.status(els.status, 'Choose who you are playing first.', ''); return; }
+		const doubles = format === 'doubles';
+		if (doubles ? !allSeated() : !opponent) {
+			TDC.status(els.status, doubles ? 'Fill every seat first.' : 'Choose who you are playing first.', '');
+			return;
+		}
 
 		els.create.disabled = true;
 		TDC.status(els.status, '', '');
 
-		const { data, error } = await supabaseClient.rpc('tdc_create_match', {
-			p_opponent_player_id: opponent.id,
-			p_rules: rules,
-			p_first_break_side: firstBreakSide,
-			p_venue_id: null,
-			p_i_am: 'home'
-		});
+		// Doubles is its own function (20261119124608): a list of players a
+		// side, in seat order, you first at home.
+		const { data, error } = doubles
+			? await supabaseClient.rpc('tdc_create_team_match', {
+				p_home_players: seats.home.map((p) => p.id),
+				p_away_players: seats.away.map((p) => p.id),
+				p_rules: rules,
+				p_first_break_side: firstBreakSide,
+				p_venue_id: null
+			})
+			: await supabaseClient.rpc('tdc_create_match', {
+				p_opponent_player_id: opponent.id,
+				p_rules: rules,
+				p_first_break_side: firstBreakSide,
+				p_venue_id: null,
+				p_i_am: 'home'
+			});
 
 		if (error) {
 			els.create.disabled = false;

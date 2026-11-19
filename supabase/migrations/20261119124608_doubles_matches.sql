@@ -605,11 +605,13 @@ begin
 	-- 20261119124608): the side's seats, in seat order, and nobody else.
 	if v_match.home_side_kind = 'player' and v_home is not null
 		and v_home <> private.tdc_match_side_players(p_match_id, 'home') then
-		raise exception 'TDC (Error): the home side of this match is fixed and cannot be changed per frame.';
+		raise exception 'TDC (Error): the home side of this match is % and cannot be changed per frame.',
+			case when array_length(private.tdc_match_side_players(p_match_id, 'home'), 1) > 1 then 'fixed' else 'one player' end;
 	end if;
 	if v_match.away_side_kind = 'player' and v_away is not null
 		and v_away <> private.tdc_match_side_players(p_match_id, 'away') then
-		raise exception 'TDC (Error): the away side of this match is fixed and cannot be changed per frame.';
+		raise exception 'TDC (Error): the away side of this match is % and cannot be changed per frame.',
+			case when array_length(private.tdc_match_side_players(p_match_id, 'away'), 1) > 1 then 'fixed' else 'one player' end;
 	end if;
 	-- Who sits in a team frame is decided by the lineup and by
 	-- tdc_swap_frame_player, which checks the team and the three reserve
@@ -1146,6 +1148,760 @@ begin
 	where id = p_keep_id;
 
 	return p_keep_id;
+end;
+$function$
+
+;
+
+
+-- ─── The lists, the profile and head to head (UV, 19 Nov: in this job) ───
+--
+-- A doubles side reads "Alice & Bob" wherever a list names a side; a seat 2
+-- player finds the match in their own lists before a frame is played; and a
+-- doubles match is flagged on the profile and left out of head to head, so it
+-- never counts in singles numbers (UV, 19 Nov). Points are not built yet
+-- (docs/systems/points.md); when they are, they leave doubles out too.
+
+-- "Alice & Bob" for a doubles side, in seat order; null for anything else,
+-- so a reader writes coalesce(this, the singles name, ...).
+create function private.tdc_doubles_side_name(p_match_id uuid, p_side text)
+returns text
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+	select string_agg(coalesce(p.display_name, 'TDC (Error)'), ' & ' order by s.seat)
+	from public.tbl_match_side_players s
+	left join public.tbl_players p on p.id = s.player_id
+	where s.match_id = p_match_id and s.side = p_side;
+$$;
+revoke execute on function private.tdc_doubles_side_name(uuid, text) from public, anon;
+
+-- @@FN public.tdc_my_matches
+CREATE OR REPLACE FUNCTION public.tdc_my_matches(p_limit integer DEFAULT 50)
+ RETURNS TABLE(id uuid, played_at timestamp with time zone, status text, sanctioned boolean, my_side text, opponent text, my_frames integer, their_frames integer, frames_played integer, win_condition text, target integer, discipline text, card_state jsonb, needs_me boolean, refereeing boolean, team_match boolean, card_role text)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+	with me as (
+		select p.id from public.tbl_players p where p.user_id = (select auth.uid())
+	),
+	mine as (
+		select m.id as match_id,
+			case when m.home_player_id = (select id from me) then 'home' else 'away' end as side
+		from public.tbl_matches m
+		where (select id from me) is not null
+			and ((select id from me) in (m.home_player_id, m.away_player_id))
+		-- Doubles (20261119124608): any seat, before a frame is played too.
+		union
+		select s.match_id, s.side
+		from public.tbl_match_side_players s
+		where s.player_id = (select id from me)
+		union
+		select f.match_id, fp.side
+		from public.tbl_frame_participants fp
+		join public.tbl_frames f on f.id = fp.frame_id
+		where fp.player_id = (select id from me)
+		-- Match referee (20261024162559).
+		union
+		select m.id, 'ref'
+		from public.tbl_matches m
+		where (select id from me) is not null
+			and m.referee_player_id = (select id from me)
+	),
+	one_side as (
+		-- Match referee (20261024162559): a referee reads the score home first.
+		select match_id,
+			case when min(side) = 'ref' then 'home' else min(side) end as side,
+			min(side) = 'ref' as refereeing
+		from mine group by match_id
+	),
+	-- A team match's role for the caller (20261029140544).
+	roles as (
+		select s.match_id,
+			case
+				when private.tdc_can_run_league(private.tdc_league_season_of_match(s.match_id)) then 'director'
+				when private.tdc_league_match_side(s.match_id) is not null then 'captain'
+			end as card_role,
+			private.tdc_league_match_side(s.match_id) as captain_side
+		from one_side s
+		join public.tbl_matches m on m.id = s.match_id
+		where m.home_side_kind = 'team' and m.away_side_kind = 'team'
+	)
+	select
+		m.id,
+		coalesce(m.started_at, m.scheduled_at, m.created_at),
+		m.status,
+		m.sanctioned,
+		s.side,
+		case
+			-- Match referee (20261024162559).
+			-- Doubles (20261119124608): "Alice & Bob" in place of seat 1's name.
+			when s.refereeing then
+				(case when m.home_side_kind = 'team' then coalesce(ht.name, 'Team') else coalesce(private.tdc_doubles_side_name(m.id, 'home'), hp.display_name, 'TDC (Error)') end)
+				|| ' : '
+				|| (case when m.away_side_kind = 'team' then coalesce(awt.name, 'Team') else coalesce(private.tdc_doubles_side_name(m.id, 'away'), ap.display_name, 'TDC (Error)') end)
+			when s.side = 'home' then
+				case when m.away_side_kind = 'team' then coalesce(awt.name, 'Team') else coalesce(private.tdc_doubles_side_name(m.id, 'away'), ap.display_name, 'TDC (Error)') end
+			else
+				case when m.home_side_kind = 'team' then coalesce(ht.name, 'Team') else coalesce(private.tdc_doubles_side_name(m.id, 'home'), hp.display_name, 'TDC (Error)') end
+		end,
+		(select count(*) from public.tbl_frames f
+			where f.match_id = m.id and f.status = 'complete' and f.winner_side = s.side)::integer,
+		(select count(*) from public.tbl_frames f
+			where f.match_id = m.id and f.status = 'complete' and f.winner_side <> s.side)::integer,
+		(select count(*) from public.tbl_frames f where f.match_id = m.id)::integer,
+		m.rules->>'win_condition_type',
+		(m.rules->>'win_condition_target')::integer,
+		m.rules->>'discipline',
+		private.tdc_card_state(m.id),
+		-- Somebody else submitted and is waiting on me.
+		case
+			-- A team card (20261029140544): a signature this person gives.
+			when r.match_id is not null then
+				coalesce(private.tdc_card_state(m.id)->>'state' = 'awaiting'
+					and (r.card_role = 'director'
+						or private.tdc_card_state(m.id)->>'waiting_on' in (r.captain_side, 'both')), false)
+			else
+		(not s.refereeing
+			and private.tdc_card_state(m.id)->>'state' = 'awaiting'
+			and (private.tdc_card_state(m.id)->>'submitted_by')::uuid
+				is distinct from (select id from me)
+			-- Doubles (20261119124608): nor my partner; the other side answers.
+			and private.tdc_side_of_player(m.id, (private.tdc_card_state(m.id)->>'submitted_by')::uuid)
+				is distinct from s.side)
+		end,
+		s.refereeing,
+		r.match_id is not null,
+		r.card_role
+	from one_side s
+	join public.tbl_matches m on m.id = s.match_id
+	left join public.tbl_players hp on hp.id = m.home_player_id
+	left join public.tbl_players ap on ap.id = m.away_player_id
+	left join public.tbl_teams ht on ht.id = m.home_team_id
+	left join public.tbl_teams awt on awt.id = m.away_team_id
+	left join roles r on r.match_id = m.id
+	order by coalesce(m.started_at, m.scheduled_at, m.created_at) desc
+	limit greatest(1, least(coalesce(p_limit, 50), 200));
+$function$
+
+;
+
+-- @@FN public.tdc_my_active
+CREATE OR REPLACE FUNCTION public.tdc_my_active()
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+	with me as (
+		select id from public.tbl_players where user_id = (select auth.uid())
+	),
+	active as (
+		select m.* from public.tbl_matches m
+		where m.status in ('scheduled', 'in_progress')
+			-- A team night only while it is on the schedule (UV, 18 Nov).
+			and (not (m.home_side_kind = 'team' and m.away_side_kind = 'team')
+				or exists (select 1 from public.tbl_league_fixtures lf where lf.match_id = m.id))
+	),
+	mine as (
+		select a.id as match_id,
+			case when a.home_player_id = (select id from me) then 'home' else 'away' end as side
+		from active a
+		where (select id from me) in (a.home_player_id, a.away_player_id)
+		-- Doubles (20261119124608): any seat, before a frame is played too.
+		union
+		select a.id, s.side
+		from public.tbl_match_side_players s
+		join active a on a.id = s.match_id
+		where s.player_id = (select id from me)
+		union
+		select a.id, fp.side
+		from public.tbl_frame_participants fp
+		join public.tbl_frames f on f.id = fp.frame_id
+		join active a on a.id = f.match_id
+		where fp.player_id = (select id from me)
+		union
+		select a.id, q.side
+		from public.tbl_league_match_squad q
+		join active a on a.id = q.match_id
+		where q.player_id = (select id from me)
+		union
+		select a.id, case when e.team_id = a.home_team_id then 'home' else 'away' end
+		from public.tbl_league_season_entrants e
+		join active a on e.team_id in (a.home_team_id, a.away_team_id)
+		where e.player_id = (select id from me) and e.status = 'active'
+		union
+		select a.id, 'ref'
+		from active a
+		where a.referee_player_id = (select id from me)
+	),
+	one_side as (
+		-- As tdc_my_matches: a referee reads the score home first.
+		select match_id,
+			case when min(side) = 'ref' then 'home' else min(side) end as side,
+			min(side) = 'ref' as refereeing
+		from mine group by match_id
+	),
+	base as (
+		select m.*, s.side, s.refereeing,
+			m.home_side_kind = 'team' and m.away_side_kind = 'team' as team_match,
+			coalesce(m.started_at, m.scheduled_at, m.created_at) as played_at,
+			private.tdc_card_state(m.id) as card,
+			case when m.home_side_kind = 'team' and m.away_side_kind = 'team'
+				then private.tdc_league_match_side(m.id) end as captain_side,
+			case when m.home_side_kind = 'team' and m.away_side_kind = 'team'
+				then private.tdc_can_run_league(private.tdc_league_season_of_match(m.id))
+				else false end as director
+		from one_side s
+		join public.tbl_matches m on m.id = s.match_id
+	),
+	flagged as (
+		select r.*,
+			coalesce(r.captain_side is not null and not exists (
+				select 1 from public.tbl_league_match_sides ms
+				where ms.match_id = r.id and ms.side = r.captain_side and ms.locked_at is not null
+			), false) as set_lineup
+		from base r
+	),
+	needs as (
+		select f.*,
+			case
+				when f.team_match then
+					f.set_lineup
+					or coalesce(f.card->>'state' = 'awaiting'
+						and (f.director or f.card->>'waiting_on' in (f.captain_side, 'both')), false)
+				else
+					coalesce(not f.refereeing
+						and f.card->>'state' = 'awaiting'
+						and (f.card->>'submitted_by')::uuid is distinct from (select id from me)
+						-- Doubles (20261119124608): nor my partner; the other side answers.
+						and private.tdc_side_of_player(f.id, (f.card->>'submitted_by')::uuid) is distinct from f.side, false)
+			end as needs_me
+		from flagged f
+	)
+	select jsonb_build_object(
+		'matches', coalesce((
+			select jsonb_agg(jsonb_build_object(
+				'id', n.id,
+				'status', n.status,
+				'team_match', n.team_match,
+				'opponent', case
+					-- Doubles (20261119124608): "Alice & Bob" in place of seat 1's name.
+					when n.refereeing then
+						(case when n.home_side_kind = 'team' then coalesce(ht.name, 'Team') else coalesce(private.tdc_doubles_side_name(n.id, 'home'), hp.display_name, 'TDC (Error)') end)
+						|| ' : '
+						|| (case when n.away_side_kind = 'team' then coalesce(awt.name, 'Team') else coalesce(private.tdc_doubles_side_name(n.id, 'away'), ap.display_name, 'TDC (Error)') end)
+					when n.side = 'home' then
+						case when n.away_side_kind = 'team' then coalesce(awt.name, 'Team') else coalesce(private.tdc_doubles_side_name(n.id, 'away'), ap.display_name, 'TDC (Error)') end
+					else
+						case when n.home_side_kind = 'team' then coalesce(ht.name, 'Team') else coalesce(private.tdc_doubles_side_name(n.id, 'home'), hp.display_name, 'TDC (Error)') end
+				end,
+				'my_frames', (select count(*) from public.tbl_frames f
+					where f.match_id = n.id and f.status = 'complete' and f.winner_side = n.side),
+				'their_frames', (select count(*) from public.tbl_frames f
+					where f.match_id = n.id and f.status = 'complete' and f.winner_side <> n.side),
+				'played_at', n.played_at,
+				'win_condition', n.rules->>'win_condition_type',
+				'target', (n.rules->>'win_condition_target')::integer,
+				'card_state', n.card->>'state',
+				'needs_me', n.needs_me,
+				'set_lineup', n.set_lineup,
+				'refereeing', n.refereeing
+			)
+			-- Needs you first, then what is being played, newest first, then
+			-- what is to come, soonest first.
+			order by n.needs_me desc, n.status = 'in_progress' desc,
+				case when n.status = 'in_progress' then n.played_at end desc,
+				n.played_at asc)
+			from needs n
+			left join public.tbl_players hp on hp.id = n.home_player_id
+			left join public.tbl_players ap on ap.id = n.away_player_id
+			left join public.tbl_teams ht on ht.id = n.home_team_id
+			left join public.tbl_teams awt on awt.id = n.away_team_id
+		), '[]'::jsonb),
+		'leagues', coalesce((
+			select jsonb_agg(jsonb_build_object(
+				'league_season_id', l.league_season_id,
+				'league_name', l.league_name,
+				'season_name', l.season_name,
+				'status', l.status,
+				'i_run_it', l.i_run_it,
+				'my_team_name', l.my_team_name,
+				'i_captain', l.i_captain,
+				'my_status', l.my_status,
+				'confirmed_at', l.confirmed_at
+			) order by l.ordinality)
+			from public.tdc_my_leagues(200) with ordinality as l
+			where l.status <> 'finished'
+				and (l.i_run_it or l.my_status is distinct from 'withdrawn')
+		), '[]'::jsonb),
+		'tournaments', coalesce((
+			select jsonb_agg(jsonb_build_object(
+				'id', t.id,
+				'name', t.name,
+				'status', t.status,
+				'starts_at', t.starts_at,
+				'entrants', t.entrants,
+				'i_run_it', t.i_run_it,
+				'poster_open', t.poster_open
+			) order by t.ordinality)
+			from public.tdc_my_tournaments(200) with ordinality as t
+			where t.status in ('draft', 'open', 'in_progress')
+				and (t.i_run_it or exists (
+					select 1 from public.tbl_tournament_entrants e
+					where e.tournament_id = t.id
+						and e.player_id = (select id from me)
+						and e.status <> 'withdrawn'
+				))
+		), '[]'::jsonb)
+	);
+$function$
+
+;
+
+-- @@FN public.tdc_my_live_matches
+CREATE OR REPLACE FUNCTION public.tdc_my_live_matches(p_league_season_id uuid DEFAULT NULL::uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+	select coalesce((
+		select jsonb_agg(x.j order by x.rank, x.at desc)
+		from (
+			select jsonb_build_object(
+				'id', c.id,
+				'team_match', c.team_match,
+				'state', c.state,
+				'opponent', case when c.team_match then coalesce(ot.name, 'Team')
+					-- Doubles (20261119124608): "Carol & Dan".
+					else coalesce(private.tdc_doubles_side_name(c.id, case when c.my_side = 'home' then 'away' else 'home' end),
+						op.display_name, 'TDC (Error)') end,
+				'opponent_kind', case when c.team_match then 'team' else 'player' end,
+				'opponent_picture', case when c.team_match then ot.picture_path else op.avatar_path end,
+				'my_frames', (select count(*) from public.tbl_frames f
+					where f.match_id = c.id and f.status = 'complete' and f.winner_side = c.my_side)::integer,
+				'their_frames', (select count(*) from public.tbl_frames f
+					where f.match_id = c.id and f.status = 'complete' and f.winner_side <> c.my_side)::integer,
+				'competition', coalesce(
+					(select l.name from public.tbl_league_fixtures lf
+						join public.tbl_league_seasons ls on ls.id = lf.league_season_id
+						join public.tbl_leagues l on l.id = ls.league_id
+						where lf.match_id = c.id limit 1),
+					(select t.name from public.tbl_tournament_fixtures tf
+						join public.tbl_tournaments t on t.id = tf.tournament_id
+						where tf.match_id = c.id limit 1))
+			) as j,
+			case when c.state = 'playing' then 0 else 1 end as rank,
+			c.at
+			from (
+				-- A team night for a team I play for
+				select m.id, true as team_match,
+					case when m.home_team_id = e.team_id then 'home' else 'away' end as my_side,
+					case when m.status = 'in_progress'
+						or (select count(*) from public.tbl_league_match_sides sd
+							where sd.match_id = m.id and sd.locked_at is not null) >= 2
+						then 'playing' else 'lineups' end as state,
+					coalesce(m.started_at, m.scheduled_at, m.created_at) as at,
+					m.home_team_id, m.away_team_id, m.home_player_id, m.away_player_id
+				from public.tbl_matches m
+				join public.tbl_league_season_entrants e
+					on e.team_id in (m.home_team_id, m.away_team_id)
+					and e.status = 'active'
+					and e.player_id = (select p.id from public.tbl_players p where p.user_id = (select auth.uid()))
+				where m.home_side_kind = 'team' and m.away_side_kind = 'team'
+					and m.status in ('scheduled', 'in_progress')
+					-- Only while it is on the schedule (UV, 18 Nov).
+					and exists (select 1 from public.tbl_league_fixtures lf where lf.match_id = m.id)
+				union all
+				-- A singles match I am playing
+				-- (or a doubles match, any seat: 20261119124608)
+				select m.id, false,
+					private.tdc_side_of_player(m.id, me.id),
+					'playing',
+					coalesce(m.started_at, m.scheduled_at, m.created_at),
+					m.home_team_id, m.away_team_id, m.home_player_id, m.away_player_id
+				from public.tbl_matches m
+				join public.tbl_players me on me.user_id = (select auth.uid())
+					and private.tdc_side_of_player(m.id, me.id) is not null
+				where m.home_side_kind = 'player' and m.away_side_kind = 'player'
+					and m.status = 'in_progress'
+			) c
+			left join public.tbl_teams ot
+				on ot.id = case when c.my_side = 'home' then c.away_team_id else c.home_team_id end
+			left join public.tbl_players op
+				on op.id = case when c.my_side = 'home' then c.away_player_id else c.home_player_id end
+			-- On a league's page, that league's nights only (UV, 18 Nov)
+			where p_league_season_id is null
+				or exists (select 1 from public.tbl_league_fixtures lf
+					where lf.match_id = c.id and lf.league_season_id = p_league_season_id)
+			order by rank, c.at desc
+			limit 3
+		) x
+	), '[]'::jsonb);
+$function$
+
+;
+
+-- @@FN public.tdc_my_feed
+CREATE OR REPLACE FUNCTION public.tdc_my_feed(p_limit integer DEFAULT 10)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+	with me as (
+		select id from public.tbl_players where user_id = (select auth.uid())
+	),
+	followed as (
+		select f.followed_id as id
+		from public.tbl_player_follows f
+		where f.follower_id = (select id from me)
+	),
+	seen as (
+		select m.id as match_id, m.home_player_id as player_id, 'home' as side
+		from public.tbl_matches m
+		where m.home_player_id in (select id from followed)
+		union
+		select m.id, m.away_player_id, 'away'
+		from public.tbl_matches m
+		where m.away_player_id in (select id from followed)
+		union
+		select f.match_id, fp.player_id, fp.side
+		from public.tbl_frame_participants fp
+		join public.tbl_frames f on f.id = fp.frame_id
+		where fp.player_id in (select id from followed)
+	),
+	counted as (
+		select m.*,
+			m.home_side_kind = 'team' and m.away_side_kind = 'team' as team_match,
+			coalesce(m.started_at, m.scheduled_at, m.created_at) as played_at,
+			(select count(*)::integer from public.tbl_frames f
+				where f.match_id = m.id and f.status = 'complete' and f.winner_side = 'home') as home_frames,
+			(select count(*)::integer from public.tbl_frames f
+				where f.match_id = m.id and f.status = 'complete' and f.winner_side = 'away') as away_frames
+		from public.tbl_matches m
+		where m.status in ('in_progress', 'complete')
+			and m.id in (select match_id from seen)
+	),
+	judged as (
+		select c.*,
+			case
+				when c.status = 'complete' then true
+				when c.team_match then
+					private.tdc_card_state(c.id)->>'state' in ('awaiting', 'agreed', 'approved', 'disputed')
+					or (exists (select 1 from public.tbl_frames f where f.match_id = c.id)
+						and not exists (select 1 from public.tbl_frames f where f.match_id = c.id and f.status not in ('complete', 'abandoned')))
+				when c.rules->>'win_condition_type' = 'race_to'
+					and greatest(c.home_frames, c.away_frames) >= (c.rules->>'win_condition_target')::integer then true
+				when c.rules->>'win_condition_type' = 'best_of'
+					and greatest(c.home_frames, c.away_frames) > (c.rules->>'win_condition_target')::integer / 2 then true
+				else private.tdc_card_state(c.id)->>'state' in ('awaiting', 'agreed', 'approved', 'disputed')
+			end as finished
+		from counted c
+	),
+	shown as (
+		select * from judged
+		order by finished, played_at desc, id
+		limit greatest(1, least(coalesce(p_limit, 10), 200)) + 1
+	)
+	select jsonb_build_object(
+		'follows', exists (select 1 from followed),
+		'more', (select count(*) from shown) > greatest(1, least(coalesce(p_limit, 10), 200)),
+		'rows', coalesce((
+			select jsonb_agg(jsonb_build_object(
+				'id', s.id,
+				'team_match', s.team_match,
+				'finished', s.finished,
+				-- Doubles (20261119124608): "Alice & Bob" in place of seat 1's name.
+				'home', case when s.home_side_kind = 'team' then coalesce(ht.name, 'Team') else coalesce(private.tdc_doubles_side_name(s.id, 'home'), hp.display_name, 'TDC (Error)') end,
+				'away', case when s.away_side_kind = 'team' then coalesce(awt.name, 'Team') else coalesce(private.tdc_doubles_side_name(s.id, 'away'), ap.display_name, 'TDC (Error)') end,
+				'home_frames', s.home_frames,
+				'away_frames', s.away_frames,
+				'played_at', s.played_at,
+				'win_condition', s.rules->>'win_condition_type',
+				'target', (s.rules->>'win_condition_target')::integer,
+				'competition', coalesce(lg.name, tn.name),
+				'players', who.names,
+				'avatar_path', who.avatar_path,
+				'team_picture', case when who.side = 'home' then ht.picture_path else awt.picture_path end
+			) order by s.finished, s.played_at desc, s.id)
+			from (
+				select * from shown
+				order by finished, played_at desc, id
+				limit greatest(1, least(coalesce(p_limit, 10), 200))
+			) s
+			cross join lateral (
+				select jsonb_agg(x.display_name order by x.display_name) as names,
+					(array_agg(x.avatar_path order by x.display_name))[1] as avatar_path,
+					(array_agg(x.side order by x.display_name))[1] as side
+				from (
+					select p.display_name, p.avatar_path, min(e.side) as side
+					from seen e
+					join public.tbl_players p on p.id = e.player_id
+					where e.match_id = s.id
+					group by p.id, p.display_name, p.avatar_path
+				) x
+			) who
+			left join public.tbl_players hp on hp.id = s.home_player_id
+			left join public.tbl_players ap on ap.id = s.away_player_id
+			left join public.tbl_teams ht on ht.id = s.home_team_id
+			left join public.tbl_teams awt on awt.id = s.away_team_id
+			left join lateral (select x.league_season_id from public.tbl_league_fixtures x where x.match_id = s.id limit 1) lf on true
+			left join public.tbl_league_seasons ls on ls.id = lf.league_season_id
+			left join public.tbl_leagues lg on lg.id = ls.league_id
+			left join lateral (select x.tournament_id from public.tbl_tournament_fixtures x where x.match_id = s.id limit 1) tf on true
+			left join public.tbl_tournaments tn on tn.id = tf.tournament_id
+		), '[]'::jsonb)
+	);
+$function$
+
+;
+
+-- @@FN public.tdc_player_profile
+CREATE OR REPLACE FUNCTION public.tdc_player_profile(p_player_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+	v_me uuid;
+	v_out jsonb;
+begin
+	if (select auth.uid()) is null then
+		raise exception 'Sign in to see a player''s profile.';
+	end if;
+	if not exists (select 1 from public.tbl_players p where p.id = p_player_id) then
+		raise exception 'No player with that id. Check the link.';
+	end if;
+	select p.id into v_me from public.tbl_players p where p.user_id = (select auth.uid());
+
+	with in_match as (
+		-- The side of the frames they are in, as tdc_my_matches reads it; a
+		-- singles match naming them; a team night's squad (never the order).
+		select x.match_id, min(x.side) as side
+		from (
+			select f.match_id, fp.side
+			from public.tbl_frame_participants fp
+			join public.tbl_frames f on f.id = fp.frame_id
+			where fp.player_id = p_player_id
+			union all
+			select m.id, case when m.home_player_id = p_player_id then 'home' else 'away' end
+			from public.tbl_matches m
+			where p_player_id in (m.home_player_id, m.away_player_id)
+			-- Doubles (20261119124608): any seat, before a frame is played too.
+			union all
+			select s.match_id, s.side
+			from public.tbl_match_side_players s
+			where s.player_id = p_player_id
+			union all
+			select q.match_id, q.side
+			from public.tbl_league_match_squad q
+			where q.player_id = p_player_id
+		) x
+		group by x.match_id
+	),
+	counted as (
+		select m.id, m.home_side_kind, m.away_side_kind, m.home_player_id, m.away_player_id,
+			m.home_team_id, m.away_team_id, m.rules, m.status, s.side,
+			-- Doubles (20261119124608): listed, never counted in singles numbers (UV, 19 Nov).
+			exists (select 1 from public.tbl_match_side_players d where d.match_id = m.id) as doubles,
+			coalesce(m.started_at, m.scheduled_at, m.created_at) as played_at,
+			(select count(*) from public.tbl_frames f
+				where f.match_id = m.id and f.status = 'complete' and f.winner_side = s.side)::integer as mine,
+			(select count(*) from public.tbl_frames f
+				where f.match_id = m.id and f.status = 'complete' and f.winner_side <> s.side)::integer as theirs
+		from in_match s
+		join public.tbl_matches m on m.id = s.match_id
+	)
+	select jsonb_build_object(
+		'player', (
+			select jsonb_build_object(
+				'player_id', p.id,
+				'display_name', p.display_name,
+				'full_name', nullif(trim(concat_ws(' ', p.first_name, p.last_name)), ''),
+				'surname', nullif(trim(p.last_name), ''),
+				'avatar_path', p.avatar_path,
+				'since', p.created_at,
+				'verified', exists (
+					select 1 from public.tbl_player_identifiers i
+					join public.tbl_identifier_verifications v on v.identifier_id = i.id
+					where i.player_id = p.id and v.revoked_at is null),
+				'is_me', p.id is not distinct from v_me
+			)
+			from public.tbl_players p where p.id = p_player_id
+		),
+		'matches', coalesce((
+			select jsonb_agg(jsonb_build_object(
+				'match_id', c.id,
+				'status', c.status,
+				'played_at', c.played_at,
+				'kind', case when lf.match_id is not null then 'league'
+					when tf.match_id is not null then 'tournament' else 'social' end,
+				'competition', coalesce(lg.name, tn.name),
+				'discipline', c.rules ->> 'discipline',
+				'team_match', c.home_side_kind = 'team' and c.away_side_kind = 'team',
+				'my_side', c.side,
+				'my_team', mt.name,
+				'opponent', case when op_kind = 'team' then coalesce(ot.name, 'Team')
+					else coalesce(private.tdc_doubles_side_name(c.id, case when c.side = 'home' then 'away' else 'home' end),
+						op.display_name, 'TDC (Error)') end,
+				-- Doubles (20261119124608): the flag the page counts by, and the
+				-- partner(s), "Bob" (every other seat of their side, in order).
+				'doubles', c.doubles,
+				'partner', case when c.doubles then (
+					select string_agg(coalesce(pp.display_name, 'TDC (Error)'), ' & ' order by sp.seat)
+					from public.tbl_match_side_players sp
+					left join public.tbl_players pp on pp.id = sp.player_id
+					where sp.match_id = c.id and sp.side = c.side and sp.player_id <> p_player_id) end,
+				'opponent_player_id', op.id,
+				'opponent_avatar', case when op_kind = 'team' then null else op.avatar_path end,
+				'opponent_team_id', ot.id,
+				'opponent_team_picture', ot.picture_path,
+				'mine', c.mine,
+				'theirs', c.theirs,
+				'venues', private.tdc_match_venue_list(c.id)
+			) order by c.played_at desc)
+			from counted c
+			cross join lateral (select case when c.side = 'home' then c.away_side_kind else c.home_side_kind end as op_kind) k
+			left join public.tbl_players op
+				on op.id = case when c.side = 'home' then c.away_player_id else c.home_player_id end
+			left join public.tbl_teams ot
+				on ot.id = case when c.side = 'home' then c.away_team_id else c.home_team_id end
+			left join public.tbl_teams mt
+				on mt.id = case when c.side = 'home' then c.home_team_id else c.away_team_id end
+			left join lateral (select x.match_id, x.league_season_id from public.tbl_league_fixtures x where x.match_id = c.id limit 1) lf on true
+			left join public.tbl_league_seasons ls on ls.id = lf.league_season_id
+			left join public.tbl_leagues lg on lg.id = ls.league_id
+			left join lateral (select x.match_id, x.tournament_id from public.tbl_tournament_fixtures x where x.match_id = c.id limit 1) tf on true
+			left join public.tbl_tournaments tn on tn.id = tf.tournament_id
+		), '[]'::jsonb),
+		'frames', coalesce((
+			select jsonb_agg(jsonb_build_object(
+				'match_id', f.match_id,
+				'frame_no', f.frame_no,
+				'at', coalesce(f.ended_at, f.started_at, c.played_at),
+				'won', coalesce(f.winner_side = fp.side, false),
+				'broke', case when f.break_side is null then null else f.break_side = fp.side end,
+				'result_event', f.result_event
+			) order by c.played_at desc, f.frame_no)
+			from counted c
+			join public.tbl_frames f on f.match_id = c.id and f.status = 'complete'
+			join public.tbl_frame_participants fp on fp.frame_id = f.id and fp.player_id = p_player_id
+			where c.status = 'complete'   -- what is counted: finished matches only
+				and not c.doubles         -- and singles numbers only (20261119124608)
+		), '[]'::jsonb),
+		'teams', coalesce((
+			select jsonb_agg(jsonb_build_object(
+				'league_season_id', ls.id,
+				'season_name', ls.name,
+				'league_id', lg.id,
+				'league_name', lg.name,
+				'league_picture', lg.picture_path,
+				'discipline', private.tdc_rules_for_league_season(ls.id) ->> 'discipline',
+				'team_id', t.id,
+				'team_name', t.name,
+				'team_picture', t.picture_path,
+				'is_captain', coalesce(e.is_captain, false),
+				'status', e.status,
+				'venues', private.tdc_season_venue_list(ls.id)
+			) order by ls.created_at desc)
+			from public.tbl_league_season_entrants e
+			join public.tbl_league_seasons ls on ls.id = e.league_season_id
+			join public.tbl_leagues lg on lg.id = ls.league_id
+			left join public.tbl_teams t on t.id = e.team_id
+			where e.player_id = p_player_id and e.status in ('active', 'inactive')
+		), '[]'::jsonb)
+	) into v_out;
+
+	return v_out;
+end;
+$function$
+
+;
+
+-- @@FN public.tdc_head_to_head
+CREATE OR REPLACE FUNCTION public.tdc_head_to_head(p_player_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+	v_me uuid;
+	v_out jsonb;
+begin
+	if (select auth.uid()) is null then
+		raise exception 'Sign in to compare yourself with a player.';
+	end if;
+	if not exists (select 1 from public.tbl_players p where p.id = p_player_id) then
+		raise exception 'No player with that id. Check the link.';
+	end if;
+	select p.id into v_me from public.tbl_players p where p.user_id = (select auth.uid());
+	if v_me is null then
+		raise exception 'TDC (Error): this account has no player record.';
+	end if;
+	if v_me = p_player_id then
+		return jsonb_build_object('me', v_me, 'same', true, 'meetings', '[]'::jsonb);
+	end if;
+
+	with met as (
+		-- Frames the two played on opposite sides.
+		select f.match_id, f.frame_no,
+			coalesce(f.ended_at, f.started_at, coalesce(m.started_at, m.scheduled_at, m.created_at)) as at,
+			coalesce(m.started_at, m.scheduled_at, m.created_at) as played_at,
+			coalesce(f.winner_side = a.side, false) as won,
+			case when f.break_side is null then null else f.break_side = a.side end as broke
+		from public.tbl_frame_participants a
+		join public.tbl_frame_participants b on b.frame_id = a.frame_id and b.side <> a.side
+		join public.tbl_frames f on f.id = a.frame_id and f.status = 'complete'
+		join public.tbl_matches m on m.id = f.match_id and m.status = 'complete'
+		where a.player_id = v_me and b.player_id = p_player_id
+			-- Doubles is not a meeting of the two (UV, 19 Nov; 20261119124608).
+			and not exists (select 1 from public.tbl_match_side_players d where d.match_id = m.id)
+	)
+	select jsonb_build_object(
+		'me', v_me,
+		'same', false,
+		'meetings', coalesce((
+			select jsonb_agg(jsonb_build_object(
+				'match_id', g.match_id,
+				'played_at', g.played_at,
+				'kind', case when lf.match_id is not null then 'league'
+					when tf.match_id is not null then 'tournament' else 'social' end,
+				'competition', coalesce(lg.name, tn.name),
+				'team_match', mm.home_side_kind = 'team' and mm.away_side_kind = 'team',
+				'home_team', ht.name,
+				'away_team', awt.name,
+				'mine', g.mine,
+				'theirs', g.theirs,
+				'frames', g.frames
+			) order by g.played_at desc)
+			from (
+				select met.match_id, min(met.played_at) as played_at,
+					count(*) filter (where met.won)::integer as mine,
+					count(*) filter (where not met.won)::integer as theirs,
+					jsonb_agg(jsonb_build_object('frame_no', met.frame_no, 'at', met.at, 'won', met.won, 'broke', met.broke)
+						order by met.frame_no) as frames
+				from met
+				group by met.match_id
+			) g
+			join public.tbl_matches mm on mm.id = g.match_id
+			left join public.tbl_teams ht on ht.id = mm.home_team_id
+			left join public.tbl_teams awt on awt.id = mm.away_team_id
+			left join lateral (select x.match_id, x.league_season_id from public.tbl_league_fixtures x where x.match_id = g.match_id limit 1) lf on true
+			left join public.tbl_league_seasons ls on ls.id = lf.league_season_id
+			left join public.tbl_leagues lg on lg.id = ls.league_id
+			left join lateral (select x.match_id, x.tournament_id from public.tbl_tournament_fixtures x where x.match_id = g.match_id limit 1) tf on true
+			left join public.tbl_tournaments tn on tn.id = tf.tournament_id
+		), '[]'::jsonb)
+	) into v_out;
+
+	return v_out;
 end;
 $function$
 

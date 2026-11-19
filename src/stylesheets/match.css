@@ -364,6 +364,14 @@ body:has(#mv-banner:not([hidden])) .mv-stage { height: calc(100dvh - var(--nav-t
 	.mv-side[data-side="home"] .mv-names { text-align: right; }
 }
 .mv-pic img { width: 100%; height: 100%; object-fit: cover; }
+/* Doubles (UV, 19 Nov): the side's pictures in one row, each overlapping the
+   one before by 0.3 of a picture; a name a line beside them. */
+.mv-pics { flex: 0 0 auto; display: flex; }
+.mv-pics .mv-pic + .mv-pic { margin-left: calc(var(--mv-who-h) * -0.3); }
+@media (orientation: landscape) {
+	.mv-side[data-side="home"] .mv-pics { flex-direction: row-reverse; }
+	.mv-side[data-side="home"] .mv-pics .mv-pic + .mv-pic { margin-left: 0; margin-right: calc(var(--mv-who-h) * -0.3); }
+}
 .mv-names {
 	display: flex;
 	flex-direction: column;

@@ -107,7 +107,9 @@
 	// lists show every state, but only a finished match is counted.
 	function inPeriod(p) {
 		const since = days ? Date.now() - days * 86400000 : 0;
-		const matches = p.matches.filter((m) => m.status === 'complete' && (!since || new Date(m.played_at).getTime() >= since));
+		// Doubles is listed, never counted in the singles numbers (UV, 19 Nov;
+		// migration 20261119124608, which also leaves its frames out).
+		const matches = p.matches.filter((m) => m.status === 'complete' && !m.doubles && (!since || new Date(m.played_at).getTime() >= since));
 		const ids = new Set(matches.map((m) => m.match_id));
 		return { matches, frames: p.frames.filter((f) => ids.has(f.match_id)) };
 	}
@@ -358,7 +360,8 @@
 		// The opponent's picture opens their profile, the row their match (UV, 5 Nov).
 		const pic = m.team_match ? node('span', 'team-pic pp-row-pic') : TDC.profilePic(avatar(m.opponent_avatar, m.opponent), m.opponent_player_id);
 		if (m.team_match) pic.append(TDC.teamPic(m.opponent_team_picture));
-		row.append(strip, pic, rowNames('vs ' + m.opponent, m),
+		// Doubles (20261119124608): "with Bob vs Carol & Dan".
+		row.append(strip, pic, rowNames((m.doubles && m.partner ? 'with ' + m.partner + ' ' : '') + 'vs ' + m.opponent, m),
 			// The score once a frame is in.
 			m.status !== 'complete' && !m.mine && !m.theirs ? node('span', 'pp-score muted', '–') : scoreNode('pp-score', m.mine, m.theirs));
 		return row;

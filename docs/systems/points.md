@@ -58,6 +58,8 @@ The full list is `DATA` in the module, which the page will show. A test checks t
 
 **A league night reset (18 Nov; migration `20261118120357_league_night_reset`):** `match.resets` (how many times the league director reset the night back to lineups) is in `DATA`, `fillScenario` and the match view. It will be read as the count of the match's rows in `tbl_league_match_resets`. No formula uses it yet, and the real read is not built.
 
+**Doubles (19 Nov; migration `20261119124608_doubles_matches`):** `match.doubles` (more than one player a side) is in `DATA`, `fillScenario` and the match view. It will be read as whether the match has rows in `tbl_match_side_players`. **UV, 19 Nov: doubles is left out of points for now**, so when the real read is built a doubles match earns nothing; no formula uses the flag yet.
+
 ## Rules in the engine, not in a formula
 
 | Rule | How |

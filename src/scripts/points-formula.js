@@ -187,6 +187,7 @@ const TDCPoints = (() => {
 		match: [
 			['match.kind', 'text', 'social, league or tournament'],
 			['match.team', 'yes/no', 'A team match'],
+			['match.doubles', 'yes/no', 'A doubles match: more than one player a side (19 Nov; not counted in singles numbers)'],
 			['match.complete', 'yes/no', 'Finished'],
 			['match.locked', 'yes/no', 'The result is locked (agreed, approved or published)'],
 			['match.sanctioned', 'yes/no', 'Sanctioned'],
@@ -370,6 +371,7 @@ const TDCPoints = (() => {
 			match: {
 				kind: m.kind || 'social',
 				team: !!m.team,
+				doubles: !!m.doubles,
 				complete: m.complete !== false,
 				locked: !!m.locked,
 				sanctioned: !!m.sanctioned,
@@ -490,6 +492,7 @@ const TDCPoints = (() => {
 		return {
 			kind: s.match.kind,
 			team: s.match.team,
+			doubles: s.match.doubles,
 			complete: s.match.complete,
 			locked: s.match.locked,
 			sanctioned: s.match.sanctioned,

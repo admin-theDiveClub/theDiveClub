@@ -8,7 +8,7 @@
 --   deleting     any seat may delete a social one; the record keeps every seat
 begin;
 \ir _helpers.psql
-select plan(22);
+select plan(31);
 
 select tests.create_user('Dbl Alice') as alice \gset
 select tests.create_user('Dbl Bob') as bob \gset
@@ -46,6 +46,13 @@ select is((select home_player_id from public.tbl_matches where id = :'m'), :'ali
 	'seat 1 is also the match''s home player, so singles readers still see a name');
 select is((select away_player_id from public.tbl_matches where id = :'m'), :'carol_p'::uuid,
 	'and the away player');
+select tests.sign_out();
+
+select tests.sign_in(:'bob');
+select is((select opponent from public.tdc_my_matches() where id = :'m'), 'Dbl Carol & Dbl Dan',
+	'seat 2 finds the match in their list before a frame, the other side named in full');
+select is((select x->>'opponent' from jsonb_array_elements(public.tdc_my_active()->'matches') x where x->>'id' = :'m'),
+	'Dbl Carol & Dbl Dan', 'and in the nav''s active matches');
 select tests.sign_out();
 
 -- ─── Scoring ───
@@ -87,12 +94,29 @@ select throws_ok(format($$ select public.tdc_answer_card(%L, true) $$, :'m'),
 select throws_ok(format($$ select public.tdc_answer_card(%L, false, 'wrong score') $$, :'m'),
 	'P0001', 'Your side submitted this scorecard. The other side answers it.',
 	'nor dispute');
+select is((select needs_me from public.tdc_my_matches() where id = :'m'), false,
+	'the partner''s list does not say the card needs them');
+select tests.sign_in(:'carol');
+select is((select needs_me from public.tdc_my_matches() where id = :'m'), true,
+	'the other side''s list does');
 select tests.sign_in(:'dan');
 select is(public.tdc_answer_card(:'m', true)->>'state', 'agreed', 'any player on the other side agrees, and it is settled');
 select tests.sign_in(:'carol');
 select throws_ok(format($$ select public.tdc_answer_card(%L, true) $$, :'m'),
 	'P0001', 'There is nothing waiting to be answered on this scorecard.',
 	'the first answer settled it: their partner has nothing left to answer');
+
+-- ─── The profile and head to head: listed, never counted (UV, 19 Nov) ───
+
+select (select x from jsonb_array_elements(public.tdc_player_profile(:'alice_p')->'matches') x
+	where x->>'match_id' = :'m') as pm \gset
+select is(:'pm'::jsonb->>'doubles', 'true', 'the profile lists the match, flagged doubles');
+select is(:'pm'::jsonb->>'partner', 'Dbl Bob', 'with the partner');
+select is(:'pm'::jsonb->>'opponent', 'Dbl Carol & Dbl Dan', 'and the other side in full');
+select is((select count(*)::integer from jsonb_array_elements(public.tdc_player_profile(:'alice_p')->'frames') x
+	where x->>'match_id' = :'m'), 0, 'its frames are not among the counted frames');
+select is(jsonb_array_length(public.tdc_head_to_head(:'alice_p')->'meetings'), 0,
+	'a doubles match is not a head to head meeting');
 select tests.sign_out();
 
 -- ─── Deleting ───

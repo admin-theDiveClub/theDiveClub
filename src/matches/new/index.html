@@ -2,6 +2,8 @@
 layout: layout.html
 title: New Match
 description: "Start a match against another player."
+extraStyles:
+  - /stylesheets/league.css
 extraScripts:
   - /scripts/match-settings.js
   - /scripts/match-new.js
@@ -18,6 +20,27 @@ extraScripts:
 
 <div class="tdc-card">
 	<h1>New Match</h1>
+
+	{% comment %}
+		Singles or doubles (UV, 19 Nov). The site's pill (.cp-views, league.css),
+		its thumb added by tdc-controls.js. 2 v 2 shows the two sides as seats,
+		you in the first; a tap on an empty seat points the search below at it.
+	{% endcomment %}
+	<div class="cp-views new-format" id="match-format" role="group" aria-label="Players a side">
+		<button type="button" class="cp-view" data-format="singles" aria-pressed="true">1 v 1</button>
+		<button type="button" class="cp-view" data-format="doubles" aria-pressed="false">2 v 2</button>
+	</div>
+
+	<div class="dbl" id="doubles" hidden>
+		<div class="dbl-side">
+			<div class="dbl-head">Your side</div>
+			<div class="dbl-seats" id="dbl-home"></div>
+		</div>
+		<div class="dbl-side">
+			<div class="dbl-head">Opponents</div>
+			<div class="dbl-seats" id="dbl-away"></div>
+		</div>
+	</div>
 
 	<!-- Who you are playing. Stays at the top once chosen. -->
 	<div class="field" id="opponent-field">

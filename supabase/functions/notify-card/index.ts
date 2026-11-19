@@ -12,7 +12,8 @@
 // which is a spam machine rather than a notification.
 //
 // What the caller can do is cause a message they are entitled to cause: they
-// must be in the match, and the only person told is the other player.
+// must be in the match, and the only people told are the other side (in
+// doubles, 20261119124608: also their partner, for a new or deleted match).
 
 import { createClient } from 'npm:@supabase/supabase-js@2.117.1';
 import webpush from 'npm:web-push@3.6.7';
@@ -175,8 +176,11 @@ Deno.serve(async (req) => {
 
 		// Who is on this match, and who is the other one? For a deleted match
 		// the match itself is gone, so the note left behind is read instead.
-		let homeId: string | null = null;
-		let awayId: string | null = null;
+		// Each side as a list of players (doubles, 20261119124608): every seat in
+		// order, or the one player a singles side is.
+		let homeIds: string[] = [];
+		let awayIds: string[] = [];
+		const one = (id: string | null) => (id ? [id] : []);
 		let summary = '';
 		let shape = '';
 		let when = '';
@@ -185,11 +189,11 @@ Deno.serve(async (req) => {
 		if (kind === 'deleted') {
 			const { data: gone } = await admin
 				.from('tbl_deleted_matches')
-				.select('home_player_id, away_player_id, summary')
+				.select('home_player_id, away_player_id, home_players, away_players, summary')
 				.eq('match_id', matchId).maybeSingle();
 			if (!gone) return reply(req, 404, { error: 'TDC (Error): no record of that match being deleted.' });
-			homeId = gone.home_player_id;
-			awayId = gone.away_player_id;
+			homeIds = gone.home_players ?? one(gone.home_player_id);
+			awayIds = gone.away_players ?? one(gone.away_player_id);
 			summary = gone.summary ?? '';
 		} else {
 			const { data: match } = await admin
@@ -202,8 +206,16 @@ Deno.serve(async (req) => {
 				// their own notifications when teams are built.
 				return reply(req, 200, { sent: 0, note: 'team match' });
 			}
-			homeId = match.home_player_id;
-			awayId = match.away_player_id;
+			const { data: seats, error: seatsError } = await admin
+				.from('tbl_match_side_players').select('side, seat, player_id')
+				.eq('match_id', matchId).order('seat');
+			if (seatsError) {
+				console.error(LOG, 'Could not read the sides:', seatsError);
+				return reply(req, 500, { error: 'TDC (Error): ' + seatsError.message });
+			}
+			const seated = (side: string) => (seats ?? []).filter((s) => s.side === side).map((s) => s.player_id as string);
+			homeIds = seated('home').length ? seated('home') : one(match.home_player_id);
+			awayIds = seated('away').length ? seated('away') : one(match.away_player_id);
 			const rules = match.rules as Record<string, unknown> | null;
 			shape = describeMatch(rules);
 			noApproval = String(rules?.approval_mode ?? 'none') === 'none';
@@ -219,25 +231,35 @@ Deno.serve(async (req) => {
 			}
 		}
 
-		if (me.id !== homeId && me.id !== awayId) {
+		const mySide = homeIds.includes(me.id) ? 'home' : awayIds.includes(me.id) ? 'away' : null;
+		if (!mySide) {
 			return reply(req, 403, { error: 'TDC (Error): you are not in that match.' });
 		}
+		const doubles = homeIds.length > 1 || awayIds.length > 1;
 
-		const otherId = me.id === homeId ? awayId : homeId;
-		if (!otherId) return reply(req, 200, { sent: 0, note: 'no other player' });
+		const otherIds = mySide === 'home' ? awayIds : homeIds;
+		if (!otherIds.length) return reply(req, 200, { sent: 0, note: 'no other player' });
 
-		// Everything is addressed to the other player, except an arrangement
-		// like the time, which belongs to both of them.
+		// Everything is addressed to the other side, except an arrangement like
+		// the time, which belongs to everybody in it. In doubles a new match and
+		// a deleted one also go to your partner, who is just as much in it; and
+		// an answer to a card comes from the other side, so "the other side" of
+		// an agreement or a dispute is the side that submitted it.
+		const everyone = [...homeIds, ...awayIds];
 		const wantedIds = TELL_BOTH.has(kind)
-			? [homeId, awayId].filter((id): id is string => !!id)
-			: [otherId];
+			? everyone
+			: (kind === 'opponent_added' || kind === 'deleted')
+				? everyone.filter((id) => id !== me.id)
+				: otherIds;
 
 		const { data: found } = await admin
-			.from('tbl_players').select('id, user_id, display_name').in('id', wantedIds);
+			.from('tbl_players').select('id, user_id, display_name').in('id', everyone);
+		const nameOf = (id: string) => (found ?? []).find((p) => p.id === id)?.display_name ?? 'TDC (No Name)';
+		const sideNames = (ids: string[]) => ids.map(nameOf).join(' & ');
 
 		// A walk-in has no account and no devices. Nothing to do, and not a
 		// fault worth reporting to the page.
-		const targets = (found ?? []).filter((p) => p.user_id);
+		const targets = (found ?? []).filter((p) => p.user_id && wantedIds.includes(p.id));
 		if (targets.length === 0) return reply(req, 200, { sent: 0, note: 'no account' });
 
 		// Read once, outside the loop: it is the same note for everybody.
@@ -259,7 +281,7 @@ Deno.serve(async (req) => {
 		let mine = summary;
 		if (kind !== 'deleted' && summary.includes(' – ')) {
 			const [h, a] = summary.split(' – ');
-			mine = target.id === homeId ? `${h} – ${a}` : `${a} – ${h}`;
+			mine = homeIds.includes(target.id) ? `${h} – ${a}` : `${a} – ${h}`;
 		}
 
 		let title: string;
@@ -269,7 +291,10 @@ Deno.serve(async (req) => {
 		switch (kind) {
 			case 'opponent_added':
 				title = 'You are in a match';
-				message = `${who} started a match against you.`
+				// Doubles: both sides named, since a partner is told too.
+				message = (doubles
+					? `${who} started a doubles match: ${sideNames(homeIds)} v ${sideNames(awayIds)}.`
+					: `${who} started a match against you.`)
 					+ (shape ? ` ${shape}.` : '')
 					+ (when ? ` ${when}.` : '');
 				break;

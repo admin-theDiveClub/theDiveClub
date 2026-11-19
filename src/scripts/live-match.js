@@ -22,7 +22,8 @@ const TDCLiveMatch = (() => {
 	}
 
 	function initials(name) {
-		return (name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+		// Words that start with a letter or digit, so doubles' "Carol & Dan" reads CD.
+		return (name || '?').split(/\s+/).filter((w) => /^[\p{L}\p{N}]/u.test(w)).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
 	}
 
 	// The other side's picture: a team's hexagon, a player's face or their initials, as

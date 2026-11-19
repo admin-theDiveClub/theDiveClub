@@ -118,3 +118,7 @@ Both security definer, signed in only, read only; the page never reads `tbl_play
 ### Checked
 
 Rendered and driven headless on a scratch build against the local Supabase copy, seeded through the real functions (Shadow: six singles and a team night): 420 × 860 both themes and 1440 wide; every count checked against the seed; the period, the toggle, the address, a not-built tap, your own profile. Never against production.
+
+### Doubles (19 Nov, migration `20261119124608`)
+
+A doubles match is listed but never counted (UV): `tdc_player_profile` marks it `doubles` with the `partner`, and leaves its frames out of `frames`, so Form, Frames, B&F and Conversion never see it; `inPeriod` skips it, so Matches and the streak do not either. Its row reads "with Bob vs Carol & Dan". `tdc_head_to_head` skips doubles: two players on opposite sides of a doubles match have not met. Showing doubles numbers of their own is not built.
