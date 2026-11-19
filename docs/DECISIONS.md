@@ -2579,4 +2579,26 @@ These predate the log. They are recorded here because every one of them is a dec
 *Example:* on The Ultimates v Cheeky Tiger, once a lag is in, W's switch now has an rBF stop on the lag loser's end; BF stays on the lag winner's end; GB stays hidden while the league has it off.
 *So:* migration `20261119101023` (that one key on 38 matches, nothing else); `docs/systems/leagues.md`. No page change.
 
+## 2026-11-19 — Singles leagues: how they work
+
+*Decided by UV:*
+- **A singles player is a team of one, made automatically.** Rejected: fixtures naming the two players directly.
+- **A singles night is a normal singles match on `/match/`.** Rejected: the league scorecard with one session and both players signing.
+- **Only the league director starts a fixture's match**, as in team leagues. Rejected: either player may start it.
+- **A new singles season ranks its players by matches won, then frames won.** Rejected: today's player default (frames won, then win %).
+- **A result counts and settles as any singles match's does:** it counts once submitted; the opponent agrees, or the dispute window passes; a dispute reopens it. Rejected: both players signing as captains do; the league director approving every result.
+- **A season may switch between singles and teams at any time, the director sorting out the teams.** Rejected: only while it has no teams and no fixtures.
+
+*Replaces:* "Every league has a team size" (23 Oct), as UV's 24 Oct entry said it would: a league's team size is now 1 (singles) or 2 to 10.
+*Why:* UV wants singles leagues as leagues like any other. A team of one keeps the fixtures, byes, readiness and Standings working on teams, and `/match/` already scores a singles match live with the players entering their own frames.
+*Claude's, within that (for UV to correct):*
+- The team is named after the player's display name when it is made, and they are its captain. A shared display name gets "(2)".
+- The singles columns are Matches Played, Matches Won, Frames Played, Frames Won, Win %. The team defaults are seeded too, unused while it is singles.
+- No reserves in singles (the team limit is 1).
+- A team that is not exactly one active player is refused when its night is started, not when the rules change.
+
+*Example:* Ann, Ben and Cas join a singles league and get teams "Ann", "Ben" and "Ben (2)". The director presses Start on Ann v Ben: a singles match Ann v Ben opens on `/match/`. Ann records 2–0 and submits, it counts in Standings at once, and Ben agrees. Switch a league with a team of two to singles, and that team's night is refused with "Pair has 2 active players. In a singles league a team is one player: sort it out on Run it first."
+*Found while building:* nothing was needed for the result rule. `private.tdc_match_competition` knows only tournaments, so a league match is never "published", and a singles card's approval setting has no effect: it settles by agreement or the dispute window.
+*So:* migration `20261119122128_singles_leagues`, tests `085_singles_leagues`; `docs/systems/leagues.md`. The pages are steps 2 and 3 (`docs/STATUS.md` §3, 1a).
+
 ---

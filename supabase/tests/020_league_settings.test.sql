@@ -22,24 +22,24 @@ select lives_ok(
 	format($$ select private.tdc_check_match_rules(%L::jsonb) $$, tests.rules()),
 	'team size 0 means no sessions, and is accepted');
 
-select throws_ok(
+-- Refused until 19 Nov; a singles league since (20261119122128).
+select lives_ok(
 	format($$ select private.tdc_check_match_rules(%L::jsonb) $$, tests.rules('{"team_size": 1}')),
-	'P0001', 'TDC (Error): team_size must be 0 (no sessions) or a whole number from 2 to 10.',
-	'a team of one is a singles match, and is refused');
+	'a team of one is a singles league, and is accepted');
 
 select throws_ok(
 	format($$ select private.tdc_check_match_rules(%L::jsonb) $$, tests.rules('{"team_size": 2.5}')),
-	'P0001', 'TDC (Error): team_size must be 0 (no sessions) or a whole number from 2 to 10.',
+	'P0001', 'TDC (Error): team_size must be 0 (no sessions), 1 (singles) or a whole number from 2 to 10.',
 	'a fractional team size is refused');
 
 select throws_ok(
 	format($$ select private.tdc_check_match_rules(%L::jsonb) $$, tests.rules('{"team_size": "5"}')),
-	'P0001', 'TDC (Error): team_size must be 0 (no sessions) or a whole number from 2 to 10.',
+	'P0001', 'TDC (Error): team_size must be 0 (no sessions), 1 (singles) or a whole number from 2 to 10.',
 	'a team size typed as text is refused');
 
 select throws_ok(
 	format($$ select private.tdc_check_match_rules(%L::jsonb) $$, tests.rules('{"team_size": 11}')),
-	'P0001', 'TDC (Error): team_size must be 0 (no sessions) or a whole number from 2 to 10.',
+	'P0001', 'TDC (Error): team_size must be 0 (no sessions), 1 (singles) or a whole number from 2 to 10.',
 	'a team size over 10 is refused');
 
 select throws_ok(

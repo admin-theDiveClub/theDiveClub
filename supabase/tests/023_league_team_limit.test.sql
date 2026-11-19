@@ -6,7 +6,7 @@
 --   • the player, their captain or the director marks them away or back
 --   • the limit binds captains and players, never the director
 --   • lowering it below a team's size is allowed
---   • every league has a team size from 2 to 10
+--   • every league has a team size (1 for singles since 19 Nov, else 2 to 10)
 --
 -- A two-man league with one reserve, so a team's limit is 3.
 begin;
@@ -31,7 +31,7 @@ select tests.player_of(:'u4') as p4 \gset
 select tests.sign_in(:'dee');
 select throws_ok(
 	format($$ select public.tdc_create_league('No Size', %L::jsonb) $$, tests.rules()),
-	'P0001', 'A league needs a team size from 2 to 10: the number of players a side in each session.',
+	'P0001', 'A league needs a team size: 1 for singles, or 2 to 10 players a side in each session.',
 	'a league with no team size is refused');
 
 select public.tdc_create_league('Limit League', tests.rules('{"team_size": 2}')) as league \gset
@@ -171,7 +171,7 @@ select throws_ok(
 	'eleven reserves is refused on an update too');
 select throws_like(
 	format($$ select public.tdc_update_league(%L, null, %L::jsonb) $$, :'league', tests.rules()),
-	'A league needs a team size from 2 to 10%',
+	'A league needs a team size: 1 for singles%',
 	'a league cannot be changed to no team size');
 select tests.sign_out();
 
