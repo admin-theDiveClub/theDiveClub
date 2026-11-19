@@ -205,6 +205,14 @@ extraScripts:
 	{% endcomment %}
 	<section class="jumbo card-jumbo card-summary sign-form" id="sign-panel" hidden aria-label="The result and the signatures">
 		{% comment %}
+			A picture of the scoresheet as it stands, to save or share (UV, 19 Nov),
+			in the corner as the banner's Share; a picture icon, since Share
+			shares the link.
+		{% endcomment %}
+		<div class="lj-corner">
+			<button type="button" class="lj-icon" id="sheet-btn" data-icon="picture" title="Save a picture of the scoresheet" aria-label="Save a picture of the scoresheet"><span class="tdc-ring"></span></button>
+		</div>
+		{% comment %}
 			The league's shield over its name, then each detail on its own line in
 			its own style (UV, 17 Nov): the season cream, the venue a green link as
 			in the banner, the date grey, the round green.

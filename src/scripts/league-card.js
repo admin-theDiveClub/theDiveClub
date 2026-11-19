@@ -72,7 +72,7 @@
 		sfDispute: el('sf-dispute'),
 		changedSince: el('changed-since'), changedCount: el('changed-count'), changedList: el('changed-list'),
 		signHome: el('sign-home'), signAway: el('sign-away'), disputeBtn: el('dispute-btn'),
-		share: el('share-btn'),
+		share: el('share-btn'), sheet: el('sheet-btn'),
 		status: el('page-status')
 	};
 
@@ -2150,6 +2150,8 @@
 	// team, whether anything is disputed, then the buttons.
 	function renderSignatures(both) {
 		if (els.signPanel.hidden) return;   // renderSummary decides
+		sheetReady = null;   // the card was read again: a picture made before is out of date
+		preloadSheet();
 
 		// The league's shield, its name, then a line each for the season, the
 		// venues (links, as in the banner), the date and the round (UV, 17 Nov;
@@ -2266,6 +2268,404 @@
 			btn.textContent = (s && !s.current ? 'Sign again for ' : 'Sign and submit for ') + teamName(side);
 		}
 		els.disputeBtn.hidden = !working || state === 'approved';
+	}
+
+	// ─── The scoresheet as a picture (UV, 19 Nov) ───
+	// The picture button in the signatures section's corner saves or shares a
+	// picture of the card as it stands, laid out as Billiard Café's paper
+	// scoresheet: a row per frame (position, player, B/F, lag, point, the
+	// frame, then the same mirrored for away), each session's total, the
+	// total points and the two signatures, in the site's colours and fonts.
+	// Drawn on a canvas from the card's own data, not a screenshot of the
+	// page, which shows head to head and not a sheet. On a phone (a touch
+	// screen) the share sheet opens with it (Save to Photos, WhatsApp); with a
+	// mouse it downloads. A phone shares only soon after the tap, so the
+	// pictures and fonts are fetched while the page draws; a picture made too
+	// late to share waits for a second tap.
+	const SHEET_W = 1200, SHEET_SCALE = 2;   // 2,400 pixels wide
+	const sheetImages = new Map();   // url -> Promise of the loaded image, or null
+	let sheetFontsLoad = null;
+	let sheetReady = null;           // a picture made but not yet shared: { file, title }
+
+	const cssVar = (name, fallback) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+
+	function sheetImage(url) {
+		if (!url) return Promise.resolve(null);
+		if (!sheetImages.has(url)) {
+			sheetImages.set(url, new Promise((resolve) => {
+				const img = new Image();
+				img.crossOrigin = 'anonymous';   // the buckets are public; without it the canvas could not be saved
+				img.onload = () => resolve(img);
+				img.onerror = () => { sheetImages.delete(url); resolve(null); };   // tried again next time
+				img.src = url;
+			}));
+		}
+		return sheetImages.get(url);
+	}
+	function sheetFonts() {
+		if (!sheetFontsLoad) {
+			const display = cssVar('--font-display', 'sans-serif'), body = cssVar('--font-body', 'sans-serif');
+			sheetFontsLoad = Promise.all([
+				document.fonts.load('40px ' + display), document.fonts.load('400 20px ' + body),
+				document.fonts.load('600 20px ' + body), document.fonts.load('800 20px ' + body)
+			]).catch((err) => {
+				sheetFontsLoad = null;
+				console.error('[' + AREA + '] the scoresheet picture\'s fonts did not load; it is drawn in the fallback font.', err);
+			});
+		}
+		return sheetFontsLoad;
+	}
+	const sheetUrls = () => ({
+		league: TDC.pictureUrl('league-pictures', seasonRow && seasonRow.tbl_leagues && seasonRow.tbl_leagues.picture_path),
+		home: TDC.pictureUrl('team-pictures', match.home_picture),
+		away: TDC.pictureUrl('team-pictures', match.away_picture)
+	});
+	function preloadSheet() {
+		const u = sheetUrls();
+		sheetFonts();
+		sheetImage(u.league); sheetImage(u.home); sheetImage(u.away);
+	}
+
+	async function drawSheet() {
+		const C = {
+			bg: cssVar('--bg-base', '#202020'), text: cssVar('--text-primary', '#f4e8d2'), muted: cssVar('--text-muted', '#808080'),
+			primary: cssVar('--color-primary', '#61ffad'), warning: cssVar('--color-warning', '#ffae00'),
+			error: cssVar('--color-error', '#ff0000'), line: cssVar('--border-color', '#404040')
+		};
+		const DISPLAY = cssVar('--font-display', 'sans-serif'), BODY = cssVar('--font-body', 'sans-serif');
+		const urls = sheetUrls();
+		const [, leagueImg, homeImg, awayImg] = await Promise.all([sheetFonts(), sheetImage(urls.league), sheetImage(urls.home), sheetImage(urls.away)]);
+		const lost = [[urls.league, leagueImg], [urls.home, homeImg], [urls.away, awayImg]].filter(([u, i]) => u && !i).map(([u]) => u);
+		if (lost.length) TDC.error(AREA, 'a picture could not be drawn into the scoresheet, so its outline is there instead.', { lost }, els.status);
+
+		// The layout, in the picture's own pixels before the scale.
+		const PAD = 48, W = SHEET_W, IN = W - PAD * 2;
+		const ROW = 46, HEAD = 44, TOTAL = 44, GRAND = 58, PIC = 104, SHIELD = 96, SIG = 120;
+		const COLS = { seq: 64, name: 268, bf: 66, lag: 60, p: 56 };
+		const HALF = COLS.seq + COLS.name + COLS.bf + COLS.lag + COLS.p;
+		const FR = IN - HALF * 2;
+		const sessions = [...new Set(card.map((f) => f.session || 1))].sort((a, b) => a - b);
+		const framesOf = (s) => card.filter((f) => (f.session || 1) === s).sort((a, b) => a.frame_no - b.frame_no);
+		const dateText = match.scheduled_at
+			? new Date(match.scheduled_at).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+			: 'No date set';
+		const lines = [
+			info && info.league_name ? ['league', info.league_name] : null,
+			info && info.name ? ['season', info.name] : null,
+			venues.length ? ['venue', venues.map((x) => x.name).join(', ')] : null,
+			['date', dateText],
+			fixture && fixture.round ? ['round', 'Round ' + fixture.round] : null
+		].filter(Boolean);
+		const LINE = {
+			league: { h: 50, size: 38, display: true },
+			season: { h: 32, size: 22 },
+			venue: { h: 32, size: 22, color: C.primary },
+			date: { h: 32, size: 20, weight: 400, color: C.muted },
+			round: { h: 32, size: 20, color: C.primary }
+		};
+		const disputed = cardState && cardState.state === 'disputed';
+		const tableIn = HEAD + sessions.reduce((n, s) => n + framesOf(s).length * ROW + TOTAL, 0) + GRAND;
+		const H = PAD
+			+ SHIELD + 18 + lines.reduce((n, [k]) => n + LINE[k].h, 0) + 30   // the league
+			+ PIC + 14 + 40 + 30 + 34                                          // the teams and the score
+			+ tableIn + 40                                                     // the sheet
+			+ 30 + SIG + 12                                                    // the signatures
+			+ (disputed ? 34 : 0) + 40 + PAD;                                  // a dispute, the foot
+
+		const canvas = document.createElement('canvas');
+		canvas.width = W * SHEET_SCALE;
+		canvas.height = H * SHEET_SCALE;
+		const ctx = canvas.getContext('2d');
+		if (!ctx) throw new Error('this browser would not give us a canvas to draw the scoresheet on');
+		ctx.scale(SHEET_SCALE, SHEET_SCALE);
+		ctx.fillStyle = C.bg;
+		ctx.fillRect(0, 0, W, H);
+
+		const font = (size, display, weight) => (weight || (display ? 400 : 600)) + ' ' + size + 'px ' + (display ? DISPLAY : BODY);
+		function fit(text, max) {
+			if (ctx.measureText(text).width <= max) return text;
+			let t = text;
+			while (t.length > 1 && ctx.measureText(t + '…').width > max) t = t.slice(0, -1);
+			return t.trimEnd() + '…';
+		}
+		// Text at (x, y), its middle on y; returns its width. A glow is drawn
+		// twice for strength (shadowBlur ignores the scale, hence the factor).
+		function say(text, x, y, { size = 20, display = false, weight, color = C.text, align = 'center', max, glow, spacing } = {}) {
+			ctx.save();
+			ctx.font = font(size, display, weight);
+			ctx.fillStyle = color;
+			ctx.textAlign = align;
+			ctx.textBaseline = 'middle';
+			if (spacing && 'letterSpacing' in ctx) ctx.letterSpacing = spacing + 'px';
+			const t = max ? fit(String(text), max) : String(text);
+			if (glow) { ctx.shadowColor = glow; ctx.shadowBlur = 10 * SHEET_SCALE; ctx.fillText(t, x, y); }
+			ctx.fillText(t, x, y);
+			const w = ctx.measureText(t).width;
+			ctx.restore();
+			return w;
+		}
+		function rrect(x, y, w, h, r) {
+			ctx.beginPath();
+			ctx.moveTo(x + r, y);
+			ctx.arcTo(x + w, y, x + w, y + h, r);
+			ctx.arcTo(x + w, y + h, x, y + h, r);
+			ctx.arcTo(x, y + h, x, y, r);
+			ctx.arcTo(x, y, x + w, y, r);
+			ctx.closePath();
+		}
+		function band(y, h, color, alpha) {
+			ctx.save();
+			ctx.globalAlpha = alpha;
+			ctx.fillStyle = color;
+			ctx.fillRect(PAD, y, IN, h);
+			ctx.restore();
+		}
+		// A picture in the site's shield or hexagon (TDC.SHAPES), or the shape's
+		// outline alone when there is no picture.
+		function shapedPic(img, kind, cx, top, size) {
+			const path = new Path2D(TDC.SHAPES[kind]);
+			ctx.save();
+			ctx.translate(cx - size / 2, top);
+			ctx.scale(size / 100, size / 100);
+			if (img) {
+				ctx.save();
+				ctx.clip(path);
+				const k = Math.max(100 / img.naturalWidth, 100 / img.naturalHeight);
+				const w = img.naturalWidth * k, h = img.naturalHeight * k;
+				ctx.drawImage(img, (100 - w) / 2, (100 - h) / 2, w, h);
+				ctx.restore();
+			}
+			ctx.lineWidth = (img ? 2 : 3) * 100 / size;
+			ctx.strokeStyle = img ? C.line : C.primary;
+			ctx.stroke(path);
+			ctx.restore();
+		}
+
+		// The league: its shield, then a line each, as the section's top.
+		let y = PAD;
+		shapedPic(leagueImg, 'shield', W / 2, y, SHIELD);
+		y += SHIELD + 18;
+		for (const [k, t] of lines) {
+			const s = LINE[k];
+			say(t, W / 2, y + s.h / 2, { size: s.size, display: s.display, weight: s.weight, color: s.color || C.text, max: IN });
+			y += s.h;
+		}
+		y += 30;
+
+		// The two teams either side of the score, the leader's number green.
+		const homeX = PAD + HALF / 2, awayX = W - PAD - HALF / 2;
+		for (const [side, x, img] of [['home', homeX, homeImg], ['away', awayX, awayImg]]) {
+			shapedPic(img, 'hexagon', x, y, PIC);
+			say(teamName(side), x, y + PIC + 14 + 20, { size: 28, display: true, max: HALF - 40 });
+		}
+		const hs = score('home'), as = score('away');
+		const parts = [[String(hs), hs > as ? C.primary : C.text], [' : ', C.muted], [String(as), as > hs ? C.primary : C.text]];
+		ctx.font = font(76, true);
+		const widths = parts.map(([t]) => ctx.measureText(t).width);
+		let sx = W / 2 - widths.reduce((a, b) => a + b, 0) / 2;
+		parts.forEach(([t, c], i) => { say(t, sx, y + PIC / 2, { size: 76, display: true, color: c, align: 'left' }); sx += widths[i]; });
+		const played = card.filter((f) => f.status === 'complete').length;
+		say(stateOf(true)[1] + ' · ' + played + ' of ' + plural(card.length, 'frame') + ' played', W / 2, y + PIC + 14 + 40 + 15, { size: 18, weight: 400, color: C.muted });
+		y += PIC + 14 + 40 + 30 + 34;
+
+		// The sheet: a sunken panel, the columns' heads, a row per frame.
+		rrect(PAD - 12, y - 8, IN + 24, tableIn + 16, 18);
+		ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+		ctx.fill();
+		ctx.lineWidth = 1;
+		ctx.strokeStyle = C.line;
+		ctx.stroke();
+
+		const col = {};   // 'home.name' -> [x, width]
+		let cx = PAD;
+		for (const k of ['seq', 'name', 'bf', 'lag', 'p']) { col['home.' + k] = [cx, COLS[k]]; cx += COLS[k]; }
+		const frX = cx;
+		cx += FR;
+		for (const k of ['p', 'lag', 'bf', 'name', 'seq']) { col['away.' + k] = [cx, COLS[k]]; cx += COLS[k]; }
+		const mid = (side, k) => col[side + '.' + k][0] + col[side + '.' + k][1] / 2;
+		const span = (side, keys) => {   // the middle of several neighbouring columns
+			const xs = keys.map((k) => col[side + '.' + k]);
+			const left = Math.min(...xs.map(([x]) => x)), right = Math.max(...xs.map(([x, w]) => x + w));
+			return (left + right) / 2;
+		};
+		const hline = (at, color, alpha) => { ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.fillRect(PAD, at - 0.5, IN, 1); ctx.restore(); };
+
+		const HEADS = { seq: 'SEQ', name: 'PLAYER', bf: 'B/F', lag: 'LAG', p: 'P' };
+		for (const side of ['home', 'away']) {
+			for (const k of Object.keys(HEADS)) say(HEADS[k], mid(side, k), y + HEAD / 2, { size: 15, weight: 700, color: C.muted, spacing: 1.5 });
+		}
+		say('FR', frX + FR / 2, y + HEAD / 2, { size: 15, weight: 700, color: C.muted, spacing: 1.5 });
+		y += HEAD;
+		hline(y, C.line, 1);
+
+		const totals = { home: 0, away: 0 };
+		for (const s of sessions) {
+			const frames = framesOf(s);
+			for (const f of frames) {
+				const done = f.status === 'complete';
+				const rowMid = y + ROW / 2;
+				for (const side of ['home', 'away']) {
+					const seat = seatOf(f, side);
+					const won = done && f.winner_side === side;
+					if (won) totals[side]++;
+					say(String(seat.pos || ''), mid(side, 'seq'), rowMid, { size: 18, color: C.muted });
+					// The player who played it, a reserve marked as one.
+					const [nx, nw] = col[side + '.name'];
+					if (seat.name) {
+						ctx.font = font(15, false, 400);
+						const tag = seat.reserve ? ' · reserve' : '';
+						const tagW = tag ? ctx.measureText(tag).width : 0;
+						ctx.font = font(19);
+						const name = fit(seat.name, nw - 20 - tagW);
+						const w1 = ctx.measureText(name).width;
+						const x0 = nx + nw / 2 - (w1 + tagW) / 2;
+						say(name, x0, rowMid, { size: 19, align: 'left' });
+						if (tag) say(tag, x0 + w1, rowMid, { size: 15, weight: 400, color: C.muted, align: 'left' });
+					} else {
+						say('Empty seat', nx + nw / 2, rowMid, { size: 17, weight: 400, color: C.muted });
+					}
+					// B/F: the special win's letters, green glowing yellow as on the page.
+					if (won && RESULT_MARK[f.result_event]) {
+						say(RESULT_MARK[f.result_event], mid(side, 'bf'), rowMid, { size: 20, weight: 800, color: C.primary, glow: C.warning });
+					} else if (won && f.result_event === 'default') {
+						say('WO', mid(side, 'bf'), rowMid, { size: 15, weight: 700, color: C.muted });
+					}
+					// LAG: a yellow dot for the side that won it.
+					if (f.break_side === side) {
+						ctx.save();
+						ctx.beginPath();
+						ctx.arc(mid(side, 'lag'), rowMid, 8, 0, Math.PI * 2);
+						ctx.fillStyle = C.warning;
+						ctx.shadowColor = C.warning;
+						ctx.shadowBlur = 8 * SHEET_SCALE;
+						ctx.fill();
+						ctx.restore();
+					}
+					// P: the point, 1 or 0 once played.
+					if (done) say(won ? '1' : '0', mid(side, 'p'), rowMid, { size: 26, display: true, color: won ? C.primary : C.muted });
+					else if (f.status === 'abandoned') say('–', mid(side, 'p'), rowMid, { size: 22, color: C.muted });
+				}
+				// The frame, green once played.
+				rrect(frX + 10, y + 8, FR - 20, ROW - 16, 8);
+				ctx.lineWidth = 1.5;
+				ctx.strokeStyle = done ? C.primary : C.line;
+				ctx.stroke();
+				say('F' + f.frame_no, frX + FR / 2, rowMid, { size: 16, weight: 700, color: done ? C.primary : C.muted });
+				y += ROW;
+				hline(y, C.muted, 0.18);
+			}
+			// The session's total, each side's frames won, the winner's green.
+			band(y, TOTAL, C.primary, 0.08);
+			const won = { home: frames.filter((f) => f.winner_side === 'home').length, away: frames.filter((f) => f.winner_side === 'away').length };
+			for (const side of ['home', 'away']) {
+				const other = side === 'home' ? 'away' : 'home';
+				say('SESSION ' + s + ' TOTAL', span(side, ['seq', 'name']), y + TOTAL / 2, { size: 15, weight: 700, color: C.muted, spacing: 1.5 });
+				say(String(won[side]), span(side, ['bf', 'lag', 'p']), y + TOTAL / 2, { size: 26, display: true, color: won[side] > won[other] ? C.primary : C.text });
+			}
+			y += TOTAL;
+			hline(y, C.line, 1);
+		}
+		// The total points.
+		band(y, GRAND, C.primary, 0.14);
+		for (const side of ['home', 'away']) {
+			const other = side === 'home' ? 'away' : 'home';
+			say('TOTAL POINTS', span(side, ['seq', 'name']), y + GRAND / 2, { size: 17, weight: 800, spacing: 2 });
+			say(String(totals[side]), span(side, ['bf', 'lag', 'p']), y + GRAND / 2, { size: 34, display: true, color: totals[side] > totals[other] ? C.primary : C.text });
+		}
+		y += GRAND + 40;
+
+		// The signatures: a box under each team, green while it stands.
+		say('SIGNATURES', W / 2, y + 10, { size: 15, weight: 700, color: C.muted, spacing: 2 });
+		y += 30;
+		const sides = (cardState && cardState.sides) || {};
+		for (const [side, x0] of [['home', PAD], ['away', W - PAD - HALF]]) {
+			const s = sides[side];
+			const g = signatures.find((x) => x.side === side);
+			const cxm = x0 + HALF / 2;
+			rrect(x0, y, HALF, SIG, 16);
+			ctx.lineWidth = 1.5;
+			ctx.strokeStyle = s && s.current ? C.primary : C.line;
+			ctx.stroke();
+			say((side === 'home' ? 'HOME' : 'AWAY') + ' SIGNATURE', cxm, y + 22, { size: 14, weight: 700, color: C.muted, spacing: 1.5 });
+			say(teamName(side), cxm, y + 50, { size: 22, display: true, max: HALF - 32 });
+			if (s) {
+				say('Signed' + (g ? ' by ' + g.by_name + signedAs(g) : ''), cxm, y + 79, { size: 18, color: s.current ? C.primary : C.text, max: HALF - 32 });
+				say(when(s.at) + (s.current ? '' : ' · the card changed since'), cxm, y + 102, { size: 16, weight: 400, color: C.muted, max: HALF - 32 });
+			} else {
+				say('Not signed', cxm, y + 86, { size: 18, weight: 400, color: C.muted });
+			}
+		}
+		y += SIG + 12;
+
+		if (disputed) {
+			say('Disputed: ' + (cardState.note || 'no reason given'), W / 2, y + 17, { size: 18, color: C.error, max: IN });
+			y += 34;
+		}
+		// When it was taken: a picture of the card as it stood then.
+		say('thediveclub.org · as it stood ' + when(new Date().toISOString()), W / 2, y + 22, { size: 15, weight: 400, color: C.muted });
+		return canvas;
+	}
+
+	// The file's name: the league, the round and the teams.
+	function sheetName() {
+		const slug = (t) => String(t || '').normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
+		return [info && info.league_name, fixture && fixture.round ? 'R' + fixture.round : '', match.home_name, 'v', match.away_name]
+			.map(slug).filter(Boolean).join('-') + '.png';
+	}
+	async function makeSheet() {
+		const canvas = await drawSheet();
+		const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+		if (!blob) throw new Error('the browser would not turn the canvas into a picture');
+		return { file: new File([blob], sheetName(), { type: 'image/png' }), title: document.title };
+	}
+	// A touch screen shares it; a mouse downloads it (a computer's share
+	// sheet has no plain "save").
+	async function giveSheet(sheet) {
+		const touch = matchMedia('(pointer: coarse)').matches;
+		if (touch && navigator.canShare && navigator.canShare({ files: [sheet.file] })) {
+			await navigator.share({ files: [sheet.file], title: sheet.title });
+			return;
+		}
+		const url = URL.createObjectURL(sheet.file);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = sheet.file.name;
+		document.body.append(a);
+		a.click();
+		a.remove();
+		setTimeout(() => URL.revokeObjectURL(url), 10000);
+		TDC.status(els.status, 'Scoresheet saved: ' + sheet.file.name, 'success');
+	}
+	async function shareSheet(sheet) {
+		try {
+			await giveSheet(sheet);
+		} catch (err) {
+			if (err && err.name === 'AbortError') return;   // the share sheet closed
+			if (err && err.name === 'NotAllowedError') {
+				// Made too long after the tap for the phone to allow it.
+				sheetReady = sheet;
+				TDC.status(els.status, 'The scoresheet picture is ready: tap the picture button again to share it.', 'success');
+				return;
+			}
+			TDC.error(AREA, 'the scoresheet picture could not be shared or saved.', err, els.status);
+		}
+	}
+	async function sheetClicked() {
+		if (!match || !card.length) return;
+		if (sheetReady) {
+			const ready = sheetReady;
+			sheetReady = null;
+			await shareSheet(ready);
+			return;
+		}
+		let sheet;
+		try {
+			sheet = await TDC.busy(els.sheet, makeSheet(), els.status);
+		} catch (err) {
+			TDC.error(AREA, 'the scoresheet picture could not be made.', err, els.status);
+			return;
+		}
+		await shareSheet(sheet);
 	}
 
 	// ─── Writing ───
@@ -2641,6 +3041,17 @@
 		TDC.shareButton(els.share, 'match', matchId, {
 			area: AREA, status: els.status, title: () => document.title
 		});
+		// The scoresheet picture's icon, the same way (UV, 19 Nov).
+		try {
+			const face = els.sheet.querySelector('.tdc-ring');
+			face.innerHTML = TDCRing.svg();
+			new TDCRing.RingStatus(face, {
+				icons: ['picture'], labels: { picture: 'Save a picture of the scoresheet', empty: 'Save a picture', loading: 'Working' }, initial: 'picture'
+			});
+		} catch (err) {
+			TDC.error(AREA, 'the scoresheet picture icon could not be drawn.', err, els.status);
+		}
+		els.sheet.addEventListener('click', sheetClicked);
 
 		// Who the reader is, for the player's view, asked at once: it needs only
 		// the sign-in (UV, 16 Nov: as fast as it can load). An account with no

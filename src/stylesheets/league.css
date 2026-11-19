@@ -1963,17 +1963,24 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	--x-line: transparent calc(50% - 0.75px), var(--text-muted) calc(50% - 0.75px), var(--text-muted) calc(50% + 0.75px), transparent calc(50% + 0.75px);
 	background: linear-gradient(45deg, var(--x-line)), linear-gradient(-45deg, var(--x-line));
 }
-/* A break & finish or a golden break: BF or GB in the win's green, glowing
- * as the dot does, in place of it (UV, 29 Oct); the lag's ring still round
- * it. */
+/* A break & finish, a golden break or a reverse one: its letters in the
+ * win's green in place of the dot (UV, 29 Oct), larger and glowing yellow,
+ * with no lag ring round them (UV, 19 Nov): BF and GB mean that side broke,
+ * so the ring said nothing the letters don't. Overflows the mark's box
+ * sideways rather than shrinking. */
 .h2h-mark.is-special::before { content: none; }
-.h2h-mark.is-special {
-	font-size: 0.62rem;
+.h2h-mark.is-special,
+.h2h-mark.is-special.is-lag {
+	overflow: visible;
+	white-space: nowrap;
+	font-size: 0.85rem;
 	font-weight: 800;
 	letter-spacing: 0.02em;
 	line-height: 1;
 	color: var(--color-primary);
-	text-shadow: 0 0 6px color-mix(in srgb, var(--color-primary) 70%, transparent);
+	border-color: transparent;
+	box-shadow: none;
+	text-shadow: 0 0 6px color-mix(in srgb, var(--color-warning) 85%, transparent), 0 0 2px color-mix(in srgb, var(--color-warning) 60%, transparent);
 }
 /* On a phone a five-man table fits without scrolling: the row's names lose
  * their pictures (the column headings keep theirs) and the marks shrink. */
@@ -2035,7 +2042,9 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 @media (max-width: 40rem) {
 	.sign-form.jumbo { width: auto; }
 }
-.sf-top { min-width: 0; }
+/* Clear of the picture button in the corner on both sides, so the centred
+ * lines stay centred (UV, 19 Nov). */
+.sf-top { min-width: 0; padding-inline: 2.75rem; }
 .sf-frames { min-width: 0; padding-top: var(--space-4); }
 .sign-form .h2h-tables { display: flex; flex-wrap: wrap; justify-content: center; }
 .sign-form .h2h-team { flex: 0 1 auto; min-width: 0; }

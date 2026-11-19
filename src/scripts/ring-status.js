@@ -162,6 +162,13 @@ const TDCRing = (() => {
 			'M73 68A7 7 0 1 1 59 68A7 7 0 1 1 73 68',
 			'M40.1 46.6L59.9 35.4',
 			'M40.1 53.4L59.9 64.6'] },
+		// Added 19 Nov for the scorecard's picture of its scoresheet (UV: a
+		// picture icon, not Share's, which shares the link): a framed picture,
+		// two hills and a sun.
+		picture: { label: 'Save picture', strokes: [
+			'M33 31L67 31Q72 31 72 36L72 64Q72 69 67 69L33 69Q28 69 28 64L28 36Q28 31 33 31',
+			'M29 64L43 49L53 59L59 53L71 64',
+			'M64 42A4 4 0 1 1 56 42A4 4 0 1 1 64 42'] },
 		more: { label: 'More', widths: [8, 8, 8], strokes: [
 			'M33 46A4 4 0 1 1 33 54A4 4 0 1 1 33 46',
 			'M50 46A4 4 0 1 1 50 54A4 4 0 1 1 50 46',
