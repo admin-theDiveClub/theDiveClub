@@ -68,14 +68,14 @@ extraScripts:
 			<!-- The picture left of the centre line, the names right of it (UV, 5 Nov).
 			     A tap on a photo shows it large (player.js, openZoom). -->
 			<div class="pp-id">
+				<div class="pp-idrow">
 				<div class="pp-pic-wrap">
 					<div class="pp-pic" id="pp-pic"></div>
 					<span class="pp-verified" id="pp-verified" title="ID verified" hidden><svg viewBox="0 0 24 24" role="img" aria-label="ID verified"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
 				</div>
-				<div class="pp-names">
-					<h1 id="pp-name"></h1>
-					<p class="muted pp-full" id="pp-full"></p>
+				<h1 id="pp-name"></h1>
 				</div>
+				<p class="muted pp-full" id="pp-full"></p>
 			</div>
 			<!-- Ring icons (ring-status.js), drawn in by player.js (wakeIcons, UV 5 Nov).
 			     data-others: only on somebody else's profile. -->
@@ -89,7 +89,9 @@ extraScripts:
 			<p class="muted pp-link-note" id="pp-link-note" hidden>Your short link needs your full first name and surname. <a href="/accounts/profile/">Add them to your account</a>.</p>
 		</header>
 
-		<div class="cp-views pp-views" id="pp-views" role="group" aria-label="Show">
+		<!-- One sunken pill (UV, 19 Nov): the tabs along its top, the chosen tab's content inside it. -->
+			<div class="pp-tabs">
+			<div class="cp-views pp-views" id="pp-views" role="group" aria-label="Show">
 			<button type="button" class="cp-view" data-tab="profile" aria-pressed="true">Profile</button>
 			<button type="button" class="cp-view" data-tab="h2h" aria-pressed="false">Head to head</button>
 			<button type="button" class="cp-view" data-tab="cmp" aria-pressed="false">Compare</button>
@@ -98,7 +100,7 @@ extraScripts:
 		<div id="pp-tab-profile">
 			<!-- Teams first (UV, 5 Nov): each team with its place in its league. -->
 			<section class="pp-section">
-				<h2>Teams</h2>
+				<h2>Leagues</h2>
 				<div class="pp-list" data-part="teams"></div>
 			</section>
 
@@ -188,7 +190,7 @@ extraScripts:
 				<div class="pp-c-who" data-side="them"></div>
 			</div>
 			<div class="pp-c-body">
-				<h2 class="pp-c-h">Teams</h2>
+				<h2 class="pp-c-h">Leagues</h2>
 				<div class="pp-list" data-side="mine" data-part="teams"></div>
 				<div class="pp-list" data-side="them" data-part="teams"></div>
 
@@ -257,5 +259,6 @@ extraScripts:
 				<p class="status pp-c-wide" data-note role="status"></p>
 			</div>
 		</div>
+			</div><!-- /.pp-tabs -->
 	</div>
 </div>

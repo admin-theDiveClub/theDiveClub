@@ -175,6 +175,9 @@
 	function fitName() {
 		const h = els.name;
 		h.style.fontSize = '';
+		// One line's height for the picture while the name is measured, so the picture
+		// takes no more of the row than it will end up with.
+		els.pic.style.setProperty('--pp-pic-size', Math.round(parseFloat(getComputedStyle(h).lineHeight) || 0) + 'px');
 		const room = h.clientWidth;
 		if (room && h.scrollWidth > room) {
 			const size = parseFloat(getComputedStyle(h).fontSize);
@@ -183,12 +186,12 @@
 		sizePic();
 	}
 
-	// The picture as tall as the names beside it (UV, 17 Nov), never wider than
-	// its half of the hero.
+	// The picture as tall as one line of the display name beside it (UV, 17 Nov; the
+	// full name moved below, 19 Nov). One line, not the name's whole height: a name
+	// that wrapped would grow the picture and push its own words out of the row.
 	function sizePic() {
-		const names = els.name.parentElement, id = names.parentElement;
-		const half = (id.clientWidth - parseFloat(getComputedStyle(id).columnGap || 0)) / 2;
-		const size = Math.min(names.offsetHeight, half);
+		const row = els.name.parentElement;
+		const size = Math.min(parseFloat(getComputedStyle(els.name).lineHeight), row.clientWidth / 2);
 		if (size > 0) els.pic.style.setProperty('--pp-pic-size', Math.round(size) + 'px');
 	}
 	document.fonts.ready.then(() => { if (them) fitName(); });

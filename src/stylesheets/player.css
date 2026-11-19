@@ -20,27 +20,15 @@
 
 /* ── The hero ── */
 .pp-hero { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); text-align: center; }
-/* The picture against the centre line on its left, the names against it on
- * its right (UV, 5 Nov). A long display name wraps within its half. */
-.pp-id {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-	align-items: center;
-	column-gap: var(--space-4);
-	width: 100%;
-}
-.pp-id .pp-pic-wrap { justify-self: end; }
-/* The picture as tall as the names, all in a row (UV, 17 Nov): the names trimmed to
- * the display name's capitals and the full name's baseline, so the picture's top and
- * foot meet them; player.js (sizePic) sets the picture to the names' height. */
-.pp-names { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; align-self: center; }
-.pp-names h1,
-.pp-names .pp-full { text-box: trim-both cap alphabetic; }
-.tdc-card .pp-names .pp-full { margin: 0; }   /* over the card's paragraph margin, or the picture is 24px too tall */
-/* Against the line, over forms.css's centred page heading and its line. */
-.tdc-card .pp-names h1,
-.tdc-card .pp-names h1 + p { text-align: left; }
-.pp-pic-wrap { position: relative; }
+/* The picture and the display name in one centred row, the full name centred
+ * below them (UV, 19 Nov). player.js (sizePic) sets the picture to the display
+ * name's height; a long display name wraps beside the picture. */
+.pp-id { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); width: 100%; }
+.pp-idrow { display: flex; align-items: center; justify-content: center; gap: var(--space-3); max-width: 100%; }
+.pp-idrow h1 { min-width: 0; text-align: left; }
+/* The full name small under the row, over the card's paragraph margin and line height. */
+.tdc-card .pp-id .pp-full { margin: 0; font-size: 0.9rem; line-height: 1.3; text-align: center; }
+.pp-pic-wrap { position: relative; flex: none; }
 /* A plain circle (UV, 7 Nov: no ring round a picture). Narrower on the narrowest
    screens, where half the card is less than its width. */
 .pp-pic {
@@ -64,20 +52,23 @@
 /* A tick on a photo: on a small solid disc, or it could not be seen on every picture. */
 .pp-verified {
 	position: absolute;
-	right: var(--space-1);
-	bottom: var(--space-2);
+	/* Centred on the circle's rim at 4:30 (14.6% in from the right and the foot of the
+	 * picture), half the picture across, so it sits on the edge and keeps its place and
+	 * its proportion at any picture size. */
+	right: calc(14.6% - 25%);
+	bottom: calc(14.6% - 25%);
 	display: grid;
 	place-items: center;
-	width: 1.9rem;
-	height: 1.9rem;
+	width: 50%;
+	height: 50%;
 	border-radius: var(--radius-round);
 	background: var(--bg-base);
 	box-shadow: var(--shadow-pic);
 }
 .pp-verified[hidden] { display: none; }
-.pp-verified svg { width: 1rem; height: 1rem; fill: none; stroke: var(--color-primary); stroke-width: var(--control-border); stroke-linecap: round; stroke-linejoin: round; }
+.pp-verified svg { width: 70%; height: 70%; fill: none; stroke: var(--color-primary); stroke-width: var(--control-border); stroke-linecap: round; stroke-linejoin: round; }
 .pp-verified svg * { vector-effect: non-scaling-stroke; }
-.tdc-card .pp-hero h1 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 2.75rem; line-height: 1.32; overflow-wrap: normal; }
+.tdc-card .pp-hero h1 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 1.725rem; line-height: 1.32; overflow-wrap: normal; }   /* a league page's heading line size, 1.5 times (UV, 19 Nov) */
 .pp-full { margin: 0; }
 .pp-full[hidden] { display: none; }
 
@@ -205,6 +196,26 @@
 }
 .tdc-card.player-page .cp-views button.cp-view:focus-visible { outline: 2px solid var(--nm-light-colour); outline-offset: -2px; }
 .pp-views { margin: var(--space-5) auto 0; }
+
+/* ── The tabs and their content in one sunken pill (UV, 19 Nov) ──
+ * The pill is the box; the tab row is its top, no sunken shadow of its own (the
+ * thumb is still raised), and the chosen tab's content sits inside it. Compare
+ * no longer takes back the card's padding: the pill is its edge. */
+.pp-tabs {
+	margin-top: var(--space-5);
+	padding: var(--space-1) var(--space-1) var(--space-4);
+	border-radius: var(--nm-field-radius);
+	box-shadow: var(--nm-sunken);
+}
+.player-page .pp-tabs > .pp-views { margin: 0; box-shadow: none; }
+.player-page .pp-tabs > .pp-views[hidden] { display: none; }
+.pp-tabs > [id^="pp-tab-"] { padding: 0 var(--space-3); }
+.pp-tabs > [id^="pp-tab-"][hidden] { display: none; }
+.pp-tabs > #pp-tab-cmp { padding: 0; }
+.pp-tabs .pp-c { margin: 0; }
+/* The first heading under the tabs sits closer than a section on its own would. */
+.pp-tabs > [id^="pp-tab-"] > .pp-section:first-child { margin-top: var(--space-5); }
+.pp-tabs .pp-c-body > .pp-c-h:first-child { margin-top: var(--space-4); }
 
 /* ── Sections ── */
 .pp-section { margin-top: var(--space-6); }
