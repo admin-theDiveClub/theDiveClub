@@ -2283,7 +2283,7 @@
 	// mouse it downloads. A phone shares only soon after the tap, so the
 	// pictures and fonts are fetched while the page draws; a picture made too
 	// late to share waits for a second tap.
-	const SHEET_W = 1200, SHEET_SCALE = 2;   // 2,400 pixels wide
+	const SHEET_PX = 2400;   // always 2,400 pixels wide, whatever the table's width
 	const sheetImages = new Map();   // url -> Promise of the loaded image, or null
 	let sheetFontsLoad = null;
 	let sheetReady = null;           // a picture made but not yet shared: { file, title }
@@ -2341,15 +2341,42 @@
 		if (lost.length) TDC.error(AREA, 'a picture could not be drawn into the scoresheet, so its outline is there instead.', { lost }, els.status);
 		if (!iconImg) TDC.error(AREA, 'the site\'s icon could not be drawn into the scoresheet, so it is left out.', { url: urls.icon }, els.status);
 
-		// The layout, in the picture's own pixels before the scale.
-		const PAD = 48, W = SHEET_W, IN = W - PAD * 2;
-		const ROW = 46, HEAD = 44, TOTAL = 44, GRAND = 58, PIC = 104, SHIELD = 56, SIG = 120;
-		const TEAMW = 340;   // each team's picture and name, out at the sides so the score can be tall
-		const ICON = 84;     // the site's icon, small and centred above the league (UV, 19 Nov)
-		const COLS = { seq: 64, name: 268, bf: 66, lag: 60, p: 56 };
+		// The layout, in the picture's own units before the scale. The table is
+		// only as wide as it needs to be, each column as its widest content,
+		// and the picture only as wide as the table: the heading and the
+		// signatures fit inside it (UV, 19 Nov). Measured before drawing.
+		const font = (size, display, weight) => (weight || (display ? 400 : 600)) + ' ' + size + 'px ' + (display ? DISPLAY : BODY);
+		const measurer = document.createElement('canvas').getContext('2d');
+		if (!measurer) throw new Error('this browser would not give us a canvas to measure the scoresheet on');
+		const textW = (text, size, display, weight, spacing) => {
+			measurer.font = font(size, display, weight);
+			if ('letterSpacing' in measurer) measurer.letterSpacing = (spacing || 0) + 'px';
+			return measurer.measureText(String(text)).width;
+		};
+		const headW = (t) => textW(t, 15, false, 700, 1.5);
+		const PAD = 40;
+		const ROW = 38, HEAD = 36, TOTAL = 38, GRAND = 48, PIC = 96, SHIELD = 52, SIG = 112;
+		const ICON = 76;     // the site's icon, small and centred above the league (UV, 19 Nov)
+		const NAME_IN = 14;  // a name's gap from the inner edge of its column
+		// Both teams' seats together: each column is as wide as the widest
+		// content on either side, and the two sides are always the same size
+		// (UV, 19 Nov), so the longest name of the night sizes both Player columns.
+		const seatsAll = card.flatMap((f) => [seatOf(f, 'home'), seatOf(f, 'away')]);
+		const most = (xs) => Math.max(0, ...xs);
+		const longestName = most(seatsAll.filter((s) => s.name).map((s) => textW(s.name, 19) + (s.reserve ? textW(' · reserve', 15, false, 400) : 0)));
+		const COLS = {
+			seq: Math.max(headW('SEQ'), textW('H' + most(seatsAll.map((s) => s.pos || 0)), 18)) + 20,
+			name: Math.max(headW('PLAYER'), textW('Empty seat', 17, false, 400), longestName) + NAME_IN * 2,
+			bf: Math.max(headW('B/F'), textW('rBF', 20, false, 800)) + 20,
+			lag: Math.max(headW('LAG'), textW(String(card.length), 28, true)) + 20,
+			p: Math.max(headW('P'), textW(String(card.length), 34, true)) + 20
+		};
 		const HALF = COLS.seq + COLS.name + COLS.bf + COLS.lag + COLS.p;
-		const FR = IN - HALF * 2;
 		const sessions = [...new Set(card.map((f) => f.session || 1))].sort((a, b) => a - b);
+		const FR = Math.max(textW('F' + most(card.map((f) => f.frame_no)), 16, false, 700) + 40,
+			textW('SESSION ' + most(sessions), 14, false, 700, 1), textW('TOTAL', 17, false, 800, 2)) + 14;
+		const IN = HALF * 2 + FR, W = IN + PAD * 2;
+		const SCALE = SHEET_PX / W;
 		const framesOf = (s) => card.filter((f) => (f.session || 1) === s).sort((a, b) => a.frame_no - b.frame_no);
 		const dateText = match.scheduled_at
 			? new Date(match.scheduled_at).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
@@ -2379,11 +2406,11 @@
 			+ (disputed ? 34 : 0) + 40 + PAD;                                  // a dispute, the foot
 
 		const canvas = document.createElement('canvas');
-		canvas.width = W * SHEET_SCALE;
-		canvas.height = H * SHEET_SCALE;
+		canvas.width = SHEET_PX;
+		canvas.height = Math.ceil(H * SCALE);
 		const ctx = canvas.getContext('2d');
 		if (!ctx) throw new Error('this browser would not give us a canvas to draw the scoresheet on');
-		ctx.scale(SHEET_SCALE, SHEET_SCALE);
+		ctx.scale(SCALE, SCALE);
 		ctx.fillStyle = C.bg;
 		ctx.fillRect(0, 0, W, H);
 		// The site's green glow from above the top (UV, 19 Nov; global.css,
@@ -2399,24 +2426,31 @@
 			ctx.fillRect(0, 0, W, H);
 		}
 
-		const font = (size, display, weight) => (weight || (display ? 400 : 600)) + ' ' + size + 'px ' + (display ? DISPLAY : BODY);
 		function fit(text, max) {
 			if (ctx.measureText(text).width <= max) return text;
 			let t = text;
 			while (t.length > 1 && ctx.measureText(t + '…').width > max) t = t.slice(0, -1);
 			return t.trimEnd() + '…';
 		}
-		// Text at (x, y), its middle on y; returns its width. A glow is drawn
-		// twice for strength (shadowBlur ignores the scale, hence the factor).
-		function say(text, x, y, { size = 20, display = false, weight, color = C.text, align = 'center', max, glow, spacing } = {}) {
+		// The size text must drop to (no lower than 60% of it) to fit max.
+		const shrunk = (text, size, display, weight, max) => {
+			let s = size;
+			while (s > size * 0.6 && textW(text, s, display, weight) > max) s -= 1;
+			return s;
+		};
+		// Text at (x, y), its middle on y; returns its width. With shrink, too
+		// wide a text is first made smaller, then cut. A glow is drawn twice for
+		// strength (shadowBlur ignores the scale, hence the factor).
+		function say(text, x, y, { size = 20, display = false, weight, color = C.text, align = 'center', max, glow, spacing, shrink } = {}) {
 			ctx.save();
+			if (max && shrink) size = shrunk(String(text), size, display, weight, max);
 			ctx.font = font(size, display, weight);
 			ctx.fillStyle = color;
 			ctx.textAlign = align;
 			ctx.textBaseline = 'middle';
 			if (spacing && 'letterSpacing' in ctx) ctx.letterSpacing = spacing + 'px';
 			const t = max ? fit(String(text), max) : String(text);
-			if (glow) { ctx.shadowColor = glow; ctx.shadowBlur = 10 * SHEET_SCALE; ctx.fillText(t, x, y); }
+			if (glow) { ctx.shadowColor = glow; ctx.shadowBlur = 10 * SCALE; ctx.fillText(t, x, y); }
 			ctx.fillText(t, x, y);
 			const w = ctx.measureText(t).width;
 			ctx.restore();
@@ -2490,31 +2524,32 @@
 		for (const [k, t] of lines) {
 			const s = LINE[k];
 			if (k === 'league') {
-				ctx.font = font(s.size, true);
-				const nameW = Math.min(ctx.measureText(t).width, IN - SHIELD - 16);
+				// Smaller, then cut, to fit the table's width beside the shield.
+				const room = IN - SHIELD - 16;
+				const size = shrunk(t, s.size, true, undefined, room);
+				const nameW = Math.min(textW(t, size, true), room);
 				const x0 = W / 2 - (SHIELD + (t ? 16 + nameW : 0)) / 2;
 				shapedPic(leagueImg, 'shield', x0 + SHIELD / 2, y + (s.h - SHIELD) / 2, SHIELD);
-				if (t) say(t, x0 + SHIELD + 16, y + s.h / 2, { size: s.size, display: true, align: 'left', max: IN - SHIELD - 16 });
+				if (t) say(t, x0 + SHIELD + 16, y + s.h / 2, { size, display: true, align: 'left', max: room });
 			} else if (k === 'when' && fixture && fixture.round) {
-				sayParts([['Round ' + fixture.round, C.primary], [' · ', C.muted], [t, C.muted]], W / 2, y + s.h / 2, { size: s.size });
+				const parts = [['Round ' + fixture.round, C.primary], [' · ', C.muted], [t, C.muted]];
+				const size = shrunk(parts.map(([p]) => p).join(''), s.size, false, undefined, IN);
+				sayParts(parts, W / 2, y + s.h / 2, { size });
 			} else {
-				say(t, W / 2, y + s.h / 2, { size: s.size, display: s.display, weight: s.weight, color: s.color || C.text, max: IN });
+				say(t, W / 2, y + s.h / 2, { size: s.size, display: s.display, weight: s.weight, color: s.color || C.text, max: IN, shrink: true });
 			}
 			y += s.h;
 		}
 		y += 30;
 
-		// The two teams out at the sides; the score between them as tall as a
+		// The two teams at the sides; the score between them as tall as a
 		// picture and its name together (UV, 19 Nov), the leader's number green.
-		const homeX = PAD + TEAMW / 2, awayX = W - PAD - TEAMW / 2;
-		for (const [side, x, img] of [['home', homeX, homeImg], ['away', awayX, awayImg]]) {
-			shapedPic(img, 'hexagon', x, y, PIC);
-			say(teamName(side), x, y + PIC + 14 + 20, { size: 28, display: true, max: TEAMW - 20 });
-		}
+		// All within the table's width: the score keeps its height while each
+		// team keeps at least TEAM_MIN, else it shrinks; the teams take the rest.
 		const hs = score('home'), as = score('away');
 		{
 			const top = y, tall = PIC + 14 + 34;   // the picture's top to the name's foot
-			const room = IN - TEAMW * 2 - 40;
+			const GAP = 20, TEAM_MIN = Math.min(220, IN / 3);
 			const digits = [String(hs), ':', String(as)];
 			ctx.font = font(100, true);
 			const m = ctx.measureText('0123456789');
@@ -2522,7 +2557,14 @@
 			const gapOf = (size) => size * 0.12;
 			const widthAt = (size) => { ctx.font = font(size, true); return digits.reduce((n, t) => n + ctx.measureText(t).width, 0) + gapOf(size) * 2; };
 			let size = 100 * tall / glyphH;
+			const room = IN - TEAM_MIN * 2 - GAP * 2;
 			if (widthAt(size) > room) size *= room / widthAt(size);
+			const teamW = (IN - widthAt(size) - GAP * 2) / 2;
+			const homeX = PAD + teamW / 2, awayX = W - PAD - teamW / 2;
+			for (const [side, x, img] of [['home', homeX, homeImg], ['away', awayX, awayImg]]) {
+				shapedPic(img, 'hexagon', x, y, PIC);
+				say(teamName(side), x, y + PIC + 14 + 20, { size: 28, display: true, max: teamW, shrink: true });
+			}
 			const base = top + (tall + m.actualBoundingBoxAscent * size / 100 - m.actualBoundingBoxDescent * size / 100) / 2;
 			const colors = [hs > as ? C.primary : C.text, C.muted, as > hs ? C.primary : C.text];
 			ctx.save();
@@ -2567,13 +2609,17 @@
 		cx += FR;
 		for (const k of ['p', 'lag', 'bf', 'name', 'seq']) { col['away.' + k] = [cx, COLS[k]]; cx += COLS[k]; }
 		const mid = (side, k) => col[side + '.' + k][0] + col[side + '.' + k][1] / 2;
+		// Names sit against the table's middle (UV, 19 Nov): home's right-aligned,
+		// away's left-aligned, NAME_IN from the column's inner edge.
+		const nameEdge = (side) => side === 'home' ? col['home.name'][0] + col['home.name'][1] - NAME_IN : col['away.name'][0] + NAME_IN;
+		const inward = (side) => side === 'home' ? 'right' : 'left';
 		function dot(x, at, color) {
 			ctx.save();
 			ctx.beginPath();
 			ctx.arc(x, at, 8, 0, Math.PI * 2);
 			ctx.fillStyle = color;
 			ctx.shadowColor = color;
-			ctx.shadowBlur = 8 * SHEET_SCALE;
+			ctx.shadowBlur = 8 * SCALE;
 			ctx.fill();
 			ctx.restore();
 		}
@@ -2581,7 +2627,10 @@
 
 		const HEADS = { seq: 'SEQ', name: 'PLAYER', bf: 'B/F', lag: 'LAG', p: 'P' };
 		for (const side of ['home', 'away']) {
-			for (const k of Object.keys(HEADS)) say(HEADS[k], mid(side, k), y + HEAD / 2, { size: 15, weight: 700, color: C.muted, spacing: 1.5 });
+			for (const k of Object.keys(HEADS)) {
+				const x = k === 'name' ? nameEdge(side) : mid(side, k);
+				say(HEADS[k], x, y + HEAD / 2, { size: 15, weight: 700, color: C.muted, spacing: 1.5, align: k === 'name' ? inward(side) : 'center' });
+			}
 		}
 		say('FR', frX + FR / 2, y + HEAD / 2, { size: 15, weight: 700, color: C.muted, spacing: 1.5 });
 		y += HEAD;
@@ -2600,19 +2649,19 @@
 					// The position as H1 or A1 (UV, 19 Nov).
 					say(seat.pos ? (side === 'home' ? 'H' : 'A') + seat.pos : '', mid(side, 'seq'), rowMid, { size: 18, color: C.muted });
 					// The player who played it, a reserve marked as one.
-					const [nx, nw] = col[side + '.name'];
+					const nw = col[side + '.name'][1];
 					if (seat.name) {
 						ctx.font = font(15, false, 400);
 						const tag = seat.reserve ? ' · reserve' : '';
 						const tagW = tag ? ctx.measureText(tag).width : 0;
 						ctx.font = font(19);
-						const name = fit(seat.name, nw - 20 - tagW);
+						const name = fit(seat.name, nw - NAME_IN * 2 - tagW);
 						const w1 = ctx.measureText(name).width;
-						const x0 = nx + nw / 2 - (w1 + tagW) / 2;
+						const x0 = side === 'home' ? nameEdge(side) - (w1 + tagW) : nameEdge(side);
 						say(name, x0, rowMid, { size: 19, align: 'left' });
 						if (tag) say(tag, x0 + w1, rowMid, { size: 15, weight: 400, color: C.muted, align: 'left' });
 					} else {
-						say('Empty seat', nx + nw / 2, rowMid, { size: 17, weight: 400, color: C.muted });
+						say('Empty seat', nameEdge(side), rowMid, { size: 17, weight: 400, color: C.muted, align: inward(side) });
 					}
 					// B/F: the special win's letters, green glowing yellow as on the page.
 					if (won && RESULT_MARK[f.result_event]) {
@@ -2627,7 +2676,7 @@
 					else if (f.status === 'abandoned') say('–', mid(side, 'p'), rowMid, { size: 22, color: C.muted });
 				}
 				// The frame, green once played.
-				rrect(frX + 10, y + 8, FR - 20, ROW - 16, 8);
+				rrect(frX + 10, y + 6, FR - 20, ROW - 12, 8);
 				ctx.lineWidth = 1.5;
 				ctx.strokeStyle = done ? C.primary : C.line;
 				ctx.stroke();
@@ -2672,23 +2721,23 @@
 			ctx.lineWidth = 1.5;
 			ctx.strokeStyle = s && s.current ? C.primary : C.line;
 			ctx.stroke();
-			say((side === 'home' ? 'HOME' : 'AWAY') + ' SIGNATURE', cxm, y + 22, { size: 14, weight: 700, color: C.muted, spacing: 1.5 });
-			say(teamName(side), cxm, y + 50, { size: 22, display: true, max: HALF - 32 });
+			say((side === 'home' ? 'HOME' : 'AWAY') + ' SIGNATURE', cxm, y + 20, { size: 14, weight: 700, color: C.muted, spacing: 1.5 });
+			say(teamName(side), cxm, y + 46, { size: 22, display: true, max: HALF - 32, shrink: true });
 			if (s) {
-				say('Signed' + (g ? ' by ' + g.by_name + signedAs(g) : ''), cxm, y + 79, { size: 18, color: s.current ? C.primary : C.text, max: HALF - 32 });
-				say(when(s.at) + (s.current ? '' : ' · the card changed since'), cxm, y + 102, { size: 16, weight: 400, color: C.muted, max: HALF - 32 });
+				say('Signed' + (g ? ' by ' + g.by_name + signedAs(g) : ''), cxm, y + 72, { size: 18, color: s.current ? C.primary : C.text, max: HALF - 32, shrink: true });
+				say(when(s.at) + (s.current ? '' : ' · the card changed since'), cxm, y + 94, { size: 16, weight: 400, color: C.muted, max: HALF - 32, shrink: true });
 			} else {
-				say('Not signed', cxm, y + 86, { size: 18, weight: 400, color: C.muted });
+				say('Not signed', cxm, y + 80, { size: 18, weight: 400, color: C.muted });
 			}
 		}
 		y += SIG + 12;
 
 		if (disputed) {
-			say('Disputed: ' + (cardState.note || 'no reason given'), W / 2, y + 17, { size: 18, color: C.error, max: IN });
+			say('Disputed: ' + (cardState.note || 'no reason given'), W / 2, y + 17, { size: 18, color: C.error, max: IN, shrink: true });
 			y += 34;
 		}
 		// When it was taken: a picture of the card as it stood then.
-		say('thediveclub.org · as it stood ' + when(new Date().toISOString()), W / 2, y + 22, { size: 15, weight: 400, color: C.muted });
+		say('thediveclub.org · as it stood ' + when(new Date().toISOString()), W / 2, y + 22, { size: 15, weight: 400, color: C.muted, max: IN, shrink: true });
 		return canvas;
 	}
 
@@ -2698,13 +2747,15 @@
 		return [info && info.league_name, fixture && fixture.round ? 'R' + fixture.round : '', match.home_name, 'v', match.away_name]
 			.map(slug).filter(Boolean).join('-') + '.jpg';
 	}
-	// A JPEG at quality 0.95 (UV, 19 Nov: about 1 MB at the best quality we
-	// can): on a 25-frame sample at 2,400 wide, 0.88 MB against the PNG's 1.77,
-	// the text and marks still clean at full size. WebP was smaller still but
-	// not every phone saves or forwards it; a smaller PNG lost the pixels.
+	// A JPEG at quality 0.94 (UV, 19 Nov: about 1 MB at the best quality we
+	// can): on a 25-frame sample, 2,400 wide, 0.99 MB against the PNG's 1.77,
+	// the text and marks still clean at full size. 0.95 until the table was
+	// made compact, which draws it at a higher scale (1.06 MB at 0.95). WebP
+	// was smaller still but not every phone saves or forwards it; a smaller
+	// PNG lost the pixels.
 	async function makeSheet() {
 		const canvas = await drawSheet();
-		const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+		const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.94));
 		if (!blob) throw new Error('the browser would not turn the canvas into a picture');
 		return { file: new File([blob], sheetName(), { type: 'image/jpeg' }), title: document.title };
 	}

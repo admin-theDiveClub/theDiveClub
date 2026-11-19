@@ -2550,3 +2550,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, within that:* the 512px icon (`/resources/icons/icon-512.png`, the diver over the pool, transparent), drawn 84 pixels tall in the picture's 1,200-wide layout (168 real pixels); if it will not load, the picture is still made without it and the page says so.
 *Example:* a shared sheet opens with the diver at the top, then the league's shield and name beneath it.
 *So:* `sheetUrls()`, `preloadSheet()` and `drawSheet()` in `scripts/league-card.js`; `docs/systems/leagues.md`. No database change.
+
+## 2026-11-19 — The scoresheet picture: a compact table that sets the width
+
+*Decided by UV:* **player names aligned inward (towards the table's middle); the table more compact and only as wide as it needs to be; the heading and the signatures no wider than the table, everything adjusted to fit; the columns on both sides the same size, the bigger side sizing the other.**
+*Claude's, within that:* each column measured as its widest content over both teams; rows 38 tall (were 46); the picture still 2,400 pixels wide, drawn at whatever scale that takes; text above and below shrinks to 60% before it is cut; the score keeps its height unless each team would get less than 220; the JPEG quality 0.94 (from 0.95) to stay near 1 MB at the higher scale (993 KB on the sample).
+*Example:* on a night whose longest name is "Ricky van der Merwe", both Player columns are just wide enough for it; home's names end against the frame column and away's start from it; the league name, score and signature boxes sit within the same width.
+*So:* `drawSheet()` and `makeSheet()` in `scripts/league-card.js`; `docs/systems/leagues.md`. No database change.
