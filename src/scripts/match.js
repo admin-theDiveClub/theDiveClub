@@ -3310,7 +3310,7 @@
 			.eq('match_id', id)
 			.maybeSingle();
 		if (error) { TDC.showSupabaseError(AREA, error, els.stageStatus); return SOCIAL; }
-		if (!f) { contextOf = { id, context: SOCIAL }; return SOCIAL; }
+		if (!f) return leagueContext(id);
 
 		let round = null;
 		if (f.bracket === 'third_place') round = 'Third place';
@@ -3342,19 +3342,48 @@
 		return context;
 	}
 
+	// A singles league's night (19 Nov) is a singles match on a league
+	// fixture: the league, its season and the round, read the same once-per-
+	// match way. tbl_league_fixtures, tbl_league_seasons and tbl_leagues are
+	// readable by anybody signed in. Not on a fixture either: social.
+	async function leagueContext(id) {
+		const { data: f, error } = await supabaseClient
+			.from('tbl_league_fixtures')
+			.select('league_season_id, round, tbl_league_seasons(name, tbl_leagues(name))')
+			.eq('match_id', id)
+			.maybeSingle();
+		if (error) { TDC.showSupabaseError(AREA, error, els.stageStatus); return SOCIAL; }
+		if (!f) { contextOf = { id, context: SOCIAL }; return SOCIAL; }
+		const s = f.tbl_league_seasons;
+		const context = {
+			kind: 'league',
+			name: (s && s.tbl_leagues && s.tbl_leagues.name) || 'TDC (Error)',
+			season: (s && s.name) || null,
+			round: f.round ? 'Round ' + f.round : null,
+			leagueSeasonId: f.league_season_id
+		};
+		contextOf = { id, context };
+		return context;
+	}
+
 	// The banner under the nav (UV, 5 Nov): a tournament match says which
 	// tournament and round it is, and a tap opens the draw. The stage gives
-	// up the banner's height so it still fits the screen (match.css).
+	// up the banner's height so it still fits the screen (match.css). A
+	// singles league's night (19 Nov) says its league and round, and a tap
+	// opens the league's Fixtures.
 	function renderBanner() {
 		const c = MATCH && MATCH.context;
-		if (!c || c.kind !== 'tournament') { els.banner.hidden = true; return; }
-		els.banner.href = '/tournaments/bracket/?t=' + encodeURIComponent(c.tournamentId);
+		if (!c || (c.kind !== 'tournament' && c.kind !== 'league')) { els.banner.hidden = true; return; }
+		const league = c.kind === 'league';
+		els.banner.href = league
+			? '/leagues/season/?s=' + encodeURIComponent(c.leagueSeasonId) + '&tab=fixtures'
+			: '/tournaments/bracket/?t=' + encodeURIComponent(c.tournamentId);
 		els.bannerName.textContent = c.name;
 		// Several venues are counted: naming the first, for one match, could send
 		// somebody to the wrong club (UV, 5 Nov).
 		const where = MATCH.venues.length > 1 ? MATCH.venues.length + ' venues' : TDC.venueNames(MATCH.venues);
 		els.bannerRound.textContent = [c.round, where].filter(Boolean).join(' · ');
-		els.banner.setAttribute('aria-label', [c.name, c.round, where, 'open the draw'].filter(Boolean).join(', '));
+		els.banner.setAttribute('aria-label', [c.name, c.round, where, league ? 'open the league' : 'open the draw'].filter(Boolean).join(', '));
 		els.banner.hidden = false;
 	}
 
@@ -3460,9 +3489,9 @@
 			match: {
 				id: m.id,
 				// The tournament it is part of, if any (UV, 5 Nov: the banner
-				// under the nav); otherwise social. Leagues are not looked up
-				// yet: a league night is a team match, which this page does
-				// not open.
+				// under the nav), or the league for a singles league's night
+				// (19 Nov); otherwise social. A team league night is a team
+				// match, which this page does not open.
 				context: await matchContext(m.id),
 				sanctioned: m.sanctioned,
 				venues,
