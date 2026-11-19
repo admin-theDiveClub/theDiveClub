@@ -2042,9 +2042,7 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 @media (max-width: 40rem) {
 	.sign-form.jumbo { width: auto; }
 }
-/* Clear of the picture button in the corner on both sides, so the centred
- * lines stay centred (UV, 19 Nov). */
-.sf-top { min-width: 0; padding-inline: 2.75rem; }
+.sf-top { min-width: 0; }
 .sf-frames { min-width: 0; padding-top: var(--space-4); }
 .sign-form .h2h-tables { display: flex; flex-wrap: wrap; justify-content: center; }
 .sign-form .h2h-team { flex: 0 1 auto; min-width: 0; }
@@ -2161,6 +2159,28 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .cl-table tbody tr:last-child td { border-bottom: none; }
 .sf-buttons { display: flex; flex-direction: column; gap: var(--space-3); }
 .sf-buttons > .btn { width: 100%; margin: 0; }
+/* Share, the scoresheet as a picture (UV, 19 Nov): yellow words and the
+ * picture icon before them, the icon the words' height and colour. */
+.sf-buttons > .sf-share,
+.tdc-card .sf-buttons > button.sf-share {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-2);
+	color: var(--color-warning);
+}
+/* The ring's box leaves room for its (hidden) circle, so it is drawn larger
+ * than the words, the margins keeping the button its height. */
+.sf-share .tdc-ring { flex: none; width: 2.4em; height: 2.4em; margin: -0.6em -0.35em -0.6em -0.6em; color: currentColor; }
+.sf-share .tdc-ring .mark { stroke: currentColor; }
+.sf-share .sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
 
 /* ── The lineup page (UV, 12 Nov) ────────────────────────────────────
  * Until both lineups are in: the two teams' season so far as a football

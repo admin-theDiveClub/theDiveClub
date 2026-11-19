@@ -2271,7 +2271,8 @@
 	}
 
 	// ─── The scoresheet as a picture (UV, 19 Nov) ───
-	// The picture button in the signatures section's corner saves or shares a
+	// The Share button above Raise a dispute (until later on 19 Nov an icon in
+	// the signatures section's corner) saves or shares a
 	// picture of the card as it stands, laid out as Billiard Café's paper
 	// scoresheet: a row per frame (position, player, B/F, lag, point, the
 	// frame, then the same mirrored for away), each session's total, the
@@ -2687,13 +2688,17 @@
 	function sheetName() {
 		const slug = (t) => String(t || '').normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
 		return [info && info.league_name, fixture && fixture.round ? 'R' + fixture.round : '', match.home_name, 'v', match.away_name]
-			.map(slug).filter(Boolean).join('-') + '.png';
+			.map(slug).filter(Boolean).join('-') + '.jpg';
 	}
+	// A JPEG at quality 0.95 (UV, 19 Nov: about 1 MB at the best quality we
+	// can): on a 25-frame sample at 2,400 wide, 0.88 MB against the PNG's 1.77,
+	// the text and marks still clean at full size. WebP was smaller still but
+	// not every phone saves or forwards it; a smaller PNG lost the pixels.
 	async function makeSheet() {
 		const canvas = await drawSheet();
-		const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+		const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.95));
 		if (!blob) throw new Error('the browser would not turn the canvas into a picture');
-		return { file: new File([blob], sheetName(), { type: 'image/png' }), title: document.title };
+		return { file: new File([blob], sheetName(), { type: 'image/jpeg' }), title: document.title };
 	}
 	// A touch screen shares it; a mouse downloads it (a computer's share
 	// sheet has no plain "save").
@@ -3118,12 +3123,13 @@
 		TDC.shareButton(els.share, 'match', matchId, {
 			area: AREA, status: els.status, title: () => document.title
 		});
-		// The scoresheet picture's icon, the same way (UV, 19 Nov).
+		// The scoresheet picture's icon, the same way, in the Share button above
+		// Raise a dispute (UV, 19 Nov).
 		try {
 			const face = els.sheet.querySelector('.tdc-ring');
 			face.innerHTML = TDCRing.svg();
 			new TDCRing.RingStatus(face, {
-				icons: ['picture'], labels: { picture: 'Save a picture of the scoresheet', empty: 'Save a picture', loading: 'Working' }, initial: 'picture'
+				icons: ['picture'], labels: { picture: 'Share a picture of the scoresheet', empty: 'Share', loading: 'Working' }, initial: 'picture'
 			});
 		} catch (err) {
 			TDC.error(AREA, 'the scoresheet picture icon could not be drawn.', err, els.status);

@@ -205,14 +205,6 @@ extraScripts:
 	{% endcomment %}
 	<section class="jumbo card-jumbo card-summary sign-form" id="sign-panel" hidden aria-label="The result and the signatures">
 		{% comment %}
-			A picture of the scoresheet as it stands, to save or share (UV, 19 Nov),
-			in the corner as the banner's Share; a picture icon, since Share
-			shares the link.
-		{% endcomment %}
-		<div class="lj-corner">
-			<button type="button" class="lj-icon" id="sheet-btn" data-icon="picture" title="Save a picture of the scoresheet" aria-label="Save a picture of the scoresheet"><span class="tdc-ring"></span></button>
-		</div>
-		{% comment %}
 			The league's shield over its name, then each detail on its own line in
 			its own style (UV, 17 Nov): the season cream, the venue a green link as
 			in the banner, the date grey, the round green.
@@ -310,11 +302,14 @@ extraScripts:
 		{% comment %}
 			One button per side: a captain sees their own side's, the league
 			director both (UV, 29 Oct), each while that side's signature does
-			not stand.
+			not stand. Share, a picture of the scoresheet as it stands to save or
+			send (UV, 19 Nov): yellow, with the picture icon, above Raise a dispute;
+			it was an icon in the section's corner until later the same day.
 		{% endcomment %}
 		<div class="sf-buttons">
 			<button type="button" class="btn btn-primary" id="sign-home" data-side="home" hidden>Sign for home</button>
 			<button type="button" class="btn btn-primary" id="sign-away" data-side="away" hidden>Sign for away</button>
+			<button type="button" class="btn btn-secondary sf-share" id="sheet-btn" aria-label="Share a picture of the scoresheet"><span class="tdc-ring" aria-hidden="true"></span><span>Share</span></button>
 			<button type="button" class="btn btn-danger" id="dispute-btn" hidden>Raise a dispute</button>
 		</div>
 	</section>

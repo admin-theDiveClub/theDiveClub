@@ -2529,3 +2529,17 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, within that:* the frames badge green once every frame is played, yellow before; the glow drawn from `--page-glow-size` and `--page-glow-rise`, so it follows the site's; **the teams moved out to the sides (340 each) to give the tall score room, so a long team name is cut with "…" at 320 (it had 474 before)**.
 *Example:* a 25-frame night signed by both reads 11 : 12 in digits as tall as the hexagon and the name, with "Signed by both" glowing green and "25/25 frames" beside it; session 2's row reads `1 0 SESSION 2 5 4`, the grey numbers being lags.
 *So:* `drawSheet()` in `scripts/league-card.js` only; `docs/systems/leagues.md`. No database change.
+
+## 2026-11-19 — Share the scoresheet from a button above Raise a dispute
+
+*Decided by UV:* **the scoresheet picture's icon leaves the signatures section's corner; a button above Raise a dispute takes its place, "Share" in yellow with the same picture icon.**
+*Claude's, within that:* the site's raised see-through button (as Raise a dispute's), always shown; the picture ring drawn larger than the words with negative margins so the button keeps the others' height.
+*Example:* a captain who has just signed scrolls past the signature lines and taps the yellow Share under Sign; the share sheet opens with the picture.
+*So:* `src/leagues/card/index.html` (`#sheet-btn` moved into `.sf-buttons`), `.sf-share` in `league.css` (and `.sf-top`'s corner padding removed), labels in `scripts/league-card.js`; `docs/systems/leagues.md`. No database change.
+
+## 2026-11-19 — The scoresheet picture as a JPEG of about 1 MB
+
+*Decided by UV:* **the exported picture must be smaller, around 1 MB, at the best quality that allows.**
+*Claude's, within that:* JPEG at quality 0.95, still 2,400 pixels wide. Measured on a 25-frame sample: PNG 1.77 MB; JPEG 0.95 0.88 MB, 0.92 0.74, 0.90 0.69; WebP 0.92 0.33; PNG at 1,800 wide 1.14. JPEG 0.95 is the highest quality under the target, and its text and marks are clean at full size. WebP was rejected because not every phone saves or forwards it, and a smaller PNG because it loses pixels and is still over 1 MB. Real team pictures add a little.
+*Example:* a captain shares the night's sheet to WhatsApp as `8-Ball-Mainstream-R3-Cheeky-Tiger-v-Break-and-Blaze.jpg`, about 0.9 MB.
+*So:* `makeSheet()` and `sheetName()` in `scripts/league-card.js`; `docs/systems/leagues.md`. No database change.
