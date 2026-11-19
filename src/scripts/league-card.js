@@ -2340,7 +2340,8 @@
 
 		// The layout, in the picture's own pixels before the scale.
 		const PAD = 48, W = SHEET_W, IN = W - PAD * 2;
-		const ROW = 46, HEAD = 44, TOTAL = 44, GRAND = 58, PIC = 104, SHIELD = 96, SIG = 120;
+		const ROW = 46, HEAD = 44, TOTAL = 44, GRAND = 58, PIC = 104, SHIELD = 56, SIG = 120;
+		const TEAMW = 340;   // each team's picture and name, out at the sides so the score can be tall
 		const COLS = { seq: 64, name: 268, bf: 66, lag: 60, p: 56 };
 		const HALF = COLS.seq + COLS.name + COLS.bf + COLS.lag + COLS.p;
 		const FR = IN - HALF * 2;
@@ -2349,24 +2350,24 @@
 		const dateText = match.scheduled_at
 			? new Date(match.scheduled_at).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 			: 'No date set';
+		// The league's shield beside its name, and the round and date on one
+		// line (UV, 19 Nov).
 		const lines = [
-			info && info.league_name ? ['league', info.league_name] : null,
+			['league', (info && info.league_name) || ''],
 			info && info.name ? ['season', info.name] : null,
 			venues.length ? ['venue', venues.map((x) => x.name).join(', ')] : null,
-			['date', dateText],
-			fixture && fixture.round ? ['round', 'Round ' + fixture.round] : null
+			['when', dateText]
 		].filter(Boolean);
 		const LINE = {
-			league: { h: 50, size: 38, display: true },
+			league: { h: 72, size: 38, display: true },
 			season: { h: 32, size: 22 },
 			venue: { h: 32, size: 22, color: C.primary },
-			date: { h: 32, size: 20, weight: 400, color: C.muted },
-			round: { h: 32, size: 20, color: C.primary }
+			when: { h: 32, size: 20, weight: 400, color: C.muted }
 		};
 		const disputed = cardState && cardState.state === 'disputed';
 		const tableIn = HEAD + sessions.reduce((n, s) => n + framesOf(s).length * ROW + TOTAL, 0) + GRAND;
 		const H = PAD
-			+ SHIELD + 18 + lines.reduce((n, [k]) => n + LINE[k].h, 0) + 30   // the league
+			+ lines.reduce((n, [k]) => n + LINE[k].h, 0) + 30                  // the league
 			+ PIC + 14 + 40 + 30 + 34                                          // the teams and the score
 			+ tableIn + 40                                                     // the sheet
 			+ 30 + SIG + 12                                                    // the signatures
@@ -2380,6 +2381,18 @@
 		ctx.scale(SHEET_SCALE, SHEET_SCALE);
 		ctx.fillStyle = C.bg;
 		ctx.fillRect(0, 0, W, H);
+		// The site's green glow from above the top (UV, 19 Nov; global.css,
+		// body::before): green at a centre --page-glow-rise above the top,
+		// fading to the background over --page-glow-size.
+		{
+			const glowR = parseFloat(cssVar('--page-glow-size', '1000')) || 1000;
+			const glowRise = parseFloat(cssVar('--page-glow-rise', '760')) || 760;
+			const glow = ctx.createRadialGradient(W / 2, -glowRise, 0, W / 2, -glowRise, glowR);
+			glow.addColorStop(0, C.primary);
+			glow.addColorStop(1, C.bg);
+			ctx.fillStyle = glow;
+			ctx.fillRect(0, 0, W, H);
+		}
 
 		const font = (size, display, weight) => (weight || (display ? 400 : 600)) + ' ' + size + 'px ' + (display ? DISPLAY : BODY);
 		function fit(text, max) {
@@ -2441,31 +2454,93 @@
 			ctx.restore();
 		}
 
-		// The league: its shield, then a line each, as the section's top.
+		// Several pieces of text, each its own colour, centred together on x.
+		function sayParts(parts, x, y, opts) {
+			ctx.font = font(opts.size, opts.display, opts.weight);
+			const widths = parts.map(([t]) => ctx.measureText(t).width);
+			let px = x - widths.reduce((a, b) => a + b, 0) / 2;
+			parts.forEach(([t, c], i) => { say(t, px, y, { ...opts, color: c, align: 'left' }); px += widths[i]; });
+		}
+		// A badge: the site's small sunken pill, its words in its colour.
+		function pill(text, x, y, color, glow) {
+			ctx.font = font(16, false, 700);
+			const w = ctx.measureText(text).width + 36, h = 34;
+			rrect(x, y - h / 2, w, h, h / 2);
+			ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+			ctx.fill();
+			ctx.lineWidth = 1;
+			ctx.strokeStyle = C.line;
+			ctx.stroke();
+			say(text, x + w / 2, y, { size: 16, weight: 700, color, glow: glow ? color : undefined });
+			return w;
+		}
+		const pillWidth = (text) => { ctx.font = font(16, false, 700); return ctx.measureText(text).width + 36; };
+
+		// The league: its shield beside its name, then a line each.
 		let y = PAD;
-		shapedPic(leagueImg, 'shield', W / 2, y, SHIELD);
-		y += SHIELD + 18;
 		for (const [k, t] of lines) {
 			const s = LINE[k];
-			say(t, W / 2, y + s.h / 2, { size: s.size, display: s.display, weight: s.weight, color: s.color || C.text, max: IN });
+			if (k === 'league') {
+				ctx.font = font(s.size, true);
+				const nameW = Math.min(ctx.measureText(t).width, IN - SHIELD - 16);
+				const x0 = W / 2 - (SHIELD + (t ? 16 + nameW : 0)) / 2;
+				shapedPic(leagueImg, 'shield', x0 + SHIELD / 2, y + (s.h - SHIELD) / 2, SHIELD);
+				if (t) say(t, x0 + SHIELD + 16, y + s.h / 2, { size: s.size, display: true, align: 'left', max: IN - SHIELD - 16 });
+			} else if (k === 'when' && fixture && fixture.round) {
+				sayParts([['Round ' + fixture.round, C.primary], [' · ', C.muted], [t, C.muted]], W / 2, y + s.h / 2, { size: s.size });
+			} else {
+				say(t, W / 2, y + s.h / 2, { size: s.size, display: s.display, weight: s.weight, color: s.color || C.text, max: IN });
+			}
 			y += s.h;
 		}
 		y += 30;
 
-		// The two teams either side of the score, the leader's number green.
-		const homeX = PAD + HALF / 2, awayX = W - PAD - HALF / 2;
+		// The two teams out at the sides; the score between them as tall as a
+		// picture and its name together (UV, 19 Nov), the leader's number green.
+		const homeX = PAD + TEAMW / 2, awayX = W - PAD - TEAMW / 2;
 		for (const [side, x, img] of [['home', homeX, homeImg], ['away', awayX, awayImg]]) {
 			shapedPic(img, 'hexagon', x, y, PIC);
-			say(teamName(side), x, y + PIC + 14 + 20, { size: 28, display: true, max: HALF - 40 });
+			say(teamName(side), x, y + PIC + 14 + 20, { size: 28, display: true, max: TEAMW - 20 });
 		}
 		const hs = score('home'), as = score('away');
-		const parts = [[String(hs), hs > as ? C.primary : C.text], [' : ', C.muted], [String(as), as > hs ? C.primary : C.text]];
-		ctx.font = font(76, true);
-		const widths = parts.map(([t]) => ctx.measureText(t).width);
-		let sx = W / 2 - widths.reduce((a, b) => a + b, 0) / 2;
-		parts.forEach(([t, c], i) => { say(t, sx, y + PIC / 2, { size: 76, display: true, color: c, align: 'left' }); sx += widths[i]; });
+		{
+			const top = y, tall = PIC + 14 + 34;   // the picture's top to the name's foot
+			const room = IN - TEAMW * 2 - 40;
+			const digits = [String(hs), ':', String(as)];
+			ctx.font = font(100, true);
+			const m = ctx.measureText('0123456789');
+			const glyphH = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+			const gapOf = (size) => size * 0.12;
+			const widthAt = (size) => { ctx.font = font(size, true); return digits.reduce((n, t) => n + ctx.measureText(t).width, 0) + gapOf(size) * 2; };
+			let size = 100 * tall / glyphH;
+			if (widthAt(size) > room) size *= room / widthAt(size);
+			const base = top + (tall + m.actualBoundingBoxAscent * size / 100 - m.actualBoundingBoxDescent * size / 100) / 2;
+			const colors = [hs > as ? C.primary : C.text, C.muted, as > hs ? C.primary : C.text];
+			ctx.save();
+			ctx.font = font(size, true);
+			ctx.textAlign = 'left';
+			ctx.textBaseline = 'alphabetic';
+			let sx = W / 2 - widthAt(size) / 2;
+			ctx.font = font(size, true);
+			digits.forEach((t, i) => {
+				ctx.fillStyle = colors[i];
+				ctx.fillText(t, sx, base);
+				sx += ctx.measureText(t).width + (i < 2 ? gapOf(size) : 0);
+			});
+			ctx.restore();
+		}
+		// Under it, the card's state and its frames as badges (UV, 19 Nov),
+		// the state in the banner's colour.
+		const [stateKey, stateLabel] = stateOf(true);
+		const STATE_COLOR = { approved: C.muted, agreed: C.primary, disputed: C.error };
 		const played = card.filter((f) => f.status === 'complete').length;
-		say(stateOf(true)[1] + ' · ' + played + ' of ' + plural(card.length, 'frame') + ' played', W / 2, y + PIC + 14 + 40 + 15, { size: 18, weight: 400, color: C.muted });
+		const badges = [
+			[stateLabel, STATE_COLOR[stateKey] || C.warning, stateKey !== 'approved' && stateKey !== 'disputed'],
+			[played + '/' + plural(card.length, 'frame'), played === card.length ? C.primary : C.warning, false]
+		];
+		const badgeY = y + PIC + 14 + 40 + 15 + 6;
+		let bx = W / 2 - (badges.reduce((n, [t]) => n + pillWidth(t), 0) + 12 * (badges.length - 1)) / 2;
+		for (const [t, c, g] of badges) bx += pill(t, bx, badgeY, c, g) + 12;
 		y += PIC + 14 + 40 + 30 + 34;
 
 		// The sheet: a sunken panel, the columns' heads, a row per frame.
@@ -2483,11 +2558,16 @@
 		cx += FR;
 		for (const k of ['p', 'lag', 'bf', 'name', 'seq']) { col['away.' + k] = [cx, COLS[k]]; cx += COLS[k]; }
 		const mid = (side, k) => col[side + '.' + k][0] + col[side + '.' + k][1] / 2;
-		const span = (side, keys) => {   // the middle of several neighbouring columns
-			const xs = keys.map((k) => col[side + '.' + k]);
-			const left = Math.min(...xs.map(([x]) => x)), right = Math.max(...xs.map(([x, w]) => x + w));
-			return (left + right) / 2;
-		};
+		function dot(x, at, color) {
+			ctx.save();
+			ctx.beginPath();
+			ctx.arc(x, at, 8, 0, Math.PI * 2);
+			ctx.fillStyle = color;
+			ctx.shadowColor = color;
+			ctx.shadowBlur = 8 * SHEET_SCALE;
+			ctx.fill();
+			ctx.restore();
+		}
 		const hline = (at, color, alpha) => { ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.fillRect(PAD, at - 0.5, IN, 1); ctx.restore(); };
 
 		const HEADS = { seq: 'SEQ', name: 'PLAYER', bf: 'B/F', lag: 'LAG', p: 'P' };
@@ -2498,7 +2578,7 @@
 		y += HEAD;
 		hline(y, C.line, 1);
 
-		const totals = { home: 0, away: 0 };
+		const totals = { home: 0, away: 0 }, lags = { home: 0, away: 0 };
 		for (const s of sessions) {
 			const frames = framesOf(s);
 			for (const f of frames) {
@@ -2508,7 +2588,8 @@
 					const seat = seatOf(f, side);
 					const won = done && f.winner_side === side;
 					if (won) totals[side]++;
-					say(String(seat.pos || ''), mid(side, 'seq'), rowMid, { size: 18, color: C.muted });
+					// The position as H1 or A1 (UV, 19 Nov).
+					say(seat.pos ? (side === 'home' ? 'H' : 'A') + seat.pos : '', mid(side, 'seq'), rowMid, { size: 18, color: C.muted });
 					// The player who played it, a reserve marked as one.
 					const [nx, nw] = col[side + '.name'];
 					if (seat.name) {
@@ -2531,18 +2612,9 @@
 						say('WO', mid(side, 'bf'), rowMid, { size: 15, weight: 700, color: C.muted });
 					}
 					// LAG: a yellow dot for the side that won it.
-					if (f.break_side === side) {
-						ctx.save();
-						ctx.beginPath();
-						ctx.arc(mid(side, 'lag'), rowMid, 8, 0, Math.PI * 2);
-						ctx.fillStyle = C.warning;
-						ctx.shadowColor = C.warning;
-						ctx.shadowBlur = 8 * SHEET_SCALE;
-						ctx.fill();
-						ctx.restore();
-					}
-					// P: the point, 1 or 0 once played.
-					if (done) say(won ? '1' : '0', mid(side, 'p'), rowMid, { size: 26, display: true, color: won ? C.primary : C.muted });
+					if (f.break_side === side) dot(mid(side, 'lag'), rowMid, C.warning);
+					// P: a green dot for the side that won it, nothing for a loss (UV, 19 Nov).
+					if (won) dot(mid(side, 'p'), rowMid, C.primary);
 					else if (f.status === 'abandoned') say('–', mid(side, 'p'), rowMid, { size: 22, color: C.muted });
 				}
 				// The frame, green once played.
@@ -2554,23 +2626,28 @@
 				y += ROW;
 				hline(y, C.muted, 0.18);
 			}
-			// The session's total, each side's frames won, the winner's green.
+			// The session's row (UV, 19 Nov): its name in the middle, each side's
+			// frames won under P (the winner's green) and lags won under LAG, grey.
 			band(y, TOTAL, C.primary, 0.08);
 			const won = { home: frames.filter((f) => f.winner_side === 'home').length, away: frames.filter((f) => f.winner_side === 'away').length };
+			const lagsWon = (side) => frames.filter((f) => f.break_side === side).length;
+			say('SESSION ' + s, frX + FR / 2, y + TOTAL / 2, { size: 14, weight: 700, color: C.muted, spacing: 1 });
 			for (const side of ['home', 'away']) {
 				const other = side === 'home' ? 'away' : 'home';
-				say('SESSION ' + s + ' TOTAL', span(side, ['seq', 'name']), y + TOTAL / 2, { size: 15, weight: 700, color: C.muted, spacing: 1.5 });
-				say(String(won[side]), span(side, ['bf', 'lag', 'p']), y + TOTAL / 2, { size: 26, display: true, color: won[side] > won[other] ? C.primary : C.text });
+				lags[side] += lagsWon(side);
+				say(String(lagsWon(side)), mid(side, 'lag'), y + TOTAL / 2, { size: 22, display: true, color: C.muted });
+				say(String(won[side]), mid(side, 'p'), y + TOTAL / 2, { size: 26, display: true, color: won[side] > won[other] ? C.primary : C.text });
 			}
 			y += TOTAL;
 			hline(y, C.line, 1);
 		}
-		// The total points.
+		// The night's row, laid out as a session's: TOTAL in the middle.
 		band(y, GRAND, C.primary, 0.14);
+		say('TOTAL', frX + FR / 2, y + GRAND / 2, { size: 17, weight: 800, spacing: 2 });
 		for (const side of ['home', 'away']) {
 			const other = side === 'home' ? 'away' : 'home';
-			say('TOTAL POINTS', span(side, ['seq', 'name']), y + GRAND / 2, { size: 17, weight: 800, spacing: 2 });
-			say(String(totals[side]), span(side, ['bf', 'lag', 'p']), y + GRAND / 2, { size: 34, display: true, color: totals[side] > totals[other] ? C.primary : C.text });
+			say(String(lags[side]), mid(side, 'lag'), y + GRAND / 2, { size: 28, display: true, color: C.muted });
+			say(String(totals[side]), mid(side, 'p'), y + GRAND / 2, { size: 34, display: true, color: totals[side] > totals[other] ? C.primary : C.text });
 		}
 		y += GRAND + 40;
 
