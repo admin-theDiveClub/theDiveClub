@@ -876,9 +876,12 @@ TDCLeagueNav.panel('fixtures', () => {
 		// To the season page with this team open and in view (UV, 24 Oct). Not
 		// on a finished fixture, whose whole box opens the card (25 Oct).
 		const team = node(linked ? 'a' : 'span', 'fx-team');
-		if (linked) team.href = '/leagues/season/?s=' + encodeURIComponent(seasonId) + '&team=' + encodeURIComponent(teamId);
-		const pic = node('span', 'team-pic');
 		const player = singles && singlesPlayer.get(teamId);
+		// A singles player's name opens their profile (19 Nov).
+		if (linked) team.href = player
+			? '/players/?p=' + encodeURIComponent(player.player_id)
+			: '/leagues/season/?s=' + encodeURIComponent(seasonId) + '&team=' + encodeURIComponent(teamId);
+		const pic = node('span', 'team-pic');
 		if (player) name = player.display_name;
 		pic.append(player ? TDC.playerTeamPic(player.avatar_path, name) : TDC.teamPic(teamPictures.get(teamId)));
 		const names = node('span', 'fx-names');

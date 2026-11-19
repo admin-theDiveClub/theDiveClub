@@ -157,7 +157,14 @@
 	{% endcomment %}
 	<h2>Teams</h2>
 
-	<div class="toolbar">
+	{% comment %}
+		A singles league (team size 1, 19 Nov): every player's team of one is
+		made for them, so there is no New team. The tables below stay, for
+		sorting out a season switched from teams.
+	{% endcomment %}
+	<p class="muted" id="team-singles" hidden>This is a singles league: every player is their own team, made when they join. To split a team left from before the switch, set its players' Team to No team above, and each gets a team of their own.</p>
+
+	<div class="toolbar" id="team-add-bar">
 		<div class="field">
 			<label for="team-new">New team</label>
 			<input type="text" id="team-new" maxlength="120" autocomplete="off" placeholder="Rack Attack">

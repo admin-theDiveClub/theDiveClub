@@ -115,6 +115,11 @@ TDCLeagueNav.panel('manage', () => {
 
 		els.name.textContent = info.league_name + ' — ' + info.name;
 
+		// Singles (19 Nov): teams of one are made by the database, so no New team.
+		const singles = !!(info.rules && info.rules.team_size === 1);
+		document.getElementById('team-add-bar').hidden = singles;
+		document.getElementById('team-singles').hidden = !singles;
+
 		const bits = [];
 		if (info.starts_on) bits.push('From ' + day(info.starts_on));
 		if (info.ends_on) bits.push('to ' + day(info.ends_on));

@@ -113,6 +113,11 @@ TDCLeagueNav.panel('season', () => {
 	let seasonSoFar = null;     // { data: tdc_league_standings, columns: the season's own }
 	let signedOut = false;      // not signed in: one read fills all of the above (loadPublic)
 	let showsPlayers = true;    // the league's names and faces switch, for somebody signed out
+	// A singles league (team size 1, 19 Nov): each team is one player. The
+	// teams are drawn as player cards (their face and name, a tap opens their
+	// profile), nobody captains or claims anybody, and a night is played on
+	// /match/.
+	let singles = false;
 	// A team named in the address (&team=, from the fixtures page) is opened
 	// and brought into view once, on the first draw.
 	let focusTeam = new URLSearchParams(location.search).get('team');
@@ -126,7 +131,7 @@ TDCLeagueNav.panel('season', () => {
 		if (!box) return;
 		focusTeam = null;
 		showView('teams', true);
-		box.open = true;
+		if (!singles) box.open = true;
 		box.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	});
 
@@ -171,6 +176,29 @@ TDCLeagueNav.panel('season', () => {
 
 	const plural = (n, one, many) => (n === 1 ? '1 ' + one : (n || 0) + ' ' + (many || one + 's'));
 
+	// ─── Singles (19 Nov) ───
+	// A team's player: the active one first, the withdrawn left out (a season
+	// switched from teams may still have a team of several until the director
+	// sorts it out). Null for a team with nobody, or signed out with the names
+	// switch off, when the team's own name stands in.
+	function singlesPlayer(teamId) {
+		if (!singles) return null;
+		const rows = (rosters.get(teamId) || []).filter((r) => r.status !== 'withdrawn');
+		return rows.find((r) => r.status === 'active') || rows[0] || null;
+	}
+	// A team's name, or in singles its player's name as it is now (the team
+	// keeps the name it was given when it was made).
+	function sideName(teamId, name) {
+		const p = singlesPlayer(teamId);
+		return p ? p.display_name : name;
+	}
+	// "Teams" in the tab pill and the heading, "Players" in singles.
+	function sayTeamsWord() {
+		for (const w of document.querySelectorAll('.ls-teams-word')) w.textContent = singles ? 'Players' : 'Teams';
+	}
+	// Where a night is opened: a singles night on the match page.
+	const nightHref = (matchId) => (singles ? '/match/?id=' : '/leagues/card/?m=') + encodeURIComponent(matchId);
+
 	function day(s) {
 		if (!s) return '';
 		const d = new Date(s + 'T00:00:00');
@@ -203,6 +231,8 @@ TDCLeagueNav.panel('season', () => {
 		els.name.textContent = info.league_name;
 		els.meta.textContent = info.name;
 		els.jumboPic.replaceChildren(TDC.leaguePic(null));
+		singles = !!(info.rules && info.rules.team_size === 1);
+		sayTeamsWord();
 
 		return true;
 	}
@@ -222,6 +252,8 @@ TDCLeagueNav.panel('season', () => {
 		info = data;
 		els.name.textContent = info.league_name;
 		els.meta.textContent = info.name;
+		singles = !!(info.rules && info.rules.team_size === 1);
+		sayTeamsWord();
 		seasonRow = {
 			status: data.status, max_reserves: data.max_reserves, entry_mode: data.entry_mode,
 			tbl_leagues: { picture_path: data.picture_path }
@@ -280,9 +312,10 @@ TDCLeagueNav.panel('season', () => {
 		const opened = (f) => f.match_status === 'scheduled' || f.match_status === 'in_progress';
 		const side = (f) => (f.home_team_id === mine.my_team_id ? 'home' : 'away');
 
-		if (!mine.i_captain) {
-			// A player: the first one not yet finished, or the most recent if
-			// they all are (as before).
+		if (!mine.i_captain || singles) {
+			// A player, and every singles player (captain of their team of one,
+			// with no lineup to set): the first one not yet finished, or the
+			// most recent if they all are (as before).
 			showMyCard(ours.find((f) => !finished(f)) || ours[ours.length - 1], 'My next match', false);
 			return true;
 		}
@@ -305,14 +338,14 @@ TDCLeagueNav.panel('season', () => {
 
 	function showMyCard(f, label, score) {
 		const home = f.home_team_id === mine.my_team_id;
-		const bits = ['v ' + (home ? f.away_name : f.home_name)];
+		const bits = ['v ' + (home ? sideName(f.away_team_id, f.away_name) : sideName(f.home_team_id, f.home_name))];
 		if (f.scheduled_at) bits.push(new Date(f.scheduled_at).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' }));
 		if (score) {
 			const us = (home ? f.home_frames : f.away_frames) || 0;
 			const them = (home ? f.away_frames : f.home_frames) || 0;
 			bits.push(us + '–' + them);
 		}
-		els.meCard.href = '/leagues/card/?m=' + encodeURIComponent(f.match_id);
+		els.meCard.href = nightHref(f.match_id);
 		els.meCard.replaceChildren(node('span', 'ls-btn-main', label), node('span', 'ls-btn-sub', bits.join(' · ')));
 		els.meCard.classList.add('ls-btn-two');
 		els.meCard.hidden = false;
@@ -331,14 +364,25 @@ TDCLeagueNav.panel('season', () => {
 		// The compact row, once they are on a team.
 		els.meRow.hidden = !mine.my_team_id;
 		if (mine.my_team_id) {
-			els.mePic.replaceChildren(TDC.teamPic(teamPictures.get(mine.my_team_id)));
-			TDC.runName(els.meTeam, mine.my_team_name);   // one line, running when too long (UV, 16 Nov)
-			els.meCaptain.hidden = !controlsTeam();
+			// Singles: yourself, as your card shows you (19 Nov).
+			const me = singlesPlayer(mine.my_team_id);
+			els.mePic.replaceChildren(me
+				? TDC.playerTeamPic(me.avatar_path, me.display_name)
+				: TDC.teamPic(teamPictures.get(mine.my_team_id)));
+			TDC.runName(els.meTeam, me ? me.display_name : mine.my_team_name);   // one line, running when too long (UV, 16 Nov)
+			els.meCaptain.hidden = singles || !controlsTeam();
 		}
 
 		if (mine.my_status === 'withdrawn') {
 			els.meLine.textContent = 'You withdrew from this league.';
 			els.meDetail.textContent = 'Whoever runs the league can add you back if you change your mind.';
+		} else if (mine.my_status === 'inactive' && mine.my_team_id && singles) {
+			// Singles (19 Nov): no team place to keep, and coming back is for
+			// whoever runs the league. The button is not offered: a singles
+			// player is their team's only captain, whom only the director may
+			// mark away or back.
+			els.meLine.textContent = 'You are marked away.';
+			els.meDetail.textContent = 'Your matches cannot be started until whoever runs the league marks you back.';
 		} else if (mine.my_status === 'inactive' && mine.my_team_id) {
 			// Away: still on the team, not pickable, not taking up a place.
 			els.meLine.textContent = 'You are marked away from ' + mine.my_team_name + '.';
@@ -355,7 +399,9 @@ TDCLeagueNav.panel('season', () => {
 			els.meDetail.textContent = 'Whoever runs the league will let you in. There is nothing else for you to do yet.';
 		} else if (!mine.confirmed_at) {
 			els.meLine.textContent = 'You are in this league. Are you playing?';
-			els.meDetail.textContent = 'Confirming tells your captain and whoever runs the league that you are playing.';
+			els.meDetail.textContent = singles
+				? 'Confirming tells whoever runs the league that you are playing.'
+				: 'Confirming tells your captain and whoever runs the league that you are playing.';
 			els.meConfirm.hidden = false;
 			els.meWithdraw.hidden = false;
 		} else if (!mine.my_team_name) {
@@ -369,7 +415,9 @@ TDCLeagueNav.panel('season', () => {
 			els.meWithdraw.hidden = false;
 			els.meAway.textContent = 'I am away for a while';
 			els.meAway.dataset.active = '0';
-			els.meAway.hidden = false;
+			// Not in singles: the database lets only the director mark a
+			// team's only captain away, and a singles player is just that.
+			els.meAway.hidden = singles;
 		}
 	}
 
@@ -455,8 +503,9 @@ TDCLeagueNav.panel('season', () => {
 
 		els.meTeamBox.hidden = !mine.my_team_id;
 		if (!mine.my_team_id) return;
-		els.meTeamName.textContent = mine.my_team_name;
-		const team = TDCStandings.rank(data.teams.map((t) => Object.assign({}, t)), colsFor('team'))
+		// Singles: your team is you, so its place is your rank above (19 Nov).
+		els.meTeamName.textContent = singles ? 'My results' : mine.my_team_name;
+		const team = !singles && TDCStandings.rank(data.teams.map((t) => Object.assign({}, t)), colsFor('team'))
 			.find((t) => t.team_id === mine.my_team_id);
 		els.meTeamPlace.hidden = !team || team.rank === null;
 		if (team && team.rank !== null) els.meTeamPlace.textContent = ordinal(team.rank) + ' of ' + data.teams.length;
@@ -472,10 +521,10 @@ TDCLeagueNav.panel('season', () => {
 			const us = (home ? f.home_frames : f.away_frames) || 0;
 			const them = (home ? f.away_frames : f.home_frames) || 0;
 			const row = node('a', 'ls-wait ms-result');
-			row.href = '/leagues/card/?m=' + encodeURIComponent(f.match_id);
+			row.href = nightHref(f.match_id);
 			row.append(
 				node('span', 'ms-result-when', f.scheduled_at ? new Date(f.scheduled_at).toLocaleDateString([], { day: 'numeric', month: 'short' }) : ''),
-				node('span', 'ms-result-who', 'v ' + (home ? f.away_name : f.home_name)),
+				node('span', 'ms-result-who', 'v ' + (home ? sideName(f.away_team_id, f.away_name) : sideName(f.home_team_id, f.home_name))),
 				node('span', 'ms-result-score', us + '–' + them),
 				node('span', us > them ? 'badge live' : 'badge', us > them ? 'Won' : us < them ? 'Lost' : 'Drawn'));
 			return row;
@@ -647,7 +696,8 @@ TDCLeagueNav.panel('season', () => {
 		const nights = new Set(fixtures.filter((f) => f.scheduled_at).map((f) => new Date(f.scheduled_at).toDateString())).size;
 
 		const tiles = [
-			['Teams', teams.length],
+			// A singles league's teams are its players (19 Nov).
+			...(singles ? [] : [['Teams', teams.length]]),
 			['Players', (joinInfo && joinInfo.players) || 0],
 			['Names down', (joinInfo && joinInfo.interested) || 0],
 			['Nights', nights],
@@ -865,7 +915,8 @@ TDCLeagueNav.panel('season', () => {
 	}
 
 	function renderPool() {
-		els.poolPanel.hidden = !controlsTeam();
+		// Not in singles: nobody claims anybody onto a team of one (19 Nov).
+		els.poolPanel.hidden = singles || !controlsTeam();
 		if (els.poolPanel.hidden) return;
 
 		// Said before they try, not only after the database refuses. The
@@ -950,7 +1001,7 @@ TDCLeagueNav.panel('season', () => {
 	}
 
 	function renderRequests() {
-		els.askPanel.hidden = !controlsTeam() || !requests.length;
+		els.askPanel.hidden = singles || !controlsTeam() || !requests.length;
 		if (els.askPanel.hidden) return;
 
 		const full = isFull(myTeam());
@@ -1092,7 +1143,44 @@ TDCLeagueNav.panel('season', () => {
 	const nameRoom = new ResizeObserver((seen) => seen.forEach((e) => fitName(e.target)));
 	document.fonts.ready.then(() => els.teamList.querySelectorAll('.team-box-name').forEach(fitName));   // the display face changes the widths
 
+	// A singles player's card (19 Nov): the closed team card's look, their
+	// face and name, and a tap opens their profile rather than a roster of
+	// one. Signed out with no ids, it is the card and no link.
+	function playerCard(t) {
+		const p = singlesPlayer(t.team_id);
+		const box = document.createElement('details');
+		box.className = 'team-box is-player';
+		box.id = 'team-' + t.team_id;
+		box.dataset.team = t.team_id;
+		if (mine && mine.my_team_id === t.team_id) box.classList.add('is-mine');
+		const head = document.createElement('summary');
+		const top = node('span', 'lj-team-head');
+		const pic = node('span', 'team-pic');
+		const shown = p ? p.display_name : t.name;
+		pic.append(TDC.playerTeamPic(p && p.avatar_path, shown));
+		const name = node('span', 'team-box-name');
+		name.append(node('span', 'lj-run', shown));
+		nameRoom.observe(name);
+		top.append(pic, name);
+		head.append(top);
+		if (p && p.player_id) {
+			head.setAttribute('role', 'link');
+			head.title = 'Open their profile';
+			head.addEventListener('click', (e) => {
+				e.preventDefault();
+				const href = '/players/?p=' + encodeURIComponent(p.player_id);
+				if (e.ctrlKey || e.metaKey) window.open(href, '_blank', 'noopener');
+				else location.href = href;
+			});
+		} else {
+			head.addEventListener('click', (e) => e.preventDefault());
+		}
+		box.append(head);
+		return box;
+	}
+
 	function teamCard(t) {
+		if (singles) return playerCard(t);
 		const box = document.createElement('details');
 		box.className = 'team-box';
 		box.id = 'team-' + t.team_id;
@@ -1184,7 +1272,7 @@ TDCLeagueNav.panel('season', () => {
 		els.teamsHeadCount.hidden = !teams.length;
 		els.teamsHeadCount.textContent = String(teams.length);
 		els.teamEmpty.hidden = !!teams.length;
-		els.teamsHint.hidden = !(requestsRead && mayAsk()) || !teams.length;
+		els.teamsHint.hidden = singles || !(requestsRead && mayAsk()) || !teams.length;
 		els.teamsHint.textContent = asked.size
 			? 'The captain of a team you asked decides. Open it and tap its ring to take it back.'
 			: 'You are on no team yet. Open a team and tap its ring to ask to join it; its captain decides.';

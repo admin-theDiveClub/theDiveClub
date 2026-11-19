@@ -2608,4 +2608,19 @@ These predate the log. They are recorded here because every one of them is a dec
 *Example:* on Fixtures, "Cas 0 ▷ 0 Ann" with "C" and "A" in circles while neither has a photo.
 *So:* `TDC.playerTeamPic` (`tdc.js`), `.team-initials` (`league.css`); `docs/systems/leagues.md`.
 
+## 2026-11-19 — The Season tab and Run it in a singles league
+
+*Decided by UV (the plan of 19 Nov):* the Season tab shows a player card per entrant in place of team cards, with no claiming, captains or asking to join; Run it has no team creation.
+*Claude's, for UV to correct:*
+- A player card is the closed team card, and a tap opens the player's profile rather than unfolding.
+- The pill and heading say Players.
+- My Season has no Away button for a singles player: the database lets only the director mark a team's only captain away. Changing that would need a migration.
+- The results heading reads "My results", with no team place.
+- The season's numbers have no Teams tile.
+- On Fixtures, a singles player's name opens their profile.
+- Run it explains how to split a team left from before a switch.
+
+*Example:* Ann opens the Season tab: Players (3) with cards Ann (blue), Ben and Cas. My Season shows her row, "My next match v Cas" opening `/match/`, and "My results".
+*So:* `league-season.js`, `season.html`, `league-manage.js`, `manage.html`, `league-fixtures.js`; `docs/systems/leagues.md`.
+
 ---
