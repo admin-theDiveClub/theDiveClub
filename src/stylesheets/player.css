@@ -612,3 +612,6 @@ body:has(.site-nav:not(.is-hidden)) .pp-c-head { top: var(--nav-total); }
 .pp-meet:hover,
 .pp-meet:focus-visible { background: var(--hover-wash); outline: none; }
 .tdc-card .pp-rematch { display: block; width: 100%; margin-top: var(--space-5); }
+/* The player star (UV, 19 Nov): under the stat boxes, in the period; its key above it. */
+.pp-star-key { margin-top: var(--space-4); text-align: center; }
+.pp-star { margin-top: var(--space-2); }

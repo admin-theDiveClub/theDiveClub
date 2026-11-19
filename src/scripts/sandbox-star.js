@@ -18,20 +18,8 @@
 	const AREA = 'Star';
 	const el = (id) => document.getElementById(id);
 
-	// The spokes, clockwise from the top. n and d name the counts below.
-	const SPOKES = [
-		// The standards and starting frames are UV's (19 Nov).
-		{ key: 'win',   label: 'Win rate',     short: 'Win',       n: 'fw',  d: 'fp',  std: 50, start: 100,
-			help: 'Frames won out of frames played.' },
-		{ key: 'own',   label: 'Own break',    short: 'Own brk',   n: 'bw',  d: 'b',   std: 70, start: 50,
-			help: 'Frames won out of the frames they broke.' },
-		{ key: 'their', label: 'Their break',  short: 'Their brk', n: 'obw', d: 'ob',  std: 40, start: 50,
-			help: 'Frames won out of the frames their opponent broke.' },
-		{ key: 'in',    label: 'Break in',     short: 'Brk in',    n: 'i',   d: 'r',   std: 50, start: 10,
-			help: 'Breaks with a ball in, out of breaks with a result recorded.' },
-		{ key: 'bf',    label: 'B&F',          short: 'B&F',       n: 'bf',  d: 'b',   std: 10, start: 100,
-			help: 'Break & finish or golden break, out of the frames they broke.' }
-	];
+	// The spokes and UV's standards are TDCStar's (player-star.js).
+	const SPOKES = TDCStar.SPOKES;
 
 	// The counts, in the table's order.
 	const COUNTS = [
@@ -59,39 +47,11 @@
 			c: { fp: 100, fw: 50, b: 50, bw: 30, ob: 50, obw: 20, r: 50, i: 33, bf: 5 } }
 	];
 
-	const settings = {
-		std: Object.fromEntries(SPOKES.map((s) => [s.key, s.std])),
-		start: Object.fromEntries(SPOKES.map((s) => [s.key, s.start])),
-		solid: 200,
-		mode: 'ratio',
-		range: 25,
-		raw: false,
-		walkovers: false
-	};
+	// UV's settings (TDCStar.defaults), changed by this page's sliders; raw is this page's own.
+	const settings = Object.assign(TDCStar.defaults(), { raw: false });
 
 	// ─── The sums ───
-
-	// One spoke for one player: the raw and shown rates (0–1), or null with no data.
-	function spoke(p, s, start) {
-		const d = Number(p.c[s.d]) || 0;
-		const n = Math.min(Number(p.c[s.n]) || 0, d);
-		if (d <= 0) return null;
-		const std = settings.std[s.key] / 100;
-		return { raw: n / d, shown: (n + start * std) / (d + start), n, d, over: (Number(p.c[s.n]) || 0) > d };
-	}
-
-	// How far out a rate is drawn, 0 (centre) to 1 (edge); the standard is 0.5.
-	function reach(rate, s) {
-		const std = settings.std[s.key] / 100;
-		let r;
-		if (settings.mode === 'ratio') {
-			r = std > 0 ? 0.5 * rate / std : (rate > 0 ? 1 : 0.5);
-		} else {
-			const gap = (rate - std) * 100 / settings.range;
-			r = 0.5 + 0.5 * gap;
-		}
-		return Math.max(0, Math.min(1, r));
-	}
+	// TDCStar.spoke and TDCStar.reach (player-star.js), with this page's settings.
 
 	const pct = (x) => (x * 100).toFixed(1) + '%';
 	const gapText = (x, s) => {
@@ -100,60 +60,11 @@
 	};
 
 	// ─── The star ───
-
-	const SVG = 'http://www.w3.org/2000/svg';
-	const R = 82;
-	const svgEl = (name, attrs) => {
-		const e = document.createElementNS(SVG, name);
-		for (const k in attrs) e.setAttribute(k, attrs[k]);
-		return e;
-	};
-	const angle = (i) => -Math.PI / 2 + i * 2 * Math.PI / SPOKES.length;
-	const at = (i, r) => [Math.cos(angle(i)) * r * R, Math.sin(angle(i)) * r * R];
-	const ring = (r) => SPOKES.map((s, i) => at(i, r).join(',')).join(' ');
-
-	// The frame: the edge, the standard ring, the axes and their labels.
-	function frame(label) {
-		const svg = svgEl('svg', { viewBox: '-130 -118 260 236', class: 'star-svg', role: 'img' });
-		svg.setAttribute('aria-label', label);
-
-		svg.append(svgEl('polygon', { points: ring(1), class: 'star-edge' }));
-		svg.append(svgEl('polygon', { points: ring(0.5), class: 'star-std' }));
-		SPOKES.forEach((s, i) => {
-			const [x, y] = at(i, 1);
-			svg.append(svgEl('line', { x1: 0, y1: 0, x2: x, y2: y, class: 'star-axis' }));
-			const [lx, ly] = at(i, 1.2);
-			const t = svgEl('text', { x: lx, y: ly, class: 'star-label', 'text-anchor': Math.abs(lx) < 4 ? 'middle' : (lx > 0 ? 'start' : 'end'), 'dominant-baseline': 'middle' });
-			t.textContent = s.short;
-			svg.append(t);
-		});
-		return svg;
-	}
-
-	// One player's star on a frame, in a group of its own (cls colours it).
-	function layer(svg, p, cls) {
-		const g = svgEl('g', { class: cls || '' });
-		svg.append(g);
-		const rows = SPOKES.map((s) => spoke(p, s, settings.start[s.key]));
-		const shape = (pick) => rows.map((v, i) => at(i, v ? reach(pick(v), SPOKES[i]) : 0.5).join(',')).join(' ');
-
-		const certain = Math.min(1, (Number(p.c.fp) || 0) / settings.solid);
-		const shown = svgEl('polygon', { points: shape((v) => v.shown), class: 'star-shown' });
-		shown.style.fillOpacity = (0.08 + 0.42 * certain).toFixed(2);
-		shown.style.strokeOpacity = (0.35 + 0.65 * certain).toFixed(2);
-		g.append(shown);
-		if (settings.raw) g.append(svgEl('polygon', { points: shape((v) => v.raw), class: 'star-raw' }));
-
-		rows.forEach((v, i) => {
-			const [x, y] = at(i, v ? reach(v.shown, SPOKES[i]) : 0.5);
-			g.append(svgEl('circle', { cx: x, cy: y, r: 3, class: v ? 'star-dot' : 'star-dot star-none' }));
-		});
-		return { rows, certain };
-	}
+	// The shared star (player-star.js): the line only, no dots at the corners.
 
 	function star(p) {
-		const svg = frame('Star for ' + p.name);
-		return { svg, ...layer(svg, p) };
+		const { svg, layers } = TDCStar.draw('Star for ' + p.name, [{ counts: p.c, raw: settings.raw }], settings);
+		return { svg, ...layers[0] };
 	}
 
 	function card(p, index) {
@@ -239,9 +150,10 @@
 		const b = players.find((p) => p.id === compare.b);
 		if (!a || !b) { box.replaceChildren(); return; }
 
-		const svg = frame('Star comparing ' + a.name + ' and ' + b.name);
-		const la = layer(svg, a, 'star-a');
-		const lb = layer(svg, b, 'star-b');
+		const { svg, layers: [la, lb] } = TDCStar.draw('Star comparing ' + a.name + ' and ' + b.name, [
+			{ counts: a.c, cls: 'star-a', raw: settings.raw },
+			{ counts: b.c, cls: 'star-b', raw: settings.raw }
+		], settings);
 
 		const legend = document.createElement('p');
 		legend.className = 'star-legend';
@@ -382,26 +294,8 @@
 
 	// ─── League players ───
 
-	// The counts from tdc_player_profile's frames: finished frames of finished
-	// matches only. broke is null where breaks were not tracked; those frames
-	// count for the win rate only. No break result is returned, so r and i stay 0.
-	function countFrames(frames) {
-		const c = { fp: 0, fw: 0, b: 0, bw: 0, ob: 0, obw: 0, r: 0, i: 0, bf: 0 };
-		frames.forEach((f) => {
-			if (f.result_event === 'default' && !settings.walkovers) return;
-			c.fp++;
-			if (f.won) c.fw++;
-			if (f.broke === true) {
-				c.b++;
-				if (f.won) c.bw++;
-				if (f.won && (f.result_event === 'break_and_finish' || f.result_event === 'golden_break')) c.bf++;
-			} else if (f.broke === false) {
-				c.ob++;
-				if (f.won) c.obw++;
-			}
-		});
-		return c;
-	}
+	// The counts from tdc_player_profile's frames: TDCStar.count (player-star.js).
+	const countFrames = (frames) => TDCStar.count(frames, settings.walkovers);
 
 	async function addPlayer(row, button) {
 		if (players.some((p) => p.id === row.id)) {

@@ -5,9 +5,11 @@ description: "A player's profile: form, stats, leagues and teams, and how you ma
 extraStyles:
   - /stylesheets/league.css
   - /stylesheets/player.css
+  - /stylesheets/player-star.css
 extraScripts:
   - /scripts/match-settings.js
   - /scripts/league-standings-def.js
+  - /scripts/player-star.js
   - /scripts/player.js
 ---
 {% comment %}
@@ -114,6 +116,9 @@ extraScripts:
 					<button type="button" class="cp-view" data-days="30" aria-pressed="false">Last 30 days</button>
 				</div>
 				<div class="pp-grid" data-part="grid"></div>
+				<!-- The player star (UV, 19 Nov; docs/design/player-star.md), in the period. -->
+				<p class="muted pp-sub pp-star-key">Grey ring: the standard · outside is better · dashed: their frames alone</p>
+				<div class="pp-star" data-part="star"></div>
 			</section>
 
 			<!-- Frame difference per night is on Compare only (UV, 17 Nov). -->
@@ -200,6 +205,9 @@ extraScripts:
 				</div>
 				<div class="pp-grid" data-side="mine" data-part="grid"></div>
 				<div class="pp-grid" data-side="them" data-part="grid"></div>
+				<!-- The player star: one across both halves, you green and them blue (UV, 19 Nov). -->
+				<p class="muted pp-sub pp-c-wide pp-star-key">Grey ring: the standard · outside is better</p>
+				<div class="pp-star pp-c-wide" id="pp-cmp-star"></div>
 
 				<h2 class="pp-c-h">Frame difference per night</h2>
 				<p class="muted pp-sub pp-c-wide">Last 15 nights in the period, newest at the foot · won minus lost</p>

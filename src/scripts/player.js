@@ -485,9 +485,38 @@
 		}
 	}
 
+	// The player star (UV, 19 Nov; docs/design/player-star.md), drawn by
+	// player-star.js from the frames in the period. The Profile tab shows the
+	// raw star too, dashed (every Profile tab, UV); Compare is one star across
+	// both halves, you green and them blue, without it (UV).
+	const STAR = TDCStar.defaults();
+	const starCounts = (p) => TDCStar.count(inPeriod(p).frames, STAR.walkovers);
+
+	function renderStar(v) {
+		const box = v.part('star');
+		const { svg } = TDCStar.draw('Star for ' + v.p.player.display_name, [{ counts: starCounts(v.p), raw: true }], STAR);
+		box.replaceChildren(svg);
+	}
+
+	function renderCompareStar() {
+		const box = el('pp-cmp-star');
+		const { svg } = TDCStar.draw('Star comparing you and ' + themName(), [
+			{ counts: starCounts(mine), cls: 'star-a' },
+			{ counts: starCounts(them), cls: 'star-b' }
+		], STAR);
+		const legend = node('p', 'star-legend');
+		legend.append(node('span', 'star-key-a', mine.player.display_name), node('span', 'star-key-b', them.player.display_name));
+		box.replaceChildren(legend, svg);
+	}
+
 	// Everything that hangs on the period, in every view.
 	function renderPeriod() {
-		for (const v of views) { renderStats(v); if (v.vertical) renderBars(v); }   // the bars on Compare only (UV, 17 Nov)
+		for (const v of views) {
+			renderStats(v);
+			if (v.vertical) renderBars(v);   // the bars on Compare only (UV, 17 Nov)
+			else renderStar(v);              // the star on the Profile tab; Compare has one across both halves
+		}
+		if (mine) renderCompareStar();
 	}
 
 	function renderProfile() {

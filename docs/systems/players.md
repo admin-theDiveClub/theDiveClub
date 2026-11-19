@@ -62,6 +62,24 @@ The display font's line height on this page (the name, the stat numbers, the tea
 
 **Not built yet** (UV, 5 Nov: shown, a tap says so): Challenge, the rematch, Home venue (About's row), More. Each is a control with `data-unbuilt="<name>"`; a tap writes "<name> is not built yet." on its section's note line (`[data-note]`), or the page's status line.
 
+### The player star (UV, 19 Nov; migration `20261119142114`, test `087_player_profile_break_outcome`)
+
+Five spokes (win rate, own break, their break, break in, B&F), each measured against UV's own standard, never against other players: where the player's game needs work. The idea, UV's numbers and what is still open are in `docs/design/player-star.md`; it was tuned on `/sandbox/star/`.
+
+| Where | What |
+|---|---|
+| Profile tab (yours and anyone's) | Under the Stats boxes, in the period. The star, plus the **raw star dashed**: their frames alone, with no starting frames (UV: every Profile tab) |
+| Compare | **One star across both halves** (`#pp-cmp-star`, `.pp-c-wide`): you green, them blue (`--color-team`), a legend with both names; no raw star (UV) |
+
+**How it is drawn.** One module, `scripts/player-star.js` (`TDCStar`), holds UV's standards and starting frames, the counting (`count`) and the drawing (`draw`), and the profile and the sandbox both use it, so a standard changed there changes both. Styles in `stylesheets/player-star.css`, loaded by both pages. `player.js` adds `renderStar(v)` for the Profile tab's view and `renderCompareStar()`, both run by `renderPeriod`, so the period switch redraws them. The counts come from `inPeriod(p).frames`: finished frames of finished matches, doubles left out as for every other number. Walkovers are left out.
+
+- **The line only, no dots at the corners** (UV). The standard is the grey ring halfway out (UV).
+- **A spoke with no data** (no chances in the period, e.g. Break in for a player with league frames only) sits on the standard, its label greyed with "no data" under it (UV). On Compare a label greys only when neither player has data for it.
+- **How solid** the star is follows frames played, solid at 200 (UV), so a player with a dozen frames has a faint star.
+- **The break result.** `tdc_player_profile`'s frames gain `break_outcome` (migration `20261119142114`, patched from the fresh-database text after `doubles_matches`, one line). It is the breaker's, so it counts on the player's own breaks only. League scorecards do not record it (none of 900 league frames on 19 Nov), so it comes from social and singles matches.
+
+**Checked:** rendered headless at 420 on the local copy, seeded through the real functions (two players, two finished matches with break results, one dry, one scratch, one not recorded), signed in through the local auth: your own profile (star and dashed raw star, Break in counted 5 of 6), someone else's Profile tab, Compare (one star, both colours, no raw). The no-data label checked on the sandbox. Not on a phone, not against production.
+
 ### Follow (UV, 5 Nov; migration `20261105205913`, test `061_player_follows`)
 
 **One-way, no approval, and private** (UV): a tap follows, a second tap stops, and only you can see who you follow. No follower lists, no counts, no notification. Private can be opened up later; once people have seen who follows whom it cannot be taken back.

@@ -2643,3 +2643,23 @@ These predate the log. They are recorded here because every one of them is a dec
 
 *Example:* Alice starts a 2 v 2 with Bob against Carol and Dan. Bob scores frame 1 on his phone; it is credited to all four. Alice submits; Bob sees "Submitted. Waiting for Carol & Dan", Dan taps Looks right and it is settled. Alice's profile lists "with Bob vs Carol & Dan" and her win rate does not move.
 *So:* migration `20261119124608_doubles_matches`, test `086_doubles_matches`; `match-new.js`, `src/matches/new/index.html`, `match.js`, `player.js`, `home-cards.js`, `live-match.js`, `points-formula.js`, `forms.css`, `match.css`, `notify-card`; `docs/systems/matches.md`, `players.md`, `points.md`.
+
+## 2026-11-19 — The player star on the profile
+
+*The question:* how to rate a player's game so it means something to them, when samples are small (league players have at most 31 frames), and how to show it.
+
+*Decided by UV:*
+- **Measured against UV's own standard for each spoke, never against other players.** Five spokes: win rate, own break, their break, break in, B&F. Standards 50 / 70 / 40 / 50 / 10%.
+- **Starting frames** steady small samples (Claude's suggestion, UV took it as well): every player starts with frames played at the standard, 100 / 50 / 50 / 10 / 100. A star is solid at 200 frames.
+- **On every Profile tab the raw star is shown dashed; on Compare it is hidden**, and Compare is one star across both halves.
+- **The star follows the Stats period.** A spoke with no data sits on the standard, its label greyed with "no data".
+- **The line only, no dots at the corners. The standard ring is grey.**
+- **The break result is added to the profile function** so Break in can be counted.
+
+*Rejected:* comparing each player with every other player (percentiles), which Claude first proposed; and frames played as the star's outer limit, which turns it into a measure of experience rather than ability.
+
+*Claude's, not yet confirmed by UV:* walkovers left out; golden breaks counted as B&F; scratch and foul on the break not counted as "in"; the gap drawn as a ratio (UV had it on Ratio when approving the numbers); B&F counted even where a match's rules had B&F off.
+
+*Example:* a newcomer who won 5 of 5 shows 52.4% on the win-rate spoke ((5 + 50) / (5 + 100)), faint, with a large dashed raw star; a regular at 232 of 400 shows 56.4%, nearly solid.
+
+*So:* migration `20261119142114_player_profile_break_outcome`, test `087`; `scripts/player-star.js`, `stylesheets/player-star.css`, `player.js`, `players/index.html`, `player.css`; the sandbox uses the same module. `docs/systems/players.md`, `docs/design/player-star.md`.

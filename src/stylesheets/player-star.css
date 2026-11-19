@@ -1,0 +1,24 @@
+/* The player star (UV, 19 Nov; docs/design/player-star.md), drawn by
+   scripts/player-star.js on the player profile and /sandbox/star/.
+   The line and the fill only, no dots at the corners (UV). The standard is
+   the grey ring halfway out (UV). A second player on one star (Compare)
+   takes the team blue; the first keeps the green. */
+.star-svg { display: block; width: 100%; max-width: 20rem; margin: 0 auto; overflow: visible; }
+.star-edge, .star-axis { fill: none; stroke: var(--border-color); stroke-width: 1; }
+.star-std { fill: none; stroke: var(--text-muted); stroke-width: 1.5; }
+.star-shown { fill: var(--color-primary); stroke: var(--color-primary); stroke-width: 2; stroke-linejoin: round; }
+.star-raw { fill: none; stroke: var(--text-primary); stroke-width: 1.25; stroke-dasharray: 4 3; opacity: 0.7; }
+.star-b .star-shown { fill: var(--color-team); stroke: var(--color-team); }
+.star-label { fill: var(--text-muted); font-size: 11px; }
+.star-label.star-nodata { opacity: 0.55; }
+.star-key-a { color: var(--color-primary); }
+.star-key-b { color: var(--color-team); }
+/* The names over a two-player star, in their colours. */
+.star-legend {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--space-1) var(--space-4);
+	margin: var(--space-2) 0 0;
+	font-size: 0.85rem;
+}
