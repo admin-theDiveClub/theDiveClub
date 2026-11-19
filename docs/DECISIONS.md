@@ -2668,8 +2668,8 @@ These predate the log. They are recorded here because every one of them is a dec
 
 *Decided by UV:* the star goes on each league's row on a player's profile and on each `/leagues/` card, showing one player's frames in that league only. Every spoke's starting frames are the expected maximum frames the player could play in the league, from the league's settings; the star's opacity is matches played ÷ matches scheduled.
 
-*Chosen by UV from Claude's options:* the maximum is counted from the made schedule (a season does not store its rounds); a singles match counts its most frames from the match rules (race to N: 2N−1, best of N: N). *Decided by UV, 19 Nov, on the panel:* "matches played" is the player's own matches, so a team night they sat out lowers the star's solidity.
+*Chosen by UV from Claude's options:* the maximum is counted from the made schedule (a season does not store its rounds); a singles match counts its most frames from the match rules (race to N: 2N−1, best of N: N). *Decided by UV, 19 Nov:* the league star also shows the raw dashed line. *Decided by UV, 19 Nov, on the panel:* "matches played" is the player's own matches, so a team night they sat out lowers the star's solidity.
 
-*Claude's, not confirmed:* no raw dashed star on a league star; the Stats period does not apply; shown only where the player is active.
+*Claude's, not confirmed:* the Stats period does not apply; shown only where the player is active.
 
 *So:* migration `20261119180000_player_profile_league_star`, test `088`; `player-star.js`, `player.js`, `leagues.js`, `player.css`, `league.css`, `leagues/index.html`.

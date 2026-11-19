@@ -363,7 +363,7 @@
 			const got = await TDCStar.leagueSettings(supabaseClient, l.league_season_id, l.my_team_id, rules);
 			if (got.error) { TDC.showSupabaseError(AREA, got.error, els.status); return; }
 			const counts = TDCStar.count(TDCStar.leagueFrames(data, l.league_season_id), got.set.walkovers);
-			const { svg } = TDCStar.draw('Your star in ' + l.league_name, [{ counts, certain: TDCStar.leagueSolid(data, l.league_season_id, got.scheduled) }], got.set);
+			const { svg } = TDCStar.draw('Your star in ' + l.league_name, [{ counts, raw: true, certain: TDCStar.leagueSolid(data, l.league_season_id, got.scheduled) }], got.set);
 			const box = el('div', 'lc-star');
 			box.append(svg);
 			stars.set(l.league_season_id, box);

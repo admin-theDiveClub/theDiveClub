@@ -367,7 +367,7 @@
 				const set = got.set;
 				const certain = TDCStar.leagueSolid(v.p, t.league_season_id, got.scheduled);
 				const counts = TDCStar.count(TDCStar.leagueFrames(v.p, t.league_season_id), set.walkovers);
-				const { svg } = TDCStar.draw('Star for ' + v.p.player.display_name + ' in ' + t.league_name, [{ counts, certain }], set);
+				const { svg } = TDCStar.draw('Star for ' + v.p.player.display_name + ' in ' + t.league_name, [{ counts, certain, raw: true }], set);
 				const star = node('span', 'pp-team-star');
 				star.append(svg);
 				a.append(star);
