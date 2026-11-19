@@ -133,6 +133,11 @@ const TDCRing = (() => {
 			'M45 43.7A8 13 0 1 0 45 56.3L45 51L39 51',
 			'M56 37L56 63',
 			'M56 37L63 37A6.5 6.5 0 0 1 63 50L56 50M63 50A6.5 6.5 0 0 1 63 63L56 63'] },
+		// Added 19 Nov for the team card's W (UV): the letter in place of the
+		// tick on the knob, as tall as the BF and GB above.
+		w: { label: 'Won the frame', strokes: [
+			'M35 37L42 63L50 42',
+			'M50 42L58 63L65 37'] },
 		// Added 24 Oct for the team card's lag: a spotted cue ball, the ball and its spot.
 		// The spots are foreshortened towards the ball's edge so it reads as a
 		// sphere: rounder and heavier near the middle, flatter and lighter out

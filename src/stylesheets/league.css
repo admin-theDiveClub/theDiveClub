@@ -1611,8 +1611,8 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	padding-bottom: var(--space-2);
 	font-family: var(--font-body);
 }
-.cs-fold .cs-home { text-align: right; }
-.cs-fold .cs-away { text-align: left; }
+.cs-fold .cs-home,
+.cs-fold .cs-away { text-align: center; }   /* centred in their columns (UV, 19 Nov) */
 .cs-fold-score { display: flex; align-items: baseline; gap: var(--space-2); }
 .cs-fold .cs-colon { color: var(--text-muted); }
 .cs-session[open]:not(.is-closing) > summary .cs-fold { display: none; }
@@ -1627,12 +1627,19 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	--tri-height: 2.4rem;
 	--nm-knob: 1.9rem;
 }
-.cs-grid { --cs-mid: calc(var(--tri-width) + 2.6rem); }
+/* The middle column is the switch's own width (UV, 19 Nov: the L and W
+ * letters went inside the track), plus, on every frame, the room W takes
+ * fully open with the special wins this league has on (UV, 19 Nov: "reserve
+ * always"), so nothing moves or re-wraps when W opens. --cs-specials is the
+ * most stops W can gain on one side (league-card.js, on the body); W's box
+ * is balanced either side of its middle, so twice that many steps. */
+.cs-grid { --cs-mid: calc(var(--tri-width) + var(--cs-specials, 0) * (var(--tri-width) - var(--tri-height))); }
 .cs-row {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) var(--cs-mid) minmax(0, 1fr);
+	--cs-gap: var(--space-2);   /* also read by the heading row's padding */
+	grid-template-columns: minmax(0, 1fr) minmax(var(--cs-mid), max-content) minmax(0, 1fr);
 	align-items: center;
-	gap: var(--space-2);
+	gap: var(--cs-gap);
 	padding: var(--space-2) 0;
 	border-bottom: 1px solid var(--border-color);
 }
@@ -1642,12 +1649,26 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	color: var(--text-primary);
 	/* One line, running sideways when too long (UV, 16 Nov): TDC.runName */
 }
-.cs-head .cs-home { grid-column: 1; text-align: right; }
-.cs-head .cs-away { grid-column: 3; text-align: left; }
+/* Team and player names centred in their columns (UV, 19 Nov; they kept to
+ * the side nearest the switches until then). */
+/* The heading row has nothing between the teams (UV, 19 Nov), so each team
+ * name has its half of the row: centred over its players' column; too wide
+ * for that, kept to its outer edge and reaching into the middle; wider than
+ * the half, running sideways (TDC.runName, design.css). The half is the
+ * clip; padding on the inner side leaves a content box exactly the players'
+ * column (a half is (the row - a gap) / 2, a column (the row - the middle -
+ * two gaps) / 2), and safe center falls back to the start, the outer edge,
+ * when the name does not fit it (the away box right to left, so its start
+ * is the right; the name in it left to right). Once it runs, it runs from
+ * the left as every running name does. */
+.cs-row.cs-head { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.cs-head .cs-team { display: flex; justify-content: safe center; }
+.cs-head .cs-home { grid-column: 1; padding-right: calc((var(--cs-mid) + var(--cs-gap)) / 2); }
+.cs-head .cs-away { grid-column: 2; padding-left: calc((var(--cs-mid) + var(--cs-gap)) / 2); direction: rtl; }
+.cs-head .cs-team > .lj-run { flex: none; direction: ltr; }
+.cs-head .cs-team.is-long { direction: ltr; padding-left: 0; padding-right: 0; }
 
-.cs-player { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
-.cs-player.cs-home { align-items: flex-end; text-align: right; }
-.cs-player.cs-away { align-items: flex-start; text-align: left; }
+.cs-player { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; align-items: center; text-align: center; }
 .cs-player.is-won .card-person-name { color: var(--color-primary); font-weight: 700; }
 .cs-sub { font-size: 0.85rem; color: var(--text-muted); }
 .cs-empty { color: var(--text-muted); font-style: italic; }
@@ -1700,43 +1721,21 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	padding: 0.05rem 0.4rem;
 	color: var(--color-warning);
 }
-/* On a phone the picture goes above the name, so the name has the column;
- * both are then centred in their side, the line under them too (UV,
- * 12 Nov: wherever a player takes more than one line). */
-@media (max-width: 30rem) {
-	.cs-seat,
-	.cs-player.cs-home .cs-seat { flex-direction: column; }
-	.cs-player .card-person,
-	.cs-player.cs-home .card-person { flex-direction: column; gap: var(--space-1); }
-	.cs-player,
-	.cs-player.cs-home,
-	.cs-player.cs-away { align-items: center; text-align: center; }
-	.cs-player .card-person-name { text-align: center; }
-	.cs-seat.is-pickable,
-	.cs-player.cs-home .cs-seat.is-pickable { padding: var(--space-1); border-radius: var(--radius-md); }
-}
+/* The picture above the name on every screen (UV, 19 Nov; on a phone only
+ * until then), so the name has the column. */
+.cs-seat,
+.cs-player.cs-home .cs-seat { flex-direction: column; }
+.cs-player .card-person,
+.cs-player.cs-home .card-person { flex-direction: column; gap: var(--space-1); }
+.cs-seat.is-pickable,
+.cs-player.cs-home .cs-seat.is-pickable { padding: var(--space-1); border-radius: var(--radius-md); }
 
 /* L over W in the middle: home at the left end, nobody in the middle, away
- * at the right, its letter either side. */
+ * at the right, the letter inside the track at each end (UV, 19 Nov; it sat
+ * outside until then). Under them, once the lag is in, a switch per special
+ * win the league has on. */
 .cs-toggles { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
-.cs-tog { display: flex; align-items: center; gap: var(--space-2); }
-.cs-tog-key {
-	width: 0.8rem;
-	font-size: 0.85rem;
-	font-weight: 700;
-	color: var(--text-muted);
-	text-align: center;
-	transition: color 0.2s ease, text-shadow 0.2s ease;
-}
-/* The letter beside the chosen end lights up. */
-.cs-tog-key.is-on {
-	color: var(--color-primary);
-	text-shadow: 0 0 8px color-mix(in srgb, var(--color-primary) 75%, transparent);
-}
-.cs-tog-lag .cs-tog-key.is-on {
-	color: var(--color-warning);
-	text-shadow: 0 0 8px color-mix(in srgb, var(--color-warning) 75%, transparent);
-}
+.cs-tog { display: flex; align-items: center; }
 
 /* The totals, either side of the middle, under each team's end. */
 .cs-total { border-bottom: none; }
@@ -1744,11 +1743,21 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	grid-column: 2;
 	display: flex;
 	justify-content: space-between;
-	padding: 0 calc(1.3rem + var(--tri-height) / 2 - 1.25rem);
+	/* Each total centred under L's end knob: L is centred in the column, so
+	 * its ends are half the room W is given beyond L in from the column's
+	 * edges, then half the track's height, less half a total's width. A
+	 * margin, as it can come out a little below zero. */
+	margin: 0 calc((var(--cs-mid) - var(--tri-width)) / 2 + var(--tri-height) / 2 - 1.25rem);
 }
 .cs-tot { display: flex; flex-direction: column; align-items: center; width: 2.5rem; }
 .cs-tot-label { font-size: 0.85rem; color: var(--text-muted); }
 .cs-tot-value { font-size: 1.35rem; font-weight: 700; color: var(--card-score, var(--color-primary)); text-shadow: var(--card-score-glow, none); font-variant-numeric: tabular-nums; }
+/* A session with every result in (UV, 19 Nov; markSessionScore): the side
+ * that won it green and lit, the other grey, a draw both green, as a
+ * finished fixture's score. In its heading, its totals and a completed
+ * card's session tables. */
+.cs-tot-value.is-winner { color: var(--color-primary); text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 60%, transparent); }
+.cs-tot-value.is-loser { color: var(--text-muted); text-shadow: none; }
 
 /* A small phone keeps every frame on one row, the names either side of the
  * switches (UV, 12 Nov: a name wraps over its words rather than the switches
@@ -1760,10 +1769,7 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	.cs-grid .tdc-tri,
 	.qv-list,
 	.qv-list .tdc-tri { --tri-width: 5.25rem; --tri-height: 2.2rem; --nm-knob: 1.7rem; }
-	.cs-grid,
-	.qv-list { --cs-mid: calc(var(--tri-width) + 2.4rem); }
-	.cs-row { gap: var(--space-1); }
-	.cs-tog { gap: var(--space-1); }   /* the letters closer, so the middle fits its narrower track */
+	.cs-row { --cs-gap: var(--space-1); }
 	.cs-player .card-person-name { font-size: 0.9rem; }
 	.cs-sub { font-size: 0.75rem; }
 	.qv-pill { padding-left: var(--space-2); padding-right: var(--space-2); }
@@ -2329,24 +2335,80 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
  * gap, so a leaving one can fold its space away (the list lifts) before it
  * goes. */
 #quick { margin-top: var(--space-5); }
-.qv-list { max-width: 40rem; margin: 0 auto; }
+/* Folding (UV, 19 Nov: "just add a drop-down arrow to the heading rather
+ * than adding any pills"): the heading is the summary, laid out as before
+ * (the h2's size and space, the grey line either side, .lj-heading) with the
+ * site's arrow right after the words. The folding group's own summary rules
+ * (forms.css, design.css: the + / – and the arrow are its ::after) are put
+ * back here, as ::after is the line on the right. */
+#quick .qv-fold { margin: 0; padding: 0; border: 0; }
+#quick .qv-fold > summary.lj-heading {
+	width: auto;
+	min-height: 0;
+	margin: 2rem 0 0.75rem;
+	padding: 0;
+	cursor: pointer;
+	color: inherit;
+	font: inherit;
+	letter-spacing: normal;
+	text-transform: none;
+}
+#quick .qv-fold > summary.lj-heading::after,
+#quick .qv-fold[open] > summary.lj-heading::after {
+	content: "";
+	position: static;
+	flex: 1 1 1rem;
+	width: auto;
+	min-width: 1rem;
+	height: 1px;
+	background: var(--border-color);
+	transform: none;
+	opacity: 1;
+}
+#quick .qv-fold-title { margin: 0; }
+.qv-arrow {
+	flex: none;
+	width: 1.25rem;
+	height: 1.25rem;
+	margin-left: calc(-1 * var(--space-2));   /* closer to the words than the lines are */
+	background: var(--nm-arrow) center / contain no-repeat;
+	transition: transform 0.35s ease, opacity var(--dots-dim) ease;
+}
+#quick .qv-fold[open]:not(.is-closing) .qv-arrow { transform: rotate(180deg); }
+/* The dots while it opens sit where the arrow is, the arrow hidden. */
+#quick .qv-fold > summary > .group-dots {
+	position: relative;
+	top: auto;
+	right: auto;
+	flex: none;
+	transform: none;
+	margin-left: calc(-1 * (var(--space-3) + (1.25rem + var(--group-dots-size)) / 2));
+}
+#quick .qv-fold > summary:has(> .group-dots[data-dots]) > .qv-arrow { opacity: 0; }
+/* One even gap between every card and line in the list (UV, 19 Nov: a
+ * card moving between groups still resized it, a card being 12px from a
+ * card but 16px from a line). The groups lay out as if they were not there
+ * (display: contents), so the list's height is the same whichever group a
+ * card is in. */
+.qv-list { max-width: 40rem; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-3); }
+.qv-group { display: contents; }
 .qv-list,
 .qv-list .tdc-tri { --tri-width: 6.25rem; --tri-height: 2.4rem; --nm-knob: 1.9rem; }
-.qv-list { --cs-mid: calc(var(--tri-width) + 2.6rem); }
+.qv-list { --cs-mid: calc(var(--tri-width) + var(--cs-specials, 0) * (var(--tri-width) - var(--tri-height))); }   /* as .cs-grid's */
 .qv-pill {
 	padding: var(--space-2) var(--space-3) var(--space-1);
 	border-radius: var(--nm-field-radius);
 	box-shadow: var(--nm-sunken);
 }
-.qv-pill + .qv-pill { margin-top: var(--space-3); }
 /* A line between two groups, in the colour of the one above it (UV, 17 Nov;
  * rings round them since 12 Nov): under Under way yellow and lit, as the lag
  * and a fixture being played are; under Now grey. Next, always last, has
- * none. */
+ * none. Both always there (UV, 19 Nov), so nothing pops in or out: with no
+ * frame under way, its line sits above every frame. Spaced by the list's
+ * gap, as the cards are. */
 .qv-line {
 	display: block;
 	height: 2px;
-	margin-top: var(--space-4);
 	border-radius: 1px;
 	background: var(--text-muted);
 }
@@ -2354,7 +2416,6 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 	background: var(--color-warning);
 	box-shadow: 0 0 8px color-mix(in srgb, var(--color-warning) 60%, transparent);
 }
-.qv-group:not([hidden]) ~ .qv-group:not([hidden]) { margin-top: var(--space-4); }
 /* A line between Now and next and the sessions under it (UV, 17 Nov). */
 #quick::after {
 	content: "";

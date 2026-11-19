@@ -155,9 +155,18 @@ extraScripts:
 		frame whose lag goes in glides up into Now), and the next fades in
 		at the bottom (UV, 17 Nov).
 	{% endcomment %}
+	{% comment %}
+		Folds (UV, 19 Nov): the heading is the details' summary, the grey
+		line either side as before and the site's arrow right after the
+		words, no pill. Open on every visit; the site's fold
+		(tdc-controls.js) opens and closes it. Only the list inside is
+		redrawn, so it stays as the reader left it.
+	{% endcomment %}
 	<section id="quick" hidden aria-label="Frames being played and next">
-		<h2 class="lj-heading">Now and next</h2>
-		<div class="qv-list" id="quick-list"></div>
+		<details class="set-group qv-fold" open>
+			<summary class="lj-heading"><h2 class="qv-fold-title">Now and next</h2><span class="qv-arrow" aria-hidden="true"></span></summary>
+			<div class="qv-list" id="quick-list"></div>
+		</details>
 	</section>
 
 	{% comment %}

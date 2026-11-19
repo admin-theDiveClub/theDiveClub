@@ -544,7 +544,12 @@ const TDCControls = (() => {
 		const prev = map.get(key);
 		map.set(key, c);
 		if (!prev || prev === c || prev.wrap.isConnected || prev.kind !== c.kind) return;
-		const to = c.knobAt, from = prev.knobAt;
+		const to = c.knobAt;
+		// A switch whose stops changed (19 Nov): where the old knob stood,
+		// counted from the middle stop, on the new track. Unmoved there, it
+		// stays (growTri opens the track round it).
+		const from = c.kind === 'tri' && prev.n && prev.n !== c.n
+			? (prev.knobAt * (prev.n - 1) - prev.before + c.before) / (c.n - 1) : prev.knobAt;
 		if (Math.abs(to - from) < 0.001 && prev.ring.state === c.ring.state) return;
 		const icon = c.ring.state;
 		c.ring.setState(prev.ring.state);
@@ -680,16 +685,53 @@ const TDCControls = (() => {
 		: ['action', 'frame', 'player'].map((k) => sel.dataset[k] || '').join('|');
 
 	function triControl(sel) {
-		if (sel.tagName !== 'SELECT' || sel.options.length !== 3) {
-			TDC.error(AREA, 'a three-way switch must be a <select> with three options.', sel);
+		// Three options, or more (UV, 19 Nov: the team card's W with its
+		// special wins beyond each end, as many as fit each side). The middle
+		// is the option whose value is empty, wherever it falls; with none,
+		// the centre one.
+		if (sel.tagName !== 'SELECT' || sel.options.length < 3) {
+			TDC.error(AREA, 'a three-way switch must be a <select> with at least three options.', sel);
 			return;
 		}
 		const key = triKey(sel);
 		const was = liveTris.get(key);
 		const c = was && (served(was.wrap) || was.changing) ? was : makeTri(sel);
+		const prev = lastDrawn.get('tri|' + key);
+		const shape = { n: c.n, before: c.before };   // before this bind, for a control handed on
 		sel.replaceWith(c.wrap);
 		c.bind(sel, key);
+		growTri(c, prev === c ? shape : prev);
 		movedFrom(lastDrawn, 'tri|' + key, c);   // the other captain's change glides (above)
+	}
+
+	// Stops added or taken away (UV, 19 Nov: W gains its special wins once the
+	// lag is in): the track grows or shrinks to its new length as the
+	// dropdown opens, its edge moving over stops that lie still, and the
+	// knob stays on its stop. What the switch sits in follows its width.
+	// Animated through the registered --tri-n, --tri-before and --tri-after
+	// (and --tri-k, the knob, while the knob has not moved), from the last
+	// drawn switch's to this one's. Less motion: straight there.
+	function growTri(c, was) {
+		if (!was || !was.n || was.n === c.n || !c.wrap.animate) return;
+		const ms = timeMs(c.wrap, '--control-reveal') && 450;   // the dropdown's opening (design.css)
+		if (!ms) return;
+		const from = { '--tri-n': was.n, '--tri-before': was.before, '--tri-after': was.n - 1 - was.before };
+		const to = { '--tri-n': c.n, '--tri-before': c.before, '--tri-after': c.n - 1 - c.before };
+		// The knob, counted from the middle stop, where it was: kept there.
+		const k = c.knobAt * (c.n - 1);
+		const wasK = was.knobAt === undefined ? null : was.knobAt * (was.n - 1) - was.before + c.before;
+		if (wasK !== null && Math.abs(wasK - k) < 0.001) {
+			from['--tri-k'] = was.knobAt * (was.n - 1);
+			to['--tri-k'] = k;
+		}
+		if (c.growing) c.growing.cancel();
+		c.growing = c.wrap.animate([from, to], { duration: ms, easing: 'ease' });
+	}
+
+	// The middle stop: the option with an empty value, else the centre one.
+	function middleOf(sel) {
+		const i = [...sel.options].findIndex((o) => o.value === '');
+		return i >= 0 ? i : Math.floor((sel.options.length - 1) / 2);
 	}
 
 	function makeTri(first) {
@@ -708,21 +750,30 @@ const TDCControls = (() => {
 		// Every icon this control may wear. A cycling one always knows the
 		// tick too: drawn first while it wore, say, rBF, ICON0 is rBF, and
 		// without the tick here it could never go back to it (UV, 29 Oct).
-		const KNOWN = [...new Set([ICON0].concat(CYCLE.length ? ['tick'] : [], CYCLE))];
+		// More stops (UV, 19 Nov): an option's own data-icon is the knob's icon
+		// at that stop, and data-icons on the select lists every icon its
+		// options may ever wear, so one drawn with three stops still knows
+		// the icons of the stops a redraw adds.
+		const optIcons = [...first.options].map((o) => o.dataset.icon)
+			.concat((first.dataset.icons || '').split(/\s+/)).filter(known);
+		const KNOWN = [...new Set([ICON0].concat(CYCLE.length ? ['tick'] : [], CYCLE, optIcons))];
 		const icon = () => {
-			const name = c.sel && c.sel.dataset.icon;
+			const o = c.sel && c.sel.options[c.sel.selectedIndex];
+			const name = (o && o.dataset.icon) || (c.sel && c.sel.dataset.icon);
 			return KNOWN.includes(name) ? name : ICON0;
 		};
-		const at = () => (c.sel.selectedIndex < 0 ? 1 : c.sel.selectedIndex) / 2;   // 0 left, 0.5 middle, 1 right
+		const count = () => c.sel.options.length;
+		const mid = () => middleOf(c.sel);
+		const index = () => c.sel.selectedIndex < 0 ? mid() : c.sel.selectedIndex;
+		const at = () => index() / (count() - 1);   // 0 left, 0.5 middle, 1 right
 		const MID = 'dot';   // the middle: a small grey dot, so it is traced like the ends
-		const state = () => at() === 0.5 ? MID : icon();
+		const state = () => index() === mid() ? MID : icon();
 		const chosen = () => c.sel.options[c.sel.selectedIndex] ? c.sel.options[c.sel.selectedIndex].text : 'Chosen';
 
 		const wrap = c.wrap = node('span', 'tdc-tri');
 		wrap.tdcTri = c;
 		if (first.dataset.tone) wrap.dataset.tone = first.dataset.tone;
-		const stops = node('span', 'tdc-tri-stops');
-		stops.append(node('i'), node('i'), node('i'));
+		const stops = node('span', 'tdc-tri-stops');   // one <i> a stop, made at each bind
 		const face = node('span', 'tdc-ring');
 		face.innerHTML = TDCRing.svg();
 		const knob = node('span', 'tdc-tri-knob');
@@ -737,20 +788,28 @@ const TDCControls = (() => {
 
 		// --p runs 0 (left) to 1 (right); --lit is how far from the middle,
 		// which lights the track as the knob reaches an end (status.css).
+		// With more stops, --p still runs 0 to 1 across the track; the middle
+		// is wherever its stop is (c.midAt), and --lit counts from there.
+		c.midAt = 0.5;
 		c.place = (p) => {
 			c.knobAt = p;
+			const gaps = Math.max(2, stops.children.length - 1);
+			const near = (a, b) => Math.abs(a - b) < 0.001;
 			wrap.style.setProperty('--p', p.toFixed(3));
-			wrap.style.setProperty('--lit', (Math.abs(p - 0.5) * 2).toFixed(3));
+			wrap.style.setProperty('--tri-k', (p * gaps).toFixed(3));   // the knob, by stop (status.css)
+			wrap.style.setProperty('--lit', Math.min(1, Math.abs(p - c.midAt) * gaps).toFixed(3));
 			// The stop the knob rests on is hidden, so the middle reads blank.
-			wrap.dataset.at = p === 0 ? 'left' : p === 1 ? 'right' : p === 0.5 ? 'middle' : '';
+			wrap.dataset.at = near(p, c.midAt) ? 'middle' : p === 0 ? 'left' : p === 1 ? 'right' : '';
+			[...stops.children].forEach((el, i) => el.classList.toggle('is-under', near(p * gaps, i)));
 		};
 
-		const startAt = (first.selectedIndex < 0 ? 1 : first.selectedIndex) / 2;
+		const startAt = (first.selectedIndex < 0 ? middleOf(first) : first.selectedIndex) / (first.options.length - 1);
 		c.sel = first;   // for icon(), until bind
 		c.ring = new TDCRing.RingStatus(face, {
 			icons: [...KNOWN, MID],
 			labels: { [icon()]: first.options[first.selectedIndex] ? first.options[first.selectedIndex].text : 'Chosen', [MID]: 'Nobody', loading: 'Saving' },
-			initial: startAt === 0.5 ? MID : icon()
+			// The middle stop, wherever it is (with more stops not halfway).
+			initial: first.selectedIndex < 0 || first.selectedIndex === middleOf(first) ? MID : icon()
 		});
 		c.sel = null;
 		c.place(startAt);
@@ -774,15 +833,17 @@ const TDCControls = (() => {
 			setTimeout(() => serveChange(c, liveTris, m, show), 0);
 		});
 
-		// Which third was clicked decides it. Never ignored, served or not.
+		// The stop nearest the tap decides it (with three, the thirds). Never
+		// ignored, served or not, except on a dead stop (a disabled option).
 		wrap.addEventListener('click', (e) => {
 			if (c.sel.disabled) return;
 			const r = wrap.getBoundingClientRect();
-			const third = Math.max(0, Math.min(2, Math.floor(3 * (e.clientX - r.left) / r.width)));
-			const now = c.sel.selectedIndex < 0 ? 1 : c.sel.selectedIndex;
+			const last = count() - 1, m = mid();
+			const stop = Math.max(0, Math.min(last, Math.round(last * (e.clientX - r.left - r.height / 2) / (r.width - r.height))));
+			const now = index();
 			// The blue tick: the page accepts; the value stays. Served by the
 			// dots as a change is, the knob staying where it is.
-			if (third === 1 && 'accept' in c.sel.dataset) {
+			if (stop === m && 'accept' in c.sel.dataset) {
 				const m = saveMark();
 				c.changing = true;
 				liveTris.set(c.key, c);
@@ -790,9 +851,11 @@ const TDCControls = (() => {
 				setTimeout(() => serveChange(c, liveTris, m, show), 0);
 				return;
 			}
+			if (c.sel.options[stop].disabled) return;
 			// The chosen end again, on a switch that cycles: the page's turn.
-			if (third === now && third !== 1 && CYCLE.length) { announce(c.sel); return; }
-			const next = third === 1 || third === now ? 1 : third;
+			if (stop === now && stop !== m && CYCLE.length) { announce(c.sel); return; }
+			// The chosen stop again, or the middle: the middle.
+			const next = stop === m || stop === now ? m : stop;
 			if (next === now) return;
 			c.own = true;
 			c.sel.selectedIndex = next;
@@ -808,6 +871,34 @@ const TDCControls = (() => {
 			wrap.append(sel);
 			wrap.classList.toggle('is-disabled', sel.disabled);
 			wrap.classList.toggle('has-accept', 'accept' in sel.dataset);
+			// A stop per option, the track as long as they need (--tri-n).
+			// A stop's letter (UV, 19 Nov: the team card's L, W, BF…) is its
+			// option's data-letter, else the select's, written in grey in place
+			// of its dot and hidden under the knob as the dot is; never at the
+			// middle. A disabled option is a dead stop, showing nothing. Made
+			// at each bind, as the control outlives a redraw and its stops may
+			// change (W gains its special wins once the lag is in).
+			const n = sel.options.length, m = middleOf(sel);
+			c.n = n;
+			c.before = m;
+			c.midAt = m / (n - 1);
+			wrap.style.setProperty('--tri-n', n);
+			wrap.style.setProperty('--tri-mid', c.midAt.toFixed(4));   // where the blue tick sits
+			// Stops either side of the middle: status.css keeps the middle where
+			// a three-stop switch's would be, so added stops never move the rest.
+			wrap.style.setProperty('--tri-before', m);
+			wrap.style.setProperty('--tri-after', n - 1 - m);
+			stops.replaceChildren(...[...sel.options].map((o, i) => {
+				const el = node('i');
+				el.style.setProperty('--tri-i', i - m);   // its place from the middle (status.css)
+				const letter = i === m || o.disabled ? '' : (o.dataset.letter || sel.dataset.letter || '');
+				el.textContent = letter;
+				el.classList.toggle('is-mid', i === m);
+				el.classList.toggle('is-letter', !!letter);
+				el.classList.toggle('is-dead', o.disabled);
+				return el;
+			}));
+			c.place(c.knobAt);
 			// Set from a script: show it, no animation. Not while a save is
 			// out: the dots show the answer.
 			onPropSet(sel, ['value', 'selectedIndex'], () => {

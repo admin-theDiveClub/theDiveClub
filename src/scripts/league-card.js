@@ -372,6 +372,10 @@
 		const both = locked.home && locked.away;
 		const canSet = working && (lineupState.i_run_it || lineupState.my_side === working);
 
+		// The room W takes fully open, kept on every frame (UV, 19 Nov), so
+		// nothing moves when it opens: the most stops it can gain on one side
+		// (league.css, --cs-specials).
+		document.body.style.setProperty('--cs-specials', mostSpecialsOneSide());
 		renderBanner(locked, both);
 		renderSwitch(both);
 		renderLineups(locked, both, canSet);
@@ -1076,13 +1080,16 @@
 	quickGroups.now.setAttribute('aria-label', 'Now');
 	quickGroups.next.setAttribute('aria-label', 'Next');
 	// Each group's line at its foot, in its colour (UV, 17 Nov; a ring round
-	// it before), a real element so it can fade on its own; shown only while a
-	// later group is there (syncQuick).
+	// it before). Always there (UV, 19 Nov: a line coming and going changed
+	// the section's height): Under way's yellow line and Now's grey one show
+	// whatever the groups hold, so before any frame is started Under way is
+	// empty and its line sits above every frame. The groups never hide;
+	// Next, always last, has none.
 	for (const [key, g] of Object.entries(quickGroups)) {
-		g.hidden = true;
+		g.hidden = false;
 		g.dataset.key = key;
 		g.qvLine = node('span', 'qv-line');
-		g.qvLine.hidden = true;
+		g.qvLine.hidden = key === 'next';
 		g.append(g.qvLine);
 		els.quickList.append(g);
 	}
@@ -1106,9 +1113,13 @@
 		const live = strays.concat(ahead.filter((f) => f.break_side));
 		const waiting = ahead.filter((f) => !f.break_side);
 		const assumed = waiting.slice(0, Math.max(0, quickTables() - live.length));
+		// The list keeps its length (UV, 19 Nov): a frame out of order coming
+		// in pushes the last of Next off, rather than making the list longer.
+		// Every frame under way still shows, even beyond it.
+		const nextRoom = Math.max(0, quickCount() - live.length - assumed.length);
 		return live.map((f) => ({ f, group: 'live' }))
 			.concat(assumed.map((f) => ({ f, group: 'now' })))
-			.concat(waiting.slice(assumed.length).map((f) => ({ f, group: 'next' })));
+			.concat(waiting.slice(assumed.length, assumed.length + nextRoom).map((f) => ({ f, group: 'next' })));
 	}
 
 	function renderQuick(both) {
@@ -1135,27 +1146,31 @@
 		// frame row is; it moves below if its group or place changed. One no
 		// longer in the list (its result is in) is the only one that fades.
 		for (const r of pills) if (want.has(r.dataset.frame)) r.replaceChildren(...quickPill(want.get(r.dataset.frame).f));
+		// Their L and W made switches now, not when the controls' own watcher
+		// gets to them: everything below is measured, and a card still
+		// holding plain selects is another height (UV, 19 Nov: the section
+		// grew for a card that then shrank to its real size).
+		TDCControls.scan(els.quickList);
 		const gone = pills.filter((r) => !want.has(r.dataset.frame));
-		const wanted = (g) => list.some((x) => x.group === g);
-		const emptying = Object.values(quickGroups).filter((el) => !el.hidden && !wanted(el.dataset.key));
 
-		// 1. The finished frames fade out in place; a group they leave empty
-		// fades with them, unless one of its frames is moving to the other.
-		const fading = gone.concat(emptying.filter((el) => [...el.querySelectorAll('.qv-pill')].every((r) => gone.includes(r))));
+		// 1. The finished frames fade out in place. The groups and their lines
+		// stay (UV, 19 Nov), so a group left empty does not go.
+		const fading = gone;
 		for (const r of fading) r.style.pointerEvents = 'none';
 		if (motion) await Promise.all(fading.map((el) => quickFade(el, 1, 0, 'forwards')));
 
 		// 2. The new layout, laid out at once; where everything was is kept,
 		// so it can slide there from it.
-		const before = new Map(pills.filter((r) => !gone.includes(r)).map((r) => [r, r.getBoundingClientRect()]));
+		// The lines too, which slide with the cards (they are always there).
+		const before = new Map(pills.filter((r) => !gone.includes(r))
+			.concat(Object.values(quickGroups).map((g) => g.qvLine).filter((l) => !l.hidden))
+			.map((r) => [r, r.getBoundingClientRect()]));
 		const fromHeight = els.quickList.offsetHeight;
 		for (const r of gone) r.remove();
 		const have = new Map(pills.map((r) => [r.dataset.frame, r]));
 		const fresh = [];
-		const appearing = [];
 		for (const { f, group } of list) {
 			const box = quickGroups[group];
-			if (box.hidden) { box.hidden = false; appearing.push(box); }
 			let r = have.get(String(f.frame_no));
 			if (!r || gone.includes(r)) {
 				r = node('div', 'qv-pill');
@@ -1166,41 +1181,38 @@
 			r.dataset.group = group;
 			box.insertBefore(r, box.qvLine);   // in the list's order within its group, above its line
 		}
-		for (const el of emptying) {
-			el.hidden = true;   // before its fade is cleared, or it shows again for a frame
-			for (const a of el.getAnimations()) a.cancel();
-			el.style.pointerEvents = '';
-		}
-		// A group's line shows while a later group is there; one newly shown fades in.
-		const groups = Object.values(quickGroups);
-		const linesOn = [];
-		groups.forEach((g, i) => {
-			const on = !g.hidden && groups.slice(i + 1).some((later) => !later.hidden);
-			if (on && g.qvLine.hidden) linesOn.push(g.qvLine);
-			g.qvLine.hidden = !on;
-		});
+		TDCControls.scan(els.quickList);   // the new cards' switches, before their height is taken
 		if (!motion) return;
 
-		// 3. Each frame slides from where it was, and the list's height with
-		// it; the new frames wait unseen, then fade in.
+		// 3. Each frame slides from where it was; the new frames wait unseen.
+		// The list's height is held where it was until the cards have moved,
+		// and changes once (UV, 19 Nov: first it shrank as one card left and
+		// grew back when the next came in; then, growing first, it opened
+		// before anything moved). Then, growing, it grows and the new frames
+		// fade into the room; shrinking, the new frames fade in and it shrinks.
 		for (const r of fresh) r.style.opacity = '0';
 		const ease = { duration: QUICK_MOVE_MS, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' };
-		const moves = [];
-		for (const [r, was] of before) {
-			const now = r.getBoundingClientRect();
-			const dx = was.left - now.left, dy = was.top - now.top;
-			if (dx || dy) moves.push(r.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], ease));
-		}
 		const toHeight = els.quickList.offsetHeight;
-		if (toHeight !== fromHeight) {
-			if (toHeight > fromHeight) els.quickList.style.overflow = 'hidden';   // growing: nothing shows past it meanwhile
-			moves.push(els.quickList.animate([{ height: fromHeight + 'px' }, { height: toHeight + 'px' }], ease));
+		const resize = () => done(els.quickList.animate([{ height: fromHeight + 'px' }, { height: toHeight + 'px' }], ease));
+		const hold = toHeight !== fromHeight ? els.quickList.animate([{ height: fromHeight + 'px' }, { height: fromHeight + 'px' }], { duration: 1e9 }) : null;
+		const fadeIn = async () => {
+			for (const r of fresh) r.style.opacity = '';
+			await Promise.all(fresh.map((r) => quickFade(r, 0, 1, 'backwards')));
+		};
+		try {
+			const moves = [];
+			for (const [r, was] of before) {
+				const now = r.getBoundingClientRect();
+				const dx = was.left - now.left, dy = was.top - now.top;
+				if (dx || dy) moves.push(r.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], ease));
+			}
+			await Promise.all(moves.map(done));
+			if (toHeight < fromHeight) await fadeIn();
+		} finally {
+			if (hold) hold.cancel();
 		}
-		for (const line of linesOn) moves.push(line.animate([{ opacity: 0 }, { opacity: 1 }], ease));
-		await Promise.all(moves.map(done));
-		els.quickList.style.overflow = '';
-		for (const r of fresh) r.style.opacity = '';
-		await Promise.all(fresh.map((r) => quickFade(r, 0, 1, 'backwards')));
+		if (hold) await resize();
+		if (toHeight >= fromHeight) await fadeIn();
 	}
 
 	// Less motion (the person's choice, else the device's): nothing moves.
@@ -1328,6 +1340,17 @@
 	// session the reader opened or closed against that stays so through every
 	// redraw. Its heading carries the session's score, so a closed one still
 	// says how it went.
+	// A session with every result in (UV, 19 Nov): its scores in green for the
+	// side that won it and grey for the other, a draw both green, as a finished
+	// fixture's (.is-winner, .is-loser). Until then, the card's score colour.
+	function markSessionScore(value, frames, side) {
+		if (!frames.length || frames.some((f) => f.status !== 'complete')) return value;
+		const won = (s) => frames.filter((f) => f.winner_side === s).length;
+		const mine = won(side), theirs = won(side === 'home' ? 'away' : 'home');
+		value.classList.add(mine >= theirs ? 'is-winner' : 'is-loser');
+		return value;
+	}
+
 	function sessionBlock(heading, frames, strict, nextOpen) {
 		const block = node('details', 'cs-session set-group');
 		const shown = quickFrames();
@@ -1351,7 +1374,7 @@
 		const sesScore = (side) => {
 			const value = node('span', 'cs-tot-value', String(won(side)));
 			value.dataset.live = 'ses|' + heading + '|' + side;
-			return value;
+			return markSessionScore(value, frames, side);
 		};
 		const mid = node('span', 'cs-fold-score');
 		mid.append(sesScore('home'), node('span', 'cs-colon', ':'), sesScore('away'));
@@ -1372,6 +1395,7 @@
 			const cell = node('span', 'cs-tot cs-' + side);
 			const value = node('span', 'cs-tot-value', String(frames.filter((f) => f.winner_side === side).length));
 			value.dataset.live = 'tot|' + heading + '|' + side;
+			markSessionScore(value, frames, side);
 			cell.append(node('span', 'cs-tot-label', 'Total'), value);
 			both.append(cell);
 		}
@@ -1394,7 +1418,7 @@
 		for (const side of ['home', 'away']) {
 			const value = node('span', 'cs-tot-value', String(won(side)));
 			value.dataset.live = 'ses|' + heading + '|' + side;
-			sc.append(value);
+			sc.append(markSessionScore(value, frames, side));
 			if (side === 'home') sc.append(node('span', 'cs-colon', ':'));
 		}
 		title.append(node('span', 'cs-done-text', heading), sc);
@@ -1501,10 +1525,17 @@
 		for (const [action, letter, value, words] of [
 			['lag', 'L', f.break_side, 'won the lag'],
 			['win', 'W', f.winner_side, 'won the frame']]) {
+			// The letter is drawn inside the track at each end, in place of
+			// the end's dot (UV, 19 Nov; tdc-controls.js, data-letter).
 			const line = node('span', 'cs-tog cs-tog-' + action);
 			// An open discrepancy: the track glows blue inside, for everybody,
 			// as the frame's cells in the tables do (UV, 17 Nov).
 			if ((edited.get(f.frame_no) || {})[action]) line.classList.add('is-edited');
+			// A win recorded with nobody on L (UV, 19 Nov): the lag's track
+			// glows blue inside as a discrepancy's does, asking for it. Not a
+			// walkover, which has no lag.
+			if (action === 'lag' && f.status === 'complete' && f.winner_side && !f.break_side
+				&& f.result_event !== 'default') line.classList.add('is-no-lag');
 			const pick = document.createElement('select');
 			pick.dataset.control = 'tri';
 			// A discrepancy this reader may accept (UV, 17 Nov): a blue tick
@@ -1514,14 +1545,10 @@
 			// The lag in the warning colour with a spotted cue ball (UV, 24 Oct),
 			// so it never reads as the result.
 			if (action === 'lag') { pick.dataset.icon = 'cue'; pick.dataset.tone = 'warning'; }
-			// W wears the result (UV, 29 Oct): a tick, BF or GB. With either
-			// on in the league, tapping the chosen end again steps through
-			// them (cycleNext) rather than clearing it.
-			if (action === 'win') {
-				pick.dataset.icon = RESULT_ICON[f.result_event] || 'tick';
-				const cycle = specials().map((e) => RESULT_ICON[e]);
-				if (cycle.length) pick.dataset.cycle = cycle.join(' ');
-			}
+			// W's knob wears a W, not a tick (UV, 19 Nov): a plain win. Tapping
+			// W's chosen stop again clears it.
+			if (action === 'win') pick.dataset.icon = 'w';
+			pick.dataset.letter = letter;
 			// The action and frame tell the page's redraw which live control
 			// this is, so its animation carries on (tdc-controls.js).
 			pick.dataset.action = action;
@@ -1531,21 +1558,22 @@
 				new Option(teamName(left) + ' ' + words, left, false, value === left),
 				new Option('Nobody yet', '', false, !value),
 				new Option(teamName(right) + ' ' + words, right, false, value === right));
+			if (action === 'win') winStops(pick, f, left, right);
 			pick.disabled = !mayEnter;
 			pick.setAttribute('aria-label', (action === 'lag' ? 'Lag' : 'Winner') + ', frame ' + f.frame_no);
-			line.append(node('span', 'cs-tog-key' + (value === left ? ' is-on' : ''), letter), pick,
-				node('span', 'cs-tog-key' + (value === right ? ' is-on' : ''), letter));
+			line.append(pick);
 			cell.append(line);
 		}
 		return cell;
 	}
 
 	// ─── Break & finish and golden break (UV, 29 Oct) ───
-	// The special wins the league has on, in the order a repeat tap on W
-	// steps through them: tick, BF, GB, back to the tick when the winner won
-	// the lag; tick, rBF, back to the tick when they lost it (UV, 29 Oct).
+	// The special wins the league has on, in the order their switches are
+	// drawn under W (UV, 19 Nov; until then a repeat tap on W stepped
+	// through them).
 	const RESULT_ICON = { break_and_finish: 'bf', golden_break: 'gb', reverse_break_and_finish: 'rbf' };
 	const RESULT_MARK = { break_and_finish: 'BF', golden_break: 'GB', reverse_break_and_finish: 'rBF' };
+	const RESULT_WORDS = { break_and_finish: 'a break and finish', golden_break: 'a golden break', reverse_break_and_finish: 'a reverse break and finish' };
 	function specials() {
 		const r = match.rules || {};
 		const breaks = !!r.track_breaks;
@@ -1564,10 +1592,42 @@
 		if (event === 'reverse_break_and_finish') return !!f.break_side && f.break_side !== side;
 		return !breakerRule() || f.break_side === side;
 	}
-	function cycleNext(f, side) {
-		const steps = ['win'].concat(specials().filter((e) => fits(e, f, side)));
-		const at = steps.indexOf(f.result_event);
-		return steps[(at < 0 ? 0 : at + 1) % steps.length];
+	// The most stops W can gain on one side, for the room kept for it. Under
+	// "needs the breaker" BF and GB go to one side and rBF to the other, so
+	// whichever is more; without it BF and GB fit either side, so the side
+	// that did not break can have them and rBF too.
+	function mostSpecialsOneSide() {
+		const s = specials();
+		const breakerOnes = s.filter((e) => e !== 'reverse_break_and_finish').length;
+		const reverse = s.includes('reverse_break_and_finish') ? 1 : 0;
+		return breakerRule() ? Math.max(breakerOnes, reverse) : breakerOnes + reverse;
+	}
+
+	// The special wins on W's own switch (UV, 19 Nov): once the lag is in,
+	// a stop beyond W at each end for every special win that fits that side
+	// (fits(): BF and GB the breaker's, rBF the other's), outward from W in
+	// specials() order, the knob wearing its letters there. No blank stops
+	// (UV, 19 Nov): the switch is as long as what fits, the middle wherever
+	// "Nobody yet" falls. A special's value is "side:event".
+	function winStops(pick, f, left, right) {
+		pick.dataset.icons = 'w bf gb rbf';
+		if (!f.break_side) return;
+		const at = (side) => specials().filter((e) => fits(e, f, side));
+		const l = at(left), r = at(right);
+		if (!l.length && !r.length) return;
+		const chosen = f.status === 'complete' && RESULT_ICON[f.result_event] && specials().includes(f.result_event)
+			&& fits(f.result_event, f, f.winner_side) ? f.winner_side + ':' + f.result_event : null;
+		const stop = (side, e) => {
+			const o = new Option(teamName(side) + ' won with ' + RESULT_WORDS[e], side + ':' + e, false, chosen === side + ':' + e);
+			o.dataset.icon = RESULT_ICON[e];
+			o.dataset.letter = RESULT_MARK[e];
+			return o;
+		};
+		const keep = pick.value;
+		pick.prepend(...l.map((e) => stop(left, e)).reverse());
+		pick.append(...r.map((e) => stop(right, e)));
+		// A special chosen is the stop shown; otherwise W's own, as drawn.
+		pick.value = chosen || keep;
 	}
 
 	// Who could come in as a reserve for a side: anybody active on the team
@@ -2379,17 +2439,13 @@
 
 		const tri = e.target.closest('select[data-action="lag"], select[data-action="win"]');
 		if (!tri) return;
-		const action = tri.dataset.action;
-		const side = tri.value === 'home' || tri.value === 'away' ? tri.value : null;
+		// A special win's stop on W (UV, 19 Nov) is "side:event".
+		const [sideValue, event] = tri.value.split(':');
+		const action = tri.dataset.action === 'win' && event ? 'special' : tri.dataset.action;
+		const side = sideValue === 'home' || sideValue === 'away' ? sideValue : null;
 		const frameNo = parseInt(tri.dataset.frame, 10);
 		const f = card.find((x) => x.frame_no === frameNo);
 		if (!f) { TDC.error(AREA, 'no frame ' + frameNo + ' on this card.', null, els.status); return; }
-
-		// The letter beside the chosen end lights at once, not after the re-read.
-		// The left end is home on the captain's rows, the player's own side on theirs.
-		const keys = tri.closest('.cs-tog').querySelectorAll('.cs-tog-key');
-		keys[0].classList.toggle('is-on', !!side && side === tri.options[0].value);
-		keys[1].classList.toggle('is-on', !!side && side === tri.options[2].value);
 
 		// tdc_record_frame writes the whole frame from what it is sent, so each
 		// toggle sends the frame as it stands with its own change laid over:
@@ -2424,18 +2480,16 @@
 			});
 		};
 
-		if (action === 'win' && side && f.status === 'complete' && f.winner_side === side) {
-			// The chosen end tapped again (data-cycle): the next result.
-			// Nothing to send when there is nowhere to step (the winner
-			// does not hold L): the tick stays.
-			const next = cycleNext(f, side);
-			if (next !== f.result_event) send('Saving', { status: 'complete', winner_side: side, result_event: next });
+		if (action === 'special') {
+			// A special win's stop on W (UV, 19 Nov): that side won with it.
+			// Only stops that fit are drawn; checked again, as the lag may
+			// have moved since the switch was drawn.
+			if (!side || !fits(event, f, side)) { render(); return; }
+			send('Saving', { status: 'complete', winner_side: side, result_event: event });
 		} else if (action === 'win' && side) {
-			// The winner, and the lag already chosen. Break outcomes and the
-			// richer result events belong to the match page, which has the
-			// controls for them; this grid is for getting results down fast.
-			send('Saving', { status: 'complete', winner_side: side,
-				result_event: f.status === 'complete' && f.winner_side === side && f.result_event ? f.result_event : 'win' });
+			// W's own stop: that side won, a plain win (UV, 19 Nov: the special
+			// wins are stops of their own beyond it), the lag kept.
+			send('Saving', { status: 'complete', winner_side: side, result_event: 'win' });
 		} else if (action === 'win') {
 			// W back to the middle clears the result; the lag stays.
 			send('Clearing', { status: 'pending', winner_side: null, result_event: null });
