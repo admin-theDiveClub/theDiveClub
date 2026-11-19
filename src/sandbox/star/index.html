@@ -1,0 +1,109 @@
+---
+layout: layout.html
+title: Star Sandbox
+description: "A scratch page for the player star: five spokes, each measured against a standard. Not part of the product."
+extraStyles:
+  - /stylesheets/sandbox.css
+extraScripts:
+  - /scripts/sandbox-star.js
+---
+{% comment %}
+	The player star's sandbox (UV, 19 Nov; docs/design/player-star.md). Five
+	spokes, each a player's rate against UV's own standard for it, never against
+	other players. Small samples are steadied by starting every player with some
+	frames played exactly at the standard. Made-up players are in the script; real
+	league players are added by search and read live through tdc_player_profile
+	(signed in), counted here, so no name or number of theirs is in the repo.
+	Nothing is saved.
+{% endcomment %}
+
+<div class="tdc-card wide sandbox star-sandbox">
+	<h1>Player star</h1>
+	<p class="muted">Each spoke is a player's rate against your standard for it. The grey ring is the standard: outside it is better, inside it is worse. Nothing here is saved. Not linked from the nav.</p>
+
+	<div class="status" id="star-status" role="status"></div>
+
+	<section class="sb-section">
+		<h2>Your standards</h2>
+		<p class="muted"><strong>Standard</strong>: what you expect of a decent player. <strong>Starting frames</strong>: how many frames at the standard every player starts with, so a few real frames move the spoke only a little.</p>
+		<div class="star-controls" id="star-spokes"></div>
+	</section>
+
+	<section class="sb-section">
+		<h2>Drawing</h2>
+		<div class="star-controls">
+			<label for="star-solid">Solid at</label>
+			<input type="range" id="star-solid" min="1" max="200" step="1" value="200">
+			<output id="star-solid-out"></output>
+			<p class="star-help">How many frames before a star is drawn fully solid. Fewer frames, fainter star.</p>
+
+			<label for="star-mode">Gap drawn as</label>
+			<select id="star-mode">
+				<option value="ratio" selected>Ratio</option>
+				<option value="points">Points</option>
+			</select>
+			<span></span>
+			<p class="star-help" id="star-mode-help"></p>
+
+			<label for="star-range" data-points>Points to the edge</label>
+			<input type="range" id="star-range" min="5" max="50" step="1" value="25" data-points>
+			<output id="star-range-out" data-points></output>
+			<p class="star-help" data-points>How many points above the standard reach the outer edge, and below it reach the centre.</p>
+		</div>
+		<div class="field-pair">
+			<div class="field">
+				<label for="star-raw">Show the raw star</label>
+				<input type="checkbox" id="star-raw">
+				<div class="hint">A dashed outline: the same player with no starting frames.</div>
+			</div>
+			<div class="field">
+				<label for="star-walkovers">Count walkovers</label>
+				<input type="checkbox" id="star-walkovers">
+				<div class="hint">For league players: a frame won or lost by walkover counts as played.</div>
+			</div>
+		</div>
+	</section>
+
+	<section class="sb-section">
+		<h2>Compare</h2>
+		<p class="muted">Two players on one star: the first green, the second blue. A league player appears here once added.</p>
+		<div class="field-pair">
+			<div class="field">
+				<label for="star-cmp-a">First player</label>
+				<select id="star-cmp-a"></select>
+			</div>
+			<div class="field">
+				<label for="star-cmp-b">Second player</label>
+				<select id="star-cmp-b"></select>
+			</div>
+		</div>
+		<div class="star-compare" id="star-compare"></div>
+	</section>
+
+	<section class="sb-section">
+		<h2>Players</h2>
+		<div class="star-grid" id="star-grid"></div>
+	</section>
+
+	<section class="sb-section">
+		<h2>Add a league player</h2>
+		<p class="muted" id="star-signin" hidden>Sign in to add real players. <a href="/accounts/?next=%2Fsandbox%2Fstar%2F">Sign in</a></p>
+		<div id="star-find" hidden>
+			<div class="star-find-field">
+				<input type="search" id="star-find-input" autocomplete="off" placeholder="Search by name" aria-label="Search for a player">
+				<span class="star-find-dots" id="star-find-dots" aria-hidden="true"></span>
+			</div>
+			<p class="status" id="star-find-note" role="status"></p>
+			<div class="star-find-results" id="star-find-results"></div>
+			<p class="muted">Their frames are read live and counted here. League scorecards record who broke but not the break result, so <strong>Break in</strong> shows no data for them.</p>
+		</div>
+	</section>
+
+	<section class="sb-section">
+		<h2>The numbers</h2>
+		<p class="muted">Every player's counts. Change any of them and the stars follow. A league player's are read from their frames; changing them changes only this page.</p>
+		<div class="table-scroll">
+			<table class="tdc-table star-table" id="star-table"></table>
+		</div>
+	</section>
+</div>

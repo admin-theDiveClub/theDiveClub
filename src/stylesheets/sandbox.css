@@ -865,3 +865,80 @@ body:has(.nm-layout) .sandbox h1 { overflow-wrap: anywhere; }   /* one long word
 	color: var(--text-muted);
 }
 .banner-physics .bp-now { display: block; color: var(--text-primary); }
+
+/* ─── The player star (/sandbox/star/, 19 Nov) ───
+   Each spoke's standard and starting frames, the drawing switches, a star per
+   player, and the counts. Laid out as the banner's physics sliders. */
+.star-controls {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) 3.5em;
+	gap: var(--space-2) var(--space-3);
+	align-items: center;
+}
+.star-controls output { text-align: right; font-variant-numeric: tabular-nums; }
+.star-controls [hidden] { display: none; }
+.star-spoke-head {
+	grid-column: 1 / -1;
+	margin: var(--space-3) 0 0;
+}
+.star-help {
+	grid-column: 1 / -1;
+	margin: 0 0 var(--space-2);
+	font-size: 0.85rem;
+	color: var(--text-muted);
+}
+.star-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+	gap: var(--space-4);
+}
+.star-card { min-width: 0; }
+.star-card-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-2);
+}
+.star-card-head h3 { margin: 0; }
+.star-sub { margin: var(--space-1) 0 0; font-size: 0.85rem; }
+.star-svg { display: block; width: 100%; max-width: 20rem; margin: 0 auto; overflow: visible; }
+.star-edge, .star-axis { fill: none; stroke: var(--border-color); stroke-width: 1; }
+.star-std { fill: none; stroke: var(--text-muted); stroke-width: 1.5; }
+.star-shown { fill: var(--color-primary); stroke: var(--color-primary); stroke-width: 2; stroke-linejoin: round; }
+.star-raw { fill: none; stroke: var(--text-primary); stroke-width: 1.25; stroke-dasharray: 4 3; opacity: 0.7; }
+.star-dot { fill: var(--color-primary); }
+.star-dot.star-none { fill: none; stroke: var(--text-muted); stroke-width: 1.25; }
+.star-label { fill: var(--text-muted); font-size: 11px; }
+.star-spokes { font-size: 0.85rem; }
+.star-up { color: var(--color-primary); }
+.star-down { color: var(--text-muted); }
+.star-table input[type="number"] { width: 4.5em; text-align: right; }
+.star-find-field { position: relative; }
+.star-find-dots {
+	position: absolute;
+	right: 2rem;
+	top: 50%;
+	width: var(--group-dots-size);
+	height: var(--group-dots-size);
+	transform: translateY(-50%);
+	box-sizing: border-box;
+	border: var(--group-dots-stroke) solid transparent;
+	border-radius: var(--radius-round);
+	color: var(--color-primary);
+	pointer-events: none;
+}
+.star-find-results { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+/* Compare (19 Nov): the second player in the team blue; the first keeps the green. */
+.star-compare .star-svg { max-width: 24rem; }
+.star-b .star-shown { fill: var(--color-team); stroke: var(--color-team); }
+.star-b .star-dot { fill: var(--color-team); }
+.star-legend {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--space-1) var(--space-4);
+	margin: var(--space-2) 0 0;
+	font-size: 0.85rem;
+}
+.star-key-a, .star-spokes th.star-key-a { color: var(--color-primary); }
+.star-key-b, .star-spokes th.star-key-b { color: var(--color-team); }
