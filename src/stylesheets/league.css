@@ -3253,7 +3253,7 @@ body.has-league-tabmenu #league-nav-admin { display: none; }
 	left: 0;
 	max-width: 30rem;        /* a phone's width, centred, on a wider screen (UV, 18 Nov) */
 	margin-inline: auto;
-	z-index: 100;
+	z-index: 98;             /* under the site's menu and profile menu (99), so they cover it when open (UV, 19 Nov) */
 	padding: var(--space-2) var(--space-3) calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
 	pointer-events: none;   /* see-through (UV, 18 Nov): only the pill takes a tap */
 	transition: transform var(--nav-slide) ease;

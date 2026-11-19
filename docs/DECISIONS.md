@@ -2564,3 +2564,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, within that:* sent as the share's text with no title (the title was the page's, which carried "The Dive Club", and some apps add a title to the text); the discipline worded as the banner's (`TDCMatchDef.DISCIPLINE`, "8-Ball"); the date as the banner's ("Wednesday, 19 November 2026" in the phone's language); a line with nothing in it left out. A computer's download carries no message.
 *Example:* WhatsApp opens with the picture and "Cheeky Tiger : Break and Blaze / 8-Ball Mainstream | Season 1 / 8-Ball / Wednesday, 19 November 2026" as its caption.
 *So:* `sheetMessage()`, `makeSheet()` and `giveSheet()` in `scripts/league-card.js`; `docs/systems/leagues.md`. No database change.
+
+## 2026-11-19 — The scoresheet picture's green rows, footer and display text
+
+*Decided by UV:* **the green rows run out to the edge of the table's card; the total row's text fits inside it; wherever the display face is used, the space below the text is right; the total row sits as the card's footer with a small gap above it.**
+*Claude's, within that:* the cause of the spill was the display face's line box, which is not its ink, so canvas's `middle` placed it high; every display text is now centred by the measured height of a capital. Session rows 40 tall (were 38), the total row 56 (was 48), the gap above it 10.
+*Example:* the total row's 11 and 12 sit with equal room above and below inside the darker green footer, whose rounded corners are the card's own.
+*So:* `say()`, `band()`, `hline()` and the card in `drawSheet()`, `scripts/league-card.js`; `docs/systems/leagues.md`. No database change.

@@ -2355,7 +2355,8 @@
 		};
 		const headW = (t) => textW(t, 15, false, 700, 1.5);
 		const PAD = 40;
-		const ROW = 38, HEAD = 36, TOTAL = 38, GRAND = 48, PIC = 96, SHIELD = 52, SIG = 112;
+		const ROW = 38, HEAD = 36, TOTAL = 40, GRAND = 56, PIC = 96, SHIELD = 52, SIG = 112;
+		const FOOT_GAP = 10;   // the gap above the total row, which sits as the card's footer (UV, 19 Nov)
 		const ICON = 76;     // the site's icon, small and centred above the league (UV, 19 Nov)
 		const NAME_IN = 14;  // a name's gap from the inner edge of its column
 		// Both teams' seats together: each column is as wide as the widest
@@ -2396,7 +2397,7 @@
 			when: { h: 32, size: 20, weight: 400, color: C.muted }
 		};
 		const disputed = cardState && cardState.state === 'disputed';
-		const tableIn = HEAD + sessions.reduce((n, s) => n + framesOf(s).length * ROW + TOTAL, 0) + GRAND;
+		const tableIn = HEAD + sessions.reduce((n, s) => n + framesOf(s).length * ROW + TOTAL, 0) + FOOT_GAP + GRAND;
 		const H = PAD
 			+ ICON + 4                                                         // the site's icon
 			+ lines.reduce((n, [k]) => n + LINE[k].h, 0) + 30                  // the league
@@ -2447,7 +2448,17 @@
 			ctx.font = font(size, display, weight);
 			ctx.fillStyle = color;
 			ctx.textAlign = align;
-			ctx.textBaseline = 'middle';
+			// The display face's line box is not its ink (global.css: the ink runs
+			// high), so 'middle' sat it too high in its row (UV, 19 Nov). It is
+			// centred by its capitals' measured height instead, the same space
+			// above and below; an all-caps face, so every word sits alike.
+			if (display) {
+				ctx.textBaseline = 'alphabetic';
+				const cap = ctx.measureText('H');
+				y += (cap.actualBoundingBoxAscent - cap.actualBoundingBoxDescent) / 2;
+			} else {
+				ctx.textBaseline = 'middle';
+			}
 			if (spacing && 'letterSpacing' in ctx) ctx.letterSpacing = spacing + 'px';
 			const t = max ? fit(String(text), max) : String(text);
 			if (glow) { ctx.shadowColor = glow; ctx.shadowBlur = 10 * SCALE; ctx.fillText(t, x, y); }
@@ -2465,11 +2476,27 @@
 			ctx.arcTo(x, y, x + w, y, r);
 			ctx.closePath();
 		}
+		function roundPath(x, y, w, h, r) {
+			const p = new Path2D();
+			p.moveTo(x + r, y);
+			p.arcTo(x + w, y, x + w, y + h, r);
+			p.arcTo(x + w, y + h, x, y + h, r);
+			p.arcTo(x, y + h, x, y, r);
+			p.arcTo(x, y, x + w, y, r);
+			p.closePath();
+			return p;
+		}
+		// The sheet's card: CARD_X to CARD_X + CARD_W, its path set when drawn.
+		const CARD_X = PAD - 12, CARD_W = IN + 24;
+		let cardPath = null;
+		// A green row, out to the card's edges and inside its rounded corners
+		// (UV, 19 Nov).
 		function band(y, h, color, alpha) {
 			ctx.save();
+			if (cardPath) ctx.clip(cardPath);
 			ctx.globalAlpha = alpha;
 			ctx.fillStyle = color;
-			ctx.fillRect(PAD, y, IN, h);
+			ctx.fillRect(CARD_X, y, CARD_W, h);
 			ctx.restore();
 		}
 		// A picture in the site's shield or hexagon (TDC.SHAPES), or the shape's
@@ -2595,12 +2622,10 @@
 		y += PIC + 14 + 40 + 30 + 34;
 
 		// The sheet: a sunken panel, the columns' heads, a row per frame.
-		rrect(PAD - 12, y - 8, IN + 24, tableIn + 16, 18);
+		// Its foot is the total row's, which sits as the card's footer.
+		cardPath = roundPath(CARD_X, y - 8, CARD_W, tableIn + 8, 18);
 		ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
-		ctx.fill();
-		ctx.lineWidth = 1;
-		ctx.strokeStyle = C.line;
-		ctx.stroke();
+		ctx.fill(cardPath);
 
 		const col = {};   // 'home.name' -> [x, width]
 		let cx = PAD;
@@ -2623,7 +2648,14 @@
 			ctx.fill();
 			ctx.restore();
 		}
-		const hline = (at, color, alpha) => { ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.fillRect(PAD, at - 0.5, IN, 1); ctx.restore(); };
+		// A rule across the table; full, out to the card's edges as a green row.
+		const hline = (at, color, alpha, full) => {
+			ctx.save();
+			ctx.globalAlpha = alpha;
+			ctx.fillStyle = color;
+			if (full) ctx.fillRect(CARD_X, at - 0.5, CARD_W, 1); else ctx.fillRect(PAD, at - 0.5, IN, 1);
+			ctx.restore();
+		};
 
 		const HEADS = { seq: 'SEQ', name: 'PLAYER', bf: 'B/F', lag: 'LAG', p: 'P' };
 		for (const side of ['home', 'away']) {
@@ -2682,7 +2714,7 @@
 				ctx.stroke();
 				say('F' + f.frame_no, frX + FR / 2, rowMid, { size: 16, weight: 700, color: done ? C.primary : C.muted });
 				y += ROW;
-				hline(y, C.muted, 0.18);
+				hline(y, C.muted, 0.18, f === frames[frames.length - 1]);   // over a green row, full
 			}
 			// The session's row (UV, 19 Nov): its name in the middle, each side's
 			// frames won under P (the winner's green) and lags won under LAG, grey.
@@ -2697,9 +2729,12 @@
 				say(String(won[side]), mid(side, 'p'), y + TOTAL / 2, { size: 26, display: true, color: won[side] > won[other] ? C.primary : C.text });
 			}
 			y += TOTAL;
-			hline(y, C.line, 1);
+			hline(y, C.line, 1, true);
 		}
-		// The night's row, laid out as a session's: TOTAL in the middle.
+		// The night's row, laid out as a session's: TOTAL in the middle. The
+		// card's footer, a small gap above it (UV, 19 Nov).
+		y += FOOT_GAP;
+		hline(y, C.line, 1, true);
 		band(y, GRAND, C.primary, 0.14);
 		say('TOTAL', frX + FR / 2, y + GRAND / 2, { size: 17, weight: 800, spacing: 2 });
 		for (const side of ['home', 'away']) {
@@ -2707,6 +2742,10 @@
 			say(String(lags[side]), mid(side, 'lag'), y + GRAND / 2, { size: 28, display: true, color: C.muted });
 			say(String(totals[side]), mid(side, 'p'), y + GRAND / 2, { size: 34, display: true, color: totals[side] > totals[other] ? C.primary : C.text });
 		}
+		// The card's edge last, over the green rows that run out to it.
+		ctx.lineWidth = 1;
+		ctx.strokeStyle = C.line;
+		ctx.stroke(cardPath);
 		y += GRAND + 40;
 
 		// The signatures: a box under each team, green while it stands.
