@@ -2571,3 +2571,12 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, within that:* the cause of the spill was the display face's line box, which is not its ink, so canvas's `middle` placed it high; every display text is now centred by the measured height of a capital. Session rows 40 tall (were 38), the total row 56 (was 48), the gap above it 10.
 *Example:* the total row's 11 and 12 sit with equal room above and below inside the darker green footer, whose rounded corners are the card's own.
 *So:* `say()`, `band()`, `hline()` and the card in `drawSheet()`, `scripts/league-card.js`; `docs/systems/leagues.md`. No database change.
+
+## 2026-11-19 — 8-Ball Mainstream's reverse break & finish onto played nights too
+
+*Decided by UV:* **rBF, switched on in the league's settings on 19 Nov, goes onto every match of the league: the two unplayed nights with locked lineups (The Ultimates v Cheeky Tiger, Wu Tang Clan v Foul Play Syndicate) and every played night.** Rejected: only the two unplayed nights; and changing the re-freeze rule so a locked lineup with no frames takes new settings (the rule stays as it is).
+*Why:* the save's re-freeze reached only untouched matches, so the scorecard offered no rBF on the nights the LD expected. On a played night it only adds rBF as a choice when a frame is corrected; no frame changes or is rescored.
+*Example:* on The Ultimates v Cheeky Tiger, once a lag is in, W's switch now has an rBF stop on the lag loser's end; BF stays on the lag winner's end; GB stays hidden while the league has it off.
+*So:* migration `20261119101023` (that one key on 38 matches, nothing else); `docs/systems/leagues.md`. No page change.
+
+---
