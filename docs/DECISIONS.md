@@ -2543,3 +2543,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, within that:* JPEG at quality 0.95, still 2,400 pixels wide. Measured on a 25-frame sample: PNG 1.77 MB; JPEG 0.95 0.88 MB, 0.92 0.74, 0.90 0.69; WebP 0.92 0.33; PNG at 1,800 wide 1.14. JPEG 0.95 is the highest quality under the target, and its text and marks are clean at full size. WebP was rejected because not every phone saves or forwards it, and a smaller PNG because it loses pixels and is still over 1 MB. Real team pictures add a little.
 *Example:* a captain shares the night's sheet to WhatsApp as `8-Ball-Mainstream-R3-Cheeky-Tiger-v-Break-and-Blaze.jpg`, about 0.9 MB.
 *So:* `makeSheet()` and `sheetName()` in `scripts/league-card.js`; `docs/systems/leagues.md`. No database change.
+
+## 2026-11-19 — The site's icon on the scoresheet picture
+
+*Decided by UV:* **the site's icon at the top of the scoresheet picture, centred, small, above the league name.**
+*Claude's, within that:* the 512px icon (`/resources/icons/icon-512.png`, the diver over the pool, transparent), drawn 84 pixels tall in the picture's 1,200-wide layout (168 real pixels); if it will not load, the picture is still made without it and the page says so.
+*Example:* a shared sheet opens with the diver at the top, then the league's shield and name beneath it.
+*So:* `sheetUrls()`, `preloadSheet()` and `drawSheet()` in `scripts/league-card.js`; `docs/systems/leagues.md`. No database change.

@@ -2317,6 +2317,7 @@
 		return sheetFontsLoad;
 	}
 	const sheetUrls = () => ({
+		icon: '/resources/icons/icon-512.png',   // the site's icon at the top (UV, 19 Nov)
 		league: TDC.pictureUrl('league-pictures', seasonRow && seasonRow.tbl_leagues && seasonRow.tbl_leagues.picture_path),
 		home: TDC.pictureUrl('team-pictures', match.home_picture),
 		away: TDC.pictureUrl('team-pictures', match.away_picture)
@@ -2324,7 +2325,7 @@
 	function preloadSheet() {
 		const u = sheetUrls();
 		sheetFonts();
-		sheetImage(u.league); sheetImage(u.home); sheetImage(u.away);
+		sheetImage(u.icon); sheetImage(u.league); sheetImage(u.home); sheetImage(u.away);
 	}
 
 	async function drawSheet() {
@@ -2335,14 +2336,16 @@
 		};
 		const DISPLAY = cssVar('--font-display', 'sans-serif'), BODY = cssVar('--font-body', 'sans-serif');
 		const urls = sheetUrls();
-		const [, leagueImg, homeImg, awayImg] = await Promise.all([sheetFonts(), sheetImage(urls.league), sheetImage(urls.home), sheetImage(urls.away)]);
+		const [, iconImg, leagueImg, homeImg, awayImg] = await Promise.all([sheetFonts(), sheetImage(urls.icon), sheetImage(urls.league), sheetImage(urls.home), sheetImage(urls.away)]);
 		const lost = [[urls.league, leagueImg], [urls.home, homeImg], [urls.away, awayImg]].filter(([u, i]) => u && !i).map(([u]) => u);
 		if (lost.length) TDC.error(AREA, 'a picture could not be drawn into the scoresheet, so its outline is there instead.', { lost }, els.status);
+		if (!iconImg) TDC.error(AREA, 'the site\'s icon could not be drawn into the scoresheet, so it is left out.', { url: urls.icon }, els.status);
 
 		// The layout, in the picture's own pixels before the scale.
 		const PAD = 48, W = SHEET_W, IN = W - PAD * 2;
 		const ROW = 46, HEAD = 44, TOTAL = 44, GRAND = 58, PIC = 104, SHIELD = 56, SIG = 120;
 		const TEAMW = 340;   // each team's picture and name, out at the sides so the score can be tall
+		const ICON = 84;     // the site's icon, small and centred above the league (UV, 19 Nov)
 		const COLS = { seq: 64, name: 268, bf: 66, lag: 60, p: 56 };
 		const HALF = COLS.seq + COLS.name + COLS.bf + COLS.lag + COLS.p;
 		const FR = IN - HALF * 2;
@@ -2368,6 +2371,7 @@
 		const disputed = cardState && cardState.state === 'disputed';
 		const tableIn = HEAD + sessions.reduce((n, s) => n + framesOf(s).length * ROW + TOTAL, 0) + GRAND;
 		const H = PAD
+			+ ICON + 4                                                         // the site's icon
 			+ lines.reduce((n, [k]) => n + LINE[k].h, 0) + 30                  // the league
 			+ PIC + 14 + 40 + 30 + 34                                          // the teams and the score
 			+ tableIn + 40                                                     // the sheet
@@ -2477,8 +2481,12 @@
 		}
 		const pillWidth = (text) => { ctx.font = font(16, false, 700); return ctx.measureText(text).width + 36; };
 
-		// The league: its shield beside its name, then a line each.
+		// The site's icon, small and centred (UV, 19 Nov); left out, with an
+		// error said above, if it would not load.
 		let y = PAD;
+		if (iconImg) ctx.drawImage(iconImg, W / 2 - ICON / 2, y, ICON, ICON);
+		y += ICON + 4;
+		// The league: its shield beside its name, then a line each.
 		for (const [k, t] of lines) {
 			const s = LINE[k];
 			if (k === 'league') {
