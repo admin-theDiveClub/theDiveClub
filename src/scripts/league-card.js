@@ -2286,7 +2286,7 @@
 	const SHEET_PX = 2400;   // always 2,400 pixels wide, whatever the table's width
 	const sheetImages = new Map();   // url -> Promise of the loaded image, or null
 	let sheetFontsLoad = null;
-	let sheetReady = null;           // a picture made but not yet shared: { file, title }
+	let sheetReady = null;           // a picture made but not yet shared: { file, text }
 
 	const cssVar = (name, fallback) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 
@@ -2757,14 +2757,29 @@
 		const canvas = await drawSheet();
 		const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.94));
 		if (!blob) throw new Error('the browser would not turn the canvas into a picture');
-		return { file: new File([blob], sheetName(), { type: 'image/jpeg' }), title: document.title };
+		return { file: new File([blob], sheetName(), { type: 'image/jpeg' }), text: sheetMessage() };
+	}
+	// The message sent with the picture (UV, 19 Nov), a line each, a missing
+	// one left out; no title, so nothing else (the page's "The Dive Club") is added:
+	//   Cheeky Tiger : Break and Blaze
+	//   8-Ball Mainstream | Season 1
+	//   8-Ball
+	//   Wednesday, 19 November 2026
+	function sheetMessage() {
+		const discipline = match.rules && match.rules.discipline;
+		return [
+			teamName('home') + ' : ' + teamName('away'),
+			[info && info.league_name, info && info.name].filter(Boolean).join(' | '),
+			discipline ? (D.DISCIPLINE[discipline] || discipline) : '',
+			match.scheduled_at ? new Date(match.scheduled_at).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : ''
+		].filter(Boolean).join('\n');
 	}
 	// A touch screen shares it; a mouse downloads it (a computer's share
 	// sheet has no plain "save").
 	async function giveSheet(sheet) {
 		const touch = matchMedia('(pointer: coarse)').matches;
 		if (touch && navigator.canShare && navigator.canShare({ files: [sheet.file] })) {
-			await navigator.share({ files: [sheet.file], title: sheet.title });
+			await navigator.share({ files: [sheet.file], text: sheet.text });
 			return;
 		}
 		const url = URL.createObjectURL(sheet.file);

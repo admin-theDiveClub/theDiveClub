@@ -2557,3 +2557,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, within that:* each column measured as its widest content over both teams; rows 38 tall (were 46); the picture still 2,400 pixels wide, drawn at whatever scale that takes; text above and below shrinks to 60% before it is cut; the score keeps its height unless each team would get less than 220; the JPEG quality 0.94 (from 0.95) to stay near 1 MB at the higher scale (993 KB on the sample).
 *Example:* on a night whose longest name is "Ricky van der Merwe", both Player columns are just wide enough for it; home's names end against the frame column and away's start from it; the league name, score and signature boxes sit within the same width.
 *So:* `drawSheet()` and `makeSheet()` in `scripts/league-card.js`; `docs/systems/leagues.md`. No database change.
+
+## 2026-11-19 — The message sent with the scoresheet picture
+
+*Decided by UV:* **the shared picture's message reads, a line each: Team Name : Team Name; League Name | Season Name; the discipline; the date. "The Dive Club" is removed.**
+*Claude's, within that:* sent as the share's text with no title (the title was the page's, which carried "The Dive Club", and some apps add a title to the text); the discipline worded as the banner's (`TDCMatchDef.DISCIPLINE`, "8-Ball"); the date as the banner's ("Wednesday, 19 November 2026" in the phone's language); a line with nothing in it left out. A computer's download carries no message.
+*Example:* WhatsApp opens with the picture and "Cheeky Tiger : Break and Blaze / 8-Ball Mainstream | Season 1 / 8-Ball / Wednesday, 19 November 2026" as its caption.
+*So:* `sheetMessage()`, `makeSheet()` and `giveSheet()` in `scripts/league-card.js`; `docs/systems/leagues.md`. No database change.
