@@ -503,13 +503,13 @@
 
 /* Each player's picture and names head their half and stay at the top as
  * the page scrolls (UV, 5 Nov; kept without a sunken pill, UV 17 Nov): just
- * under the nav while it shows, at the very top once it has slid away
- * (nav.js, .is-hidden). On a phone they always leave a nav-bar-sized space
- * above them (UV, 20 Nov: mobile only), so when the nav slides away the cards
- * still sit clear of the screen's top and its notch. */
+ * under the nav while it shows, and once it has slid away just under the phone's
+ * island or notch (the top inset, --nav-top; 0 where there is none), not at the
+ * very top where the island covered them (UV, 20 Nov). Nothing is drawn above
+ * them: the space is transparent and the page scrolls behind it. */
 .pp-c-head {
 	position: sticky;
-	top: 0;
+	top: var(--nav-top);
 	z-index: 3;
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -522,25 +522,6 @@
 }
 body:has(.site-nav:not(.is-hidden)) .pp-c-head { top: var(--nav-total); }
 @media (prefers-reduced-motion: reduce) { .pp-c-head { transition: none; } }
-@media (max-width: 36rem) {   /* a phone: the same width the card's phone padding starts at */
-	.pp-c-head,
-	body:has(.site-nav:not(.is-hidden)) .pp-c-head { top: var(--nav-total); }
-	/* The nav bar's own height of space above the pinned cards (UV, 20 Nov) is blank page
-	   background, so a star or a row scrolling up does not show in it. Above that, the
-	   phone's island and status bar (the top inset) stay transparent, content scrolling
-	   behind them as everywhere. Only while the cards are pinned (player.js sets
-	   is-stuck): at the top of the page the band would cover the tab selectors. */
-	.pp-c-head.is-stuck::before {
-		content: '';
-		position: absolute;
-		right: 0;
-		bottom: 100%;
-		left: 0;
-		height: var(--nav-height);
-		background: var(--bg-base);
-		pointer-events: none;
-	}
-}
 .pp-c-who { position: relative; display: flex; align-items: center; min-width: 0; height: 4.5rem; padding: 0 var(--space-3); box-sizing: border-box; border-radius: var(--nm-field-radius); box-shadow: var(--nm-raised); background: var(--bg-base); }
 .pp-c-who[data-side="mine"] { justify-content: flex-end; }
 /* Your card is the site's green with dark text (UV, 20 Nov). */

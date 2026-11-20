@@ -2869,3 +2869,7 @@ These predate the log. They are recorded here because every one of them is a dec
 *Reversal, UV, 20 Nov:* what is above the pinned cards on a phone must not be solid: it blocked the island and hid the tab selectors. The solid band and its `is-stuck` script are removed; the nav-sized space above the cards stays and is transparent. `player.css`, `player.js`.
 
 *Settled, UV, 20 Nov (phone screenshots):* on a phone the island and status bar zone above the pinned cards is transparent, and the nav-bar-sized space directly above the cards is blank page background (only while the cards are pinned). This replaces the solid band the whole nav height and the later removal of the band. `player.css`, `player.js`.
+
+*Again, UV, 20 Nov (a third phone screenshot, "wrong again"):* the band above the pinned cards is a fade, solid against the cards and clear toward the island, running down to the cards' top edge; the solid block showed as a rectangle with a sliver of content below it. *Claude's reading, not confirmed.* `player.css`.
+
+*Settled for now, UV, 20 Nov ("it should be transparent and the sizing is still wrong"):* no band or fade above Compare's pinned cards; they sit just under the nav while it shows and just under the phone's island (`--nav-top`) once it has gone, not a nav's height down. This replaces the always-`--nav-total` space and every band tried (solid, while-pinned, fade). *Claude's reading of "sizing", not confirmed.* `player.css`, `player.js` (`is-stuck` removed).

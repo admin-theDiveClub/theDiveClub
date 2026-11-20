@@ -520,24 +520,6 @@
 	const pause = () => new Promise((r) => setTimeout(r, 200));
 	// Compare or Profile; only Profile on your own page. Compare opens by default
 	// for somebody else's (UV, 20 Nov); &tab=profile keeps Profile on reload.
-	// Compare's pinned heads know when they are pinned (`is-stuck`), so the band of
-	// page background just above them on a phone shows only then (UV, 20 Nov): shown
-	// always it covered the tab selectors at the top of the page.
-	function checkStuck() {
-		const head = document.querySelector('.pp-c-head');
-		if (!head) return;
-		const top = parseFloat(getComputedStyle(head).top) || 0;
-		head.classList.toggle('is-stuck', head.offsetParent !== null && head.getBoundingClientRect().top <= top + 0.5);
-	}
-	let stuckQueued = false;
-	const queueStuck = () => {
-		if (stuckQueued) return;
-		stuckQueued = true;
-		requestAnimationFrame(() => { stuckQueued = false; checkStuck(); });
-	};
-	addEventListener('scroll', queueStuck, { passive: true });
-	addEventListener('resize', queueStuck);
-
 	function showTab(tab, btn) {
 		const other = them && !them.player.is_me;
 		const t = other && tab !== 'profile' ? 'cmp' : 'profile';
@@ -547,7 +529,6 @@
 		const url = new URL(location.href);
 		if (!other || t === 'cmp') url.searchParams.delete('tab'); else url.searchParams.set('tab', 'profile');
 		history.replaceState(null, '', url);
-		queueStuck();
 		if (btn) TDC.busy(btn, pause(), els.status);
 	}
 	els.views.addEventListener('click', (e) => {
