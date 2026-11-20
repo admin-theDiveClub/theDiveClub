@@ -7,10 +7,12 @@ extraStyles:
   - /stylesheets/footer.css
   - /stylesheets/home.css
   - /stylesheets/live-match.css
+  - /stylesheets/player-star.css
 extraScripts:
   - /scripts/hero.js
   - /scripts/home.js
   - /scripts/live-match.js
+  - /scripts/player-star.js
   - /scripts/home-cards.js
 ---
 {% comment %}
@@ -23,8 +25,8 @@ extraScripts:
 	(UV, 16 Nov): it hides only on the page's own scroll, and this page never scrolls.
 	The site's footer is drawn here, in the box, not by the layout (hideFooter).
 	The logo fills the first screen of the content, alone (UV, 16 Nov).
-	Every raised card on the page (the Get the app card, then Matches, Leagues and
-	Tournaments) lies over the balls but is cut off by the table's edge (UV, 16 Nov;
+	Every raised card on the page (the Get the app card or your live match; the Matches,
+	Leagues and Tournaments cards were removed on 20 Nov) lies over the balls but is cut off by the table's edge (UV, 16 Nov;
 	.home-raised).
 {% endcomment %}
 <style>
@@ -223,21 +225,19 @@ extraScripts:
 			<button type="button" class="home-install-x" id="home-install-x" aria-label="Hide this">✕</button>
 		</div>
 		<div class="home-live live-cards home-raised" id="home-live" role="region" aria-label="Your match" hidden></div>
+		<!-- A solid grey line across the bottom of the table (UV, 20 Nov), where the first
+		     screen's cloth ends and the player star begins; in the scrolling box, so it
+		     shows only once you scroll down to it. -->
+		<div class="home-baulk" aria-hidden="true"></div>
 		<div class="home-content">
 			<div class="status" id="home-cards-status" role="status"></div>
 			<div class="home-cards" id="home-cards">
-				<section class="hc-card home-raised">
-					<a class="hc-head" href="/matches/"><h2>Matches</h2><span>All ›</span></a>
-					<div class="hc-body" id="hc-matches"></div>
-				</section>
-				<section class="hc-card home-raised">
-					<a class="hc-head" href="/leagues/"><h2>Leagues</h2><span>All ›</span></a>
-					<div class="hc-body" id="hc-leagues"></div>
-				</section>
-				<section class="hc-card home-raised">
-					<a class="hc-head" href="/tournaments/"><h2>Tournaments</h2><span>All ›</span></a>
-					<div class="hc-body" id="hc-tournaments"></div>
-				</section>
+				<!-- Your player star (UV, 20 Nov): the profile's own star, signed in only, directly on
+				     the cloth with no card and no heading. The Matches, Leagues and Tournaments cards
+				     that were here were removed the same day (UV). -->
+				<div class="home-star" id="hc-star-card" hidden>
+					<div id="hc-star"></div>
+				</div>
 			</div>
 		</div>
 		{% include "footer.html" %}

@@ -12,6 +12,33 @@
 	.home-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
 }
 
+.home-star-who { display: flex; align-items: center; justify-content: center; gap: var(--space-3); margin: 0 0 var(--space-2); }
+.home-star-pic {
+	display: grid;
+	place-items: center;
+	flex: none;
+	width: 2.75rem;
+	height: 2.75rem;
+	border-radius: var(--radius-round);
+	overflow: hidden;
+	background: var(--bg-base);
+	color: var(--color-primary);
+	font-weight: 700;
+	box-shadow: var(--shadow-pic);
+}
+.home-star-pic img { width: 100%; height: 100%; object-fit: cover; }
+.home-star-name { font-family: var(--font-display); font-size: 1.725rem; line-height: 1.32; color: var(--text-primary); }
+
+.home-baulk {
+	/* The table's markings are chalked in the site's grey, about 2px wide (hero.js,
+	   drawMarkings); this one runs across the bottom of the table, above the player star
+	   (UV, 20 Nov). */
+	height: 2px;
+	margin: 0 var(--space-4);
+	border-radius: 1px;
+	background: var(--text-muted);
+}
+
 .hc-card {
 	min-width: 0;
 	padding: var(--space-4);

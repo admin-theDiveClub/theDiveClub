@@ -119,6 +119,13 @@ const TDCStar = (() => {
 		return { set, avg: avg.data, scheduled: fixtures.data.length };
 	}
 
+	// Every counted frame of a profile (tdc_player_profile): finished, singles
+	// matches only, as the profile counts them. For the star on the home page.
+	function allFrames(profile) {
+		const ids = new Set(profile.matches.filter((m) => m.status === 'complete' && !m.doubles).map((m) => m.match_id));
+		return profile.frames.filter((f) => ids.has(f.match_id));
+	}
+
 	// A profile's counted frames in one league season: finished matches of that
 	// season, doubles left out (as the profile counts).
 	function leagueMatchIds(profile, seasonId) {
@@ -365,5 +372,5 @@ const TDCStar = (() => {
 		return { svg, layers: out };
 	}
 
-	return { SPOKES, LEAGUE_SPOKES, EVERY, defaults, leagueSettings, leagueFrames, leagueSolid, count, spoke, reach, frame, layer, markNoData, draw };
+	return { SPOKES, LEAGUE_SPOKES, EVERY, defaults, leagueSettings, leagueFrames, leagueSolid, allFrames, count, spoke, reach, frame, layer, markNoData, draw };
 })();

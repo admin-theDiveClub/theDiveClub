@@ -1,34 +1,14 @@
-// The home page's three cards (UV, 16 Nov): Matches, Leagues and Tournaments, under the
-// Get the app card, on the cloth (index.html). Everything comes from one call,
-// tdc_home_cards (migration 20261116132606), signed out or in.
-//
-// Signed out: the public leagues and tournaments; Matches says "Sign in to start a new
-// match." Signed in: my leagues, my tournaments, my recent matches. Active first (the
-// database orders them). A league or tournament is a badge with its name under it (UV)
-// and a status bar between them; a match is a row naming the player or team I played,
-// with a strip in its state's colour. The colours are the state colours (docs/ui.md):
-// yellow under way, green open or done, grey paused or over, red abandoned or disputed.
+// The home page's content on the cloth (UV, 16 Nov; cut down on 20 Nov, when UV removed the
+// Matches, Leagues and Tournaments cards): your live match, in the Get the app card's place
+// (live-match.js draws it), and your player star (player-star.js). Everything comes from one
+// call, tdc_home_cards (migration 20261116132606), which says whether you are signed in
+// and lists your live matches; the star is read from tdc_player_profile.
 (function () {
 	'use strict';
 	var AREA = 'Home';
 	var root = document.getElementById('home-cards');
 	if (!root) return;
 	var statusEl = document.getElementById('home-cards-status');
-	var bodies = {
-		matches: document.getElementById('hc-matches'),
-		leagues: document.getElementById('hc-leagues'),
-		tournaments: document.getElementById('hc-tournaments')
-	};
-
-	// A state's colour: the strip's class (home.css)
-	var LEAGUE = {
-		running: ['is-on', 'Running'], taking_entries: ['is-go', 'Taking entries'],
-		on_break: ['is-rest', 'On break'], finished: ['is-rest', 'Finished']
-	};
-	var TOURNAMENT = {
-		in_progress: ['is-on', 'Under way'], open: ['is-go', 'Open'],
-		draft: ['is-none', 'Draft'], complete: ['is-rest', 'Finished']
-	};
 
 	function el(tag, cls, text) {
 		var e = document.createElement(tag);
@@ -38,108 +18,31 @@
 	}
 
 	function initials(name) {
-		// Words that start with a letter or digit, so doubles' "Carol & Dan" reads CD.
+		// Words that start with a letter or digit, so a name reads as its first two letters.
 		return (name || '?').split(/\s+/).filter(function (w) { return /^[\p{L}\p{N}]/u.test(w); }).slice(0, 2).map(function (w) { return w[0]; }).join('').toUpperCase() || '?';
 	}
 
-	var TROPHY = 'M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z';
-	function trophy() {
-		var NS = 'http://www.w3.org/2000/svg';
-		var svg = document.createElementNS(NS, 'svg');
-		svg.setAttribute('viewBox', '0 0 24 24');
-		svg.setAttribute('aria-hidden', 'true');
-		var path = document.createElementNS(NS, 'path');
-		path.setAttribute('d', TROPHY);
-		path.setAttribute('fill', 'currentColor');
-		svg.append(path);
-		return svg;
-	}
-
-	// A badge: the picture, the status bar, the name under it
-	function badge(href, pic, name, state, kindClass) {
-		var a = el('a', 'hc-badge ' + state[0]);
-		a.href = href;
-		a.title = name + ' · ' + state[1];
-		var box = el('span', 'hc-pic ' + kindClass);
-		box.append(pic);
-		a.append(box, el('span', 'hc-bar'), el('span', 'hc-name', name));
-		var said = el('span', 'visually-hidden', ', ' + state[1]);
-		a.append(said);
-		return a;
-	}
-
-	function leagueBadge(l, signedIn) {
-		// Everybody, the LD included, lands on Standings (UV, 18 Nov)
-		var href = '/leagues/season/?s=' + encodeURIComponent(l.league_season_id);
-		return badge(href, TDC.leaguePic(l.picture_path), l.name, LEAGUE[l.status] || ['is-none', l.status], 'hc-pic-league');
-	}
-
-	function tournamentBadge(t, signedIn) {
-		// As the profile menu: the poster until the start, then the draw. Signed out, the
-		// poster always (the only one shown is one with a public poster)
-		var poster = !signedIn || (t.status !== 'in_progress' && t.poster_open);
-		var href = (poster ? '/tournaments/poster/?t=' : '/tournaments/bracket/?t=') + encodeURIComponent(t.id);
-		return badge(href, trophy(), t.name, TOURNAMENT[t.status] || ['is-none', t.status], 'hc-pic-tournament');
-	}
-
-	// A match's state, as a fixture's and the card's (league.css): a dispute or an
-	// abandoned match red, being played or waiting on a signature yellow, done green
-	function matchState(m) {
-		if (m.status === 'abandoned' || m.card_state === 'disputed') return 'is-bad';
-		if (m.status === 'in_progress' || m.card_state === 'awaiting') return 'is-on';
-		if (m.status === 'complete') return 'is-done';
-		return 'is-go';
-	}
-
-	function opponentPic(m) {
-		if (m.opponent_kind === 'team') {
-			var t = el('span', 'hc-face hc-face-team');
-			t.append(TDC.teamPic(m.opponent_picture));
-			return t;
-		}
-		var box = el('span', 'hc-face');
-		var url = TDC.pictureUrl('player-avatars', m.opponent_picture);
+	// Your picture and display name, above your star (UV, 20 Nov): the picture, or your
+	// initials without one, then the name in the display face. Not a link.
+	function whoRow(me) {
+		var row = el('div', 'home-star-who');
+		var pic = el('span', 'home-star-pic');
+		var url = TDC.pictureUrl('player-avatars', me.avatar_path);
 		if (url) {
 			var img = el('img');
 			img.alt = '';
-			img.loading = 'lazy';
 			img.onerror = function () {
-				console.error('[' + AREA + '] a picture on the Matches card could not be loaded, using the initials.', url);
+				console.error('[' + AREA + '] your picture could not be loaded, using your initials.', url);
 				img.remove();
-				box.textContent = initials(m.opponent);
+				pic.textContent = initials(me.display_name);
 			};
 			img.src = url;
-			box.append(img);
+			pic.append(img);
 		} else {
-			box.textContent = initials(m.opponent);
+			pic.textContent = initials(me.display_name);
 		}
-		return box;
-	}
-
-	function matchRow(m) {
-		// As /matches/: a team night opens the team card
-		var a = el('a', 'hc-match ' + matchState(m));
-		a.href = m.team_match ? '/leagues/card/?m=' + encodeURIComponent(m.id) : '/match/?id=' + encodeURIComponent(m.id);
-		var right = (m.my_frames + m.their_frames > 0) ? m.my_frames + '–' + m.their_frames
-			: m.status === 'in_progress' ? 'Playing' : m.status === 'scheduled' ? 'Not started' : '';
-		// League and single matches in the one list, each with its badge (UV, 16 Nov)
-		var kind = KIND[m.kind] || null;
-		if (!kind) console.error('[' + AREA + '] a match on the Matches card has no kind the card knows.', m.kind);
-		a.append(el('span', 'hc-strip'), opponentPic(m), el('span', 'hc-opp', m.opponent),
-			el('span', 'badge hc-kind hc-kind-' + (m.kind || 'none'), kind || ''), el('span', 'hc-right', right));
-		return a;
-	}
-	var KIND = { league: 'League', tournament: 'Tournament', social: 'Singles' };
-
-	// An empty card says so, with the way in
-	function empty(words, href, linkWords) {
-		var p = el('p', 'hc-empty', words + ' ');
-		if (href) {
-			var a = el('a', null, linkWords);
-			a.href = href;
-			p.append(a);
-		}
-		return p;
+		row.append(pic, el('span', 'home-star-name', me.display_name));
+		return row;
 	}
 
 	// Your live match (UV, 18 Nov; live-match.js draws it): in the Get the app card's
@@ -157,48 +60,50 @@
 		if (TDCLiveMatch.fill(box, d.live, function () { if (installShown) install.hidden = false; }) && install) install.hidden = true;
 	}
 
+	// Your player star (UV, 20 Nov), above Matches: the one on your own profile, all time,
+	// from tdc_player_profile (player-star.js draws it), directly on the cloth with no
+	// card and no heading. Signed in only; shown at once with the dots in it and filled
+	// when your frames arrive.
+	function drawStar() {
+		var card = document.getElementById('hc-star-card');
+		var body = document.getElementById('hc-star');
+		if (!card || !body) return;
+		card.hidden = false;
+		var work = (async function () {
+			var session = await TDC.getSession(AREA);
+			if (!session) { card.hidden = true; return; }
+			var me = await TDC.getMyPlayer(AREA, session.user.id, statusEl);
+			if (!me) { card.hidden = true; return; }
+			var r = await supabaseClient.rpc('tdc_player_profile', { p_player_id: me.id });
+			if (r.error) { card.hidden = true; TDC.showSupabaseError(AREA, r.error, statusEl); return; }
+			var p = r.data;
+			if (!p || !Array.isArray(p.matches) || !Array.isArray(p.frames)) {
+				card.hidden = true;
+				TDC.error(AREA, 'your frames came back in a shape this page does not know.', p, statusEl);
+				return;
+			}
+			var set = TDCStar.defaults();
+			var counts = TDCStar.count(TDCStar.allFrames(p), set.walkovers);
+			body.replaceChildren(whoRow(me), TDCStar.draw('Your star', [{ counts: counts, raw: true }], set, TDCStar.LEAGUE_SPOKES, { stats: true }).svg);
+		})();
+		work.catch(function (e) { card.hidden = true; TDC.error(AREA, 'your star could not be drawn.', e, statusEl); });
+		TDC.busy(body, work);
+	}
+
 	function draw(d) {
-		var signedIn = !!d.signed_in;
-		var leagues = d.leagues || [], tournaments = d.tournaments || [], matches = d.matches || [];
 		drawLive(d);
-
-		if (!signedIn) {
-			var a = el('a', 'hc-signin', 'Sign in to start a new match.');
-			a.href = '/accounts/?next=' + encodeURIComponent('/matches/new/');
-			bodies.matches.replaceChildren(a);
-		} else if (matches.length) {
-			var list = el('div', 'hc-matches');
-			list.append.apply(list, matches.map(matchRow));
-			bodies.matches.replaceChildren(list);
-		} else {
-			bodies.matches.replaceChildren(empty('No matches yet.', '/matches/new/', 'Start a match'));
-		}
-
-		function grid(rows, make) {
-			var g = el('div', 'hc-badges');
-			g.append.apply(g, rows.map(function (r) { return make(r, signedIn); }));
-			return g;
-		}
-		bodies.leagues.replaceChildren(leagues.length ? grid(leagues, leagueBadge)
-			: signedIn ? empty('You are not in a league yet.', '/leagues/', 'Find a league')
-			: empty('No public leagues yet.'));
-		bodies.tournaments.replaceChildren(tournaments.length ? grid(tournaments, tournamentBadge)
-			: signedIn ? empty('You are not in a tournament yet.', '/tournaments/', 'Find a tournament')
-			: empty('No public tournaments yet.'));
+		if (d.signed_in) drawStar();
 	}
 
 	try {
-		var work = supabaseClient.rpc('tdc_home_cards');
-		// The dots in each card while it loads
-		Object.keys(bodies).forEach(function (k) { if (bodies[k]) TDC.busy(bodies[k], work); });
-		work.then(function (r) {
+		supabaseClient.rpc('tdc_home_cards').then(function (r) {
 			if (r.error) { TDC.showSupabaseError(AREA, r.error, statusEl); return; }
 			try { draw(r.data || {}); }
-			catch (e) { TDC.error(AREA, 'the cards could not be drawn.', e, statusEl); }
+			catch (e) { TDC.error(AREA, 'the page could not be drawn.', e, statusEl); }
 		}, function (e) {
-			TDC.error(AREA, 'the cards could not be read.', e, statusEl);
+			TDC.error(AREA, 'the page could not be read.', e, statusEl);
 		});
 	} catch (e) {
-		TDC.error(AREA, 'the cards could not be read.', e, statusEl);
+		TDC.error(AREA, 'the page could not be read.', e, statusEl);
 	}
 })();

@@ -2873,3 +2873,21 @@ These predate the log. They are recorded here because every one of them is a dec
 *Again, UV, 20 Nov (a third phone screenshot, "wrong again"):* the band above the pinned cards is a fade, solid against the cards and clear toward the island, running down to the cards' top edge; the solid block showed as a rectangle with a sliver of content below it. *Claude's reading, not confirmed.* `player.css`.
 
 *Settled for now, UV, 20 Nov ("it should be transparent and the sizing is still wrong"):* no band or fade above Compare's pinned cards; they sit just under the nav while it shows and just under the phone's island (`--nav-top`) once it has gone, not a nav's height down. This replaces the always-`--nav-total` space and every band tried (solid, while-pinned, fade). *Claude's reading of "sizing", not confirmed.* `player.css`, `player.js` (`is-stuck` removed).
+
+## 20 Nov: The player star on the home page
+
+*Decided by UV:* the player star on the home page, above Matches. *Claude's reading, not confirmed:* a card "Your star" with the signed-in player's own player star (as on their profile, all time, with the percentages), signed in only, its heading a link to their profile; one extra call (`tdc_player_profile`). `index.html`, `home-cards.js`, `player-star.js` (`allFrames`).
+
+*Then, UV, 20 Nov:* the home page's star has no card and no heading: it sits directly on the cloth. The link to the profile went with the heading.
+
+## 20 Nov: A grey line at the foot of the home page's table
+
+*Decided by UV:* a solid grey line, like the table's markings, at the bottom of the table, visible only when scrolled down. *Claude's reading, not confirmed:* a 2px line in the markings' grey across the foot of the cards, above the footer, in the scrolling box. `index.html`, `home.css`.
+
+*Corrected, UV, 20 Nov:* the grey line is at the bottom of the table, above the player star (not below the cards, above the footer). `index.html`, `home.css`.
+
+## 20 Nov: The home page's Matches, Leagues and Tournaments cards are removed
+
+*Decided by UV:* the Matches, Leagues and Tournaments sections are removed from the home page, leaving the player star (with the grey line above it). This undoes 16 Nov "The home page's three cards". *Claude's, not asked:* the code that drew them was removed from `home-cards.js` (the file now draws only the live match and the star); the database function `tdc_home_cards` and its test are left as they are, still sending the lists, and the `hc-` styles stay in `home.css` unused. `index.html`, `home-cards.js`.
+
+*Then, UV, 20 Nov:* the player's name and picture above the home page's star. *Claude's reading:* your display name in the display face with your picture beside it, no full name, no link (UV had removed the profile link). `home-cards.js`, `home.css`.
