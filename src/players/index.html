@@ -96,6 +96,12 @@ extraScripts:
 		</div>
 
 		<div id="pp-tab-profile">
+			<!-- The player star sits above Leagues (UV, 20 Nov; UV 19 Nov; docs/design/player-star.md),
+			     all time (the Stats section and its period switch were removed on 20 Nov). -->
+			<section class="pp-section">
+				<div class="pp-star" data-part="star"></div>
+			</section>
+
 			<!-- Teams first (UV, 5 Nov): each team with its place in its league. -->
 			<section class="pp-section">
 				<h2>Leagues</h2>
@@ -106,47 +112,23 @@ extraScripts:
 				<h2>Form</h2>
 				<p class="muted pp-sub">Last 10 frames · newest at the foot · yellow ring: broke</p>
 				<div class="pp-form" data-part="form"></div>
+				<p class="pp-streak" data-part="streak"></p>
 			</section>
 
-			<section class="pp-section">
-				<h2>Stats</h2>
-				<div class="cp-views pp-period" role="group" aria-label="Period">
-					<button type="button" class="cp-view" data-days="0" aria-pressed="true">All time</button>
-					<button type="button" class="cp-view" data-days="90" aria-pressed="false">Last 90 days</button>
-					<button type="button" class="cp-view" data-days="30" aria-pressed="false">Last 30 days</button>
-				</div>
-				<div class="pp-grid" data-part="grid"></div>
-				<!-- The player star (UV, 19 Nov; docs/design/player-star.md), in the period. -->
-				<p class="muted pp-sub pp-star-key">Grey ring: the standard · outside is better · dashed: their frames alone</p>
-				<div class="pp-star" data-part="star"></div>
-			</section>
-
-			<!-- Frame difference per night is on Compare only (UV, 17 Nov). -->
-
-			<!-- Match lists a page at a time (UV, 5 Nov): each page number is a
-			     stepper on its side at the right of its heading; each match has a
+			<!-- Matches (UV, 20 Nov): one list a page at a time, a tab for each kind (the
+			     Competitions and Recent matches headings are gone). Each match has a
 			     state strip, as the league fixtures do. Every state is listed
 			     (migration 20261105064410); only finished matches are counted. -->
 			<section class="pp-section">
-				<h2>Competitions</h2>
-				<div class="pp-head">
-					<h3 class="pp-h3">Leagues</h3>
-					<input type="number" id="pp-page-league" data-part="page-league" data-stepper="across" min="1" max="1" value="1" aria-label="Leagues: page">
+				<h2>Matches</h2>
+				<div class="cp-views pp-mtabs" role="group" aria-label="Show matches">
+					<button type="button" class="cp-view" data-mfilter="all" aria-pressed="true">All Matches</button>
+					<button type="button" class="cp-view" data-mfilter="league" aria-pressed="false">Leagues</button>
+					<button type="button" class="cp-view" data-mfilter="tournament" aria-pressed="false">Tournaments</button>
+					<button type="button" class="cp-view" data-mfilter="singles" aria-pressed="false">Singles</button>
 				</div>
-				<div data-part="league"></div>
-				<div class="pp-head">
-					<h3 class="pp-h3">Tournaments</h3>
-					<input type="number" id="pp-page-tournament" data-part="page-tournament" data-stepper="across" min="1" max="1" value="1" aria-label="Tournaments: page">
-				</div>
-				<div data-part="tournament"></div>
-			</section>
-
-			<section class="pp-section">
-				<div class="pp-head">
-					<h2>Recent matches</h2>
-					<input type="number" id="pp-page-recent" data-part="page-recent" data-stepper="across" min="1" max="1" value="1" aria-label="Recent matches: page">
-				</div>
-				<div data-part="recent"></div>
+				<div class="pp-head pp-head-solo"><input type="number" id="pp-page-matches" data-part="page-matches" data-stepper="across" min="1" max="1" value="1" aria-label="Matches: page"></div>
+				<div data-part="matches"></div>
 			</section>
 
 			<section class="pp-section">
@@ -161,7 +143,7 @@ extraScripts:
 		     names head their half, as on the stage, and stay at the top while the
 		     page scrolls. Every Profile section, both sides drawn by the same
 		     functions as the Profile tab (player.js, compareViews); one period for
-		     both; Form and the frame difference run down the page; About is one
+		     both; Form runs down the page (the frame difference per night was removed on 20 Nov); About is one
 		     table, its headings in the middle. -->
 		<div id="pp-tab-cmp" class="pp-c" hidden>
 			<div class="pp-c-head">
@@ -169,6 +151,10 @@ extraScripts:
 				<div class="pp-c-who" data-side="them"></div>
 			</div>
 			<div class="pp-c-body">
+				<!-- The player star: one across both halves, you green and them blue (UV, 19 Nov),
+				     above Leagues (UV, 20 Nov); it is all time since the Stats section went (UV, 20 Nov). -->
+				<div class="pp-star pp-c-wide" id="pp-cmp-star"></div>
+
 				<h2 class="pp-c-h">Leagues</h2>
 				<!-- Leagues you are both in: one card, one star (UV, 20 Nov). -->
 				<div class="pp-list pp-c-wide" id="pp-cmp-shared"></div>
@@ -179,60 +165,24 @@ extraScripts:
 				<p class="muted pp-sub pp-c-wide">Last 10 frames · newest at the foot · yellow ring: broke</p>
 				<div class="pp-form pp-form-down" data-side="mine" data-part="form"></div>
 				<div class="pp-form pp-form-down" data-side="them" data-part="form"></div>
+				<p class="pp-streak" data-side="mine" data-part="streak"></p>
+				<p class="pp-streak" data-side="them" data-part="streak"></p>
 
-				<h2 class="pp-c-h">Stats</h2>
-				<div class="cp-views pp-period pp-c-wide" role="group" aria-label="Period">
-					<button type="button" class="cp-view" data-days="0" aria-pressed="true">All time</button>
-					<button type="button" class="cp-view" data-days="90" aria-pressed="false">Last 90 days</button>
-					<button type="button" class="cp-view" data-days="30" aria-pressed="false">Last 30 days</button>
+				<!-- Matches: one tab row for both halves (UV, 20 Nov), each half its own page and list. -->
+				<h2 class="pp-c-h">Matches</h2>
+				<div class="cp-views pp-mtabs pp-c-wide" role="group" aria-label="Show matches">
+					<button type="button" class="cp-view" data-mfilter="all" aria-pressed="true">All Matches</button>
+					<button type="button" class="cp-view" data-mfilter="league" aria-pressed="false">Leagues</button>
+					<button type="button" class="cp-view" data-mfilter="tournament" aria-pressed="false">Tournaments</button>
+					<button type="button" class="cp-view" data-mfilter="singles" aria-pressed="false">Singles</button>
 				</div>
-				<div class="pp-grid" data-side="mine" data-part="grid"></div>
-				<div class="pp-grid" data-side="them" data-part="grid"></div>
-				<!-- The player star: one across both halves, you green and them blue (UV, 19 Nov). -->
-				<p class="muted pp-sub pp-c-wide pp-star-key">Grey ring: the standard · outside is better</p>
-				<div class="pp-star pp-c-wide" id="pp-cmp-star"></div>
-
-				<h2 class="pp-c-h">Frame difference per night</h2>
-				<p class="muted pp-sub pp-c-wide">Last 15 nights in the period, newest at the foot · won minus lost</p>
-				<div class="pp-down-bars" data-side="mine">
-					<div class="pp-bar-labels muted" data-part="barLabels"></div>
-					<div class="pp-bars" data-part="bars"></div>
-				</div>
-				<div class="pp-down-bars" data-side="them">
-					<div class="pp-bar-labels muted" data-part="barLabels"></div>
-					<div class="pp-bars" data-part="bars"></div>
-				</div>
-
-				<h2 class="pp-c-h">Competitions</h2>
-				<!-- Leagues and Tournaments each one heading across both halves (UV, 17 Nov),
-				     each side's page number under it. -->
-				<h3 class="pp-h3 pp-c-wide">Leagues</h3>
 				<div data-side="mine">
-					<div class="pp-head pp-head-solo"><input type="number" data-part="page-league" data-stepper="across" min="1" max="1" value="1" aria-label="Your leagues: page"></div>
-					<div data-part="league"></div>
+					<div class="pp-head pp-head-solo"><input type="number" data-part="page-matches" data-stepper="across" min="1" max="1" value="1" aria-label="Your matches: page"></div>
+					<div data-part="matches"></div>
 				</div>
 				<div data-side="them">
-					<div class="pp-head pp-head-solo"><input type="number" data-part="page-league" data-stepper="across" min="1" max="1" value="1" aria-label="Their leagues: page"></div>
-					<div data-part="league"></div>
-				</div>
-				<h3 class="pp-h3 pp-c-wide">Tournaments</h3>
-				<div data-side="mine">
-					<div class="pp-head pp-head-solo"><input type="number" data-part="page-tournament" data-stepper="across" min="1" max="1" value="1" aria-label="Your tournaments: page"></div>
-					<div data-part="tournament"></div>
-				</div>
-				<div data-side="them">
-					<div class="pp-head pp-head-solo"><input type="number" data-part="page-tournament" data-stepper="across" min="1" max="1" value="1" aria-label="Their tournaments: page"></div>
-					<div data-part="tournament"></div>
-				</div>
-
-				<h2 class="pp-c-h">Recent matches</h2>
-				<div data-side="mine">
-					<div class="pp-head pp-head-solo"><input type="number" data-part="page-recent" data-stepper="across" min="1" max="1" value="1" aria-label="Your recent matches: page"></div>
-					<div data-part="recent"></div>
-				</div>
-				<div data-side="them">
-					<div class="pp-head pp-head-solo"><input type="number" data-part="page-recent" data-stepper="across" min="1" max="1" value="1" aria-label="Their recent matches: page"></div>
-					<div data-part="recent"></div>
+					<div class="pp-head pp-head-solo"><input type="number" data-part="page-matches" data-stepper="across" min="1" max="1" value="1" aria-label="Their matches: page"></div>
+					<div data-part="matches"></div>
 				</div>
 
 				<h2 class="pp-c-h">About</h2>

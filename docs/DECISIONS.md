@@ -2773,3 +2773,91 @@ These predate the log. They are recorded here because every one of them is a dec
 *Then, UV, 20 Nov:* on Compare the form reads **Opp | Result | Result | Opp**: yours Opp then Result, theirs Result then Opp, the dots meeting at the middle line. The Profile tab keeps the dot in the middle with the opponent to its right.
 
 *Then, UV, 20 Nov:* the opponent on each form row is **the player, not the team**: `tdc_player_profile`'s frames gain `opponent` (migration `20261120130000`, test `090`), the display name of whoever was across the table in that frame.
+
+*Then, UV, 20 Nov:* wherever the form shows, a line down the middle with an arrowhead at the foot shows the direction of time (newest at the bottom), on Compare and on the Profile tab. `player.css`.
+
+*Then, UV, 20 Nov:* a "Streak: N" label at the bottom of the form section: frames won since the last lost frame. *Claude's reading:* counted over all finished frames, not only the ten shown; 0 if the latest frame was lost. `player.js` (`renderForm`), `players/index.html`, `player.css`.
+
+## 20 Nov: The player star sits above Leagues
+
+*Decided by UV:* the player stats star (the Profile tab's, and Compare's one star) sits above the Leagues section. *Claude's reading:* "player stats stars" means these, not the league stars on the league cards; it keeps following the Stats period switch, which stays under Stats. `players/index.html`, `player.css`.
+
+## 20 Nov: The sandbox uses the league star's spokes
+
+*Decided by UV:* the sandbox star uses the same formulas and headings as the league stars; UV will set new standards and starting frames on it. *Claude's, not asked:* the Star menu, the Break in spoke and the break-result columns were removed from the sandbox; the sandbox draws with its starting frames (the league cards use none); Lags Won gets a starting-frames slider (default 0). `sandbox-star.js`, `sandbox/star/index.html`, `docs/design/player-star.md`.
+
+## 20 Nov: The profile star follows the sandbox star
+
+*Decided by UV:* the player profile star (Profile tab and Compare) uses the sandbox star's spokes, labels and values: the league star's five spokes (Win %, Lags Won, W | Own Brk, W | Opp Brk, B&F | Own Brk), with the standards and starting frames set on the sandbox. This ends "we will play around with the main player star later" and drops Break in from it. `player.js`; the values stay in `player-star.js` (`defaults`).
+
+## 20 Nov: UV's new standards and starting frames
+
+*Decided by UV (set on the sandbox):* Win % 67% / 100 starting frames; Lags Won 50% / 20; W | Own Brk 75% / 100; W | Opp Brk 40% / 100; B&F | Own Brk 7% / 100. Written into `player-star.js` as the defaults, so the profile's player star follows them; the league stars use the same standards and no starting frames. These replace the 19 Nov numbers and the B&F values tried earlier the same day.
+
+## 20 Nov: Compare's player star: you green, them cream, raw stars in colour
+
+*Decided by UV:* on Compare's one star, you are green and the other player always cream (as on the league cards), and each shows their raw star dashed in their own colour. This replaces green and blue with no raw stars. `player.js` (`renderCompareStar`), `player-star.js` (the cream layer draws its raw star too), `player-star.css`.
+
+## 20 Nov: Star labels wrap so the star can be bigger
+
+*Decided by UV:* label text wraps where needed so the star can be larger. *Claude's reading:* a label wraps at its " | " ("W | Own Brk" becomes "W |" over "Own Brk"); the picture is only as wide as its longest line, so the star grows. The shared league card keeps its wider picture for the three numbers. `player-star.js`.
+
+## 20 Nov: Another player's star is cream
+
+*Decided by UV:* on the Profile tab, when viewing another player's profile, the star shape is white (cream), not green. *Claude's reading:* a cream filled shape, also for their league rows and the one-sided league stars on Compare; green only for your own. `player.js`, `player-star.css`.
+
+## 20 Nov: Grey team names on league cards; your pinned card green
+
+*Decided by UV:* team names in the league cards are grey text; on Compare's frozen cards the one for your stats has a green background. *Claude's reading:* the profile's league cards (not the `/leagues/` page's team-name badge); "green background" is a 22% green tint so cream text reads. `player.css`.
+
+*Then, UV, 20 Nov:* your pinned card is the site's green with dark text, not a tint.
+
+*Then, UV, 20 Nov:* the opponent's pinned card is cream with dark text, as yours is green with dark text.
+
+## 20 Nov: Frame difference per night: one upright graph
+
+*Decided by UV:* a normal upright graph, one base line for both sides, the bars above and below it. *Claude's reading, not confirmed:* one graph for both players with two bars a night (yours green, theirs cream), the nights lined up from the newest, no month labels. `player.js` (`renderCompareBars`), `players/index.html`, `player.css`.
+
+## 20 Nov: The frame difference per night section is removed
+
+*Decided by UV:* the Frame difference per night section is removed from Compare (it had been rebuilt as one upright graph earlier the same day). `players/index.html`, `player.js` (`renderCompareBars`, `nightsOf`, `dayKey`), `player.css`. The data it used is still in the profile function.
+
+## 20 Nov: No outer content card on the profile
+
+*Decided by UV:* the player profile's outer content card is removed; the name and buttons sit directly on the background. *Claude's reading:* the card's shadow and background are dropped, its padding stays so nothing moves. `player.css`.
+
+## 20 Nov: The profile's content section is as wide as the removed card
+
+*Decided by UV:* with the outer content card gone, the content section (the tabs and what is in them) is as wide as that card was. `player.css` (`.pp-tabs` side margins equal to the card's padding).
+
+## 20 Nov: Nothing above the player stars
+
+*Decided by UV:* above the player stars, the names (Compare's legend) and the grey subtitle are removed. `player.js` (`renderCompareStar`), `players/index.html`.
+
+## 20 Nov: Percentages under the player stars' labels
+
+*Decided by UV:* percentages under the player stars' labels, two lines (the player's stats, then the adjusted stats), in the players' colours. *Claude's reading, not confirmed:* raw then adjusted; yours | theirs on Compare; on a profile a single number a line. `player-star.js`, `player.js`.
+
+*Then, UV, 20 Nov:* the adjusted values under the player stars' labels are smaller and in grey text (the player's own stats keep their colours).
+
+*Then, UV, 20 Nov:* the adjusted values are centred under the actual values (both number lines are centred on the actual line's middle).
+
+## 20 Nov: The Stats section is removed
+
+*Decided by UV:* the Stats section (period switch and the four boxes) is removed from the Profile and Compare tabs. *Consequence, Claude's, not asked:* the period switch went with it, so the player stars are always all time. `players/index.html`, `player.js`, `player.css`.
+
+## 20 Nov: Matches as one tabbed list; Home venue removed
+
+*Decided by UV:* the Competitions headings are removed, and tabs show matches instead (All Matches, Leagues, Tournaments, Singles); Recent matches is removed as redundant; Home venue is removed from About. *Claude's reading, not confirmed:* Singles means the social matches between two people; one tab choice shared by both halves of Compare; 5 a page. `players/index.html`, `player.js`, `player.css`.
+
+## 20 Nov: Match rows show the date
+
+*Decided by UV:* wherever the profile lists matches, each row includes its date (this reverses the 17 Nov "no date"). *Claude's choice:* its own muted line between the competition and the venue; the year only when it is not this one. `player.js` (`rowNames`).
+
+*Then, UV, 20 Nov:* the match list shows 3 matches a page, not 5 (`PER_PAGE` in `player.js`).
+
+## 20 Nov: League names on league cards: display font, cream
+
+*Decided by UV:* the league's name on the star cards is in the custom (display) font, the same size as the display name on the frozen cards, in cream. *Claude's reading:* the profile's league rows and Compare's shared card; on the rows the name moves to its own line at the top. `player.js`, `player.css` (`.pp-league-name`).
+
+*Then, UV, 20 Nov:* a "Matches" heading above the match tabs, on both tabs.

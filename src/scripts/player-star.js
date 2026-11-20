@@ -18,12 +18,15 @@
 const TDCStar = (() => {
 	// The spokes, clockwise from the top. n and d name the counts below. The
 	// standards and starting frames are UV's (19 Nov).
+	// The standards and starting frames are UV's, set on the sandbox on 20 Nov
+	// (Win % 67/100, Lags Won 50/20, W | Own Brk 75/100, W | Opp Brk 40/100,
+	// B&F | Own Brk 7/100); Break in is the old value (50/10), now unused by any star.
 	const SPOKES = [
-		{ key: 'win',   label: 'Win rate',    short: 'Win',       n: 'fw',  d: 'fp', std: 50, start: 100,
+		{ key: 'win',   label: 'Win rate',    short: 'Win',       n: 'fw',  d: 'fp', std: 67, start: 100,
 			help: 'Frames won out of frames played.' },
-		{ key: 'own',   label: 'Own break',   short: 'Own brk',   n: 'bw',  d: 'b',  std: 70, start: 50,
+		{ key: 'own',   label: 'Own break',   short: 'Own brk',   n: 'bw',  d: 'b',  std: 75, start: 100,
 			help: 'Frames won out of the frames they broke.' },
-		{ key: 'their', label: 'Their break', short: 'Their brk', n: 'obw', d: 'ob', std: 40, start: 50,
+		{ key: 'their', label: 'Their break', short: 'Their brk', n: 'obw', d: 'ob', std: 40, start: 100,
 			help: 'Frames won out of the frames their opponent broke.' },
 		{ key: 'in',    label: 'Break in',    short: 'Brk in',    n: 'i',   d: 'r',  std: 50, start: 10,
 			help: 'Breaks with a ball in, out of their breaks with a result recorded.' },
@@ -37,7 +40,7 @@ const TDCStar = (() => {
 	// won" is a frame they broke, so Own break is frames won out of lags won and
 	// Their break frames won out of lags lost. The standard is UV's, 50% for Lags
 	// won (UV, 20 Nov), set on the sandbox with the others.
-	const LAG = { key: 'lag', label: 'Lags won', short: 'Lags won', n: 'b', d: 'fp', std: 50, start: 0,
+	const LAG = { key: 'lag', label: 'Lags won', short: 'Lags won', n: 'b', d: 'fp', std: 50, start: 20,
 		help: 'Frames they broke (lags won) out of frames played.' };
 	// Its labels read as the question each answers (UV, 20 Nov): the player's
 	// win rate, lags won, then wins given who broke, then B&F given their break.
@@ -171,15 +174,42 @@ const TDCStar = (() => {
 	const at = (i, r, n) => [Math.cos(angle(i, n)) * r * R, Math.sin(angle(i, n)) * r * R];
 	const ring = (r, sp) => sp.map((s, i) => at(i, r, sp.length).join(',')).join(' ');
 
+	// A label too long for one line is wrapped at its bar (UV, 20 Nov): "W | Own Brk"
+	// becomes "W |" over "Own Brk", so the longest line is short and the star can
+	// take more of the picture. A label's lines, the numbers and "no data" all go
+	// through setLines, which centres the block on the label's place.
+	const wrap = (short) => {
+		const i = short.indexOf(' | ');
+		return i < 0 ? [short] : [short.slice(0, i + 2), short.slice(i + 3)];
+	};
+	function setLines(t, lines) {
+		const x = t.getAttribute('x');
+		t.textContent = '';
+		lines.forEach((line, i) => {
+			const dy = (i === 0 ? -(lines.length - 1) * 0.6 : 1.2) + 'em';
+			// { x, nodes }: a line centred on its own x (the player star's two lines of
+			// numbers, so the adjusted ones sit centred under the actual ones).
+			const ts = Array.isArray(line) || typeof line === 'string'
+				? svgEl('tspan', { x, dy })
+				: svgEl('tspan', { x: line.x, dy, 'text-anchor': 'middle' });
+			if (typeof line === 'string') ts.textContent = line;
+			else ts.append(...(Array.isArray(line) ? line : line.nodes));
+			t.append(ts);
+		});
+	}
+
 	// The frame: the edge, the standard ring, the axes and their labels.
-	function frame(label, sp, extraWide, bare) {
-		// Wide enough for the longest label, which sits to one side of the star; the
-		// player star's short labels keep the usual width.
-		const longest = Math.max(...sp.map((s) => s.short.length), extraWide || 0);
-		const half = longest > 10 ? Math.ceil(97 + 5.8 * longest) : 130;
+	function frame(label, sp, extraWide, bare, tall) {
+		// Wide enough for the longest line of a label, which sits to one side of the
+		// star; the usual width unless a line is long.
+		const longest = Math.max(...sp.flatMap((s) => wrap(s.short)).map((l) => l.length), extraWide || 0);
+		// A side label starts about 93 out from the middle and runs outward, about 5.8
+		// a character; the picture is as wide as its longest line needs, and no less
+		// than the star (UV, 20 Nov: text was running outside the card).
+		const half = Math.max(130, Math.ceil(97 + 5.8 * longest));
 		// A bare star (UV, 20 Nov: a league on one player's side of Compare, in a half
 		// too narrow to read labels) has no labels, so the picture is trimmed to the star.
-		const svg = svgEl('svg', { viewBox: bare ? '-92 -92 184 184' : `${-half} -118 ${2 * half} 236`, class: 'star-svg' + (bare ? ' star-bare' : ''), role: 'img' });
+		const svg = svgEl('svg', { viewBox: bare ? '-92 -92 184 184' : (tall ? `${-half} -134 ${2 * half} 252` : `${-half} -118 ${2 * half} 236`), class: 'star-svg' + (bare ? ' star-bare' : ''), role: 'img' });
 		svg.setAttribute('aria-label', label);
 		svg.append(svgEl('polygon', { points: ring(1, sp), class: 'star-edge' }));
 		svg.append(svgEl('polygon', { points: ring(0.5, sp), class: 'star-std' }));
@@ -187,14 +217,17 @@ const TDCStar = (() => {
 			const [x, y] = at(i, 1, sp.length);
 			svg.append(svgEl('line', { x1: 0, y1: 0, x2: x, y2: y, class: 'star-axis' }));
 			if (bare) return;
-			const [lx, ly] = at(i, 1.2, sp.length);
+			const [lx, ly0] = at(i, 1.2, sp.length);
+			// With two lines of numbers (a player star) the top label is raised so its
+			// last line clears the star's tip.
+			const ly = tall && Math.abs(lx) < 4 && ly0 < 0 ? ly0 - 16 : ly0;
 			const t = svgEl('text', {
 				x: lx, y: ly, class: 'star-label', 'data-spoke': s.key,
 				'text-anchor': Math.abs(lx) < 4 ? 'middle' : (lx > 0 ? 'start' : 'end'),
 				'dominant-baseline': 'middle'
 			});
-			t.textContent = s.short;
 			svg.append(t);
+			setLines(t, wrap(s.short));
 		});
 		return svg;
 	}
@@ -215,6 +248,8 @@ const TDCStar = (() => {
 		// the raw star's style, until UV asked for a solid line.)
 		if (o.dashed) {
 			g.append(svgEl('polygon', { points: shape((v) => v.shown), class: 'star-me' }));
+			// Its raw star too, dashed, in the same cream (UV, 20 Nov: Compare's star).
+			if (o.raw) g.append(svgEl('polygon', { points: shape((v) => v.raw), class: 'star-raw' }));
 			return { rows, certain };
 		}
 		const shown = svgEl('polygon', { points: shape((v) => v.shown), class: 'star-shown' });
@@ -240,13 +275,7 @@ const TDCStar = (() => {
 			if (rowsList.some((rows) => rows[i])) return;
 			const t = svg.querySelector(`[data-spoke="${s.key}"]`);
 			t.classList.add('star-nodata');
-			const x = t.getAttribute('x');
-			t.textContent = '';
-			const a = svgEl('tspan', { x, dy: '-0.5em' });
-			a.textContent = s.short;
-			const b = svgEl('tspan', { x, dy: '1.2em' });
-			b.textContent = 'no data';
-			t.append(a, b);
+			setLines(t, [...wrap(s.short), 'no data']);
 		});
 	}
 
@@ -267,21 +296,54 @@ const TDCStar = (() => {
 			if (!v && !w) return;
 			const a = spoke(avg, s, set);
 			const t = svg.querySelector(`[data-spoke="${s.key}"]`);
-			const x = t.getAttribute('x');
-			t.textContent = '';
-			const top = svgEl('tspan', { x, dy: '-0.6em' });
-			top.textContent = s.short;
-			const nums = svgEl('tspan', { x, dy: '1.25em' });
 			const part = (cls, text) => {
 				const n = svgEl('tspan', { class: cls });
 				n.textContent = text;
 				return n;
 			};
 			const sep = () => part('star-num-sep', ' | ');
-			nums.append(part('star-num-p', pct(v, 'shown')), sep());
-			if (you >= 0) nums.append(part('star-num-me', pct(w, 'shown')), sep());
-			nums.append(part('star-num-a', pct(a, 'raw')));
-			t.append(top, nums);
+			const nums = [part('star-num-p', pct(v, 'shown')), sep()];
+			if (you >= 0) nums.push(part('star-num-me', pct(w, 'shown')), sep());
+			nums.push(part('star-num-a', pct(a, 'raw')));
+			setLines(t, [...wrap(s.short), nums]);
+		});
+	}
+
+	// The numbers under each label of a player star (UV, 20 Nov), in the players'
+	// colours: a line of their own stats, then a line of the adjusted ones (with the
+	// starting frames), each "you | them" on Compare and a single number on a
+	// profile. The first layer is green (you) unless its cls is star-cream; a dashed
+	// layer is the other player, cream.
+	function markStats(svg, out, layers, sp) {
+		const tone = (l) => (l.dashed || (l.cls && l.cls.indexOf('star-cream') >= 0) ? 'star-num-me' : 'star-num-p');
+		const part = (cls, text) => {
+			const n = svgEl('tspan', { class: cls });
+			n.textContent = text;
+			return n;
+		};
+		const pct = (v, key) => (v ? Math.round(v[key] * 100) + '%' : '–');
+		sp.forEach((s, i) => {
+			const rows = out.map((o) => o.rows[i]);
+			if (!rows.some(Boolean)) return;
+			const t = svg.querySelector(`[data-spoke="${s.key}"]`);
+			// The adjusted line is smaller and grey (UV, 20 Nov), the players' own in colour.
+			const line = (key, adjusted) => {
+				const nodes = [];
+				layers.forEach((l, k) => {
+					if (k) nodes.push(part(adjusted ? 'star-num-adj' : 'star-num-sep', ' | '));
+					nodes.push(part(adjusted ? 'star-num-adj' : tone(l), pct(rows[k], key)));
+				});
+				return nodes;
+			};
+			// Both number lines are centred on the middle of the actual one, which
+			// starts at the label's edge (or ends at it, on the left): its width is
+			// estimated at about 5.9 a character.
+			const actual = line('raw'), adjusted = line('shown', true);
+			const lx = parseFloat(t.getAttribute('x'));
+			const anchor = t.getAttribute('text-anchor');
+			const width = actual.reduce((n, p) => n + p.textContent.length, 0) * 5.9;
+			const cx = anchor === 'start' ? lx + width / 2 : anchor === 'end' ? lx - width / 2 : lx;
+			setLines(t, [...wrap(s.short), { x: cx, nodes: actual }, { x: cx, nodes: adjusted }]);
 		});
 	}
 
@@ -291,11 +353,13 @@ const TDCStar = (() => {
 		const sp = spokes || SPOKES;
 		const bare = !!(opts && opts.bare);
 		// Three numbers under a label (a shared league star) are wider than the labels.
-		const svg = frame(label, sp, layers.some((l) => l.dashed) ? 15 : 0, bare);
+		const stats = !!(opts && opts.stats);
+		const svg = frame(label, sp, stats ? (layers.length > 1 ? 10 : 4) : (layers.some((l) => l.dashed) && layers.some((l) => l.avg) ? 15 : 0), bare, stats);
 		const out = layers.map((l) => layer(svg, l.counts, set, l, sp));
 		const league = layers.findIndex((l) => l.avg);
 		if (!bare) {
 			if (league >= 0) markNumbers(svg, out, layers, set, sp);
+			else if (stats) markStats(svg, out, layers, sp);
 			markNoData(svg, out.map((x) => x.rows), sp);
 		}
 		return { svg, layers: out };

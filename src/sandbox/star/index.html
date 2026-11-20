@@ -1,7 +1,7 @@
 ---
 layout: layout.html
 title: Star Sandbox
-description: "A scratch page for the player star: five spokes, each measured against a standard. Not part of the product."
+description: "A scratch page for the star: five spokes (the league star's), each measured against a standard. Not part of the product."
 extraStyles:
   - /stylesheets/sandbox.css
   - /stylesheets/player-star.css
@@ -38,14 +38,6 @@ extraScripts:
 			<input type="range" id="star-solid" min="1" max="200" step="1" value="200">
 			<output id="star-solid-out"></output>
 			<p class="star-help">How many frames before a star is drawn fully solid. Fewer frames, fainter star.</p>
-
-			<label for="star-set">Star</label>
-			<select id="star-set">
-				<option value="player" selected>Player star (five spokes, starting frames)</option>
-				<option value="league">League star (Lags won in, Break in out, no starting frames)</option>
-			</select>
-			<span></span>
-			<p class="star-help">The league star is the one on a league's card: Win rate, Lags won, Own break, Their break and B&amp;F, from the frames alone with no starting frames. Standards are the ones above.</p>
 
 			<label for="star-mode">Gap drawn as</label>
 			<select id="star-mode">
@@ -105,7 +97,7 @@ extraScripts:
 			</div>
 			<p class="status" id="star-find-note" role="status"></p>
 			<div class="star-find-results" id="star-find-results"></div>
-			<p class="muted">Their frames are read live and counted here. League scorecards record who broke but not the break result, so <strong>Break in</strong> shows no data for them.</p>
+			<p class="muted">Their frames are read live and counted here, on the same five spokes the league stars use. Only who broke and who won are needed, which every league scorecard records.</p>
 		</div>
 	</section>
 

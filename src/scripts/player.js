@@ -3,10 +3,10 @@
 // The hero (picture left of the centre line, names right; a tap on a photo
 // shows it large; Challenge, Follow, Share and More as ring icons), then a
 // toggle between three tabs:
-//   • Profile: teams with each team's place, form (the last 10 frames),
-//     stats over a period, competitions (league and tournament matches) and
-//     recent matches a page at a time, about. The frame difference per night
-//     is on Compare only (UV, 17 Nov).
+//   • Profile: teams, form (the last 10 frames),
+//     competitions (league and tournament matches) and recent matches a page
+//     at a time, about. (The frame difference per night, on Compare only
+//     since 17 Nov, was removed on 20 Nov, UV.)
 //   • (Head to head was removed on 20 Nov, UV; tdc_head_to_head is still in
 //     the database, unused.)
 //   • Compare (the tab that opens first for another player, UV 20 Nov): both profiles side by side, you on the left, each half headed
@@ -26,7 +26,7 @@
 // their side won it (UV, 5 Nov). "Lags" is frames broken, as the standings
 // count it.
 //
-// Challenge, Follow, Home venue and More have nothing behind
+// Challenge, Follow and More have nothing behind
 // them yet (UV, 5 Nov: shown, a tap says so). Honours are off the page until
 // they are built (UV, 5 Nov).
 //
@@ -51,7 +51,7 @@
 	const playerId = params.get('p');
 	let them = null;     // tdc_player_profile of the player shown
 	let mine = null;     // and of the person looking, for side by side
-	let days = 0;        // the period: 0 all time, else the last n days
+	const days = 0;      // the period: all time (the period switch went with the Stats section, 20 Nov, UV)
 	let iFollow = false; // tdc_i_follow: private to the person looking (UV, 5 Nov)
 
 	// ─── Small helpers ───
@@ -77,11 +77,8 @@
 		}
 		return box;
 	}
-	const pct = (a, b) => (b ? Math.round((a / b) * 100) + '%' : '–');
 	const day = (iso) => new Date(iso).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' });
 	const monthYear = (iso) => new Date(iso).toLocaleDateString('en-ZA', { month: 'short', year: 'numeric' });
-	const dayKey = (iso) => { const d = new Date(iso); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
-	const result = (m) => (m.mine > m.theirs ? 'W' : m.mine < m.theirs ? 'L' : 'D');
 	const kindLabel = (m) => (m.kind === 'social' ? 'Social' : m.competition || (m.kind === 'league' ? 'League' : 'Tournament'));
 	const matchHref = (m) => (m.team_match ? '/leagues/card/?m=' : '/match/?id=') + encodeURIComponent(m.match_id);
 	const playerHref = (id) => '/players/?p=' + encodeURIComponent(id);
@@ -104,36 +101,6 @@
 		const matches = p.matches.filter((m) => m.status === 'complete' && !m.doubles && (!since || new Date(m.played_at).getTime() >= since));
 		const ids = new Set(matches.map((m) => m.match_id));
 		return { matches, frames: p.frames.filter((f) => ids.has(f.match_id)) };
-	}
-
-	function count(p) {
-		const { matches, frames } = inPeriod(p);
-		const won = frames.filter((f) => f.won);
-		const broke = frames.filter((f) => f.broke === true);
-		const offBreak = frames.filter((f) => f.broke === false);
-		const gb = won.filter((f) => f.result_event === 'golden_break');
-		// Streaks of matches won, oldest first; a loss or a draw ends one.
-		let best = 0, run = 0;
-		for (const m of matches.slice().reverse()) {
-			run = result(m) === 'W' ? run + 1 : 0;
-			best = Math.max(best, run);
-		}
-		return {
-			matches: matches.length,
-			mw: matches.filter((m) => result(m) === 'W').length,
-			ml: matches.filter((m) => result(m) === 'L').length,
-			md: matches.filter((m) => result(m) === 'D').length,
-			frames: frames.length,
-			fw: won.length,
-			bf: won.filter((f) => f.result_event === 'break_and_finish').length,
-			rbf: won.filter((f) => f.result_event === 'reverse_break_and_finish').length,
-			gb: gb.length,
-			broke: broke.length,
-			breakKnown: broke.length + offBreak.length,
-			wonOnBreak: broke.filter((f) => f.won).length,
-			best,
-			current: run
-		};
 	}
 
 	// ─── The hero ───
@@ -216,9 +183,17 @@
 	function renderForm(v) {
 		const box = v.part('form');
 		const byMatch = new Map(v.p.matches.map((m) => [m.match_id, m]));
-		const last = v.p.frames.slice()
-			.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : a.frame_no - b.frame_no))
-			.slice(-10);
+		const all = v.p.frames.slice()
+			.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : a.frame_no - b.frame_no));
+		const last = all.slice(-10);
+		// The streak (UV, 20 Nov): frames won since the last one lost, over every
+		// finished frame, not only the ten shown; 0 when the latest was lost.
+		const streak = v.part('streak');
+		let run = 0;
+		for (let i = all.length - 1; i >= 0 && all[i].won; i--) run++;
+		if (streak) {
+			streak.replaceChildren(...(all.length ? [node('span', 'muted', 'Streak: '), node('b', run ? 'pp-primary' : null, String(run))] : []));
+		}
 		if (!last.length) { box.replaceChildren(node('span', 'muted', 'No finished frames yet.')); return; }
 		if (last.some((f) => f.opponent === undefined)) {
 			TDC.error(AREA, "The profile does not name each frame's opponent yet. Push migration 20261120130000.", null, els.status);
@@ -243,75 +218,6 @@
 			else row.append(node('span'), d, opp);
 			return row;
 		}));
-	}
-
-	function cell(label, big, sub, tone) {
-		const c = node('div', 'pp-cell');
-		c.append(node('span', 'pp-lbl', label), node('span', 'pp-big' + (tone ? ' pp-' + tone : ''), big), node('span', 'muted pp-cell-sub', sub));
-		return c;
-	}
-
-	// Four boxes (UV, 5 Nov). Conversion: frames won on their own break, of
-	// the frames they broke ("Lags", as the standings count lags won).
-	function renderStats(v) {
-		const s = count(v.p);
-		v.part('grid').replaceChildren(
-			cell('Frames', pct(s.fw, s.frames), 'P ' + s.frames + ' · W ' + s.fw + ' · L ' + (s.frames - s.fw), 'primary'),
-			cell('Matches', pct(s.mw, s.matches), 'P ' + s.matches + ' · W ' + s.mw + ' · L ' + s.ml + (s.md ? ' · D ' + s.md : ''), 'primary'),
-			cell('B&F', String(s.bf), 'GB ' + s.gb + ' · rB&F ' + s.rbf, 'warning'),
-			cell('Conversion', pct(s.wonOnBreak, s.broke), 'Lags ' + s.broke + ' · FW ' + s.wonOnBreak)
-		);
-	}
-
-	// Frames won minus frames lost on each of the last 15 nights in the
-	// period (UV, 5 Nov): green above the line, grey below it, a stub on it
-	// for a night that came out even. On Compare the graph runs down the page
-	// (UV, 5 Nov): a night a row, newest at the foot, the line upright, green
-	// to its right and grey to its left.
-	function renderBars(v) {
-		const bars = v.part('bars'), barLabels = v.part('barLabels');
-		bars.classList.toggle('is-down', v.vertical);
-		const { frames } = inPeriod(v.p);
-		const nights = new Map();
-		for (const f of frames.slice().reverse()) {
-			const k = dayKey(f.at);
-			if (!nights.has(k)) nights.set(k, { at: f.at, won: 0, lost: 0 });
-			const n = nights.get(k);
-			if (f.won) n.won++; else n.lost++;
-		}
-		const list = [...nights.values()].slice(-15);
-		if (!list.length) {
-			bars.replaceChildren(node('span', 'muted pp-empty', 'No frames in this period.'));
-			barLabels.replaceChildren();
-			return;
-		}
-		const up = Math.max(0, ...list.map((n) => n.won - n.lost));
-		const down = Math.max(0, ...list.map((n) => n.lost - n.won));
-		const upShare = up + down ? (up / (up + down)) * 100 : 50;   // where the base line sits
-		// Along the night's own length: height in the graph, width down the page.
-		const size = v.vertical ? 'width' : 'height';
-		let month = '';
-		const labels = [];
-		const line = node('span', 'pp-baseline');
-		if (v.vertical) line.style.left = (100 - upShare) + '%'; else line.style.top = upShare + '%';
-		bars.replaceChildren(line, ...list.map((n) => {
-			const diff = n.won - n.lost;
-			const col = node('span', 'pp-night');
-			col.title = day(n.at) + ': won ' + n.won + ', lost ' + n.lost + ' (' + (diff > 0 ? '+' : '') + diff + ')';
-			const top = node('span', 'pp-night-up'), bottom = node('span', 'pp-night-down');
-			top.style[size] = upShare + '%';
-			bottom.style[size] = (100 - upShare) + '%';
-			const b = node('span', 'pp-bar' + (diff < 0 ? ' pp-bar-lost' : diff === 0 ? ' pp-bar-even' : ''));
-			if (diff) b.style[size] = (Math.abs(diff) / (diff > 0 ? up : down)) * 100 + '%';
-			(diff < 0 ? bottom : top).append(b);
-			// Down the page the lost side is on the left.
-			if (v.vertical) col.append(bottom, top); else col.append(top, bottom);
-			const m = new Date(n.at).toLocaleDateString('en-ZA', { month: 'short' });
-			labels.push(node('span', null, m !== month ? m : ''));
-			month = m;
-			return col;
-		}));
-		barLabels.replaceChildren(...labels);
 	}
 
 	// Each league's star (UV, 19 Nov): its starting frames come from the league's
@@ -356,8 +262,11 @@
 			const pic = node('span', 'team-pic pp-team-pic');
 			pic.append(TDC.teamPic(t.team_picture));
 			const names = node('span', 'pp-team-names');
-			names.append(node('span', 'pp-team-name', t.team_name || 'No team yet'),
-				node('span', 'muted pp-team-sub', [t.league_name, t.season_name, TDC.venueNames(t.venues)].filter(Boolean).join(' · ')));
+			// The league's name heads the card in the display face (UV, 20 Nov), then the
+			// team's, then the season and venue.
+			names.append(node('span', 'pp-league-name', t.league_name),
+				node('span', 'pp-team-name', t.team_name || 'No team yet'),
+				node('span', 'muted pp-team-sub', [t.season_name, TDC.venueNames(t.venues)].filter(Boolean).join(' · ')));
 			const right = node('span', 'pp-team-right');
 			// No role in a singles league: everybody is captain of a team of one (UV, 20 Nov).
 			if (!isSingles(t)) right.append(node('span', 'muted pp-team-role', t.is_captain ? 'Captain' : 'Player'));
@@ -367,7 +276,7 @@
 				const set = got.set;
 				const certain = TDCStar.leagueSolid(v.p, t.league_season_id, got.scheduled);
 				const counts = TDCStar.count(TDCStar.leagueFrames(v.p, t.league_season_id), set.walkovers);
-				const { svg } = TDCStar.draw('Star for ' + v.p.player.display_name + ' in ' + t.league_name, [{ counts, certain, avg: got.avg }], set, TDCStar.LEAGUE_SPOKES, { bare: !!v.side });
+				const { svg } = TDCStar.draw('Star for ' + v.p.player.display_name + ' in ' + t.league_name, [{ counts, certain, avg: got.avg, cls: v.p.player.is_me ? '' : 'star-cream' }], set, TDCStar.LEAGUE_SPOKES, { bare: !!v.side });
 				const star = node('span', 'pp-team-star');
 				star.append(svg);
 				a.append(star);
@@ -388,7 +297,7 @@
 			const a = node('a', 'pp-team pp-team-shared');
 			a.href = '/leagues/season/?s=' + encodeURIComponent(sid);
 			const head = node('span', 'pp-shared-head');
-			head.append(node('span', 'pp-team-name', t.league_name),
+			head.append(node('span', 'pp-league-name', t.league_name),
 				node('span', 'muted pp-team-sub', [t.season_name, TDC.venueNames(t.venues)].filter(Boolean).join(' · ')));
 			const sides = node('span', 'pp-shared-sides');
 			// No player names (the heads above are pinned to the page) and no team
@@ -437,10 +346,13 @@
 	}
 
 	// A match row's words, a line each (UV, 17 Nov): who, the league or
-	// tournament, the venue; no date.
+	// tournament, the date (put back 20 Nov, UV), the venue.
 	function rowNames(who, m) {
 		const names = node('span', 'pp-row-names');
-		names.append(node('span', 'pp-row-name', who), node('span', 'muted pp-row-sub', kindLabel(m)));
+		// The year only when it is not this one.
+		const when = new Date(m.played_at);
+		const date = when.toLocaleDateString('en-ZA', when.getFullYear() === new Date().getFullYear() ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' });
+		names.append(node('span', 'pp-row-name', who), node('span', 'muted pp-row-sub', kindLabel(m)), node('span', 'muted pp-row-sub', date));
 		const venue = TDC.venueNames(m.venues);
 		if (venue) names.append(node('span', 'muted pp-row-sub', venue));
 		return names;
@@ -457,27 +369,33 @@
 		return s;
 	}
 
-	// A list a page at a time, its page number the stepper on its side in the
-	// heading (UV, 5 Nov): leagues and tournaments 4 a page, recent matches 5.
-	const LISTS = {
-		league: { per: 4, of: (ms) => ms.filter((m) => m.kind === 'league'), none: 'No league matches yet.' },
-		tournament: { per: 4, of: (ms) => ms.filter((m) => m.kind === 'tournament'), none: 'No tournament matches yet.' },
-		recent: { per: 5, of: (ms) => ms, none: 'No matches yet.' }
+	// Matches, one list a page at a time (UV, 20 Nov), 3 a page, its page number
+	// the stepper above it, and a tab for each kind: All Matches, Leagues,
+	// Tournaments and Singles. *Claude's reading, for UV to judge:* Singles is the
+	// social matches between two people (not a doubles match, which only All lists).
+	// One choice of tab for every view, so Compare's two halves follow one row.
+	const MATCH_FILTERS = {
+		all: { of: (ms) => ms, none: 'No matches yet.' },
+		league: { of: (ms) => ms.filter((m) => m.kind === 'league'), none: 'No league matches yet.' },
+		tournament: { of: (ms) => ms.filter((m) => m.kind === 'tournament'), none: 'No tournament matches yet.' },
+		singles: { of: (ms) => ms.filter((m) => m.kind === 'social' && !m.doubles), none: 'No singles matches yet.' }
 	};
-	function renderList(v, key) {
-		const l = LISTS[key], page = v.part('page-' + key), box = v.part(key);
-		const list = l.of(v.p.matches);
-		const pages = Math.max(1, Math.ceil(list.length / l.per));
+	const PER_PAGE = 3;   // 5 until 20 Nov (UV: only 3 a page)
+	let matchFilter = 'all';
+	function renderMatches(v) {
+		const f = MATCH_FILTERS[matchFilter], page = v.part('page-matches'), box = v.part('matches');
+		const list = f.of(v.p.matches);
+		const pages = Math.max(1, Math.ceil(list.length / PER_PAGE));
 		page.max = String(pages);
 		page.disabled = pages < 2;
 		const at = Math.min(pages, Math.max(1, Math.round(page.valueAsNumber) || 1));
 		if (page.valueAsNumber !== at) page.value = String(at);
-		const shown = list.slice((at - 1) * l.per, at * l.per);
-		box.replaceChildren(...(shown.length ? shown.map(matchRow) : [node('p', 'muted pp-empty', l.none)]));
+		const shown = list.slice((at - 1) * PER_PAGE, at * PER_PAGE);
+		box.replaceChildren(...(shown.length ? shown.map(matchRow) : [node('p', 'muted pp-empty', f.none)]));
 	}
-	// Each view's page numbers turn their own list's pages.
+	// Each view's page number turns its own list's pages.
 	function listenPages(v) {
-		for (const key of Object.keys(LISTS)) v.part('page-' + key).addEventListener('change', () => renderList(v, key));
+		v.part('page-matches').addEventListener('change', () => renderMatches(v));
 	}
 
 	// About as label and value pairs: a list on the Profile tab, one table
@@ -488,10 +406,6 @@
 		add('Full name', p.player.full_name ? TDC.fullName(p.player.full_name, p.player.surname) : document.createTextNode('Not given'));
 		const d = discipline(p);
 		add('Plays', document.createTextNode(d || '–'));
-		const venue = node('button', 'pp-link', 'Not built yet');
-		venue.type = 'button';
-		venue.dataset.unbuilt = 'Home venue';
-		add('Home venue', venue);
 		const teams = p.teams.filter((t) => t.team_id);
 		const tl = node('span');
 		if (!teams.length) tl.textContent = 'None';
@@ -558,32 +472,36 @@
 	// player-star.js from the frames in the period. The Profile tab shows the
 	// raw star too, dashed (every Profile tab, UV); Compare is one star across
 	// both halves, you green and them blue, without it (UV).
+	// From 20 Nov it follows the sandbox's star (UV): the same five spokes and
+	// labels (Win %, Lags Won, W | Own Brk, W | Opp Brk, B&F | Own Brk) and the
+	// same standards and starting frames, TDCStar's defaults.
 	const STAR = TDCStar.defaults();
+	const SPOKES = TDCStar.LEAGUE_SPOKES;
 	const starCounts = (p) => TDCStar.count(inPeriod(p).frames, STAR.walkovers);
 
+	// Somebody else's star is cream, not green (UV, 20 Nov), as on Compare: the
+	// green shape is yours alone (your own profile, and your half of Compare).
 	function renderStar(v) {
 		const box = v.part('star');
-		const { svg } = TDCStar.draw('Star for ' + v.p.player.display_name, [{ counts: starCounts(v.p), raw: true }], STAR);
+		const { svg } = TDCStar.draw('Star for ' + v.p.player.display_name, [{ counts: starCounts(v.p), raw: true, cls: v.p.player.is_me ? '' : 'star-cream' }], STAR, SPOKES, { stats: true });
 		box.replaceChildren(svg);
 	}
 
 	function renderCompareStar() {
 		const box = el('pp-cmp-star');
+		// You green, the other player always cream, as on the league cards, each with
+		// their raw star dashed in their own colour (UV, 20 Nov).
 		const { svg } = TDCStar.draw('Star comparing you and ' + themName(), [
-			{ counts: starCounts(mine), cls: 'star-a' },
-			{ counts: starCounts(them), cls: 'star-b' }
-		], STAR);
-		const legend = node('p', 'star-legend');
-		legend.append(node('span', 'star-key-a', mine.player.display_name), node('span', 'star-key-b', them.player.display_name));
-		box.replaceChildren(legend, svg);
+			{ counts: starCounts(mine), cls: 'star-a', raw: true },
+			{ counts: starCounts(them), dashed: true, raw: true }
+		], STAR, SPOKES, { stats: true });
+		box.replaceChildren(svg);   // no names or caption above it (UV, 20 Nov)
 	}
 
-	// Everything that hangs on the period, in every view.
+	// Everything that is drawn from the frames, in every view.
 	function renderPeriod() {
 		for (const v of views) {
-			renderStats(v);
-			if (v.vertical) renderBars(v);   // the bars on Compare only (UV, 17 Nov)
-			else renderStar(v);              // the star on the Profile tab; Compare has one across both halves
+			if (!v.vertical) renderStar(v);   // the star on the Profile tab; Compare has one across both halves
 		}
 		if (mine) renderCompareStar();
 	}
@@ -591,7 +509,7 @@
 	function renderProfile() {
 		for (const v of views) {
 			renderForm(v);
-			for (const key of Object.keys(LISTS)) renderList(v, key);
+			renderMatches(v);
 		}
 		renderPeriod();
 		renderAbout();
@@ -617,14 +535,14 @@
 		const b = e.target.closest('[data-tab]');
 		if (b) showTab(b.dataset.tab, b);
 	});
-	// One period for the whole page: the Profile tab's switch and Compare's
-	// (one for both sides, UV 5 Nov) stay in step.
+	// The match tabs (UV, 20 Nov): one choice for the Profile tab and both halves of
+	// Compare; a new tab starts every list on its first page.
 	document.addEventListener('click', (e) => {
-		const b = e.target.closest('.pp-period [data-days]');
-		if (!b || !them) return;
-		days = Number(b.dataset.days);
-		for (const x of document.querySelectorAll('.pp-period [data-days]')) x.setAttribute('aria-pressed', String(x.dataset.days === b.dataset.days));
-		renderPeriod();
+		const b = e.target.closest('.pp-mtabs [data-mfilter]');
+		if (!b || !them || !MATCH_FILTERS[b.dataset.mfilter]) return;
+		matchFilter = b.dataset.mfilter;
+		for (const x of document.querySelectorAll('.pp-mtabs [data-mfilter]')) x.setAttribute('aria-pressed', String(x.dataset.mfilter === matchFilter));
+		for (const v of views) { v.part('page-matches').value = '1'; renderMatches(v); }
 		TDC.busy(b, pause(), els.status);
 	});
 

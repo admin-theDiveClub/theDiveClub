@@ -3,6 +3,10 @@
  * to head toggle and the period) and .team-pic it uses. Tokens only. */
 
 .player-page { padding-top: var(--space-4); }
+/* No outer content card (UV, 20 Nov): the player's name, buttons and tabs sit
+   directly on the page's background. The card's own raised shadow is dropped; its
+   padding and width stay, so everything keeps its place. */
+.tdc-card.player-page { box-shadow: none; background: none; }
 .player-page .muted { color: var(--text-muted); }
 
 /* ── Buttons: none of the card's button look (.tdc-card button stretches and
@@ -163,7 +167,9 @@
 .player-page .cp-views {
 	position: relative;
 	display: grid;
-	grid-template-columns: repeat(3, minmax(6.5rem, 1fr));
+	/* Two tabs since Head to head went (UV, 20 Nov): with three columns the pair
+	   sat to the left of an empty third. */
+	grid-template-columns: repeat(2, minmax(6.5rem, 1fr));
 	gap: 0;
 	box-sizing: border-box;
 	width: 100%;
@@ -196,16 +202,26 @@
 }
 .tdc-card.player-page .cp-views button.cp-view:focus-visible { outline: 2px solid var(--nm-light-colour); outline-offset: -2px; }
 .pp-views { margin: var(--space-5) auto 0; }
+/* The match tabs (UV, 20 Nov): four across, fitted to the width rather than scrolling. */
+.player-page .cp-views.pp-mtabs { grid-template-columns: repeat(4, minmax(0, 1fr)); margin: var(--space-3) auto 0; }
+.tdc-card.player-page .pp-mtabs button.cp-view { font-size: 0.8rem; padding: 0 var(--space-1); }
 
 /* ── The tabs and their content in one sunken pill (UV, 19 Nov) ──
  * The pill is the box; the tab row is its top, no sunken shadow of its own (the
  * thumb is still raised), and the chosen tab's content sits inside it. Compare
  * no longer takes back the card's padding: the pill is its edge. */
 .pp-tabs {
+	/* As wide as the outer card was (UV, 20 Nov): out to where its padding began,
+	   the same amounts design.css gives the card (less on a phone). */
+	margin-right: calc(-1 * var(--space-5));
+	margin-left: calc(-1 * var(--space-5));
 	margin-top: var(--space-5);
 	padding: var(--space-1) var(--space-1) var(--space-4);
 	border-radius: var(--nm-field-radius);
 	box-shadow: var(--nm-sunken);
+}
+@media (max-width: 36rem) {   /* the card's phone padding (design.css, UV 9 Nov) */
+	.pp-tabs { margin-right: calc(-1 * var(--space-3)); margin-left: calc(-1 * var(--space-3)); }
 }
 .player-page .pp-tabs > .pp-views { margin: 0 auto; box-shadow: none; }   /* centred (UV, 20 Nov) */
 .player-page .pp-tabs > .pp-views[hidden] { display: none; }
@@ -256,52 +272,55 @@
 .pp-form-row:last-child { border-bottom: 0; }
 /* Compare (UV, 20 Nov): Opp | Result on your side, Result | Opp on theirs, so the
    two dots meet at the line down the middle. */
+/* On the Profile tab the names are centred in the half to the right of the dots (UV, 20 Nov). */
+.pp-form:not([data-side]) .pp-form-opp { text-align: center; }
 .pp-form-row.is-mine { grid-template-columns: minmax(0, 1fr) auto; }
+.pp-streak { margin: var(--space-3) 0 0; text-align: center; }
+.pp-streak:empty { display: none; }
+/* On Compare each streak sits against the middle line, as the dots do (UV, 20 Nov). */
+.pp-streak[data-side="mine"] { text-align: right; }
+.pp-streak[data-side="them"] { text-align: left; }
 .pp-form-row.is-mine .pp-form-opp { text-align: right; }
 .pp-form-row.is-them { grid-template-columns: auto minmax(0, 1fr); }
+/* A line down the middle with an arrowhead at the foot: time runs down, newest at
+   the bottom (UV, 20 Nov). On Profile it runs through the dots; on Compare it is
+   the line between the two halves, drawn on the right-hand half's left edge. */
+.pp-form { position: relative; }
+.pp-form::before,
+.pp-form::after { content: ''; position: absolute; left: 50%; pointer-events: none; }
+.pp-form::before { top: 0; bottom: 0; width: 1px; margin-left: -0.5px; background: var(--text-muted); opacity: 0.6; }
+.pp-form::after {
+	bottom: -1px;
+	margin-left: -5px;
+	border-top: 7px solid var(--text-muted);
+	border-right: 5px solid transparent;
+	border-left: 5px solid transparent;
+	opacity: 0.6;
+}
+.pp-form[data-side="mine"]::before,
+.pp-form[data-side="mine"]::after { display: none; }
+.pp-form[data-side="them"]::before,
+.pp-form[data-side="them"]::after { left: 0; }
+/* On Profile the line passes behind the dots, so an empty ring is filled to hide it. */
+.pp-form:not([data-side]) .pp-dot-l { background: var(--bg-base); position: relative; z-index: 1; }
+.pp-form:not([data-side]) .pp-dot { position: relative; z-index: 1; }
 .pp-form-opp { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.85rem; }
 .pp-dot { flex: none; width: 0.875rem; height: 0.875rem; border-radius: var(--radius-round); box-sizing: border-box; }
 .pp-dot-w { background: var(--color-primary); box-shadow: 0 0 8px color-mix(in srgb, var(--color-primary) 55%, transparent); }
-.pp-dot-l { border: 2px solid var(--border-color); }
+/* A loss is the scorecard's cross, not an empty ring (UV, 20 Nov): the same two
+   thin muted strokes as .h2h-mark.is-lost (league.css), in the dot's box. */
+.pp-dot-l { display: inline-flex; align-items: center; justify-content: center; }
+.pp-dot-l::before {
+	content: '';
+	width: 0.6rem;
+	height: 0.6rem;
+	--x-line: transparent calc(50% - 0.75px), var(--text-muted) calc(50% - 0.75px), var(--text-muted) calc(50% + 0.75px), transparent calc(50% + 0.75px);
+	background: linear-gradient(45deg, var(--x-line)), linear-gradient(-45deg, var(--x-line));
+}
 .pp-dot-d { border: 2px solid var(--color-primary); background: linear-gradient(90deg, var(--color-primary) 50%, transparent 50%); }
 /* Form: a frame they broke wears a yellow ring, a gap from the dot: it says something,
    as the words above the dots tell, and is not a ring round an icon. */
 .pp-dot-broke { outline: 2px solid var(--color-warning); outline-offset: 3px; }
-
-/* Stats: equal boxes in one row, as many rows as they need (UV, 5 Nov) */
-.pp-period { margin: var(--space-3) auto 0; }
-.pp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
-.pp-cell {
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-2);
-	padding: var(--space-4);
-	border-radius: var(--nm-field-radius);
-	box-shadow: var(--nm-sunken);
-}
-.pp-lbl { font-size: 0.85rem; line-height: 1.2; color: var(--text-muted); }
-.pp-big { font-family: var(--font-display); font-size: 2.4rem; line-height: 1.32; }
-.pp-cell-sub { font-size: 0.85rem; line-height: 1.3; }
-
-/* The frame difference per night: each night a column, its bar above the
- * base line for a night won on frames, below it for one lost; the line sits
- * where the tallest of each side puts it. */
-.pp-bars {
-	position: relative;
-	display: flex;
-	gap: var(--space-1);
-	height: 8.75rem;
-	margin-top: var(--space-4);
-}
-.pp-baseline { position: absolute; left: 0; right: 0; border-top: 1px solid var(--border-color); }
-.pp-night { flex: 1; display: flex; flex-direction: column; height: 100%; }
-.pp-night-up { display: flex; align-items: flex-end; }
-.pp-night-down { display: flex; align-items: flex-start; }
-.pp-bar { flex: 1; border-radius: var(--radius-sm) var(--radius-sm) 0 0; background: var(--color-primary); opacity: 0.85; }
-.pp-bar-lost { border-radius: 0 0 var(--radius-sm) var(--radius-sm); background: var(--border-color); }
-.pp-bar-even { height: 2px; border-radius: 0; background: var(--text-muted); }
-.pp-bar-labels { display: flex; gap: var(--space-1); margin-top: var(--space-1); font-size: 0.85rem; }
-.pp-bar-labels span { flex: 1; overflow: visible; white-space: nowrap; }
 
 /* Leagues & teams */
 /* The player search, /players/ with nobody in the address. The dots have a
@@ -373,8 +392,14 @@
 .pp-shared-sides { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
 .pp-shared-side { display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; }
 /* The extra class beats design.css's `html :is(.team-name, … .sd-team-row .sd-name, .pp-team-name)`, which makes every team name blue. */
-.pp-shared-sides .pp-shared-me .pp-team-name { color: var(--color-primary); }
-.pp-shared-sides .pp-shared-them .pp-team-name { color: var(--text-primary); }
+/* A team's name on a league card is grey (UV, 20 Nov), on the rows and on the shared
+   card (it was green and cream there, to match the lines). The league's own name
+   on the shared card stays as it was. */
+/* A league's name on a league card: the display face, cream, the size of the display
+   name on the pinned Compare cards (0.3375 of 2.75rem), UV 20 Nov. */
+.pp-league-name { font-family: var(--font-display); font-size: calc(2.75rem * 0.3375); font-weight: 400; line-height: 1.32; color: var(--text-primary); overflow-wrap: anywhere; }
+.tdc-card .pp-team-names .pp-team-name,
+.tdc-card .pp-shared-side .pp-team-name { color: var(--text-muted); }
 .pp-team-shared .pp-team-star { display: block; }
 .pp-team-shared .pp-team-star .star-svg { max-width: 26rem; }
 .pp-team-pic { width: 2.75rem; height: 2.75rem; border-radius: var(--radius-md); }
@@ -389,9 +414,7 @@
 
 /* A list of matches or people: one sunken panel holds the rows, a hairline between
    them, since a shadow on every row would be repainted at every move of the light. */
-[data-part="league"]:has(.pp-row),
-[data-part="tournament"]:has(.pp-row),
-[data-part="recent"]:has(.pp-row),
+[data-part="matches"]:has(.pp-row),
 #pp-feed:has(.pp-row),
 #pp-find-results:has(.pp-row),
 #pp-following:has(.pp-row) {
@@ -401,7 +424,7 @@
 }
 .pp-row:last-child { border-bottom: 0; }
 
-/* Recent matches */
+/* A match row (the lists of matches, the feed, the search and the follows) */
 .pp-row {
 	display: flex;
 	align-items: center;
@@ -505,6 +528,14 @@ body:has(.site-nav:not(.is-hidden)) .pp-c-head { top: var(--nav-total); }
 }
 .pp-c-who { position: relative; display: flex; align-items: center; min-width: 0; height: 4.5rem; padding: 0 var(--space-3); box-sizing: border-box; border-radius: var(--nm-field-radius); box-shadow: var(--nm-raised); background: var(--bg-base); }
 .pp-c-who[data-side="mine"] { justify-content: flex-end; }
+/* Your card is the site's green with dark text (UV, 20 Nov). */
+.pp-c-who[data-side="mine"] { background: var(--color-primary); }
+.pp-c-who[data-side="mine"] .pp-c-name { color: var(--bg-base); }
+.pp-c-who[data-side="mine"] .pp-c-full { color: color-mix(in srgb, var(--bg-base) 75%, transparent); }
+/* The other player's card is cream with dark text (UV, 20 Nov), as their star is cream. */
+.pp-c-who[data-side="them"] { background: var(--text-primary); }
+.pp-c-who[data-side="them"] .pp-c-name { color: var(--bg-base); }
+.pp-c-who[data-side="them"] .pp-c-full { color: color-mix(in srgb, var(--bg-base) 75%, transparent); }
 
 /* The stage's person (match.css .mv-person, sideways): the picture, then
  * the display name (0.6 of its height) over the full name (0.385). Yours
@@ -565,27 +596,12 @@ body:has(.site-nav:not(.is-hidden)) .pp-c-head { top: var(--nav-total); }
 .pp-c-body > .pp-c-h,
 .pp-c-body > .pp-c-wide { grid-column: 1 / -1; }
 /* A half's stat boxes: one column on a phone, two by two once there is room. */
-.pp-c-body .pp-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, max(9rem, 40%)), 1fr)); }
 .tdc-card .pp-c-h { margin: var(--space-6) 0 var(--space-2); font-family: var(--font-display); font-weight: 400; font-size: 1.4rem; color: var(--color-primary); }
 .pp-c-body > .pp-c-h:first-child { margin-top: var(--space-5); }
+.pp-c-body > .pp-star-key:first-child { margin-top: var(--space-4); }
 /* Every heading on the tabs is cream, not green (UV, 20 Nov). */
 .tdc-card .pp-tabs h2,
 .tdc-card .pp-tabs .pp-h3 { color: var(--text-primary); }
-.pp-c-body > .pp-period { margin: var(--space-2) auto var(--space-3); }
-
-/* The frame difference down the page (UV, 5 Nov): a night a row, the month
- * beside the first night of it, the line upright, won to its right. */
-.pp-down-bars { display: flex; gap: var(--space-2); margin-top: var(--space-3); }
-.pp-down-bars .pp-bar-labels { flex-direction: column; flex: none; width: 2rem; margin-top: 0; }
-.pp-down-bars .pp-bar-labels span { flex: 0 0 0.75rem; line-height: 0.75rem; }
-.pp-bars.is-down { flex: 1; flex-direction: column; height: auto; margin-top: 0; }
-.pp-bars.is-down .pp-baseline { top: 0; bottom: 0; right: auto; border-top: 0; border-left: 1px solid var(--border-color); }
-.pp-bars.is-down .pp-night { flex: 0 0 0.75rem; flex-direction: row; height: 0.75rem; }
-.pp-bars.is-down .pp-night-up { justify-content: flex-start; align-items: stretch; }
-.pp-bars.is-down .pp-night-down { justify-content: flex-end; align-items: stretch; }
-.pp-bars.is-down .pp-bar { flex: none; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
-.pp-bars.is-down .pp-bar-lost { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
-.pp-bars.is-down .pp-bar-even { width: 2px; height: auto; }
 
 /* In a half the lists are tighter (the layout's doing, UV to judge): no
  * picture and no win or loss dot on a row, a smaller score, and a list's

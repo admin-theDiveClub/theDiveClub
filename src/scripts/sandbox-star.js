@@ -18,15 +18,14 @@
 	const AREA = 'Star';
 	const el = (id) => document.getElementById(id);
 
-	// The spokes and UV's standards are TDCStar's (player-star.js). SPOKES is the
-	// list on show: the player star's five, or the league star's (UV, 20 Nov: Win
-	// rate, Lags won, Own break, Their break, B&F), chosen by the Star menu. The
-	// standards for every spoke are set below, once each.
-	let SPOKES = TDCStar.SPOKES;
-	// The league star has no starting frames (UV, 20 Nov), so it is drawn with 0.
-	const drawSettings = () => SPOKES === TDCStar.LEAGUE_SPOKES
-		? Object.assign({}, settings, { start: Object.fromEntries(Object.keys(settings.start).map((k) => [k, 0])) })
-		: settings;
+	// The spokes are the league star's (UV, 20 Nov): Win %, Lags Won, W | Own Brk,
+	// W | Opp Brk and B&F | Own Brk, with the formulas and headings the league
+	// stars use (TDCStar.LEAGUE_SPOKES, player-star.js). UV sets the standards and
+	// the starting frames for them here. (The profile's own player star still has
+	// its five spokes, Break in included, until UV says.)
+	// The league star's headings (their short labels) head everything here too.
+	const SPOKES = TDCStar.LEAGUE_SPOKES.map((s) => Object.assign({}, s, { label: s.short }));
+	const drawSettings = () => settings;
 
 	// The counts, in the table's order.
 	const COUNTS = [
@@ -36,22 +35,20 @@
 		{ key: 'bw',  label: 'Won on own break' },
 		{ key: 'ob',  label: 'Opponent broke' },
 		{ key: 'obw', label: 'Won on their break' },
-		{ key: 'r',   label: 'Break result recorded' },
-		{ key: 'i',   label: 'Break in' },
 		{ key: 'bf',  label: 'B&F' }
 	];
 
 	const players = [
 		{ id: 'd1', name: 'The Regular', note: 'Made up: 400 frames, a little above every standard',
-			c: { fp: 400, fw: 232, b: 200, bw: 136, ob: 200, obw: 96, r: 190, i: 133, bf: 22 } },
+			c: { fp: 400, fw: 232, b: 200, bw: 136, ob: 200, obw: 96, bf: 22 } },
 		{ id: 'd2', name: 'Newcomer, won 5 of 5', note: 'Made up: five frames, all won',
-			c: { fp: 5, fw: 5, b: 3, bw: 3, ob: 2, obw: 2, r: 3, i: 3, bf: 1 } },
+			c: { fp: 5, fw: 5, b: 3, bw: 3, ob: 2, obw: 2, bf: 1 } },
 		{ id: 'd3', name: 'Newcomer, won 1 of 5', note: 'Made up: five frames, one won',
-			c: { fp: 5, fw: 1, b: 2, bw: 1, ob: 3, obw: 0, r: 2, i: 1, bf: 0 } },
+			c: { fp: 5, fw: 1, b: 2, bw: 1, ob: 3, obw: 0, bf: 0 } },
 		{ id: 'd4', name: 'The Big Breaker', note: 'Made up: wins on the break, loses on the other',
-			c: { fp: 120, fw: 60, b: 60, bw: 45, ob: 60, obw: 15, r: 58, i: 49, bf: 12 } },
+			c: { fp: 120, fw: 60, b: 60, bw: 45, ob: 60, obw: 15, bf: 12 } },
 		{ id: 'd5', name: 'On the Standard', note: 'Made up: 100 frames, exactly at every standard',
-			c: { fp: 100, fw: 50, b: 50, bw: 30, ob: 50, obw: 20, r: 50, i: 33, bf: 5 } }
+			c: { fp: 100, fw: 50, b: 50, bw: 30, ob: 50, obw: 20, bf: 5 } }
 	];
 
 	// UV's settings (TDCStar.defaults), changed by this page's sliders; raw is this page's own.
@@ -224,13 +221,13 @@
 	}
 
 	function buildSpokes() {
-		TDCStar.EVERY.forEach((s) => {
+		SPOKES.forEach((s) => {
 			const head = document.createElement('h3');
 			head.className = 'star-spoke-head';
 			head.textContent = s.label;
 			el('star-spokes').append(head);
 			slider('std-' + s.key, 'Standard', 0, 100, settings.std[s.key], (v) => v + '%', s.help, (v) => { settings.std[s.key] = v; });
-			if (s.key !== 'lag') slider('start-' + s.key, 'Starting frames', 0, 100, settings.start[s.key], (v) => String(v),
+			slider('start-' + s.key, 'Starting frames', 0, 100, settings.start[s.key], (v) => String(v),
 				'Every player starts with this many frames at the ' + s.label + ' standard.', (v) => { settings.start[s.key] = v; });
 		});
 	}
@@ -251,10 +248,6 @@
 		};
 		solid.addEventListener('input', () => { settings.solid = Number(solid.value); show(); draw(); });
 		range.addEventListener('input', () => { settings.range = Number(range.value); show(); draw(); });
-		el('star-set').addEventListener('change', (e) => {
-			SPOKES = e.target.value === 'league' ? TDCStar.LEAGUE_SPOKES : TDCStar.SPOKES;
-			draw();
-		});
 		el('star-mode').addEventListener('change', (e) => { settings.mode = e.target.value; modeHelp(); draw(); });
 		el('star-raw').addEventListener('change', (e) => { settings.raw = e.target.checked; draw(); });
 		el('star-walkovers').addEventListener('change', (e) => {
