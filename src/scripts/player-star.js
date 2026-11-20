@@ -27,16 +27,36 @@ const TDCStar = (() => {
 			help: 'Frames won out of the frames their opponent broke.' },
 		{ key: 'in',    label: 'Break in',    short: 'Brk in',    n: 'i',   d: 'r',  std: 50, start: 10,
 			help: 'Breaks with a ball in, out of their breaks with a result recorded.' },
-		{ key: 'bf',    label: 'B&F',         short: 'B&F',       n: 'bf',  d: 'b',  std: 10, start: 100,
+		{ key: 'bf',    label: 'B&F',         short: 'B&F',       n: 'bf',  d: 'b',  std: 7, start: 100,
 			help: 'Break & finish or golden break, out of the frames they broke.' }
 	];
 
-	// A fresh copy of UV's settings; the sandbox changes its own. A league's
-	// star gives one starting-frames number for every spoke (see expectedFrames).
+	// The league star's five spokes (UV, 20 Nov), counted from who broke and who
+	// won alone, so every league can draw them. Win rate, Own break, Their break
+	// and B&F are the same spokes as above; Lags won replaces Break in. A "lag
+	// won" is a frame they broke, so Own break is frames won out of lags won and
+	// Their break frames won out of lags lost. The standard is UV's, 50% for Lags
+	// won (UV, 20 Nov), set on the sandbox with the others.
+	const LAG = { key: 'lag', label: 'Lags won', short: 'Lags won', n: 'b', d: 'fp', std: 50, start: 0,
+		help: 'Frames they broke (lags won) out of frames played.' };
+	// Its labels read as the question each answers (UV, 20 Nov): the player's
+	// win rate, lags won, then wins given who broke, then B&F given their break.
+	const LEAGUE_SPOKES = [
+		Object.assign({}, SPOKES[0], { short: 'Win %' }),
+		Object.assign({}, LAG, { short: 'Lags Won' }),
+		Object.assign({}, SPOKES[1], { short: 'W | Own Brk' }),
+		Object.assign({}, SPOKES[2], { short: 'W | Opp Brk' }),
+		Object.assign({}, SPOKES[4], { short: 'B&F | Own Brk' })
+	];
+	// Every spoke either star uses, once each: what the sandbox sets standards for.
+	const EVERY = [SPOKES[0], LAG, SPOKES[1], SPOKES[2], SPOKES[3], SPOKES[4]];
+
+	// A fresh copy of UV's settings; the sandbox changes its own. startAll gives
+	// one starting-frames number to every spoke (the league star gives 0).
 	function defaults(startAll) {
 		return {
-			std: Object.fromEntries(SPOKES.map((s) => [s.key, s.std])),
-			start: Object.fromEntries(SPOKES.map((s) => [s.key, startAll === undefined ? s.start : startAll])),
+			std: Object.fromEntries(EVERY.map((s) => [s.key, s.std])),
+			start: Object.fromEntries(EVERY.map((s) => [s.key, startAll === undefined ? s.start : startAll])),
 			solid: 200,
 			mode: 'ratio',
 			range: 25,
@@ -68,38 +88,24 @@ const TDCStar = (() => {
 		return c;
 	}
 
-	// ─── A league's star (UV, 19 Nov) ───
-	// One player's frames in one league season, and every spoke starting with
-	// the most frames that player could play in it: the nights their team plays
-	// (its fixtures with an opponent, byes left out) times the most frames one
-	// player plays a night. A team night has team_size frames each (the night is
-	// team_size squared, each player plays team_size of them). A singles match
-	// (team_size 1) holds at most 2N-1 frames in a race to N, N in a best of N or
-	// a fixed N; timed and free play have no maximum (null).
-	function framesPerNight(rules) {
-		const size = Number(rules && rules.team_size) || 0;
-		if (size > 1) return size;
-		const n = Number(rules && rules.win_condition_target) || 0;
-		switch (rules && rules.win_condition_type) {
-			case 'race_to': return n > 0 ? 2 * n - 1 : null;
-			case 'best_of':
-			case 'fixed_frames': return n > 0 ? n : null;
-			default: return null;
-		}
-	}
+	// ─── A league's star (UV, 19 Nov; reworked 20 Nov) ───
+	// One player's frames in one league season, on the league spokes. Three
+	// lines: the grey pentagon is UV's standards (the sandbox's), the yellow line
+	// the league's own average, the green shape the player's current stats, from
+	// their frames alone with no starting frames (UV: the league is where you feel
+	// the heat, so it is not softened as the player profile is). How solid it is
+	// follows matches played out of matches scheduled.
 
-	// The settings for a league's star, read from the made schedule. error is
-	// set when the schedule could not be read (the caller says so); with no
-	// schedule yet, or no maximum for the format, the fixed starting frames stay.
-	// avg is the league's pooled counts (tdc_league_star_average), drawn as the
-	// yellow line (UV, 20 Nov): the league's own average per spoke, ignoring UV's
-	// standards and starting frames.
-	async function leagueSettings(client, seasonId, teamId, rules) {
-		const set = defaults();
-		const per = framesPerNight(rules);
+	// The settings for a league's star: UV's standards, no starting frames. avg
+	// is the league's pooled counts (tdc_league_star_average), the yellow line;
+	// scheduled is how many matches the team has (its fixtures with an opponent,
+	// byes left out), read from the made schedule. error is set when either could
+	// not be read (the caller says so).
+	async function leagueSettings(client, seasonId, teamId) {
+		const set = defaults(0);
 		const [avg, fixtures] = await Promise.all([
 			client.rpc('tdc_league_star_average', { p_league_season_id: seasonId }),
-			teamId && per
+			teamId
 				? client.from('tbl_league_fixtures').select('id')
 					.eq('league_season_id', seasonId).not('away_team_id', 'is', null)
 					.or('home_team_id.eq.' + teamId + ',away_team_id.eq.' + teamId)
@@ -107,9 +113,7 @@ const TDCStar = (() => {
 		]);
 		if (avg.error) return { set, error: avg.error };
 		if (fixtures.error) return { set, error: fixtures.error };
-		const got = { set, avg: avg.data };
-		if (!fixtures.data.length) return got;
-		return { set: defaults(fixtures.data.length * per), avg: avg.data, max: fixtures.data.length * per, scheduled: fixtures.data.length };
+		return { set, avg: avg.data, scheduled: fixtures.data.length };
 	}
 
 	// A profile's counted frames in one league season: finished matches of that
@@ -161,20 +165,29 @@ const TDCStar = (() => {
 		for (const k in attrs) e.setAttribute(k, attrs[k]);
 		return e;
 	};
-	const angle = (i) => -Math.PI / 2 + i * 2 * Math.PI / SPOKES.length;
-	const at = (i, r) => [Math.cos(angle(i)) * r * R, Math.sin(angle(i)) * r * R];
-	const ring = (r) => SPOKES.map((s, i) => at(i, r).join(',')).join(' ');
+	// Each drawing function takes the list of spokes to draw (sp): the player
+	// star's five, or the league star's.
+	const angle = (i, n) => -Math.PI / 2 + i * 2 * Math.PI / n;
+	const at = (i, r, n) => [Math.cos(angle(i, n)) * r * R, Math.sin(angle(i, n)) * r * R];
+	const ring = (r, sp) => sp.map((s, i) => at(i, r, sp.length).join(',')).join(' ');
 
 	// The frame: the edge, the standard ring, the axes and their labels.
-	function frame(label) {
-		const svg = svgEl('svg', { viewBox: '-130 -118 260 236', class: 'star-svg', role: 'img' });
+	function frame(label, sp, extraWide, bare) {
+		// Wide enough for the longest label, which sits to one side of the star; the
+		// player star's short labels keep the usual width.
+		const longest = Math.max(...sp.map((s) => s.short.length), extraWide || 0);
+		const half = longest > 10 ? Math.ceil(97 + 5.8 * longest) : 130;
+		// A bare star (UV, 20 Nov: a league on one player's side of Compare, in a half
+		// too narrow to read labels) has no labels, so the picture is trimmed to the star.
+		const svg = svgEl('svg', { viewBox: bare ? '-92 -92 184 184' : `${-half} -118 ${2 * half} 236`, class: 'star-svg' + (bare ? ' star-bare' : ''), role: 'img' });
 		svg.setAttribute('aria-label', label);
-		svg.append(svgEl('polygon', { points: ring(1), class: 'star-edge' }));
-		svg.append(svgEl('polygon', { points: ring(0.5), class: 'star-std' }));
-		SPOKES.forEach((s, i) => {
-			const [x, y] = at(i, 1);
+		svg.append(svgEl('polygon', { points: ring(1, sp), class: 'star-edge' }));
+		svg.append(svgEl('polygon', { points: ring(0.5, sp), class: 'star-std' }));
+		sp.forEach((s, i) => {
+			const [x, y] = at(i, 1, sp.length);
 			svg.append(svgEl('line', { x1: 0, y1: 0, x2: x, y2: y, class: 'star-axis' }));
-			const [lx, ly] = at(i, 1.2);
+			if (bare) return;
+			const [lx, ly] = at(i, 1.2, sp.length);
 			const t = svgEl('text', {
 				x: lx, y: ly, class: 'star-label', 'data-spoke': s.key,
 				'text-anchor': Math.abs(lx) < 4 ? 'middle' : (lx > 0 ? 'start' : 'end'),
@@ -188,13 +201,22 @@ const TDCStar = (() => {
 
 	// One player's star on a frame, in a group of its own (cls colours it).
 	// raw adds the dashed star of their frames alone, with no starting frames.
-	function layer(svg, c, set, opts) {
+	function layer(svg, c, set, opts, sp) {
 		const o = opts || {};
+		sp = sp || SPOKES;
 		const g = svgEl('g', { class: o.cls || '' });
 		svg.append(g);
-		const rows = SPOKES.map((s) => spoke(c, s, set));
-		const shape = (pick) => rows.map((v, i) => at(i, v ? reach(pick(v), SPOKES[i], set) : 0.5).join(',')).join(' ');
+		const rows = sp.map((s) => spoke(c, s, set));
+		const shape = (pick) => rows.map((v, i) => at(i, v ? reach(pick(v), sp[i], set) : 0.5, sp.length).join(',')).join(' ');
 		const certain = o.certain !== undefined ? o.certain : Math.min(1, (Number(c.fp) || 0) / set.solid);
+		// A dashed layer is the line alone, solid cream (UV, 20 Nov: the viewer's
+		// line on Compare's shared league star), with no fill. (Swapped on 20 Nov: the cream line
+		// is now the other player, the viewer is the green shape.) (It was dashed, in
+		// the raw star's style, until UV asked for a solid line.)
+		if (o.dashed) {
+			g.append(svgEl('polygon', { points: shape((v) => v.shown), class: 'star-me' }));
+			return { rows, certain };
+		}
 		const shown = svgEl('polygon', { points: shape((v) => v.shown), class: 'star-shown' });
 		shown.style.fillOpacity = (0.08 + 0.42 * certain).toFixed(2);
 		shown.style.strokeOpacity = (0.35 + 0.65 * certain).toFixed(2);
@@ -203,9 +225,9 @@ const TDCStar = (() => {
 		// The league's average (UV, 20 Nov): the pooled counts as plain rates, a
 		// yellow line. A spoke the league has no chances for sits on the standard.
 		if (o.avg) {
-			const a = SPOKES.map((s, i) => spoke(o.avg, s, set));
+			const a = sp.map((s) => spoke(o.avg, s, set));
 			g.append(svgEl('polygon', {
-				points: a.map((v, i) => at(i, v ? reach(v.raw, SPOKES[i], set) : 0.5).join(',')).join(' '),
+				points: a.map((v, i) => at(i, v ? reach(v.raw, sp[i], set) : 0.5, sp.length).join(',')).join(' '),
 				class: 'star-avg'
 			}));
 		}
@@ -213,8 +235,8 @@ const TDCStar = (() => {
 	}
 
 	// A spoke no layer has data for: its label greyed, "no data" under it.
-	function markNoData(svg, rowsList) {
-		SPOKES.forEach((s, i) => {
+	function markNoData(svg, rowsList, sp) {
+		(sp || SPOKES).forEach((s, i) => {
 			if (rowsList.some((rows) => rows[i])) return;
 			const t = svg.querySelector(`[data-spoke="${s.key}"]`);
 			t.classList.add('star-nodata');
@@ -228,13 +250,56 @@ const TDCStar = (() => {
 		});
 	}
 
+	// The numbers under each label of a league star (UV, 20 Nov): the player's
+	// stat in green, a bar, the league's average in yellow, each a whole number
+	// with a % sign (UV, 20 Nov: first without, then with). A spoke the player has no data for gets none
+	// (markNoData says so instead); one the league has no data for shows a dash.
+	// With a dashed (solid cream) layer too (Compare's shared league star): the
+	// green number, then the cream, then the league's: yours | theirs | the league's.
+	function markNumbers(svg, out, layers, set, sp) {
+		const main = layers.findIndex((l) => l.avg);
+		const you = layers.findIndex((l) => l.dashed);
+		const avg = layers[main].avg;
+		const pct = (v, key) => (v ? Math.round(v[key] * 100) + '%' : '–');
+		sp.forEach((s, i) => {
+			const v = out[main].rows[i];
+			const w = you >= 0 ? out[you].rows[i] : null;
+			if (!v && !w) return;
+			const a = spoke(avg, s, set);
+			const t = svg.querySelector(`[data-spoke="${s.key}"]`);
+			const x = t.getAttribute('x');
+			t.textContent = '';
+			const top = svgEl('tspan', { x, dy: '-0.6em' });
+			top.textContent = s.short;
+			const nums = svgEl('tspan', { x, dy: '1.25em' });
+			const part = (cls, text) => {
+				const n = svgEl('tspan', { class: cls });
+				n.textContent = text;
+				return n;
+			};
+			const sep = () => part('star-num-sep', ' | ');
+			nums.append(part('star-num-p', pct(v, 'shown')), sep());
+			if (you >= 0) nums.append(part('star-num-me', pct(w, 'shown')), sep());
+			nums.append(part('star-num-a', pct(a, 'raw')));
+			t.append(top, nums);
+		});
+	}
+
 	// A player's star, ready to place: frames in, an <svg> out.
-	function draw(label, layers, set) {
-		const svg = frame(label);
-		const out = layers.map((l) => layer(svg, l.counts, set, l));
-		markNoData(svg, out.map((x) => x.rows));
+	// opts.bare: the star alone, with no labels or numbers.
+	function draw(label, layers, set, spokes, opts) {
+		const sp = spokes || SPOKES;
+		const bare = !!(opts && opts.bare);
+		// Three numbers under a label (a shared league star) are wider than the labels.
+		const svg = frame(label, sp, layers.some((l) => l.dashed) ? 15 : 0, bare);
+		const out = layers.map((l) => layer(svg, l.counts, set, l, sp));
+		const league = layers.findIndex((l) => l.avg);
+		if (!bare) {
+			if (league >= 0) markNumbers(svg, out, layers, set, sp);
+			markNoData(svg, out.map((x) => x.rows), sp);
+		}
 		return { svg, layers: out };
 	}
 
-	return { SPOKES, defaults, framesPerNight, leagueSettings, leagueFrames, leagueSolid, count, spoke, reach, frame, layer, markNoData, draw };
+	return { SPOKES, LEAGUE_SPOKES, EVERY, defaults, leagueSettings, leagueFrames, leagueSolid, count, spoke, reach, frame, layer, markNoData, draw };
 })();

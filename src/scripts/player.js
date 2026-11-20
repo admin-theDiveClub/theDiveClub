@@ -7,9 +7,9 @@
 //     stats over a period, competitions (league and tournament matches) and
 //     recent matches a page at a time, about. The frame difference per night
 //     is on Compare only (UV, 17 Nov).
-//   • Head to head: your meetings. Only frames the two of you played against
-//     each other count (tdc_head_to_head).
-//   • Compare: both profiles side by side, you on the left, each half headed
+//   • (Head to head was removed on 20 Nov, UV; tdc_head_to_head is still in
+//     the database, unused.)
+//   • Compare (the tab that opens first for another player, UV 20 Nov): both profiles side by side, you on the left, each half headed
 //     by its player's picture and names, which stay at the top as the page
 //     scrolls (UV, 5 Nov); no sunken halves (UV, 17 Nov).
 // Your own profile has no toggle and no buttons for others.
@@ -26,7 +26,7 @@
 // their side won it (UV, 5 Nov). "Lags" is frames broken, as the standings
 // count it.
 //
-// Challenge, Follow, the rematch, Home venue and More have nothing behind
+// Challenge, Follow, Home venue and More have nothing behind
 // them yet (UV, 5 Nov: shown, a tap says so). Honours are off the page until
 // they are built (UV, 5 Nov).
 //
@@ -40,10 +40,8 @@
 		status: el('pp-status'), body: el('pp-body'),
 		pic: el('pp-pic'), verified: el('pp-verified'), name: el('pp-name'), full: el('pp-full'),
 		actions: el('pp-actions'), views: el('pp-views'),
-		profile: el('pp-tab-profile'), h2h: el('pp-tab-h2h'), cmpTab: el('pp-tab-cmp'),
+		profile: el('pp-tab-profile'), cmpTab: el('pp-tab-cmp'),
 		aboutTitle: el('pp-about-title'), about: el('pp-about'), cAbout: el('pp-c-about'),
-		vs: el('pp-vs'), split: el('pp-split'), vsLine: el('pp-vs-line'),
-		meeting: el('pp-meeting'), meetings: el('pp-meetings'),
 		follow: el('pp-follow'), find: el('pp-find'), findInput: el('pp-find-input'),
 		findNote: el('pp-find-note'), findResults: el('pp-find-results'),
 		following: el('pp-following'), followingNote: el('pp-following-note')
@@ -53,9 +51,7 @@
 	const playerId = params.get('p');
 	let them = null;     // tdc_player_profile of the player shown
 	let mine = null;     // and of the person looking, for side by side
-	let h2h = null;      // tdc_head_to_head
 	let days = 0;        // the period: 0 all time, else the last n days
-	let meetingsAll = false;
 	let iFollow = false; // tdc_i_follow: private to the person looking (UV, 5 Nov)
 
 	// ─── Small helpers ───
@@ -339,19 +335,32 @@
 		await Promise.all(teams.map(async (t) => {
 			const key = t.league_season_id + t.team_id;
 			if (sets[key]) return;
-			const got = await TDCStar.leagueSettings(supabaseClient, t.league_season_id, t.team_id, t.rules);
+			const got = await TDCStar.leagueSettings(supabaseClient, t.league_season_id, t.team_id);
 			if (got.error) { TDC.showSupabaseError(AREA, got.error, els.status); return; }
 			sets[key] = { set: got.set, scheduled: got.scheduled, avg: got.avg };
 		}));
 		return sets;
 	}
 
+	// The leagues both players are in (UV, 20 Nov): on Compare each is one
+	// combined card with one star for both, so it leaves the two halves' lists.
+	// Both need a team, as the star is read by team. Empty on the Profile tab.
+	let shared = new Set();
+	function sharedSeasons() {
+		if (!mine) return new Set();
+		const ids = new Set(mine.teams.filter((t) => t.team_id).map((t) => t.league_season_id));
+		return new Set(them.teams.filter((t) => t.team_id && ids.has(t.league_season_id)).map((t) => t.league_season_id));
+	}
+
 	function renderTeams(v, places, sets) {
 		const box = v.part('teams');
 		if (!v.p.teams.length) { box.replaceChildren(node('p', 'muted pp-empty', 'Not in a league yet.')); return; }
-		box.replaceChildren(...v.p.teams.map((t) => {
+		const list = v.side ? v.p.teams.filter((t) => !shared.has(t.league_season_id)) : v.p.teams;
+		box.replaceChildren(...list.map((t) => {
 			const a = node('a', 'pp-team');
-			a.href = '/leagues/season/?s=' + encodeURIComponent(t.league_season_id) + (t.team_id ? '&team=' + encodeURIComponent(t.team_id) : '');
+			// A league card opens the league's first page, Standings (UV, 20 Nov); the
+			// old &team= opened the Season tab on the team.
+			a.href = '/leagues/season/?s=' + encodeURIComponent(t.league_season_id);
 			const pic = node('span', 'team-pic pp-team-pic');
 			pic.append(TDC.teamPic(t.team_picture));
 			const names = node('span', 'pp-team-names');
@@ -367,7 +376,47 @@
 				const set = got.set;
 				const certain = TDCStar.leagueSolid(v.p, t.league_season_id, got.scheduled);
 				const counts = TDCStar.count(TDCStar.leagueFrames(v.p, t.league_season_id), set.walkovers);
-				const { svg } = TDCStar.draw('Star for ' + v.p.player.display_name + ' in ' + t.league_name, [{ counts, certain, raw: true, avg: got.avg }], set);
+				const { svg } = TDCStar.draw('Star for ' + v.p.player.display_name + ' in ' + t.league_name, [{ counts, certain, avg: got.avg }], set, TDCStar.LEAGUE_SPOKES, { bare: !!v.side });
+				const star = node('span', 'pp-team-star');
+				star.append(svg);
+				a.append(star);
+			}
+			return a;
+		}));
+	}
+
+	// One card for a league both players are in, with one star: yours the green
+	// shape, theirs the solid cream line (UV, 20 Nov), the league's average yellow
+	// and UV's standards the grey pentagon. Under each label: yours | theirs | the
+	// league's (Claude's addition, for UV to judge).
+	function renderShared(places, sets) {
+		const box = el('pp-cmp-shared');
+		box.replaceChildren(...[...shared].map((sid) => {
+			const m = mine.teams.find((t) => t.league_season_id === sid);
+			const t = them.teams.find((x) => x.league_season_id === sid);
+			const a = node('a', 'pp-team pp-team-shared');
+			a.href = '/leagues/season/?s=' + encodeURIComponent(sid);
+			const head = node('span', 'pp-shared-head');
+			head.append(node('span', 'pp-team-name', t.league_name),
+				node('span', 'muted pp-team-sub', [t.season_name, TDC.venueNames(t.venues)].filter(Boolean).join(' · ')));
+			const sides = node('span', 'pp-shared-sides');
+			for (const [x, who, cls] of [[m, 'You', 'pp-shared-me'], [t, themName(), 'pp-shared-them']]) {
+				const side = node('span', 'pp-shared-side ' + cls);
+				const place = places ? places[x.team_id] : null;
+				side.append(node('span', 'pp-shared-who', who), node('span', 'pp-team-name', x.team_name || 'No team yet'),
+					node('span', 'pp-team-place' + (place === 1 || place === 2 ? ' pp-primary' : ''), place ? ordinal(place) : '–'),
+					node('span', 'muted pp-team-role', x.is_captain ? 'Captain' : 'Player'));
+				sides.append(side);
+			}
+			a.append(head, sides);
+			const gm = sets && sets[sid + m.team_id];
+			const gt = sets && sets[sid + t.team_id];
+			if (gm && gt) {
+				const count = (p) => TDCStar.count(TDCStar.leagueFrames(p, sid), gm.set.walkovers);
+				const { svg } = TDCStar.draw('Star comparing you and ' + themName() + ' in ' + t.league_name, [
+					{ counts: count(mine), certain: TDCStar.leagueSolid(mine, sid, gm.scheduled), avg: gm.avg },
+					{ counts: count(them), dashed: true }
+				], gt.set, TDCStar.LEAGUE_SPOKES);
 				const star = node('span', 'pp-team-star');
 				star.append(svg);
 				a.append(star);
@@ -558,97 +607,18 @@
 		if (mine) { renderCompareHeads(); renderCompareAbout(); }
 	}
 
-	// ─── Head to head ───
-	function versusSide(p, label, me) {
-		const s = node('div', 'pp-vs-side');
-		s.append(TDC.profilePic(avatar(p.avatar_path, p.display_name, 'pp-vs-pic' + (me ? ' pp-vs-pic-me' : '')), p.player_id), node('span', 'pp-vs-name', label));
-		return s;
-	}
-
-	function renderH2H() {
-		if (!h2h || !mine) return;
-		const ms = h2h.meetings;
-		const won = ms.filter((m) => m.mine > m.theirs).length;
-		const lost = ms.filter((m) => m.mine < m.theirs).length;
-		const fMine = ms.reduce((a, m) => a + m.mine, 0);
-		const fTheirs = ms.reduce((a, m) => a + m.theirs, 0);
-		const name = themName();
-
-		const mid = node('div', 'pp-vs-mid');
-		const score = node('div', 'pp-vs-score');
-		score.append(node('span', 'pp-primary', String(won)), node('span', 'muted pp-colon', ':'), node('span', null, String(lost)));
-		mid.append(node('span', 'muted pp-vs-kicker', 'Head to head'), score, node('span', 'muted pp-sub', ms.length === 1 ? 'meeting' : 'meetings'));
-		els.vs.replaceChildren(versusSide(mine.player, 'You', true), mid, versusSide(them.player, name));
-
-		const a = node('span', 'pp-split-me'), b = node('span', 'pp-split-them');
-		a.style.flexGrow = won || (lost ? 0 : 1);
-		b.style.flexGrow = lost || (won ? 0 : 1);
-		els.split.replaceChildren(a, b);
-
-		// The current run of meetings won, newest first.
-		let streak = 0, by = null;
-		for (const m of ms) {
-			const r = m.mine > m.theirs ? 'You' : m.mine < m.theirs ? name : null;
-			if (!r || (by && r !== by)) break;
-			by = r;
-			streak++;
-		}
-		els.vsLine.replaceChildren();
-		const f = node('span');
-		f.append(document.createTextNode('Frames '), node('b', 'pp-primary', String(fMine)), node('span', 'muted pp-colon', ':'), node('b', null, String(fTheirs)));
-		els.vsLine.append(f, node('span', 'muted', '|'), node('span', null, 'Streak ' + (by ? by + ' ' + streak : '–')));
-
-		// The last meeting, frame by frame.
-		if (!ms.length) {
-			els.meeting.replaceChildren(node('p', 'muted pp-empty', h2h.same ? 'This is you.' : 'You have not played each other in a finished match yet.'));
-		} else {
-			const m = ms[0];
-			const head = node('div', 'pp-panel-head');
-			head.append(node('span', 'pp-panel-title', 'Last meeting'), node('span', 'muted pp-sub', day(m.played_at) + ' · ' + kindLabel(m)));
-			const line = node('div', 'pp-panel-score');
-			line.append(node('b', null, 'You'), scoreNode('pp-score pp-score-big', m.mine, m.theirs), node('b', null, name));
-			const strip = node('div', 'pp-strip');
-			for (const fr of m.frames) {
-				const s = node('span', 'pp-strip-frame' + (fr.won ? ' pp-strip-mine' : ''));
-				s.title = 'Frame ' + fr.frame_no + ': ' + (fr.won ? 'you' : name);
-				strip.append(s);
-			}
-			const open = node('a', 'pp-link', 'Open match');
-			open.href = matchHref(m);
-			els.meeting.replaceChildren(head, line, strip, node('p', 'muted pp-key', 'Frame by frame · green is yours'), open);
-		}
-
-		// Every meeting.
-		const list = meetingsAll ? ms : ms.slice(0, 3);
-		const rowsM = list.map((m) => {
-			const a2 = node('a', 'pp-meet');
-			a2.href = matchHref(m);
-			const who = m.team_match && m.home_team ? m.home_team + ' v ' + m.away_team : 'vs ' + name;
-			a2.append(rowNames(who, m), scoreNode('pp-score', m.mine, m.theirs));
-			return a2;
-		});
-		if (ms.length > 3) {
-			const more = node('button', 'pp-link', meetingsAll ? 'Show fewer' : 'All ' + ms.length);
-			more.type = 'button';
-			more.addEventListener('click', () => { meetingsAll = !meetingsAll; renderH2H(); });
-			rowsM.push(more);
-		}
-		if (!rowsM.length) rowsM.push(node('p', 'muted pp-empty', 'No meetings yet.'));
-		els.meetings.replaceChildren(...rowsM);
-	}
-
 	// ─── The tabs and the period ───
 	const pause = () => new Promise((r) => setTimeout(r, 200));
-	// profile, h2h or cmp; only profile on your own page. &tab= keeps it on reload.
+	// Compare or Profile; only Profile on your own page. Compare opens by default
+	// for somebody else's (UV, 20 Nov); &tab=profile keeps Profile on reload.
 	function showTab(tab, btn) {
 		const other = them && !them.player.is_me;
-		const t = other && (tab === 'h2h' || tab === 'cmp') ? tab : 'profile';
+		const t = other && tab !== 'profile' ? 'cmp' : 'profile';
 		for (const b of els.views.querySelectorAll('[data-tab]')) b.setAttribute('aria-pressed', String(b.dataset.tab === t));
 		els.profile.hidden = t !== 'profile';
-		els.h2h.hidden = t !== 'h2h';
 		els.cmpTab.hidden = t !== 'cmp';
 		const url = new URL(location.href);
-		if (t === 'profile') url.searchParams.delete('tab'); else url.searchParams.set('tab', t);
+		if (!other || t === 'cmp') url.searchParams.delete('tab'); else url.searchParams.set('tab', 'profile');
 		history.replaceState(null, '', url);
 		if (btn) TDC.busy(btn, pause(), els.status);
 	}
@@ -1062,14 +1032,12 @@
 		if (!them.player.is_me) {
 			const me = await TDC.getMyPlayer(AREA, session.user.id, els.status);
 			if (!me) return;
-			const [mp, hh, fw] = await Promise.all([
+			const [mp, fw] = await Promise.all([
 				supabaseClient.rpc('tdc_player_profile', { p_player_id: me.id }),
-				supabaseClient.rpc('tdc_head_to_head', { p_player_id: playerId }),
 				supabaseClient.rpc('tdc_i_follow', { p_player_id: playerId })
 			]);
-			if (!check(mp, 'profile') || !check(hh, 'head to head')) return;
+			if (!check(mp, 'profile')) return;
 			mine = mp.data;
-			h2h = hh.data;
 			// Not through check(): false is a good answer here.
 			if (fw.error) { TDC.showSupabaseError(AREA, fw.error, els.status); return; }
 			iFollow = fw.data;
@@ -1082,13 +1050,15 @@
 		renderHero();
 		wireShare();
 		renderProfile();
-		renderH2H();
+		shared = sharedSeasons();
 		for (const v of views) renderTeams(v, null);
+		if (mine) renderShared(null, null);
 		showTab(params.get('tab'));
 		els.body.hidden = false;
 		fitName();   // measured once it is shown
 		if (them.player.is_me) wakeIcons(); else drawFollow();
 		const [places, sets] = await Promise.all([teamPlaces(), leagueSets()]);
 		for (const v of views) renderTeams(v, places, sets);
+		if (mine) renderShared(places, sets);
 	})(), 'The player');
 })();

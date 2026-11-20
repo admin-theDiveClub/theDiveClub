@@ -72,6 +72,7 @@ Built from the project doc `claude/stats-todo.md` on 23 Oct 2026, with everythin
 | 4 | A break event mis-tapped starts the frame, and changing it does not undo that (since 26 Oct the pill changes the event but cannot clear it), so the frame's start stays where the mis-tap put it |
 | 5 | Changing the race target mid-match can make a match over, but does not auto-submit |
 | 6 | "Table not set" and every match showing as social — deliberate placeholders until those layers exist |
+| 7 | **3D views of the stats** (UV, 20 Nov): only after the 2D profile pictures are finished. Ideas and cautions in `docs/design/profile-stories.md`, "3D" |
 
 ## 7. Code tidy-ups from the 23 Oct audit (low priority)
 

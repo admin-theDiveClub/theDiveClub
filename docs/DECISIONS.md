@@ -2675,3 +2675,57 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV, 20 Nov:* a yellow line on each league star shows the league average for every spoke, ignoring UV's standards. *Claude's, not confirmed:* the average is pooled over every player's frames, so the win-rate spoke sits at 50% by construction; walkovers and doubles are left out.
 
 *So:* migrations `20261119180000_player_profile_league_star` and `20261120080000_league_star_average`, test `088`; `player-star.js`, `player.js`, `leagues.js`, `player.css`, `league.css`, `leagues/index.html`.
+
+## 20 Nov: The league star's own spokes, and no starting frames
+
+*Decided by UV:* league stars (every league) use five spokes of their own, from who broke and who won alone: Win rate (FW / FP), Lags won (frames broken / FP), Own break (FW / lags won), Their break (FW / lags lost), B&F (BF / lags won). The grey pentagon is UV's standards from the sandbox, the same for every league; the yellow line the league's average; the green shape the player's current stats. **Lags won's standard is 50%.** **No starting frames on a league star**: the green shape is the frames alone, so the league lets a player feel the heat while the player profile's starting frames keep it from hurting the profile. The player star keeps its five spokes, to be reworked later.
+
+*This reverses, for league stars:* the 19 Nov starting frames equal to the league's expected maximum frames (and the earlier idea of dropping UV's standards for the league average, which UV also dropped within the day). `framesPerNight` was removed; the raw dashed line is not drawn on a league star, as it would be the green shape.
+
+*Claude's, not confirmed:* FW in Own and Their break means frames won within those lags; Break in is dropped from league stars.
+
+*So:* `player-star.js` (`LEAGUE_SPOKES`, `EVERY`, spoke list passed to `draw`), `player.js`, `leagues.js`, `sandbox-star.js`, `sandbox/star/index.html` (the Star menu and the Lags won standard slider); `docs/systems/players.md`, `docs/design/player-star.md`.
+
+## 20 Nov: The B&F standard is 5%
+
+*Decided by UV:* the B&F standard goes from 10% to 5%. It is one spoke shared by the player star and the league star, so both change (`player-star.js`, `SPOKES`). The league's own rate so far is 2.3% of frames.
+
+## 20 Nov: Numbers under the league star's labels
+
+*Decided by UV:* under each spoke's label on a league star, the player's stat in green and the league average in yellow, `58% | 52%`, whole numbers (UV first asked for no % sign, then asked for them). `player-star.js` (`markNumbers`), `player-star.css`.
+
+## 20 Nov: The league star's labels
+
+*Decided by UV:* the league star's labels read Win %, Lags Won, W | Opp Brk, W | Own Brk, B&F | Own Brk (`LEAGUE_SPOKES` in `player-star.js`; the player star's labels are unchanged). *Claude's, not asked:* the spokes keep their order (Own break before Their break), each label named by what it measures; the picture is widened to fit the longest label, so the star is a little smaller in its box (its maximum width raised from 15 to 19rem).
+
+## 20 Nov: Compare's shared league card, and league cards open Standings
+
+*Decided by UV:* on a profile's Compare tab, a league both players are in is shown as one combined card with one star for both; the viewer's line is the raw-style dashed line. Any league card opens the league's first page (Standings), so the profile's Leagues rows no longer link with `&team=` (which opened the Season tab).
+
+*Claude's, not asked:* the player whose profile it is is the green shape; three numbers under each label (yours | theirs | the league's); a league shows combined only when both players have a team in it; the card sits above the two halves' lists, which keep the leagues only one of them is in.
+
+*So:* `player-star.js` (`dashed` layer, `markNumbers`), `player.js` (`renderShared`, `sharedSeasons`, the row's link), `players/index.html` (`#pp-cmp-shared`), `player.css`, `player-star.css`; `docs/systems/players.md`.
+
+*Changed by UV, 20 Nov, later:* the viewer's line on the shared star is a **solid cream line**, not the dashed raw-style one.
+
+*Changed by UV, 20 Nov, later still:* swapped: **you are the green shape and the other player is the solid cream line** on the shared star. (Claude's earlier choice that the profile's owner was green is reversed.)
+
+## 20 Nov: The B&F standard is back to 10%
+
+*Decided by UV:* the B&F standard goes back from 5% to 10% (`player-star.js`, `SPOKES`), for both the player star and the league star. This reverses "The B&F standard is 5%" above, made earlier the same day.
+
+## 20 Nov: The B&F standard is 7%
+
+*Decided by UV:* the B&F standard is 7% (`player-star.js`, `SPOKES`), for both the player star and the league star. It was 10%, then 5%, 10% and 8% earlier the same day; this is the one that stands.
+
+## 20 Nov: The profile's tabs: Compare, Profile; Head to head removed
+
+*Decided by UV:* the player profile's tabs are **Compare, Profile**, in that order, and **Compare opens by default** (for another player; your own profile has no tabs). The Head to head tab is removed completely.
+
+*Claude's, not asked:* the database function `tdc_head_to_head` and its test are left in place (nothing calls it now), since removing a function is a migration UV did not ask for; the `.pp-vs-pic` rule in `design.css` is left alone; an old `&tab=h2h` link opens Compare.
+
+*So:* `players/index.html`, `player.js` (`showTab`, the loader no longer calls `tdc_head_to_head`), `player.css`; `docs/systems/players.md`.
+
+## 20 Nov: A one-sided league star on Compare has no labels
+
+*Decided by UV:* where a league card sits on one player's side only, forced into a half-width column, the star shows without labels (no names, no numbers): the star alone. `player-star.js` (`draw` option `bare`), `player.js` (`renderTeams`).

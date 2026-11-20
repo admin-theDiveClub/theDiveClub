@@ -18,8 +18,15 @@
 	const AREA = 'Star';
 	const el = (id) => document.getElementById(id);
 
-	// The spokes and UV's standards are TDCStar's (player-star.js).
-	const SPOKES = TDCStar.SPOKES;
+	// The spokes and UV's standards are TDCStar's (player-star.js). SPOKES is the
+	// list on show: the player star's five, or the league star's (UV, 20 Nov: Win
+	// rate, Lags won, Own break, Their break, B&F), chosen by the Star menu. The
+	// standards for every spoke are set below, once each.
+	let SPOKES = TDCStar.SPOKES;
+	// The league star has no starting frames (UV, 20 Nov), so it is drawn with 0.
+	const drawSettings = () => SPOKES === TDCStar.LEAGUE_SPOKES
+		? Object.assign({}, settings, { start: Object.fromEntries(Object.keys(settings.start).map((k) => [k, 0])) })
+		: settings;
 
 	// The counts, in the table's order.
 	const COUNTS = [
@@ -63,7 +70,7 @@
 	// The shared star (player-star.js): the line only, no dots at the corners.
 
 	function star(p) {
-		const { svg, layers } = TDCStar.draw('Star for ' + p.name, [{ counts: p.c, raw: settings.raw }], settings);
+		const { svg, layers } = TDCStar.draw('Star for ' + p.name, [{ counts: p.c, raw: settings.raw }], drawSettings(), SPOKES);
 		return { svg, ...layers[0] };
 	}
 
@@ -153,7 +160,7 @@
 		const { svg, layers: [la, lb] } = TDCStar.draw('Star comparing ' + a.name + ' and ' + b.name, [
 			{ counts: a.c, cls: 'star-a', raw: settings.raw },
 			{ counts: b.c, cls: 'star-b', raw: settings.raw }
-		], settings);
+		], drawSettings(), SPOKES);
 
 		const legend = document.createElement('p');
 		legend.className = 'star-legend';
@@ -217,13 +224,13 @@
 	}
 
 	function buildSpokes() {
-		SPOKES.forEach((s) => {
+		TDCStar.EVERY.forEach((s) => {
 			const head = document.createElement('h3');
 			head.className = 'star-spoke-head';
 			head.textContent = s.label;
 			el('star-spokes').append(head);
 			slider('std-' + s.key, 'Standard', 0, 100, settings.std[s.key], (v) => v + '%', s.help, (v) => { settings.std[s.key] = v; });
-			slider('start-' + s.key, 'Starting frames', 0, 100, settings.start[s.key], (v) => String(v),
+			if (s.key !== 'lag') slider('start-' + s.key, 'Starting frames', 0, 100, settings.start[s.key], (v) => String(v),
 				'Every player starts with this many frames at the ' + s.label + ' standard.', (v) => { settings.start[s.key] = v; });
 		});
 	}
@@ -244,6 +251,10 @@
 		};
 		solid.addEventListener('input', () => { settings.solid = Number(solid.value); show(); draw(); });
 		range.addEventListener('input', () => { settings.range = Number(range.value); show(); draw(); });
+		el('star-set').addEventListener('change', (e) => {
+			SPOKES = e.target.value === 'league' ? TDCStar.LEAGUE_SPOKES : TDCStar.SPOKES;
+			draw();
+		});
 		el('star-mode').addEventListener('change', (e) => { settings.mode = e.target.value; modeHelp(); draw(); });
 		el('star-raw').addEventListener('change', (e) => { settings.raw = e.target.checked; draw(); });
 		el('star-walkovers').addEventListener('change', (e) => {

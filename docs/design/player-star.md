@@ -32,7 +32,7 @@ Frames where who broke is unknown count for spoke 1 only. Spoke 4's "In" means t
 | Own break | 70% | 50 |
 | Their break | 40% | 50 |
 | Break in | 50% | 10 |
-| B&F | 10% | 100 |
+| B&F | 7% (10% until 20 Nov; then 5%, 10%, 8% and finally 7% the same day) | 100 |
 
 **Solid at 200 frames.** The gap was drawn as **Ratio** (twice the standard at the edge, the standard the ring halfway out) when UV approved the numbers; Points stays on the sandbox. Three of these (Win rate and B&F starting frames, Solid at) sit at the end of their sliders' range. These are TDCStar's numbers now, on the profile and the sandbox.
 
@@ -47,9 +47,13 @@ Two players on one star, picked from the page's players (league players once add
 - The line only, no dots at the corners; the standard ring grey.
 - The break result comes from `tdc_player_profile` since migration `20261119142114`.
 
-## On a league (UV, 19 Nov)
+## On a league (UV, 19 Nov, reworked 20 Nov)
 
-The same star on each league's row on the profile and each `/leagues/` card: that league's frames only, every spoke starting with the most frames the player could play in it (their team's non-bye fixtures × frames a player plays a night; singles by the win condition), and solidity = matches played ÷ matches scheduled. A yellow line shows the league's own average per spoke (UV, 20 Nov). Details: `docs/systems/players.md`, "The league star".
+A star on each league's row on the profile and each `/leagues/` card, with **its own five spokes**: Win rate (FW / FP), **Lags won** (frames broken / FP, standard 50%), Own break (FW / lags won), Their break (FW / lags lost) and B&F (BF / lags won). Grey pentagon = UV's standards (set on the sandbox, the same for every league), yellow line = the league's own average per spoke, green shape = the player's stats **with no starting frames** (the league is where you feel the heat; the player star's starting frames protect the profile). Opacity = matches played / matches scheduled. The player star on the profile keeps its five spokes for now ("we will play around with the main player star later", UV). Details: `docs/systems/players.md`, "The league star".
+
+## More spokes and better pictures (UV, 20 Nov)
+
+What the real league data can tell, new spoke ideas, 2D pictures and the 3D ideas for later are in `docs/design/profile-stories.md` (ideas only, nothing decided).
 
 ## Unsettled: tried on the sandbox, not decided
 

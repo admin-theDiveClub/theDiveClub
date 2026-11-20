@@ -369,7 +369,7 @@
 }
 /* The star under the stat boxes (UV, 19 Nov), one line of its own. */
 .lc-star { flex: 0 0 100%; }
-.lc-star .star-svg { max-width: 15rem; }
+.lc-star .star-svg { max-width: 19rem; }
 .lc-pill.lc-stat {
 	flex: 1 1 auto;
 	height: auto;

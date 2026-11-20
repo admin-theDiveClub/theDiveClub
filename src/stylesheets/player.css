@@ -345,7 +345,26 @@
 .pp-team { flex-wrap: wrap; }
 /* A league's star (UV, 19 Nov), under the row's names. */
 .pp-team-star { flex: 0 0 100%; }
-.pp-team-star .star-svg { max-width: 15rem; }
+.pp-team-star .star-svg { max-width: 19rem; }
+/* A league both players are in, on Compare (UV, 20 Nov): one card across both
+   halves, the league's name, each side's team and place, then the one star. */
+/* Stacked as plain blocks, not a column flex: a flex item holding an SVG sized in
+   per cent is measured narrower than it is laid out, so the star was taller than
+   its box and spilled out of the card (seen 20 Nov). */
+.pp-team-shared { display: block; }
+.pp-team-shared > * + * { margin-top: var(--space-3); }
+.pp-shared-head { display: flex; flex-direction: column; text-align: center; }
+.pp-shared-sides { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.pp-shared-side { display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; }
+.pp-shared-who { font-size: 0.85rem; }
+/* The extra class beats design.css's `html :is(.team-name, … .sd-team-row .sd-name, .pp-team-name)`, which makes every team name blue. */
+.pp-shared-sides .pp-shared-me .pp-shared-who,
+.pp-shared-sides .pp-shared-me .pp-team-name { color: var(--color-primary); }
+.pp-shared-sides .pp-shared-them .pp-shared-who,
+.pp-shared-sides .pp-shared-them .pp-team-name { color: var(--text-primary); }
+.pp-shared-them .pp-shared-who { text-decoration: underline; text-underline-offset: 0.25em; }
+.pp-team-shared .pp-team-star { display: block; }
+.pp-team-shared .pp-team-star .star-svg { max-width: 26rem; }
 .pp-team-pic { width: 2.75rem; height: 2.75rem; border-radius: var(--radius-md); }
 .pp-team-names,
 .pp-row-names { display: flex; flex: 1; flex-direction: column; min-width: 0; }
@@ -364,8 +383,7 @@
 [data-part="recent"]:has(.pp-row),
 #pp-feed:has(.pp-row),
 #pp-find-results:has(.pp-row),
-#pp-following:has(.pp-row),
-#pp-meetings:has(.pp-meet) {
+#pp-following:has(.pp-row) {
 	padding: var(--space-2) var(--space-4);
 	border-radius: var(--nm-field-radius);
 	box-shadow: var(--nm-sunken);
@@ -421,7 +439,6 @@
 	clip: rect(0 0 0 0);
 	white-space: nowrap;
 }
-.pp-key { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-4); margin: var(--space-2) 0 0; font-size: 0.85rem; }
 
 /* A list's heading with its page number under it: the heading stays centred, as every
  * heading on the page, and the number, as tall and wide as a field now, has no room
@@ -440,44 +457,6 @@
 .pp-about dd { text-align: right; }
 .pp-about a { color: var(--color-primary); }
 
-/* ── Head to head ── */
-.pp-versus {
-	margin-top: var(--space-5);
-	padding: var(--space-5) var(--space-3);
-	border-radius: var(--nm-field-radius);
-	box-shadow: var(--nm-sunken);
-}
-.pp-vs { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
-.pp-vs-side { display: flex; flex: 0 1 6rem; flex-direction: column; align-items: center; gap: var(--space-2); min-width: 0; }
-.pp-vs-pic {
-	display: grid;
-	place-items: center;
-	width: min(5.25rem, 100%);
-	aspect-ratio: 1;
-	border-radius: var(--radius-round);
-	overflow: hidden;
-	font-size: 1.75rem;
-	font-weight: 700;
-	box-shadow: var(--shadow-pic);
-}
-.pp-vs-pic img { width: 100%; height: 100%; object-fit: cover; }
-.pp-vs-name { font-weight: 700; text-align: center; overflow-wrap: anywhere; }
-.pp-vs-mid { display: flex; flex-direction: column; align-items: center; }
-.pp-vs-kicker { font-size: 0.85rem; }
-.pp-vs-score { font-family: var(--font-display); font-size: clamp(2rem, 12vw, 3.5rem); line-height: 1.32; margin-top: var(--space-2); white-space: nowrap; }
-.pp-split { display: flex; gap: 3px; height: 0.5rem; margin-top: var(--space-5); border-radius: var(--radius-pill); overflow: hidden; }
-.pp-split-me { background: var(--color-primary); }
-.pp-split-them { background: var(--text-primary); }
-.pp-vs-line { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-4); margin: var(--space-3) 0 0; font-size: 1rem; }
-
-.pp-panel { padding: var(--space-4); border-radius: var(--nm-field-radius); box-shadow: var(--nm-sunken); }
-.pp-panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); }
-.pp-panel-title { font-family: var(--font-display); font-size: 1.15rem; color: var(--color-primary); }
-.pp-panel-score { display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); }
-.pp-score-big { font-size: 2rem; }
-.pp-strip { display: flex; gap: var(--space-1); margin-top: var(--space-3); }
-.pp-strip-frame { flex: 1; height: 0.375rem; border-radius: var(--radius-sm); background: var(--text-primary); }
-.pp-strip-mine { background: var(--color-primary); }
 
 /* ── Compare (UV, 5 Nov) ──
  * The two profiles side by side, you on the left, on the card itself: no sunken
@@ -613,20 +592,6 @@ body:has(.site-nav:not(.is-hidden)) .pp-c-head { top: var(--nav-total); }
 .pp-c-about a { color: var(--color-primary); }
 .tdc-card .pp-c-about .pp-link { display: inline; margin: 0; padding: 0; }
 
-#pp-meetings { display: flex; flex-direction: column; margin-top: var(--space-3); }
-.pp-meet {
-	display: flex;
-	align-items: center;
-	gap: var(--space-3);
-	padding: var(--space-3) 0;
-	border-bottom: 1px solid var(--border-color);
-	color: var(--text-primary);
-	text-decoration: none;
-}
-.pp-meet:not(:has(+ .pp-meet)) { border-bottom: 0; }
-.pp-meet:hover,
-.pp-meet:focus-visible { background: var(--hover-wash); outline: none; }
-.tdc-card .pp-rematch { display: block; width: 100%; margin-top: var(--space-5); }
 /* The player star (UV, 19 Nov): under the stat boxes, in the period; its key above it. */
 .pp-star-key { margin-top: var(--space-4); text-align: center; }
 .pp-star { margin-top: var(--space-2); }

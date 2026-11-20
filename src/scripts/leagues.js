@@ -344,10 +344,11 @@
 		});
 	}
 
-	// The star on each card (UV, 19 Nov; docs/design/player-star.md): this
-	// person's frames in that league only, every spoke starting with the most
-	// frames they could play in it (TDCStar.leagueSettings). Read after the
-	// ranks and the rules, which it needs.
+	// The star on each card (UV, 19 Nov; reworked 20 Nov; docs/design/player-star.md):
+	// this person's frames in that league only, on the league spokes: UV's
+	// standards as the grey pentagon, the league's own average as a yellow line,
+	// their own stats as the green shape (TDCStar.leagueSettings). Read after the
+	// ranks, which it needs.
 	let stars = new Map();   // league season id -> the star's element
 	async function loadStars(rows) {
 		const mine = rows.filter((l) => ranks.has(l.league_season_id));
@@ -359,11 +360,10 @@
 			return;
 		}
 		await Promise.all(mine.map(async (l) => {
-			const rules = Object.assign({}, seasonRules.get(l.league_season_id) || {}, { team_size: l.team_size });
-			const got = await TDCStar.leagueSettings(supabaseClient, l.league_season_id, l.my_team_id, rules);
+			const got = await TDCStar.leagueSettings(supabaseClient, l.league_season_id, l.my_team_id);
 			if (got.error) { TDC.showSupabaseError(AREA, got.error, els.status); return; }
 			const counts = TDCStar.count(TDCStar.leagueFrames(data, l.league_season_id), got.set.walkovers);
-			const { svg } = TDCStar.draw('Your star in ' + l.league_name, [{ counts, raw: true, avg: got.avg, certain: TDCStar.leagueSolid(data, l.league_season_id, got.scheduled) }], got.set);
+			const { svg } = TDCStar.draw('Your star in ' + l.league_name, [{ counts, avg: got.avg, certain: TDCStar.leagueSolid(data, l.league_season_id, got.scheduled) }], got.set, TDCStar.LEAGUE_SPOKES);
 			const box = el('div', 'lc-star');
 			box.append(svg);
 			stars.set(l.league_season_id, box);

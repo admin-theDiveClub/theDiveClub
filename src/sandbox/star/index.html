@@ -39,6 +39,14 @@ extraScripts:
 			<output id="star-solid-out"></output>
 			<p class="star-help">How many frames before a star is drawn fully solid. Fewer frames, fainter star.</p>
 
+			<label for="star-set">Star</label>
+			<select id="star-set">
+				<option value="player" selected>Player star (five spokes, starting frames)</option>
+				<option value="league">League star (Lags won in, Break in out, no starting frames)</option>
+			</select>
+			<span></span>
+			<p class="star-help">The league star is the one on a league's card: Win rate, Lags won, Own break, Their break and B&amp;F, from the frames alone with no starting frames. Standards are the ones above.</p>
+
 			<label for="star-mode">Gap drawn as</label>
 			<select id="star-mode">
 				<option value="ratio" selected>Ratio</option>

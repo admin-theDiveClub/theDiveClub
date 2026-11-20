@@ -16,14 +16,14 @@ extraScripts:
 	A player's profile page, reached as /players/?p=<player id> from a name on
 	a league's season page or its standings. Built 5 Nov from UV's combined
 	design (artboard D on the "Player Profile Designs" canvas): the hero, then
-	a toggle between the player's Profile, Head to head (your meetings) and
+	a toggle between Compare (opens first for another player, UV 20 Nov) and the player's Profile (Head to head was removed 20 Nov); formerly Profile, Head to head and
 	Compare (your stats against theirs). Your own profile shows no toggle;
 	your account settings stay on /accounts/profile/. No bar above the hero
 	(UV, 5 Nov): Share and More are ring icons beside Challenge and Follow.
 
-	Every number is counted by scripts/player.js from tdc_player_profile and
-	tdc_head_to_head (migration 20261105044302). Signed in only (UV, 5 Nov).
-	Challenge, the rematch, Home venue and More have nothing behind them yet:
+	Every number is counted by scripts/player.js from tdc_player_profile
+	(migration 20261105044302). Signed in only (UV, 5 Nov).
+	Challenge, Home venue and More have nothing behind them yet:
 	a tap says so (UV, 5 Nov). The hero's chips moved to About the same day
 	(UV). Honours are off the page until they are built (UV, 5 Nov;
 	docs/BACKLOG.md).
@@ -92,9 +92,8 @@ extraScripts:
 		<!-- One sunken pill (UV, 19 Nov): the tabs along its top, the chosen tab's content inside it. -->
 			<div class="pp-tabs">
 			<div class="cp-views pp-views" id="pp-views" role="group" aria-label="Show">
-			<button type="button" class="cp-view" data-tab="profile" aria-pressed="true">Profile</button>
-			<button type="button" class="cp-view" data-tab="h2h" aria-pressed="false">Head to head</button>
 			<button type="button" class="cp-view" data-tab="cmp" aria-pressed="false">Compare</button>
+			<button type="button" class="cp-view" data-tab="profile" aria-pressed="true">Profile</button>
 		</div>
 
 		<div id="pp-tab-profile">
@@ -158,25 +157,6 @@ extraScripts:
 			</section>
 		</div>
 
-		<div id="pp-tab-h2h" hidden>
-			<section class="pp-section pp-versus">
-				<div class="pp-vs" id="pp-vs"></div>
-				<div class="pp-split" id="pp-split"></div>
-				<p class="pp-vs-line" id="pp-vs-line"></p>
-			</section>
-
-			<section class="pp-section">
-				<div class="pp-panel" id="pp-meeting"></div>
-			</section>
-
-			<section class="pp-section">
-				<h2>Every meeting</h2>
-				<div id="pp-meetings"></div>
-				<button type="button" class="pp-btn pp-btn-primary pp-rematch" data-unbuilt="Challenge to a rematch">Challenge to a rematch</button>
-				<p class="status" data-note role="status"></p>
-			</section>
-		</div>
-
 		<!-- Compare (UV, 5 Nov): the two profiles side by side, you on the left,
 		     on the card itself (no sunken halves, UV 17 Nov). Each player's picture and
 		     names head their half, as on the stage, and stay at the top while the
@@ -191,6 +171,8 @@ extraScripts:
 			</div>
 			<div class="pp-c-body">
 				<h2 class="pp-c-h">Leagues</h2>
+				<!-- Leagues you are both in: one card, one star (UV, 20 Nov). -->
+				<div class="pp-list pp-c-wide" id="pp-cmp-shared"></div>
 				<div class="pp-list" data-side="mine" data-part="teams"></div>
 				<div class="pp-list" data-side="them" data-part="teams"></div>
 
