@@ -2,11 +2,13 @@
 --
 --   a league match in the profile's matches names its league season
 --   the profile's teams carry the season's rules (team size)
+--   the league's pooled counts (tdc_league_star_average, 20 Nov): Ann 2-0 over
+--     a player, so 4 player-frames, 2 won; refused when signed out
 --   a team's real nights are countable from the made schedule: byes are not
 --     (three singles players, one round robin: two nights each, one bye)
 begin;
 \ir _helpers.psql
-select plan(5);
+select plan(9);
 
 select tests.create_user('LStar LD') as dee \gset
 select tests.create_user('LStar Ann') as ann \gset
@@ -57,6 +59,14 @@ select is((select count(*)::int from public.tbl_league_fixtures
 select is((select count(*)::int from public.tbl_league_fixtures
 	where league_season_id = :'season' and (home_team_id = :'tann'::uuid or away_team_id = :'tann'::uuid)),
 	3, 'and the bye is a row the count leaves out');
+
+select tests.sign_in(:'ben');
+select public.tdc_league_star_average(:'season') as avg \gset
+select is((:'avg'::jsonb ->> 'fp')::int, 4, 'the league average pools every player''s frames: 2 frames, 2 players each');
+select is((:'avg'::jsonb ->> 'fw')::int, 2, 'and half of them were won');
+select is((:'avg'::jsonb ->> 'b')::int, 0, 'and no breaks are counted where who broke was not recorded');
+select tests.sign_out();
+select throws_ok(format($$ select public.tdc_league_star_average(%L) $$, :'season'), null, null, 'it needs a signed-in person');
 
 select * from finish();
 rollback;

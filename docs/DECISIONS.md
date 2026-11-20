@@ -2672,4 +2672,6 @@ These predate the log. They are recorded here because every one of them is a dec
 
 *Claude's, not confirmed:* the Stats period does not apply; shown only where the player is active.
 
-*So:* migration `20261119180000_player_profile_league_star`, test `088`; `player-star.js`, `player.js`, `leagues.js`, `player.css`, `league.css`, `leagues/index.html`.
+*Decided by UV, 20 Nov:* a yellow line on each league star shows the league average for every spoke, ignoring UV's standards. *Claude's, not confirmed:* the average is pooled over every player's frames, so the win-rate spoke sits at 50% by construction; walkovers and doubles are left out.
+
+*So:* migrations `20261119180000_player_profile_league_star` and `20261120080000_league_star_average`, test `088`; `player-star.js`, `player.js`, `leagues.js`, `player.css`, `league.css`, `leagues/index.html`.

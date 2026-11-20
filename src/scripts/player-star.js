@@ -91,16 +91,25 @@ const TDCStar = (() => {
 	// The settings for a league's star, read from the made schedule. error is
 	// set when the schedule could not be read (the caller says so); with no
 	// schedule yet, or no maximum for the format, the fixed starting frames stay.
+	// avg is the league's pooled counts (tdc_league_star_average), drawn as the
+	// yellow line (UV, 20 Nov): the league's own average per spoke, ignoring UV's
+	// standards and starting frames.
 	async function leagueSettings(client, seasonId, teamId, rules) {
 		const set = defaults();
 		const per = framesPerNight(rules);
-		if (!teamId || !per) return { set };
-		const { data, error } = await client.from('tbl_league_fixtures').select('id')
-			.eq('league_season_id', seasonId).not('away_team_id', 'is', null)
-			.or('home_team_id.eq.' + teamId + ',away_team_id.eq.' + teamId);
-		if (error) return { set, error };
-		if (!data.length) return { set };
-		return { set: defaults(data.length * per), max: data.length * per, scheduled: data.length };
+		const [avg, fixtures] = await Promise.all([
+			client.rpc('tdc_league_star_average', { p_league_season_id: seasonId }),
+			teamId && per
+				? client.from('tbl_league_fixtures').select('id')
+					.eq('league_season_id', seasonId).not('away_team_id', 'is', null)
+					.or('home_team_id.eq.' + teamId + ',away_team_id.eq.' + teamId)
+				: Promise.resolve({ data: [] })
+		]);
+		if (avg.error) return { set, error: avg.error };
+		if (fixtures.error) return { set, error: fixtures.error };
+		const got = { set, avg: avg.data };
+		if (!fixtures.data.length) return got;
+		return { set: defaults(fixtures.data.length * per), avg: avg.data, max: fixtures.data.length * per, scheduled: fixtures.data.length };
 	}
 
 	// A profile's counted frames in one league season: finished matches of that
@@ -191,6 +200,15 @@ const TDCStar = (() => {
 		shown.style.strokeOpacity = (0.35 + 0.65 * certain).toFixed(2);
 		g.append(shown);
 		if (o.raw) g.append(svgEl('polygon', { points: shape((v) => v.raw), class: 'star-raw' }));
+		// The league's average (UV, 20 Nov): the pooled counts as plain rates, a
+		// yellow line. A spoke the league has no chances for sits on the standard.
+		if (o.avg) {
+			const a = SPOKES.map((s, i) => spoke(o.avg, s, set));
+			g.append(svgEl('polygon', {
+				points: a.map((v, i) => at(i, v ? reach(v.raw, SPOKES[i], set) : 0.5).join(',')).join(' '),
+				class: 'star-avg'
+			}));
+		}
 		return { rows, certain };
 	}
 

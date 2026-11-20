@@ -49,7 +49,7 @@ Two players on one star, picked from the page's players (league players once add
 
 ## On a league (UV, 19 Nov)
 
-The same star on each league's row on the profile and each `/leagues/` card: that league's frames only, every spoke starting with the most frames the player could play in it (their team's non-bye fixtures × frames a player plays a night; singles by the win condition), and solidity = matches played ÷ matches scheduled. Details: `docs/systems/players.md`, "The league star".
+The same star on each league's row on the profile and each `/leagues/` card: that league's frames only, every spoke starting with the most frames the player could play in it (their team's non-bye fixtures × frames a player plays a night; singles by the win condition), and solidity = matches played ÷ matches scheduled. A yellow line shows the league's own average per spoke (UV, 20 Nov). Details: `docs/systems/players.md`, "The league star".
 
 ## Unsettled: tried on the sandbox, not decided
 
