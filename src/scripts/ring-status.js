@@ -139,15 +139,17 @@ const TDCRing = (() => {
 			'M35 37L42 63L50 42',
 			'M50 42L58 63L65 37'] },
 		// Added 24 Oct for the team card's lag: a spotted cue ball, the ball and its spot.
-		// The spots are foreshortened towards the ball's edge so it reads as a
-		// sphere: rounder and heavier near the middle, flatter and lighter out
-		// towards the rim. Grouped into three strokes by distance, as the engine
-		// has four dots: the ball, the near spot, the middle ring, the rim.
+		// The spots sit on the 12 corners of an icosahedron (the most even spread
+		// of points on a sphere; UV, 20 Nov: evenly placed like a real measles
+		// ball), tipped a little so six show on the front. They are foreshortened
+		// towards the ball's edge so it reads as a sphere: rounder near the middle,
+		// flatter out towards the rim. Grouped by distance, as the engine has four
+		// dots: the ball, the near spot, the middle three, the rim two.
 		cue: { label: 'Won the lag', widths: [5, 6, 5, 4], strokes: [
 			'M50 20A30 30 0 1 1 50 80A30 30 0 1 1 50 20',
-			'M47.3 43.1A1.6 1.4 -33.7 1 1 44.7 44.9A1.6 1.4 -33.7 1 1 47.3 43.1',
-			'M64.2 40.4A1.8 0.8 49.8 1 1 61.8 37.6A1.8 0.8 49.8 1 1 64.2 40.4M33.4 54.3A1.8 0.8 -110.6 1 1 34.6 57.7A1.8 0.8 -110.6 1 1 33.4 54.3M53.2 64.6A1.9 1.1 160.3 1 1 56.8 63.4A1.9 1.1 160.3 1 1 53.2 64.6M68.6 56.6A1.7 0.3 104.7 1 1 69.4 53.4A1.7 0.3 104.7 1 1 68.6 56.6',
-			'M40.8 30.9A2.1 0.4 -31.4 1 1 37.2 33.1A2.1 0.4 -31.4 1 1 40.8 30.9M45 71.7A2 0.3 -172.2 1 1 49 72.3A2 0.3 -172.2 1 1 45 71.7'] },
+			'M56.8 50.8A2 1.9 79.7 1 1 56.1 46.9A2 1.9 79.7 1 1 56.8 50.8',
+			'M34.4 53.7A2 1.4 249.6 1 1 35.8 57.4A2 1.4 249.6 1 1 34.4 53.7M43.4 32.7A2 1.1 -27.1 1 1 39.8 34.5A2 1.1 -27.1 1 1 43.4 32.7M51.2 69.5A2 0.9 170.5 1 1 55.2 68.8A2 0.9 170.5 1 1 51.2 69.5',
+			'M65.2 34.9A2 0.5 39.8 1 1 62.2 32.3A2 0.5 39.8 1 1 65.2 34.9M70.4 57.5A2 0.4 104.9 1 1 71.4 53.6A2 0.4 104.9 1 1 70.4 57.5'] },
 		// Added 5 Nov for the player page's buttons (UV): follow (the person,
 		// moved left, with a small plus), share (three small circles joined by
 		// two lines; UV, 10 Nov: softer than the box it was) and more (three
