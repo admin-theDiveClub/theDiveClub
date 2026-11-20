@@ -119,6 +119,8 @@ TDCLeagueNav.panel('manage', () => {
 		const singles = !!(info.rules && info.rules.team_size === 1);
 		document.getElementById('team-add-bar').hidden = singles;
 		document.getElementById('team-singles').hidden = !singles;
+		// No Captain column in singles: each player captains a team of one (UV, 20 Nov).
+		els.table.classList.toggle('is-singles', singles);
 
 		const bits = [];
 		if (info.starts_on) bits.push('From ' + day(info.starts_on));

@@ -1089,7 +1089,7 @@ TDCLeagueNav.panel('season', () => {
 		// and no word for everybody else (UV, 10 Nov).
 		const sub = r.status === 'active' ? '' : (r.status === 'withdrawn' ? 'Withdrawn' : 'Away');
 		main.append(personLink(r.player_id, r.display_name, r.avatar_path, sub));
-		if (r.is_captain) main.append(node('span', 'badge live', 'Captain'));
+		if (r.is_captain && !singles) main.append(node('span', 'badge live', 'Captain'));
 		row.append(main);
 
 		// Captain controls, on my own team only.
@@ -1124,7 +1124,7 @@ TDCLeagueNav.panel('season', () => {
 			rel.dataset.player = r.player_id;
 			rel.dataset.name = r.display_name;
 
-			actions.append(cap, rel);
+			if (singles) actions.append(rel); else actions.append(cap, rel);   // no captain in singles (UV, 20 Nov)
 			row.append(actions);
 		}
 		return row;

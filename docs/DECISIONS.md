@@ -2729,3 +2729,33 @@ These predate the log. They are recorded here because every one of them is a dec
 ## 20 Nov: A one-sided league star on Compare has no labels
 
 *Decided by UV:* where a league card sits on one player's side only, forced into a half-width column, the star shows without labels (no names, no numbers): the star alone. `player-star.js` (`draw` option `bare`), `player.js` (`renderTeams`).
+
+## 20 Nov: League cards lose the player's name and the team's place; headings cream
+
+*Decided by UV:* league cards on the profile show no player name (the names are pinned at the top of the page already) and no team rank; every heading on the Profile and Compare tabs is cream rather than green.
+
+*So:* `player.js` (`renderTeams`, `renderShared`; `teamPlaces` removed), `player.css`, `players/index.html` (`league-standings-def.js` no longer loaded); `docs/systems/players.md`.
+
+## 20 Nov: Compare's pinned heads are raised cards
+
+*Decided by UV:* the player name and picture sections are raised cards with shadows. *Claude's reading, not confirmed:* the two pinned heads on Compare (`.pp-c-who`), not the hero. `player.css`.
+
+*Later, UV, 20 Nov:* the type on the pinned heads is 0.75 of what it was (display name, full name and initials; the picture's size is unchanged).
+
+*Then, UV, 20 Nov:* the display name alone is 0.75 of that again, 0.3375 of the picture's height in all (the full name stays at 0.289, the initials at 0.27).
+
+*Then, UV, 20 Nov:* the strip behind the two pinned cards has no background of its own; each card is solid (`background: var(--bg-base)`), so content scrolling past shows between and round them.
+
+## 20 Nov: No pill round the profile's league cards
+
+*Decided by UV (with a marked-up screenshot of the league cards on Compare):* the raised, shadowed container round each league card is removed; the content stays. `player.css` (`.pp-team`).
+
+## 20 Nov: No "Captain" in a singles league
+
+*Decided by UV:* wherever a singles league is shown, "Captain" is left off, since every player is captain of their own team of one. *Claude's reading of "wherever":* the profile, Compare, the Leagues cards, the nav menu, the season page's roster (badge and Make captain button) and the manage page's Captain column.
+
+*So:* migration `20261120120000_my_active_team_size` (one line: the menu's data had no team size), test `089`; `player.js`, `leagues.js`, `nav.js`, `league-season.js`, `league-manage.js`, `league.css`.
+
+## 20 Nov: Grey lines between the profile's league cards
+
+*Decided by UV:* grey separator lines between league cards: along the foot of a combined card, and down the middle where the two players' leagues stand separately. *Claude's addition, not asked:* a hairline between cards stacked in one list (and their gap closed). `player.css`.

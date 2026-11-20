@@ -336,7 +336,7 @@
 	gap: var(--space-3);
 	padding: var(--space-3) var(--space-4);
 	border-radius: var(--nm-field-radius);
-	box-shadow: var(--nm-raised);
+	/* No raised pill round a league card (UV, 20 Nov): its names and star sit on the tab. */
 	color: var(--text-primary);
 	text-decoration: none;
 }
@@ -351,18 +351,23 @@
 /* Stacked as plain blocks, not a column flex: a flex item holding an SVG sized in
    per cent is measured narrower than it is laid out, so the star was taller than
    its box and spilled out of the card (seen 20 Nov). */
+/* Grey lines between league cards (UV, 20 Nov), as there is no pill round them: a
+   line between cards one above the other, a line along the foot of a combined
+   card on Compare, and a line down the middle where the two players' own
+   leagues stand in their two columns. */
+.pp-list:has(> .pp-team) { gap: 0; }
+.pp-list > .pp-team + .pp-team { border-top: 1px solid var(--border-color); border-radius: 0; }
+.pp-team-shared { border-bottom: 1px solid var(--border-color); border-radius: 0; }
+.pp-c-body > [data-side][data-part="teams"] { align-self: stretch; }
+.pp-c-body:has(> [data-part="teams"] .pp-team) > [data-side="them"][data-part="teams"] { border-left: 1px solid var(--border-color); }
 .pp-team-shared { display: block; }
 .pp-team-shared > * + * { margin-top: var(--space-3); }
 .pp-shared-head { display: flex; flex-direction: column; text-align: center; }
 .pp-shared-sides { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
 .pp-shared-side { display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; }
-.pp-shared-who { font-size: 0.85rem; }
 /* The extra class beats design.css's `html :is(.team-name, … .sd-team-row .sd-name, .pp-team-name)`, which makes every team name blue. */
-.pp-shared-sides .pp-shared-me .pp-shared-who,
 .pp-shared-sides .pp-shared-me .pp-team-name { color: var(--color-primary); }
-.pp-shared-sides .pp-shared-them .pp-shared-who,
 .pp-shared-sides .pp-shared-them .pp-team-name { color: var(--text-primary); }
-.pp-shared-them .pp-shared-who { text-decoration: underline; text-underline-offset: 0.25em; }
 .pp-team-shared .pp-team-star { display: block; }
 .pp-team-shared .pp-team-star .star-svg { max-width: 26rem; }
 .pp-team-pic { width: 2.75rem; height: 2.75rem; border-radius: var(--radius-md); }
@@ -373,7 +378,6 @@
 .pp-team-sub,
 .pp-row-sub { font-size: 0.85rem; }
 .pp-team-right { display: flex; flex-direction: column; align-items: flex-end; }
-.pp-team-place { font-family: var(--font-display); font-size: 1.5rem; line-height: 1.32; }
 .pp-team-role { font-size: 0.85rem; }
 
 /* A list of matches or people: one sunken panel holds the rows, a hairline between
@@ -477,12 +481,16 @@
 	z-index: 3;
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
-	background: var(--bg-base);
+	/* Each player's picture and names sit on a raised card (UV, 20 Nov); the room
+	   round them is for the shadows. */
+	gap: var(--space-3);
+	padding: var(--space-2) var(--space-3) var(--space-3);
+	/* No background of its own (UV, 20 Nov): only the two cards are solid. */
 	transition: top var(--nav-slide, 0.3s) ease;
 }
 body:has(.site-nav:not(.is-hidden)) .pp-c-head { top: var(--nav-total); }
 @media (prefers-reduced-motion: reduce) { .pp-c-head { transition: none; } }
-.pp-c-who { position: relative; display: flex; align-items: center; min-width: 0; height: 4.5rem; padding: 0 var(--space-3); box-sizing: border-box; }
+.pp-c-who { position: relative; display: flex; align-items: center; min-width: 0; height: 4.5rem; padding: 0 var(--space-3); box-sizing: border-box; border-radius: var(--nm-field-radius); box-shadow: var(--nm-raised); background: var(--bg-base); }
 .pp-c-who[data-side="mine"] { justify-content: flex-end; }
 
 /* The stage's person (match.css .mv-person, sideways): the picture, then
@@ -508,7 +516,7 @@ body:has(.site-nav:not(.is-hidden)) .pp-c-head { top: var(--nav-total); }
 	border-radius: var(--radius-round);
 	overflow: hidden;
 	color: var(--color-primary);
-	font-size: calc(var(--c-who-h) * 0.36);
+	font-size: calc(var(--c-who-h) * 0.27);   /* 0.75 of the 0.36 it was (UV, 20 Nov) */
 	font-weight: 700;
 	box-shadow: var(--shadow-pic);
 }
@@ -529,8 +537,8 @@ body:has(.site-nav:not(.is-hidden)) .pp-c-head { top: var(--nav-total); }
 	line-height: 1;
 	text-box: trim-both cap alphabetic;
 }
-.pp-c-name { font-family: var(--font-display); font-size: calc(var(--c-who-h) * 0.6); color: var(--text-primary); }
-.pp-c-full { font-size: calc(var(--c-who-h) * 0.385); color: var(--text-muted); }
+.pp-c-name { font-family: var(--font-display); font-size: calc(var(--c-who-h) * 0.3375);   /* 0.75 of 0.6, then 0.75 of that again (UV, 20 Nov) */ color: var(--text-primary); }
+.pp-c-full { font-size: calc(var(--c-who-h) * 0.289);   /* 0.75 of 0.385 */ color: var(--text-muted); }
 
 /* Each section: its heading across both halves, then yours and theirs. */
 .pp-c-body {
@@ -547,6 +555,9 @@ body:has(.site-nav:not(.is-hidden)) .pp-c-head { top: var(--nav-total); }
 .pp-c-body .pp-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, max(9rem, 40%)), 1fr)); }
 .tdc-card .pp-c-h { margin: var(--space-6) 0 var(--space-2); font-family: var(--font-display); font-weight: 400; font-size: 1.4rem; color: var(--color-primary); }
 .pp-c-body > .pp-c-h:first-child { margin-top: var(--space-5); }
+/* Every heading on the tabs is cream, not green (UV, 20 Nov). */
+.tdc-card .pp-tabs h2,
+.tdc-card .pp-tabs .pp-h3 { color: var(--text-primary); }
 .pp-c-body > .pp-period { margin: var(--space-2) auto var(--space-3); }
 
 /* Form down the page, newest at the foot (UV, 5 Nov). */

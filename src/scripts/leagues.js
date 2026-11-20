@@ -185,7 +185,8 @@
 		if (l.my_status === 'withdrawn') tags.append(el('span', 'badge pending', 'You withdrew'));
 		if (l.my_status === 'inactive') tags.append(el('span', 'badge pending', 'Inactive'));
 		if (l.my_team_name) tags.append(el('span', 'badge team-name', l.my_team_name));
-		if (l.i_captain && l.my_status === 'active' && l.confirmed_at) tags.append(el('span', 'badge live', 'Captain'));
+		// Not in a singles league, where everybody is captain of a team of one (UV, 20 Nov).
+		if (l.i_captain && l.team_size !== 1 && l.my_status === 'active' && l.confirmed_at) tags.append(el('span', 'badge live', 'Captain'));
 		if (l.i_run_it) tags.append(el('span', 'badge live', 'You run this'));
 
 		const run = el('div', 'lc-run');

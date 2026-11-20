@@ -261,7 +261,8 @@
 		return menuRow(href, LEAGUE_STRIP[l.status], l.league_name, [
 			LEAGUE_SAID[l.status] || l.status,
 			l.my_team_name && { team: l.my_team_name },
-			l.i_captain && inIt ? 'Captain' : '',
+			// A singles league's players are each captain of a team of one: redundant (UV, 20 Nov).
+			l.i_captain && inIt && l.team_size !== 1 ? 'Captain' : '',
 			l.my_status === 'inactive' ? 'Inactive' : '',
 			l.i_run_it ? 'You run this' : ''
 		], inIt && !l.confirmed_at ? menuBadge('Confirm your place') : null);

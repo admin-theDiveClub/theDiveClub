@@ -30,8 +30,8 @@
 // them yet (UV, 5 Nov: shown, a tap says so). Honours are off the page until
 // they are built (UV, 5 Nov).
 //
-// Needs: tdc.js, match-settings.js (TDCMatchDef), league-standings-def.js
-// (TDCStandings, for a team's place).
+// Needs: tdc.js, match-settings.js (TDCMatchDef), player-star.js. (A team's
+// place in its league was removed from the league cards on 20 Nov, UV.)
 
 (() => {
 	const AREA = 'Player';
@@ -82,10 +82,6 @@
 	const monthYear = (iso) => new Date(iso).toLocaleDateString('en-ZA', { month: 'short', year: 'numeric' });
 	const dayKey = (iso) => { const d = new Date(iso); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
 	const result = (m) => (m.mine > m.theirs ? 'W' : m.mine < m.theirs ? 'L' : 'D');
-	const ordinal = (n) => {
-		const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
-		return n + (s[(v - 20) % 10] || s[v] || s[0]);
-	};
 	const kindLabel = (m) => (m.kind === 'social' ? 'Social' : m.competition || (m.kind === 'league' ? 'League' : 'Tournament'));
 	const matchHref = (m) => (m.team_match ? '/leagues/card/?m=' : '/match/?id=') + encodeURIComponent(m.match_id);
 	const playerHref = (id) => '/players/?p=' + encodeURIComponent(id);
@@ -302,30 +298,6 @@
 		barLabels.replaceChildren(...labels);
 	}
 
-	// Each team's place in its season, by the league's own ranking columns
-	// (TDCStandings, as the Standings tab ranks them). null where it cannot
-	// be ranked; '' where it could not be read (said on the status line).
-	async function teamPlaces() {
-		const teams = them.teams.concat(mine ? mine.teams : []);   // both sides of Compare
-		const seasons = [...new Set(teams.filter((t) => t.team_id).map((t) => t.league_season_id))];
-		const places = {};
-		await Promise.all(seasons.map(async (sid) => {
-			const [st, cols] = await Promise.all([
-				supabaseClient.rpc('tdc_league_standings', { p_league_season_id: sid }),
-				supabaseClient.from('tbl_league_standing_columns')
-					.select('id, scope, position, name, equation, decimals, rank_priority, higher_first')
-					.eq('league_season_id', sid).eq('scope', 'team').order('position')
-			]);
-			if (st.error || cols.error) {
-				TDC.error(AREA, 'a team\'s place in its league could not be read.', st.error || cols.error, els.status);
-				return;
-			}
-			const ranked = TDCStandings.rank((st.data.teams || []).map((t) => Object.assign({}, t)), cols.data || []);
-			for (const r of ranked) places[r.team_id] = r.rank;
-		}));
-		return places;
-	}
-
 	// Each league's star (UV, 19 Nov): its starting frames come from the league's
 	// own schedule, so they are read once per team and season, for both sides of
 	// Compare. Keyed season + team; a team with none read has no entry.
@@ -342,6 +314,10 @@
 		return sets;
 	}
 
+	// A singles league (team size 1): its players are each captain of a team of
+	// one, so the role is left off (UV, 20 Nov). The season's rules come with the team.
+	const isSingles = (t) => !!(t.rules && t.rules.team_size === 1);
+
 	// The leagues both players are in (UV, 20 Nov): on Compare each is one
 	// combined card with one star for both, so it leaves the two halves' lists.
 	// Both need a team, as the star is read by team. Empty on the Profile tab.
@@ -352,7 +328,7 @@
 		return new Set(them.teams.filter((t) => t.team_id && ids.has(t.league_season_id)).map((t) => t.league_season_id));
 	}
 
-	function renderTeams(v, places, sets) {
+	function renderTeams(v, sets) {
 		const box = v.part('teams');
 		if (!v.p.teams.length) { box.replaceChildren(node('p', 'muted pp-empty', 'Not in a league yet.')); return; }
 		const list = v.side ? v.p.teams.filter((t) => !shared.has(t.league_season_id)) : v.p.teams;
@@ -367,9 +343,8 @@
 			names.append(node('span', 'pp-team-name', t.team_name || 'No team yet'),
 				node('span', 'muted pp-team-sub', [t.league_name, t.season_name, TDC.venueNames(t.venues)].filter(Boolean).join(' · ')));
 			const right = node('span', 'pp-team-right');
-			const place = places && t.team_id ? places[t.team_id] : null;
-			right.append(node('span', 'pp-team-place' + (place === 1 || place === 2 ? ' pp-primary' : ''), place ? ordinal(place) : '–'),
-				node('span', 'muted pp-team-role', t.is_captain ? 'Captain' : 'Player'));
+			// No role in a singles league: everybody is captain of a team of one (UV, 20 Nov).
+			if (!isSingles(t)) right.append(node('span', 'muted pp-team-role', t.is_captain ? 'Captain' : 'Player'));
 			a.append(pic, names, right);
 			const got = sets && t.team_id ? sets[t.league_season_id + t.team_id] : null;
 			if (got) {
@@ -389,7 +364,7 @@
 	// shape, theirs the solid cream line (UV, 20 Nov), the league's average yellow
 	// and UV's standards the grey pentagon. Under each label: yours | theirs | the
 	// league's (Claude's addition, for UV to judge).
-	function renderShared(places, sets) {
+	function renderShared(sets) {
 		const box = el('pp-cmp-shared');
 		box.replaceChildren(...[...shared].map((sid) => {
 			const m = mine.teams.find((t) => t.league_season_id === sid);
@@ -400,12 +375,12 @@
 			head.append(node('span', 'pp-team-name', t.league_name),
 				node('span', 'muted pp-team-sub', [t.season_name, TDC.venueNames(t.venues)].filter(Boolean).join(' · ')));
 			const sides = node('span', 'pp-shared-sides');
-			for (const [x, who, cls] of [[m, 'You', 'pp-shared-me'], [t, themName(), 'pp-shared-them']]) {
+			// No player names (the heads above are pinned to the page) and no team
+			// place (UV, 20 Nov): the colours say whose team is whose.
+			for (const [x, cls] of [[m, 'pp-shared-me'], [t, 'pp-shared-them']]) {
 				const side = node('span', 'pp-shared-side ' + cls);
-				const place = places ? places[x.team_id] : null;
-				side.append(node('span', 'pp-shared-who', who), node('span', 'pp-team-name', x.team_name || 'No team yet'),
-					node('span', 'pp-team-place' + (place === 1 || place === 2 ? ' pp-primary' : ''), place ? ordinal(place) : '–'),
-					node('span', 'muted pp-team-role', x.is_captain ? 'Captain' : 'Player'));
+				side.append(node('span', 'pp-team-name', x.team_name || 'No team yet'));
+				if (!isSingles(x)) side.append(node('span', 'muted pp-team-role', x.is_captain ? 'Captain' : 'Player'));
 				sides.append(side);
 			}
 			a.append(head, sides);
@@ -506,7 +481,7 @@
 		if (!teams.length) tl.textContent = 'None';
 		teams.forEach((t, i) => {
 			if (i) tl.append(document.createTextNode(', '));
-			const a = node('a', 'team-name', t.team_name + (t.is_captain ? ' (C)' : ''));
+			const a = node('a', 'team-name', t.team_name + (t.is_captain && !isSingles(t) ? ' (C)' : ''));
 			a.href = '/leagues/season/?s=' + encodeURIComponent(t.league_season_id) + '&team=' + encodeURIComponent(t.team_id);
 			tl.append(a);
 		});
@@ -1052,13 +1027,13 @@
 		renderProfile();
 		shared = sharedSeasons();
 		for (const v of views) renderTeams(v, null);
-		if (mine) renderShared(null, null);
+		if (mine) renderShared(null);
 		showTab(params.get('tab'));
 		els.body.hidden = false;
 		fitName();   // measured once it is shown
 		if (them.player.is_me) wakeIcons(); else drawFollow();
-		const [places, sets] = await Promise.all([teamPlaces(), leagueSets()]);
-		for (const v of views) renderTeams(v, places, sets);
-		if (mine) renderShared(places, sets);
+		const sets = await leagueSets();
+		for (const v of views) renderTeams(v, sets);
+		if (mine) renderShared(sets);
 	})(), 'The player');
 })();
