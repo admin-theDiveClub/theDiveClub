@@ -2759,3 +2759,17 @@ These predate the log. They are recorded here because every one of them is a dec
 ## 20 Nov: Grey lines between the profile's league cards
 
 *Decided by UV:* grey separator lines between league cards: along the foot of a combined card, and down the middle where the two players' leagues stand separately. *Claude's addition, not asked:* a hairline between cards stacked in one list (and their gap closed). `player.css`.
+
+## 20 Nov: The pinned heads keep a nav-bar-sized space above them, on mobile only
+
+*Decided by UV:* a nav-bar-sized space always stays above the frozen cards, so they sit well on a phone when the nav disappears; on larger screens they behave as before. `player.css` (`.pp-c-head` `top: var(--nav-total)` below 36rem).
+
+## 20 Nov: Form as rows; the tab selector centred
+
+*Decided by UV:* the Compare / Profile selector is centred. Form loses its sunken pill: a row per frame with a grey line between rows, the dot exactly in the middle, and the opponent shown on each frame. *Claude's reading, not confirmed:* the rows apply to the Profile tab's form as well as Compare's (so Profile's form, which ran across, now runs down); the label is the opponent's name without "v".
+
+*So:* `player.js` (`renderForm`), `player.css`, `players/index.html` (the Profile form's caption).
+
+*Then, UV, 20 Nov:* on Compare the form reads **Opp | Result | Result | Opp**: yours Opp then Result, theirs Result then Opp, the dots meeting at the middle line. The Profile tab keeps the dot in the middle with the opponent to its right.
+
+*Then, UV, 20 Nov:* the opponent on each form row is **the player, not the team**: `tdc_player_profile`'s frames gain `opponent` (migration `20261120130000`, test `090`), the display name of whoever was across the table in that frame.

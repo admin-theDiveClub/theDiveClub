@@ -220,12 +220,28 @@
 			.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : a.frame_no - b.frame_no))
 			.slice(-10);
 		if (!last.length) { box.replaceChildren(node('span', 'muted', 'No finished frames yet.')); return; }
+		if (last.some((f) => f.opponent === undefined)) {
+			TDC.error(AREA, "The profile does not name each frame's opponent yet. Push migration 20261120130000.", null, els.status);
+		}
+		// A row a frame (UV, 20 Nov): the dot in the middle, the match's opponent
+		// beside it, a grey line between rows. The opponent is the player in that
+		// frame, also on a team night.
 		box.replaceChildren(...last.map((f) => {
 			const m = byMatch.get(f.match_id);
 			const d = resultDot(f.won ? 'W' : 'L');
 			if (f.broke) d.classList.add('pp-dot-broke');
 			d.title = (f.won ? 'Won' : 'Lost') + (f.broke ? ', broke' : '') + (m ? ' · v ' + m.opponent + ', ' + day(m.played_at) : '');
-			return d;
+			// On Compare each half reads toward the line down the middle: yours
+			// Opp | Result, theirs Result | Opp (UV, 20 Nov), so the two dots sit
+			// side by side at the centre. On the Profile tab the dot is in the middle.
+			// The player across the table (UV, 20 Nov), not the match's team: the
+			// frame's own opponent, from migration 20261120130000.
+			const opp = node('span', 'muted pp-form-opp', f.opponent || '');
+			const row = node('div', 'pp-form-row' + (v.side ? ' is-' + v.side : ''));
+			if (v.side === 'mine') row.append(opp, d);
+			else if (v.side === 'them') row.append(d, opp);
+			else row.append(node('span'), d, opp);
+			return row;
 		}));
 	}
 
