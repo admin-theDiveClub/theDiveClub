@@ -2861,3 +2861,9 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* the league's name on the star cards is in the custom (display) font, the same size as the display name on the frozen cards, in cream. *Claude's reading:* the profile's league rows and Compare's shared card; on the rows the name moves to its own line at the top. `player.js`, `player.css` (`.pp-league-name`).
 
 *Then, UV, 20 Nov:* a "Matches" heading above the match tabs, on both tabs.
+
+*Then, UV, 20 Nov (a phone screenshot):* on a phone the space above the pinned cards is solid page background, so scrolling content does not show through it. `player.css` (`.pp-c-head::before`).
+
+*Fix, UV's screenshot, 20 Nov:* the solid band above the pinned cards covered the tab selectors on a phone at the top of the page; it now shows only while the cards are pinned (`is-stuck`). `player.js`, `player.css`.
+
+*Reversal, UV, 20 Nov:* what is above the pinned cards on a phone must not be solid: it blocked the island and hid the tab selectors. The solid band and its `is-stuck` script are removed; the nav-sized space above the cards stays and is transparent. `player.css`, `player.js`.
