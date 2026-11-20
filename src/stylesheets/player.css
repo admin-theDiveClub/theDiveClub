@@ -525,6 +525,21 @@ body:has(.site-nav:not(.is-hidden)) .pp-c-head { top: var(--nav-total); }
 @media (max-width: 36rem) {   /* a phone: the same width the card's phone padding starts at */
 	.pp-c-head,
 	body:has(.site-nav:not(.is-hidden)) .pp-c-head { top: var(--nav-total); }
+	/* The nav bar's own height of space above the pinned cards (UV, 20 Nov) is blank page
+	   background, so a star or a row scrolling up does not show in it. Above that, the
+	   phone's island and status bar (the top inset) stay transparent, content scrolling
+	   behind them as everywhere. Only while the cards are pinned (player.js sets
+	   is-stuck): at the top of the page the band would cover the tab selectors. */
+	.pp-c-head.is-stuck::before {
+		content: '';
+		position: absolute;
+		right: 0;
+		bottom: 100%;
+		left: 0;
+		height: var(--nav-height);
+		background: var(--bg-base);
+		pointer-events: none;
+	}
 }
 .pp-c-who { position: relative; display: flex; align-items: center; min-width: 0; height: 4.5rem; padding: 0 var(--space-3); box-sizing: border-box; border-radius: var(--nm-field-radius); box-shadow: var(--nm-raised); background: var(--bg-base); }
 .pp-c-who[data-side="mine"] { justify-content: flex-end; }

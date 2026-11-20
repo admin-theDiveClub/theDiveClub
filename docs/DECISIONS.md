@@ -2867,3 +2867,5 @@ These predate the log. They are recorded here because every one of them is a dec
 *Fix, UV's screenshot, 20 Nov:* the solid band above the pinned cards covered the tab selectors on a phone at the top of the page; it now shows only while the cards are pinned (`is-stuck`). `player.js`, `player.css`.
 
 *Reversal, UV, 20 Nov:* what is above the pinned cards on a phone must not be solid: it blocked the island and hid the tab selectors. The solid band and its `is-stuck` script are removed; the nav-sized space above the cards stays and is transparent. `player.css`, `player.js`.
+
+*Settled, UV, 20 Nov (phone screenshots):* on a phone the island and status bar zone above the pinned cards is transparent, and the nav-bar-sized space directly above the cards is blank page background (only while the cards are pinned). This replaces the solid band the whole nav height and the later removal of the band. `player.css`, `player.js`.
