@@ -8,7 +8,10 @@
 .star-edge, .star-axis { fill: none; stroke: var(--border-color); stroke-width: 1; }
 .star-std { fill: none; stroke: var(--text-muted); stroke-width: 1.5; }
 .star-shown { fill: var(--color-primary); stroke: var(--color-primary); stroke-width: 1.25; stroke-linejoin: round; }
-.star-raw { fill: none; stroke: var(--text-primary); stroke-width: 1.25; stroke-dasharray: 4 3; opacity: 0.7; }
+/* The dotted line is the adjusted star (UV, 21 Nov): solid corners joined by
+   broken edges (player-star.js, dotted). The filled shape is the actual stats. */
+.star-adj { fill: none; stroke: var(--text-primary); stroke-width: 1.5; stroke-linejoin: round; }   /* full strength, not faded: at 0.7 the cream read as the standard's grey (UV, 21 Nov) */
+.star-adj path { fill: none; }
 .star-avg { fill: none; stroke: var(--color-warning); stroke-width: 1.25; stroke-linejoin: round; }
 .star-cream .star-shown { fill: var(--text-primary); stroke: var(--text-primary); }
 .star-me { fill: none; stroke: var(--text-primary); stroke-width: 1.25; stroke-linejoin: round; }
@@ -23,8 +26,16 @@
 .star-key-a { color: var(--color-primary); }
 .star-key-b { color: var(--color-team); }
 .star-key-me { color: var(--text-primary); }
-/* Compare's raw stars take their player's colour (UV, 20 Nov): yours green; theirs keeps the cream. */
-.star-a .star-raw { stroke: var(--color-primary); }
+/* Compare's dotted stars take their player's colour (UV, 20 Nov): yours green; theirs keeps the cream. */
+.star-a .star-adj { stroke: var(--color-primary); }
+.star-b .star-adj { stroke: var(--color-team); }
+/* The key under a Leagues heading (UV, 21 Nov): the grey standard and the yellow league
+   average, in the star labels' size (player.js sizeKeys sets the size from a drawn star). */
+.star-key { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 var(--space-4); margin: 0 0 var(--space-3); font-size: 0.75rem; color: var(--text-muted); }
+.star-key[hidden] { display: none; }
+.star-key span { display: inline-flex; align-items: center; gap: 0.5em; }
+.star-key i { display: inline-block; width: 0.7em; height: 0.7em; border-radius: 50%; background: var(--text-muted); }
+.star-key .star-key-avg i { background: var(--color-warning); }
 /* The names over a two-player star, in their colours. */
 .star-legend {
 	display: flex;

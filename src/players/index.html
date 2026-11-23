@@ -72,9 +72,12 @@ extraScripts:
 					<div class="pp-pic" id="pp-pic"></div>
 					<span class="pp-verified" id="pp-verified" title="ID verified" hidden><svg viewBox="0 0 24 24" role="img" aria-label="ID verified"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
 				</div>
-				<h1 id="pp-name"></h1>
+				<!-- One picture as tall as both name rows beside it (UV, 21 Nov); player.js sizePic. -->
+				<div class="pp-names">
+					<h1 id="pp-name"></h1>
+					<p class="muted pp-full" id="pp-full"></p>
 				</div>
-				<p class="muted pp-full" id="pp-full"></p>
+				</div>
 			</div>
 			<!-- Ring icons (ring-status.js), drawn in by player.js (wakeIcons, UV 5 Nov).
 			     data-others: only on somebody else's profile. -->
@@ -105,6 +108,8 @@ extraScripts:
 			<!-- Teams first (UV, 5 Nov): each team with its place in its league. -->
 			<section class="pp-section">
 				<h2>Leagues</h2>
+				<!-- The key to every league star (UV, 21 Nov), once here; shown by player.js sizeKeys. -->
+				<p class="star-key" hidden><span><i></i>Standard</span><span class="star-key-avg"><i></i>League average</span></p>
 				<div class="pp-list" data-part="teams"></div>
 			</section>
 
@@ -156,6 +161,7 @@ extraScripts:
 				<div class="pp-star pp-c-wide" id="pp-cmp-star"></div>
 
 				<h2 class="pp-c-h">Leagues</h2>
+				<p class="star-key pp-c-wide" hidden><span><i></i>Standard</span><span class="star-key-avg"><i></i>League average</span></p>
 				<!-- Leagues you are both in: one card, one star (UV, 20 Nov). -->
 				<div class="pp-list pp-c-wide" id="pp-cmp-shared"></div>
 				<div class="pp-list" data-side="mine" data-part="teams"></div>

@@ -31,7 +31,9 @@
 .pp-idrow { display: flex; align-items: center; justify-content: center; gap: var(--space-3); max-width: 100%; }
 .pp-idrow h1 { min-width: 0; text-align: left; }
 /* The full name small under the row, over the card's paragraph margin and line height. */
-.tdc-card .pp-id .pp-full { margin: 0; font-size: 0.9rem; line-height: 1.3; text-align: center; }
+.tdc-card .pp-id .pp-full { margin: 0; font-size: 0.9rem; line-height: 1.3; text-align: left; }
+/* The two name rows beside the one picture (UV, 21 Nov), left-aligned; the picture is as tall as both. */
+.pp-names { display: flex; flex-direction: column; justify-content: center; gap: var(--space-1); min-width: 0; }
 .pp-pic-wrap { position: relative; flex: none; }
 /* A plain circle (UV, 7 Nov: no ring round a picture). Narrower on the narrowest
    screens, where half the card is less than its width. */
@@ -402,7 +404,24 @@
 .tdc-card .pp-shared-side .pp-team-name { color: var(--text-muted); }
 .pp-team-shared .pp-team-star { display: block; }
 .pp-team-shared .pp-team-star .star-svg { max-width: 26rem; }
-.pp-team-pic { width: 2.75rem; height: 2.75rem; border-radius: var(--radius-md); }
+/* A league's name with its shield and a team's with its hexagon beside it (UV, 21 Nov;
+   player.js named). The picture is first in the markup and stands on the name's
+   inside: left of it on the Profile tab and in the other player's half, right of it
+   in yours (toward the middle line, as the pinned heads face it). Each box is 2rem tall. */
+.pp-nm { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.pp-nm .pp-nm-pic, .pp-nm .pp-lg-pic { flex: none; height: 2rem; }
+.pp-nm .pp-nm-pic { width: 2rem; border-radius: 0; }
+.pp-nm .pp-lg-pic { width: 2rem; }   /* the shield is narrower; it stands centred in the hexagon's width so both names start together */
+.pp-team-names { gap: var(--space-1); }
+/* Centred, as the shared card is (UV, 21 Nov): the league's shield on the left of its name always,
+   a team's hexagon on the left too, except on the shared card (right of yours, left of theirs). */
+.pp-team-names { align-items: center; text-align: center; }
+.pp-nm { justify-content: center; }
+/* On a card that is not the shared one, pictures are always on the left (UV, 21 Nov); only the shared card puts yours on the right. */
+.pp-shared-head .pp-nm { justify-content: center; }
+.pp-shared-side { align-items: center; }
+.pp-shared-side .pp-nm { justify-content: center; }
+.pp-shared-side.is-mine .pp-nm { flex-direction: row-reverse; }
 .pp-team-names,
 .pp-row-names { display: flex; flex: 1; flex-direction: column; min-width: 0; }
 .pp-team-name,
@@ -604,8 +623,7 @@ body:has(.site-nav:not(.is-hidden)) .pp-c-head { top: var(--nav-total); }
  * page number under its heading rather than beside it. */
 .pp-c-body .pp-row > .pp-person-pic,
 .pp-c-body .pp-row > .pp-row-pic,
-.pp-c-body .pp-row > .pp-dot,
-.pp-c-body .pp-team-pic { display: none; }
+.pp-c-body .pp-row > .pp-dot { display: none; }
 .pp-c-body .pp-row { gap: var(--space-2); }
 .pp-c-body .pp-score { font-size: 1.15rem; }
 .pp-c-body .pp-team { gap: var(--space-2); padding: var(--space-2) var(--space-3); }

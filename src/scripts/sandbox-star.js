@@ -51,8 +51,9 @@
 			c: { fp: 100, fw: 50, b: 50, bw: 30, ob: 50, obw: 20, bf: 5 } }
 	];
 
-	// UV's settings (TDCStar.defaults), changed by this page's sliders; raw is this page's own.
-	const settings = Object.assign(TDCStar.defaults(), { raw: false });
+	// UV's settings (TDCStar.defaults), changed by this page's sliders.
+	// The filled shape is the actual stats, the dotted line the adjusted star (UV, 21 Nov).
+	const settings = TDCStar.defaults();
 
 	// ─── The sums ───
 	// TDCStar.spoke and TDCStar.reach (player-star.js), with this page's settings.
@@ -67,7 +68,7 @@
 	// The shared star (player-star.js): the line only, no dots at the corners.
 
 	function star(p) {
-		const { svg, layers } = TDCStar.draw('Star for ' + p.name, [{ counts: p.c, raw: settings.raw }], drawSettings(), SPOKES);
+		const { svg, layers } = TDCStar.draw('Star for ' + p.name, [{ counts: p.c, adjusted: true }], drawSettings(), SPOKES);
 		return { svg, ...layers[0] };
 	}
 
@@ -155,8 +156,8 @@
 		if (!a || !b) { box.replaceChildren(); return; }
 
 		const { svg, layers: [la, lb] } = TDCStar.draw('Star comparing ' + a.name + ' and ' + b.name, [
-			{ counts: a.c, cls: 'star-a', raw: settings.raw },
-			{ counts: b.c, cls: 'star-b', raw: settings.raw }
+			{ counts: a.c, cls: 'star-a', adjusted: true },
+			{ counts: b.c, cls: 'star-b', adjusted: true }
 		], drawSettings(), SPOKES);
 
 		const legend = document.createElement('p');
@@ -232,24 +233,10 @@
 		});
 	}
 
-	function modeHelp() {
-		el('star-mode-help').textContent = settings.mode === 'ratio'
-			? 'Ratio: twice the standard reaches the edge, zero the centre. A rare spoke (B&F) swings further for the same points.'
-			: 'Points: the same number of points above or below the standard moves every spoke the same distance.';
-		document.querySelectorAll('[data-points]').forEach((e) => { e.hidden = settings.mode !== 'points'; });
-	}
-
 	function wireDrawing() {
 		const solid = el('star-solid');
-		const range = el('star-range');
-		const show = () => {
-			el('star-solid-out').textContent = solid.value;
-			el('star-range-out').textContent = range.value;
-		};
+		const show = () => { el('star-solid-out').textContent = solid.value; };
 		solid.addEventListener('input', () => { settings.solid = Number(solid.value); show(); draw(); });
-		range.addEventListener('input', () => { settings.range = Number(range.value); show(); draw(); });
-		el('star-mode').addEventListener('change', (e) => { settings.mode = e.target.value; modeHelp(); draw(); });
-		el('star-raw').addEventListener('change', (e) => { settings.raw = e.target.checked; draw(); });
 		el('star-walkovers').addEventListener('change', (e) => {
 			settings.walkovers = e.target.checked;
 			players.forEach((p) => { if (p.frames) p.c = countFrames(p.frames); });
@@ -257,7 +244,6 @@
 			draw();
 		});
 		show();
-		modeHelp();
 	}
 
 	// ─── The numbers ───

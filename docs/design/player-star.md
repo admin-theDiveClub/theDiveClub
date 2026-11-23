@@ -45,7 +45,7 @@ Two players on one star, picked from the page's players (league players once add
 
 ## On the profile (UV, 19 Nov)
 
-- Every Profile tab: the star with the raw star dashed. Compare: one star across both halves, you green and them blue, no raw star.
+- Every Profile tab: the star, actual filled and adjusted dotted (swapped 21 Nov). Compare: one star across both halves, you green and them blue, no raw star.
 - It follows the Stats period. A spoke with no data sits on the standard, its label greyed with "no data".
 - The line only, no dots at the corners; the standard ring grey.
 - The break result comes from `tdc_player_profile` since migration `20261119142114`.
@@ -80,3 +80,7 @@ What the real league data can tell, new spoke ideas, 2D pictures and the 3D idea
 - Five made-up players (a 400-frame regular, two five-frame newcomers, a strong breaker, one exactly on every standard), their nine counts editable.
 - **League players are added by search**, signed in: `tdc_search_opponents`, then `tdc_player_profile`'s `frames`, counted in the browser (`TDCStar.count`), the break result included once migration `20261119142114` is pushed. No name or number of theirs is in the repo, and nothing is written. Their counts can be edited on the page too.
 - A dashed outline shows the raw star (no starting frames), so the effect of the adjustment can be seen.
+
+## 21 Nov (UV): which shape is which
+
+Wherever the player star shows (profile, Compare, home page, sandbox): **filled = actual stats, dotted = adjusted by the standards and starting frames**, the dotted line's corners solid and joined, its edges broken. The sandbox's "Show the raw star" switch is gone (the dotted line is always drawn). The league star is unchanged. The key for the grey standard and the yellow league average is under the "Leagues" heading, once.

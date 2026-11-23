@@ -148,10 +148,19 @@
 	// The picture as tall as one line of the display name beside it (UV, 17 Nov; the
 	// full name moved below, 19 Nov). One line, not the name's whole height: a name
 	// that wrapped would grow the picture and push its own words out of the row.
+	// 21 Nov (UV): the one picture fills both rows, as tall as the display name and
+	// the full name together (never over half the row). A bigger picture narrows the
+	// names and may wrap them, so it is measured again until it stops changing.
 	function sizePic() {
-		const row = els.name.parentElement;
-		const size = Math.min(parseFloat(getComputedStyle(els.name).lineHeight), row.clientWidth / 2);
-		if (size > 0) els.pic.style.setProperty('--pp-pic-size', Math.round(size) + 'px');
+		const names = els.name.parentElement, row = names.parentElement;
+		const cap = row.clientWidth / 2;
+		let size = 0;
+		for (let i = 0; i < 4; i++) {
+			const next = Math.round(Math.min(names.getBoundingClientRect().height, cap));
+			if (!(next > 0) || next === size) break;
+			size = next;
+			els.pic.style.setProperty('--pp-pic-size', size + 'px');
+		}
 	}
 	document.fonts.ready.then(() => { if (them) fitName(); });
 	addEventListener('resize', () => { if (them) fitName(); });
@@ -229,16 +238,37 @@
 		await Promise.all(teams.map(async (t) => {
 			const key = t.league_season_id + t.team_id;
 			if (sets[key]) return;
-			const got = await TDCStar.leagueSettings(supabaseClient, t.league_season_id, t.team_id);
+			const got = await TDCStar.leagueSettings(supabaseClient, t.league_season_id, t.team_id, !isSingles(t));
 			if (got.error) { TDC.showSupabaseError(AREA, got.error, els.status); return; }
 			sets[key] = { set: got.set, scheduled: got.scheduled, avg: got.avg };
 		}));
 		return sets;
 	}
 
+	// The key under each Leagues heading (UV, 21 Nov): the grey standard and the
+	// yellow league average, once for every league star below it, in the size the
+	// star's own labels are drawn at (11 in the picture, scaled with it). Shown only
+	// when a labelled star is on screen there; measured again on a resize and a tab.
+	function sizeKeys() {
+		for (const key of document.querySelectorAll('.star-key')) {
+			const tab = key.closest('#pp-tab-profile, #pp-tab-cmp');
+			const svg = tab && !tab.hidden ? tab.querySelector('.pp-team-star .star-svg:not(.star-bare)') : null;
+			const scale = svg ? svg.getBoundingClientRect().width / svg.viewBox.baseVal.width : 0;
+			key.hidden = !(scale > 0);
+			if (scale > 0) key.style.fontSize = (11 * scale).toFixed(2) + 'px';
+		}
+	}
+	addEventListener('resize', sizeKeys);
+
 	// A singles league (team size 1): its players are each captain of a team of
 	// one, so the role is left off (UV, 20 Nov). The season's rules come with the team.
 	const isSingles = (t) => !!(t.rules && t.rules.team_size === 1);
+	// A card shows no team name or role (UV, 21 Nov) in a singles league, or where the
+	// team is just the player under their own name (a league whose rules do not say
+	// team size 1, e.g. a team called "Julie" for Julie). *Claude's reading, for UV to
+	// judge:* a team named as the player's display or full name.
+	const teamOfOne = (t, p) => isSingles(t) || [p && p.display_name, p && p.full_name]
+		.some((n) => n && t.team_name && n.trim().toLowerCase() === t.team_name.trim().toLowerCase());
 
 	// The leagues both players are in (UV, 20 Nov): on Compare each is one
 	// combined card with one star for both, so it leaves the two halves' lists.
@@ -250,27 +280,40 @@
 		return new Set(them.teams.filter((t) => t.team_id && ids.has(t.league_season_id)).map((t) => t.league_season_id));
 	}
 
+	// A league's or a team's name with its picture beside it (UV, 21 Nov), in its own
+	// frame: the league's shield, the team's hexagon (TDC.leaguePic, TDC.teamPic).
+	// The picture comes first in the markup; CSS puts it on the name's inside.
+	function named(kind, path, nameNode) {
+		const box = node('span', 'pp-nm pp-nm-' + kind);
+		const pic = node('span', kind === 'league' ? 'pp-lg-pic' : 'team-pic pp-nm-pic');
+		pic.append(kind === 'league' ? TDC.leaguePic(path) : TDC.teamPic(path));
+		box.append(pic, nameNode);
+		return box;
+	}
+
 	function renderTeams(v, sets) {
 		const box = v.part('teams');
 		if (!v.p.teams.length) { box.replaceChildren(node('p', 'muted pp-empty', 'Not in a league yet.')); return; }
 		const list = v.side ? v.p.teams.filter((t) => !shared.has(t.league_season_id)) : v.p.teams;
 		box.replaceChildren(...list.map((t) => {
-			const a = node('a', 'pp-team');
+			const a = node('a', 'pp-team' + (v.side ? ' is-' + v.side : ''));
 			// A league card opens the league's first page, Standings (UV, 20 Nov); the
 			// old &team= opened the Season tab on the team.
 			a.href = '/leagues/season/?s=' + encodeURIComponent(t.league_season_id);
-			const pic = node('span', 'team-pic pp-team-pic');
-			pic.append(TDC.teamPic(t.team_picture));
 			const names = node('span', 'pp-team-names');
 			// The league's name heads the card in the display face (UV, 20 Nov), then the
-			// team's, then the season and venue.
-			names.append(node('span', 'pp-league-name', t.league_name),
-				node('span', 'pp-team-name', t.team_name || 'No team yet'),
-				node('span', 'muted pp-team-sub', [t.season_name, TDC.venueNames(t.venues)].filter(Boolean).join(' · ')));
-			const right = node('span', 'pp-team-right');
-			// No role in a singles league: everybody is captain of a team of one (UV, 20 Nov).
-			if (!isSingles(t)) right.append(node('span', 'muted pp-team-role', t.is_captain ? 'Captain' : 'Player'));
-			a.append(pic, names, right);
+			// team's, then the season and venue. Each name has its picture beside it (UV,
+			// 21 Nov), on the inside on Compare (toward the middle line).
+			// No team line in a singles league (UV, 21 Nov): a team of one has no name of
+			// its own, and the player is already named at the top of the page.
+			names.append(...[named('league', t.league_picture, node('span', 'pp-league-name', t.league_name)),
+				teamOfOne(t, v.p.player) ? null : t.team_id ? named('team', t.team_picture, node('span', 'pp-team-name', t.team_name || 'No team yet'))
+					: node('span', 'pp-team-name', 'No team yet'),
+				// The role (Player, Captain) directly under the team name (UV, 21 Nov); none
+				// for a team of one.
+				teamOfOne(t, v.p.player) ? null : node('span', 'muted pp-team-role', t.is_captain ? 'Captain' : 'Player'),
+				node('span', 'muted pp-team-sub', [t.season_name, TDC.venueNames(t.venues)].filter(Boolean).join(' · '))].filter(Boolean));
+			a.append(names);
 			const got = sets && t.team_id ? sets[t.league_season_id + t.team_id] : null;
 			if (got) {
 				const set = got.set;
@@ -297,18 +340,22 @@
 			const a = node('a', 'pp-team pp-team-shared');
 			a.href = '/leagues/season/?s=' + encodeURIComponent(sid);
 			const head = node('span', 'pp-shared-head');
-			head.append(node('span', 'pp-league-name', t.league_name),
+			head.append(named('league', t.league_picture, node('span', 'pp-league-name', t.league_name)),
 				node('span', 'muted pp-team-sub', [t.season_name, TDC.venueNames(t.venues)].filter(Boolean).join(' · ')));
 			const sides = node('span', 'pp-shared-sides');
 			// No player names (the heads above are pinned to the page) and no team
 			// place (UV, 20 Nov): the colours say whose team is whose.
-			for (const [x, cls] of [[m, 'pp-shared-me'], [t, 'pp-shared-them']]) {
-				const side = node('span', 'pp-shared-side ' + cls);
-				side.append(node('span', 'pp-team-name', x.team_name || 'No team yet'));
-				if (!isSingles(x)) side.append(node('span', 'muted pp-team-role', x.is_captain ? 'Captain' : 'Player'));
+			for (const [x, cls, who] of [[m, 'pp-shared-me', mine.player], [t, 'pp-shared-them', them.player]]) {
+				if (teamOfOne(x, who)) continue;   // no team line in a singles league (UV, 21 Nov)
+				const side = node('span', 'pp-shared-side ' + cls + ' ' + (cls === 'pp-shared-me' ? 'is-mine' : 'is-them'));
+				// The hexagon on the inside, toward the middle (yours right of its name, theirs left).
+				side.append(x.team_id ? named('team', x.team_picture, node('span', 'pp-team-name', x.team_name || 'No team yet'))
+					: node('span', 'pp-team-name', 'No team yet'));
+				if (!teamOfOne(x, who)) side.append(node('span', 'muted pp-team-role', x.is_captain ? 'Captain' : 'Player'));
 				sides.append(side);
 			}
-			a.append(head, sides);
+			a.append(head);
+			if (sides.children.length) a.append(sides);
 			const gm = sets && sets[sid + m.team_id];
 			const gt = sets && sets[sid + t.team_id];
 			if (gm && gt) {
@@ -483,17 +530,17 @@
 	// green shape is yours alone (your own profile, and your half of Compare).
 	function renderStar(v) {
 		const box = v.part('star');
-		const { svg } = TDCStar.draw('Star for ' + v.p.player.display_name, [{ counts: starCounts(v.p), raw: true, cls: v.p.player.is_me ? '' : 'star-cream' }], STAR, SPOKES, { stats: true });
+		const { svg } = TDCStar.draw('Star for ' + v.p.player.display_name, [{ counts: starCounts(v.p), adjusted: true, cls: v.p.player.is_me ? '' : 'star-cream' }], STAR, SPOKES, { stats: true });
 		box.replaceChildren(svg);
 	}
 
 	function renderCompareStar() {
 		const box = el('pp-cmp-star');
 		// You green, the other player always cream, as on the league cards, each with
-		// their raw star dashed in their own colour (UV, 20 Nov).
+		// their adjusted star dotted in their own colour (UV, 20 Nov; actual and adjusted swapped 21 Nov).
 		const { svg } = TDCStar.draw('Star comparing you and ' + themName(), [
-			{ counts: starCounts(mine), cls: 'star-a', raw: true },
-			{ counts: starCounts(them), dashed: true, raw: true }
+			{ counts: starCounts(mine), cls: 'star-a', adjusted: true },
+			{ counts: starCounts(them), dashed: true, adjusted: true }
 		], STAR, SPOKES, { stats: true });
 		box.replaceChildren(svg);   // no names or caption above it (UV, 20 Nov)
 	}
@@ -529,6 +576,7 @@
 		const url = new URL(location.href);
 		if (!other || t === 'cmp') url.searchParams.delete('tab'); else url.searchParams.set('tab', 'profile');
 		history.replaceState(null, '', url);
+		sizeKeys();
 		if (btn) TDC.busy(btn, pause(), els.status);
 	}
 	els.views.addEventListener('click', (e) => {
@@ -969,5 +1017,6 @@
 		const sets = await leagueSets();
 		for (const v of views) renderTeams(v, sets);
 		if (mine) renderShared(sets);
+		sizeKeys();
 	})(), 'The player');
 })();

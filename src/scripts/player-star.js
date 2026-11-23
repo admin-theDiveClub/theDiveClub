@@ -9,9 +9,11 @@
 //
 //   shown = (successes + start × standard) / (chances + start)
 //
-// The standard is the grey ring halfway out. Ratio: shown ÷ standard, twice
-// the standard at the edge. Points: shown − standard, `range` points at the
-// edge (above) or the centre (below). How solid a star is follows frames
+// The standard is the grey ring halfway out. The scale (UV, 21 Nov): 0% is the
+// centre and 100% the outer edge; each side of the ring is scaled on its own, so
+// 0 to the standard fills the centre to the ring and the standard to 100% fills
+// the ring to the edge (see reach). The old ratio and points modes are gone.
+// How solid a star is follows frames
 // played (a league's star: matches played out of scheduled). A spoke with no chances sits on the standard, its label greyed with
 // "no data" (UV, 19 Nov). No dots at the corners: the line only (UV, 19 Nov).
 
@@ -44,12 +46,14 @@ const TDCStar = (() => {
 		help: 'Frames they broke (lags won) out of frames played.' };
 	// Its labels read as the question each answers (UV, 20 Nov): the player's
 	// win rate, lags won, then wins given who broke, then B&F given their break.
+	// The order, clockwise from the top (UV, 21 Nov): Lags Won always sits between the
+	// two Own Brk stats, W | Own Brk and B&F | Own Brk.
 	const LEAGUE_SPOKES = [
 		Object.assign({}, SPOKES[0], { short: 'Win %' }),
-		Object.assign({}, LAG, { short: 'Lags Won' }),
 		Object.assign({}, SPOKES[1], { short: 'W | Own Brk' }),
-		Object.assign({}, SPOKES[2], { short: 'W | Opp Brk' }),
-		Object.assign({}, SPOKES[4], { short: 'B&F | Own Brk' })
+		Object.assign({}, LAG, { short: 'Lags Won' }),
+		Object.assign({}, SPOKES[4], { short: 'B&F | Own Brk' }),
+		Object.assign({}, SPOKES[2], { short: 'W | Opp Brk' })
 	];
 	// Every spoke either star uses, once each: what the sandbox sets standards for.
 	const EVERY = [SPOKES[0], LAG, SPOKES[1], SPOKES[2], SPOKES[3], SPOKES[4]];
@@ -61,8 +65,6 @@ const TDCStar = (() => {
 			std: Object.fromEntries(EVERY.map((s) => [s.key, s.std])),
 			start: Object.fromEntries(EVERY.map((s) => [s.key, startAll === undefined ? s.start : startAll])),
 			solid: 200,
-			mode: 'ratio',
-			range: 25,
 			walkovers: false
 		};
 	}
@@ -104,8 +106,12 @@ const TDCStar = (() => {
 	// scheduled is how many matches the team has (its fixtures with an opponent,
 	// byes left out), read from the made schedule. error is set when either could
 	// not be read (the caller says so).
-	async function leagueSettings(client, seasonId, teamId) {
+	// teamLeague (UV, 21 Nov): in a team league a frame is won by one side and lost by
+	// the other, so the league's average win rate is always 50% and the win-rate
+	// standard is 50 too, not the 67 of the player star. Not for a singles league.
+	async function leagueSettings(client, seasonId, teamId, teamLeague) {
 		const set = defaults(0);
+		if (teamLeague) set.std.win = 50;
 		const [avg, fixtures] = await Promise.all([
 			client.rpc('tdc_league_star_average', { p_league_season_id: seasonId }),
 			teamId
@@ -160,9 +166,14 @@ const TDCStar = (() => {
 	// How far out a rate is drawn, 0 (centre) to 1 (edge); the standard is 0.5.
 	function reach(rate, s, set) {
 		const std = set.std[s.key] / 100;
-		const r = set.mode === 'ratio'
-			? (std > 0 ? 0.5 * rate / std : (rate > 0 ? 1 : 0.5))
-			: 0.5 + 0.5 * (rate - std) * 100 / set.range;
+		// UV, 21 Nov: the outer edge is 100%, the centre 0%, and the standard's ring
+		// sits halfway out whatever the standard is. Each side is scaled on its own:
+		// 0 to the standard fills the centre to the ring, the standard to 100% fills
+		// the ring to the edge (a 67% standard: 33.5% is halfway to the ring, 83.5%
+		// halfway from the ring to the edge).
+		const r = rate <= std
+			? (std > 0 ? 0.5 * rate / std : 0.5)
+			: (std < 1 ? 0.5 + 0.5 * (rate - std) / (1 - std) : 0.5);
 		return Math.max(0, Math.min(1, r));
 	}
 
@@ -239,34 +250,77 @@ const TDCStar = (() => {
 		return svg;
 	}
 
-	// One player's star on a frame, in a group of its own (cls colours it).
-	// raw adds the dashed star of their frames alone, with no starting frames.
+	// The dotted line (UV, 21 Nov): the adjusted star. Each corner is solid, the two
+	// edges meeting in a round join, and the stretch of edge between corners is
+	// broken, its dashes spaced to fit the edge evenly. An edge too short for a
+	// dash is solid. Returns a group; CSS (.star-adj) colours it.
+	const CORNER = 7, DASH = 4, GAP = 3;
+	function dotted(pts) {
+		const g = svgEl('g', { class: 'star-adj' });
+		const n = pts.length;
+		const len = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]);
+		// The point t along the way from a to b.
+		const along = (a, b, t) => { const L = len(a, b); return L ? [a[0] + (b[0] - a[0]) * t / L, a[1] + (b[1] - a[1]) * t / L] : a; };
+		const xy = (p) => p[0].toFixed(2) + ',' + p[1].toFixed(2);
+		pts.forEach((p, i) => {
+			const prev = pts[(i + n - 1) % n], next = pts[(i + 1) % n];
+			// The corner: a piece of each edge either side, joined at the point.
+			const a = along(p, prev, Math.min(CORNER, len(p, prev) / 2));
+			const b = along(p, next, Math.min(CORNER, len(p, next) / 2));
+			g.append(svgEl('path', { d: 'M' + xy(a) + 'L' + xy(p) + 'L' + xy(b), class: 'star-adj-corner' }));
+			// The edge from this corner to the next: broken between the corner pieces,
+			// starting and ending on a gap so a dash never runs into a corner.
+			const L = len(p, next);
+			const mid = L - 2 * CORNER - 2 * GAP;   // what the dashes and the gaps between them fill
+			if (mid < DASH) return;
+			const count = Math.max(1, Math.round((mid + GAP) / (DASH + GAP)));
+			const dash = (mid - (count - 1) * GAP) / count;
+			g.append(svgEl('path', {
+				d: 'M' + xy(along(p, next, CORNER + GAP)) + 'L' + xy(along(p, next, L - CORNER - GAP)),
+				class: 'star-adj-edge', 'stroke-dasharray': dash.toFixed(2) + ' ' + GAP
+			}));
+		});
+		return g;
+	}
+
+	// One player's star on a frame, in a group of its own (cls colours it). The
+	// filled shape (or, for a dashed layer, the solid line) is their actual stats,
+	// from their frames alone (UV, 21 Nov); adjusted adds the dotted line: the same
+	// frames adjusted by the standards and starting frames (it was the other way
+	// round until 21 Nov: the fill was adjusted and the dashed line actual).
 	function layer(svg, c, set, opts, sp) {
 		const o = opts || {};
 		sp = sp || SPOKES;
 		const g = svgEl('g', { class: o.cls || '' });
 		svg.append(g);
 		const rows = sp.map((s) => spoke(c, s, set));
-		const shape = (pick) => rows.map((v, i) => at(i, v ? reach(pick(v), sp[i], set) : 0.5, sp.length).join(',')).join(' ');
+		const pts = (pick) => rows.map((v, i) => at(i, v ? reach(pick(v), sp[i], set) : 0.5, sp.length));
+		const shape = (pick) => pts(pick).map((p) => p.join(',')).join(' ');
 		const certain = o.certain !== undefined ? o.certain : Math.min(1, (Number(c.fp) || 0) / set.solid);
 		// A dashed layer is the line alone, solid cream (UV, 20 Nov: the viewer's
 		// line on Compare's shared league star), with no fill. (Swapped on 20 Nov: the cream line
-		// is now the other player, the viewer is the green shape.) (It was dashed, in
-		// the raw star's style, until UV asked for a solid line.)
+		// is now the other player, the viewer is the green shape.)
 		if (o.dashed) {
-			g.append(svgEl('polygon', { points: shape((v) => v.shown), class: 'star-me' }));
-			// Its raw star too, dashed, in the same cream (UV, 20 Nov: Compare's star).
-			if (o.raw) g.append(svgEl('polygon', { points: shape((v) => v.raw), class: 'star-raw' }));
+			g.append(svgEl('polygon', { points: shape((v) => v.raw), class: 'star-me' }));
+			// Its dotted adjusted line too, in the same cream.
+			if (o.adjusted) g.append(dotted(pts((v) => v.shown)));
 			return { rows, certain };
 		}
-		const shown = svgEl('polygon', { points: shape((v) => v.shown), class: 'star-shown' });
-		shown.style.fillOpacity = (0.08 + 0.42 * certain).toFixed(2);
-		shown.style.strokeOpacity = (0.35 + 0.65 * certain).toFixed(2);
+		const shown = svgEl('polygon', { points: shape((v) => v.raw), class: 'star-shown' });
+		// A cream star (somebody else's) keeps its outline at full strength and a
+		// stronger fill however few frames it has: faded, cream is only grey and is
+		// mistaken for the standard's grey pentagon (UV, 21 Nov).
+		const cream = /\bstar-cream\b/.test(o.cls || '');
+		shown.style.fillOpacity = (cream ? 0.2 + 0.3 * certain : 0.08 + 0.42 * certain).toFixed(2);
+		shown.style.strokeOpacity = (cream ? 1 : 0.35 + 0.65 * certain).toFixed(2);
 		g.append(shown);
-		if (o.raw) g.append(svgEl('polygon', { points: shape((v) => v.raw), class: 'star-raw' }));
+		if (o.adjusted) g.append(dotted(pts((v) => v.shown)));
 		// The league's average (UV, 20 Nov): the pooled counts as plain rates, a
 		// yellow line. A spoke the league has no chances for sits on the standard.
-		if (o.avg) {
+		// A league with no counted frames yet has no average to draw (UV, 21 Nov): every
+		// spoke would sit on the standard's ring and hide it, so the star looked unlike
+		// every other league's.
+		if (o.avg && Number(o.avg.fp) > 0) {
 			const a = sp.map((s) => spoke(o.avg, s, set));
 			g.append(svgEl('polygon', {
 				points: a.map((v, i) => at(i, v ? reach(v.raw, sp[i], set) : 0.5, sp.length).join(',')).join(' '),

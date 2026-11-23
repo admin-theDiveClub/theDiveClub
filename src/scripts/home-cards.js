@@ -84,7 +84,7 @@
 			}
 			var set = TDCStar.defaults();
 			var counts = TDCStar.count(TDCStar.allFrames(p), set.walkovers);
-			body.replaceChildren(whoRow(me), TDCStar.draw('Your star', [{ counts: counts, raw: true }], set, TDCStar.LEAGUE_SPOKES, { stats: true }).svg);
+			body.replaceChildren(whoRow(me), TDCStar.draw('Your star', [{ counts: counts, adjusted: true }], set, TDCStar.LEAGUE_SPOKES, { stats: true }).svg);
 		})();
 		work.catch(function (e) { card.hidden = true; TDC.error(AREA, 'your star could not be drawn.', e, statusEl); });
 		TDC.busy(body, work);
