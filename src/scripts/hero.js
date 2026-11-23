@@ -187,7 +187,7 @@
 
 		/* ---------- the tunables ---------- */
 		// Physics: the game's, with the cloth's grip and the swerve on sliders here
-		var P = { cs: 3, cg: 10, ks: 0.5, kg: 0.2, bb: 0.1, sw: 0.15, side: 0.8, wyKeep: 0.1 };   // UV's, 18 Nov (second set; ks 0.1 -> 0.5 after)
+		var P = { cs: 3, cg: 20, ks: 0.5, kg: 0.4, bb: 0.1, sw: 0.1, side: 0.8, wyKeep: 0.1 };   // UV's, 23 Nov (cg 10 -> 20, kg 0.2 -> 0.4, sw 0.15 -> 0.1; the same in banner-table.js)
 		var S = { speed: 1, linePx: 2, shadow: 1, blur: 1.2, glow: 1, miss: 0 };                     // UV's, 14 Nov
 
 		/* ---------- colours and sizes, from the site's tokens ---------- */
@@ -728,7 +728,9 @@
 					b.vx = b.vz = b.vy = b.sx = b.sz = b.wy = 0;
 					b.hit = false; b.pk = null; b.bounced = false;
 					b.q = randomQuat();
-					b.trail = [];
+					// Its old line is left to undraw with the rest (UV, 23 Nov), not wiped; a
+					// break in it, so the new ball's line never joins the old one across the table
+					b.trail.push(null);
 					return;
 				}
 				b.t = 0.3;   // nowhere clear: try again shortly

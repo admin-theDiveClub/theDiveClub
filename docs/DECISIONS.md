@@ -2905,3 +2905,11 @@ These predate the log. They are recorded here because every one of them is a dec
 ## 21 Nov: The star's scale: the edge is 100%, the standard's ring halfway, each side scaled on its own
 
 *Decided by UV (from a screenshot, the percentages looked wrong):* the pentagon's **outer edge is 100%** and the centre 0%; the **standard's ring is always halfway out**, and the two gaps are scaled to the standard set on the sandbox. For a Win % standard of 67%: 0 to 67% runs from the centre to the ring (33.5% is halfway), 67% to 100% from the ring to the edge (83.5% is halfway). This replaces the **ratio** scale (the edge at twice the standard, so a 67% standard hit the edge at 100% but a 50% standard at 100% too, and a 7% B&F standard at 14%), and the **points** mode with its "points to the edge" slider, both removed from the sandbox and from `TDCStar` (`reach`, `defaults`). It applies to every star (player and league, the dotted line and the yellow average) and every standard.
+
+## 23 Nov: The tables' physics, a fourth set; a potted ball's line undraws
+
+*Decided by UV:* from the sliders on `/sandbox/banner/` (a screenshot): **cloth speed 3, cloth grip 20, cushion soaks up 0.5, cushion strips spin 0.4, side off cushions 0.8, side wears off 0.1, ball–ball 0.1, swerve 0.1**; speed 1. **Everywhere:** every banner and the home page's table. Changed from the set before: grip 10 → 20, strips spin 0.2 → 0.4, swerve 0.15 → 0.1.
+*Example:* a ball skidding at 4 balls a second starts rolling after 0.06 s (it was 0.11 s), and side works at 60% of its strength off a cushion (it was 80%).
+
+*Decided by UV:* on every table the green lines undraw like the white one, never just disappear. The home page's table wiped a potted ball's line when its new ball dropped in; it now keeps it, with a break, as the banner table already did.
+*So:* `scripts/banner-table.js` and `scripts/hero.js` (`P`; `pocketStep` in `hero.js`); `docs/systems/file-map.md`.

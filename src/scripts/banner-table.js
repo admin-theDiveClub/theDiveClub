@@ -69,7 +69,7 @@ var TDCBannerTable = (function () {
 	// Physics: the game's, with the cloth's grip and the swerve on sliders. Shared by every
 	// table on the page; only /sandbox/banner/ changes them (tune(), sandbox-banner-controls.js,
 	// UV 17 Nov), and only in memory, so a reload is back to these.
-	var P = { cs: 3, cg: 10, ks: 0.5, kg: 0.2, bb: 0.1, sw: 0.15, side: 0.8, wyKeep: 0.1 };   // UV's, 18 Nov (second set; ks 0.1 -> 0.5 after)
+	var P = { cs: 3, cg: 20, ks: 0.5, kg: 0.4, bb: 0.1, sw: 0.1, side: 0.8, wyKeep: 0.1 };   // UV's, 23 Nov (cg 10 -> 20, kg 0.2 -> 0.4, sw 0.15 -> 0.1; the same in hero.js)
 	var S = { speed: 1, linePx: 2, shadow: 1, blur: 1.2, glow: 1, miss: 0 };                     // UV's, 14 Nov
 	function tune(changes) {
 		if (changes) Object.keys(changes).forEach(function (k) {
