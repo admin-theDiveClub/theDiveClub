@@ -115,9 +115,88 @@ const TDCLiveMatch = (() => {
 		}
 	}
 
+	// ─── Join this league (UV, 24 Nov) ───
+	// The live card's glass on a league season's Standings tab (#league-join; the
+	// stylesheet shows it on that tab only), for somebody who is not in the league,
+	// while its season is Taking entries and it takes names: no place in it or
+	// withdrew, the same people as the Season tab's +. After that the director adds
+	// players by hand (UV). A tap opens the Season tab (UV, 24 Nov), where Join this
+	// league is a button of its own under the banner; joining or withdrawing there
+	// sends tdc:league-entry and the card reads again. Its ✕ hides it until the
+	// page is next loaded, as the live card's.
+	const JOIN_AREA = 'Join league';
+
+	// Whether the card shows, and what it says: { name, mode, picture } or null.
+	async function joinable(seasonId, signedIn) {
+		if (!signedIn) {
+			// Only a season Visible to public answers; any other, no card.
+			const { data, error } = await supabaseClient.rpc('tdc_public_league_season', { p_league_season_id: seasonId });
+			if (error) throw error;
+			if (!data || data.status !== 'taking_entries' || data.entry_mode === 'ld_only') return null;
+			return { name: data.league_name, mode: data.entry_mode, picture: data.picture_path };
+		}
+		const [join, row] = await Promise.all([
+			supabaseClient.rpc('tdc_league_join_info', { p_league_season_id: seasonId }),
+			supabaseClient.from('tbl_league_seasons').select('status, tbl_leagues(picture_path)').eq('id', seasonId).maybeSingle()
+		]);
+		if (join.error) throw join.error;
+		if (row.error) throw row.error;
+		const j = (join.data || [])[0];
+		if (!j || !row.data || row.data.status !== 'taking_entries' || j.entry_mode === 'ld_only') return null;
+		if (j.my_status && j.my_status !== 'withdrawn') return null;
+		return { name: j.league_name, mode: j.entry_mode, picture: row.data.tbl_leagues && row.data.tbl_leagues.picture_path };
+	}
+
+	async function joinCard(box) {
+		const seasonId = new URLSearchParams(location.search).get('s');
+		if (!seasonId) return;
+		const statusEl = document.getElementById('sd-status');
+		try {
+			const signedIn = !!(await TDC.getSession(JOIN_AREA));
+			const j = await joinable(seasonId, signedIn);
+			if (!j) { box.replaceChildren(); box.hidden = true; return; }
+
+			const wrap = el('div', 'live-card');
+			// A tap opens the Season tab, where Join this league is its own button
+			// under the banner (UV, 24 Nov): in place where the tabs switch so.
+			const go = el('a', 'live-card-link');
+			go.href = '/leagues/season/?s=' + encodeURIComponent(seasonId) + '&tab=season';
+			go.addEventListener('click', (e) => {
+				if (typeof TDCLeagueNav === 'undefined' || e.metaKey || e.ctrlKey || e.shiftKey) return;
+				e.preventDefault();
+				TDCLeagueNav.open('season', { push: true });
+				window.scrollTo(0, 0);
+			});
+			const pic = el('span', 'live-face live-face-team');
+			pic.append(TDC.leaguePic(j.picture, ''));
+			const words = el('span', 'live-card-words');
+			const how = j.mode === 'self_confirm' ? 'Join straight away' : 'Taking names';
+			words.append(el('span', 'live-card-title', 'Join this league'), el('span', 'live-card-sub', how + ' · ' + j.name));
+			const arrow = el('span', 'live-card-go', '›');
+			arrow.setAttribute('aria-hidden', 'true');
+			go.append(pic, words, arrow);
+			const x = el('button', 'live-card-x', '✕');
+			x.type = 'button';
+			x.setAttribute('aria-label', 'Hide this until the page is reloaded');
+			x.addEventListener('click', () => { box.replaceChildren(); box.hidden = true; });
+			wrap.append(go, x);
+			box.replaceChildren(wrap);
+			box.hidden = false;
+		} catch (e) {
+			box.hidden = true;
+			TDC.error(JOIN_AREA, 'whether you can join this league could not be read: ' + ((e && e.message) || e), e, statusEl);
+		}
+	}
+
 	document.addEventListener('DOMContentLoaded', () => {
 		const box = document.getElementById('league-live');
 		if (box) league(box);
+		const join = document.getElementById('league-join');
+		if (join) {
+			joinCard(join);
+			// Joined or withdrawn on the Season tab (league-season.js): read again.
+			document.addEventListener('tdc:league-entry', () => joinCard(join));
+		}
 	});
 
 	return { fill, href, waiting };

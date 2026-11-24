@@ -20,7 +20,7 @@ TDCLoader.hold((async () => {
 	area.hidden = false;
 
 	// The Verifications and Credits tools are for owners and admins only (the database checks again).
-	const adminTiles = [el('verifications-tile'), el('credits-tile')];
+	const adminTiles = [el('verifications-tile'), el('products-tile'), el('credits-tile')];
 	if (adminTiles.some((t) => !t)) {
 		TDC.error(AREA, 'staff page is missing an owner/admin tile.');
 		return;

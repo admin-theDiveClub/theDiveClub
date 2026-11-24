@@ -16,7 +16,7 @@
   - ⚠ `private.tdc_merge_players` must be updated whenever a new table references `tbl_players`, so nothing is left on the deleted record. Migration `20261014170000` brought it up to date (redeem codes, matches, frames, frame participants) and carries a query that lists every foreign key to `tbl_players` — run it rather than trusting a list. ~~Its body is untested~~ — **tested since 24 Oct** (`supabase/tests/028_merge_players.test.sql`), on the local copy, through `tdc_staff_link_account` as `/staff/link/` calls it; the local copy is what makes deleting an account-linked record safe to try.
   - **Squads, lineups and notification settings (migration `20261024090641`, audit A5).** `tbl_league_match_squad` (cascade), `tbl_league_match_order` (set null) and `tbl_notification_prefs` (cascade) were not moved, so a claim took a league player out of tonight's squad, emptied their lineup position and turned their notifications back on. The settings had been left out on purpose, on the grounds that the walk-in has none; but the settings that matter are the account's, on the record being deleted. All three move now. **On a clash the account's row stands and the walk-in's goes** (UV, 24 Oct): the account's setting for a category wins; in any match where the account is in the squad or lineup, the walk-in's squad row is deleted and its positions emptied, matched on the match rather than the side so one person never ends up in one team's lineup and the other's squad. A walk-in cannot reach those tables through any function, so a clash means a direct write. On 24 Oct the foreign-key query gave the same 22 references on local and production; every one is handled, and no uuid column names a player without a foreign key.
   - **The 23rd, `tbl_matches.referee_player_id` (migration `20261024162559`, 24 Oct):** a match's own referee, set null on delete, moved with the other match columns inside the unlock. No new guard: a player may referee their own match, so a merge that makes the referee one of the players is allowed. Covered by `031_match_referee`.
-  - Seed data: venue The Dive Club (`the-dive-club`); `admin@thediveclub.org` is owner, `yuvannaidoo@gmail.com` is staff. Two more venues since 5 Nov, with no owner or staff ("Venues" below).
+  - Seed data: venue The Dive Club (`the-dive-club`); `admin@thediveclub.org` is owner, `yuvannaidoo@gmail.com` is staff. Two more venues since 5 Nov, with no owner or staff ("Venues" below); Rick Schoenlank owns both since 17 Nov. Basil's Billiards Pool Lounge (`basils-billiards`, Paulshof, Sandton) since 24 Nov (migration `20261124130755_venue_basils_billiards`), no owner or staff yet, tables and hours unknown.
   - **Still to do:**
     - Audit log: record who linked, verified or revoked what (staff can link any walk-in to any account; there is no log yet).
     - Push leftovers: iPhone login persistence check, Android testing, and the real "score changed" trigger + deep link once match tables exist.
@@ -143,6 +143,35 @@ How the credits came in before this: an owner or admin adjusting by hand with a 
 - **A wrong confirmation is put right with an owner's adjustment**, never undone: the history only grows.
 - **The merge** moves `tbl_credit_top_ups.player_id` (patched from `20261119124608`'s definition).
 - **A gateway later** (shop Stage 6) marks the same request paid, with its own method; nothing here is rebuilt.
+
+## The shop: products and the cart (24 Nov; the shop's Stage 2, `docs/design/shop.md`)
+
+**Built** (migration `20261124125407_shop_products_and_cart`, test `092_shop_products_and_cart`; the pages 24 Nov). Checkout and orders are Stage 3: nothing here takes credits from anybody.
+
+| Part | What it holds and why |
+|---|---|
+| `tbl_shop_categories` | A venue's tabs, in `sort_order`; a name unique per venue (case and spaces ignored). Deleted only once empty. The Dive Club starts with **Café, Apparel, Pool accessories** (UV, 24 Nov) |
+| `tbl_shop_products` | Name, **price in whole credits** (UV, 24 Nov), `collect` (`bar`: made at the bar; `collect`: within 30 days, the Delivery policy), `active` (**off when it runs out: no stock counts until P5**, UV), picture, order. A trigger keeps a product in its own venue's category. **Never deleted**, so a Stage 3 order can always name what it sold |
+| `product-pictures` | A public bucket, as the league and team pictures: `<product id>/<random>.webp`, 512px, EXIF stripped. Its storage rules ask `private.tdc_can_manage_product_folder(folder)`, **security definer**: a rule that read `tbl_shop_products` directly made every upload to every bucket fail, since all the rules on `storage.objects` are checked and the user can't read that table |
+| `tbl_shop_cart_items` | **The cart on the account** (the same on every device; UV, 24 Nov): player, product, quantity 1 to 99. In `tdc_merge_players` (the account's line stands if both have one) |
+
+| Function | Who | Does |
+|---|---|---|
+| `tdc_shop(venue)` | **anyone, signed out too** (UV, 24 Nov) | Categories in order, each with its products that are on; a category with none left out; the venue's `cents_per_credit` for the rand shown beside each price. **`null` = the venue with a shop** (the first by name), since a stranger can't read `tbl_venues`. In test `069`'s list of everything a stranger can reach |
+| `tdc_staff_shop(venue)` | owner, admin | Everything: products that are off, empty categories |
+| `tdc_save_shop_category`, `tdc_set_shop_category_order` (the whole list), `tdc_delete_shop_category` (only empty) | owner, admin (UV, 24 Nov, as pricing) | Categories |
+| `tdc_save_shop_product`, `tdc_set_shop_product_active`, `tdc_set_shop_product_picture` (returns the old path to delete) | owner, admin | Products |
+| `tdc_my_cart(venue)` | signed in | Every line; one switched off since stays, marked `active: false`, and is left out of `count` and `total_credits` |
+| `tdc_set_cart_qty(product, qty)` | signed in | 0 takes it out; a product that is off can be taken out but not added. Returns the cart |
+
+**The pages:**
+
+| Page | What |
+|---|---|
+| `/shop/` (`shop/index.html`, `scripts/shop.js`, `stylesheets/shop.css`, tokens `--shop-*`) | "Online payment is coming soon. **Pay at the club** for now." (yellow); the categories as the site's tab pill (hidden with one); a row per product: picture (or its first letter), name, **"30 credits · R30"** (the rand at today's price per credit; UV, 24 Nov), how collected, and **+**, which becomes the number in the cart (a tap adds one). **No balance** (UV, 24 Nov). Signed out, + goes to sign in and back. The **cart bar** follows at the foot ("3 items · 140 credits · View cart") and opens **the cart** over the page in the Add credits card's look: lines with − and +, a product switched off shown struck through "No longer available" with Remove, the total in credits and rand, and **Checkout · coming next**, disabled until Stage 3. Then one line on what else credits pay for, the policies and the company block. Studio services and Art are off the shop for now (UV, 24 Nov) |
+| `/staff/products/` (`scripts/staff-products.js`, `stylesheets/staff-products.css`; an owner/admin tile on the hub) | Each category with its products (the shop's rows) and an **In the shop** switch; a tap opens the product's form (name, category, price with its rand, collected, In the shop); a new product takes its picture once saved. Under them the categories: up, down, Rename, Delete (only empty), and a New category box |
+
+Driven headless at 420 against the local copy (24 Nov): Sipho added three products and a picture; signed out the shop showed them and + went to sign in; Ann's cart read "3 items · 140 credits"; Sipho switched the socks off and Ann's cart showed them struck through with 60 credits. **Not on a phone.**
 
 ## The install tutorial (`/install/`, 3 Nov)
 

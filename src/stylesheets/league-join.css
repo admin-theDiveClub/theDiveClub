@@ -96,8 +96,24 @@
 	width: 2.75rem;
 	height: 1.2em;
 }
-/* Two icons, one above the other: the name's second line keeps clear too. */
-.lj-corner:has(#interest-btn:not([hidden])) + .lj-id h1::before { height: 5rem; }
+/* Join this league (UV, 24 Nov): its own button just below the banner, no longer
+ * a second icon in the corner. */
+.lj-join { margin-top: var(--space-4); }
+/* Yellow (UV, 24 Nov), the site's warning colour, filled as the main button is */
+.tdc-card .lj-join .ls-btn-go { background: var(--color-warning); color: var(--color-on-primary); gap: var(--space-2); }
+/* The plus that was its icon in the corner, before the words (UV, 24 Nov) */
+.lj-join-plus {
+	flex: 0 0 auto;
+	width: 1.25em;
+	height: 1.25em;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 8;
+	stroke-linecap: round;
+}
+/* Withdraw (UV, 24 Nov: the button once your name is down): the plus loses its
+ * upright and reads as a minus */
+#interest-btn[data-mode="withdraw"] .lj-join-v { display: none; }
 /* The details all in one row where they fit, Who runs it too (UV, 10 Nov): on
  * a wide screen one row; narrower, the details across and Who runs it under
  * them; on a phone two across. */

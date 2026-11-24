@@ -634,20 +634,26 @@ TDCLeagueNav.panel('season', () => {
 		return row;
 	}
 
-	// The banner's corner: Share is always there, and the plus for somebody
-	// who may put their name down (tdc_league_show_interest decides what that
-	// does, as the season was set up).
+	// Join this league: a button on its own just below the banner (UV, 24 Nov;
+	// it was a plus in the banner's corner, beside Share), for somebody who may
+	// put their name down (tdc_league_show_interest decides what that does, as
+	// the season was set up). Once their name is down it is Withdraw
+	// (tdc_withdraw_league_entry); once they are let in (by the director, by
+	// payment on a season where paying confirms, or straight away) it is gone
+	// (UV, 24 Nov). Paid while still only named down does not hide it (UV).
 	function renderCorner() {
 		els.interestBtn.hidden = true;
 		if (!joinInfo) return;
-		const again = joinInfo.my_status === 'withdrawn';
-		if (!again && (joinInfo.my_status || joinInfo.entry_mode === 'ld_only')) return;
+		const st = joinInfo.my_status;
+		let mode = null;
+		if (st === 'interested') mode = 'withdraw';
+		else if (st === 'withdrawn' || (!st && joinInfo.entry_mode !== 'ld_only')) mode = 'join';
+		if (!mode) return;
 
-		const label = again ? 'Put my name down again' : 'Put my name down';
-		els.interestBtn.title = label;
-		els.interestBtn.setAttribute('aria-label', label);
+		els.interestBtn.dataset.mode = mode;
+		els.interestBtn.querySelector('.lj-join-word').textContent =
+			mode === 'withdraw' ? 'Withdraw' : (st === 'withdrawn' ? 'Join this league again' : 'Join this league');
 		els.interestBtn.hidden = false;
-		wakeIcon(els.interestBtn);
 	}
 
 	// An icon shows already drawn: a page load draws nothing in (UV, 16 Nov).
@@ -671,9 +677,22 @@ TDCLeagueNav.panel('season', () => {
 	els.interestBtn.addEventListener('click', () => {
 		// Signed out: to sign-in and back here, where they tap it themselves (UV, 10 Nov).
 		if (signedOut) { TDC.requireSession(AREA); return; }
+		// Either way the Standings tab's Join this league card reads again
+		// (live-match.js).
+		const changed = () => document.dispatchEvent(new CustomEvent('tdc:league-entry'));
+		if (els.interestBtn.dataset.mode === 'withdraw') {
+			if (!confirm('Take your name off this league?')) return;
+			write('Taking your name off', () => supabaseClient.rpc('tdc_withdraw_league_entry', {
+				p_league_season_id: seasonId
+			}), () => { changed(); return 'Your name is off.'; }, { single: true, dots: els.interestBtn });
+			return;
+		}
 		write('Putting your name down', () => supabaseClient.rpc('tdc_league_show_interest', {
 			p_league_season_id: seasonId
-		}), (data) => data === 'active' ? 'You are in.' : 'Your name is down.', { single: true, dots: els.interestBtn, leaves: true });
+		}), (data) => {
+			changed();
+			return data === 'active' ? 'You are in.' : 'Your name is down.';
+		}, { single: true, dots: els.interestBtn, leaves: true });
 	});
 
 	// The first night from now that has a fixture.

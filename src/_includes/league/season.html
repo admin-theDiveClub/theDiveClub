@@ -21,7 +21,6 @@
 
 	<section class="jumbo lj-hero" id="jumbo" data-banner-table>
 		<div class="lj-corner">
-			<button type="button" class="lj-icon" id="interest-btn" data-icon="plus" title="Put my name down" aria-label="Put my name down" hidden><span class="tdc-ring"></span></button>
 			<button type="button" class="lj-icon" id="share-btn" data-icon="share" title="Share" aria-label="Share"><span class="tdc-ring"></span></button>
 		</div>
 		<div class="lj-id">
@@ -41,6 +40,15 @@
 			<dl class="jumbo-facts" id="jumbo-facts"></dl>
 		</details>
 	</section>
+
+	{% comment %}
+		Join this league (UV, 24 Nov): a button on its own just below the banner,
+		for somebody who may put their name down; the Standings tab's card leads
+		here. It was a plus in the banner's corner.
+	{% endcomment %}
+	<div class="ls-actions lj-join">
+		<button type="button" class="ls-btn ls-btn-go" id="interest-btn" hidden><svg class="lj-join-plus" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42"/><path class="lj-join-v" d="M50 30L50 70"/><path d="M30 50L70 50"/></svg><span class="lj-join-word">Join this league</span></button>
+	</div>
 
 	<div class="status" id="page-status"></div>
 

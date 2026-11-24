@@ -1,30 +1,80 @@
-/* The shop page (/shop/, UV 19 Nov). Laid out by league.css's policy look
-   (.lr-*); this file adds only the item lists, the section notes and the
-   pricing note. No shadows of its own: the whole page sits in one sunken
-   panel (.lr-doc), and the items are rows with hairlines, as long lists are
-   site-wide (docs/ui.md, "Long lists"). */
+/* The shop (/shop/; UV, 24 Nov; docs/design/shop.md, Stage 2; scripts/shop.js).
+   One sunken panel of rows with hairlines (docs/ui.md, "Long lists"); a + per row that
+   becomes the quantity; the cart bar following at the foot; the cart over the page in the
+   Add credits card's look (credits-card.css's .cc). The foot (policies, company block) keeps
+   league.css's policy look (.lr-*). Tokens --shop-* in variables.css. */
 
-/* Under way, so yellow (docs/ui.md, "State colours"): prices not set yet. */
-.tdc-card .shop-pricing {
-	margin: var(--space-4) 0 0;
+/* Under way, so yellow (docs/ui.md, "State colours"): online payment not open yet. */
+.tdc-card .shop-pay-note {
+	margin: 0 0 var(--space-5);
+	padding: var(--space-3) var(--space-4);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--nm-sunken-small);
+	line-height: 1.5;
+}
+.shop-pay-note strong { color: var(--color-warning); }
+
+/* ─── The list ─── */
+.shop-list {
+	list-style: none;
+	margin: 0;
+	padding: 0 var(--space-4);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--nm-sunken);
+}
+.shop-list:empty { display: none; }
+.shop-item {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
 	padding: var(--space-3) 0;
-	border-top: 1px solid var(--border-color);
-	border-bottom: 1px solid var(--border-color);
-	line-height: 1.55;
 }
-.shop-pricing strong {
-	display: block;
-	color: var(--color-warning);
+.shop-item + .shop-item { border-top: 1px solid var(--border-color); }
+.shop-pic {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: var(--shop-pic);
+	height: var(--shop-pic);
+	border-radius: var(--radius-md);
+	overflow: hidden;
+	box-shadow: var(--nm-sunken-small);
 }
+.shop-pic img { width: 100%; height: 100%; object-fit: cover; }
+.shop-pic-none { color: var(--text-muted); font-family: var(--font-display); font-size: 1.5rem; line-height: 1.32; }
+.shop-words { flex: 1; min-width: 0; }
+.shop-name { font-weight: 600; overflow-wrap: anywhere; }
+.shop-price { color: var(--text-muted); font-size: 0.85rem; }
+.shop-collect { color: var(--text-muted); font-size: 0.75rem; }
 
-.tdc-card .shop-note {
-	margin: 0 0 var(--space-2);
-	color: var(--text-muted);
-	line-height: 1.55;
+/* + in a green ring; once in the cart, the number in a solid green pill (tap: one more). */
+.tdc-card button.shop-add,
+.tdc-card button.shop-qty {
+	flex: none;
+	width: auto;   /* the card's buttons are full width; these sit at the row's end */
+	min-width: var(--shop-add);
+	height: var(--shop-add);
+	min-height: 0;
+	margin: 0;
+	padding: 0 var(--space-3);
+	border-radius: var(--radius-pill);
+	font-size: 1.1rem;
+	font-weight: 700;
+	line-height: 1;
 }
+.tdc-card button.shop-add {
+	border: 2px solid var(--color-primary);
+	background: transparent;
+	color: var(--color-primary);
+	box-shadow: var(--nm-raised-small);
+}
+.tdc-card button.shop-qty { background: var(--nm-light-colour); color: var(--color-on-primary); }
 
-/* Two columns from a phone up; one only when the screen is very narrow. */
-.shop-items,
+.tdc-card .shop-empty { margin: var(--space-4) 0; text-align: center; }
+.tdc-card .shop-credits-line { margin: var(--space-5) 0 0; font-size: 0.85rem; line-height: 1.5; }
+.shop-foot { margin-top: var(--space-5); }
 .shop-policies {
 	list-style: none;
 	margin: 0;
@@ -33,9 +83,84 @@
 	grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
 	column-gap: var(--space-4);
 }
-.shop-items li,
-.shop-policies li {
-	padding: var(--space-3) 0;
-	border-top: 1px solid var(--border-color);
-	line-height: 1.4;
+.shop-policies li { padding: var(--space-3) 0; border-top: 1px solid var(--border-color); line-height: 1.4; }
+
+/* Room at the foot so the cart bar never covers the last of the page. */
+body:has(.shop-cartbar:not([hidden])) main { padding-bottom: calc(var(--shop-bar) + var(--space-6)); }
+
+/* ─── The cart bar: follows at the foot ─── */
+.shop-cartbar {
+	position: fixed;
+	left: 50%;
+	bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
+	z-index: 90;
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	width: calc(100% - 2 * var(--space-4));
+	max-width: var(--cc-width);
+	min-height: var(--shop-bar);
+	padding: var(--space-2) var(--space-2) var(--space-2) var(--space-5);
+	border: 0;
+	border-radius: var(--radius-pill);
+	background: var(--bg-base);
+	color: var(--text-primary);
+	font: inherit;
+	text-align: left;
+	box-shadow: var(--shadow-panel);
+	transform: translateX(-50%);
+	cursor: pointer;
 }
+.shop-cartbar[hidden] { display: none; }
+.shop-cartbar-count { font-weight: 700; }
+.shop-cartbar-total { color: var(--text-muted); }
+.shop-cartbar-go {
+	margin-left: auto;
+	padding: var(--space-3) var(--space-5);
+	border-radius: var(--radius-pill);
+	background: var(--nm-light-colour);
+	color: var(--color-on-primary);
+	font-weight: 700;
+}
+
+/* ─── The cart ─── */
+.shop-cart-lines {
+	list-style: none;
+	margin: 0 0 var(--space-4);
+	padding: 0 var(--space-4);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--nm-sunken);
+}
+.shop-cart-line,
+.shop-cart-empty { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) 0; }
+.shop-cart-line + .shop-cart-line { border-top: 1px solid var(--border-color); }
+.shop-cart-line.is-off .shop-name { color: var(--text-muted); text-decoration: line-through; }
+.shop-cart-line.is-off .shop-price { color: var(--color-warning); }
+.shop-step {
+	flex: none;
+	min-width: var(--shop-add);
+	height: var(--shop-add);
+	padding: 0 var(--space-2);
+	border: 0;
+	border-radius: var(--radius-pill);
+	background: transparent;
+	color: var(--text-primary);
+	font: inherit;
+	font-size: 1.1rem;
+	box-shadow: var(--nm-raised-small);
+	cursor: pointer;
+}
+.shop-step:active { box-shadow: var(--nm-sunken-small); }
+.shop-step.is-plus { color: var(--color-primary); }
+.shop-cart-line.is-off .shop-step { font-size: 0.85rem; }
+.shop-step-n { min-width: 1.5rem; text-align: center; font-weight: 700; }
+.shop-cart-total {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--space-2);
+	margin: 0 var(--space-1) var(--space-4);
+	color: var(--text-muted);
+}
+.shop-cart-sum { color: var(--text-primary); font-family: var(--font-display); font-size: 1.15rem; line-height: 1.32; text-align: right; }

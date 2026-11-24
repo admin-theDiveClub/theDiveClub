@@ -1,0 +1,51 @@
+/* Staff products page (/staff/products/; 24 Nov; scripts/staff-products.js).
+   The product rows are the shop's own (shop.css), with a switch at the right. */
+
+.pm-group { margin-bottom: var(--space-5); }
+.pm-group h2 { margin-bottom: var(--space-3); }
+.tdc-card .pm-none { margin: 0; }
+
+/* A row: the product (a button opening its form), then its In the shop switch. */
+.tdc-card button.pm-open {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	flex: 1;
+	min-width: 0;
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: inherit;
+	font-weight: 400;
+	text-align: left;
+	box-shadow: none;
+}
+.pm-open .shop-words > span { display: block; }
+.shop-item.is-off .shop-pic,
+.shop-item.is-off .shop-name { opacity: 0.55; }
+
+.tdc-card #add-product { width: 100%; }
+
+/* Categories: name, up, down, Rename, Delete. */
+.pm-cats {
+	list-style: none;
+	margin: 0 0 var(--space-4);
+	padding: 0 var(--space-4);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--nm-sunken);
+}
+.pm-cat { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-3) 0; }
+.pm-cat + .pm-cat { border-top: 1px solid var(--border-color); }
+.pm-cat-name { flex: 1 1 8rem; font-weight: 600; }
+.pm-cat-add { display: block; }
+.pm-cat-add .field { margin-bottom: var(--space-3); }
+.tdc-card .pm-cat-add button { width: 100%; }
+
+.pm-on { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.pm-picture { margin-top: var(--space-5); }
+.pm-pic-row { display: flex; align-items: center; gap: var(--space-4); }
+.pm-pic-row .shop-pic { width: 5rem; height: 5rem; }
+.tdc-card .pm-pic-row button { margin-bottom: var(--space-2); }
+.tdc-card #edit-back { width: 100%; margin-top: var(--space-4); }

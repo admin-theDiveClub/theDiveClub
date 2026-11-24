@@ -2953,3 +2953,33 @@ These predate the log. They are recorded here because every one of them is a dec
 *Example:* Ann taps "0 credits ⊕ Add" in her profile menu, slides to 250, Checkout, Get my code · R 250; the card shows TXZ5 and a QR. Sipho scans it with his camera, `/staff/top-ups/` opens on "Ann Test · 250 · R250", he taps Cash, Confirm; Ann's card turns to "Paid · 250 credits added" within 4 seconds.
 *So:* `docs/systems/foundations.md`, "Buying credits"; `docs/ui.md`; `docs/systems/file-map.md`.
 *Touches:* `scripts/credits-card.js`, `stylesheets/credits-card.css`, `_includes/layout.html`, `_includes/nav.html`, `scripts/nav.js`, `stylesheets/nav.css`, `accounts/profile/index.html`, `scripts/profile.js`, `staff/top-ups/index.html`, `scripts/staff-top-ups.js`, `stylesheets/staff-top-ups.css`, `staff/credits/index.html`, `scripts/staff-credits.js`, `stylesheets/staff-credits.css`, `staff/index.html`, `termsofservice.html`, `stylesheets/variables.css`, `.eleventy.js`, `package.json`
+
+## 2026-11-24 — Join this league: a card on Standings, a yellow button on Season
+*Decided by:* UV.
+*What:* a league season's Standings tab has a card, like the live match card, for somebody not in the league: "Join this league". **It shows only while the season is Taking entries**: after that, the director adds players by hand. **A tap opens the Season tab**, where the + that sat in the banner's corner beside Share is now **a yellow button of its own just below the banner**, with the plus before the words "Join this league". Pressing it puts the name down, as the + did. **Once the name is down the button is Withdraw**, which takes it off again; **once the player is let in** (by the director, or by payment on a season where paying confirms) **the button is hidden**. A paid tick on somebody still only named down does not hide it (UV: not needed). Withdraw asks first (UV).
+*Example:* Sipho opens Summer Singles (Taking entries), sees "Join this league · Taking names · Summer Singles" above the standings and taps it; the Season tab opens, he presses the yellow Join this league, and reads "Your name is down." Once the director sets the season to Running, nobody new sees the card.
+*Claude's, for UV to correct:* the same people as the old + (a withdrawn player sees it too, the button reading "Join this league again"); the card is on Standings only; the button itself still shows whatever the season's status; the yellow is the site's warning colour with the main button's dark text; Withdraw keeps the yellow and its plus becomes a minus.
+*So:* `docs/systems/leagues.md`, "Join this league".
+*Touches:* `leagues/season/index.html`, `_includes/league/season.html`, `scripts/live-match.js`, `scripts/league-season.js`, `stylesheets/live-match.css`, `stylesheets/league-join.css`
+
+## 2026-11-24 — The shop: products and the cart (the shop's Stage 2)
+*Decided by UV:*
+- **Prices are in credits, with the rand value shown small beside them** ("30 credits · R30"), worked out at the venue's current price per credit.
+- **The owner types the products in** on a new Products page; nothing is loaded by Claude. **The owner manages the categories** there, starting with Café, Apparel and Pool accessories. **Owners and admins** may change products and categories (as pricing).
+- **Studio services and Art are off the shop for now.**
+- **No stock counts until P5**: the owner switches an item off when it runs out.
+- **The cart is kept on the account**, the same on every device.
+- **Anyone may browse the shop signed out**, with prices; adding to the cart asks them to sign in.
+- **Nothing needs a verified ID to buy**: restricted products never appear on the site.
+- **No balance on the shop page** (24 Nov stands: the profile menu and the profile only), and **no Credits tab** beside the categories.
+*Claude's, for UV to correct:*
+- A product is **never deleted**, only switched off, so a later order can always name what it sold; a category can be deleted only once empty.
+- A product switched off while in someone's cart **stays in the cart, struck through, "No longer available"**, left out of the total, with Remove.
+- The cart ends at **"Checkout · coming next"**, disabled, until Stage 3.
+- A short line under the products says what else credits pay for (table time, games, arcade, simulators, entries), as the old Play credits list did; the policies and company block stay at the foot.
+- **The Terms say "Everything we offer is listed in our Shop"**, which is no longer quite true with Studio services and Art off it: left for UV to word (B1).
+- A product's picture is added once it is saved (the picture's folder is the product's id).
+- The cart is not a points data point: it is emptied and refilled, so it says nothing lasting about a player (Stage 3's orders will be).
+*Example:* Sipho adds "Flat white, Café, 30 credits, made at the bar" and its picture on Staff › Products. A stranger opening `/shop/` sees "Flat white · 30 credits · R30 · Made at the bar" and a +, which takes them to sign in and back. Ann adds two and a pair of socks: the bar reads "3 items · 140 credits". The socks run out; Sipho switches them off; Ann's cart shows them struck through and 60 credits.
+*So:* `docs/systems/foundations.md`, "The shop: products and the cart"; `docs/ui.md`; `docs/systems/file-map.md`.
+*Touches:* migration `20261124125407_shop_products_and_cart.sql`, `supabase/tests/092_shop_products_and_cart.test.sql`, `supabase/tests/069_league_public_reads.test.sql`, `shop/index.html`, `scripts/shop.js`, `stylesheets/shop.css`, `staff/products/index.html`, `scripts/staff-products.js`, `stylesheets/staff-products.css`, `staff/index.html`, `scripts/staff-hub.js`, `stylesheets/variables.css`

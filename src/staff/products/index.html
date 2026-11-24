@@ -1,0 +1,94 @@
+---
+layout: layout.html
+title: Products
+description: "Manage the shop's categories and products."
+extraScripts:
+  - /scripts/staff-common.js
+  - /scripts/staff-products.js
+extraStyles:
+  - /stylesheets/shop.css
+  - /stylesheets/staff-products.css
+---
+<!-- The shop's products (24 Nov; docs/design/shop.md, Stage 2). Owners and admins.
+     Categories (the shop's tabs) and products, priced in credits, switched off when
+     they run out (no stock counts until P5). -->
+<div class="tdc-card">
+	<h1>Products</h1>
+	<p class="muted" id="venue-line"></p>
+
+	<div id="staff-area" hidden>
+		<div class="field" id="venue-field" hidden>
+			<label for="venue-select">Venue</label>
+			<select id="venue-select"></select>
+		</div>
+
+		<div id="manage-area" hidden>
+			<!-- The list: categories with their products -->
+			<section id="list-view">
+				<div id="product-groups"></div>
+				<button type="button" class="btn-primary" id="add-product">Add a product</button>
+
+				<h2>Categories</h2>
+				<p class="hint">The shop's tabs, in this order. A category shows in the shop once a product in it is on.</p>
+				<ul class="pm-cats" id="cat-list"></ul>
+				<form id="cat-form" class="pm-cat-add" novalidate>
+					<div class="field">
+						<label for="cat-name">New category</label>
+						<input type="text" id="cat-name" maxlength="40" autocomplete="off" placeholder="e.g. Snacks">
+					</div>
+					<button type="submit" class="btn-secondary" id="cat-add">Add</button>
+				</form>
+			</section>
+
+			<!-- One product -->
+			<section id="edit-view" hidden>
+				<h2 id="edit-title">New product</h2>
+				<form id="product-form" novalidate>
+					<div class="field">
+						<label for="p-name">Name</label>
+						<input type="text" id="p-name" maxlength="80" autocomplete="off">
+					</div>
+					<div class="field">
+						<label for="p-category">Category</label>
+						<select id="p-category"></select>
+					</div>
+					<div class="field">
+						<label for="p-price">Price in credits</label>
+						<input type="number" id="p-price" inputmode="numeric" min="1" max="100000" step="1">
+						<div class="hint" id="p-rand"></div>
+					</div>
+					<div class="field">
+						<label for="p-collect">Collected</label>
+						<select id="p-collect">
+							<option value="bar">Made at the bar</option>
+							<option value="collect">Collect within 30 days</option>
+						</select>
+					</div>
+					<div class="field pm-on">
+						<label for="p-active">In the shop</label>
+						<input type="checkbox" id="p-active" checked>
+					</div>
+					<button type="submit" class="btn-primary" id="p-save">Save</button>
+				</form>
+
+				<div class="pm-picture" id="pic-area" hidden>
+					<h3>Picture</h3>
+					<div class="pm-pic-row">
+						<span id="pic-preview"></span>
+						<div>
+							<button type="button" class="btn-secondary" id="pic-choose">Choose a picture</button>
+							<button type="button" class="btn-sm btn-danger" id="pic-remove" hidden>Remove</button>
+						</div>
+					</div>
+					<input type="file" id="pic-file" accept="image/*" hidden>
+					<div class="status" id="pic-status"></div>
+				</div>
+				<p class="hint" id="pic-later">Save the product first, then add its picture.</p>
+
+				<button type="button" class="btn-secondary" id="edit-back">Back to the products</button>
+			</section>
+		</div>
+	</div>
+
+	<div class="status" id="status-msg"></div>
+</div>

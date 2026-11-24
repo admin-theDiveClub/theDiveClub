@@ -165,6 +165,7 @@ select is((select string_agg(object_kind || ' ' || object_name, E'\n' order by o
 function public.tdc_public_league_season(p_league_season_id uuid)
 function public.tdc_public_league_standings(p_league_season_id uuid)
 function public.tdc_resolve_short_code(p_code text)
+function public.tdc_shop(p_venue_id uuid)
 function public.tdc_short_link(p_kind text, p_id uuid)
 function public.tdc_tournament_poster(p_tournament_id uuid)
 function public.tdc_venue_competitions(p_venue_id uuid)

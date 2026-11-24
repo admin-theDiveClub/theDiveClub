@@ -326,3 +326,10 @@
   --qr-ink: #202020;
   --qr-paper: #f4e8d2;
 }
+
+/* ─── The shop (/shop/, stylesheets/shop.css; 24 Nov) ─── */
+:root {
+  --shop-pic: 3.5rem;   /* a product's picture in the list */
+  --shop-add: 2.75rem;  /* the + and the steppers: a finger's width */
+  --shop-bar: 3.75rem;  /* the cart bar's height */
+}

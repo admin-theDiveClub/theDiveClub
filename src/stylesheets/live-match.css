@@ -101,3 +101,7 @@
 @media (min-width: 992px) {
 	.league-live { max-width: none; width: calc(100% * 10 / 12); }
 }
+
+/* Join this league (UV, 24 Nov; live-match.js joinCard): the same card, on the
+   Standings tab only; a tap opens the Season tab. */
+body:not(:has(.league-panel[data-tab="standings"]:not([hidden]))) .league-join { display: none; }
