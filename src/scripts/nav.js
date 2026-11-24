@@ -169,7 +169,74 @@
 		account.classList.toggle('open', open);
 		profileBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
 		if (open && menu.classList.contains('open')) setMenu(false);
-		if (open) loadActive();
+		if (open) { loadActive(); loadCredits(); }
+	}
+
+	// --- Your credits, under the banner (UV, 24 Nov) ---
+	// Shown here and on the profile page only, never on a page a player shows
+	// others. Read each time the menu opens, as the middle is; a tap closes the
+	// menu and opens the Add credits card (scripts/credits-card.js). What is on
+	// screen stays until the new read arrives.
+	const accountCredits = document.getElementById('nav-account-credits');
+	let creditsRead = 0;
+
+	async function loadCredits() {
+		if (!accountCredits) return;
+		if (typeof TDCCredits === 'undefined') {
+			TDC.error(AREA, 'credits-card.js is not loaded, so the credits row cannot open.');
+			return;
+		}
+		const read = ++creditsRead;
+		const { data: venues, error } = await TDC.busy(accountDots, supabaseClient
+			.from('tbl_venues').select('id, name').eq('active', true).eq('sells_credits', true).order('name'));
+		if (read !== creditsRead) return;
+		if (error) {
+			TDC.error(AREA, 'could not load the venues that sell credits.', error);
+			return;
+		}
+		if (!venues || !venues.length) { accountCredits.hidden = true; return; }
+		const balances = await Promise.all(venues.map((v) => supabaseClient.rpc('tdc_my_credit_balance', { p_venue_id: v.id })));
+		if (read !== creditsRead) return;
+		const rows = venues.map((v, i) => {
+			const btn = menuEl('button', 'nav-account-credit');
+			btn.type = 'button';
+			const { data: n, error: balErr } = balances[i];
+			if (venues.length > 1) btn.append(menuEl('span', 'nav-account-credit-venue', v.name));
+			const value = menuEl('span', 'nav-account-credit-value');
+			if (balErr) {
+				TDC.error(AREA, `could not load your balance at ${v.name}.`, balErr);
+				value.textContent = 'TDC (Error)';
+			} else {
+				value.append(String(n), menuEl('span', null, n === 1 ? ' credit' : ' credits'));
+			}
+			const add = menuEl('span', 'nav-account-credit-add', 'Add');
+			add.prepend(plusIcon());
+			btn.append(value, add);
+			btn.setAttribute('aria-label', `${balErr ? 'Your' : n} credits${venues.length > 1 ? ' at ' + v.name : ''}: add credits`);
+			btn.addEventListener('click', () => {
+				setAccount(false);
+				TDCCredits.open({ venueId: v.id });
+			});
+			return btn;
+		});
+		accountCredits.replaceChildren(...rows);
+		accountCredits.hidden = false;
+	}
+	function plusIcon() {
+		const ns = 'http://www.w3.org/2000/svg';
+		const s = document.createElementNS(ns, 'svg');
+		s.setAttribute('viewBox', '0 0 24 24');
+		s.setAttribute('fill', 'none');
+		s.setAttribute('stroke', 'currentColor');
+		s.setAttribute('stroke-width', '2');
+		s.setAttribute('stroke-linecap', 'round');
+		s.setAttribute('aria-hidden', 'true');
+		const c = document.createElementNS(ns, 'circle');
+		c.setAttribute('cx', '12'); c.setAttribute('cy', '12'); c.setAttribute('r', '9');
+		const p = document.createElementNS(ns, 'path');
+		p.setAttribute('d', 'M12 8v8M8 12h8');
+		s.append(c, p);
+		return s;
 	}
 
 	// --- The profile menu's middle: what you're in (UV, 5 Nov) ---

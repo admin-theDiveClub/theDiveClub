@@ -420,6 +420,47 @@ body {
 	height: calc(var(--account-pic) * 0.75);
 }
 
+/* Your credits, under the banner (UV, 24 Nov): one raised pill per venue that sells
+   them, opening the Add credits card (scripts/credits-card.js). */
+.nav-account-credits {
+	flex: 0 0 auto;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	margin: 0 var(--space-3) var(--space-4);
+}
+.nav-account-credit {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	min-height: var(--nm-field);
+	padding: 0 var(--space-3) 0 var(--space-5);
+	border: 0;
+	border-radius: var(--nm-field-radius);
+	background: transparent;
+	color: var(--text-primary);
+	font: inherit;
+	text-align: left;
+	box-shadow: var(--nm-raised);
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+}
+.nav-account-credit:active { box-shadow: var(--nm-sunken); }
+.nav-account-credit:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.nav-account-credit-venue { color: var(--text-muted); font-size: 0.85rem; }
+.nav-account-credit-value { flex: 1; font-weight: 700; }
+.nav-account-credit-value span { color: var(--text-muted); font-weight: 400; }
+.nav-account-credit-add {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-1);
+	color: var(--color-primary);
+	font-size: 0.85rem;
+	font-weight: 600;
+}
+.nav-account-credit-add svg { width: 1.25rem; height: 1.25rem; }
+
 /* The middle, sunk into the panel: what you're in (nav.js, tdc_my_active). */
 .nav-account-middle {
 	position: relative;

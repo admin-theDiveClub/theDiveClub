@@ -50,7 +50,9 @@ TDCLoader.hold((async () => {
 		redeemVenue:    el('redeem-venue'),
 		redeemCode:     el('redeem-code'),
 		redeemBtn:      el('redeem-btn'),
-		creditsStatus:  el('credits-status')
+		creditsStatus:  el('credits-status'),
+		topupsList:     el('topups-list'),
+		addCreditsBtn:  el('add-credits-btn')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -390,6 +392,7 @@ TDCLoader.hold((async () => {
 	// no other club shown here yet). A venue picker only appears once there's a choice to make.
 	async function loadCredits() {
 		els.creditsList.textContent = '';
+		els.topupsList.textContent = '';
 
 		const { data: venues, error: venErr } = await supabaseClient
 			.from('tbl_venues')
@@ -418,8 +421,14 @@ TDCLoader.hold((async () => {
 		els.redeemVenueField.hidden = venues.length < 2;
 
 		// Every venue's balance asked at once (UV, 16 Nov: as fast as it can
-		// load), drawn in the venues' order as before.
-		const balances = await Promise.all(venues.map((v) => supabaseClient.rpc('tdc_my_credit_balance', { p_venue_id: v.id })));
+		// load), drawn in the venues' order as before. A request waiting for
+		// payment is read with them (buying credits, 24 Nov).
+		const [balances, topUps] = await Promise.all([
+			Promise.all(venues.map((v) => supabaseClient.rpc('tdc_my_credit_balance', { p_venue_id: v.id }))),
+			Promise.all(venues.map((v) => supabaseClient.rpc('tdc_my_top_ups', { p_venue_id: v.id })))
+		]);
+		drawTopUps(venues, topUps);
+		els.addCreditsBtn.hidden = false;
 		for (const [i, v] of venues.entries()) {
 			const { data: balance, error: balErr } = balances[i];
 			const row = document.createElement('div');
@@ -439,6 +448,41 @@ TDCLoader.hold((async () => {
 			els.creditsList.appendChild(row);
 		}
 	}
+
+	// A request still waiting for payment, with its code and how long it lasts;
+	// Show code opens the Add credits card on it (scripts/credits-card.js).
+	// Paid, cancelled and expired ones are not listed.
+	function drawTopUps(venues, results) {
+		const rows = [];
+		for (const [i, v] of venues.entries()) {
+			const { data, error } = results[i];
+			if (error) {
+				TDC.error(AREA, `could not load your credit requests at ${v.name}.`, error, els.creditsStatus);
+				continue;
+			}
+			for (const t of (data || []).filter((r) => r.state === 'waiting')) {
+				const row = document.createElement('div');
+				row.className = 'kv';
+				const label = document.createElement('span');
+				label.className = 'k';
+				const ends = new Date(t.expires_at);
+				label.textContent = `Waiting: ${t.code} · ${t.credits} credits · R${(t.pay_cents / 100).toFixed(t.pay_cents % 100 ? 2 : 0)}`
+					+ ` · until ${ends.toLocaleDateString(undefined, { weekday: 'short' })} ${ends.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
+				const show = document.createElement('button');
+				show.type = 'button';
+				show.className = 'btn-sm';
+				show.textContent = 'Show code';
+				show.addEventListener('click', () => TDCCredits.open({ topUp: t }));
+				row.append(label, show);
+				rows.push(row);
+			}
+		}
+		els.topupsList.replaceChildren(...rows);
+	}
+
+	els.addCreditsBtn.addEventListener('click', () => TDCCredits.open());
+	// The card says when credits land; the balances and requests are read again.
+	window.addEventListener('tdc:credits-changed', () => loadCredits());
 
 	els.redeemForm.addEventListener('submit', async (e) => {
 		e.preventDefault();

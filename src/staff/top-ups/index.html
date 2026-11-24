@@ -1,0 +1,65 @@
+---
+layout: layout.html
+title: Top-ups
+description: "Confirm a player's pay-at-the-club credits."
+extraScripts:
+  - /scripts/staff-common.js
+  - /scripts/staff-top-ups.js
+extraStyles:
+  - /stylesheets/staff-top-ups.css
+---
+<!-- Buying credits, the staff side (24 Nov; docs/design/shop.md, Stage 1). Any staff.
+     A player's QR is a link here with ?code=, so the phone's own camera opens the
+     request; the code can also be typed. -->
+<div class="tdc-card">
+	<h1>Top-ups</h1>
+	<p class="muted" id="venue-line"></p>
+
+	<div id="staff-area" hidden>
+		<div class="field" id="venue-field" hidden>
+			<label for="venue-select">Venue</label>
+			<select id="venue-select"></select>
+		</div>
+
+		<form id="find-form" class="tu-find" novalidate>
+			<div class="field">
+				<label for="find-code">Code</label>
+				<input type="text" id="find-code" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="7K4Q">
+			</div>
+			<button type="submit" class="btn-primary" id="find-btn">Find</button>
+		</form>
+
+		<!-- One request, ready to confirm -->
+		<section id="request" class="tu-request" hidden>
+			<div class="tu-person">
+				<span class="tu-pic" id="req-pic" aria-hidden="true"></span>
+				<div>
+					<div class="tu-name" id="req-name"></div>
+					<div class="sub" id="req-full"></div>
+				</div>
+			</div>
+			<div class="kv"><span class="k">Credits</span><span class="v" id="req-credits"></span></div>
+			<div class="kv"><span class="k">To pay</span><span class="v tu-pay" id="req-pay"></span></div>
+			<div class="kv"><span class="k">Code</span><span class="v tu-code" id="req-code"></span></div>
+			<div class="kv"><span class="k">Asked</span><span class="v" id="req-when"></span></div>
+			<p class="tu-said" id="req-said" hidden></p>
+
+			<div id="req-act">
+				<div class="tu-method" role="group" aria-label="How they paid">
+					<button type="button" class="tu-way" id="pay-cash" aria-pressed="false">Cash</button>
+					<button type="button" class="tu-way" id="pay-card" aria-pressed="false">Card</button>
+				</div>
+				<button type="button" class="btn-primary" id="confirm-btn" disabled>Confirm payment</button>
+			</div>
+			<button type="button" class="btn-secondary" id="back-btn">Back to the list</button>
+		</section>
+
+		<!-- Everything waiting at this venue -->
+		<section id="waiting">
+			<h2>Waiting</h2>
+			<div class="results" id="waiting-list"></div>
+		</section>
+	</div>
+
+	<div class="status" id="status-msg"></div>
+</div>

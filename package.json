@@ -23,6 +23,7 @@
     "supabase": "^2.121.0"
   },
   "dependencies": {
-    "@supabase/supabase-js": "2.117.1"
+    "@supabase/supabase-js": "2.117.1",
+    "qrcode-generator": "1.4.4"
   }
 }

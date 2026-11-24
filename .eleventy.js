@@ -7,6 +7,11 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({
     "node_modules/@supabase/supabase-js/dist/umd/supabase.js": "scripts/vendor/supabase.js"
   });
+  // QR code maker (MIT, Kazuhiko Arase), pinned in package.json: the Add credits card's
+  // pay-at-the-club QR (scripts/credits-card.js loads it only when a code is shown)
+  eleventyConfig.addPassthroughCopy({
+    "node_modules/qrcode-generator/qrcode.js": "scripts/vendor/qrcode.js"
+  });
   eleventyConfig.addPassthroughCopy("src/components");
 
   // Project board: its code lives outside src/ in tools/project-board/app/ and is published

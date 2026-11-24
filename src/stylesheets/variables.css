@@ -313,3 +313,16 @@
   --nm-knob-glow: white;   /* a dark glow reads as a shade */
   --nm-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23594f4f' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 }
+
+/* ─── The Add credits card (scripts/credits-card.js, stylesheets/credits-card.css; 24 Nov) ─── */
+:root {
+  --cc-width: 30rem;            /* the card's widest; a phone's full width below it */
+  --cc-amount-size: 3.5rem;     /* the typed number of credits, in the display face */
+  --cc-qr-size: 11rem;          /* the pay-at-the-club QR */
+  --cc-code-size: 1.75rem;      /* the code under it */
+  --cc-thumb: 1.75rem;          /* the slider's knob */
+  --cc-track: 0.6rem;           /* the slider's groove */
+  /* The QR is dark on light in both themes: a camera reads an inverted one badly. */
+  --qr-ink: #202020;
+  --qr-paper: #f4e8d2;
+}

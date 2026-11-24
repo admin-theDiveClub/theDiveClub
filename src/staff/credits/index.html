@@ -5,6 +5,8 @@ description: "Look up a player's credit balance and make manual adjustments."
 extraScripts:
   - /scripts/staff-common.js
   - /scripts/staff-credits.js
+extraStyles:
+  - /stylesheets/staff-credits.css
 ---
 <div class="tdc-card">
 	<h1>Credits</h1>
@@ -63,4 +65,37 @@ extraScripts:
 	</div>
 
 	<div class="status" id="status-msg"></div>
+
+	<!-- Pricing (24 Nov; docs/design/shop.md, Stage 1): what a credit costs on the site's
+	     Add credits card, the slider's range, and discount steps (money off). Owners and
+	     admins of a venue that sells credits. -->
+	<section id="pricing" class="section" hidden>
+		<h2>Pricing</h2>
+		<form id="pricing-form" novalidate>
+			<div class="field">
+				<label for="price-rand">Rand per credit</label>
+				<input type="number" id="price-rand" inputmode="decimal" min="0.01" max="1000" step="0.01">
+			</div>
+			<div class="field">
+				<label for="price-min">Fewest credits</label>
+				<input type="number" id="price-min" inputmode="numeric" min="1" max="100000" step="1">
+			</div>
+			<div class="field">
+				<label for="price-max">Most credits</label>
+				<input type="number" id="price-max" inputmode="numeric" min="1" max="100000" step="1">
+			</div>
+			<div class="field">
+				<label for="price-step">In steps of</label>
+				<input type="number" id="price-step" inputmode="numeric" min="1" max="100000" step="1">
+			</div>
+
+			<h3>Discounts</h3>
+			<p class="hint">Money off when someone buys at least this many credits. None means no discount.</p>
+			<div id="tier-list"></div>
+			<button type="button" class="btn-secondary" id="tier-add">Add a discount</button>
+
+			<button type="submit" class="btn-primary" id="pricing-save">Save pricing</button>
+		</form>
+		<div class="status" id="pricing-status"></div>
+	</section>
 </div>

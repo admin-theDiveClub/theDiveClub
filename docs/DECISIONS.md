@@ -2932,3 +2932,24 @@ These predate the log. They are recorded here because every one of them is a dec
 *Example:* Ann asks for 250 credits at 19:00 and gets code 7K4Q. At the bar Sipho types 7K4Q, sees Ann's name and face and "250 credits · R250", takes cash, taps Cash, then Confirm; Ann's balance shows 250. If Ann hadn't paid by 19:00 the next day, the code would read Expired.
 *So:* `docs/systems/foundations.md`, "Buying credits"; `docs/design/shop.md`.
 *Touches:* migration `20261124112328_credit_top_ups.sql`, `supabase/tests/091_credit_top_ups.test.sql`, `src/scripts/points-formula.js`
+
+## 2026-11-24 — The top-up QR is a link to the staff page
+*Decided by UV:* the QR on the Add credits card holds a link, `https://thediveclub.org/staff/top-ups/?code=7K4Q`. Staff scan it with the phone's own camera and land on that request, ready to confirm. The staff page reads `?code=` and looks it up as if it had been typed; the typed box stays for when a camera isn't handy.
+*Why:* the phone's own camera reads a QR on every phone with no extra code; a Scan button inside the page would need a QR-reading library for iPhones.
+*Rejected:* the code alone in the QR, with a Scan button on the staff page.
+*Example:* Sipho points his phone's camera at Ann's card, taps the link, and `/staff/top-ups/` opens on "Top Ann · 250 credits · R250" with Cash, Card and Confirm. A player who scans their own QR gets the page's "You are not staff at this venue."
+*Touches:* step 2 (the pages); `docs/design/shop.md` Stage 1
+
+## 2026-11-24 — Buying credits: the pages (the shop's Stage 1, step 2)
+*Built to UV's settled design* (`docs/design/shop.md`, canvas artboard 2; the entries above): the Add credits card over any page, the balance under the profile menu's banner and on the profile, `/staff/top-ups/` for any staff with the QR opening it, Pricing on `/staff/credits/`, the Terms' line.
+*Claude's, for UV to correct:*
+- The card starts at **100 credits** (a round amount near the low end of 10 to 1,000).
+- **No "receipt to your account email" line** on Checkout, though the canvas has one: no email is sent until Stage 5, so the line would promise something that doesn't happen.
+- The card asks whether staff have confirmed **every 4 seconds** while it is open and the page is shown, and stops when it closes.
+- The profile lists **only waiting requests**; paid, cancelled and expired ones are not shown there (the ledger history is a later piece).
+- The staff page's Waiting list is read on opening, after each confirm and on a venue change, **not live**; pull down to refresh it.
+- A wrong code typed at the bar is caught by staff seeing the **name, picture and amount** before Confirm.
+- The QR maker is **`qrcode-generator`** (MIT, no dependencies), pinned in `package.json` and copied at build like the Supabase library; it loads only when a code is shown.
+*Example:* Ann taps "0 credits ⊕ Add" in her profile menu, slides to 250, Checkout, Get my code · R 250; the card shows TXZ5 and a QR. Sipho scans it with his camera, `/staff/top-ups/` opens on "Ann Test · 250 · R250", he taps Cash, Confirm; Ann's card turns to "Paid · 250 credits added" within 4 seconds.
+*So:* `docs/systems/foundations.md`, "Buying credits"; `docs/ui.md`; `docs/systems/file-map.md`.
+*Touches:* `scripts/credits-card.js`, `stylesheets/credits-card.css`, `_includes/layout.html`, `_includes/nav.html`, `scripts/nav.js`, `stylesheets/nav.css`, `accounts/profile/index.html`, `scripts/profile.js`, `staff/top-ups/index.html`, `scripts/staff-top-ups.js`, `stylesheets/staff-top-ups.css`, `staff/credits/index.html`, `scripts/staff-credits.js`, `stylesheets/staff-credits.css`, `staff/index.html`, `termsofservice.html`, `stylesheets/variables.css`, `.eleventy.js`, `package.json`

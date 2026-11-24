@@ -173,4 +173,140 @@ TDCLoader.hold((async () => {
 			els.adjustBtn.disabled = false;
 		}
 	});
+
+	// ─── 3. Pricing (24 Nov; docs/design/shop.md, Stage 1) ───
+	// What a credit costs on the Add credits card, the slider's range and the
+	// discount steps (money off), for a venue that sells credits. The database
+	// checks it all again (tdc_set_credit_prices): a step that doesn't fit the
+	// range, discounts that don't rise or sit off the slider are refused there
+	// with a message written for people.
+	const pe = {
+		section: el('pricing'), form: el('pricing-form'), rand: el('price-rand'), min: el('price-min'),
+		max: el('price-max'), step: el('price-step'), tiers: el('tier-list'), add: el('tier-add'),
+		save: el('pricing-save'), status: el('pricing-status')
+	};
+	const peMissing = Object.entries(pe).filter(([, v]) => !v).map(([k]) => k);
+	if (peMissing.length) {
+		TDC.error(AREA, 'credits page is missing its pricing elements: ' + peMissing.join(', '), null, els.statusEl);
+		return;
+	}
+
+	function tierRow(t) {
+		const row = document.createElement('div');
+		row.className = 'tier-row';
+		const at = document.createElement('input');
+		at.type = 'number';
+		at.inputMode = 'numeric';
+		at.min = '1';
+		at.step = '1';
+		at.className = 'tier-at';
+		at.setAttribute('aria-label', 'From this many credits');
+		at.value = t ? String(t.at) : '';
+		const pct = document.createElement('input');
+		pct.type = 'number';
+		pct.inputMode = 'numeric';
+		pct.min = '1';
+		pct.max = '90';
+		pct.step = '1';
+		pct.className = 'tier-pct';
+		pct.setAttribute('aria-label', 'Percent off');
+		pct.value = t ? String(t.pct) : '';
+		// Plain boxes, not steppers: a stepper's chevrons left no room for "1000".
+		at.dataset.control = 'none';
+		pct.dataset.control = 'none';
+		// Each box kept with its words, so a narrow screen wraps between the pairs.
+		const pair = (...parts) => {
+			const g = document.createElement('span');
+			g.className = 'tier-pair';
+			g.append(...parts);
+			return g;
+		};
+		const remove = document.createElement('button');
+		remove.type = 'button';
+		remove.className = 'btn-sm btn-danger';
+		remove.textContent = 'Remove';
+		remove.addEventListener('click', () => row.remove());
+		row.append(pair('From', at, 'credits'), pair(pct, '% off'), remove);
+		return row;
+	}
+
+	async function loadPricing() {
+		pe.section.hidden = true;
+		TDC.status(pe.status, '', '');
+		if (!isAdminHere()) return;
+		const id = els.selectEl.value;
+		const { data: v, error: vErr } = await supabaseClient.from('tbl_venues').select('sells_credits').eq('id', id).maybeSingle();
+		if (id !== els.selectEl.value) return;
+		if (vErr) {
+			TDC.error(AREA, 'could not check whether this venue sells credits.', vErr, els.statusEl);
+			return;
+		}
+		if (!v || !v.sells_credits) return;
+		pe.section.hidden = false;
+		const { data, error } = await TDC.busy(pe.form, supabaseClient.rpc('tdc_credit_prices', { p_venue_id: id }), pe.status);
+		if (id !== els.selectEl.value) return;
+		if (error) {
+			TDC.showSupabaseError(AREA, error, pe.status);
+			return;
+		}
+		pe.rand.value = (data.cents_per_credit / 100).toFixed(2);
+		pe.min.value = String(data.min_credits);
+		pe.max.value = String(data.max_credits);
+		pe.step.value = String(data.step_credits);
+		pe.tiers.replaceChildren(...(data.tiers || []).map(tierRow));
+	}
+
+	pe.add.addEventListener('click', () => pe.tiers.appendChild(tierRow(null)));
+
+	pe.form.addEventListener('submit', async (e) => {
+		e.preventDefault();
+		const rand = parseFloat(pe.rand.value);
+		const cents = Math.round(rand * 100);
+		const ints = [pe.min, pe.max, pe.step].map((i) => parseInt(i.value, 10));
+		if (!Number.isFinite(rand) || cents < 1) {
+			TDC.status(pe.status, 'Please enter what one credit costs, at least 1 cent.', 'error');
+			return;
+		}
+		if (ints.some((n) => !Number.isInteger(n))) {
+			TDC.status(pe.status, 'Please fill in the fewest and most credits and the step.', 'error');
+			return;
+		}
+		const tiers = [];
+		for (const row of pe.tiers.querySelectorAll('.tier-row')) {
+			const at = parseInt(row.querySelector('.tier-at').value, 10);
+			const pct = parseInt(row.querySelector('.tier-pct').value, 10);
+			if (!Number.isInteger(at) || !Number.isInteger(pct)) {
+				TDC.status(pe.status, 'Each discount needs a number of credits and a percent, or remove it.', 'error');
+				return;
+			}
+			tiers.push({ at, pct });
+		}
+		tiers.sort((a, b) => a.at - b.at);
+
+		pe.save.disabled = true;
+		TDC.status(pe.status, '', '');
+		try {
+			const { error } = await TDC.busy(pe.save, supabaseClient.rpc('tdc_set_credit_prices', {
+				p_venue_id: els.selectEl.value,
+				p_cents_per_credit: cents,
+				p_min_credits: ints[0],
+				p_max_credits: ints[1],
+				p_step_credits: ints[2],
+				p_tiers: tiers
+			}), pe.status);
+			if (error) {
+				TDC.showSupabaseError(AREA, error, pe.status);
+				return;
+			}
+			await loadPricing();
+			TDC.status(pe.status, '✓ Pricing saved. New requests use it; ones already waiting keep their price.', 'success');
+		} catch (err) {
+			TDC.error(AREA, 'unexpected problem saving the pricing.', err, pe.status);
+		} finally {
+			pe.save.disabled = false;
+		}
+	});
+
+	els.selectEl.addEventListener('change', loadPricing);
+	await loadPricing();
 })(), 'StaffCredits');

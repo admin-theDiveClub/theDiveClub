@@ -1,0 +1,264 @@
+/* The Add credits card (UV, 24 Nov; docs/design/shop.md, Stage 1; canvas artboard 2).
+   One card over whatever page you are on: a sheet rising from the foot on a phone,
+   centred and no wider than --cc-width above that. Solid (--bg-base), as the profile
+   menu is on a phone, so the page under it never confuses a number. Built by
+   scripts/credits-card.js; tokens --cc-* and --qr-* in variables.css. */
+
+.cc {
+	width: 100%;
+	max-width: var(--cc-width);
+	max-height: calc(100dvh - var(--space-5));
+	margin: auto auto 0;
+	padding: var(--space-3) var(--space-5) var(--space-5);
+	padding-bottom: calc(var(--space-5) + env(safe-area-inset-bottom));
+	border: 0;
+	border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+	background: var(--bg-base);
+	color: var(--text-primary);
+	box-shadow: var(--shadow-panel);
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+.cc::backdrop { background: var(--scrim); }
+@media (min-width: 40rem) {
+	.cc { margin: auto; border-radius: var(--radius-lg); padding-bottom: var(--space-5); }
+}
+
+/* ─── The head: back, the title, close ─── */
+.cc-head {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	min-height: var(--nm-field);
+	margin-bottom: var(--space-3);
+}
+.cc-head h2 {
+	flex: 1;
+	margin: 0;
+	font-family: var(--font-display);
+	font-size: 1.15rem;
+	font-weight: 400;
+	line-height: 1.32;
+}
+.cc-head h2:focus { outline: none; }   /* focused only so opening doesn't ring Close */
+.cc-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: var(--nm-field);
+	height: var(--nm-field);
+	padding: 0;
+	border: 0;
+	border-radius: var(--radius-round);
+	background: transparent;
+	color: var(--text-primary);
+	box-shadow: var(--nm-raised-small);
+	cursor: pointer;
+}
+.cc-icon:active { box-shadow: var(--nm-sunken-small); }
+.cc-icon svg { width: 1.25rem; height: 1.25rem; }
+
+.cc-venue { margin-bottom: var(--space-4); }
+
+/* ─── 1. The amount ─── */
+.cc-amount {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: var(--space-2) var(--space-4) var(--space-3);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--nm-sunken);
+}
+.cc .cc-amount input {
+	width: 100%;
+	min-height: 0;
+	padding: 0;
+	border: 0;
+	outline: 0;
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-primary);
+	font-family: var(--font-display);
+	font-size: var(--cc-amount-size);
+	line-height: 1.32;
+	text-align: center;
+	-moz-appearance: textfield;
+	appearance: textfield;
+}
+.cc .cc-amount input::-webkit-outer-spin-button,
+.cc .cc-amount input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.cc-amount-unit { color: var(--text-muted); font-size: 0.85rem; }
+
+/* The slider: a sunken groove, a raised knob ringed in green. Dragged sideways only. */
+.cc-slider { position: relative; margin-top: var(--space-4); }
+.cc-range {
+	display: block;
+	width: 100%;
+	height: var(--nm-field);
+	margin: 0;
+	background: transparent;
+	-webkit-appearance: none;
+	appearance: none;
+	touch-action: none;
+	cursor: pointer;
+}
+.cc-range::-webkit-slider-runnable-track {
+	height: var(--cc-track);
+	border-radius: var(--radius-pill);
+	box-shadow: var(--nm-sunken-small);
+}
+.cc-range::-moz-range-track {
+	height: var(--cc-track);
+	border-radius: var(--radius-pill);
+	box-shadow: var(--nm-sunken-small);
+}
+.cc-range::-webkit-slider-thumb {
+	width: var(--cc-thumb);
+	height: var(--cc-thumb);
+	margin-top: calc((var(--cc-track) - var(--cc-thumb)) / 2);
+	border: 2px solid var(--color-primary);
+	border-radius: var(--radius-round);
+	background: var(--bg-base);
+	box-shadow: var(--nm-raised-small);
+	-webkit-appearance: none;
+}
+.cc-range::-moz-range-thumb {
+	width: var(--cc-thumb);
+	height: var(--cc-thumb);
+	border: 2px solid var(--color-primary);
+	border-radius: var(--radius-round);
+	background: var(--bg-base);
+	box-shadow: var(--nm-raised-small);
+}
+.cc-range:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; border-radius: var(--radius-pill); }
+
+/* Discount ticks under the groove, lit once passed. None while no discount is set. */
+.cc-ticks { position: relative; height: 2.5rem; margin: 0 calc(var(--cc-thumb) / 2); }
+.cc-ticks:empty { display: none; }
+.cc-tick {
+	position: absolute;
+	top: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	transform: translateX(-50%);
+	color: var(--text-muted);
+	font-size: 0.75rem;
+	line-height: 1.2;
+	white-space: nowrap;
+}
+.cc-tick::before { content: ''; width: 2px; height: var(--space-2); margin-bottom: 2px; border-radius: 1px; background: currentColor; }
+.cc-tick b { font-weight: 700; }
+.cc-tick.is-passed { color: var(--color-primary); }
+
+.cc-sum {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--space-3);
+	margin: var(--space-4) 0;
+}
+.cc-save { color: var(--text-muted); font-size: 0.85rem; }
+.cc-price { font-family: var(--font-display); font-size: 1.5rem; line-height: 1.32; white-space: nowrap; }
+
+.cc .btn { width: 100%; margin: 0; }
+
+/* The ways to pay, small under Checkout: only At the club is lit. */
+.cc-ways { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); margin-top: var(--space-3); }
+.cc-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-1);
+	padding: var(--space-1) var(--space-3);
+	border-radius: var(--radius-pill);
+	box-shadow: var(--nm-sunken-small);
+	color: var(--text-muted);
+	font-size: 0.75rem;
+}
+.cc-chip svg { width: 0.9rem; height: 0.9rem; }
+.cc-chip.is-on { color: var(--text-primary); }
+.cc-chip.is-on svg { color: var(--color-primary); }
+
+/* ─── 2. Checkout ─── */
+.cc-lines { padding: var(--space-2) var(--space-4); border-radius: var(--radius-lg); box-shadow: var(--nm-sunken); }
+.cc-line { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-1) 0; }
+.cc-line.is-off { color: var(--color-primary); }
+.cc-line.is-total { margin-top: var(--space-1); padding-top: var(--space-2); border-top: 1px solid var(--border-color); font-weight: 700; }
+
+.cc-who { display: flex; align-items: center; gap: var(--space-3); margin: var(--space-4) 0 var(--space-2); }
+.cc-who-pic {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: 2.5rem;
+	height: 2.5rem;
+	border-radius: var(--radius-round);
+	overflow: hidden;
+	box-shadow: var(--nm-sunken-small);
+	color: var(--text-muted);
+	font-size: 0.85rem;
+	font-weight: 700;
+}
+.cc-who-pic img { width: 100%; height: 100%; object-fit: cover; }
+.cc-who-name { font-weight: 600; }
+
+.cc-label { margin: var(--space-4) 0 var(--space-2); color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
+.cc-way {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	min-height: var(--nm-field);
+	margin-bottom: var(--space-2);
+	padding: 0 var(--nm-pad);
+	border-radius: var(--radius-pill);
+}
+.cc-way svg { width: 1.25rem; height: 1.25rem; flex: none; }
+.cc-way span { flex: 1; }
+.cc-way.is-off { box-shadow: var(--nm-sunken-small); color: var(--text-muted); }
+.cc-way.is-off small { font-size: 0.75rem; }
+.cc-way.is-on { box-shadow: var(--nm-raised-small), inset 0 0 0 2px var(--color-primary); }
+.cc-way.is-on svg { color: var(--color-primary); }
+.cc-pay-go { margin-top: var(--space-3); }
+
+/* ─── 3. The code ─── */
+.cc-code-step { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.cc-code-step > p { margin: 0 0 var(--space-4); color: var(--text-muted); }
+.cc-qr {
+	width: var(--cc-qr-size);
+	height: var(--cc-qr-size);
+	padding: var(--space-3);
+	border-radius: var(--radius-md);
+	background: var(--qr-paper);
+	box-shadow: var(--nm-raised-small);
+}
+.cc-qr svg { display: block; width: 100%; height: 100%; }
+.cc-code {
+	margin-top: var(--space-4);
+	font-family: var(--font-mono);
+	font-size: var(--cc-code-size);
+	font-weight: 700;
+	letter-spacing: 0.25em;
+	padding-left: 0.25em; /* the letter spacing's last gap, so the code sits centred */
+}
+.cc-state {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	margin-top: var(--space-3);
+	padding: var(--space-1) var(--space-4);
+	border-radius: var(--radius-pill);
+	box-shadow: var(--nm-sunken-small);
+	font-size: 0.85rem;
+}
+.cc-state::before { content: ''; width: 0.5rem; height: 0.5rem; border-radius: var(--radius-round); background: var(--cc-state, var(--text-muted)); }
+.cc-state.is-waiting { --cc-state: var(--color-warning); }
+.cc-state.is-paid { --cc-state: var(--color-primary); color: var(--color-primary); }
+.cc-state.is-over { --cc-state: var(--text-muted); color: var(--text-muted); }
+.cc-until { margin: var(--space-2) 0 var(--space-4); color: var(--text-muted); font-size: 0.85rem; }
+.cc-code-step .btn + .btn { margin-top: var(--space-3); }
+
+.cc .status:empty { display: none; }
+.cc .status { margin-top: var(--space-3); }
