@@ -53,6 +53,8 @@
  * close under the name as its subtitle, the badge a clear step below. */
 .lj-names { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
 .tdc-card .lj-names .lj-season { margin-top: var(--space-1); }
+/* The venue (UV, 24 Nov): straight under the season, seen with the banner folded */
+.tdc-card .lj-names .lj-venue { margin-top: 0; }
 .lj-names .jumbo-status { margin-top: var(--space-3); font-family: var(--font-body); }
 .tdc-card .lj-names h1 {
 	max-width: 100%;

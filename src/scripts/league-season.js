@@ -43,7 +43,7 @@ TDCLeagueNav.panel('season', () => {
 		meTeamPlace: el('me-team-place'), meResults: el('me-results'), meResultsEmpty: el('me-results-empty'),
 		views: el('ls-views'), teamsView: el('ls-teams'), playersView: el('ls-players'),
 		poolPlaces: el('pool-places'),
-		jumbo: el('jumbo'), jumboPic: el('jumbo-pic'), jumboFacts: el('jumbo-facts'),
+		jumbo: el('jumbo'), jumboPic: el('jumbo-pic'), jumboFacts: el('jumbo-facts'), venue: el('l-venue'),
 		share: el('share-btn'), interestBtn: el('interest-btn'),
 		stats: el('stats'), notesBox: el('notes-box'), notes: el('l-notes'),
 		nights: el('l-nights'), nightCount: el('night-count'), nightKey: el('night-key'), nightPicked: el('night-picked'), nightNote: el('night-note'),
@@ -572,6 +572,13 @@ TDCLeagueNav.panel('season', () => {
 		// The league's own picture, or the trophy it had until it had one.
 		els.jumboPic.replaceChildren(TDC.leaguePic(seasonRow && seasonRow.tbl_leagues && seasonRow.tbl_leagues.picture_path));
 
+		// The venue under the season, seen with the banner folded (UV, 24 Nov),
+		// each a link to its page as on the Standings line.
+		const where = info.venues || [];
+		els.venue.replaceChildren();
+		where.forEach((v, i) => { if (i) els.venue.append(', '); els.venue.append(TDC.venueLink(v)); });
+		els.venue.hidden = !where.length;
+
 		const facts = [];
 		facts.push(['Game', D.DISCIPLINE[rules.discipline] || rules.discipline || 'Not set']);
 		const when = [info.starts_on ? day(info.starts_on) : null, info.ends_on ? day(info.ends_on) : null].filter(Boolean);
@@ -588,8 +595,15 @@ TDCLeagueNav.panel('season', () => {
 			return row;
 		}));
 
-		const venues = TDC.venueFact(info.venues);
-		if (venues) els.jumboFacts.append(venues);
+		// Team size where the venue was (UV, 24 Nov: the venue is under the
+		// season now), in the Rules tab's words (league-rules.js ownValue).
+		const size = rules.team_size;
+		const reserves = (seasonRow && seasonRow.max_reserves) || 0;
+		const sizeRow = node('div', 'jumbo-fact');
+		sizeRow.append(node('dt', null, 'Team size'), node('dd', null, size === 1 ? 'Singles'
+			: size >= 2 ? size + ' a side' + (reserves ? ', up to ' + plural(reserves, 'reserve') : '')
+			: 'Not set'));
+		els.jumboFacts.append(sizeRow);
 
 		// Who runs it: each one's picture, with their name over their role (UV, 10 Nov).
 		const people = node('div', 'jumbo-fact lj-people');
