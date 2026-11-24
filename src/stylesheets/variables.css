@@ -298,6 +298,16 @@
   --nm-sunken:
     inset var(--nm-x) var(--nm-y) calc(var(--nm-blur) / 2) var(--nm-dark),
     inset calc(var(--nm-x) * -1) calc(var(--nm-y) * -1) calc(var(--nm-blur) / 2) var(--nm-lit);
+  /* A picture's shadow (UV, 24 Nov: "less severe, and let it move less than the
+     other shadows on the page"): half the move of the shadow it replaces, and
+     drawn at --pic-shade-strength. design.css, "Pictures set into the page". */
+  --pic-shade-strength: 0.6;
+  --nm-pic-sunken:
+    inset calc(var(--nm-x) / 2) calc(var(--nm-y) / 2) calc(var(--nm-blur) / 4) var(--nm-dark),
+    inset calc(var(--nm-x) / -2) calc(var(--nm-y) / -2) calc(var(--nm-blur) / 4) var(--nm-lit);
+  --nm-pic-sunken-small:
+    inset calc(var(--nm-x) / 4) calc(var(--nm-y) / 4) calc(var(--nm-blur) / 8) var(--nm-dark),
+    inset calc(var(--nm-x) / -4) calc(var(--nm-y) / -4) calc(var(--nm-blur) / 8) var(--nm-lit);
   --nm-knob-glow: color-mix(in srgb, var(--nm-light-colour) 40%, transparent);
   --nm-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2361ffad' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 }

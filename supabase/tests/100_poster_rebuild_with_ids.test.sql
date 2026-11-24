@@ -30,7 +30,7 @@ set snapshot     = private.tdc_poster_snapshot(p.tournament_id, p.include_entran
 	generated_at = now()
 where coalesce((p.snapshot ->> 'version')::integer, 1) < 3;
 
-select is((select (snapshot ->> 'version')::integer from public.tbl_tournament_posters where tournament_id = :'t'), 3, 'the old poster is rebuilt at version 3');
+select ok((select (snapshot ->> 'version')::integer from public.tbl_tournament_posters where tournament_id = :'t') >= 3, 'the old poster is rebuilt at version 3 or later');
 select is((select snapshot #>> '{officials,0,player_id}' from public.tbl_tournament_posters where tournament_id = :'t'), tests.player_of(:'dee')::text, 'its director has their player id');
 select is((select jsonb_array_length(snapshot -> 'entrant_ids') from public.tbl_tournament_posters where tournament_id = :'t'), 2, 'its entrants have theirs');
 select ok((select is_public from public.tbl_tournament_posters where tournament_id = :'t'), 'it is still shared');

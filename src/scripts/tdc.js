@@ -613,6 +613,23 @@ const TDC = (() => {
 		return img;
 	}
 
+	// ─── A banner's picture as tall as the name (UV, 24 Nov; docs/ui-list.md item 10) ───
+	// On a tournament's and a league's banner the picture sits only in the name's
+	// row, its height the name's (both lines when it wraps), so the lines under
+	// the name have the banner's whole width. CSS cannot size a box from a
+	// heading beside it, so the name's height is measured whenever it changes and
+	// handed to league-join.css as --lj-name-h. The venue's banner is not one.
+	if (typeof ResizeObserver !== 'undefined') {
+		const nameWatch = new ResizeObserver((entries) => {
+			for (const e of entries) {
+				const id = e.target.closest('.lj-id');
+				const h = Math.round(e.target.getBoundingClientRect().height);
+				if (id && h && id.style.getPropertyValue('--lj-name-h') !== h + 'px') id.style.setProperty('--lj-name-h', h + 'px');
+			}
+		});
+		document.querySelectorAll('.lj-hero:not(.venue-hero) .lj-id .lj-names > h1').forEach((h1) => nameWatch.observe(h1));
+	}
+
 	// ─── Text that changed, faded (UV, 29 Oct) ───
 	// A page that draws itself again with data it has re-read (a live update,
 	// a tab shown again) shows what moved: before drawing it takes

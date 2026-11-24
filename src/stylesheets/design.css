@@ -839,16 +839,19 @@ button.league-nav-item:focus-visible { outline: 2px solid var(--nm-light-colour)
 	position: absolute;
 	inset: 0;
 	border-radius: inherit;
-	box-shadow: var(--pic-inset, var(--nm-sunken-small));
+	box-shadow: var(--pic-inset, var(--nm-pic-sunken-small));
+	opacity: var(--pic-shade-strength);
 	pointer-events: none;
 }
-/* The bigger ones take the full depth. */
-:is(.nav-account-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-vs-pic, .mv-pic) { --pic-inset: var(--nm-sunken); }
+/* The bigger ones take more depth. Every picture's shadow is lighter and moves half
+   as far as the shadows round it (UV, 24 Nov): --nm-pic-sunken(-small), at
+   --pic-shade-strength (variables.css). */
+:is(.nav-account-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-vs-pic, .mv-pic) { --pic-inset: var(--nm-pic-sunken); }
 /* The box round a picture casts nothing once the picture is sunk in it. */
 :is(.pp-pic, .pp-zoom-pic, .lj-pic):has(img) { --shadow-pic: 0 0 transparent; }
 /* These two draw the picture as their own background, under an inset shadow. */
-.avatar-large:not(.placeholder) { box-shadow: var(--nm-sunken); }
-.chosen-avatar:where([style*="background-image"]) { box-shadow: var(--nm-sunken-small); }
+.avatar-large:not(.placeholder) { box-shadow: var(--nm-pic-sunken); }
+.chosen-avatar:where([style*="background-image"]) { box-shadow: var(--nm-pic-sunken-small); }
 
 /* A league's shield and a team's hexagon (TDC.leaguePic, TDC.teamPic). The box
    they stand in gives up its circle. The shadow is the page round the shape,
@@ -860,8 +863,11 @@ button.league-nav-item:focus-visible { outline: 2px solid var(--nm-light-colour)
 	overflow: visible;
 	background: none;
 }
+/* The shade moves half as far as before and is drawn lighter (UV, 24 Nov: a
+   picture's shadow less severe and moving less than the page's): 0.25 and 0.5,
+   were 0.5 and 1, at --pic-shade-strength. */
 .tdc-shaped {
-	--shade-move: 0.5;
+	--shade-move: 0.25;
 	--shade-blur: calc(var(--nm-blur) / 8);
 	position: relative;
 	display: grid;
@@ -872,7 +878,7 @@ button.league-nav-item:focus-visible { outline: 2px solid var(--nm-light-colour)
 	overflow: hidden;
 }
 :is(.jumbo-pic, .league-tile-pic, .lc-pic, .lj-pic-inner, .hc-pic) .tdc-shaped {
-	--shade-move: 1;
+	--shade-move: 0.5;
 	--shade-blur: calc(var(--nm-blur) / 4);
 }
 /* As tall as its box, and as wide as a shield is. */
@@ -887,6 +893,7 @@ button.league-nav-item:focus-visible { outline: 2px solid var(--nm-light-colour)
 	overflow: visible;
 	pointer-events: none;
 	filter: blur(var(--shade-blur));
+	opacity: var(--pic-shade-strength);
 	will-change: transform;
 }
 .tdc-shade-dark {

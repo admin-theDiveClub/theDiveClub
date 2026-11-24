@@ -197,8 +197,17 @@ var TDCBannerTable = (function () {
 					if (onX) mx += 0.02; else mz += 0.02;
 					if (mx > CX || mz > CZ) break;
 				}
-				// The corners: a hole on the corner point
-				while (!fitsCard(CX - mx, CZ - mz, CM / 2) && mx < CX && mz < CZ) { mx += 0.02; mz += 0.02; }
+				// The corners: a hole on the corner point. Each side moved in only while the
+				// hole still crosses that side (UV, 24 Nov, docs/ui-list.md item 9: both were
+				// moved together, so the sides with the middle pockets came in as far again
+				// as the corners needed of the other two, and the top pockets sat ~22px inside
+				// the banner's edge while the side ones touched it). Both together only where
+				// neither alone is the reason (a rounded card's corner)
+				while (!fitsCard(CX - mx, CZ - mz, CM / 2) && mx < CX && mz < CZ) {
+					var overX = CX - mx + CM / 2 > CX - FIT_GAP, overZ = CZ - mz + CM / 2 > CZ - FIT_GAP;
+					if (overX || !overZ) mx += 0.02;
+					if (overZ || !overX) mz += 0.02;
+				}
 				return [CX - mx, CZ - mz, mx, mz];
 			}
 
@@ -383,6 +392,7 @@ var TDCBannerTable = (function () {
 			var lctx = layer.getContext('2d');
 			var dpr = 1, cw = 0, ch = 0, sc = 10, cx = 0, cy = 0, layerKey = '', boxKey = '', bleed = 0, topOff = 0;
 			var sizeDirty = true, sizeWatchUntil = 0;
+			var pull = 0;   // px the wrapper is pulled up at the top of its card (fit)
 			function sizeMayChange() { sizeDirty = true; sizeWatchUntil = performance.now() + 600; }
 			var sizeWatch = new ResizeObserver(sizeMayChange);
 			sizeWatch.observe(stage);
@@ -420,16 +430,25 @@ var TDCBannerTable = (function () {
 			sizeDirty = false;
 			var bw = stage.clientWidth, h = stage.clientHeight;
 				if (!bw || !h) return null;
-				// The table reaches out into the page card's side margin (UV, 14 Nov: "let the
-				// new banner edge extend into that margin space"): the canvases are wider than
-				// the banner by the card's own side padding, each side
-				// (measured to the page card's inside edge, the nearer side, whatever lies between)
-				var card = stage.closest('.tdc-card'), bl = 0;
-				if (card) {
-					var cr = card.getBoundingClientRect(), sr = stage.getBoundingClientRect();
-					bl = Math.max(0, Math.floor(Math.min(sr.left - cr.left, cr.right - sr.right) - card.clientLeft));
-				}
+				// The table fits the card's margin (UV, 24 Nov; docs/ui-list.md item 9): the
+				// pockets' outer edges line up with everything else on the card, so the
+				// canvases are the banner's own width. Until then (14 Nov: "let the new banner
+				// edge extend into that margin space") they reached out into the page card's
+				// side padding by bl each side; bl stays, at 0, for the code that reads it.
+				var bl = 0;
 				var w = bw + 2 * bl;
+				// And the gap above equals the gap at the sides (UV, 24 Nov, the same item): a
+				// banner at the very top of its card is pulled up by the card's top padding
+				// less its side padding. The pockets' outer edges are the banner's, top and
+				// sides alike (tableIn), so the gaps to them are then equal. A banner lower down
+				// a page is left where it is.
+				var card = stage.closest('.tdc-card');
+				if (card) {
+					var ccs = getComputedStyle(card), padT = parseFloat(ccs.paddingTop) || 0, padS = parseFloat(ccs.paddingLeft) || 0;
+					var gapAbove = wrap.getBoundingClientRect().top - card.getBoundingClientRect().top - card.clientTop - pull;
+					var wantPull = Math.abs(gapAbove - padT) < 1 ? Math.min(0, padS - padT) : 0;
+					if (wantPull !== pull) { pull = wantPull; wrap.style.marginTop = pull ? pull + 'px' : ''; }
+				}
 				var d = Math.min(window.devicePixelRatio || 1, sharpNow());
 				var upright = window.innerWidth < window.innerHeight;
 				var ballPx = Math.min(bw / (upright ? 18 : 36), POCKET_MAX / MM);

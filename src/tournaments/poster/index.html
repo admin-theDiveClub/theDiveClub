@@ -97,13 +97,22 @@ extraScripts:
 			<div class="status" id="p-entry-status"></div>
 		</section>
 
-		<section class="lj-numbers" id="p-numbers" aria-label="The tournament in numbers"></section>
-
-		{% comment %} Who is in before the rules (UV, 24 Nov). {% endcomment %}
-		<div id="p-names-box" hidden>
-			<h2>Who is in <span class="badge" id="p-names-count"></span></h2>
-			<div class="poster-names" id="p-names"></div>
+		{% comment %}
+			Who is in before the rules (UV, 24 Nov), as two lists: Confirmed
+			first, then Interested folded and closed on opening; the numbers
+			after both (UV, 24 Nov; docs/ui-list.md item 8).
+		{% endcomment %}
+		<div id="p-confirmed-box" hidden>
+			<h2>Confirmed <span class="badge" id="p-confirmed-count"></span></h2>
+			<div class="poster-names" id="p-confirmed"></div>
 		</div>
+
+		<details class="set-group poster-fold" id="p-interested-box" hidden>
+			<summary><h2>Interested <span class="badge" id="p-interested-count"></span></h2></summary>
+			<div class="poster-names" id="p-interested"></div>
+		</details>
+
+		<section class="lj-numbers" id="p-numbers" aria-label="The tournament in numbers"></section>
 
 		<div id="p-rules-box" hidden>
 			<h2>How it is played</h2>

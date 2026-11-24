@@ -54,6 +54,18 @@
 	column-gap: var(--space-5);
 	margin-bottom: var(--space-4);
 }
+/* Interested folds, closed on opening (UV, 24 Nov; docs/ui-list.md item 8):
+ * a set-group whose summary is the h2, centred and spaced as the Confirmed
+ * heading above it, the arrow after its words. Padded the arrow's width on
+ * both sides so the words sit on the centre line as Confirmed's do. */
+.poster-fold { margin-bottom: 0; }
+.poster-fold > summary {
+	margin: 2rem auto 0.75rem;
+	padding: 0 1.75rem;
+	min-height: 0;
+	cursor: pointer;
+}
+.poster-fold > summary h2 { margin: 0; }
 .poster-names > .person {
 	display: flex;
 	break-inside: avoid;

@@ -71,6 +71,33 @@
 }
 .tdc-card .lj-season { margin: 0; color: var(--text-muted); text-align: left; }
 
+/* A tournament's and a league's banner (UV, 24 Nov; docs/ui-list.md item 10: "relax
+ * the cramped text below the names"): the picture only in the name's row, as tall
+ * as the name (both lines when it wraps; tdc.js measures it as --lj-name-h), and
+ * the lines under the name across the whole banner, under the picture too. The
+ * names' box lays out as if it were not there, so its lines join the banner's
+ * grid. The venue's banner keeps the picture beside all its lines. */
+.lj-hero:not(.venue-hero) .lj-id { row-gap: 0; }
+.lj-hero:not(.venue-hero) .lj-names { display: contents; }
+.lj-hero:not(.venue-hero) .lj-pic {
+	grid-row: 1;
+	grid-column: 1;
+	width: var(--lj-name-h, 1.52rem);
+	height: var(--lj-name-h, 1.52rem);
+}
+.lj-hero:not(.venue-hero) .lj-names > h1 { grid-row: 1; grid-column: 2; }
+.lj-hero:not(.venue-hero) .lj-names > :not(h1) { grid-column: 1 / -1; justify-self: start; }
+/* At the name's size the picture's shadow is scaled with it (UV, 24 Nov: "fix shadows
+ * on pictures"). The shade moves in real pixels (design.css, .tdc-shade: the light's
+ * offset times --shade-move), so the move made for a 6.5rem (104px) picture is too
+ * much for a name-sized one (24px a line): a quarter of it, the blur with it. A round
+ * picture takes the small pictures' inset. */
+.lj-hero:not(.venue-hero) .lj-pic-inner { --pic-inset: var(--nm-pic-sunken-small); }
+.lj-hero:not(.venue-hero) .lj-pic-inner .tdc-shaped {
+	--shade-move: 0.125;
+	--shade-blur: calc(var(--nm-blur) / 16);
+}
+
 @media (max-width: 30rem) {
 	.lj-pic { width: 5rem; height: 5rem; }
 	.lj-hero .jumbo-facts { grid-template-columns: repeat(auto-fill, minmax(min(100%, 8.5rem), 1fr)); }

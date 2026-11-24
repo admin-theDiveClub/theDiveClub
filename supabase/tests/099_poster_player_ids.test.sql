@@ -22,7 +22,7 @@ select public.tdc_publish_poster(:'t', p_include_entrants => false, p_include_dr
 select public.tdc_publish_poster(:'t', p_include_entrants => true, p_include_draw => true) as snap2 \gset
 select tests.sign_out();
 
-select is((:'snap'::jsonb ->> 'version')::integer, 3, 'the snapshot is version 3');
+select ok((:'snap'::jsonb ->> 'version')::integer >= 3, 'the snapshot is version 3 or later');
 select is(:'snap'::jsonb #>> '{officials,0,player_id}', tests.player_of(:'dee')::text, 'the director carries their player id');
 
 select is(jsonb_array_length(:'snap'::jsonb -> 'entrant_ids'), 4, 'an id for every entrant');

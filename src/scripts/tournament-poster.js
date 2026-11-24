@@ -35,7 +35,8 @@
 		private: el('p-private'), numbers: el('p-numbers'),
 		rulesBox: el('p-rules-box'), rules: el('p-rules'),
 		roundsBox: el('p-rounds-box'), rounds: el('p-rounds'),
-		namesBox: el('p-names-box'), names: el('p-names'), namesCount: el('p-names-count'),
+		confirmedBox: el('p-confirmed-box'), confirmed: el('p-confirmed'), confirmedCount: el('p-confirmed-count'),
+		interestedBox: el('p-interested-box'), interested: el('p-interested'), interestedCount: el('p-interested-count'),
 		drawBox: el('p-draw-box'), draw: el('p-draw'),
 		entry: el('p-entry'), entryDetail: el('p-entry-detail'),
 		entryActions: el('p-entry-actions'), entryStatus: el('p-entry-status'),
@@ -205,23 +206,26 @@
 
 		// A side's picture and name: one link to the player's profile (UV, 24 Nov),
 		// as a league fixture's side; the card itself opens nothing here.
-		const player = (name, playerId) => {
+		// The picture from the snapshot since version 5 (UV, 24 Nov).
+		const player = (name, playerId, avatar) => {
 			const who = node(playerId ? 'a' : 'span', 'poster-side-player');
 			if (playerId) who.href = profileUrl(playerId);
-			who.append(face(name || '', null), node('span', 'poster-side-name', name || 'To be decided'));
+			who.append(face(name || '', avatar || null), node('span', 'poster-side-name', name || 'To be decided'));
 			return who;
 		};
 
 		if (bye) {
 			const row = node('div', 'poster-side');
-			row.append(player(f.winner, f.home ? f.home_player_id : f.away_player_id));
+			row.append(f.home
+				? player(f.winner, f.home_player_id, f.home_avatar)
+				: player(f.winner, f.away_player_id, f.away_avatar));
 			box.append(row, node('div', 'poster-fixture-tag', 'Bye: through to the next round'));
 			return box;
 		}
 
-		const side = (name, frames, isWinner, playerId) => {
+		const side = (name, frames, isWinner, playerId, avatar) => {
 			const row = node('div', 'poster-side' + (isWinner ? ' won' : '') + (name ? '' : ' tbd'));
-			row.append(player(name, name ? playerId : null));
+			row.append(player(name, name ? playerId : null, name ? avatar : null));
 			if (frames !== null && frames !== undefined) {
 				row.append(node('span', 'poster-side-score', String(frames)));
 			}
@@ -229,8 +233,8 @@
 		};
 
 		box.append(
-			side(f.home, f.home_frames, decided && f.winner === f.home, f.home_player_id),
-			side(f.away, f.away_frames, decided && f.winner === f.away, f.away_player_id)
+			side(f.home, f.home_frames, decided && f.winner === f.home, f.home_player_id, f.home_avatar),
+			side(f.away, f.away_frames, decided && f.winner === f.away, f.away_player_id, f.away_avatar)
 		);
 
 		// A result that has not been published is not official, and a poster
@@ -518,6 +522,35 @@
 		}));
 	}
 
+	// ─── Who is in ───
+	// Counts, not names — unless the TD included names. Confirmed and
+	// Interested apart, each with their picture (UV, 24 Nov; snapshot
+	// version 4, migration 20261124183008): statuses and pictures sit beside
+	// the names in the same order. Every poster was rebuilt at version 4, so
+	// names without statuses mean something is wrong, and it is said.
+	function renderEntrants(s) {
+		const names = s.entrant_names || [];
+		const ids = s.entrant_ids || [];
+		const statuses = s.entrant_statuses;
+		const avatars = s.entrant_avatars || [];
+		const lists = { confirmed: [], interested: [] };
+		if (names.length && !Array.isArray(statuses)) {
+			TDC.error(AREA, 'the poster holds names but not who is confirmed (built before version 4); regenerate it.', null, els.status);
+		} else {
+			names.forEach((n, i) => {
+				const list = lists[statuses[i]];
+				if (!list) { TDC.error(AREA, 'unknown entrant status in the snapshot: ' + statuses[i], null, els.status); return; }
+				list.push(person(n, avatars[i] || null, null, ids[i]));
+			});
+		}
+		els.confirmedBox.hidden = !lists.confirmed.length;
+		els.confirmedCount.textContent = String(lists.confirmed.length);
+		els.confirmed.replaceChildren(...lists.confirmed);
+		els.interestedBox.hidden = !lists.interested.length;
+		els.interestedCount.textContent = String(lists.interested.length);
+		els.interested.replaceChildren(...lists.interested);
+	}
+
 	// ─── Rendering the whole thing ───
 	function render(row) {
 		snap = row.snapshot;
@@ -528,12 +561,7 @@
 		renderRules(snap.rules);
 		renderRoundRules(snap);
 
-		// Counts, not names — unless the TD included names.
-		const names = snap.entrant_names || [];
-		els.namesBox.hidden = !names.length;
-		els.namesCount.textContent = String(names.length);
-		const ids = snap.entrant_ids || [];
-		els.names.replaceChildren(...names.map((n, i) => person(n, null, null, ids[i])));
+		renderEntrants(snap);
 
 		renderDraw(snap.draw);
 		// The text for a poster designer is on the poster's settings page now,
