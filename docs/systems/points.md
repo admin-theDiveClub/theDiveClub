@@ -54,6 +54,8 @@ The full list is `DATA` in the module, which the page will show. A test checks t
 
 **Using the app (13 Nov; migration `20261113164109_player_devices`):** `me.profile.uses_app` (has opened the installed app on any device) and `me.profile.app_days` (the days they did) are in `DATA` and `fillPerson`. They will be read from `tbl_player_devices`: any row with `installed` true, and the sum of those rows' `days_seen`. Recording started with that migration and nothing before it can be recovered. No formula uses them yet, and the real read is not built.
 
+**Receipt emails (24 Nov; migration `20261124170346_shop_receipt_emails`):** nothing added. The email switches and the queue say how a player likes to be told, not how they play or use the site; the orders behind the emails are already counted above (Claude's call).
+
 **A tournament's picture (24 Nov; migration `20261124150322_tournament_pictures`):** nothing added. It belongs to the tournament, not to a player, and says nothing about how anybody plays (Claude's call).
 
 **The staff queue (24 Nov; migration `20261124155021_shop_staff_orders`):** `me.profile.shop_collected` (orders they collected) is in `DATA` and `fillPerson`. It will be read from `tbl_shop_orders`, the rows whose status is `collected`. How an at-club order was paid (cash or card) and who handed it over are the club's, not the player's: nothing added for them (Claude's call). No formula uses it yet, and the real read is not built.

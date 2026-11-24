@@ -1,6 +1,6 @@
 -- The poster holds third place, round rules and who runs it (migration
 -- 20261105160712). Still only through the snapshot: a stranger reads them
--- once the poster is shared, and never a player id.
+-- once the poster is shared. (Player ids joined it on 24 Nov: 099.)
 begin;
 \ir _helpers.psql
 select plan(11);
@@ -22,7 +22,7 @@ select public.tdc_set_round_rules(:'t', 2, tests.rules('{"win_condition_target":
 select public.tdc_publish_poster(:'t', p_public => true) as snap \gset
 select tests.sign_out();
 
-select is((:'snap'::jsonb ->> 'version')::integer, 2, 'the snapshot is version 2');
+select ok((:'snap'::jsonb ->> 'version')::integer >= 2, 'the snapshot is version 2 or later');
 select is((:'snap'::jsonb ->> 'third_place')::boolean, true, 'it says there is a third-place playoff');
 select is((:'snap'::jsonb ->> 'rounds')::integer, 2, 'it knows the main bracket has two rounds');
 select is(jsonb_array_length(:'snap'::jsonb -> 'round_rules'), 1, 'one round has rules of its own');
@@ -31,7 +31,8 @@ select ok(not (:'snap'::jsonb #> '{round_rules,0,rules}') ? 'approval_mode', 'ro
 select ok((:'snap'::jsonb -> 'rules') ? 'track_breaks', 'whether breaks are recorded is on the poster');
 select is(:'snap'::jsonb #>> '{officials,0,name}', 'Poster Dee', 'the director is named');
 select is(:'snap'::jsonb #>> '{officials,0,role}', 'Tournament director', 'with the role in words');
-select ok(not (:'snap'::jsonb #> '{officials,0}') ? 'player_id', 'and no player id');
+-- No player id was the rule until 24 Nov, when UV chose links to profiles (099).
+select is(:'snap'::jsonb #>> '{officials,0,player_id}', tests.player_of(:'dee')::text, 'and their player id, for the link to their profile');
 
 -- A stranger reads it through the one function open to them.
 select tests.sign_in_anon();

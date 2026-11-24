@@ -204,6 +204,8 @@
 }
 .cc-who-pic img { width: 100%; height: 100%; object-fit: cover; }
 .cc-who-name { font-weight: 600; }
+.cc-who-text { display: flex; flex-direction: column; min-width: 0; }
+.cc-who-mail { color: var(--text-muted); font-size: 0.85rem; overflow-wrap: anywhere; }
 
 .cc-label { margin: var(--space-4) 0 var(--space-2); color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
 .cc-way {

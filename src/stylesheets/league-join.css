@@ -100,7 +100,10 @@
 }
 /* Join this league (UV, 24 Nov): its own button just below the banner, no longer
  * a second icon in the corner. */
-.lj-join { margin-top: var(--space-4); }
+/* No top margin of its own (UV, 24 Nov: too much space above it): the banner's gap
+ * (--space-5, measured from the table as drawn, banner-table.css) is the gap, the
+ * same as the one under it. */
+.lj-join { margin-top: 0; }
 /* The same gap under it as over it (UV, 24 Nov): with the status line empty it sat
  * flush on the Teams / My Season pill. Gone with the button (.ls-actions hides). */
 .lj-join { margin-bottom: var(--space-5); }

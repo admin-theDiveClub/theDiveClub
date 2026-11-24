@@ -109,6 +109,7 @@ var TDCBannerTable = (function () {
 			wrap.remove();
 			stage.style.removeProperty('--banner-in-x');
 			stage.style.removeProperty('--banner-in-z');
+			stage.style.removeProperty('--banner-out-z');
 		}
 		try { return init(); } catch (e) {
 			fail('the table could not be drawn.', e);
@@ -464,6 +465,15 @@ var TDCBannerTable = (function () {
 				var padX = Math.round(bed[2] * ballPx - bl) + 'px', padZ = Math.round(bed[3] * ballPx) + 'px';
 				if (stage.style.getPropertyValue('--banner-in-x') !== padX) stage.style.setProperty('--banner-in-x', padX);
 				if (stage.style.getPropertyValue('--banner-in-z') !== padZ) stage.style.setProperty('--banner-in-z', padZ);
+				// How far the table's lowest pocket, line and glow included, stops short of the
+				// banner's foot (UV, 24 Nov: "too much space above the I'm interested button"):
+				// banner-table.css takes it off the gap under the banner, so the gap is measured
+				// from the table as drawn. A corner's hole sits on the corner point; a middle
+				// pocket on the top and bottom cushions reaches MM - MID_LIP past it. Only the
+				// banner's margin reads it, so setting it never changes the banner's size.
+				var low = Math.max(hz + CM / 2, midSides() ? 0 : hz + MM - MID_LIP) + FIT_GAP;
+				var padOut = Math.max(0, Math.round((CZ - low) * ballPx)) + 'px';
+				if (stage.style.getPropertyValue('--banner-out-z') !== padOut) stage.style.setProperty('--banner-out-z', padOut);
 				var dX = hx - HX, dZ = hz - HZ, oldX = HX, oldZ = HZ;
 				buildTable(hx, hz);
 				shapesDirty = true;   // where the banner's raised and sunken parts lie, read again

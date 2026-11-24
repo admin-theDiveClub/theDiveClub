@@ -165,7 +165,12 @@ const TDCCredits = (() => {
 		const who = el('div', 'cc-who');
 		const whoPic = el('span', 'cc-who-pic');
 		const whoName = el('span', 'cc-who-name');
-		who.append(whoPic, whoName);
+		// "Receipt to …" (shop Stage 5), only while the Credits added email is on.
+		const whoMail = el('span', 'cc-who-mail');
+		whoMail.hidden = true;
+		const whoText = el('span', 'cc-who-text');
+		whoText.append(whoName, whoMail);
+		who.append(whoPic, whoText);
 		const wayOff = el('div', 'cc-way is-off');
 		wayOff.append(icon(ICON.card), el('span', null, 'Card or Instant EFT'), el('small', null, 'Coming soon'));
 		const wayOn = el('div', 'cc-way is-on');
@@ -193,7 +198,7 @@ const TDCCredits = (() => {
 		document.body.appendChild(dlg);
 
 		els = { back, title, close, venueField, venueSel, amountStep, amount, range, ticks, save, price, toPay,
-			payStep, lines, whoPic, whoName, getCode, codeStep, codeSaid, qr, code, state, untilLine, again, done, status };
+			payStep, lines, whoPic, whoName, whoMail, getCode, codeStep, codeSaid, qr, code, state, untilLine, again, done, status };
 
 		close.addEventListener('click', shut);
 		done.addEventListener('click', shut);
@@ -288,6 +293,24 @@ const TDCCredits = (() => {
 		els.lines.replaceChildren(...rows);
 		els.getCode.textContent = `Get my code · ${rand(q.pay)}`;
 		drawWho();
+		drawReceiptTo();
+	}
+
+	// Asked each time Checkout opens, so a switch changed on the profile shows at once.
+	// A failure only leaves the line off: it says nothing that matters to paying.
+	async function drawReceiptTo() {
+		els.whoMail.hidden = true;
+		try {
+			const { data, error } = await supabaseClient.rpc('tdc_email_prefs');
+			if (error) { console.error('[Credits] could not read your email settings.', error); return; }
+			const on = (data.prefs || []).some((p) => p.kind === 'top_up_paid' && p.enabled);
+			if (on && data.email) {
+				els.whoMail.textContent = 'Receipt to ' + data.email;
+				els.whoMail.hidden = false;
+			}
+		} catch (err) {
+			console.error('[Credits] could not read your email settings.', err);
+		}
 	}
 
 	function drawWho() {

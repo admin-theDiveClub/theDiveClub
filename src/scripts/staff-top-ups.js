@@ -192,6 +192,7 @@ TDCLoader.hold((async () => {
 				els.confirmBtn.disabled = false;
 				return;
 			}
+			TDC.flushEmails();
 			await backToList();
 			TDC.status(els.statusEl, `✓ ${t.credits} credits added for ${t.display_name}. Their balance: ${data}.`, 'success');
 		} catch (err) {

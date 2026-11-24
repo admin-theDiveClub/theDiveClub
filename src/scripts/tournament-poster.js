@@ -80,8 +80,8 @@
 	};
 	const plural = (n, one, many) => (n === 1 ? '1 ' + one : (n || 0) + ' ' + (many || one + 's'));
 
-	// A picture, or initials. The snapshot holds no player ids, so nothing
-	// here opens a profile.
+	// A picture, or initials. Its link to the profile is round it (person,
+	// fixtureLine), from the player ids the snapshot holds since version 3.
 	function face(name, path) {
 		const box = node('span', 'person-pic');
 		const url = path ? TDC.pictureUrl('player-avatars', path) : null;
@@ -97,8 +97,13 @@
 		return box;
 	}
 
-	function person(name, path, sub) {
-		const p = node('span', 'person');
+	// A person: one link to their profile (UV, 24 Nov), as a league season's
+	// people are; a stranger is asked to sign in there. Plain on a poster built
+	// before the snapshot held ids (version 3).
+	const profileUrl = (playerId) => '/players/?p=' + encodeURIComponent(playerId);
+	function person(name, path, sub, playerId) {
+		const p = node(playerId ? 'a' : 'span', 'person');
+		if (playerId) p.href = profileUrl(playerId);
 		const names = node('span', 'person-names');
 		names.append(node('span', 'person-name', name));
 		if (sub) names.append(node('span', 'person-sub', sub));
@@ -310,16 +315,25 @@
 		const box = node('div', 'poster-fixture'
 			+ (f.match_status === 'in_progress' ? ' is-live' : decided ? ' is-done' : ''));
 
+		// A side's picture and name: one link to the player's profile (UV, 24 Nov),
+		// as a league fixture's side; the card itself opens nothing here.
+		const player = (name, playerId) => {
+			const who = node(playerId ? 'a' : 'span', 'poster-side-player');
+			if (playerId) who.href = profileUrl(playerId);
+			who.append(face(name || '', null), node('span', 'poster-side-name', name || 'To be decided'));
+			return who;
+		};
+
 		if (bye) {
 			const row = node('div', 'poster-side');
-			row.append(face(f.winner, null), node('span', 'poster-side-name', f.winner));
+			row.append(player(f.winner, f.home ? f.home_player_id : f.away_player_id));
 			box.append(row, node('div', 'poster-fixture-tag', 'Bye: through to the next round'));
 			return box;
 		}
 
-		const side = (name, frames, isWinner) => {
+		const side = (name, frames, isWinner, playerId) => {
 			const row = node('div', 'poster-side' + (isWinner ? ' won' : '') + (name ? '' : ' tbd'));
-			row.append(face(name || '', null), node('span', 'poster-side-name', name || 'To be decided'));
+			row.append(player(name, name ? playerId : null));
 			if (frames !== null && frames !== undefined) {
 				row.append(node('span', 'poster-side-score', String(frames)));
 			}
@@ -327,8 +341,8 @@
 		};
 
 		box.append(
-			side(f.home, f.home_frames, decided && f.winner === f.home),
-			side(f.away, f.away_frames, decided && f.winner === f.away)
+			side(f.home, f.home_frames, decided && f.winner === f.home, f.home_player_id),
+			side(f.away, f.away_frames, decided && f.winner === f.away, f.away_player_id)
 		);
 
 		// A result that has not been published is not official, and a poster
@@ -695,7 +709,7 @@
 		if (officials.length) {
 			const people = node('div', 'jumbo-fact lj-people');
 			const list = node('dd');
-			list.append(...officials.map((o) => person(o.name, o.avatar_path, o.role)));
+			list.append(...officials.map((o) => person(o.name, o.avatar_path, o.role, o.player_id)));
 			people.append(node('dt', null, 'Who runs it'), list);
 			els.facts.append(people);
 		}
@@ -755,7 +769,8 @@
 		const names = snap.entrant_names || [];
 		els.namesBox.hidden = !names.length;
 		els.namesCount.textContent = String(names.length);
-		els.names.replaceChildren(...names.map((n) => person(n, null)));
+		const ids = snap.entrant_ids || [];
+		els.names.replaceChildren(...names.map((n, i) => person(n, null, null, ids[i])));
 
 		renderDraw(snap.draw);
 

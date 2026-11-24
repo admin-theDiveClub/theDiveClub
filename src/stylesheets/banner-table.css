@@ -23,6 +23,10 @@
 @media (max-width: 30rem) {
 	.banner-wrap > .jumbo { --banner-pad: calc(var(--space-4) + var(--space-2)); }
 }
+/* The gap under the banner is measured from the table as drawn (UV, 24 Nov: "too much
+   space above the I'm interested button"): its lowest pocket stops short of the banner's
+   foot by --banner-out-z (the script), which comes off league.css's --space-5 */
+.banner-wrap > .jumbo { margin-bottom: max(0px, calc(var(--space-5) - var(--banner-out-z, 0px))); }
 /* The corner icons (Share, the way in; league-join.css) keep their gap to the corner
    in from the cushions too, clear of the corner pocket */
 .banner-wrap > .jumbo > .lj-corner {

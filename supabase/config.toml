@@ -420,3 +420,6 @@ verify_jwt = true
 
 [functions.notify-card]
 verify_jwt = true
+
+[functions.send-shop-emails]
+verify_jwt = true

@@ -109,7 +109,7 @@ document.getElementById('notif-preset-1').addEventListener('click', (e) => {
 		tournament: 'Being entered or confirmed, and when your next match is ready.',
 		league:     'League nights and standings.',
 		admin:      'Anything about your account itself.',
-		shop:       'Your order is ready to collect, or the club cancelled it.'
+		shop:       'Your order is ready to collect, or it was cancelled.'
 	};
 
 	function row(pref) {
@@ -164,4 +164,62 @@ document.getElementById('notif-preset-1').addEventListener('click', (e) => {
 
 		box.replaceChildren(...(data || []).map(row));
 	})(), 'Notifications');
+})();
+
+// ─── Which emails you get (shop Stage 5) ──────────────────────────
+//
+// One switch per receipt email, all on until turned off (no row means on, as the
+// notification switches). Built from tdc_email_prefs, which also says where they go.
+
+(() => {
+	const AREA = 'Emails';
+
+	const box    = document.getElementById('email-prefs');
+	const to     = document.getElementById('email-prefs-to');
+	const status = document.getElementById('email-prefs-status');
+	if (!box || !to || !status) return;   // not this page
+
+	const LABEL = {
+		top_up_paid:     'Credits added',
+		order_placed:    'Order placed',
+		order_ready:     'Ready to collect',
+		order_collected: 'Collected (your receipt)',
+		order_cancelled: 'Order cancelled'
+	};
+
+	function row(pref) {
+		const field = document.createElement('div');
+		field.className = 'field';
+		const id = 'email-pref-' + pref.kind;
+		const label = document.createElement('label');
+		label.setAttribute('for', id);
+		label.textContent = LABEL[pref.kind] || pref.kind;
+		const input = document.createElement('input');
+		input.type = 'checkbox';
+		input.id = id;
+		input.checked = pref.enabled;
+		input.addEventListener('change', () => save(pref.kind, input.checked, input));
+		field.append(label, input);
+		return field;
+	}
+
+	const writer = TDC.writer({ area: AREA, status });
+	function save(kind, enabled, control) {
+		return writer.write('Saving', async () => {
+			const res = await supabaseClient.rpc('tdc_set_email_pref', { p_kind: kind, p_enabled: enabled });
+			if (res.error) control.checked = !enabled;
+			return res;
+		}, () => 'Saved.');
+	}
+
+	TDCLoader.hold((async () => {
+		const session = await TDC.getSession(AREA);
+		if (!session) return;
+
+		const { data, error } = await supabaseClient.rpc('tdc_email_prefs');
+		if (error) { TDC.showSupabaseError(AREA, error, status); return; }
+
+		to.textContent = data.email ? `From the shop, to ${data.email}.` : '';
+		box.replaceChildren(...(data.prefs || []).map(row));
+	})(), 'Emails');
 })();

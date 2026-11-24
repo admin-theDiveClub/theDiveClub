@@ -60,8 +60,9 @@
 	margin-bottom: var(--space-2);
 }
 
-/* Not links (the snapshot holds no player ids), so no glow on hover. */
-#poster .person:hover { box-shadow: none; }
+/* A person with a player id is a link to their profile (UV, 24 Nov) and glows as
+ * a league season's; one from a poster built before the ids is not, so no glow. */
+#poster span.person:hover { box-shadow: none; }
 
 /* ── The draw ──────────────────────────────────────────────────────── */
 
@@ -107,6 +108,23 @@
 	gap: var(--space-2);
 	padding: var(--space-1) 0;
 }
+/* A side's picture and name, one link to the player's profile (UV, 24 Nov), washing
+ * like a league fixture's side (.fx-team); plain with no player to open. */
+.poster-side-player {
+	display: flex;
+	flex: 1;
+	align-items: center;
+	gap: var(--space-2);
+	min-width: 0;
+	margin: calc(-1 * var(--space-1));
+	padding: var(--space-1);
+	border-radius: var(--nm-field-radius);
+	color: inherit;
+	text-decoration: none;
+	transition: background-color 0.2s ease;
+}
+a.poster-side-player:hover { background: var(--hover-wash); }
+a.poster-side-player:focus-visible { outline: 2px solid var(--nm-light-colour); outline-offset: -2px; }
 .poster-side .person-pic { width: 1.75rem; height: 1.75rem; font-size: 0.68rem; box-shadow: var(--shadow-pic); }
 
 /* Nobody there yet: the picture's space alone, as the draw page has. */

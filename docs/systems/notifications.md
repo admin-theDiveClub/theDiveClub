@@ -25,7 +25,8 @@
 ### Shop orders (`20261124155021`)
 
 - **A fifth category, `shop`** (UV, 24 Nov: a new Shop switch). The two check constraints were replaced and `tdc_set_notification_pref` / `tdc_notification_prefs` patched (one word each); `push.js` labels it "Shop".
-- **`order_ready`**: staff marked the order Ready. **`order_cancelled`**: staff cancelled it (out of stock), saying whether credits came back. Both from `private.tdc_notify_order`, the staff member as actor, linked to the profile. A step back and forward again sends a second Ready (rare; not collapsed). An order cancelled by the nightly job sends nothing. See `docs/systems/foundations.md`, "The shop: the staff queue and hand-over".
+- **`order_ready`**: staff marked the order Ready. **`order_cancelled`**: staff cancelled it (out of stock), saying whether credits came back. Both from `private.tdc_notify_order`, the staff member as actor, linked to the profile. A step back and forward again sends a second Ready (rare; not collapsed). **`order_uncollected`** (since `20261124170346`, UV 24 Nov): the nightly job cancelled it ("B27 wasn't collected in time"), with no actor, so always told.
+- **Receipt emails** (`20261124170346`) use the same queue-and-sweep shape in their own table, `tbl_shop_emails`, and their own switches (`tbl_email_prefs`); the Shop switch here never stops one. `TDC.flushPushes()` sweeps both. See `docs/systems/foundations.md`, "The shop: receipt emails". See `docs/systems/foundations.md`, "The shop: the staff queue and hand-over".
 - `/staff/orders/` starts a sweep (`TDC.flushPushes()`) after each write, as the tournament pages do.
 
 ### Sending the push (`20261022120000`, `supabase/functions/notify-push`)

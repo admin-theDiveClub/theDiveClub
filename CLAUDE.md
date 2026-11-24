@@ -49,6 +49,7 @@ Before replying with anything else, read this file, `docs/STATUS.md`, and the sy
 | `docs/design/` | **Settled designs not yet built.** Read before proposing anything in that area. `leagues.md` is the current one |
 | `docs/systems/` | **How each built system works** — read the one for your area |
 | `docs/ui.md` | UI conventions, the stylesheet layers, known UI problems, layout traps |
+| `docs/ui-list.md` | **UV's UI list.** Every UI point UV raises is added the same turn; "fix a page's UI" means put that page through every item on it |
 | `docs/test-plan.md` | Scenarios UV plays on real devices; Claude checks the database afterwards |
 | `docs/MODELS.md` | Which Claude model to use for which job |
 | `docs/product/` | Documentation for venues, directors and players |

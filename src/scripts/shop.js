@@ -311,6 +311,7 @@ TDCLoader.hold((async () => {
 			payWith = null;
 			cartDlg.close();
 			TDCOrder.open(data);
+			TDC.flushEmails();
 			if (data.pay_with === 'credits') window.dispatchEvent(new CustomEvent('tdc:credits-changed'));
 			window.dispatchEvent(new CustomEvent('tdc:orders-changed'));
 			await rereadCart();

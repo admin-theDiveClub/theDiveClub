@@ -4,7 +4,8 @@
 // the lines and how it is paid. Cancel order while it is placed (UV, 24 Nov: until staff start
 // it), asked first; credits paid come back at once. While it is open and still on its way, it asks
 // every few seconds whether staff have moved it on (Stage 4 moves it), as the Add credits card does.
-// No "we'll email you" line: emails are Stage 5.
+// "We'll email you when it's ready." while it is Placed or Preparing and the player's Ready to
+// collect email is on (Stage 5), asked each time the card opens.
 // The QR is a link to /staff/orders/?order=<id>, as the top-up QR is to its staff page
 // (DECISIONS 24 Nov); that page is Stage 4.
 //
@@ -24,6 +25,7 @@ const TDCOrder = (() => {
 	let els = null;
 	let order = null;
 	let pollTimer = null;
+	let readyEmail = false;   // the player's Ready to collect email is on
 
 	function el(tag, cls, text) {
 		const n = document.createElement(tag);
@@ -117,6 +119,7 @@ const TDCOrder = (() => {
 		const words = [];
 		if (live && bar) words.push('Café: made when you arrive.');
 		if (live && o.collect_by) words.push(`Merch: collect by ${day(o.collect_by)}.`);
+		if (readyEmail && (o.status === 'placed' || o.status === 'preparing')) words.push('We\'ll email you when it\'s ready.');
 		els.collect.textContent = (live ? `${o.venue_name} · ` : `${o.venue_name} · ${day(o.placed_at)}`) + words.join(' ');
 		els.cancel.hidden = !o.can_cancel;
 
@@ -169,6 +172,7 @@ const TDCOrder = (() => {
 			}
 			order = data;
 			draw(data);
+			TDC.flushEmails();
 			window.dispatchEvent(new CustomEvent('tdc:orders-changed'));
 			if (data.pay_with === 'credits') window.dispatchEvent(new CustomEvent('tdc:credits-changed'));
 		} catch (err) {
@@ -217,6 +221,22 @@ const TDCOrder = (() => {
 		TDC.status(els.status, '', '');
 		if (!dlg.open) dlg.showModal();
 		draw(o);
+		readEmailSetting();
+	}
+
+	// A failure only leaves the line off; console only.
+	async function readEmailSetting() {
+		try {
+			const { data, error } = await supabaseClient.rpc('tdc_email_prefs');
+			if (error) { console.error('[Orders] could not read your email settings.', error); return; }
+			const on = !!data.email && (data.prefs || []).some((p) => p.kind === 'order_ready' && p.enabled);
+			if (on !== readyEmail) {
+				readyEmail = on;
+				if (order && dlg.open) draw(order);
+			}
+		} catch (err) {
+			console.error('[Orders] could not read your email settings.', err);
+		}
 	}
 
 	function shut() {

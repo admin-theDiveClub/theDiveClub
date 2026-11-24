@@ -96,6 +96,9 @@ const TDC = (() => {
 	// else, because the notification is already recorded and will be in
 	// their tray. Failures go to the console and no further.
 	async function flushPushes() {
+		// The shop's receipt emails ride on the same sweep (shop Stage 5): every page that
+		// sends pushes sends waiting emails too. Never awaited, as the pushes aren't.
+		flushEmails();
 		try {
 			const { data: waiting, error } = await supabaseClient.rpc('tdc_pushes_waiting');
 			if (error || !(waiting > 0)) return;
@@ -110,6 +113,24 @@ const TDC = (() => {
 			}
 		} catch (e) {
 			console.error('[Push] could not send notifications.', e);
+		}
+	}
+
+	// Send any shop receipt emails that are waiting (send-shop-emails; migration
+	// shop_receipt_emails). The same shape as the pushes: a count first, nothing in the
+	// common case, and the edge function is told nothing. A missed sweep leaves the email
+	// waiting for the next one (it is skipped after a day). Console only, never the page.
+	async function flushEmails() {
+		try {
+			const { data: waiting, error } = await supabaseClient.rpc('tdc_shop_emails_waiting');
+			if (error || !(waiting > 0)) return;
+			for (let i = 0; i < 3; i++) {
+				const { data, error: sendError } = await supabaseClient.functions.invoke('send-shop-emails');
+				if (sendError) { console.error('[Email] could not send receipt emails.', sendError); return; }
+				if (!data || !data.more) return;
+			}
+		} catch (e) {
+			console.error('[Email] could not send receipt emails.', e);
 		}
 	}
 
@@ -799,6 +820,6 @@ const TDC = (() => {
 		location.reload();
 	}
 
-	return { shortUrl, shareButton, error, status, freshReload, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer, readEarly, read, shortKey, shortRead,
+	return { shortUrl, shareButton, error, status, freshReload, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, flushEmails, queued, writer, readEarly, read, shortKey, shortRead,
 		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, fullName, fullNameOf, leaguePic, tournamentPic, teamPic, playerTeamPic, SHAPES, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade, runName, runWords, leagueLine };
 })();
