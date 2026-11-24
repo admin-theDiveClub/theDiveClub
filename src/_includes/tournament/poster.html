@@ -12,24 +12,14 @@
 	separate acts, so a TD can build one, read the text out of it for a
 	designer, and never make it public.
 
-	What goes in is the TD's choice. The default is the tournament and the
-	entrant counts; names and the draw are opt-in, because the real entrant
-	list is the TD's.
+	The poster is live (UV, 24 Nov): it shows everything, names and the draw
+	included, as it is when it is opened. So there is nothing to choose and no
+	Regenerate; Generate shows only while there is no poster yet.
 {% endcomment %}
 <div class="panel" id="poster-panel">
 	<h2>The poster</h2>
 	<p class="muted" id="poster-state">No poster yet.</p>
-
-	<div class="field">
-		<label for="poster-names">Include the entrants' names</label>
-		<input type="checkbox" id="poster-names">
-	</div>
-
-	<div class="field">
-		<label for="poster-draw">Include the draw and results</label>
-		<input type="checkbox" id="poster-draw">
-		<div class="hint">Results that have not been published are marked as not confirmed.</div>
-	</div>
+	<div class="hint">Results that have not been published are marked as not confirmed.</div>
 
 	<div class="btn-row">
 		<button type="button" class="btn btn-primary btn-sm" id="poster-build">Generate</button>
@@ -44,8 +34,8 @@
 {% comment %}
 	The point of the poster, per UV's original spec: a block of text describing
 	the tournament in enough detail to hand to an AI and get a poster back.
-	Written from the poster's own snapshot (poster-words.js), so it cannot
-	describe a different tournament than the poster shows.
+	Written from the same live read the poster draws from (poster-words.js), so
+	it cannot describe a different tournament than the poster shows.
 {% endcomment %}
 <div class="panel" id="pt-text-box" hidden>
 	<h2>Text for a poster designer</h2>

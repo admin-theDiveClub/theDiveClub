@@ -1,17 +1,14 @@
 // The poster (/tournaments/poster/?t=<id>). The one page that works signed out.
 //
 // Everything on it comes from one call to tdc_tournament_poster, which returns
-// a jsonb snapshot the TD built and stored. There is no second read: the page
-// cannot ask for anything the snapshot does not hold, which is the point — anon
-// reaches that function and the table behind it and nothing else on the site.
+// one vetted jsonb shape. There is no second read: the page cannot ask for
+// anything that shape does not hold, which is the point — anon reaches that
+// function and nothing else on the site.
 //
-// So this page renders a blob rather than querying the tournament. Two things
-// follow from that and are deliberate:
-//
-//   - It can be out of date, and says so. A poster shows the tournament as it
-//     was when it was generated. The TD regenerates it.
-//   - Keys may be missing. The TD chooses whether entrant names and the draw go
-//     in, so every section here checks for its data rather than assuming it.
+// It is live (UV, 24 Nov; migration 20261124210356): the shape is built when
+// it is read, with the names and the draw always in, so the page is never out
+// of date and there is no Regenerate. Every section still checks for its data
+// rather than assuming it (a draw not yet made, nobody entered).
 //
 // Entry is the exception: those buttons need an account, so they come from
 // tdc_my_entry and only appear once there is a session.
@@ -40,7 +37,6 @@
 		drawBox: el('p-draw-box'), draw: el('p-draw'),
 		entry: el('p-entry'), entryDetail: el('p-entry-detail'),
 		entryActions: el('p-entry-actions'), entryStatus: el('p-entry-status'),
-		generated: el('p-generated'),
 		share: el('p-share'), name: el('p-name'),
 		status: el('page-status')
 	};
@@ -125,13 +121,6 @@
 		return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 	}
 
-	function generatedWhen(iso) {
-		const d = new Date(iso);
-		if (isNaN(d)) return '';
-		return d.toLocaleString([], {
-			day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
-		});
-	}
 
 	// ─────────────────────────────────────────────────────────────────
 	// The ruleset, in words
@@ -409,15 +398,13 @@
 		return cls === 'ls-btn-go' ? marked(b, !!minus) : b;
 	}
 
-	// After entering, the whole page is re-read rather than the entry box
-	// patched: the counts on the poster are part of the snapshot, so they do
-	// not move until the TD regenerates it, and pretending otherwise here
-	// would be the page inventing a number.
+	// After entering, the whole page is re-read from the server, so the new
+	// name and the counts appear at once (the poster is live, 24 Nov).
 	// Queued, never refused (TDC.writer): a second press of the same button
 	// joins the first.
 	const entryWriter = TDC.writer({
 		area: AREA, status: els.entryStatus,
-		reload: async () => { await loadEntry(true); return true; }
+		reload: async () => { if (!(await loadPoster())) return false; await loadEntry(true); return true; }
 	});
 
 	function enter(status) {
@@ -535,7 +522,7 @@
 		const avatars = s.entrant_avatars || [];
 		const lists = { confirmed: [], interested: [] };
 		if (names.length && !Array.isArray(statuses)) {
-			TDC.error(AREA, 'the poster holds names but not who is confirmed (built before version 4); regenerate it.', null, els.status);
+			TDC.error(AREA, 'the poster holds names but not who is confirmed.', null, els.status);
 		} else {
 			names.forEach((n, i) => {
 				const list = lists[statuses[i]];
@@ -566,11 +553,7 @@
 		renderDraw(snap.draw);
 		// The text for a poster designer is on the poster's settings page now,
 		// for whoever runs the tournament (UV, 24 Nov; tournament-poster-settings.js).
-
-		// Said plainly, because a poster is a snapshot and a reader deserves to
-		// know how old it is before trusting a score on it.
-		els.generated.textContent = 'This page was generated on ' + generatedWhen(row.generated_at)
-			+ '. It shows the tournament as it was then.';
+		// No "generated on" line: the page is live (UV, 24 Nov).
 
 		els.private.hidden = row.is_public;
 		// No small links to Entrants and the Draw at the foot (UV, 24 Nov): the
@@ -594,15 +577,22 @@
 			area: AREA, status: els.status, title: () => els.name.textContent
 		});
 
+		if (!(await loadPoster())) return;
+		await loadEntry(!!session);
+	})(), 'Poster');
+
+	// Reads the live poster and draws it. False when there is nothing to show
+	// (an error, said on the page, or no shared poster).
+	async function loadPoster() {
 		const { data, error } = await supabaseClient.rpc('tdc_tournament_poster', {
 			p_tournament_id: tournamentId
 		});
-		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 
 		const row = (data || [])[0];
-		if (!row) { els.nothing.hidden = false; return; }
+		if (!row) { els.poster.hidden = true; els.nothing.hidden = false; return false; }
 
 		render(row);
-		await loadEntry(!!session);
-	})(), 'Poster');
+		return true;
+	}
 })();

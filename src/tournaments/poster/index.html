@@ -17,10 +17,10 @@ extraScripts:
 {% comment %}
 	The poster. It renders without a session, as a venue's page does.
 
-	It reads one function, tdc_tournament_poster, which returns a snapshot the
-	TD built and stored — not a live view of the tournament. anon can reach
-	that function and the one table behind it and nothing else; see the header
-	of migration 20261021140000 for why it is built that way.
+	It reads one function, tdc_tournament_poster, which builds one vetted shape
+	of the tournament live when it is read (UV, 24 Nov; migration
+	20261124210356), names and draw always in. anon can reach that function and
+	nothing else; it shows nothing until the poster is shared.
 
 	Because a visitor may be signed out, this page uses TDC.getSession and not
 	TDC.requireSession: everything above the entry buttons renders for a
@@ -28,7 +28,7 @@ extraScripts:
 
 	In the league join page's look (UV, 5 Nov), whose banner, stage panel,
 	numbers and rule boxes it borrows from league.css and league-join.css:
-	as much about the tournament as the snapshot holds, and nothing the
+	as much about the tournament as that shape holds, and nothing the
 	director left unset.
 
 	Reached as /tournaments/poster/?t=<tournament id>.
@@ -133,8 +133,6 @@ extraScripts:
 			The text for a poster designer moved to the poster's settings page in
 			the Manage menu, for whoever runs the tournament (UV, 24 Nov).
 		{% endcomment %}
-
-		<p class="muted sub" id="p-generated"></p>
 
 		<div class="status" id="page-status"></div>
 	</div>
