@@ -3051,3 +3051,20 @@ These predate the log. They are recorded here because every one of them is a dec
 - **The Delivery policy's "staff will check your ID" stays.** Staff look at an ID document when merch is handed over; no ID verification is needed to buy (24 Nov). Stage 4's hand-over keeps its "ID matches" tick.
 *Example:* Ann orders socks on 24 Nov and never collects them; on the night of 24 Dec the order turns Cancelled and her 80 credits come back. Had she come in, staff would have looked at her ID before handing them over.
 *Touches:* `docs/STATUS.md` §3, §5; `docs/systems/foundations.md`; `docs/design/shop.md` Stage 4
+
+## 2026-11-24 — The shop: the staff queue and hand-over (the shop's Stage 4)
+*Decided by UV:*
+- **Any staff at the venue** (owner, admin, staff) see the queue and move orders on.
+- **One page for a bar screen and phones**, which **checks for new orders every 5 seconds**; a new order **chimes and its card flashes** while the page is open.
+- **Staff may cancel any open order** (out of stock), credits back at once, and **the player is told** (tray and push).
+- **At hand-over, an order paid at the club is paid there with Cash or Card**; an order paid with credits shows Paid and needs no payment step. **No ticks**: Cash or Card, then Mark collected.
+- **No ID check at hand-over**: the person collecting is tied to the order's code and account. **This reverses** "The Delivery policy's *staff will check your ID* stays" in "Uncollected shop orders, and ID at hand-over" (the same day). Delivery's "Who may collect" now reads: "Only the account holder may collect an order: show its code or QR at the bar."
+- **One step back is allowed until an order is collected**; Collected is final.
+- **Staff may not hand over (or cancel) their own order**, as with top-ups.
+- **The player is told when the order is Ready**, under **a new Shop switch** in notification settings.
+- **Scanning uses the phone's own camera** (the QR is already a link); a bar laptop types the number. No scanner in the page.
+- **The nightly job is built now**: merch orders past 30 days and café-only orders from an earlier day are cancelled, credits back if paid with credits. **Refunds and Delivery gain** "Café orders not collected on the day are cancelled overnight, and credits paid are returned."
+*Claude's, for UV to correct:* the job runs at 04:00 club time (02:00 UTC) and turns on `pg_cron`; it cancels Ready orders too, and tells nobody; a moved-already order is refused using the step the page showed; an order is handed over only from Ready, and no step is skipped; the code box sends any other four characters to Top-ups; two open orders with one number (a weekday repeating while merch waits) open the newest, saying so; the chime is two notes made in the browser, with a mute switch remembered per device; the order's card opens over the queue from a tap anywhere on a card, holding Back and Cancel, so each card has one button; Ready and Cancel link to the profile; `me.profile.shop_collected` on the points page.
+*Example:* Ann orders a flat white and socks with credits: **B1** appears in New and chimes. Sipho taps Start, then Ready, and Ann's phone says "B1 is ready to collect". She shows her QR; Sipho's camera opens B1's card; Mark collected. Bob's **B2** (R40 at the club): Sipho picks Card, then "Mark collected · R40". Socks run out on Ann's next order: Cancel order, her 80 credits come back and she is told.
+*So:* `docs/systems/foundations.md`, "The shop: the staff queue and hand-over"; `docs/systems/notifications.md`; `docs/ui.md`; `docs/systems/file-map.md`; `docs/systems/points.md`.
+*Touches:* migrations `20261124155021_shop_staff_orders.sql`, `20261124160613_shop_uncollected_orders.sql`; tests `096_shop_staff_orders`, `097_shop_uncollected_orders`; `src/staff/orders/index.html`, `src/scripts/staff-orders.js`, `src/stylesheets/staff-orders.css`, `src/staff/index.html`, `src/scripts/push.js`, `src/delivery/index.html`, `src/refunds/index.html`, `src/scripts/points-formula.js`

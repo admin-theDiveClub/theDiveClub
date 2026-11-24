@@ -22,6 +22,12 @@
 - **`team_join_request`** (category `league`): a player asked to join a team; every active captain of that team is told, linked to the season page's Players tab. Written by `tdc_request_team`, once per request (asking again writes nothing).
 - **`team_join_taken`**: a team the player asked took them; written by the trigger on the entrant's team, so a claim by the captain or a placing by the director both send it. Not sent to a player put on a team they never asked. See `docs/systems/leagues.md`, "Asking to join a team".
 
+### Shop orders (`20261124155021`)
+
+- **A fifth category, `shop`** (UV, 24 Nov: a new Shop switch). The two check constraints were replaced and `tdc_set_notification_pref` / `tdc_notification_prefs` patched (one word each); `push.js` labels it "Shop".
+- **`order_ready`**: staff marked the order Ready. **`order_cancelled`**: staff cancelled it (out of stock), saying whether credits came back. Both from `private.tdc_notify_order`, the staff member as actor, linked to the profile. A step back and forward again sends a second Ready (rare; not collapsed). An order cancelled by the nightly job sends nothing. See `docs/systems/foundations.md`, "The shop: the staff queue and hand-over".
+- `/staff/orders/` starts a sweep (`TDC.flushPushes()`) after each write, as the tournament pages do.
+
 ### Sending the push (`20261022120000`, `supabase/functions/notify-push`)
 
 - **A sweep, not a trigger.** The rows are written inside database functions and triggers, so the page that caused them does not know how many were written or to whom and cannot compose them. A trigger calling out over HTTP would need `pg_net`, and **the project has neither `pg_net` nor `pg_cron`** (checked 22 Oct). Turning them on is a decision of its own, and this design needs neither.
@@ -30,7 +36,7 @@
 - **Three kinds of row are retired without being sent**, marked pushed so the sweep stops reconsidering them: a muted category, a recipient with no account or no device, and anything over an hour old — a push about something that happened hours ago is worse than silence, and the tray is where old news belongs.
 - **`notify-push` is told nothing at all.** Unlike `notify-card`, which is told which match and what happened, this has no input to abuse: the caller cannot name a recipient, write a message, or choose which notification to send. Signing in is the whole permission.
 - `TDC.flushPushes()` sets a sweep going: it asks `tdc_pushes_waiting` first and does nothing in the common case. Called from `nav.js` on load and on refocus — the backstop, since the nav is on every page — and straight after the writes on `/tournaments/manage/`, `/tournaments/bracket/`, `/leagues/manage/` and `/leagues/season/`, for latency. **Never awaited and never surfaced**: a missed sweep costs the push and nothing else, because the row is already in the tray.
-- **If `pg_cron` is ever turned on** — the dispute-window reminder wants it too — it can call the same Edge Function on a schedule and none of this changes. The function does not know what set it off.
+- **If `pg_cron` is ever turned on** — the dispute-window reminder wants it too — it can call the same Edge Function on a schedule and none of this changes. The function does not know what set it off. **It was turned on 24 Nov** (`20261124160613_shop_uncollected_orders`) for the shop's nightly job only; the push is still swept as above.
 - **Not yet swept from `match.js`**, so an official editing a frame there relies on the nav backstop. `match.js` is 117 KB and the most dangerous file in the project; the one-line addition is worth doing deliberately.
 - Deploy: `npx supabase functions deploy notify-push --use-api`. **The migrations must be pushed first**, because the function calls `tdc_claim_pushes`.
 

@@ -184,7 +184,7 @@ Driven headless at 420 against the local copy (24 Nov): Sipho added three produc
 
 ## The shop: checkout and orders (24 Nov; the shop's Stage 3, `docs/design/shop.md`)
 
-**Built** (migration `20261124152509_shop_orders`, test `095_shop_orders`; the pages 24 Nov). Staff moving an order on (Preparing, Ready, Collected), the hand-over and out-of-stock refunds are Stage 4.
+**Built** (migration `20261124152509_shop_orders`, test `095_shop_orders`; the pages 24 Nov). Staff moving an order on (Preparing, Ready, Collected), the hand-over and out-of-stock refunds are Stage 4 (the next section).
 
 **The flow:** the cart is the checkout. The player picks **Credits** (taken the moment the order is placed) or **At the club** (placed unpaid; staff take cash or card at hand-over, Stage 4), and taps Place order. The whole cart becomes **one order** (UV: Ready only when all of it is), numbered for the day. While it is still **Placed** the player may cancel it (UV: until staff start it), and credits paid come straight back.
 
@@ -214,9 +214,44 @@ The order as the pages get it carries `label` (B27), `pay_cents`, `can_cancel` a
 | **Refunds** | A "Shop orders" clause: cancel on the site until staff start preparing it; credits back at once |
 
 - **The merge** moves `tbl_shop_orders.player_id` (patched from `20261124125407`'s definition; its ledger rows move with the rest of the ledger).
-- **Not built:** an uncollected order's credits coming back after 30 days, which **a nightly job will do** (UV, 24 Nov; STATUS §3), and everything staff do (Stage 4). **Staff check ID when merch is handed over** (the Delivery policy stays; UV, 24 Nov), though none is needed to buy.
+- **Since built (Stage 4, below):** everything staff do, and the nightly job that cancels uncollected orders. *Until later on 24 Nov* staff were to check ID when merch was handed over; UV then dropped the ID check.
 
 Driven headless at 420 against the local copy (24 Nov): Ann (120 credits) ordered a flat white and socks with credits: B1, 110 credits, 10 left, the QR, collect by Thu 24 Dec; a coffee with 10 credits showed "You need 20 more credits", Add credits and Place order disabled; At the club gave B2, R30; Profile › Orders listed both; Show on B1, Cancel order, asked first, "Cancelled · 110 credits back" and the profile's balance 120. No console errors. **Not on a phone; the QR not scanned.**
+
+## The shop: the staff queue and hand-over (24 Nov; the shop's Stage 4, `docs/design/shop.md`)
+
+**Built** (migrations `20261124155021_shop_staff_orders` and `20261124160613_shop_uncollected_orders`, tests `096_shop_staff_orders` and `097_shop_uncollected_orders`; the page 24 Nov). Receipt emails are Stage 5.
+
+**The flow:** an order lands in **New**. Staff tap **Start** (Preparing), then **Ready** (the player is told), then **Hand over**: for an order paid at the club they pick **Cash** or **Card**, then **Mark collected**; one paid with credits is simply marked collected. **One step back** is allowed until it is collected (UV). Staff may **cancel** any open order, out of stock for example, with credits back at once and the player told (UV). **No ID check** at hand-over (UV, 24 Nov: the order's code and account are enough), which reversed the same day's "staff look at an ID document". **Nobody hands over or cancels their own order** (UV, as top-ups). Every night the orders not collected are cancelled (below).
+
+| Part | What it holds and why |
+|---|---|
+| `tbl_shop_orders`, new columns | `paid_method` (`cash` / `card`, only on an order paid at the club, set at hand-over), `paid_by`, `collected_at`, `collected_by`. Checks: collected exactly when `collected_at` is set, and never unpaid |
+| Notifications, category **`shop`** | A new Shop switch on the profile (UV). `order_ready` ("B27 is ready to collect") and `order_cancelled` ("B27 was cancelled by the club", with "N credits are back in your account." or "Nothing was charged."), linked to the profile. Written by `private.tdc_notify_order`, the staff member as actor, so staff are never told about their own order. `tdc_set_notification_pref` and `tdc_notification_prefs` were patched from `20261022100000` (one word in each list) |
+| The nightly job | **pg_cron, turned on here** (the project's first schedule). `private.tdc_cancel_uncollected_orders()` at **02:00 UTC, 04:00 at the club**: any open order with merch past `collect_by` (30 days), or café only from an earlier day at the club (the venue's timezone). Credits paid come back as an `order_refund` row with the reason "Not collected in time"; an order paid at the club had nothing taken. The player is **not** told (nobody asked; see STATUS) |
+
+| Function | Who | Does |
+|---|---|---|
+| `tdc_staff_orders(venue)` | any staff | `{orders, top_ups_waiting}`: every open order, oldest first, each with the person (name, full name, picture), `paid_method`, `collected_at` and `is_mine`; and how many top-ups are waiting |
+| `tdc_staff_find_order(venue, label)` | any staff | By the number (B27, case and spaces ignored): every open order with it, newest first (a weekday's number repeats while merch waits 30 days); with none open, the newest of any state, so the page can say why. Not an order number: nothing |
+| `tdc_staff_order(venue, id)` | any staff | One order, any state (the QR) |
+| `tdc_staff_move_order(venue, id, from, to)` | any staff | placed → preparing → ready, or one back. `from` is what the page showed: a second screen is told "Someone has moved that order already." Ready tells the player |
+| `tdc_staff_collect_order(venue, id, method)` | any staff, not their own | Only from Ready; at the club needs `cash` or `card` and marks it paid |
+| `tdc_staff_cancel_order(venue, id)` | any staff, not their own | Any open order; credits back once (the ledger's unique index); the player told |
+
+**The page:**
+
+| Where | What |
+|---|---|
+| `/staff/orders/` (`scripts/staff-orders.js`, `stylesheets/staff-orders.css`; artboards 5 and 6; an **Orders** tile first on the staff hub, any staff) | The code box ("B27 or 7K4Q": an order number opens its card; any other four characters go to `/staff/top-ups/?code=`), a yellow "2 top-ups waiting" link, a **Sound for new orders** switch (remembered per device). **New · Preparing · Ready to collect**: three sunken columns from 48rem, the site's tab pill below it ("New · 2"). Each card: the number in green, how long ago (merch: "merch · day 3 of 30"), the name, the lines, a tag ("Paid · credits" green, "Pay at club · R40" yellow), one button (Start, Ready in yellow, Hand over). Ready cards have a yellow line inside the edge. **Asks every 5 s while shown** (UV), and again on coming back to the tab; a new order **chimes** (two notes made in the browser, no sound file; only after a first tap on the page, the browser's rule) and **flashes green** four times |
+| **The order's card** (a `.cc` dialog over the page) | Opened by tapping a card, Hand over, a typed number or the QR (`?order=<id>`, cleared on close). The picture and names, "Ready · placed 4 min ago", the lines with "Paid · credits", "To pay R40 · 40 credits" (yellow) or "Paid at the club · Card"; Cash and Card (at the club, Ready); the next step (Start, Ready, "Mark collected · R40", disabled until Cash or Card); "Back to Preparing"; **Cancel order** (asked first). Your own order: "another staff member hands it over", no Mark collected or Cancel. Refusals show inside the card |
+| **Notifications** (`push.js`) | Shop: "Your order is ready to collect, or the club cancelled it." |
+| **Delivery and Refunds** | "Who may collect": show the code or QR at the bar (no ID). Both gain "Café · Not collected": cancelled overnight, credits returned |
+
+- **No new player-referencing table**, so the merge is unchanged (the new columns reference `auth.users`).
+- **The player's order card is unchanged**; it already shows Preparing, Ready, Collected and Cancelled as they happen. An at-club order once paid still reads "Pay at the club" there (STATUS).
+
+Driven headless at 420 and 1280 against the local copy (24 Nov): Sipho started Ann's B1 (coffee and socks, credits) from its card; Ann ordered B3 while the page was open and it flashed in New within 5 s; Sipho opened B1, Ready (Ann's "B1 is ready to collect" written under Shop), Mark collected; Bob's B2 at the club: Mark collected · R40 stayed disabled until Card, then "✓ B2 handed over to Bob. R40 by card."; typing b2 showed "Handed over. Nothing to do."; B3 cancelled: 30 credits back, Ann told; the QR link opened B1's card; 7K4Q went to Top-ups. No page errors. **Not on a phone; the chime not heard; the job not seen running on a real night** (tested by calling it).
 
 ## The install tutorial (`/install/`, 3 Nov)
 

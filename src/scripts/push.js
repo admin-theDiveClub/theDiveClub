@@ -101,13 +101,15 @@ document.getElementById('notif-preset-1').addEventListener('click', (e) => {
 		match:      'Matches',
 		tournament: 'Tournaments',
 		league:     'Leagues',
-		admin:      'Account and admin'
+		admin:      'Account and admin',
+		shop:       'Shop'
 	};
 	const HINT = {
 		match:      'Scorecards, results, and somebody changing a frame on your card.',
 		tournament: 'Being entered or confirmed, and when your next match is ready.',
 		league:     'League nights and standings.',
-		admin:      'Anything about your account itself.'
+		admin:      'Anything about your account itself.',
+		shop:       'Your order is ready to collect, or the club cancelled it.'
 	};
 
 	function row(pref) {

@@ -1,0 +1,185 @@
+/* Staff orders page (/staff/orders/; 24 Nov; scripts/staff-orders.js; canvas artboards 5 and 6).
+   Three sunken columns of raised cards on a wide screen; on a phone one column at a time, chosen
+   with the site's tab pill. The order's card over the page is the Add credits card (.cc,
+   credits-card.css) with the person, the lines and Cash or Card. */
+
+.tdc-card.orders-page { max-width: 72rem; }
+
+/* ─── The top: the code box, top-ups waiting, Sound ─── */
+.oq-top {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: var(--space-3) var(--space-5);
+	margin-bottom: var(--space-5);
+}
+.oq-find { display: flex; align-items: flex-end; gap: var(--space-3); flex: 1 1 20rem; max-width: 30rem; }
+.oq-find .field { flex: 1; margin-bottom: 0; }
+.tdc-card .oq-find button { flex: none; width: auto; margin-bottom: 0; }
+.oq-find input { font-family: var(--font-mono); letter-spacing: 0.15em; text-transform: uppercase; }
+
+.oq-extras { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); }
+/* Under way, so yellow (docs/ui.md, "State colours"). A link drawn as a pill: no underline. */
+a.oq-topups {
+	display: inline-flex;
+	align-items: center;
+	min-height: 2.5rem;
+	padding: 0 var(--space-4);
+	border-radius: var(--radius-pill);
+	box-shadow: var(--nm-sunken-small);
+	color: var(--color-warning);
+	font-size: 0.85rem;
+	text-decoration: none;
+}
+a.oq-topups[hidden] { display: none; }
+.oq-sound { display: flex; align-items: center; gap: var(--space-2); }
+.oq-sound label { margin: 0; font-size: 0.85rem; color: var(--text-muted); }
+
+/* ─── The phone's tabs ─── */
+.oq-tabs { margin-bottom: var(--space-4); }
+
+/* ─── The board ─── */
+.oq-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
+.oq-col {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-4);
+	min-height: 8rem;
+	padding: var(--space-4);
+	border-radius: var(--radius-lg, 1.5rem);
+	box-shadow: var(--nm-sunken);
+}
+.tdc-card .oq-col-head { margin: 0; font-family: inherit; font-size: 1rem; font-weight: 600; color: var(--text-muted); }
+.oq-count { font-weight: 400; }
+.oq-none { margin: 0; font-size: 0.85rem; }
+
+/* Wide: three columns, no tabs. A phone: the chosen column only. */
+@media (min-width: 48rem) {
+	.oq-tabs { display: none; }
+}
+@media (max-width: 47.99rem) {
+	.oq-board { grid-template-columns: minmax(0, 1fr); }
+	.oq-col-head { display: none; }
+	.oq-board[data-tab="placed"] .oq-col:not([data-col="placed"]),
+	.oq-board[data-tab="preparing"] .oq-col:not([data-col="preparing"]),
+	.oq-board[data-tab="ready"] .oq-col:not([data-col="ready"]) { display: none; }
+}
+
+/* ─── A card ─── */
+.oq-card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+	padding: var(--space-4);
+	border-radius: var(--radius-lg, 1.5rem);
+	box-shadow: var(--nm-card);
+}
+/* Ready to collect: a yellow line just inside the edge, on its own layer (never a transition on
+   an --nm-* shadow; docs/ui.md, "Motion"). */
+.oq-card.is-ready::before,
+.oq-card.is-new::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	pointer-events: none;
+}
+.oq-card.is-ready::before { box-shadow: inset 0 0 0 1.5px var(--color-warning); }
+/* A new order flashes green a few times. */
+.oq-card.is-new::after {
+	box-shadow: inset 0 0 0 2px var(--color-primary), 0 0 1.25rem var(--color-primary);
+	opacity: 0;
+	animation: oq-flash 1.2s ease-in-out 4;
+}
+@keyframes oq-flash {
+	0%, 100% { opacity: 0; }
+	50% { opacity: 0.9; }
+}
+@media (prefers-reduced-motion: reduce) {
+	.oq-card.is-new::after { animation: none; opacity: 0.9; }
+}
+
+.tdc-card button.oq-open {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	border-radius: 0;
+	background: none;
+	box-shadow: none;
+	color: inherit;
+	font-size: 1rem;
+	font-weight: 400;
+	letter-spacing: normal;
+	text-transform: none;
+	text-align: left;
+}
+.oq-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); width: 100%; }
+.oq-label { font-family: var(--font-display); font-weight: 400; font-size: 1.5rem; line-height: 1.32; color: var(--color-primary); }
+.oq-when { color: var(--text-muted); font-size: 0.85rem; }
+.oq-name { font-weight: 600; }
+.oq-lines { color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; }
+
+.oq-card-foot { display: flex; align-items: center; gap: var(--space-3); }
+.oq-tag {
+	padding: var(--space-1) var(--space-3);
+	border-radius: var(--radius-pill);
+	box-shadow: var(--nm-sunken-small);
+	font-size: 0.85rem;
+	white-space: nowrap;
+}
+.oq-tag.is-paid { color: var(--color-primary); }
+.oq-tag.is-club { color: var(--color-warning); }
+.tdc-card button.oq-go { flex: none; width: auto; margin: 0 0 0 auto; padding: 0 var(--space-5); min-height: 2.75rem; }
+.tdc-card button.oq-go-ready { color: var(--color-warning); }
+
+/* ─── The order's card over the page ─── */
+.oq-sheet .oq-sheet-label { color: var(--color-primary); }
+.oq-person { display: flex; align-items: center; gap: var(--space-4); margin: var(--space-2) 0 var(--space-4); }
+.oq-pic {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: 3.5rem;
+	height: 3.5rem;
+	border-radius: var(--radius-round);
+	overflow: hidden;
+	box-shadow: var(--nm-sunken-small);
+	color: var(--text-muted);
+	font-weight: 700;
+}
+.oq-pic img { width: 100%; height: 100%; object-fit: cover; }
+.oq-person-name { font-size: 1.15rem; font-weight: 700; }
+.oq-person-full { color: var(--text-muted); }
+.oq-step { margin: 0 0 var(--space-3); color: var(--text-muted); font-size: 0.85rem; }
+.oq-step.is-ready { color: var(--color-warning); }
+.oq-step.is-collected { color: var(--color-primary); }
+.cc-line.oq-paid span:last-child { color: var(--color-primary); }
+.cc-line.oq-club span:last-child { color: var(--color-warning); }
+.oq-said { margin: var(--space-4) 0 0; color: var(--text-muted); }
+.oq-said[hidden] { display: none; }
+.oq-ways { display: flex; gap: var(--space-3); margin-top: var(--space-4); }
+.oq-ways[hidden] { display: none; }
+/* The Add credits card's ways to pay (.cc-way), as buttons, as the checkout's (shop.css). */
+.cc-way.oq-way {
+	flex: 1;
+	justify-content: center;
+	margin: 0;
+	border: 0;
+	background: transparent;
+	color: var(--text-primary);
+	font: inherit;
+	box-shadow: var(--nm-sunken-small);
+	cursor: pointer;
+}
+.cc-way.oq-way span { flex: none; }
+.cc-way.oq-way.is-on { color: var(--color-primary); box-shadow: var(--nm-raised-small), inset 0 0 0 2px var(--color-primary); }
+.oq-sheet .oq-main { margin-top: var(--space-5); }
+.oq-sheet .btn + .btn { margin-top: var(--space-3); }
+.oq-sheet .btn[hidden] { display: none; }
+.oq-sheet .oq-cancel { color: var(--color-error); }

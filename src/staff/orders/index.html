@@ -1,0 +1,64 @@
+---
+layout: layout.html
+title: Orders
+description: "The shop's orders: make them, mark them ready, hand them over."
+extraScripts:
+  - /scripts/staff-common.js
+  - /scripts/staff-orders.js
+extraStyles:
+  - /stylesheets/staff-orders.css
+---
+<!-- The shop, the staff side (24 Nov; docs/design/shop.md, Stage 4; canvas artboards 5 and 6).
+     Any staff. New · Preparing · Ready to collect: three columns on a wide screen, three tabs on a
+     phone. A player's order QR is a link here with ?order=, so the phone's own camera opens its
+     hand-over; the number (B27) can also be typed. The hand-over is a card over this page. -->
+<div class="tdc-card orders-page">
+	<h1>Orders</h1>
+	<p class="muted" id="venue-line"></p>
+
+	<div id="staff-area" hidden>
+		<div class="field" id="venue-field" hidden>
+			<label for="venue-select">Venue</label>
+			<select id="venue-select"></select>
+		</div>
+
+		<div class="oq-top">
+			<form id="find-form" class="oq-find" novalidate>
+				<div class="field">
+					<label for="find-code">Order or top-up code</label>
+					<input type="text" id="find-code" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="B27 or 7K4Q">
+				</div>
+				<button type="submit" class="btn-primary" id="find-btn">Find</button>
+			</form>
+			<div class="oq-extras">
+				<a class="oq-topups" id="topups-link" href="/staff/top-ups/" hidden></a>
+				<div class="oq-sound"><input type="checkbox" id="sound-on" checked><label for="sound-on">Sound for new orders</label></div>
+			</div>
+		</div>
+
+		<nav class="league-nav oq-tabs" aria-label="Order steps">
+			<div class="league-nav-track" id="oq-tab-track">
+				<button type="button" class="league-nav-item" data-tab="placed" aria-current="page" data-no-dots>New</button>
+				<button type="button" class="league-nav-item" data-tab="preparing" data-no-dots>Preparing</button>
+				<button type="button" class="league-nav-item" data-tab="ready" data-no-dots>Ready</button>
+			</div>
+		</nav>
+
+		<div class="oq-board" id="oq-board" data-tab="placed">
+			<section class="oq-col" data-col="placed">
+				<h2 class="oq-col-head">New <span class="oq-count" id="count-placed"></span></h2>
+				<div class="oq-list" id="list-placed"></div>
+			</section>
+			<section class="oq-col" data-col="preparing">
+				<h2 class="oq-col-head">Preparing <span class="oq-count" id="count-preparing"></span></h2>
+				<div class="oq-list" id="list-preparing"></div>
+			</section>
+			<section class="oq-col" data-col="ready">
+				<h2 class="oq-col-head">Ready to collect <span class="oq-count" id="count-ready"></span></h2>
+				<div class="oq-list" id="list-ready"></div>
+			</section>
+		</div>
+	</div>
+
+	<div class="status" id="status-msg"></div>
+</div>

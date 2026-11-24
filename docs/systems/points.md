@@ -56,6 +56,8 @@ The full list is `DATA` in the module, which the page will show. A test checks t
 
 **A tournament's picture (24 Nov; migration `20261124150322_tournament_pictures`):** nothing added. It belongs to the tournament, not to a player, and says nothing about how anybody plays (Claude's call).
 
+**The staff queue (24 Nov; migration `20261124155021_shop_staff_orders`):** `me.profile.shop_collected` (orders they collected) is in `DATA` and `fillPerson`. It will be read from `tbl_shop_orders`, the rows whose status is `collected`. How an at-club order was paid (cash or card) and who handed it over are the club's, not the player's: nothing added for them (Claude's call). No formula uses it yet, and the real read is not built.
+
 **Shop orders (24 Nov; migration `20261124152509_shop_orders`):** `me.profile.shop_orders` (orders placed and not cancelled) and `me.profile.shop_credits` (the credits those orders cost) are in `DATA` and `fillPerson`. They will be read from `tbl_shop_orders`, the rows whose status is not `cancelled`. No formula uses them yet, and the real read is not built.
 
 **The shop's products and cart (24 Nov; migration `20261124125407_shop_products_and_cart`):** nothing added. Products are the venue's, not a player's; the cart is emptied and refilled, so it says nothing lasting about a player (Claude's call, DECISIONS 24 Nov). Stage 3's orders will be data points (what was bought, how often).

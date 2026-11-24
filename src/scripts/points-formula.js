@@ -139,6 +139,7 @@ const TDCPoints = (() => {
 			['me.profile.credits_bought', 'number', 'Credits bought through top-ups'],
 			['me.profile.shop_orders', 'number', 'Shop orders placed, not cancelled'],
 			['me.profile.shop_credits', 'number', 'Credits those orders cost'],
+			['me.profile.shop_collected', 'number', 'Shop orders they collected'],
 			['me.history.frames', 'number', 'Career frames'],
 			['me.history.frames_won', 'number', 'Career frames won'],
 			['me.history.frames_lost', 'number', 'Career frames lost'],
@@ -341,7 +342,8 @@ const TDCPoints = (() => {
 			top_ups: asNumber(p.profile && p.profile.top_ups),
 			credits_bought: asNumber(p.profile && p.profile.credits_bought),
 			shop_orders: asNumber(p.profile && p.profile.shop_orders),
-			shop_credits: asNumber(p.profile && p.profile.shop_credits)
+			shop_credits: asNumber(p.profile && p.profile.shop_credits),
+			shop_collected: asNumber(p.profile && p.profile.shop_collected)
 		},
 		history: fillHistory(p.history),
 		lineup_by_captain: !!p.lineup_by_captain,
