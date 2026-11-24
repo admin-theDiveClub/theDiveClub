@@ -164,6 +164,16 @@ var TDCBannerTable = (function () {
 			// fit, the card's half-width and half-height and its corners' radius (all in balls)
 			var HX = 9, HZ = 18, LX = 0, LZ = 0, OX = 0, OZ = 0, CX = 9.5, CZ = 18.5, CARD_R = 1;
 			var midOnX = true;              // the middle pockets on the left and right cushions, or the top and bottom
+			// Which sides carry the middle pockets is chosen once, from the banner as the page
+			// first shows it (UV, 24 Nov: "a table should never switch pockets to the longer
+			// side; we want strange table sizes to be possible"): the longer sides at the first
+			// measuring after the loading screen lifts, and kept for the page's life, whatever
+			// the banner does afterwards. Until then (behind the screen) the longer sides. It
+			// was the longer sides every frame, and a near-square banner flipped for ever:
+			// the padding the pockets set (--banner-in-x, -z) reflowed the text and made the
+			// other side the longer one (Basil's venue page, 24 Nov)
+			var midFixed = null;
+			function midSides() { return midFixed !== null ? midFixed : CZ >= CX; }
 			var pockets = [], JAWS = [], BED = [], bedP = null;
 
 			// Does a hole of radius r at (x, z) lie inside the card, with FIT_GAP to spare?
@@ -180,7 +190,7 @@ var TDCBannerTable = (function () {
 			// side only as far in as its own pockets need, so the long sides, with the middle
 			// pockets, come in further than the short ones
 			function tableIn(line) {
-				var onX = CZ >= CX, mx = line, mz = line, rm = MM / 2;
+				var onX = midSides(), mx = line, mz = line, rm = MM / 2;
 				// The middle pockets' sides: the hole reaches MM - MID_LIP past the cushion
 				while (onX ? !fitsCard(CX - mx + rm - MID_LIP, 0, rm) : !fitsCard(0, CZ - mz + rm - MID_LIP, rm)) {
 					if (onX) mx += 0.02; else mz += 0.02;
@@ -261,11 +271,11 @@ var TDCBannerTable = (function () {
 				return pts;
 			}
 
-			// The table at a new size. The middle pockets sit on whichever sides are longer.
+			// The table at a new size. The middle pockets sit on the sides midSides chose.
 			function buildTable(hx, hz) {
 				HX = hx; HZ = hz; LX = HX - R; LZ = HZ - R;
 				OX = CX + 1; OZ = CZ + 1;   // past the card a ball is lost
-				midOnX = CZ >= CX;          // the banner's long sides, as tableIn has it
+				midOnX = midSides();        // as tableIn has it
 				var tl = corner(-1, -1, 'tl'), tr = corner(1, -1, 'tr'), br = corner(1, 1, 'br'), bl = corner(-1, 1, 'bl');
 				// Clockwise from the top left
 				pockets = midOnX ? [tl, tr, middleX(1, 'm1'), br, bl, middleX(-1, 'm2')]
@@ -381,6 +391,14 @@ var TDCBannerTable = (function () {
 			['click', 'transitionrun', 'transitionend', 'animationstart', 'animationend'].forEach(function (ev) {
 				stage.addEventListener(ev, sizeMayChange, true);
 			});
+			// The loading screen lifting: measured again, at the same size too, so the middle
+			// pockets' sides are chosen now (midSides)
+			function loaderChanged(e) {
+				if (midFixed !== null || (e.detail && e.detail.up)) return;
+				boxKey = '';
+				sizeMayChange();
+			}
+			document.addEventListener('tdc-loader', loaderChanged);
 
 			// The banner's size, read every frame. The ball's size follows the banner's width
 			// only (UV, 14 Nov), so opening and closing it never changes the balls or the
@@ -437,6 +455,8 @@ var TDCBannerTable = (function () {
 				forceDraw = true; trailsShown = false;   // the canvases were cleared
 				// The banner's own rounded card is not drawn, so the pockets may reach its corners
 				CX = w / 2 / ballPx; CZ = h / 2 / ballPx; CARD_R = 0; FIT_GAP = EDGE_PX / ballPx;
+				// The middle pockets' sides, chosen at the first measuring with the page shown (midSides)
+				if (midFixed === null && (typeof TDCLoader === 'undefined' || !TDCLoader.up)) midFixed = CZ >= CX;
 				var bed = tableIn(0), hx = bed[0], hz = bed[1];
 				// The content padded in as far as the cushions came in (sandbox.css). Set only
 				// when it changes: it changes the banner's size, which is read again next frame.
@@ -1762,6 +1782,7 @@ var TDCBannerTable = (function () {
 					sizeWatch.disconnect();
 					shapeWatch.disconnect();
 					window.removeEventListener('resize', sizeMayChange);
+					document.removeEventListener('tdc-loader', loaderChanged);
 					unwrap();
 				}
 			};

@@ -2990,3 +2990,10 @@ These predate the log. They are recorded here because every one of them is a dec
 - **Summer Singles belongs to Basil's and is played there.** Belonging is "fixed at creation" (5 Nov); this is a one-off exception by migration, because the league was made before the venue had an owner, so nobody could have tied it there when it was created. The rule itself stands.
 *Example:* Basil now sees the venue's Settings tab, can run Summer Singles as its venue's owner, and its season banner names Basil's.
 *Touches:* migration `20261124133103_basils_owner_summer_singles.sql`; `docs/systems/foundations.md`.
+
+## 2026-11-24 — The banner table's middle pockets never change sides
+*Decided by UV:* a table should never switch its middle pockets to the longer side; strange table sizes are to be possible. Which sides carry them is chosen **from the banner as the page first shows it** (UV: "based on default view at start, on page load") and kept for the page's life, whatever the banner does afterwards (opening, closing, filling in).
+*Why:* the pockets followed the longer sides every frame, and the padding they set changes how the text wraps. Basil's venue banner is almost square, so it flipped about three times a second for ever (374 ↔ 414px tall).
+*How (Claude's, from that):* the choice is made at the first measuring after the loading screen lifts (`tdc-loader`), so a banner sitting empty behind the screen does not decide it. Behind the screen the table still follows the longer sides.
+*Example:* on Basil's page the pockets sit top and bottom on one load and left and right on another, depending on which shape the banner had at the moment the screen lifted; either way they then stay put. A Season banner opened after load keeps the sides it had when the page showed.
+*Touches:* `src/scripts/banner-table.js` (`midSides`); `docs/systems/file-map.md`; `docs/STATUS.md` (4au).
