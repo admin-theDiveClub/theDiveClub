@@ -3137,6 +3137,9 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
 .league-tabbar { display: none; }
 body.has-league-tabbar #league-nav,
 body.has-league-tabmenu #league-nav-admin { display: none; }
+/* A tournament's pages have the same bar (UV, 24 Nov; tournament-nav.js). */
+body.has-league-tabbar #tournament-nav,
+body.has-league-tabmenu #tournament-nav-admin { display: none; }
 /* Manage's menu (UV, 18 Nov): the second pill's pages in a raised, solid
    panel rising from the bar's right end, a row each; the page open is
    green and lit. It fades and lifts in; the bar itself takes no taps. */
@@ -3240,7 +3243,9 @@ body.has-league-tabmenu #league-nav-admin { display: none; }
 	box-shadow: var(--nm-raised-small), var(--nm-sunken-small);
 	pointer-events: none;
 }
-.league-tabbar .league-nav-track.has-admin::after { right: calc(var(--space-2) + (100% - 2 * var(--space-2)) / 5); }
+/* Manage is the last of --tabbar-items buttons: five on a league's bar, four on a
+   tournament's (Poster, Draw, Rules; tournament-nav.js sets it). */
+.league-tabbar .league-nav-track.has-admin::after { right: calc(var(--space-2) + (100% - 2 * var(--space-2)) / var(--tabbar-items, 5)); }
 .league-tabmenu.league-livemenu {
 	right: auto;
 	left: 50%;

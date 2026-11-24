@@ -31,6 +31,6 @@ Where an item is a site-wide design rule, it also goes into `docs/ui.md` ("The d
 
 | Page | Date | Items checked (up to #) | Notes |
 |---|---|---|---|
-| Tournament poster (`/tournaments/poster/`) | 24 Nov | 4, but not 3 | **1:** nothing to change in Chrome, every display-font line at 1.32 (rendered at 420 with every section showing); still to see on an iPhone. **2:** built: player ids in the snapshot, every person and draw side a link (migration `20261124172239`). **3:** planned and answered by UV (Poster · Draw · Rules; Manage as its own icon with Run the draw, Entrants, Settings; signed out the bar shows and Draw and Rules ask to sign in); **not built yet**. **4:** built site-wide: the gap under every table banner measured from the table as drawn |
+| Tournament poster (`/tournaments/poster/`) and the draw page (`/tournaments/bracket/`) | 24 Nov | 4 | **1:** nothing to change in Chrome, every display-font line at 1.32 (rendered at 420 with every section showing); still to see on an iPhone. **2:** built: player ids in the snapshot, every person and draw side a link (migration `20261124172239`). **3:** planned and answered by UV (Poster · Draw · Rules; Manage as its own icon with Run the draw, Entrants, Settings; signed out the bar shows and Draw and Rules ask to sign in); built the same day on both pages (`tournament-nav.js`). **4:** built site-wide: the gap under every table banner measured from the table as drawn |
 
 A page checked up to item #N needs only the items after N on its next pass, unless a later item changed an earlier one.

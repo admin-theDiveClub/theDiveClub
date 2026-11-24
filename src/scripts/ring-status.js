@@ -76,6 +76,11 @@ const TDCRing = (() => {
 		sliders: { label: 'Manage', strokes: ['M36 30L36 70', 'M50 30L50 70', 'M64 30L64 70', 'M30 58L42 58M44 40L56 40M58 52L70 52'] },
 		document: { label: 'Rules', strokes: ['M37 28L57 28L65 36L65 72L37 72L37 28', 'M57 28L57 36L65 36', 'M44 49L58 49', 'M44 59L58 59'] },
 		calendar: { label: 'Moved', strokes: ['M30 36L70 36L70 70L30 70L30 36', 'M30 47L70 47', 'M40 29L40 40', 'M60 29L60 40'] },
+		// The tournament tabs' bottom bar (UV, 24 Nov): the Poster, the tournament
+		// announced (a megaphone), and the Draw (a bracket: two pairs meeting, then
+		// on to the final). Rules is the document, Manage the sliders, as a league's.
+		megaphone: { label: 'Poster', strokes: ['M30 45L30 57L40 57L62 68L62 34L40 45L30 45', 'M40 57L43 68L49 68L47 60', 'M68 51L74 51', 'M67 42L72 39M67 60L72 63'] },
+		bracket: { label: 'Draw', strokes: ['M28 32L42 32L42 46L28 46', 'M28 54L42 54L42 68L28 68', 'M42 39L56 39L56 61L42 61', 'M56 50L72 50'] },
 		minus: { label: 'Taken off', strokes: ['M30 50L70 50'] },
 		// Added 11 Nov for the fixtures' Open the card (UV): a scorecard, its
 		// outline, the header line and the line between the two sides' columns.

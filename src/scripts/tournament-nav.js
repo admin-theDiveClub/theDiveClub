@@ -20,11 +20,23 @@
 // the bar: always for the people running it, for anybody else once it is
 // shared (tdc_tournament_poster returns nothing to them until it is).
 //
+// The bottom bar (UV, 24 Nov; docs/ui-list.md item 3), as a league's: Poster,
+// Draw and Rules, an icon over each word, in a bar fixed to the foot of the
+// screen, on the draw page and on the poster; for whoever runs it, Manage (the
+// sliders) opens a menu of Run the draw, Entrants and Settings, and the two
+// top pills are hidden. The bar's look is league.css's (.league-tabbar). On the
+// poster the items are links, the Poster marked, and it loads this script for
+// the bar alone. Signed out (the poster), the bar shows: Draw and Rules are on
+// the draw page, which asks them to sign in and brings them back. A poster
+// that shows "Nothing here" shows no bar either, so the bar never tells a
+// stranger the tournament exists.
+//
 // The tab the page opens on, and the bar, hold the page's loading screen
 // (loader.js); a tab opened later gets a screen over that tab alone. A tab
 // shown again is drawn already and reads again in place, with no screen.
 //
-// Needs: tdc.js, supabaseClient.js; dots.js for the switch; loader.js.
+// Needs: tdc.js, supabaseClient.js; dots.js for the switch; loader.js;
+// ring-status.js for the bar's icons; league.css for the bar's look.
 
 const TDCTournamentNav = (() => {
 	const AREA = 'Tournament pages';
@@ -37,9 +49,15 @@ const TDCTournamentNav = (() => {
 		['entrants', 'Entrants', true],
 		['settings', 'Settings', true]
 	];
+	// The bottom bar's icon for each (UV, 24 Nov), and its order: the Poster first.
+	const ICON = { poster: 'megaphone', draw: 'bracket', rules: 'document' };
+	const BAR = [['poster', 'Poster'], ['draw', 'Draw'], ['rules', 'Rules']];
 	const tabOf = (key) => TABS.find(([k]) => k === key);
 	const panelOf = (key) => (tabOf(key) && tabOf(key)[3]) || key;
 	const posterUrl = (t) => '/tournaments/poster/?t=' + t;
+	const tabUrl = (t, key) => '/tournaments/bracket/?t=' + t + (key === 'draw' ? '' : '&tab=' + key);
+	// The poster page has no panels: there the bar's items are links.
+	const onPoster = () => location.pathname.startsWith('/tournaments/poster/');
 
 	const starts = new Map();     // key -> the panel's start(), registered as its script loads
 	const started = new Set();
@@ -63,12 +81,18 @@ const TDCTournamentNav = (() => {
 
 	// The tab in the green pill, wherever the bar has got to drawing.
 	function mark(key) {
-		for (const nav of document.querySelectorAll('#tournament-nav, #tournament-nav-admin')) {
+		for (const nav of document.querySelectorAll('#tournament-nav, #tournament-nav-admin, #tournament-tabbar')) {
 			for (const item of nav.querySelectorAll('[data-tab]')) {
 				if (item.dataset.tab === key) item.setAttribute('aria-current', 'page');
 				else item.removeAttribute('aria-current');
 			}
-			const here = nav.querySelector('[aria-current]');
+			// The bottom bar's Manage stands for the second pill's pages, as a league's.
+			const admin = nav.querySelector('.league-tab-admin');
+			if (admin) {
+				if (tabOf(key) && tabOf(key)[2]) admin.setAttribute('aria-current', 'page');
+				else admin.removeAttribute('aria-current');
+			}
+			const here = nav.querySelector('.league-nav-track [aria-current]');
 			const track = nav.querySelector('.league-nav-track');
 			if (here && track) track.scrollLeft = here.offsetLeft - (track.clientWidth - here.offsetWidth) / 2;
 		}
@@ -132,14 +156,16 @@ const TDCTournamentNav = (() => {
 
 	async function show(tournamentId) {
 		const nav = document.getElementById('tournament-nav');
-		if (!nav) return;
-		if (!tournamentId) { nav.hidden = true; return; }
+		if (!nav && !onPoster()) return;
+		if (!tournamentId) { if (nav) nav.hidden = true; hideBar(); return; }
 
 		// Who runs it: the same private helper the writes ask
 		// (tdc_may_run_tournament), so the bar and the database cannot
-		// disagree. The poster: offered to anybody else only once shared.
+		// disagree; nobody, signed out (the poster). The poster: offered to
+		// anybody else only once shared.
+		const signedIn = !!(await TDC.getSession(AREA));
 		const [run, poster] = await Promise.all([
-			supabaseClient.rpc('tdc_may_run_tournament', { p_tournament_id: tournamentId }),
+			signedIn ? supabaseClient.rpc('tdc_may_run_tournament', { p_tournament_id: tournamentId }) : { data: false },
 			supabaseClient.rpc('tdc_tournament_poster', { p_tournament_id: tournamentId })
 		]);
 		if (run.error) { TDC.showSupabaseError(AREA, run.error, document.getElementById('page-status')); return; }
@@ -148,6 +174,10 @@ const TDCTournamentNav = (() => {
 		const posterRow = Array.isArray(poster.data) ? poster.data[0] : poster.data;
 
 		const t = encodeURIComponent(tournamentId);
+		// The poster page showing "Nothing here": no bar either.
+		if (onPoster() && !posterRow) { hideBar(); return; }
+		bottomBar(t, iRunIt, iRunIt || !!posterRow);
+		if (!nav) { mark('poster'); return; }
 		const pill = (forRunners) => {
 			const track = document.createElement('div');
 			track.className = 'league-nav-track scroll-x';
@@ -187,11 +217,133 @@ const TDCTournamentNav = (() => {
 		if (!iRunIt && TABS.some(([k, , runners]) => k === current && runners)) open('draw', { push: false });
 	}
 
+	// ─── The bottom bar (UV, 24 Nov), copied from league-nav.js's ───
+	// The league's without its match pill. The body's own child, so the card
+	// cannot clip it; it slides away and back with the site's bar (league.css).
+	function icon(face, name, label) {
+		// Shown already drawn: a page load draws nothing in (UV, 16 Nov).
+		try {
+			face.innerHTML = TDCRing.svg();
+			new TDCRing.RingStatus(face, { icons: [name], labels: { [name]: label, empty: label, loading: 'Working' }, initial: name });
+		} catch (err) {
+			TDC.error(AREA, 'the bottom bar’s icon for ' + label + ' could not be drawn.', err);
+		}
+	}
+	function tabItem(t, key, label, className) {
+		// A tab switches in place on the draw page; the Poster, and everything
+		// on the poster page, is a link.
+		let item;
+		if (key !== 'poster' && !onPoster()) {
+			item = document.createElement('button');
+			item.type = 'button';
+		} else {
+			item = document.createElement('a');
+			item.href = key === 'poster' ? posterUrl(t) : tabUrl(t, key);
+		}
+		item.className = className;
+		item.dataset.tab = key;
+		return item;
+	}
+	function setMenu(bar, open) {
+		const menu = bar.querySelector('#tournament-tabmenu');
+		const btn = bar.querySelector('.league-tab-admin');
+		if (!menu || !btn) return;
+		menu.classList.toggle('is-open', open);
+		btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+	}
+	const menuOpen = (bar) => !!bar.querySelector('#tournament-tabmenu.is-open');
+	function bottomBar(t, iRunIt, posterShown) {
+		let bar = document.getElementById('tournament-tabbar');
+		if (!bar) {
+			bar = document.createElement('nav');
+			bar.id = 'tournament-tabbar';
+			bar.className = 'league-tabbar';
+			bar.setAttribute('aria-label', 'This tournament’s pages');
+			document.body.append(bar);
+		}
+		const track = document.createElement('div');
+		track.className = 'league-nav-track';
+		let count = 0;
+		for (const [key, label] of BAR) {
+			if (key === 'poster' && !posterShown) continue;
+			const item = tabItem(t, key, label, 'league-nav-item league-tab');
+			const face = document.createElement('span');
+			face.className = 'tdc-ring league-tab-icon';
+			const word = document.createElement('span');
+			word.className = 'league-tab-word';
+			word.textContent = label;
+			item.append(face, word);
+			icon(face, ICON[key], label);
+			track.append(item);
+			count++;
+		}
+		const parts = [track];
+		if (iRunIt) {
+			const btn = document.createElement('button');
+			btn.type = 'button';
+			btn.className = 'league-nav-item league-tab league-tab-admin';
+			btn.setAttribute('aria-haspopup', 'true');
+			btn.setAttribute('aria-expanded', 'false');
+			btn.setAttribute('aria-controls', 'tournament-tabmenu');
+			const face = document.createElement('span');
+			face.className = 'tdc-ring league-tab-icon';
+			const word = document.createElement('span');
+			word.className = 'league-tab-word';
+			word.textContent = 'Manage';
+			btn.append(face, word);
+			icon(face, 'sliders', 'Manage');
+			track.append(btn);
+			// The green line round the tabs, not Manage, as a league's.
+			track.classList.add('has-admin');
+			track.style.setProperty('--tabbar-items', String(count + 1));
+
+			const menu = document.createElement('div');
+			menu.className = 'league-tabmenu';
+			menu.id = 'tournament-tabmenu';
+			for (const [key, label, runners] of TABS) {
+				if (!runners) continue;
+				const item = tabItem(t, key, label, 'league-tabmenu-item');
+				item.textContent = label;
+				menu.append(item);
+			}
+			parts.push(menu);
+		}
+		bar.replaceChildren(...parts);
+		bar.hidden = false;
+		document.body.classList.add('has-league-tabbar');
+		document.body.classList.toggle('has-league-tabmenu', iRunIt);
+	}
+	function hideBar() {
+		const bar = document.getElementById('tournament-tabbar');
+		if (bar) bar.hidden = true;
+		document.body.classList.remove('has-league-tabbar', 'has-league-tabmenu');
+	}
+
 	document.addEventListener('click', (e) => {
-		const item = e.target.closest('#tournament-nav button[data-tab], #tournament-nav-admin button[data-tab]');
+		const bar = document.getElementById('tournament-tabbar');
+		// Manage opens and shuts its menu; any other tap shuts it.
+		if (bar) {
+			const was = menuOpen(bar);
+			if (e.target.closest('#tournament-tabbar .league-tab-admin')) { setMenu(bar, !was); return; }
+			if (was) setMenu(bar, false);
+		}
+		const item = e.target.closest('#tournament-nav button[data-tab], #tournament-nav-admin button[data-tab], #tournament-tabbar button[data-tab]');
 		if (!item) return;
-		open(item.dataset.tab, { push: true, tab: item });
+		// A page chosen in the menu: the dots on Manage, as the menu has shut.
+		const fromMenu = item.closest('.league-tabmenu');
+		open(item.dataset.tab, { push: true, tab: fromMenu ? bar.querySelector('.league-tab-admin') : item });
 	});
+	document.addEventListener('keydown', (e) => {
+		const bar = document.getElementById('tournament-tabbar');
+		if (e.key !== 'Escape' || !bar || !menuOpen(bar)) return;
+		setMenu(bar, false);
+		bar.querySelector('.league-tab-admin').focus();
+	});
+	// Scrolling shuts it, so it never rides away with the bar.
+	window.addEventListener('scroll', () => {
+		const bar = document.getElementById('tournament-tabbar');
+		if (bar && menuOpen(bar)) setMenu(bar, false);
+	}, { passive: true });
 
 	// Back and forward between tabs.
 	window.addEventListener('popstate', () => { if (panels().length) open(tabInAddress()); });
