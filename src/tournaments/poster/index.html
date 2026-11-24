@@ -10,6 +10,7 @@ extraStyles:
 extraScripts:
   - /scripts/banner-table.js
   - /scripts/match-settings.js
+  - /scripts/poster-words.js
   - /scripts/tournament-poster.js
   - /scripts/tournament-nav.js
 ---
@@ -98,6 +99,12 @@ extraScripts:
 
 		<section class="lj-numbers" id="p-numbers" aria-label="The tournament in numbers"></section>
 
+		{% comment %} Who is in before the rules (UV, 24 Nov). {% endcomment %}
+		<div id="p-names-box" hidden>
+			<h2>Who is in <span class="badge" id="p-names-count"></span></h2>
+			<div class="poster-names" id="p-names"></div>
+		</div>
+
 		<div id="p-rules-box" hidden>
 			<h2>How it is played</h2>
 			<div class="lj-rules" id="p-rules"></div>
@@ -108,35 +115,18 @@ extraScripts:
 			<div class="lj-rules" id="p-rounds"></div>
 		</div>
 
-		<div id="p-names-box" hidden>
-			<h2>Who is in <span class="badge" id="p-names-count"></span></h2>
-			<div class="poster-names" id="p-names"></div>
-		</div>
-
 		<div id="p-draw-box" hidden>
 			<h2>The draw</h2>
 			<div class="poster-draw" id="p-draw"></div>
 		</div>
 
 		{% comment %}
-			The point of the whole page, per UV's original spec: a block of text
-			describing the tournament in enough detail to hand to an AI and get
-			a poster back. Generated from the same snapshot the page renders, so
-			it cannot describe a different tournament than the one shown.
+			The text for a poster designer moved to the poster's settings page in
+			the Manage menu, for whoever runs the tournament (UV, 24 Nov).
 		{% endcomment %}
-		<details class="panel" id="p-text-box">
-			<summary><h2>Text for a poster designer</h2></summary>
-			<p class="muted">Copy this and give it to an image generator, or to a designer.</p>
-			<textarea id="p-text" rows="14" readonly></textarea>
-			<div class="btn-row">
-				<button type="button" class="btn btn-secondary btn-sm" id="p-copy">Copy</button>
-			</div>
-		</details>
 
 		<p class="muted sub" id="p-generated"></p>
 
 		<div class="status" id="page-status"></div>
-
-		<div class="link-row" id="p-links"></div>
 	</div>
 </div>

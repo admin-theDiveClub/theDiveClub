@@ -13,6 +13,8 @@ extraScripts:
   - /scripts/venue-picker.js
   - /scripts/short-code-field.js
   - /scripts/tournament-settings.js
+  - /scripts/poster-words.js
+  - /scripts/tournament-poster-settings.js
   - /scripts/rules-doc.js
   - /scripts/tournament-rules.js
 ---
@@ -47,5 +49,9 @@ extraScripts:
 
 	<div class="tournament-panel" data-tab="settings" data-title="Tournament Settings" hidden>
 {% include "tournament/settings.html" %}
+	</div>
+
+	<div class="tournament-panel" data-tab="poster-settings" data-title="Poster Settings" hidden>
+{% include "tournament/poster.html" %}
 	</div>
 </div>

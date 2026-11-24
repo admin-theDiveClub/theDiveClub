@@ -3094,3 +3094,15 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to correct:* the icons, a megaphone for the Poster and a bracket for the Draw (new; Rules and Manage are the league's); on the draw page the Poster is offered as the old pill offered it (whoever runs it, or anybody once shared); a poster showing "Nothing here" shows no bar; no match pill (the league's live-match strip), which UV did not ask for.
 *Example:* a stranger opens Friday 9-Ball's poster: Poster lit, Draw and Rules beside it; Draw asks them to sign in, then opens the draw. The director on the same poster also has Manage, whose menu opens Entrants.
 *Touches:* `src/scripts/tournament-nav.js`, `src/scripts/ring-status.js`, `src/stylesheets/league.css`, `src/tournaments/poster/index.html`; `docs/systems/tournaments.md`, `docs/systems/file-map.md`, `docs/ui.md`, `docs/ui-list.md`, `docs/STATUS.md` (4do).
+
+## 2026-11-24 — Existing posters rebuilt with player ids
+*Decided by UV:* after "I still can't open any profiles from the tournament poster page" (production's one poster was built two hours before `20261124172239` was pushed, so it held no ids), **rebuild every existing poster once in a migration** rather than regenerating by hand.
+*Claude's, for UV to correct:* each rebuilt with its own choices; whether it is shared, and who generated it, left alone; `generated_at` set to now, since the page says the poster shows the tournament as it was then; only posters below version 3.
+*Example:* Basil's Friday Super Comp's poster is rebuilt: 12 entrants now (8 when it was built), each name opening a profile.
+*Touches:* migration `20261124173925_poster_rebuild_with_ids.sql`; test `100_poster_rebuild_with_ids`; `docs/systems/tournaments.md`, `docs/STATUS.md` (4do).
+
+## 2026-11-24 — A tournament's Poster settings page
+*Decided by UV:* the text for a poster designer moves off the poster to the admin pages, as a page; then **all the poster settings move there too**. **Who may open it:** whoever gets the Manage menu (every official on the tournament, and the site owner), not directors alone. **Visible to public and the tournament picture stay on Settings.**
+*Claude's, for UV to correct:* named Poster settings, last in the Manage menu; the panel moved unchanged; the Entrants link's hint still says whether the link opens anything, pointing at the new page; the text box hidden until there is a poster.
+*Example:* Rick, a referee on Basil's tournament, opens Manage › Poster settings, ticks the names, presses Regenerate, then Copy, and pastes the text into an image generator. A player who follows the same address sees the Draw.
+*Touches:* `src/_includes/tournament/poster.html` (new), `src/scripts/tournament-poster-settings.js` (new), `src/scripts/poster-words.js` (new), `src/scripts/tournament-poster.js`, `src/scripts/tournament-manage.js`, `src/_includes/tournament/entrants.html`, `src/scripts/tournament-nav.js`, `src/tournaments/bracket/index.html`, `src/tournaments/poster/index.html`; `docs/systems/tournaments.md`, `docs/systems/file-map.md`, `docs/STATUS.md` (4do).

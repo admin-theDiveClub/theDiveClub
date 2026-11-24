@@ -2,7 +2,7 @@
 // (league-nav.js, whose sibling this is: the same bar, the same way of
 // opening a tab, the same loading screens; keep the two in step).
 //
-// One page, /tournaments/bracket/?t=<tournament id>&tab=<rules|run|entrants|settings>:
+// One page, /tournaments/bracket/?t=<tournament id>&tab=<rules|run|entrants|settings|poster-settings>:
 // Draw and Rules (everybody, as a player sees them) in the first pill; Run the draw, Entrants
 // and Settings (the people running it) in a second pill under it (UV, 10 Nov).
 // Run the draw is the Draw panel with its director's controls on, and managing()
@@ -47,7 +47,9 @@ const TDCTournamentNav = (() => {
 		['rules', 'Rules', false],
 		['run', 'Run the draw', true, 'draw'],
 		['entrants', 'Entrants', true],
-		['settings', 'Settings', true]
+		['settings', 'Settings', true],
+		// Everything about the poster, and the text for a designer (UV, 24 Nov).
+		['poster-settings', 'Poster settings', true]
 	];
 	// The bottom bar's icon for each (UV, 24 Nov), and its order: the Poster first.
 	const ICON = { poster: 'megaphone', draw: 'bracket', rules: 'document' };
