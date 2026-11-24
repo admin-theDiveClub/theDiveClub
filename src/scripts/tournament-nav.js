@@ -2,7 +2,10 @@
 // (league-nav.js, whose sibling this is: the same bar, the same way of
 // opening a tab, the same loading screens; keep the two in step).
 //
-// One page, /tournaments/bracket/?t=<tournament id>&tab=<rules|run|entrants|settings|poster-settings>:
+// Since 24 Nov (UV) Manage's menu is nine pages in three headed groups (TABS);
+// see docs/systems/tournaments.md, "The admin pages, one job each".
+//
+// One page, /tournaments/bracket/?t=<tournament id>&tab=<rules|generate|run|entrants|officials|settings|format|entries|match-rules|poster-settings>:
 // Draw and Rules (everybody, as a player sees them) in the first pill; Run the draw, Entrants
 // and Settings (the people running it) in a second pill under it (UV, 10 Nov).
 // Run the draw is the Draw panel with its director's controls on, and managing()
@@ -41,15 +44,25 @@
 const TDCTournamentNav = (() => {
 	const AREA = 'Tournament pages';
 
-	// [key, label, only for the people running it, the panel if not its own]
+	// [key, label, only for the people running it, the panel if not its own,
+	//  the panel's data-part sections it shows (null: all), its heading in Manage's menu]
+	// The admin pages split so each job is a page of its own, easy to reach on
+	// a phone (UV, 24 Nov): several share one panel and show their part of it,
+	// the panel's script unchanged. 'settings' is the key Details keeps, so
+	// every old &tab=settings link still opens.
 	const TABS = [
 		['draw', 'Draw', false],
 		['rules', 'Rules', false],
-		['run', 'Run the draw', true, 'draw'],
-		['entrants', 'Entrants', true],
-		['settings', 'Settings', true],
+		['generate', 'Generate the draw', true, 'draw', null, 'Draw'],
+		['run', 'Run the draw', true, 'draw', null, 'Draw'],
+		['entrants', 'Entrants', true, null, ['entrants'], 'People'],
+		['officials', 'Who runs it', true, 'entrants', ['officials'], 'People'],
+		['settings', 'Details', true, null, ['details'], 'Settings'],
+		['format', 'Format', true, 'settings', ['format'], 'Settings'],
+		['entries', 'Entries', true, 'settings', ['entries'], 'Settings'],
+		['match-rules', 'Match rules', true, 'settings', ['rules'], 'Settings'],
 		// Everything about the poster, and the text for a designer (UV, 24 Nov).
-		['poster-settings', 'Poster settings', true]
+		['poster-settings', 'Poster settings', true, null, null, 'Settings']
 	];
 	// The bottom bar's icon for each (UV, 24 Nov), and its order: the Poster first.
 	const ICON = { poster: 'megaphone', draw: 'bracket', rules: 'document' };
@@ -114,7 +127,13 @@ const TDCTournamentNav = (() => {
 		const was = current;
 		current = key;
 		for (const p of panels()) p.hidden = p !== target;
-		document.title = (target.dataset.title || 'Tournament') + ' — The Dive Club';
+		const [, label, runners, , parts] = tabOf(key);
+		// This page's parts of a shared panel; the rest are other pages'.
+		for (const part of target.querySelectorAll('[data-part]')) {
+			part.classList.toggle('tab-off', !!parts && !parts.includes(part.dataset.part));
+		}
+		for (const head of target.querySelectorAll('[data-tab-head]')) head.textContent = label;
+		document.title = (runners ? label : (target.dataset.title || 'Tournament')) + ' — The Dive Club';
 		mark(key);
 
 		let call = null;
@@ -302,8 +321,17 @@ const TDCTournamentNav = (() => {
 			const menu = document.createElement('div');
 			menu.className = 'league-tabmenu';
 			menu.id = 'tournament-tabmenu';
-			for (const [key, label, runners] of TABS) {
+			let group = null;
+			for (const [key, label, runners, , , heading] of TABS) {
 				if (!runners) continue;
+				// A heading over each group (UV, 24 Nov).
+				if (heading && heading !== group) {
+					const head = document.createElement('div');
+					head.className = 'league-tabmenu-head';
+					head.textContent = heading;
+					menu.append(head);
+					group = heading;
+				}
 				const item = tabItem(t, key, label, 'league-tabmenu-item');
 				item.textContent = label;
 				menu.append(item);
@@ -356,5 +384,6 @@ const TDCTournamentNav = (() => {
 		if (typeof TDCLoader !== 'undefined') TDCLoader.hold(bar, 'the tournament’s tabs');
 	});
 
-	return { show, panel, open, managing };
+	// tab(): the page showing, for a panel two pages share (tournament-bracket.js).
+	return { show, panel, open, managing, tab: () => current };
 })();

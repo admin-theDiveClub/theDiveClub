@@ -169,6 +169,14 @@ a:is(.btn, .btn-link, .tile-link, .lj-icon, .lj-btn, .ls-btn, .nav-logo, .pt-log
 	display: none !important;
 }
 
+/* A part of a panel that another page shows (UV, 24 Nov: several admin pages
+   share one panel; league-nav.js and tournament-nav.js set it from their TABS).
+   A class, not the hidden attribute, so the page's own script can keep setting
+   hidden on the same element without the two undoing each other. */
+.tab-off {
+	display: none !important;
+}
+
 /* Printing (e.g. a batch of redeem codes): drop the nav, buttons and anything marked .no-print,
    and print in plain black on white regardless of the on-screen theme. */
 @media print {

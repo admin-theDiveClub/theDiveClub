@@ -109,7 +109,7 @@ TDCTournamentNav.panel('settings', () => {
 			? 'Nobody can score a match until you press Start match on it.'
 			: 'A match starts on its own once both players are known.';
 		els.thirdPlaceHint.textContent = drawn
-			? 'Fixed with the draw. Redraw on the Draw tab keeps it as it is.'
+			? 'Fixed with the draw. Redraw on Generate the draw keeps it as it is.'
 			: 'Generated with the draw, so decide before you make it.';
 		// Visible to public, as it stands saved: listed only while players
 		// can enter themselves (tdc_open_tournaments).

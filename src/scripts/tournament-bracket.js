@@ -134,6 +134,7 @@ TDCTournamentNav.panel('draw', () => {
 	let tournament = null;
 	let fixtures = [];
 	let readOnly = true;
+	let generating = false;   // on Generate the draw (applyMode)
 	let mayRun = false;
 	// The fixture whose score the TD is typing, if any. One at a time: two
 	// half-filled score forms on one bracket is a mis-tap waiting to happen.
@@ -962,11 +963,14 @@ TDCTournamentNav.panel('draw', () => {
 	}
 
 	// The director's controls show on Run the draw alone; on Draw whoever runs
-	// the tournament sees what a player sees (UV, 10 Nov). True if that changed.
+	// the tournament sees what a player sees (UV, 10 Nov). Generate the draw
+	// (UV, 24 Nov: a page of its own) is the Generate group over the draw as a
+	// player sees it: generating. True if either changed.
 	function applyMode() {
-		const was = readOnly;
-		readOnly = !mayRun || !TDCTournamentNav.managing();
-		return was !== readOnly;
+		const was = readOnly, wasGenerating = generating;
+		generating = mayRun && TDCTournamentNav.tab() === 'generate';
+		readOnly = !mayRun || !TDCTournamentNav.managing() || generating;
+		return was !== readOnly || wasGenerating !== generating;
 	}
 
 	// What only the director's view needs, read as it opens.
@@ -988,13 +992,13 @@ TDCTournamentNav.panel('draw', () => {
 
 	// ─── The whole bracket ───
 	function render() {
-		// The director's two groups at the foot, always (UV, 5 Nov). Generate
-		// opens by itself while there is no draw, and folds when one appears;
-		// after that it is left as the director leaves it.
+		// The director's two groups, each on its own page since 24 Nov (UV):
+		// Generate over the draw on Generate the draw, always open there as it
+		// is all that page is for; Running at the foot of Run the draw.
 		const drawn = !!fixtures.length;
-		els.setup.hidden = readOnly;
+		els.setup.hidden = !generating;
 		els.running.hidden = readOnly;
-		if (drawn !== setupFor) { els.setup.open = !drawn; setupFor = drawn; }
+		if (generating) els.setup.open = true;
 		els.generate.hidden = drawn;
 		els.redraw.hidden = !drawn;
 		els.populate.hidden = !drawn;
@@ -1007,9 +1011,11 @@ TDCTournamentNav.panel('draw', () => {
 		els.bracket.classList.toggle('bracket-ro', readOnly);
 
 		if (!fixtures.length) {
-			els.bracket.replaceChildren(node('div', 'empty', readOnly
-				? 'The draw for this tournament has not been made yet.'
-				: 'No draw yet. Set it up under Generate the draw, below.'));
+			els.bracket.replaceChildren(node('div', 'empty', generating
+				? 'No draw yet. Generate it above.'
+				: readOnly
+					? 'The draw for this tournament has not been made yet.'
+					: 'No draw yet. Make one on Generate the draw, under Manage.'));
 			return;
 		}
 
@@ -1150,7 +1156,6 @@ TDCTournamentNav.panel('draw', () => {
 		drawArrows();
 	}
 	let bracketDrawn = false;
-	let setupFor = null;   // whether there was a draw when Generate was last opened or folded
 
 	// The red crosses' rings, made once each card is on the page. Shown at
 	// once rather than drawn in: the page is drawn again after every write,
@@ -1264,7 +1269,8 @@ TDCTournamentNav.panel('draw', () => {
 	// tournament's own settings. Harmless to call when there is no draw, and
 	// harmless to call twice.
 	async function resolve() {
-		if (readOnly || !fixtures.length) return true;
+		// Generate the draw's writes move people up as Run the draw's do.
+		if ((readOnly && !generating) || !fixtures.length) return true;
 		const { error } = await supabaseClient.rpc('tdc_resolve_draw', {
 			p_tournament_id: tournamentId
 		});
@@ -2669,6 +2675,7 @@ TDCTournamentNav.panel('draw', () => {
 		await loadStatus();
 
 		if (!readOnly) await editingReads();
+		else if (generating) await describeField();
 	})(), 'Draw');
 
 	// Shown again as a tab (tournament-nav.js): read again in place, so a
@@ -2680,7 +2687,7 @@ TDCTournamentNav.panel('draw', () => {
 			if (!await loadDraw()) return;
 			await loadStatus();
 			if (nowEditing) await editingReads();
-			else if (!readOnly) await describeField();
+			else if (!readOnly || generating) await describeField();
 		})().catch((err) => TDC.error(AREA, 'the draw could not be read again.', err, els.status))
 	};
 });

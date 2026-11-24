@@ -272,7 +272,7 @@
 			const placed = await TDC.busy(els.create, venues.save('tournament', data), els.status);
 			if (placed.error) {
 				TDC.showSupabaseError(AREA, placed.error, els.status);
-				const fix = node('a', null, 'Add its venues on Settings.');
+				const fix = node('a', null, 'Add its venues on its Details page.');
 				fix.href = '/tournaments/bracket/?t=' + encodeURIComponent(data) + '&tab=settings';
 				els.status.append(' The tournament itself was created. ', fix);
 				return;

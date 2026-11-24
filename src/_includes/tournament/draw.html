@@ -55,6 +55,61 @@
 </div>
 
 {% comment %}
+	Generating the draw, the Generate the draw page's own controls (UV, 24 Nov:
+	a page of its own, the draw read-only under it; until then a folding group
+	at the foot, from 5 Nov), there whether or not a draw exists. These
+	settings are read when the draw is generated, which is why they live here
+	and not on the create page. Generate makes the first draw; once there is
+	one, Redraw makes it again (asking first if matches are attached). The
+	third-place playoff is generated with the draw too, but is set on the
+	Format page (UV: each setting in one place); the draw reads it from the
+	tournament.
+{% endcomment %}
+<details class="set-group" id="setup" hidden>
+	<summary>Generate the draw</summary>
+
+	<div class="field">
+		<label for="who">Who goes in</label>
+		<select id="who">
+			<option value="confirmed">Confirmed entrants only</option>
+			<option value="all">Everyone who has not withdrawn</option>
+			<option value="none">No one</option>
+		</select>
+		<div class="hint" id="who-hint"></div>
+	</div>
+
+	{% comment %}
+		Only for No one: an empty draw has no field to be sized by, so the
+		TD says how many places the first round has. Starts at the
+		tournament's max entrants (UV, 5 Nov).
+	{% endcomment %}
+	<div class="field" id="size-field" hidden>
+		<label for="draw-size">Draw size</label>
+		<select id="draw-size">
+			<option value="4">4</option>
+			<option value="8">8</option>
+			<option value="16">16</option>
+			<option value="32">32</option>
+			<option value="64">64</option>
+		</select>
+		<div class="hint">The matches are made and wired round to round, with nobody in them. Tap a slot to put someone in.</div>
+	</div>
+
+	<div class="btn-row">
+		<button type="button" class="btn btn-primary btn-sm" id="generate">Generate the Draw</button>
+		<button type="button" class="btn btn-danger btn-sm" id="redraw" hidden>Redraw</button>
+		{% comment %}
+			Once there is a draw (UV, 5 Nov): fill the first round's open
+			slots (a bye's too) with who is not in the draw yet, at random,
+			from Who goes in; and shuffle every first-round player across its
+			matches. Both say what they will do and ask first.
+		{% endcomment %}
+		<button type="button" class="btn btn-secondary btn-sm" id="populate" hidden>Fill the first round</button>
+		<button type="button" class="btn btn-secondary btn-sm" id="shuffle" hidden>Shuffle the first round</button>
+	</div>
+</details>
+
+{% comment %}
 	How the draw is shown, for everybody once there is a draw (UV, 5 Nov),
 	each kept on this device. Full names as the standings have it: off
 	shows display names, and a player with no first or last name keeps
@@ -180,61 +235,7 @@
 </div>
 
 {% comment %}
-	The director's two folding groups at the foot (UV, 5 Nov). First,
-	generating the draw: there whether or not a draw exists, open when
-	there is none. These settings are read when the draw is generated,
-	which is why they live here and not on the create page. Generate makes
-	the first draw; once there is one, Redraw makes it again (asking first
-	if matches are attached). The third-place playoff is generated with the
-	draw too, but is set on the Settings tab since 5 Nov (UV: each setting
-	in one place); the draw reads it from the tournament.
-{% endcomment %}
-<details class="set-group" id="setup" hidden>
-	<summary>Generate the draw</summary>
-
-	<div class="field">
-		<label for="who">Who goes in</label>
-		<select id="who">
-			<option value="confirmed">Confirmed entrants only</option>
-			<option value="all">Everyone who has not withdrawn</option>
-			<option value="none">No one</option>
-		</select>
-		<div class="hint" id="who-hint"></div>
-	</div>
-
-	{% comment %}
-		Only for No one: an empty draw has no field to be sized by, so the
-		TD says how many places the first round has. Starts at the
-		tournament's max entrants (UV, 5 Nov).
-	{% endcomment %}
-	<div class="field" id="size-field" hidden>
-		<label for="draw-size">Draw size</label>
-		<select id="draw-size">
-			<option value="4">4</option>
-			<option value="8">8</option>
-			<option value="16">16</option>
-			<option value="32">32</option>
-			<option value="64">64</option>
-		</select>
-		<div class="hint">The matches are made and wired round to round, with nobody in them. Tap a slot to put someone in.</div>
-	</div>
-
-	<div class="btn-row">
-		<button type="button" class="btn btn-primary btn-sm" id="generate">Generate the Draw</button>
-		<button type="button" class="btn btn-danger btn-sm" id="redraw" hidden>Redraw</button>
-		{% comment %}
-			Once there is a draw (UV, 5 Nov): fill the first round's open
-			slots (a bye's too) with who is not in the draw yet, at random,
-			from Who goes in; and shuffle every first-round player across its
-			matches. Both say what they will do and ask first.
-		{% endcomment %}
-		<button type="button" class="btn btn-secondary btn-sm" id="populate" hidden>Fill the first round</button>
-		<button type="button" class="btn btn-secondary btn-sm" id="shuffle" hidden>Shuffle the first round</button>
-	</div>
-</details>
-
-{% comment %}
-	Second, running it: the status, and Refresh. How people move between
+	Running the draw, at the foot of Run the draw: the status, and Refresh. How people move between
 	rounds and when matches start were here too until 5 Nov; they are on
 	the Settings tab now (UV: each setting in one place). The status is
 	derived from the tournament's own facts, so it is right without

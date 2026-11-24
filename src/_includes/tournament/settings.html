@@ -16,10 +16,19 @@
 	Ids are prefixed ts-: the draw has t-progression and the like.
 {% endcomment %}
 
-<h1 id="ts-head">Settings</h1>
+{% comment %}
+	Four pages share this panel since 24 Nov (UV; tournament-nav.js's TABS),
+	each showing its own data-part: Details (details), Format (format), Entries
+	(entries), Match rules (rules). The heading is the page's name
+	(data-tab-head). The Save and its status, outside every part, show on all
+	four and still send the whole form, as the one Settings tab did; the other
+	pages' fields go back as they were.
+{% endcomment %}
+<h1 id="ts-head" data-tab-head>Settings</h1>
 <p class="muted" id="ts-meta"></p>
-<p>The rules below are frozen onto each match when it starts. Changing them reaches every match not started yet; a match with a frame in keeps the rules it began with.</p>
+<p data-part="rules">The rules below are frozen onto each match when it starts. Changing them reaches every match not started yet; a match with a frame in keeps the rules it began with.</p>
 
+<div data-part="details">
 <div class="field">
 	<label for="ts-name">Name</label>
 	<input type="text" id="ts-name" maxlength="120" autocomplete="off">
@@ -49,13 +58,15 @@
 	<div class="hint">Shown on the poster as soon as you choose it. Cropped to a square from the middle.</div>
 	<div class="status" id="ts-pic-status"></div>
 </div>
+</div>
 
-<div class="field">
+<div class="field" data-part="format">
 	<label for="ts-format">Format</label>
 	<select id="ts-format"></select>
 	<div class="hint" id="ts-format-hint"></div>
 </div>
 
+<div data-part="details">
 <div class="field">
 	<label for="ts-when">Starts</label>
 	<input type="datetime-local" id="ts-when">
@@ -67,22 +78,14 @@
 	<div id="ts-venues"></div>
 	<div class="hint">Where it is played: as many as you like, or none, from the venues you own or run. Listing a venue gives its staff no say in the tournament.</div>
 </div>
+</div>
 
-<details class="set-group" id="ts-extras" data-group="ts-extras">
-	<summary>Entries and fee</summary>
-
-	<div class="field">
-		<label for="ts-max">Maximum entrants</label>
-		<input type="number" id="ts-max" inputmode="numeric" min="2" max="1024" placeholder="No limit">
-		<div class="hint">Leave blank for no limit. Withdrawn entrants do not take up a place.</div>
-	</div>
-
-	<div class="field">
-		<label for="ts-fee">Entry fee (credits)</label>
-		<input type="number" id="ts-fee" inputmode="numeric" min="0" value="0">
-		<div class="hint">0 is free to enter.</div>
-	</div>
-
+{% comment %}
+	How the draw runs: the Format page, under the format itself. These were in
+	the "Entries and fee" folding group until 24 Nov, with the entry settings
+	below; a page each now (UV), so the group went.
+{% endcomment %}
+<div data-part="format">
 	<div class="field">
 		<label for="ts-progression">Moving between rounds</label>
 		<select id="ts-progression">
@@ -106,6 +109,20 @@
 		<input type="checkbox" id="ts-third-place">
 		<div class="hint" id="ts-third-place-hint"></div>
 	</div>
+</div>
+
+<div data-part="entries">
+	<div class="field">
+		<label for="ts-max">Maximum entrants</label>
+		<input type="number" id="ts-max" inputmode="numeric" min="2" max="1024" placeholder="No limit">
+		<div class="hint">Leave blank for no limit. Withdrawn entrants do not take up a place.</div>
+	</div>
+
+	<div class="field">
+		<label for="ts-fee">Entry fee (credits)</label>
+		<input type="number" id="ts-fee" inputmode="numeric" min="0" value="0">
+		<div class="hint">0 is free to enter.</div>
+	</div>
 
 	<div class="field">
 		<label for="ts-entry-mode">Entries</label>
@@ -128,11 +145,13 @@
 		<input type="checkbox" id="ts-listed">
 		<div class="hint" id="ts-listed-hint"></div>
 	</div>
-</details>
+</div>
 
 <!-- The ruleset, built by tournament-settings.js from TDCMatchDef -->
-<div id="ts-main"></div>
-<div id="ts-rest"></div>
+<div data-part="rules">
+	<div id="ts-main"></div>
+	<div id="ts-rest"></div>
+</div>
 
 <div class="btn-row">
 	<button type="button" class="btn btn-primary" id="ts-save" disabled>Save</button>

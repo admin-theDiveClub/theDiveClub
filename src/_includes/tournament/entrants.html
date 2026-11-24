@@ -17,13 +17,19 @@
 <p class="muted" id="en-meta"></p>
 
 {% comment %}
+	Two pages share this panel (UV, 24 Nov; tournament-nav.js's TABS): Entrants
+	shows data-part="entrants", Who runs it data-part="officials".
+{% endcomment %}
+<div data-part="entrants">
+
+{% comment %}
 	How people get in: the link to share. Who may put themselves down,
 	whether paid confirms and Visible to public were here until 5 Nov; they
 	are on the Settings tab now (UV: each setting in one place).
 {% endcomment %}
 <div class="panel" id="entry-settings" hidden>
 	<h2>How people get in</h2>
-	<p class="muted">Who may enter, and whether it is listed for the public, are on the Settings tab.</p>
+	<p class="muted">Who may enter, and whether it is listed for the public, are on the Entries page (Manage).</p>
 
 	<div class="field">
 		<label for="entry-link">The link to share</label>
@@ -68,6 +74,7 @@
 	<button type="button" class="btn btn-secondary btn-sm" id="seed-random">Randomise seeds</button>
 	<button type="button" class="btn btn-secondary btn-sm" id="seed-clear">Clear seeds</button>
 </div>
+</div>
 
 {% comment %}
 	Who runs it. A tournament always has a director — whoever created it —
@@ -79,6 +86,7 @@
 	written out here, because that table is a lookup with a rank for
 	exactly this reason — a new role should not need a page edit.
 {% endcomment %}
+<div data-part="officials">
 <h2>Who runs it</h2>
 
 <div id="official-add">
@@ -107,6 +115,7 @@
 		</thead>
 		<tbody id="official-rows"></tbody>
 	</table>
+</div>
 </div>
 
 <div class="status" id="en-status"></div>

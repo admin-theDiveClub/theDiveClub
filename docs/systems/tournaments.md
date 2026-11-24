@@ -210,6 +210,28 @@ Not built. Recorded here so it is not re-derived.
 - **Found, not changed:** the text box draws its sunken shape round enough to clip the start of each line (it did on the poster page too).
 - Driven headless at 420: the page as the director with a poster (Shared, Regenerate, the text) and without (Generate, no text), the Manage menu with Poster settings, a player sent to the address shown the Draw, the poster with no text box.
 
+### The admin pages, one job each (24 Nov, page only)
+- **UV:** split the admin pages so everything is easy to manage from a phone and a setting is quick to reach: generating separate from running, Who runs it its own page, each major settings section its own page. UV's answers: Manage's menu in headed groups; Generate the draw shows the draw read-only under its controls (DECISIONS 24 Nov, "The admin pages split, one job each").
+- **Manage's menu, nine pages in three groups** (`TABS` in `tournament-nav.js`, whose sixth column is the heading; `.league-tabmenu-head` in league.css; the menu scrolls in itself past the screen's height):
+
+| Group | Page (`&tab=`) | Panel | Shows |
+|---|---|---|---|
+| Draw | Generate the draw (`generate`) | draw | The Generate group (Who goes in, size, Generate / Redraw, Fill and Shuffle), always open, above the draw as a player sees it |
+| | Run the draw (`run`) | draw | The draw with the director's controls, Running the draw at the foot |
+| People | Entrants (`entrants`) | entrants | `data-part="entrants"`: the link to share, add, the list, seeds |
+| | Who runs it (`officials`) | entrants | `data-part="officials"` |
+| Settings | Details (`settings`) | settings | `details`: name, short link, picture, starts, venues |
+| | Format (`format`) | settings | `format`: format, moving between rounds, starting matches, third place |
+| | Entries (`entries`) | settings | `entries`: maximum, fee, entries, paid also confirms, visible to public |
+| | Match rules (`match-rules`) | settings | `rules`: the ruleset from `TDCMatchDef` |
+| | Poster settings (`poster-settings`) | poster-settings | All of it |
+
+- **How a page shows its part.** A `TABS` row names its panel (fourth column) and the `data-part` sections it shows (fifth; null for all). `open()` puts `.tab-off` (global.css, `display: none !important`) on the panel's other parts: a class, not `hidden`, so a panel's script can go on setting `hidden` on the same element. A `[data-tab-head]` element takes the page's name (Settings' heading); an admin page's document title is its name. Pages sharing a panel share its script, started once; moving between them reads the panel again in place, as showing a tab again always did. **Nothing else in `tournament-manage.js` or `tournament-settings.js` changed.**
+- **The Settings pages keep the one Save.** It shows on all four and sends the whole form, as the Settings tab did, so the other pages' fields go back as they were (checked: a fee saved from Entries left the name and maximum alone). The "Entries and fee" folding group is gone: its fields are on Format and Entries.
+- **The draw's third state, `generating`** (`applyMode()` in `tournament-bracket.js`, reading `TDCTournamentNav.tab()`): read-only like Draw (no crosses, no pills, no + Match, `bracket-ro`), with the Generate group shown and its count read (`describeField`); `resolve()` runs for it too, so Generate, Redraw, Fill and Shuffle move people up and start matches exactly as from Run the draw. The Generate group moved above the stage in `draw.html`; Run the draw no longer shows it, and with no draw says to make one on Generate the draw. The group's fold-by-itself rule (`setupFor`) went: on its own page it is always open.
+- **Old addresses:** `settings` is Details' key, so `&tab=settings` (the create page's venue link, any old bookmark) opens Details. A player sent to any of these is shown the Draw, as before.
+- Driven headless at 420 on the local copy (a director, six confirmed players, an 8-place tournament), 27 checks: Generate before and after a draw (7 cards, read-only, Redraw, Fill and Shuffle offered, two matches started), the menu's three heads and nine pages, Run the draw's controls, back to Generate in place, Entrants and Who runs it each without the other, the four Settings pages each with its own fields, Save and heading, an Entries save read back from the database, `&tab=settings`, no sideways scroll, and a player at `&tab=generate` on a read-only Draw with no Manage. No console errors but the local push function, which was not running.
+
 ### A tournament's card opens the poster before the start, the draw after (migration `20261105162834`, 5 Nov)
 - **UV:** while a tournament has not started, its link always opens the poster; once started, straight to the draw. **UV's answers:** the director's card too (they reach Entrants from the poster's foot); a player who cannot open the poster (not shared) gets the draw instead.
 - **Where:** the cards under Your Tournaments on `/tournaments/` (`tournaments.js`). Not started is Draft or Open; Running, Finished and Cancelled open the draw. Open for entry cards already opened the poster.

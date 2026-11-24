@@ -3256,6 +3256,23 @@ body.has-league-tabmenu #tournament-nav-admin { display: none; }
 .league-tabmenu-item.league-livemenu-item { flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; padding-block: var(--space-1); }
 .league-livemenu-sub { font-size: 0.85rem; font-weight: 400; color: var(--color-warning); }
 .league-tabmenu-item + .league-tabmenu-item { border-top: 1px solid var(--border-color); border-radius: 0; }
+/* Manage's menu in headed groups (UV, 24 Nov: Draw or Schedule, People,
+   Settings), and never taller than the screen above the bar: past that it
+   scrolls in itself (a phone on its side). */
+.league-tabmenu:has(.league-tabmenu-head) {
+	max-height: calc(100dvh - var(--tabbar-height, 4rem) - var(--space-7));
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+.league-tabmenu-head {
+	padding: var(--space-2) var(--nm-pad) var(--space-1);
+	color: var(--text-muted);
+	font-size: 0.75rem;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+.league-tabmenu-head:first-child { padding-top: 0; }
 .league-tabmenu-item[aria-current] { color: var(--color-primary); text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 60%, transparent); }
 /* No room kept for the bar at the page's foot (UV, 18 Nov): it slides away
    on the long scroll down that reaches the footer, so the room was only an
