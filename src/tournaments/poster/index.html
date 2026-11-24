@@ -47,21 +47,30 @@ extraScripts:
 	</div>
 
 	<div id="poster" hidden>
+		{% comment %}
+			The banner as a league season's (UV, 24 Nov): Share an icon in the
+			corner; the date and the venue under the name, seen with the banner
+			folded; the details folded under the arrow, closed on opening.
+		{% endcomment %}
 		<section class="jumbo lj-hero" id="p-hero" data-banner-table>
+			<div class="lj-corner">
+				<button type="button" class="lj-icon" id="p-share" data-icon="share" title="Share" aria-label="Share"><span class="tdc-ring"></span></button>
+			</div>
 			<div class="lj-id">
 				<span class="lj-pic"><span class="lj-pic-inner" id="p-pic"></span></span>
 				<div class="lj-names">
 					<h1 id="p-name">Tournament</h1>
 					<p class="lj-season" id="p-meta"></p>
+					<p class="lj-season lj-venue" id="p-when" hidden></p>
+					<p class="lj-season lj-venue" id="p-venue" hidden></p>
 					<span class="badge jumbo-status" id="p-status"></span>
 				</div>
 			</div>
-			<dl class="jumbo-facts" id="p-facts"></dl>
+			<details class="set-group cj-more" id="p-more">
+				<summary class="cj-more-arrow" aria-label="The tournament's details"></summary>
+				<dl class="jumbo-facts" id="p-facts"></dl>
+			</details>
 		</section>
-
-		<div class="btn-row share-row">
-			<button type="button" class="btn btn-secondary btn-sm" id="p-share">Share</button>
-		</div>
 
 		{% comment %}
 			The TD's own view of a poster they have not shared yet. A stranger
@@ -74,13 +83,15 @@ extraScripts:
 		{% comment %}
 			Entering. Driven by tdc_my_entry, which says whether the buttons
 			belong here at all and why not if they do not — so a signed-out
-			visitor is told to sign in, and somebody whose email is unconfirmed
+			visitor is taken to sign in, and somebody whose email is unconfirmed
 			is told that instead of being shown a button that refuses them.
+
+			The buttons just below the banner, as a league season's Join this
+			league (UV, 24 Nov): no panel; anything to say is a grey line under them.
 		{% endcomment %}
-		<section class="lj-stage" id="p-entry" aria-live="polite" hidden>
-			<h2 class="lj-where" id="p-entry-state"></h2>
-			<p class="lj-where-detail" id="p-entry-detail"></p>
-			<div class="lj-actions" id="p-entry-actions"></div>
+		<section class="lj-join poster-entry" id="p-entry" aria-live="polite" hidden>
+			<div class="ls-actions" id="p-entry-actions"></div>
+			<p class="poster-entry-note" id="p-entry-detail"></p>
 			<div class="status" id="p-entry-status"></div>
 		</section>
 
@@ -104,11 +115,6 @@ extraScripts:
 		<div id="p-draw-box" hidden>
 			<h2>The draw</h2>
 			<div class="poster-draw" id="p-draw"></div>
-		</div>
-
-		<div id="p-officials-box" hidden>
-			<h2>Who runs it</h2>
-			<div class="lj-officials" id="p-officials"></div>
 		</div>
 
 		{% comment %}

@@ -60,6 +60,8 @@ TDCTournamentNav.panel('settings', () => {
 		paidConfirms: el('ts-paid-confirms'), listed: el('ts-listed'), listedHint: el('ts-listed-hint'),
 		main: el('ts-main'), rest: el('ts-rest'),
 		shortCode: el('ts-short-code'),
+		picPreview: el('ts-pic-preview'), picChoose: el('ts-pic-choose'), picRemove: el('ts-pic-remove'),
+		picFile: el('ts-pic-file'), picStatus: el('ts-pic-status'),
 		save: el('ts-save'), status: el('ts-status')
 	};
 
@@ -207,11 +209,109 @@ TDCTournamentNav.panel('settings', () => {
 		return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 	}
 
+	// ─── The tournament's picture ───
+	// As a league's is (league-settings.js; UV, 24 Nov: "same as leagues"):
+	// prepared in the browser (square, 512px, re-encoded, EXIF gone), uploaded
+	// under a new random name into the tournament's folder of
+	// tournament-pictures, then named on the tournament through
+	// tdc_set_tournament_picture, which hands back the old one to delete.
+	// Saved at once, not with the Save button.
+	const PICTURE_BUCKET = 'tournament-pictures';
+	let picturePath = null;
+
+	function showPicture() {
+		els.picPreview.replaceChildren(TDC.tournamentPic(picturePath, 'The tournament’s picture'));
+		els.picRemove.hidden = !picturePath;
+		els.picChoose.textContent = picturePath ? 'Change the picture' : 'Choose a picture';
+	}
+
+	function pictureBusy(on) {
+		els.picChoose.disabled = on;
+		els.picRemove.disabled = on;
+	}
+
+	els.picChoose.addEventListener('click', () => els.picFile.click());
+
+	// The dots show the work on the button used, from the picture's
+	// preparation to the save (UV, 29 Oct: never a loading message).
+	els.picFile.addEventListener('change', () => TDC.busy(els.picChoose, (async () => {
+		const file = els.picFile.files && els.picFile.files[0];
+		els.picFile.value = '';
+		if (!file || !tournamentId) return;
+
+		pictureBusy(true);
+		TDC.status(els.picStatus, '', '');
+		try {
+			const blob = await TDC.preparePicture(file, 512, AREA, els.picStatus);
+			if (!blob) return;
+
+			// A new name every time, so no cached copy of the old picture is
+			// served in its place.
+			const ext = blob.type === 'image/webp' ? 'webp' : 'jpg';
+			const path = `${tournamentId}/${crypto.randomUUID()}.${ext}`;
+
+			const { error: upErr } = await supabaseClient.storage
+				.from(PICTURE_BUCKET).upload(path, blob, { contentType: blob.type, upsert: false });
+			if (upErr) { TDC.showSupabaseError(AREA, upErr, els.picStatus); return; }
+
+			const { data: old, error } = await supabaseClient.rpc('tdc_set_tournament_picture', {
+				p_tournament_id: tournamentId, p_path: path
+			});
+			if (error) {
+				// Not named on the tournament, so the file just uploaded is an orphan.
+				await supabaseClient.storage.from(PICTURE_BUCKET).remove([path]);
+				TDC.showSupabaseError(AREA, error, els.picStatus);
+				return;
+			}
+
+			picturePath = path;
+			showPicture();
+			TDC.status(els.picStatus, 'Picture saved.', 'success');
+			if (old) {
+				const { error: delErr } = await supabaseClient.storage.from(PICTURE_BUCKET).remove([old]);
+				// The new picture is already the tournament's; the old file only takes up room.
+				if (delErr) console.error('[' + AREA + '] could not delete the old picture', delErr);
+			}
+		} catch (err) {
+			TDC.error(AREA, 'unexpected problem saving the picture.', err, els.picStatus);
+		} finally {
+			pictureBusy(false);
+		}
+	})(), els.picStatus));
+
+	els.picRemove.addEventListener('click', () => TDC.busy(els.picRemove, (async () => {
+		if (!picturePath || !tournamentId) return;
+		if (!confirm('Remove the tournament’s picture?\n\nThe poster shows the trophy again.')) return;
+
+		pictureBusy(true);
+		TDC.status(els.picStatus, '', '');
+		try {
+			// Cleared on the tournament first: if the file delete fails, the
+			// picture is already gone from the poster.
+			const { data: old, error } = await supabaseClient.rpc('tdc_set_tournament_picture', {
+				p_tournament_id: tournamentId, p_path: null
+			});
+			if (error) { TDC.showSupabaseError(AREA, error, els.picStatus); return; }
+
+			picturePath = null;
+			showPicture();
+			if (old) {
+				const { error: delErr } = await supabaseClient.storage.from(PICTURE_BUCKET).remove([old]);
+				if (delErr) console.error('[' + AREA + '] could not delete the picture file', delErr);
+			}
+			TDC.status(els.picStatus, 'Picture removed.', 'success');
+		} catch (err) {
+			TDC.error(AREA, 'unexpected problem removing the picture.', err, els.picStatus);
+		} finally {
+			pictureBusy(false);
+		}
+	})(), els.picStatus));
+
 	async function load() {
 		const [t, f, places] = await Promise.all([
 			supabaseClient
 				.from('tbl_tournaments')
-				.select('id, name, format, starts_at, max_entrants, entry_fee_credits, progression, create_matches, third_place, entry_mode, paid_confirms, is_listed, rules')
+				.select('id, name, format, starts_at, max_entrants, entry_fee_credits, progression, create_matches, third_place, entry_mode, paid_confirms, is_listed, rules, picture_path')
 				.eq('id', tournamentId)
 				.maybeSingle(),
 			supabaseClient
@@ -244,6 +344,8 @@ TDCTournamentNav.panel('settings', () => {
 		els.entryMode.value = saved.entry_mode;
 		els.paidConfirms.checked = !!saved.paid_confirms;
 		els.listed.checked = !!saved.is_listed;
+		picturePath = saved.picture_path;
+		showPicture();
 
 		if (!await venues.load('tournament', tournamentId)) return false;
 

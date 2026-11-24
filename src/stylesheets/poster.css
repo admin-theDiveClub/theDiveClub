@@ -6,10 +6,11 @@
  * everything the club already knows about itself is stated rather than assumed.
  *
  * In the league join page's look (UV, 5 Nov). Loaded after league.css and
- * league-join.css, whose banner (.jumbo, .lj-hero), stage panel (.lj-stage,
- * .lj-btn), numbers (.lj-num), rule boxes (.lj-rule-box) and people (.person)
- * it uses. This file holds only what is the poster's own: the status colours,
- * the red button, the entrants and the draw.
+ * league-join.css, whose banner (.jumbo, .lj-hero, the folding .cj-more, the
+ * Share icon in .lj-corner), entry buttons (.lj-join, .ls-btn), numbers
+ * (.lj-num), rule boxes (.lj-rule-box) and people (.person) it uses. This file
+ * holds only what is the poster's own: the status colours, the entry line, the
+ * entrants and the draw.
  *
  * Rounds run down the page here rather than sideways as they do on the draw.
  * The draw is a working document read at the desk; this is read once, on a
@@ -26,25 +27,37 @@
 .poster-status-complete    { --strip-color: var(--text-muted); }
 .poster-status-cancelled   { --strip-color: var(--color-error); }
 
-.jumbo-facts[hidden] { display: none; }
+.jumbo-facts[hidden],
+#p-more[hidden] { display: none; }
 
-/* ── Withdraw: the stage's button in red ───────────────────────────── */
+/* ── Entering: a league season's Join this league (UV, 24 Nov) ──────── */
+/* The buttons under the banner (.lj-join, .ls-btn in league-join.css and
+ * league.css), and a grey line under them for where you stand. */
 
-.tdc-card .poster-btn-stop,
-.poster-btn-stop {
-	--q: var(--color-error);
-	--lj-glow: color-mix(in srgb, var(--color-error) 35%, transparent);
+.tdc-card .poster-entry-note {
+	margin: var(--space-2) auto 0;
+	max-width: 32rem;
+	color: var(--text-muted);
+	text-align: center;
 }
+.tdc-card .poster-entry-note:empty { display: none; }
 
-/* ── Who is in, and who runs it ────────────────────────────────────── */
+/* Saying what a press did: words alone, not pressable for that moment */
+.poster-said { cursor: default; }
 
-.poster-names,
-.lj-officials {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--space-2) var(--space-4);
-	justify-content: center;
+/* ── Who is in (who runs it is in the banner's details, UV 24 Nov) ─── */
+
+/* In neat columns (UV, 24 Nov), not wrapping rows: the names run down each
+ * column, as many columns of equal width as fit (two on a phone). */
+.poster-names {
+	column-width: 9rem;
+	column-gap: var(--space-5);
 	margin-bottom: var(--space-4);
+}
+.poster-names > .person {
+	display: flex;
+	break-inside: avoid;
+	margin-bottom: var(--space-2);
 }
 
 /* Not links (the snapshot holds no player ids), so no glow on hover. */

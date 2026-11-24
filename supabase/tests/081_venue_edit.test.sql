@@ -6,8 +6,8 @@
 --   one check decides who may edit a venue: its owner or admin, or the site
 --     owner (The Dive Club's owner), for the details, the hours, the picture
 --     and the picture's storage rules
---   the site owner's exception is details only: choosing the venue for a
---     competition still takes its own owner or admin
+--   the site owner may also list the venue as played at (24 Nov, changing
+--     17 Nov's "details only"; migration site_owner_chooses_venues)
 --   the hours are written a week at once and checked
 --   tdc_venue_competitions sends a league's picture
 begin;
@@ -139,13 +139,15 @@ select throws_ok(format($$ select public.tdc_set_venue_picture(%L, null) $$, :'c
 	'Only an owner or admin of this venue can change its picture.', 'nor change the picture');
 
 
--- ─── Details only: choosing the venue stays with its own owner or admin ───
+-- ─── Choosing the venue: the site owner may since 24 Nov ───
+-- (migration site_owner_chooses_venues; 17 Nov's "details only" was changed
+-- by UV. The rest is tested in 093_site_owner_runs_everything.)
 
 select tests.sign_in(:'site');
 select public.tdc_create_league('Site League', tests.rules('{"team_size": 2}')) as league \gset
 select public.tdc_create_league_season(:'league', 'Spring') as season \gset
-select throws_ok(format($$ select public.tdc_set_league_season_venues(%L, array[%L]::uuid[]) $$, :'season', :'club'),
-	'Only an owner or admin of a venue can choose it.', 'the site owner may not list another venue as played at');
+select lives_ok(format($$ select public.tdc_set_league_season_venues(%L, array[%L]::uuid[]) $$, :'season', :'club'),
+	'the site owner may list another venue as played at (24 Nov)');
 
 
 -- ─── A league's picture on the venue's list ───

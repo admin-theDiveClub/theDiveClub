@@ -6,10 +6,12 @@
 --     season, and may edit any match card, a social one with a referee too
 --   it is not listed among a competition's officials
 --   it may delete any match, a social one too (site_owner_deletes_matches)
+--   it may list any venue as played at, and the picker is sent every venue
+--     (site_owner_chooses_venues); others still only their own
 --   a stranger and The Dive Club's staff get none of it
 begin;
 \ir _helpers.psql
-select plan(25);
+select plan(33);
 
 select tests.create_user('So Host') as host \gset
 select tests.create_user('So Away') as away \gset
@@ -17,6 +19,10 @@ select tests.create_user('So Ref') as ref \gset
 select tests.create_user('So Site') as site \gset
 select tests.create_user('So DC Staff') as dcstaff \gset
 select tests.create_user('So Stranger') as stranger \gset
+select tests.create_user('So Club Owner') as clubowner \gset
+
+insert into public.tbl_venues (name, slug) values ('So Club', 'so-club') returning id as club \gset
+insert into public.tbl_venue_staff (venue_id, user_id, role) values (:'club', :'clubowner', 'owner');
 
 insert into public.tbl_venue_staff (venue_id, user_id, role)
 select v.id, :'site', 'owner' from public.tbl_venues v where v.slug = 'the-dive-club';
@@ -102,6 +108,28 @@ select tests.sign_in(:'site');
 select is(public.tdc_may_delete_match(:'social'), true, 'the site owner may delete a social match it has no part in');
 select lives_ok(format($$ select public.tdc_delete_match(%L) $$, :'social'), 'and does');
 select is((select count(*) from public.tbl_matches where id = :'social'), 0::bigint, 'and it is gone');
+
+-- ─── Choosing a venue (migration site_owner_chooses_venues) ───
+
+select tests.sign_in(:'host');
+select throws_ok(format($$ select public.tdc_set_league_season_venues(%L, array[%L]::uuid[]) $$, :'season', :'club'),
+	'Only an owner or admin of a venue can choose it.', 'whoever runs a season may not list another''s venue');
+select is(:'club'::uuid = any (array(select public.tdc_choosable_venues())), false, 'and the picker does not offer it');
+
+select tests.sign_in(:'clubowner');
+select is(array(select public.tdc_choosable_venues()), array[:'club'::uuid], 'a venue''s owner is offered their own venue only');
+
+select tests.sign_in(:'dcstaff');
+select is(:'club'::uuid = any (array(select public.tdc_choosable_venues())), false, 'The Dive Club''s staff are not offered other venues');
+
+select tests.sign_in(:'site');
+select is((select count(*) from public.tdc_choosable_venues()), (select count(*) from public.tbl_venues where active),
+	'the site owner is offered every open venue');
+select lives_ok(format($$ select public.tdc_set_league_season_venues(%L, array[%L]::uuid[]) $$, :'season', :'club'),
+	'and may list one it does not own on a league season');
+select lives_ok(format($$ select public.tdc_set_tournament_venues(%L, array[%L]::uuid[]) $$, :'t', :'club'),
+	'and on a tournament');
+select is((select venue_id from public.tbl_tournament_venues where tournament_id = :'t'), :'club'::uuid, 'and it is saved');
 
 select * from finish();
 rollback;

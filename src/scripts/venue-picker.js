@@ -3,9 +3,10 @@
 // step 2). The search looks like the referee's (TDCMatchDef.playerPicker).
 //
 // Played at only. It gives a venue's staff no rights, but only a venue's owner or
-// admin may choose it (UV, 17 Nov; reversing 5 Nov's "any open venue"), so the
-// search finds only the person's own venues; private.tdc_check_venue_list says
-// the same in the database. A venue already on the list keeps its pill and may
+// admin may choose it (UV, 17 Nov; reversing 5 Nov's "any open venue"), or the
+// site owner, any venue (UV, 24 Nov). The search finds only what
+// tdc_choosable_venues sends; private.tdc_check_venue_list asks the same
+// private.tdc_can_choose_venue in the database. A venue already on the list keeps its pill and may
 // be removed by anyone running the competition. The venue a competition
 // BELONGS to is tbl_leagues.venue_id and tbl_tournaments.venue_id, which decide
 // staff rights and are not chosen here (docs/systems/foundations.md, "Venues").
@@ -116,14 +117,16 @@ const TDCVenuePicker = (() => {
 			const [list, own, roles] = await Promise.all([
 				supabaseClient.rpc('tdc_venues'),
 				o ? supabaseClient.from(o.table).select('venue_id').eq(o.column, id).order('position') : null,
-				// Owners and admins also see their venue's other staff, hence the user filter.
-				supabaseClient.from('tbl_venue_staff').select('venue_id')
-					.eq('user_id', session.user.id).in('role', ['owner', 'admin'])
+				// The venues this person may choose, decided in the database
+				// (private.tdc_can_choose_venue): their own as owner or admin, or
+				// every one for the site owner (UV, 24 Nov).
+				supabaseClient.rpc('tdc_choosable_venues')
 			]);
 			if (list.error) { TDC.showSupabaseError(area, list.error, statusEl); return false; }
 			if (roles.error) { TDC.showSupabaseError(area, roles.error, statusEl); return false; }
 			venues = list.data || [];
-			mine = (roles.data || []).map((r) => r.venue_id).filter((x) => venues.some((v) => v.id === x));
+			const choosable = roles.data || [];
+			mine = choosable.filter((x) => venues.some((v) => v.id === x));
 
 			let ids = [];
 			if (kind) {

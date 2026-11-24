@@ -31,6 +31,25 @@
 {% endcomment %}
 <div id="ts-short-code"></div>
 
+{% comment %}
+	The tournament's picture (migration tournament_pictures, 24 Nov: "same as
+	leagues"), shown live on the poster's banner. Saved the moment it is
+	chosen, not with the Save button below, as a league's is.
+{% endcomment %}
+<div class="field league-pic-field">
+	<label for="ts-pic-choose">Tournament picture</label>
+	<div class="league-pic-row">
+		<div class="jumbo-pic" id="ts-pic-preview"></div>
+		<div class="btn-row">
+			<button type="button" class="btn btn-secondary btn-sm" id="ts-pic-choose">Choose a picture</button>
+			<button type="button" class="btn btn-danger btn-sm" id="ts-pic-remove" hidden>Remove</button>
+		</div>
+	</div>
+	<input type="file" id="ts-pic-file" accept="image/*" hidden>
+	<div class="hint">Shown on the poster as soon as you choose it. Cropped to a square from the middle.</div>
+	<div class="status" id="ts-pic-status"></div>
+</div>
+
 <div class="field">
 	<label for="ts-format">Format</label>
 	<select id="ts-format"></select>

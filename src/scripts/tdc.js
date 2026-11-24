@@ -515,8 +515,12 @@ const TDC = (() => {
 
 	// What goes inside a league's picture box: its own picture (league-pictures,
 	// tbl_leagues.picture_path), or the empty shield with a trophy in it.
-	function leaguePic(path, alt) {
-		const url = pictureUrl('league-pictures', path);
+	// A tournament's the same (UV, 24 Nov: "same as leagues"), from
+	// tournament-pictures (tbl_tournaments.picture_path).
+	function leaguePic(path, alt) { return shieldPic('league-pictures', path, alt); }
+	function tournamentPic(path, alt) { return shieldPic('tournament-pictures', path, alt); }
+	function shieldPic(bucket, path, alt) {
+		const url = pictureUrl(bucket, path);
 		if (url) {
 			const img = document.createElement('img');
 			img.src = url;
@@ -796,5 +800,5 @@ const TDC = (() => {
 	}
 
 	return { shortUrl, shareButton, error, status, freshReload, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, queued, writer, readEarly, read, shortKey, shortRead,
-		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, fullName, fullNameOf, leaguePic, teamPic, playerTeamPic, SHAPES, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade, runName, runWords, leagueLine };
+		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, fullName, fullNameOf, leaguePic, tournamentPic, teamPic, playerTeamPic, SHAPES, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade, runName, runWords, leagueLine };
 })();
