@@ -2913,3 +2913,8 @@ These predate the log. They are recorded here because every one of them is a dec
 
 *Decided by UV:* on every table the green lines undraw like the white one, never just disappear. The home page's table wiped a potted ball's line when its new ball dropped in; it now keeps it, with a break, as the banner table already did.
 *So:* `scripts/banner-table.js` and `scripts/hero.js` (`P`; `pocketStep` in `hero.js`); `docs/systems/file-map.md`.
+
+## 2026-11-24 — The shop is built before the payment gateway
+*Decided by UV:* the shop (credits, products, cart, checkout, orders, the staff queue, receipts) is built and running before PayFast or any other gateway, reversing 3 Nov "Payments before spending, designed as one". "Pay at the club" is the payment step until a gateway is live, and the site says so.
+*Why:* payment providers' compliance reviews (PayFast stalled since 9 Nov) need to see a working shop with real products and prices. A gateway (PayFast, or Yoco as the fallback) plugs into the payment step later without changing the rest.
+*Touches:* `docs/STATUS.md` P4, P5; `docs/design/shop.md`
