@@ -137,6 +137,8 @@ const TDCPoints = (() => {
 			['me.profile.app_days', 'number', 'Days they opened the installed app'],
 			['me.profile.top_ups', 'number', 'Credit top-ups paid (at the club for now)'],
 			['me.profile.credits_bought', 'number', 'Credits bought through top-ups'],
+			['me.profile.shop_orders', 'number', 'Shop orders placed, not cancelled'],
+			['me.profile.shop_credits', 'number', 'Credits those orders cost'],
 			['me.history.frames', 'number', 'Career frames'],
 			['me.history.frames_won', 'number', 'Career frames won'],
 			['me.history.frames_lost', 'number', 'Career frames lost'],
@@ -337,7 +339,9 @@ const TDCPoints = (() => {
 			uses_app: !!(p.profile && p.profile.uses_app),
 			app_days: asNumber(p.profile && p.profile.app_days),
 			top_ups: asNumber(p.profile && p.profile.top_ups),
-			credits_bought: asNumber(p.profile && p.profile.credits_bought)
+			credits_bought: asNumber(p.profile && p.profile.credits_bought),
+			shop_orders: asNumber(p.profile && p.profile.shop_orders),
+			shop_credits: asNumber(p.profile && p.profile.shop_credits)
 		},
 		history: fillHistory(p.history),
 		lineup_by_captain: !!p.lineup_by_captain,

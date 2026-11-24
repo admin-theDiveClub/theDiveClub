@@ -97,6 +97,8 @@ Each stage: read this file, `CLAUDE.md`, `docs/STATUS.md`, `docs/systems/foundat
 
 **Hand-over** (artboard 6): the person's name and picture, ID verified or not, the lines, three ticks (ID matches, payment taken, items handed over), then Mark collected. Collected sends the receipt.
 
+**Settled since (UV, 24 Nov):** staff look at an ID document at hand-over for merch (the Delivery policy's line stays), though no ID verification is needed to buy. An order not collected within 30 days is cancelled by a nightly job with its credits returned (STATUS §3).
+
 **Ask UV first:**
 - Which roles see the queue
 - One screen at the bar, or phones too? Live updates needed?

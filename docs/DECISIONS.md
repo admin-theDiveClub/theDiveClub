@@ -3024,3 +3024,30 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to correct:* who may set it is whoever may run the tournament (`private.tdc_can_run_tournament`); with no picture the poster shows the trophy in the league's empty shield (it was a plain trophy); the field sits after the short link on the Settings tab, as the league's does. Not built: pictures on the `/tournaments/` cards or a Draw banner, which have neither today.
 *Example:* the director of Friday 9-Ball opens Settings, chooses a photo, and the poster everybody already has the link to shows it at once, with no regenerating.
 *Touches:* migration `20261124150322_tournament_pictures.sql`; `supabase/tests/094_tournament_pictures.test.sql`; `src/_includes/tournament/settings.html`, `src/scripts/tournament-settings.js`, `src/scripts/tournament-poster.js`, `src/scripts/tdc.js`; `docs/systems/tournaments.md`, `docs/systems/points.md`, `CLAUDE.md`.
+
+## 2026-11-24 — The shop: checkout and orders (the shop's Stage 3)
+*Decided by UV:*
+- **An order is paid with credits or at the club.** Credits are taken the moment it is placed; at the club, it is placed unpaid and staff take cash or card at hand-over (Stage 4).
+- **A player may cancel their own order until staff start it** (while it is Placed); credits paid come back at once.
+- **Order numbers run per venue and start again each day.**
+- **A cart with café items and merch is one order**, Ready only when all of it is.
+- **No ID verification is needed for any purchase yet**, so the checkout has no "Bring your ID" line.
+*Claude's, put to UV as the plan's five choices and built with the go-ahead "Go", not answered one by one; for UV to correct:*
+- **The balance shows in the checkout** ("Credits · 120 credits", "Leaves 10 credits."), and only there in the shop; the shop page and the order card still show none (24 Nov: no balance on screens shown to others).
+- **The number carries the weekday's letter**, A = Monday … G = Sunday (`B27`), so a merch order waiting up to 30 days is told apart from today's 27.
+- **The day starts at midnight, club time** (the venue's timezone).
+- **The order QR is shown now**, a link to `/staff/orders/?order=<id>` (as the top-up QR, DECISIONS 24 Nov); the page it opens is Stage 4.
+- **The Refunds policy gains "Shop orders · Cancelling an order"**: cancel on the site until staff start preparing it; credits back at once.
+*Claude's, for UV to correct:* the cart is the checkout (one tap from the shop, artboard 3); Credits is chosen when the balance covers the total, else At the club; short of credits, Add credits opens the Add credits card over the checkout; product names and prices are frozen onto the order's lines and the price per credit onto the order; a line switched off stays in the cart and is not ordered; the page's total must still be right or the order is refused; a retry with the same key returns the order already placed; no "we'll email you" line until Stage 5; Profile › Orders lists every open order and the last 10; the two Pay with rows skip the site's pressed-button dots (a choice, no wait).
+*Not built:* the credits of an order not collected within 30 days coming back (the Refunds and Delivery policies promise it): a nightly job or a staff step, to settle with Stage 4 (STATUS).
+*For UV:* the Delivery policy says staff check ID when merch is collected ("Who may collect"); with no ID verification for purchases, does that line stay?
+*Example:* Ann (120 credits) puts a flat white (30) and socks (80) in her cart, taps View cart, Credits, Place order: the card shows **B1** (a Tuesday), Paid · 110 credits, collect by Thu 24 Dec, and her balance is 10. She cancels: "Cancelled · 110 credits back", 120 again. Bob orders a coffee At the club: **B2**, Pay at the club · R30.
+*So:* `docs/systems/foundations.md`, "The shop: checkout and orders"; `docs/ui.md`; `docs/systems/file-map.md`; `docs/systems/points.md`.
+*Touches:* migration `20261124152509_shop_orders.sql`, `supabase/tests/095_shop_orders.test.sql`, `src/scripts/shop.js`, `src/stylesheets/shop.css`, `src/shop/index.html`, `src/scripts/shop-order.js`, `src/stylesheets/shop-order.css`, `src/scripts/credits-card.js`, `src/accounts/profile/index.html`, `src/scripts/profile.js`, `src/refunds/index.html`, `src/scripts/points-formula.js`, `src/stylesheets/variables.css`
+
+## 2026-11-24 — Uncollected shop orders, and ID at hand-over
+*Decided by UV* (answering the two questions in "The shop: checkout and orders"):
+- **An order not collected within 30 days is cancelled by a nightly job, automatically**, with its credits returned (the Refunds and Delivery policies). Not built yet: STATUS §3. The project has no `pg_cron` (notifications.md, 22 Oct), so the job means turning it on, in a migration.
+- **The Delivery policy's "staff will check your ID" stays.** Staff look at an ID document when merch is handed over; no ID verification is needed to buy (24 Nov). Stage 4's hand-over keeps its "ID matches" tick.
+*Example:* Ann orders socks on 24 Nov and never collects them; on the night of 24 Dec the order turns Cancelled and her 80 credits come back. Had she come in, staff would have looked at her ID before handing them over.
+*Touches:* `docs/STATUS.md` §3, §5; `docs/systems/foundations.md`; `docs/design/shop.md` Stage 4

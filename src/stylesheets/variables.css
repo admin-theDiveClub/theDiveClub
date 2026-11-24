@@ -333,3 +333,9 @@
   --shop-add: 2.75rem;  /* the + and the steppers: a finger's width */
   --shop-bar: 3.75rem;  /* the cart bar's height */
 }
+
+/* ─── The order card (scripts/shop-order.js, stylesheets/shop-order.css; 24 Nov) ─── */
+:root {
+  --so-label-size: 4rem;     /* the order's number, B27, in the display face */
+  --so-step-bar: 0.3rem;     /* each of Placed, Preparing, Ready, Collected */
+}

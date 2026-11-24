@@ -1,0 +1,42 @@
+/* The order card (UV, 24 Nov; docs/design/shop.md, Stage 3; canvas artboard 4; scripts/shop-order.js).
+   Built on the Add credits card (credits-card.css's .cc, .cc-qr, .cc-lines, .cc-state); this adds
+   the number, the four steps and how it is paid. Tokens --so-* in variables.css. */
+
+.so-top { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.so-label {
+	font-family: var(--font-display);
+	font-size: var(--so-label-size);
+	line-height: 1.1;
+	color: var(--color-primary);
+}
+.so-label.is-over { color: var(--text-muted); }
+.shop-order .so-said { margin: var(--space-1) 0 var(--space-4); color: var(--text-muted); font-size: 0.85rem; }
+
+/* Placed → Preparing → Ready → Collected: a bar each, lit up to where the order is. */
+.so-steps {
+	list-style: none;
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: var(--space-2);
+	margin: var(--space-5) 0 var(--space-4);
+	padding: 0;
+	color: var(--text-muted);
+	font-size: 0.75rem;
+	text-align: center;
+}
+.so-steps li { display: flex; flex-direction: column; gap: var(--space-2); }
+.so-steps li::before { content: ''; height: var(--so-step-bar); border-radius: var(--radius-pill); box-shadow: var(--nm-sunken-small); }
+.so-steps li.is-done { color: var(--text-primary); }
+.so-steps li.is-done::before { background: var(--color-primary); box-shadow: none; }
+.so-steps[hidden] { display: none; }
+
+.so-state { display: flex; width: fit-content; margin: var(--space-4) auto; }
+.so-state[hidden] { display: none; }
+
+.so-lines { margin-top: var(--space-2); }
+.cc-line.so-paid span:last-child { color: var(--color-primary); }
+/* Under way, so yellow (docs/ui.md, "State colours"): still to pay. */
+.cc-line.so-club span:last-child { color: var(--color-warning); }
+
+.shop-order .so-collect { margin: var(--space-3) var(--space-1) var(--space-4); color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; }
+.shop-order .btn + .btn { margin-top: var(--space-3); }

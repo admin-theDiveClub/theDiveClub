@@ -511,5 +511,6 @@ const TDCCredits = (() => {
 		if (dlg && dlg.open) dlg.close();
 	}
 
-	return { open, close: shut };
+	// loadQr is shared with the order card (scripts/shop-order.js), so the QR maker loads once.
+	return { open, close: shut, loadQr };
 })();

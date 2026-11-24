@@ -52,7 +52,9 @@ TDCLoader.hold((async () => {
 		redeemBtn:      el('redeem-btn'),
 		creditsStatus:  el('credits-status'),
 		topupsList:     el('topups-list'),
-		addCreditsBtn:  el('add-credits-btn')
+		addCreditsBtn:  el('add-credits-btn'),
+		ordersList:     el('orders-list'),
+		ordersStatus:   el('orders-status')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -423,11 +425,14 @@ TDCLoader.hold((async () => {
 		// Every venue's balance asked at once (UV, 16 Nov: as fast as it can
 		// load), drawn in the venues' order as before. A request waiting for
 		// payment is read with them (buying credits, 24 Nov).
-		const [balances, topUps] = await Promise.all([
+		// Shop orders too (24 Nov, the shop's Stage 3).
+		const [balances, topUps, orders] = await Promise.all([
 			Promise.all(venues.map((v) => supabaseClient.rpc('tdc_my_credit_balance', { p_venue_id: v.id }))),
-			Promise.all(venues.map((v) => supabaseClient.rpc('tdc_my_top_ups', { p_venue_id: v.id })))
+			Promise.all(venues.map((v) => supabaseClient.rpc('tdc_my_top_ups', { p_venue_id: v.id }))),
+			Promise.all(venues.map((v) => supabaseClient.rpc('tdc_my_orders', { p_venue_id: v.id })))
 		]);
 		drawTopUps(venues, topUps);
+		drawOrders(venues, orders);
 		els.addCreditsBtn.hidden = false;
 		for (const [i, v] of venues.entries()) {
 			const { data: balance, error: balErr } = balances[i];
@@ -480,9 +485,54 @@ TDCLoader.hold((async () => {
 		els.topupsList.replaceChildren(...rows);
 	}
 
+	// Shop orders: every open one and the last 10, newest first (tdc_my_orders); Show opens the
+	// order card (scripts/shop-order.js). The venue is named only when several sell credits.
+	const ORDER_STATUS = { placed: 'Placed', preparing: 'Preparing', ready: 'Ready', collected: 'Collected', cancelled: 'Cancelled' };
+	function drawOrders(venues, results) {
+		const rows = [];
+		for (const [i, v] of venues.entries()) {
+			const { data, error } = results[i];
+			if (error) {
+				TDC.error(AREA, `could not load your orders at ${v.name}.`, error, els.ordersStatus);
+				continue;
+			}
+			for (const o of data || []) {
+				const row = document.createElement('div');
+				row.className = 'kv';
+				const label = document.createElement('span');
+				label.className = 'k';
+				const when = new Date(o.placed_at).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+				label.textContent = `${o.label} · ${ORDER_STATUS[o.status] || 'TDC (Error)'} · ${o.total_credits} credits · ${when}`
+					+ (venues.length > 1 ? ` · ${v.name}` : '');
+				const show = document.createElement('button');
+				show.type = 'button';
+				show.className = 'btn-sm';
+				show.textContent = 'Show';
+				show.addEventListener('click', () => TDCOrder.open(o));
+				row.append(label, show);
+				rows.push(row);
+			}
+		}
+		if (!rows.length) {
+			const none = document.createElement('p');
+			none.className = 'muted';
+			none.textContent = 'No orders yet.';
+			rows.push(none);
+		}
+		els.ordersList.replaceChildren(...rows);
+	}
+	// The order card says when an order is cancelled; the list is read again. A cancel paid in
+	// credits fires tdc:credits-changed too, so the two are folded into one read.
+	let creditsReload = null;
+	function reloadCredits() {
+		clearTimeout(creditsReload);
+		creditsReload = setTimeout(loadCredits, 0);
+	}
+	window.addEventListener('tdc:orders-changed', reloadCredits);
+
 	els.addCreditsBtn.addEventListener('click', () => TDCCredits.open());
 	// The card says when credits land; the balances and requests are read again.
-	window.addEventListener('tdc:credits-changed', () => loadCredits());
+	window.addEventListener('tdc:credits-changed', reloadCredits);
 
 	els.redeemForm.addEventListener('submit', async (e) => {
 		e.preventDefault();

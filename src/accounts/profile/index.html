@@ -2,7 +2,10 @@
 layout: layout.html
 title: Profile
 description: Your The Dive Club profile.
+extraStyles:
+  - /stylesheets/shop-order.css
 extraScripts:
+  - /scripts/shop-order.js
   - /scripts/profile.js
   - /scripts/push.js
 ---
@@ -102,6 +105,14 @@ extraScripts:
 			<button type="submit" class="btn-primary" id="redeem-btn">Redeem</button>
 		</form>
 		<div class="status" id="credits-status"></div>
+	</div>
+
+	<!-- Shop orders (24 Nov; docs/design/shop.md, Stage 3): every open order and the
+	     last 10; a tap on Show opens the order card (scripts/shop-order.js). -->
+	<div class="section">
+		<h2>Orders</h2>
+		<div id="orders-list"></div>
+		<div class="status" id="orders-status"></div>
 	</div>
 
 	<!-- ID verification (private) -->

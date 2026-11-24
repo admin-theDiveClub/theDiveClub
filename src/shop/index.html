@@ -6,7 +6,9 @@ description: "The Dive Club's shop: café items, apparel and pool accessories, p
 extraStyles:
   - /stylesheets/league.css
   - /stylesheets/shop.css
+  - /stylesheets/shop-order.css
 extraScripts:
+  - /scripts/shop-order.js
   - /scripts/shop.js
 updated: "24 November 2026"
 credits_line: "Credits also pay for pool table time, games and activities, arcade games, driving simulators, and league, tournament and event entries."
@@ -26,8 +28,9 @@ policies:
 	Products come from the database (tdc_shop, readable signed out), in the owner's
 	categories, priced in credits with the rand beside it. A + puts one in the cart,
 	which is on the account (tdc_set_cart_qty); signed out, it asks for a sign-in.
-	The cart bar follows at the foot and opens the cart over the page. Checkout is
-	Stage 3. Drawn by scripts/shop.js; styles in shop.css. Ends with the four policy
+	The cart bar follows at the foot and opens the cart over the page, which is the
+	checkout too (Stage 3): Pay with, Collect, Place order, then the order card
+	(scripts/shop-order.js). Drawn by scripts/shop.js; styles in shop.css. Ends with the four policy
 	links and the company block, which PayFast's review asked to see. Never list
 	restricted products here (UV, 14 Nov). In the menu as "Shop" (_data/navLinks.json).
 {% endcomment %}

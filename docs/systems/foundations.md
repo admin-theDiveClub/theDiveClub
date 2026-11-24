@@ -177,10 +177,46 @@ How the credits came in before this: an owner or admin adjusting by hand with a 
 
 | Page | What |
 |---|---|
-| `/shop/` (`shop/index.html`, `scripts/shop.js`, `stylesheets/shop.css`, tokens `--shop-*`) | "Online payment is coming soon. **Pay at the club** for now." (yellow); the categories as the site's tab pill (hidden with one); a row per product: picture (or its first letter), name, **"30 credits · R30"** (the rand at today's price per credit; UV, 24 Nov), how collected, and **+**, which becomes the number in the cart (a tap adds one). **No balance** (UV, 24 Nov). Signed out, + goes to sign in and back. The **cart bar** follows at the foot ("3 items · 140 credits · View cart") and opens **the cart** over the page in the Add credits card's look: lines with − and +, a product switched off shown struck through "No longer available" with Remove, the total in credits and rand, and **Checkout · coming next**, disabled until Stage 3. Then one line on what else credits pay for, the policies and the company block. Studio services and Art are off the shop for now (UV, 24 Nov) |
+| `/shop/` (`shop/index.html`, `scripts/shop.js`, `stylesheets/shop.css`, tokens `--shop-*`) | "Online payment is coming soon. **Pay at the club** for now." (yellow); the categories as the site's tab pill (hidden with one); a row per product: picture (or its first letter), name, **"30 credits · R30"** (the rand at today's price per credit; UV, 24 Nov), how collected, and **+**, which becomes the number in the cart (a tap adds one). **No balance** (UV, 24 Nov). Signed out, + goes to sign in and back. The **cart bar** follows at the foot ("3 items · 140 credits · View cart") and opens **the cart** over the page in the Add credits card's look: lines with − and +, a product switched off shown struck through "No longer available" with Remove, the total in credits and rand, and (since Stage 3, below) the checkout. Then one line on what else credits pay for, the policies and the company block. Studio services and Art are off the shop for now (UV, 24 Nov) |
 | `/staff/products/` (`scripts/staff-products.js`, `stylesheets/staff-products.css`; an owner/admin tile on the hub) | Each category with its products (the shop's rows) and an **In the shop** switch; a tap opens the product's form (name, category, price with its rand, collected, In the shop); a new product takes its picture once saved. Under them the categories: up, down, Rename, Delete (only empty), and a New category box |
 
 Driven headless at 420 against the local copy (24 Nov): Sipho added three products and a picture; signed out the shop showed them and + went to sign in; Ann's cart read "3 items · 140 credits"; Sipho switched the socks off and Ann's cart showed them struck through with 60 credits. **Not on a phone.**
+
+## The shop: checkout and orders (24 Nov; the shop's Stage 3, `docs/design/shop.md`)
+
+**Built** (migration `20261124152509_shop_orders`, test `095_shop_orders`; the pages 24 Nov). Staff moving an order on (Preparing, Ready, Collected), the hand-over and out-of-stock refunds are Stage 4.
+
+**The flow:** the cart is the checkout. The player picks **Credits** (taken the moment the order is placed) or **At the club** (placed unpaid; staff take cash or card at hand-over, Stage 4), and taps Place order. The whole cart becomes **one order** (UV: Ready only when all of it is), numbered for the day. While it is still **Placed** the player may cancel it (UV: until staff start it), and credits paid come straight back.
+
+| Part | What it holds and why |
+|---|---|
+| `tbl_shop_orders` | Venue, player, pay with (`credits` / `club`), total credits, **the price per credit frozen onto it** (so the rand to pay at the club never moves), status (`placed`, `preparing`, `ready`, `collected`, `cancelled`), `collect_by` (placed + 30 days when it holds merch, the Delivery policy; null for café only), paid, cancelled (when, by whom). **The number:** `order_day` (club time, from `tbl_venues.timezone`; it starts again at midnight) and `order_number`, unique per venue per day; shown behind the weekday's letter, **A = Monday … G = Sunday** (`B27` is a Tuesday's 27th), so an old merch order and today's don't share a label. Changed only through the functions (guard trigger, `tdc.order_write`); never deleted; no direct reads |
+| `tbl_shop_order_lines` | Each product's **name, price and how it is collected frozen onto the line**, as the ruleset is onto a match; never changed |
+| `tbl_shop_order_counters` | The last number per venue per day; an upsert hands out the next, so two orders at once can't share one |
+| The ledger | Entry kinds **`order`** (minus, at placing) and **`order_refund`** (plus), with `order_id`; one of each per order at most (unique index), an `order` row must name its order and be negative, a refund positive. Placing takes the same per-player lock as an adjustment, so two orders can't both pass the balance check |
+
+| Function | Who | Does |
+|---|---|---|
+| `tdc_place_order(venue, pay_with, expected_total, key)` | signed in (not a guest) | Orders the cart's lines that are on (a line switched off stays in the cart); refuses an empty cart, a total that differs from what the page showed ("Your cart or a price has changed…"), credits that don't cover it ("You have 10 credits; this order needs 30."). Numbers it, writes the lines, empties those cart lines, charges the credits. **The same key returns the order already placed**, so a double tap or a retry after a lost answer never places or charges twice |
+| `tdc_my_orders(venue)` | signed in | Every open order and the last 10, newest first |
+| `tdc_my_order(id)` | signed in | One of your own (the order card asks it while open) |
+| `tdc_cancel_my_order(id)` | signed in | Only your own, only while `placed`; refunds the credits if paid with them |
+
+The order as the pages get it carries `label` (B27), `pay_cents`, `can_cancel` and its lines.
+
+**The pages:**
+
+| Where | What |
+|---|---|
+| **The checkout**, in the cart over `/shop/` (`shop.js`, `shop.css`; artboard 3) | Under the lines: **Pay with**, the Add credits card's rows (`.cc-way`) as buttons, the chosen one ringed in green: Credits with **your balance** (shown here only; UV, 24 Nov) and At the club. Under them "Leaves 10 credits.", or in yellow "You need 20 more credits." with **Add credits** (the Add credits card over the checkout), or "Pay R30 at the bar when you collect." Credits is chosen when the balance covers the total, else At the club. **Collect:** the venue, "Café: made when you arrive." and/or "Merch: collect within 30 days." **No ID line** (UV, 24 Nov: no ID verification for any purchase yet). Then Total and **Place order**, disabled while short. The two rows carry `data-no-dots` (a choice, no wait), or the site's pressed-button dots faded the chosen row |
+| **The order card** (`scripts/shop-order.js`, `stylesheets/shop-order.css`, tokens `--so-*`; artboard 4) | Opens over the page after Place order, and from the profile. The number large in green, "Show this when you collect", **the QR** (a link to `/staff/orders/?order=<id>`, the Stage 4 page, as the top-up QR is; it opens nothing until then), Placed · Preparing · Ready · Collected as four bars lit up to where it is, the lines, "Paid · credits · 110 credits" (green) or "Pay at the club · R30 · 30 credits" (yellow), where and when to collect, **Cancel order** while placed (asked first), Done. Cancelled: the number grey, "Cancelled · 110 credits back", no QR. Asks `tdc_my_order` every 4 s while open, shown and on its way. **No "we'll email you" line** until Stage 5. `TDCOrder.open(order)`; fires `tdc:orders-changed`, and `tdc:credits-changed` after a credits refund. Borrows the QR maker through `TDCCredits.loadQr` |
+| **Profile › Orders** (`profile.js` `drawOrders`) | Under Credits: "B2 · Placed · 30 credits · Tue, 24 Nov" with Show; "No orders yet." Read with the balances, and again on either event (folded into one read) |
+| **Refunds** | A "Shop orders" clause: cancel on the site until staff start preparing it; credits back at once |
+
+- **The merge** moves `tbl_shop_orders.player_id` (patched from `20261124125407`'s definition; its ledger rows move with the rest of the ledger).
+- **Not built:** an uncollected order's credits coming back after 30 days, which **a nightly job will do** (UV, 24 Nov; STATUS §3), and everything staff do (Stage 4). **Staff check ID when merch is handed over** (the Delivery policy stays; UV, 24 Nov), though none is needed to buy.
+
+Driven headless at 420 against the local copy (24 Nov): Ann (120 credits) ordered a flat white and socks with credits: B1, 110 credits, 10 left, the QR, collect by Thu 24 Dec; a coffee with 10 credits showed "You need 20 more credits", Add credits and Place order disabled; At the club gave B2, R30; Profile › Orders listed both; Show on B1, Cancel order, asked first, "Cancelled · 110 credits back" and the profile's balance 120. No console errors. **Not on a phone; the QR not scanned.**
 
 ## The install tutorial (`/install/`, 3 Nov)
 
