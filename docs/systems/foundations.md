@@ -102,6 +102,37 @@ UV asked for the page in the league pages' language, and a tab for owners to cha
 - **Tests:** `082_venues_list` (10).
 - **Seeded:** The Dive Club (address from the footer, the rest to come), Billiard Café (Rivonia) and Billiard Café (Randpark Ridge) from the Google Maps listings UV sent. Postcodes are not held.
 
+## Buying credits (24 Nov; the shop's Stage 1, `docs/design/shop.md`)
+
+**Step 1, the database, is built** (migration `20261124112328_credit_top_ups`, test `091_credit_top_ups`). The pages come next: the Add credits card, the balance in the profile menu and the profile's Credits section, `/staff/top-ups/`, and Pricing on `/staff/credits/`.
+
+How the credits came in before this: an owner or admin adjusting by hand with a reason (`tdc_staff_adjust_credits`), or a printed cash code a player redeems (`tdc_generate_redeem_codes`, any staff; listing and voiding them, owners and admins). Both stay (UV, 24 Nov).
+
+**The flow:** a player asks for credits and gets a 4-character code (and a QR). They pay at the club; staff find the request, take the money and confirm it, with Cash or Card. **Only then** do the credits land, as one ledger row. Until then the request adds nothing to any balance.
+
+| Part | What it holds and why |
+|---|---|
+| `tbl_credit_prices` | A venue's price: cents per credit, the slider's min, max and step, and discount steps (`[{"at": 250, "pct": 10}]`, lowest first). **Settings, never code** (shop design); written only by `tdc_set_credit_prices` (owner or admin), which refuses a step that doesn't fit the range and discount steps that don't rise. The Dive Club starts at **R1 a credit, 10 to 1,000 in tens, no discounts** (UV, 24 Nov). |
+| `tbl_credit_top_ups` | The request. **Its price is frozen onto it** (cents per credit, gross, % off, what to pay), as a match's ruleset is, so a later price change never alters a request already waiting. A discount is **money off** (250 credits at 10% cost R225; UV, 24 Nov). Status `waiting`, `paid` or `cancelled`; **expired** is a waiting request past `expires_at` (24 hours; UV, 24 Nov), worked out when read, never stored. Changed only through the functions (guard trigger, `tdc.top_up_write`); never deleted. No direct reads: everything goes through the functions. |
+| The ledger | Entry kind `top_up`, with **`top_up_id`, its own unique link to the request** (Claude's, approved by UV 24 Nov, in place of the backlog's general `ref_table` / `ref_id`): the database itself refuses a second landing, and a `top_up` row must name its request. Stage 3's orders will get a link of their own the same way. |
+
+**The functions:**
+
+| Function | Who | Does |
+|---|---|---|
+| `tdc_credit_prices(venue)` | signed in | The price, for the card. Refuses a venue that doesn't sell credits |
+| `tdc_start_top_up(venue, credits)` | signed in (not a guest) | Checks the amount is on the slider, freezes the price, makes a unique code among the venue's waiting requests, and **cancels the player's older waiting one** (one code at a time; UV, 24 Nov). Returns the request |
+| `tdc_my_top_ups(venue)` | signed in | Your last 10, newest first, each with its `state` |
+| `tdc_cancel_my_top_up(id)` | signed in | Cancels your own waiting request |
+| `tdc_staff_top_ups(venue)` | any staff | Waiting and not expired, oldest first, with the person's name and picture |
+| `tdc_staff_find_top_up(venue, code)` | any staff | One request by its code, whatever its state, so the page can say why it can't be confirmed; case and spaces ignored |
+| `tdc_staff_confirm_top_up(venue, id, 'cash'\|'card')` | **any staff** (UV, 24 Nov) | Refuses your own request, a paid, cancelled or expired one. Marks it paid (who, when, how) and writes the ledger row. Returns the new balance |
+
+- **The code is stored as it is**, unlike a printed redeem code (hashed, because whoever holds one gets the credits). A top-up code only identifies a request: it adds credits to the person who made it, and only once staff have taken the money. The risk is staff typing the wrong code, so the staff page shows the person's name and picture before Confirm.
+- **A wrong confirmation is put right with an owner's adjustment**, never undone: the history only grows.
+- **The merge** moves `tbl_credit_top_ups.player_id` (patched from `20261119124608`'s definition).
+- **A gateway later** (shop Stage 6) marks the same request paid, with its own method; nothing here is rebuilt.
+
 ## The install tutorial (`/install/`, 3 Nov)
 
 How to put the app on a home screen, shown rather than told. UV's decisions are in `docs/DECISIONS.md` (3 Nov); the draft UV reviewed is the claude.ai artifact "Install on iPhone".

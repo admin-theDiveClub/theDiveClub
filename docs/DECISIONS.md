@@ -2918,3 +2918,17 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* the shop (credits, products, cart, checkout, orders, the staff queue, receipts) is built and running before PayFast or any other gateway, reversing 3 Nov "Payments before spending, designed as one". "Pay at the club" is the payment step until a gateway is live, and the site says so.
 *Why:* payment providers' compliance reviews (PayFast stalled since 9 Nov) need to see a working shop with real products and prices. A gateway (PayFast, or Yoco as the fallback) plugs into the payment step later without changing the rest.
 *Touches:* `docs/STATUS.md` P4, P5; `docs/design/shop.md`
+
+## 2026-11-24 — Buying credits: prices, codes, who confirms (the shop's Stage 1)
+*Decided by UV:*
+- **Price:** R1 a credit to start; the slider from 10 to 1,000 credits in steps of 10; **no discounts yet**. A discount, when the owner sets one, is **money off** (250 credits at 10% off cost R225), not bonus credits. All of it is a setting the owner or admin changes, not code.
+- **The pay-at-the-club code lasts 24 hours**, then shows as Expired and the person starts a new one. **A new request replaces a waiting one** (the old is cancelled): one code at a time.
+- **Any staff at the venue may confirm** that a top-up was paid, and **they record Cash or Card**.
+- **Where the balance shows:** the profile menu, under the banner, and the profile page's Credits section. Not on the shop or on screens players show others: a phone laid on the table for scores must not show someone's balance.
+- **The cash redeem codes stay** beside top-ups.
+- **The Terms get one line** on the 24-hour pay-at-the-club request.
+*Claude's, approved by UV:* a confirmed top-up is its own ledger entry kind, `top_up`, with a dedicated, unique link to its request, in place of the backlog's general `ref_table` / `ref_id`, so the database itself refuses a second landing.
+*Claude's, for UV to correct:* nobody confirms their own top-up (as with adjustments); a request's price is frozen when it is made; a wrong confirmation is put right with an owner's adjustment, with no Undo; the code is 4 characters from the redeem codes' alphabet (no 0, O, 1, I or L) and is stored as it is.
+*Example:* Ann asks for 250 credits at 19:00 and gets code 7K4Q. At the bar Sipho types 7K4Q, sees Ann's name and face and "250 credits · R250", takes cash, taps Cash, then Confirm; Ann's balance shows 250. If Ann hadn't paid by 19:00 the next day, the code would read Expired.
+*So:* `docs/systems/foundations.md`, "Buying credits"; `docs/design/shop.md`.
+*Touches:* migration `20261124112328_credit_top_ups.sql`, `supabase/tests/091_credit_top_ups.test.sql`, `src/scripts/points-formula.js`

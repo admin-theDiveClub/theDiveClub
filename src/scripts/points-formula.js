@@ -135,6 +135,8 @@ const TDCPoints = (() => {
 			['me.profile.following', 'number', 'Following'],
 			['me.profile.uses_app', 'yes/no', 'Has opened the installed app, on any device'],
 			['me.profile.app_days', 'number', 'Days they opened the installed app'],
+			['me.profile.top_ups', 'number', 'Credit top-ups paid (at the club for now)'],
+			['me.profile.credits_bought', 'number', 'Credits bought through top-ups'],
 			['me.history.frames', 'number', 'Career frames'],
 			['me.history.frames_won', 'number', 'Career frames won'],
 			['me.history.frames_lost', 'number', 'Career frames lost'],
@@ -333,7 +335,9 @@ const TDCPoints = (() => {
 			followers: asNumber(p.profile && p.profile.followers),
 			following: asNumber(p.profile && p.profile.following),
 			uses_app: !!(p.profile && p.profile.uses_app),
-			app_days: asNumber(p.profile && p.profile.app_days)
+			app_days: asNumber(p.profile && p.profile.app_days),
+			top_ups: asNumber(p.profile && p.profile.top_ups),
+			credits_bought: asNumber(p.profile && p.profile.credits_bought)
 		},
 		history: fillHistory(p.history),
 		lineup_by_captain: !!p.lineup_by_captain,
