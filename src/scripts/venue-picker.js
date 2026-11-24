@@ -73,7 +73,10 @@ const TDCVenuePicker = (() => {
 					search();
 				});
 				const pill = el('span', 'venue-pill');
-				pill.append(el('span', 'venue-pill-name', name), remove);
+				// The venue's picture before its name (UV, 24 Nov; TDC.venueMark)
+				const named = el('span', 'venue-pill-name');
+				named.append(TDC.venueMark(v), document.createTextNode(name));
+				pill.append(named, remove);
 				return pill;
 			}));
 		}
@@ -90,7 +93,9 @@ const TDCVenuePicker = (() => {
 			results.replaceChildren(...found.map((v) => {
 				const b = el('button', 'pick-result');
 				b.type = 'button';
-				b.append(el('span', 'result-name', v.name));
+				const named = el('span', 'result-name');
+				named.append(TDC.venueMark(v), document.createTextNode(v.name));
+				b.append(named);
 				if (place(v)) b.append(el('span', 'result-sub', place(v)));
 				b.addEventListener('click', () => {
 					chosen = chosen.concat(v.id);

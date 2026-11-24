@@ -120,7 +120,9 @@ const TDCOrder = (() => {
 		if (live && bar) words.push('Café: made when you arrive.');
 		if (live && o.collect_by) words.push(`Merch: collect by ${day(o.collect_by)}.`);
 		if (readyEmail && (o.status === 'placed' || o.status === 'preparing')) words.push('We\'ll email you when it\'s ready.');
-		els.collect.textContent = (live ? `${o.venue_name} · ` : `${o.venue_name} · ${day(o.placed_at)}`) + words.join(' ');
+		// The venue with its picture (UV, 24 Nov; TDC.venueMark)
+		els.collect.replaceChildren(TDC.venueMark({ picture_path: o.venue_picture_path }),
+			(live ? `${o.venue_name} · ` : `${o.venue_name} · ${day(o.placed_at)}`) + words.join(' '));
 		els.cancel.hidden = !o.can_cancel;
 
 		if (live) {

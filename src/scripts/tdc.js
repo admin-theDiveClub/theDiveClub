@@ -457,11 +457,68 @@ const TDC = (() => {
 		return (list || []).map((v) => v.name).join(', ');
 	}
 
+	// A venue's picture before its name, wherever a venue is shown (UV, 24 Nov;
+	// docs/ui-list.md item 11): a small circle the height of the text, as a
+	// player's picture; the map pin when it has none, as the venue card shows.
+	// From picture_path in every venue list (migration 20261124190347). A
+	// picture that will not load falls back to the pin and says so.
+	function venuePin() {
+		const NS = 'http://www.w3.org/2000/svg';
+		const svg = document.createElementNS(NS, 'svg');
+		svg.setAttribute('viewBox', '0 0 24 24');
+		svg.setAttribute('aria-hidden', 'true');
+		svg.setAttribute('fill', 'none');
+		svg.setAttribute('stroke', 'currentColor');
+		svg.setAttribute('stroke-linecap', 'round');
+		svg.setAttribute('stroke-linejoin', 'round');
+		svg.style.strokeWidth = 'var(--icon-line)';
+		for (const d of ['M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z', 'M12 7a2.5 2.5 0 1 0 0 5a2.5 2.5 0 0 0 0-5z']) {
+			const path = document.createElementNS(NS, 'path');
+			path.setAttribute('d', d);
+			path.setAttribute('vector-effect', 'non-scaling-stroke');
+			svg.append(path);
+		}
+		return svg;
+	}
+	function venueMark(v) {
+		const box = document.createElement('span');
+		box.className = 'venue-mark';
+		box.setAttribute('aria-hidden', 'true');
+		const url = v && v.picture_path ? pictureUrl('venue-pictures', v.picture_path) : null;
+		if (!url) { box.classList.add('is-pin'); box.append(venuePin()); return box; }
+		const img = document.createElement('img');
+		img.alt = '';
+		img.loading = 'lazy';
+		img.onerror = () => {
+			console.error('[Venues] a venue\'s picture could not be loaded, showing the pin.', url);
+			box.classList.add('is-pin');
+			img.replaceWith(venuePin());
+		};
+		img.src = url;
+		box.append(img);
+		return box;
+	}
+
 	function venueLink(v) {
 		const a = document.createElement('a');
 		a.href = '/venues/?v=' + encodeURIComponent(v.id);
-		a.textContent = v.name;
+		a.className = 'venue-named';
+		a.append(venueMark(v), document.createTextNode(v.name));
 		return a;
+	}
+
+	// The same without the link, for a card that is itself a link (a link cannot
+	// hold a link): every venue, picture and name, comma between.
+	function venueTags(list) {
+		const frag = document.createDocumentFragment();
+		(list || []).forEach((v, i) => {
+			if (i) frag.append(', ');
+			const s = document.createElement('span');
+			s.className = 'venue-named';
+			s.append(venueMark(v), document.createTextNode(v.name));
+			frag.append(s);
+		});
+		return frag;
 	}
 
 	// A heading's line under its title: what it already says, then the venues on
@@ -490,7 +547,7 @@ const TDC = (() => {
 		const dd = document.createElement('dd');
 		for (const v of venues) {
 			const line = venueLink(v);
-			line.className = 'jumbo-venue';
+			line.classList.add('jumbo-venue');
 			dd.append(line);
 		}
 		row.append(dt, dd);
@@ -838,5 +895,5 @@ const TDC = (() => {
 	}
 
 	return { shortUrl, shareButton, error, status, freshReload, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, flushEmails, queued, writer, readEarly, read, shortKey, shortRead,
-		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, fullName, fullNameOf, leaguePic, tournamentPic, teamPic, playerTeamPic, SHAPES, venueNames, venueLink, venueHeading, venueFact, liveSnapshot, liveFade, runName, runWords, leagueLine };
+		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, fullName, fullNameOf, leaguePic, tournamentPic, teamPic, playerTeamPic, SHAPES, venueNames, venueLink, venueTags, venueMark, venueHeading, venueFact, liveSnapshot, liveFade, runName, runWords, leagueLine };
 })();

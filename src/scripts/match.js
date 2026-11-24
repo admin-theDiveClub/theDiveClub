@@ -2749,9 +2749,14 @@
 	function renderPanel() {
 		const c = MATCH.context;
 		renderBanner();
-		els.contextLine.textContent = c.kind === 'social'
-			? 'Social match · not part of a league or tournament'
-			: [c.name, c.season, c.round, TDC.venueNames(MATCH.venues)].filter(Boolean).join(' · ');
+		// The venues each with their picture (UV, 24 Nov; TDC.venueTags)
+		if (c.kind === 'social') els.contextLine.textContent = 'Social match · not part of a league or tournament';
+		else {
+			const parts = [c.name, c.season, c.round].filter(Boolean);
+			if (MATCH.venues.length) parts.push(TDC.venueTags(MATCH.venues));
+			els.contextLine.replaceChildren();
+			parts.forEach((p, i) => { if (i) els.contextLine.append(' · '); els.contextLine.append(p); });
+		}
 
 		els.badgeRow.replaceChildren(
 			badge(DISCIPLINE[MATCH.rules.discipline] || 'TDC (Error)'),
@@ -3382,7 +3387,10 @@
 		// Several venues are counted: naming the first, for one match, could send
 		// somebody to the wrong club (UV, 5 Nov).
 		const where = MATCH.venues.length > 1 ? MATCH.venues.length + ' venues' : TDC.venueNames(MATCH.venues);
-		els.bannerRound.textContent = [c.round, where].filter(Boolean).join(' · ');
+		// One venue with its picture (UV, 24 Nov; TDC.venueTags: the banner is a link)
+		const roundParts = [c.round, MATCH.venues.length === 1 ? TDC.venueTags(MATCH.venues) : where].filter(Boolean);
+		els.bannerRound.replaceChildren();
+		roundParts.forEach((p, i) => { if (i) els.bannerRound.append(' · '); els.bannerRound.append(p); });
 		els.banner.setAttribute('aria-label', [c.name, c.round, where, league ? 'open the league' : 'open the draw'].filter(Boolean).join(', '));
 		els.banner.hidden = false;
 	}
@@ -3609,7 +3617,12 @@
 			? WIN_CONDITION.free_play
 			: (WIN_CONDITION[MATCH.rules.win_condition_type] || 'TDC (Error)') + ' ' + MATCH.rules.win_condition_target));
 		facts.push(factRow('Frames played', String(MATCH.frames.length)));
-		if (MATCH.venues.length) facts.push(factRow(MATCH.venues.length === 1 ? 'Venue' : 'Venues', TDC.venueNames(MATCH.venues)));
+		if (MATCH.venues.length) {
+			// Each venue with its picture (UV, 24 Nov; TDC.venueTags)
+			const row = factRow(MATCH.venues.length === 1 ? 'Venue' : 'Venues', '');
+			row.querySelector('.fact-v').append(TDC.venueTags(MATCH.venues));
+			facts.push(row);
+		}
 		if (MATCH.rules.track_breaks) {
 			const bf = MATCH.frames.filter((f) => f.result_event === 'break_and_finish'
 				|| f.result_event === 'golden_break').length;

@@ -398,7 +398,7 @@ TDCLoader.hold((async () => {
 
 		const { data: venues, error: venErr } = await supabaseClient
 			.from('tbl_venues')
-			.select('id, name')
+			.select('id, name, picture_path')
 			.eq('active', true)
 			.eq('sells_credits', true)
 			.order('name');
@@ -440,7 +440,8 @@ TDCLoader.hold((async () => {
 			row.className = 'kv';
 			const label = document.createElement('span');
 			label.className = 'k';
-			label.textContent = v.name;
+			// The venue's picture before its name (UV, 24 Nov; TDC.venueMark)
+			label.append(TDC.venueMark(v), document.createTextNode(v.name));
 			const value = document.createElement('span');
 			value.className = 'v';
 			if (balErr) {
@@ -502,8 +503,9 @@ TDCLoader.hold((async () => {
 				const label = document.createElement('span');
 				label.className = 'k';
 				const when = new Date(o.placed_at).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
-				label.textContent = `${o.label} · ${ORDER_STATUS[o.status] || 'TDC (Error)'} · ${o.total_credits} credits · ${when}`
-					+ (venues.length > 1 ? ` · ${v.name}` : '');
+				label.textContent = `${o.label} · ${ORDER_STATUS[o.status] || 'TDC (Error)'} · ${o.total_credits} credits · ${when}`;
+				// The venue with its picture (UV, 24 Nov; TDC.venueMark)
+				if (venues.length > 1) label.append(' · ', TDC.venueMark(v), v.name);
 				const show = document.createElement('button');
 				show.type = 'button';
 				show.className = 'btn-sm';

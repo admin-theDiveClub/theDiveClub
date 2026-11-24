@@ -54,6 +54,33 @@
 	column-gap: var(--space-5);
 	margin-bottom: var(--space-4);
 }
+/* A line under each list section, Confirmed and Interested (UV, 24 Nov;
+ * docs/ui-list.md item 14), the site's hairline, with the same gap above it and
+ * below it for both, Interested open or folded: --poster-sep-gap each. The rows
+ * are spaced by a see-through bottom border, not a margin: in columns the browser
+ * keeps the last row's margin in some layouts and drops it in others (one row a
+ * column kept it, two dropped it: 24px against 16px), while a border always stays.
+ * The hover wash is clipped to the row (background-clip). */
+#p-confirmed-box,
+#p-interested-box {
+	--poster-sep-gap: var(--space-4);
+	margin-bottom: var(--poster-sep-gap);
+	padding-bottom: calc(var(--poster-sep-gap) - var(--space-2));   /* the last row's border */
+	border-bottom: 1px solid var(--border-color);
+}
+#p-confirmed-box .poster-names,
+#p-interested-box .poster-names { margin-bottom: 0; }
+#p-confirmed-box .poster-names > .person,
+#p-interested-box .poster-names > .person {
+	margin-bottom: 0;
+	border-bottom: var(--space-2) solid transparent;
+	background-clip: padding-box;
+}
+#p-interested-box:not([open]) { padding-bottom: var(--poster-sep-gap); }
+#p-interested-box:not([open]) > summary { margin-bottom: 0; }
+/* The heading after a line sits the same gap under it as the line under the list. */
+#p-confirmed-box + #p-interested-box > summary { margin-top: 0; }
+
 /* Interested folds, closed on opening (UV, 24 Nov; docs/ui-list.md item 8):
  * a set-group whose summary is the h2, centred and spaced as the Confirmed
  * heading above it, the arrow after its words. Padded the arrow's width on

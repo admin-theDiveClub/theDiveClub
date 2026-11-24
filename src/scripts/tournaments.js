@@ -104,7 +104,7 @@
 		);
 
 		const bits = [when(t.starts_at), FORMAT[t.format] || t.format];
-		if (t.venues.length) bits.push(TDC.venueNames(t.venues));
+		if (t.venues.length) bits.push({ venues: t.venues });
 		bits.push(t.entrants === 1 ? '1 entrant' : t.entrants + ' entrants');
 
 		const tags = el('div', 'match-tags');
@@ -117,8 +117,19 @@
 		if (t.status_manual) tags.append(el('span', 'badge pending', 'Set by hand'));
 		if (t.i_run_it) tags.append(el('span', 'badge live', 'You run this'));
 
-		box.append(top, el('div', 'match-meta', bits.join(' · ')), tags);
+		box.append(top, metaLine(bits), tags);
 		return box;
+	}
+
+	// The card's grey line, the parts with " · " between; the venues each with
+	// their picture (UV, 24 Nov; TDC.venueTags: the card is a link).
+	function metaLine(bits) {
+		const line = el('div', 'match-meta');
+		bits.forEach((b, i) => {
+			if (i) line.append(' · ');
+			line.append(b.venues ? TDC.venueTags(b.venues) : b);
+		});
+		return line;
 	}
 
 	// How you get in, in the words of the poster's leading button.
@@ -144,7 +155,7 @@
 		);
 
 		const bits = [when(t.starts_at), FORMAT[t.format] || t.format];
-		if (t.venues.length) bits.push(TDC.venueNames(t.venues));
+		if (t.venues.length) bits.push({ venues: t.venues });
 		bits.push(t.entrants === 1 ? '1 entrant' : t.entrants + ' entrants');
 
 		// A full one stays listed and says so; the poster refuses the entry.
@@ -153,7 +164,7 @@
 			? el('span', 'badge pending', 'Full')
 			: el('span', 'badge needs-you', ENTRY[t.entry_mode] || t.entry_mode));
 
-		box.append(top, el('div', 'match-meta', bits.join(' · ')), tags);
+		box.append(top, metaLine(bits), tags);
 		return box;
 	}
 

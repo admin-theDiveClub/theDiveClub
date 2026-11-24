@@ -171,7 +171,12 @@
 		const names = el('div', 'lc-names');
 		names.append(el('h3', null, l.league_name));
 		if (l.name && l.name !== l.league_name) names.append(el('span', 'lc-sub', l.name));
-		if (l.venues.length) names.append(el('span', 'lc-sub lc-venue', TDC.venueNames(l.venues)));
+		if (l.venues.length) {
+			// Each venue with its picture (UV, 24 Nov; TDC.venueTags: the card is a link)
+			const where = el('span', 'lc-sub lc-venue');
+			where.append(TDC.venueTags(l.venues));
+			names.append(where);
+		}
 
 		const text = el('div', 'lc-text');
 		text.append(names);
@@ -423,8 +428,12 @@
 		top.append(pic, names);
 		box.append(top, el('div', 'lt-strip'));
 
-		const where = TDC.venueNames(l.venues);
-		if (where) box.append(tileLine('league-tile-meta lt-venue', where));
+		// Each venue with its picture (UV, 24 Nov; TDC.venueTags: the tile is a link)
+		if (l.venues.length) {
+			const line = tileLine('league-tile-meta lt-venue', '');
+			line.querySelector('.lc-run > span').append(TDC.venueTags(l.venues));
+			box.append(line);
+		}
 		const format = [disciplineSaid(l.discipline)];
 		if (l.team_size === 1) format.push('Singles');
 		else if (l.team_size) format.push('Teams of ' + l.team_size);

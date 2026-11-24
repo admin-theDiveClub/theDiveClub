@@ -829,12 +829,12 @@ button.league-nav-item:focus-visible { outline: 2px solid var(--nm-light-colour)
    /sandbox/neumorph/'s logo well, but filling it. A box-shadow on the box would
    be painted under its <img>, so it goes on a layer over it. Initials and
    default icons stay as they were. A new picture box joins these lists. */
-:is(.nav-avatar-wrap, .nav-account-pic, .nav-account-person-pic, .person-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-person-pic, .pp-row-pic, .pp-vs-pic, .pp-c-pic, .mv-pic, .hc-face):has(> img:not([hidden])) {
+:is(.nav-avatar-wrap, .nav-account-pic, .nav-account-person-pic, .person-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-person-pic, .pp-row-pic, .pp-vs-pic, .pp-c-pic, .mv-pic, .hc-face, .venue-mark):has(> img:not([hidden])) {
 	--shadow-pic: 0 0 transparent;
 	--match-mark-shadow: 0 0 transparent;
 	position: relative;
 }
-:is(.nav-avatar-wrap, .nav-account-pic, .nav-account-person-pic, .person-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-person-pic, .pp-row-pic, .pp-vs-pic, .pp-c-pic, .mv-pic, .hc-face):has(> img:not([hidden]))::after {
+:is(.nav-avatar-wrap, .nav-account-pic, .nav-account-person-pic, .person-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-person-pic, .pp-row-pic, .pp-vs-pic, .pp-c-pic, .mv-pic, .hc-face, .venue-mark):has(> img:not([hidden]))::after {
 	content: "";
 	position: absolute;
 	inset: 0;
@@ -849,6 +849,20 @@ button.league-nav-item:focus-visible { outline: 2px solid var(--nm-light-colour)
 :is(.nav-account-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-vs-pic, .mv-pic) { --pic-inset: var(--nm-pic-sunken); }
 /* The box round a picture casts nothing once the picture is sunk in it. */
 :is(.pp-pic, .pp-zoom-pic, .lj-pic):has(img) { --shadow-pic: 0 0 transparent; }
+/* A venue's picture before its name (UV, 24 Nov; TDC.venueMark): a circle the
+   height of the text, or the map pin in the text's colour when there is none. */
+.venue-mark {
+	display: inline-grid;
+	place-items: center;
+	width: 1.2em;
+	height: 1.2em;
+	margin-right: 0.3em;
+	vertical-align: -0.25em;
+	border-radius: var(--radius-round);
+	overflow: hidden;
+}
+.venue-mark > img { width: 100%; height: 100%; object-fit: cover; }
+.venue-mark.is-pin > svg { width: 100%; height: 100%; }
 /* These two draw the picture as their own background, under an inset shadow. */
 .avatar-large:not(.placeholder) { box-shadow: var(--nm-pic-sunken); }
 .chosen-avatar:where([style*="background-image"]) { box-shadow: var(--nm-pic-sunken-small); }

@@ -262,7 +262,10 @@ TDCLoader.hold((async () => {
 		const words = [];
 		if (bar) words.push('Café: made when you arrive.');
 		if (merch) words.push('Merch: collect within 30 days.');
-		cartEls.collect.replaceChildren(make('div', 'shop-name', shop.venue_name), make('div', 'shop-price', words.join(' ')));
+		// The venue with its picture (UV, 24 Nov; TDC.venueMark)
+		const venue = make('div', 'shop-name');
+		venue.append(TDC.venueMark({ picture_path: shop.venue_picture_path }), document.createTextNode(shop.venue_name));
+		cartEls.collect.replaceChildren(venue, make('div', 'shop-price', words.join(' ')));
 
 		cartEls.go.hidden = !live.length;
 		cartEls.go.disabled = placing || !payWith || short;

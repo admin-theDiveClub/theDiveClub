@@ -312,7 +312,7 @@
 				// The role (Player, Captain) directly under the team name (UV, 21 Nov); none
 				// for a team of one.
 				teamOfOne(t, v.p.player) ? null : node('span', 'muted pp-team-role', t.is_captain ? 'Captain' : 'Player'),
-				node('span', 'muted pp-team-sub', [t.season_name, TDC.venueNames(t.venues)].filter(Boolean).join(' · '))].filter(Boolean));
+				seasonSub(t)].filter(Boolean));
 			a.append(names);
 			const got = sets && t.team_id ? sets[t.league_season_id + t.team_id] : null;
 			if (got) {
@@ -341,7 +341,7 @@
 			a.href = '/leagues/season/?s=' + encodeURIComponent(sid);
 			const head = node('span', 'pp-shared-head');
 			head.append(named('league', t.league_picture, node('span', 'pp-league-name', t.league_name)),
-				node('span', 'muted pp-team-sub', [t.season_name, TDC.venueNames(t.venues)].filter(Boolean).join(' · ')));
+				seasonSub(t));
 			const sides = node('span', 'pp-shared-sides');
 			// No player names (the heads above are pinned to the page) and no team
 			// place (UV, 20 Nov): the colours say whose team is whose.
@@ -372,6 +372,15 @@
 		}));
 	}
 
+	// A league card's grey line: the season, then the venues each with their picture
+	// (UV, 24 Nov; TDC.venueTags: the card is a link).
+	function seasonSub(t) {
+		const sub = node('span', 'muted pp-team-sub');
+		const parts = [t.season_name, (t.venues || []).length ? TDC.venueTags(t.venues) : null].filter(Boolean);
+		parts.forEach((p, i) => { if (i) sub.append(' · '); sub.append(p); });
+		return sub;
+	}
+
 	// A match's state, as the league fixtures' strip names it (UV, 5 Nov):
 	// colours from league.css (.fx-state-*).
 	const STATE = { scheduled: 'Not started', in_progress: 'Playing', complete: 'Finished', abandoned: 'Abandoned' };
@@ -400,8 +409,12 @@
 		const when = new Date(m.played_at);
 		const date = when.toLocaleDateString('en-ZA', when.getFullYear() === new Date().getFullYear() ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' });
 		names.append(node('span', 'pp-row-name', who), node('span', 'muted pp-row-sub', kindLabel(m)), node('span', 'muted pp-row-sub', date));
-		const venue = TDC.venueNames(m.venues);
-		if (venue) names.append(node('span', 'muted pp-row-sub', venue));
+		// The venues each with their picture (UV, 24 Nov; TDC.venueTags: the row is a link)
+		if ((m.venues || []).length) {
+			const venue = node('span', 'muted pp-row-sub');
+			venue.append(TDC.venueTags(m.venues));
+			names.append(venue);
+		}
 		return names;
 	}
 

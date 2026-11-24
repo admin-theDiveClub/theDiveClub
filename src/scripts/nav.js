@@ -188,7 +188,7 @@
 		}
 		const read = ++creditsRead;
 		const { data: venues, error } = await TDC.busy(accountDots, supabaseClient
-			.from('tbl_venues').select('id, name').eq('active', true).eq('sells_credits', true).order('name'));
+			.from('tbl_venues').select('id, name, picture_path').eq('active', true).eq('sells_credits', true).order('name'));
 		if (read !== creditsRead) return;
 		if (error) {
 			TDC.error(AREA, 'could not load the venues that sell credits.', error);
@@ -201,7 +201,12 @@
 			const btn = menuEl('button', 'nav-account-credit');
 			btn.type = 'button';
 			const { data: n, error: balErr } = balances[i];
-			if (venues.length > 1) btn.append(menuEl('span', 'nav-account-credit-venue', v.name));
+			if (venues.length > 1) {
+				// The venue's picture before its name (UV, 24 Nov; TDC.venueMark)
+				const named = menuEl('span', 'nav-account-credit-venue');
+				named.append(TDC.venueMark(v), document.createTextNode(v.name));
+				btn.append(named);
+			}
 			const value = menuEl('span', 'nav-account-credit-value');
 			if (balErr) {
 				TDC.error(AREA, `could not load your balance at ${v.name}.`, balErr);

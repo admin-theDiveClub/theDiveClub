@@ -3140,3 +3140,13 @@ These predate the log. They are recorded here because every one of them is a dec
 *The glitch was Claude's:* a rule making the empty shield's trophy larger (`.lj-pic-inner svg`, 70%) also resized the two shade layers, which are SVGs, so the shade's edge was drawn across the picture. Removed (the trophy is its usual size).
 *Claude's, for UV to correct:* site-wide; half the move everywhere (round pictures' insets at half offsets and blur, shields and hexagons `--shade-move` halved); drawn at 0.6 (`--pic-shade-strength`); the banner's name-sized picture moves a quarter of the big one's again (0.125), its blur with it.
 *Touches:* `src/stylesheets/variables.css`, `src/stylesheets/design.css`, `src/stylesheets/league-join.css`; `docs/ui.md`, `docs/ui-list.md` (item 12).
+
+## 2026-11-24 — A venue's picture wherever a venue is shown
+*Decided by UV* (`docs/ui-list.md` item 11): wherever a venue is shown, its picture with it; **a small circle the height of the text, before the name, as a player's picture**; **no picture, the map pin** as the venue card shows. Then "finish all here".
+*Claude's, for UV to correct:* the three venue-list helpers carry `picture_path` (every list and banner, signed-out reads included: a path into a public bucket); the shop's two functions `venue_picture_path`; every poster rebuilt; a picture that will not load shows the pin and logs `[Venues]`; drawn in the league and tournament cards, the match page (context line, banner, details), the player profile, the venue picker's pills and results, the profile's credits and orders, the menu's credits and the shop; drop-down options (profile, credits card) stay text, since an `<option>` cannot hold a picture; the circle takes the picture shadow (item 12).
+*Touches:* migration `20261124190347_venue_pictures_in_lists.sql`; test `103_venue_pictures_in_lists`; `src/scripts/tdc.js`, `leagues.js`, `tournaments.js`, `match.js`, `player.js`, `venue-picker.js`, `profile.js`, `nav.js`, `shop.js`, `shop-order.js`; `src/stylesheets/design.css`; `docs/ui.md`, `docs/ui-list.md`, `docs/systems/foundations.md`, `docs/systems/tournaments.md`, `docs/STATUS.md` (4dq).
+
+## 2026-11-24 — Lines under the poster's entrant sections
+*Decided by UV* (`docs/ui-list.md` item 14): line separators under Confirmed and Interested, and consistent margins below both.
+*Claude's, for UV to correct:* the site's hairline; 16px above and below each line, open or folded; rows spaced by a see-through border so the gap holds in every column layout.
+*Touches:* `src/stylesheets/poster.css`; `docs/ui-list.md`, `docs/systems/tournaments.md`.
