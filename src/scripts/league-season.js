@@ -641,7 +641,26 @@ TDCLeagueNav.panel('season', () => {
 	// (tdc_withdraw_league_entry); once they are let in (by the director, by
 	// payment on a season where paying confirms, or straight away) it is gone
 	// (UV, 24 Nov). Paid while still only named down does not hide it (UV).
+	// What a press says is shown on the button itself for a moment (UV, 24 Nov:
+	// not on the line under it), then the button takes its new state, or goes.
+	let joinSay = null;
+	let joinSayTimer = null;
+	const JOIN_SAY_MS = 2500;
+	function sayOnButton(text) {
+		joinSay = text;
+		clearTimeout(joinSayTimer);
+		joinSayTimer = null;
+	}
+
 	function renderCorner() {
+		if (joinSay) {
+			els.interestBtn.dataset.mode = 'said';
+			els.interestBtn.querySelector('.lj-join-word').textContent = joinSay;
+			els.interestBtn.hidden = false;
+			// Timed from when it is drawn: the re-read after the press draws it.
+			if (!joinSayTimer) joinSayTimer = setTimeout(() => { joinSay = null; joinSayTimer = null; renderCorner(); }, JOIN_SAY_MS);
+			return;
+		}
 		els.interestBtn.hidden = true;
 		if (!joinInfo) return;
 		const st = joinInfo.my_status;
@@ -679,19 +698,24 @@ TDCLeagueNav.panel('season', () => {
 		if (signedOut) { TDC.requireSession(AREA); return; }
 		// Either way the Standings tab's Join this league card reads again
 		// (live-match.js).
+		// The message goes on the button (sayOnButton), so none on the status line;
+		// a failure still shows there.
 		const changed = () => document.dispatchEvent(new CustomEvent('tdc:league-entry'));
-		if (els.interestBtn.dataset.mode === 'withdraw') {
+		const mode = els.interestBtn.dataset.mode;
+		if (mode === 'said') return;
+		if (mode === 'withdraw') {
 			if (!confirm('Take your name off this league?')) return;
 			write('Taking your name off', () => supabaseClient.rpc('tdc_withdraw_league_entry', {
 				p_league_season_id: seasonId
-			}), () => { changed(); return 'Your name is off.'; }, { single: true, dots: els.interestBtn });
+			}), () => { changed(); sayOnButton('Your name is off'); return ''; }, { single: true, dots: els.interestBtn });
 			return;
 		}
 		write('Putting your name down', () => supabaseClient.rpc('tdc_league_show_interest', {
 			p_league_season_id: seasonId
 		}), (data) => {
 			changed();
-			return data === 'active' ? 'You are in.' : 'Your name is down.';
+			sayOnButton(data === 'active' ? 'You are in' : 'Your name is down');
+			return '';
 		}, { single: true, dots: els.interestBtn, leaves: true });
 	});
 
