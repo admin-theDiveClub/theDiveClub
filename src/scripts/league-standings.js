@@ -113,7 +113,7 @@ TDCLeagueNav.panel('standings', () => {
 	// The key, under the table (UV, 17 Nov): "Ranked by Frames Won, then Win %."
 	function rankedBy(cols) {
 		const by = cols.filter((c) => c.rank_priority).sort((a, b) => a.rank_priority - b.rank_priority);
-		if (!by.length) return 'Not ranked yet: the league director chooses what decides the order, on the Settings tab.';
+		if (!by.length) return 'Not ranked yet: the league director chooses what decides the order, on Manage › Standings.';
 		return 'Ranked by ' + by.map((c) => c.name + (c.higher_first ? '' : ' (lowest first)')).join(', then ') + '.';
 	}
 

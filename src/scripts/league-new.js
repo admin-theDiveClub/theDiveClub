@@ -260,15 +260,16 @@
 			const placed = await venues.save('season', season.data);
 			if (placed.error) {
 				TDC.showSupabaseError(AREA, placed.error, els.status);
-				const fix = node('a', null, 'Add its venues on Settings.');
-				fix.href = '/leagues/season/?s=' + encodeURIComponent(season.data) + '&tab=settings';
+				const fix = node('a', null, 'Add its venues on its Season page.');
+				fix.href = '/leagues/season/?s=' + encodeURIComponent(season.data) + '&tab=season-settings';
 				els.status.append(' The season itself was created. ', fix);
 				return;
 			}
 		}
 
-		// Straight to the season's page: a league with nobody in it is not
-		// finished being made.
+		// Straight to the season's Overview (UV, 24 Nov; Run it until the pages
+		// split): a league with nobody in it is not finished being made, and
+		// Ready to begin? says what is missing.
 		location.href = '/leagues/season/?s=' + encodeURIComponent(season.data) + '&tab=manage';
 	})(), els.status));
 

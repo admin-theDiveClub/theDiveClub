@@ -15,6 +15,17 @@
 	<h1 id="l-title">League Settings</h1>
 	<p class="muted" id="st-meta"></p>
 
+	{% comment %}
+		Four pages share this panel since 24 Nov (UV; league-nav.js's TABS), each
+		showing its own data-part: League (league), Season (season), Match rules
+		(rules), Standings (standings). The first three have the page's name as
+		a heading (head) and the Save (save), which still sends the whole form, as
+		the one Settings tab did; the other pages' fields go back as they were.
+	{% endcomment %}
+	<h2 data-part="head" data-tab-head>Settings</h2>
+
+	<div data-part="league">
+
 	<div class="field">
 		<label for="st-name">League name</label>
 		<input type="text" id="st-name" maxlength="120" autocomplete="off">
@@ -68,7 +79,9 @@
 		<input type="checkbox" id="doc-show-rules">
 		<div class="hint">Off: the Rules tab shows only the league document.</div>
 	</div>
+	</div>
 
+	<div data-part="season">
 	{% comment %}
 		This season's own name and dates, as set on the new-league page. Saved
 		with tdc_update_league_season. The dates live on the season period,
@@ -114,7 +127,9 @@
 		<div id="st-venues"></div>
 		<div class="hint">This season only. Where it is played: as many as you like, or none, from the venues you own or run. Listing a venue gives its staff no say in the league. A new season starts with the same ones.</div>
 	</div>
+	</div>
 
+	<div data-part="rules">
 	{% comment %}
 		The season's reserves beside the league's team size (UV, 24 Oct): a
 		team holds the two added together. league-settings.js draws the team
@@ -133,10 +148,13 @@
 	<!-- The ruleset, built by league-settings.js from TDCMatchDef -->
 	<div id="settings-main"></div>
 	<div id="settings-rest"></div>
+	</div>
 
+	<div data-part="save">
 	<p class="muted">Saving applies to every match in the league that has not started yet. A match with a locked lineup, a recorded frame or a signature keeps the rules it started with.</p>
 
 	<button type="button" class="btn-primary" id="save-btn" disabled>Save</button>
+	</div>
 	<div class="status" id="st-status"></div>
 
 	{% comment %}
@@ -147,7 +165,7 @@
 		it a new column is built from buttons only (docs/design/leagues.md §6:
 		a token array, never a string).
 	{% endcomment %}
-	<section class="section sc-edit" id="sc-edit" hidden>
+	<section class="section sc-edit" id="sc-edit" data-part="standings" hidden>
 		<h2>Standings</h2>
 		<p class="muted">This season's columns on the Standings tab. Each change saves at once.</p>
 

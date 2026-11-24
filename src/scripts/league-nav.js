@@ -22,6 +22,10 @@
 // page learns its season late (opened by match), so it puts data-auto="no"
 // on the bar and calls TDCLeagueNav.show(seasonId).
 //
+// Since 24 Nov (UV) Manage's menu is Overview, then Schedule, People and
+// Settings in headed groups (TABS); see docs/systems/leagues.md, "The admin
+// pages, one job each".
+//
 // The tabs only the people running the league can use (Run it, Schedule,
 // Settings, New season) are offered to them alone, in a second pill under the
 // first (UV, 10 Nov): tdc_league_season_info says who they are, and each of
@@ -41,15 +45,30 @@
 const TDCLeagueNav = (() => {
 	const AREA = 'League pages';
 
-	// [key, label, only for the people running it, the panel if not its own]
+	// [key, label, only for the people running it, the panel if not its own,
+	//  the panel's data-part sections it shows (null: all), its heading in Manage's menu]
+	// The admin pages split so each job is a page of its own, easy to reach on
+	// a phone (UV, 24 Nov), as a tournament's (tournament-nav.js): several share
+	// one panel and show their part of it. The old keys stay on the first page
+	// of each (manage: Overview, schedule: Run the schedule, settings: League),
+	// so every old link still opens. Overview first, under no heading (UV).
 	const TABS = [
 		['standings', 'Standings', false],
 		['fixtures', 'Fixtures', false],
 		['season', 'Season', false],
 		['rules', 'Rules', false],
-		['manage', 'Run it', true],
-		['schedule', 'Schedule', true, 'fixtures'],
-		['settings', 'Settings', true]
+		['manage', 'Overview', true, null, ['overview'], null],
+		['make-schedule', 'Make the schedule', true, 'fixtures', null, 'Schedule'],
+		['schedule', 'Run the schedule', true, 'fixtures', null, 'Schedule'],
+		['players', 'Players', true, 'manage', ['players'], 'People'],
+		['payment', 'Teams and payment', true, 'manage', ['payment'], 'People'],
+		['teams', 'Teams', true, 'manage', ['teams'], 'People'],
+		['officials', 'Who runs it', true, 'manage', ['officials'], 'People'],
+		['entry', 'Entry', true, 'manage', ['entry'], 'People'],
+		['settings', 'League', true, null, ['head', 'league', 'save'], 'Settings'],
+		['season-settings', 'Season', true, 'settings', ['head', 'season', 'save'], 'Settings'],
+		['match-rules', 'Match rules', true, 'settings', ['head', 'rules', 'save'], 'Settings'],
+		['standings-settings', 'Standings', true, 'settings', ['standings'], 'Settings']
 	];
 	// The bottom bar's icon for each of the first pill's tabs (UV, 18 Nov).
 	const ICON = { standings: 'podium', fixtures: 'calendar', season: 'shield', rules: 'document' };
@@ -118,7 +137,13 @@ const TDCLeagueNav = (() => {
 		const was = current;
 		current = key;
 		for (const p of panels()) p.hidden = p !== target;
-		document.title = (target.dataset.title || 'League') + ' — The Dive Club';
+		const [, label, runners, , parts] = tabOf(key);
+		// This page's parts of a shared panel; the rest are other pages'.
+		for (const part of target.querySelectorAll('[data-part]')) {
+			part.classList.toggle('tab-off', !!parts && !parts.includes(part.dataset.part));
+		}
+		for (const head of target.querySelectorAll('[data-tab-head]')) head.textContent = label;
+		document.title = (runners ? label : (target.dataset.title || 'League')) + ' — The Dive Club';
 		mark(key);
 
 		let call = null;
@@ -222,8 +247,9 @@ const TDCLeagueNav = (() => {
 		}
 		if (tabs) mark(current); else mark(nav.dataset.page);
 
-		// Schedule in the address for somebody who does not run it: Fixtures.
-		if (tabs && !info.i_run_it && current === 'schedule') open('fixtures');
+		// Make or Run the schedule in the address for somebody who does not run
+		// it: Fixtures. (The other admin panels refuse them themselves.)
+		if (tabs && !info.i_run_it && managing() && panelOf(current) === 'fixtures') open('fixtures');
 	}
 
 	// ─── The bottom bar (UV, 18 Nov) ───
@@ -381,8 +407,17 @@ const TDCLeagueNav = (() => {
 			const menu = document.createElement('div');
 			menu.className = 'league-tabmenu';
 			menu.id = 'league-tabmenu';
-			for (const [key, label, runners] of TABS) {
+			let group = null;
+			for (const [key, label, runners, , , heading] of TABS) {
 				if (!runners) continue;
+				// A heading over each group (UV, 24 Nov); New season ends Settings.
+				if (heading && heading !== group) {
+					const head = document.createElement('div');
+					head.className = 'league-tabmenu-head';
+					head.textContent = heading;
+					menu.append(head);
+					group = heading;
+				}
 				let item;
 				if (tabs) {
 					item = document.createElement('button');
@@ -461,5 +496,6 @@ const TDCLeagueNav = (() => {
 		if (typeof TDCLoader !== 'undefined') TDCLoader.hold(bar, 'the league’s tabs');
 	});
 
-	return { show, panel, open, managing, live };
+	// tab(): the page showing, for a panel two pages share (league-fixtures.js).
+	return { show, panel, open, managing, live, tab: () => current };
 })();

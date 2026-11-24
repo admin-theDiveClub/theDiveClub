@@ -87,6 +87,7 @@ TDCLeagueNav.panel('fixtures', () => {
 	let teamPictures = new Map(); // team id -> picture_path, or null
 	let mayRun = false;
 	let iRunIt = false;
+	let making = false;   // on Make the schedule (applyMode)
 	let myTeamId = null;        // so a captain can find their own night
 	// A singles league (team size 1, 19 Nov): each team is one player, shown
 	// by their name and face, and a night is a singles match on /match/.
@@ -240,12 +241,17 @@ TDCLeagueNav.panel('fixtures', () => {
 		return true;
 	}
 
-	// The director's controls show on Schedule alone; on Fixtures whoever runs
-	// the league sees what a player sees (UV, 10 Nov). True if that changed.
+	// The director's controls show on Run the schedule alone; on Fixtures
+	// whoever runs the league sees what a player sees (UV, 10 Nov). Make the
+	// schedule (UV, 24 Nov: a page of its own, as a tournament's Generate the
+	// draw) is the Make the schedule group, always open, over the fixtures as a
+	// player sees them: making. True if either changed.
 	function applyMode() {
-		const was = iRunIt;
-		iRunIt = mayRun && TDCLeagueNav.managing();
-		els.generatePanel.hidden = !iRunIt;
+		const was = iRunIt, wasMaking = making;
+		making = mayRun && TDCLeagueNav.tab() === 'make-schedule';
+		iRunIt = mayRun && TDCLeagueNav.managing() && !making;
+		els.generatePanel.hidden = !making;
+		if (making) els.generatePanel.open = true;
 		els.addPanel.hidden = !iRunIt;
 		// A player's page looks like the Season tab (UV, 10 Nov); the director's
 		// is to be reworked later, and keeps its look until then.
@@ -254,7 +260,7 @@ TDCLeagueNav.panel('fixtures', () => {
 		els.dayTitle.classList.toggle('fx-round-label', !iRunIt);
 		els.views.hidden = iRunIt;
 		showView(fxView, false);
-		return was !== iRunIt;
+		return was !== iRunIt || wasMaking !== making;
 	}
 
 	// A player's Planner and All fixtures are tabs (UV, 10 Nov), the choice
@@ -317,7 +323,7 @@ TDCLeagueNav.panel('fixtures', () => {
 	// Saying so here as well means the director reads it as a state of the
 	// league rather than as a failure.
 	async function loadReadiness() {
-		if (!iRunIt) return true;
+		if (!making) return true;
 
 		const { data, error } = await take('readiness');
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
@@ -563,7 +569,7 @@ TDCLeagueNav.panel('fixtures', () => {
 		checkSelection(map);
 
 		els.empty.hidden = !!fixtures.length;
-		els.clearBtn.hidden = !fixtures.length || !iRunIt;
+		els.clearBtn.hidden = !fixtures.length || !making;
 
 		renderCalendar(map);
 		renderUndated();

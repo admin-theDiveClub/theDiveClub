@@ -421,7 +421,9 @@ TDCLeagueNav.panel('settings', () => {
 			return false;
 		}
 
-		els.title.textContent = league.data.name + ' — Settings';
+		// The league's name alone: the page's own name is the heading under it
+		// (UV, 24 Nov: League, Season, Match rules, each a page; league-nav.js).
+		els.title.textContent = league.data.name;
 		els.name.value = league.data.name;
 		picturePath = league.data.picture_path;
 		showPicture();

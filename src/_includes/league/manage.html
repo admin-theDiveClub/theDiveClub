@@ -17,7 +17,13 @@
 	<h1 id="mg-name">League</h1>
 	<p class="muted" id="mg-meta"></p>
 
-	<div class="panel" id="ready-panel" hidden>
+	{% comment %}
+		Six pages share this panel since 24 Nov (UV; league-nav.js's TABS), each
+		showing its own data-part: Overview (overview), Players (players), Teams
+		and payment (payment), Teams (teams), Who runs it (officials), Entry
+		(entry). The heading and the status line show on all of them.
+	{% endcomment %}
+	<div class="panel" id="ready-panel" data-part="overview" hidden>
 		<h2>Ready to begin?</h2>
 		<p id="ready-line"></p>
 		<p class="muted" id="ready-detail"></p>
@@ -27,7 +33,7 @@
 		How people get in. The same three choices a tournament has, because it
 		is the same question and a director should not have to learn it twice.
 	{% endcomment %}
-	<div class="panel" id="entry-panel">
+	<div class="panel" id="entry-panel" data-part="entry">
 		<h2>How players get in</h2>
 
 		<div class="field">
@@ -59,6 +65,7 @@
 		</div>
 	</div>
 
+	<div data-part="players">
 	<div class="field" id="search-field">
 		<label for="player-search">Add a player</label>
 		<input type="search" id="player-search" autocomplete="off" placeholder="Search by name">
@@ -130,6 +137,9 @@
 		team, whether they captain it, whether they have paid, and the way out
 		of the league altogether.
 	{% endcomment %}
+	</div>
+
+	<div data-part="payment">
 	<h2>Teams and payment</h2>
 
 	<div class="table-scroll">
@@ -155,6 +165,9 @@
 		Only the director makes a team. Captains control one once it exists —
 		they claim confirmed players onto it from the season page.
 	{% endcomment %}
+	</div>
+
+	<div data-part="teams">
 	<h2>Teams</h2>
 
 	{% comment %}
@@ -196,6 +209,9 @@
 
 	<div class="empty" id="mg-team-empty" hidden>No teams yet. Add one above, then put players on it here or let its captain claim them.</div>
 
+	</div>
+
+	<div data-part="officials">
 	<h2>Who runs it</h2>
 
 	{% comment %}
@@ -232,6 +248,8 @@
 			</thead>
 			<tbody id="official-rows"></tbody>
 		</table>
+	</div>
+
 	</div>
 
 	<div class="status" id="mg-status"></div>
