@@ -829,12 +829,12 @@ button.league-nav-item:focus-visible { outline: 2px solid var(--nm-light-colour)
    /sandbox/neumorph/'s logo well, but filling it. A box-shadow on the box would
    be painted under its <img>, so it goes on a layer over it. Initials and
    default icons stay as they were. A new picture box joins these lists. */
-:is(.nav-avatar-wrap, .nav-account-pic, .nav-account-person-pic, .person-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-person-pic, .pp-row-pic, .pp-vs-pic, .pp-c-pic, .mv-pic, .hc-face, .venue-mark):has(> img:not([hidden])) {
+:is(.nav-avatar-wrap, .nav-account-pic, .nav-account-person-pic, .person-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-person-pic, .pp-row-pic, .pp-vs-pic, .pp-c-pic, .mv-pic, .hc-face, .venue-mark, .shop-pic):has(> img:not([hidden])) {
 	--shadow-pic: 0 0 transparent;
 	--match-mark-shadow: 0 0 transparent;
 	position: relative;
 }
-:is(.nav-avatar-wrap, .nav-account-pic, .nav-account-person-pic, .person-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-person-pic, .pp-row-pic, .pp-vs-pic, .pp-c-pic, .mv-pic, .hc-face, .venue-mark):has(> img:not([hidden]))::after {
+:is(.nav-avatar-wrap, .nav-account-pic, .nav-account-person-pic, .person-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-person-pic, .pp-row-pic, .pp-vs-pic, .pp-c-pic, .mv-pic, .hc-face, .venue-mark, .shop-pic):has(> img:not([hidden]))::after {
 	content: "";
 	position: absolute;
 	inset: 0;
@@ -846,7 +846,7 @@ button.league-nav-item:focus-visible { outline: 2px solid var(--nm-light-colour)
 /* The bigger ones take more depth. Every picture's shadow is lighter and moves half
    as far as the shadows round it (UV, 24 Nov): --nm-pic-sunken(-small), at
    --pic-shade-strength (variables.css). */
-:is(.nav-account-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-vs-pic, .mv-pic) { --pic-inset: var(--nm-pic-sunken); }
+:is(.nav-account-pic, .lj-pic-inner, .pp-pic-inner, .pp-zoom-inner, .pp-vs-pic, .mv-pic, .shop-hero, .shop-cat-pic) { --pic-inset: var(--nm-pic-sunken); }
 /* The box round a picture casts nothing once the picture is sunk in it. */
 :is(.pp-pic, .pp-zoom-pic, .lj-pic):has(img) { --shadow-pic: 0 0 transparent; }
 /* A venue's picture before its name (UV, 24 Nov; TDC.venueMark): a circle the

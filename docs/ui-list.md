@@ -36,6 +36,7 @@ Where an item is a site-wide design rule, it also goes into `docs/ui.md` ("The d
 | 14 | **A line separator under each list section** (Confirmed, Interested), and **the same margin below each section** | 24 Nov | Tournament poster | Under every list section on the page, a line as the site's other separators draw it; measure the gap from each section's last row (or folded heading) to the line and from the line to what follows: the same for every section, open or folded. **Built on the poster 24 Nov:** 16px above each line and 16px below, open or folded (`poster.css`). **Trap:** in CSS columns the last row's margin is kept in some layouts and dropped in others, so rows are spaced with a see-through bottom border (`background-clip: padding-box` keeps the hover wash on the row) |
 
 ---
+| 15 | **Pictures still receive the shadow from their frames** (UV, 25 Nov: "the images on the shop should still receive shadows from their frames"): a chosen picture never covers its frame's inset shadow | 25 Nov | Shop (the category cards, product rows and cart: a photo hid the sunken frame) | Same as item 12: the picture box is in design.css's "Pictures set into the page" lists (the larger ones in the `--nm-pic-sunken` list). **Built 25 Nov for the shop:** `.shop-pic`, with `.shop-hero` and `.shop-cat-pic` taking the deeper shadow. A 3D model's box needs nothing: the viewer is see-through, so the box's own shadow shows. On a page, find every `<img>` in a framed box and check its edge shows the shadow |
 
 ## Pages put through the list
 

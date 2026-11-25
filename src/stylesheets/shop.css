@@ -131,6 +131,9 @@
 	box-shadow: var(--nm-sunken-small);
 }
 .shop-pic img { width: 100%; height: 100%; object-fit: cover; }
+/* A picture lies under its frame's shadow as every picture on the site does (UV, 25 Nov):
+   .shop-pic is in design.css's "Pictures set into the page" lists, .shop-hero with the deeper
+   ones. A 3D model needs nothing: the viewer is see-through, so the box's own shadow shows. */
 .shop-pic-none { color: var(--text-muted); font-family: var(--font-display); font-size: 1.5rem; line-height: 1.32; }
 .shop-words { flex: 1; min-width: 0; }
 .shop-name { font-weight: 600; overflow-wrap: anywhere; }
