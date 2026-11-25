@@ -507,10 +507,12 @@
  * one, since the next night now glows there too (16 Nov). */
 .tdc-card .cal button.cal-day.on[class*="is-"] { outline-color: var(--night); }
 
+/* The cards' columns fill the card's width, as the rest of its content does
+ * (UV, 25 Nov: the cards were small, centred with empty room either side);
+ * each column at least a card's old width, as many as fit. */
 .lj-teams {
-	display: flex;
-	flex-wrap: wrap;
-	justify-content: center;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
 	gap: var(--space-5);
 }
 .lj-team-head { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
@@ -527,11 +529,11 @@
 
 /* A team's card, inset and folding (UV, 10 Nov): closed, its picture and name;
  * open, the places and the ring join the arrow on its line. */
-/* Every closed card the same size (UV, 10 Nov), as many to a row as fit, each
- * row centred; an opened one takes the row and pushes the others on. */
-.team-boxes.lj-teams { flex-direction: row; align-items: flex-start; }
-.lj-teams .team-box { flex: 0 0 min(100%, 22rem); min-width: 0; }
-.lj-teams .team-box[open] { flex-basis: 100%; }
+/* Every closed card the same size (UV, 10 Nov), as many to a row as fit,
+ * filling it (UV, 25 Nov); an opened one takes the row and pushes the others on. */
+.team-boxes.lj-teams { align-items: start; }
+.lj-teams .team-box { min-width: 0; }
+.lj-teams .team-box[open] { grid-column: 1 / -1; }
 .lj-teams .team-box.is-asked { box-shadow: inset 0 0 16px var(--nm-knob-glow), var(--nm-sunken); }
 .lj-teams .team-box > summary { flex-wrap: wrap; padding: var(--space-3) var(--nm-pad); }
 .lj-teams .team-box > summary::after { content: none; }
@@ -555,6 +557,14 @@
  * league-season.js sets how far). With less motion it stops at "…". */
 .lj-run { display: inline-block; }
 .lj-teams .team-box-name.is-long { text-align: left; }
+/* A name that runs sideways fades at both edges rather than being cut (UV, 25
+ * Nov: on a phone it showed "REAK AND BL", chopped hard mid-run), as on the
+ * players' fixtures and TDC.runName. */
+.lj-teams .team-box-name.is-long {
+	text-overflow: clip;
+	-webkit-mask-image: linear-gradient(to right, transparent, #000 0.75rem, #000 calc(100% - 0.75rem), transparent);
+	mask-image: linear-gradient(to right, transparent, #000 0.75rem, #000 calc(100% - 0.75rem), transparent);
+}
 .lj-teams .is-long > .lj-run { animation: lj-run var(--run-time) ease-in-out infinite alternate; }
 @keyframes lj-run {
 	0%, 15% { transform: translateX(0); }
@@ -572,8 +582,7 @@
  * centred under that, as many to a row as fit. An opened one takes the row and
  * pushes the others on. */
 @media (max-width: 40rem) {
-	.lj-teams .team-box { flex: 0 0 7.5rem; }
-	.lj-teams .team-box[open] { flex-basis: 100%; }
+	.lj-teams { grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr)); }
 	.lj-teams .team-box > summary { flex-direction: column; flex-wrap: nowrap; gap: var(--space-2); padding: var(--space-3); }
 	.lj-teams .lj-team-head { flex: none; flex-direction: column; gap: var(--space-2); max-width: 100%; text-align: center; }
 	.lj-teams .team-box-name { font-size: 0.95rem; }   /* smaller (UV, 17 Nov; was 1.1rem) */
@@ -591,8 +600,10 @@
 
 /* ── Anything that fades ── */
 [data-motion="reduce"] .lj-teams .lj-run { display: inline; animation: none; }
+[data-motion="reduce"] .lj-teams .team-box-name.is-long { text-overflow: ellipsis; -webkit-mask-image: none; mask-image: none; }
 @media (prefers-reduced-motion: reduce) {
 	:root:not([data-motion="full"]) .lj-teams .lj-run { display: inline; animation: none; }
+	:root:not([data-motion="full"]) .lj-teams .team-box-name.is-long { text-overflow: ellipsis; -webkit-mask-image: none; mask-image: none; }
 }
 [data-motion="reduce"] .lj-team-arrow,
 [data-motion="reduce"] .tdc-card .cal button.cal-day[class*="is-"] { transition: none; }
