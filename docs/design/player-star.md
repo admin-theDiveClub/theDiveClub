@@ -54,6 +54,8 @@ Two players on one star, picked from the page's players (league players once add
 
 A star on each league's row on the profile and each `/leagues/` card, with **its own five spokes**: Win rate (FW / FP), **Lags won** (frames broken / FP, standard 50%), Own break (FW / lags won), Their break (FW / lags lost) and B&F (BF / lags won). Grey pentagon = UV's standards (set on the sandbox, the same for every league), yellow line = the league's own average per spoke, green shape = the player's stats **with no starting frames** (the league is where you feel the heat; the player star's starting frames protect the profile). Opacity = matches played / matches scheduled. The player star on the profile keeps its five spokes for now ("we will play around with the main player star later", UV). Details: `docs/systems/players.md`, "The league star".
 
+**A star on every team's card (UV, 25 Nov).** The league star, drawn from a team's frames, on each team's card on the Season tab, under its players, with the league's average as on every league star. As solid as the team's matches played ÷ scheduled. In singles each player's card opens to that player's league star. Signed in only. Built: `docs/systems/leagues.md`, "Every team's star on its card".
+
 ## More spokes and better pictures (UV, 20 Nov)
 
 What the real league data can tell, new spoke ideas, 2D pictures and the 3D ideas for later are in `docs/design/profile-stories.md` (ideas only, nothing decided).

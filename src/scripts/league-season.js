@@ -82,13 +82,17 @@ TDCLeagueNav.panel('season', () => {
 		standings: () => supabaseClient.rpc('tdc_league_standings', { p_league_season_id: seasonId }),
 		columns: () => supabaseClient.from('tbl_league_standing_columns')
 			.select('id, scope, position, name, equation, decimals, rank_priority, higher_first')
-			.eq('league_season_id', seasonId).order('position')
+			.eq('league_season_id', seasonId).order('position'),
+		// Every team's star (UV, 25 Nov; 20261125145821) and the league's average,
+		// its yellow line (20261120080000). Signed in only.
+		stars: () => supabaseClient.rpc('tdc_team_star_counts', { p_league_season_id: seasonId }),
+		starAvg: () => supabaseClient.rpc('tdc_league_star_average', { p_league_season_id: seasonId })
 	};
 	const take = (key) => TDC.read('season:' + key, Q[key]);
 	// The signed-in reads, all at once. Standings is started too, though only a
 	// player uses it: it costs no waiting, and is dropped unread otherwise.
 	function startReads(withInfo) {
-		const keys = ['mine', 'join', 'row', 'fixtures', 'teams', 'pics', 'rosters', 'readiness', 'officials', 'standings', 'columns'];
+		const keys = ['mine', 'join', 'row', 'fixtures', 'teams', 'pics', 'rosters', 'stars', 'starAvg', 'readiness', 'officials', 'standings', 'columns'];
 		if (withInfo) keys.unshift('info');
 		for (const k of keys) TDC.readEarly('season:' + k, Q[k]);
 	}
@@ -101,6 +105,8 @@ TDCLeagueNav.panel('season', () => {
 	let teams = [];
 	let rosters = new Map();    // team id -> roster rows
 	let teamPictures = new Map(); // team id -> picture_path, or null
+	let teamStars = new Map();    // team id -> its star's counts (tdc_team_star_counts); signed in only
+	let starAvg = null;           // the league's pooled counts, each star's yellow line
 	const openTeams = new Set();
 	let officials = [];
 	let pool = [];
@@ -131,7 +137,7 @@ TDCLeagueNav.panel('season', () => {
 		if (!box) return;
 		focusTeam = null;
 		showView('teams', true);
-		if (!singles) box.open = true;
+		if (!singles || !signedOut) box.open = true;   // a singles card folds when signed in (25 Nov)
 		box.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	});
 
@@ -1133,8 +1139,35 @@ TDCLeagueNav.panel('season', () => {
 		for (const r of read.data || []) {
 			if (rosters.has(r.team_id)) rosters.get(r.team_id).push(r);
 		}
+
+		// Every team's star and the league's average (UV, 25 Nov). A failure says
+		// so and the cards are drawn without stars.
+		const [stars, avg] = await Promise.all([take('stars'), take('starAvg')]);
+		const starError = stars.error || avg.error;
+		if (starError) TDC.showSupabaseError(AREA, starError, els.status);
+		teamStars = starError ? new Map() : new Map((stars.data || []).map((s) => [s.team_id, s]));
+		starAvg = starError ? null : avg.data;
 		renderTeams();
-		return true;
+		return !starError;
+	}
+
+	// A team's star (UV, 25 Nov), under its players: the league star a player
+	// gets (player-star.js), drawn from the team's frames. UV's standards grey,
+	// the league's average yellow, the team green, as solid as its matches
+	// played out of scheduled. In a team league a frame is won by one side and
+	// lost by the other, so the win standard is 50 (TDCStar.leagueSettings). In
+	// singles the team is the player, so it is that player's league star.
+	function teamStar(t, name) {
+		const counts = teamStars.get(t.team_id);
+		if (signedOut || !counts) return null;
+		const set = TDCStar.defaults(0);
+		if (!singles) set.std.win = 50;
+		const certain = counts.scheduled ? Math.min(1, counts.played / counts.scheduled) : undefined;
+		const { svg } = TDCStar.draw('Star for ' + name + ' in ' + (info ? info.league_name : 'this league'),
+			[{ counts, avg: starAvg, certain }], set, TDCStar.LEAGUE_SPOKES);
+		const box = node('div', 'lj-team-star');
+		box.append(svg);
+		return box;
 	}
 
 	function rosterRow(t, r) {
@@ -1201,8 +1234,9 @@ TDCLeagueNav.panel('season', () => {
 	document.fonts.ready.then(() => els.teamList.querySelectorAll('.team-box-name').forEach(fitName));   // the display face changes the widths
 
 	// A singles player's card (19 Nov): the closed team card's look, their
-	// face and name, and a tap opens their profile rather than a roster of
-	// one. Signed out with no ids, it is the card and no link.
+	// face and name. Signed in, it folds open to their row and star (25 Nov);
+	// signed out, a tap opens their profile, and with no ids it is the card
+	// and no link.
 	function playerCard(t) {
 		const p = singlesPlayer(t.team_id);
 		const box = document.createElement('details');
@@ -1220,6 +1254,24 @@ TDCLeagueNav.panel('season', () => {
 		nameRoom.observe(name);
 		top.append(pic, name);
 		head.append(top);
+		// Signed in, the card folds open as a team's does (UV, 25 Nov): the
+		// player's row (their picture and name open the profile) and their league
+		// star. Signed out there is no star, so a tap still opens the profile.
+		if (!signedOut) {
+			const line = node('span', 'lj-team-line');
+			line.append(node('span', 'lj-team-arrow'));
+			head.append(line);
+			box.append(head);
+			box.open = openTeams.has(t.team_id);
+			box.append(...(rosters.get(t.team_id) || []).map((r) => rosterRow(t, r)));
+			const star = teamStar(t, shown);
+			if (star) box.append(star);
+			box.addEventListener('toggle', () => {
+				if (box.open) openTeams.add(t.team_id);
+				else openTeams.delete(t.team_id);
+			});
+			return box;
+		}
 		if (p && p.player_id) {
 			head.setAttribute('role', 'link');
 			head.title = 'Open their profile';
@@ -1315,6 +1367,8 @@ TDCLeagueNav.panel('season', () => {
 			box.append(ask);
 		} else if (!roster.length) box.append(node('p', 'muted', 'Nobody is on this team yet.'));
 		else box.append(...roster.map((r) => rosterRow(t, r)));
+		const star = teamStar(t, t.name);
+		if (star) box.append(star);
 
 		box.addEventListener('toggle', () => {
 			if (box.open) openTeams.add(t.team_id);

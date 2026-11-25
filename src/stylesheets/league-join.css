@@ -534,6 +534,10 @@
 .team-boxes.lj-teams { align-items: start; }
 .lj-teams .team-box { min-width: 0; }
 .lj-teams .team-box[open] { grid-column: 1 / -1; }
+/* A team's star under its players (UV, 25 Nov), at the size of a league
+ * star elsewhere (.lc-star, .pp-team-star), centred. */
+.lj-teams .lj-team-star { margin-top: var(--space-4); margin-bottom: var(--space-4); }
+.lj-teams .lj-team-star .star-svg { max-width: 19rem; }
 .lj-teams .team-box.is-asked { box-shadow: inset 0 0 16px var(--nm-knob-glow), var(--nm-sunken); }
 .lj-teams .team-box > summary { flex-wrap: wrap; padding: var(--space-3) var(--nm-pad); }
 .lj-teams .team-box > summary::after { content: none; }

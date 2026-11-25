@@ -96,6 +96,8 @@ Five spokes (win rate, own break, their break, break in, B&F), each measured aga
 | 4 | Their break (label **W \| Opp Brk**) | FW / lags lost: frames won out of the frames the opponent broke |
 | 5 | B&F (label **B&F \| Own Brk**) | BF / lags won |
 
+**Also on the Season tab's team cards (UV, 25 Nov):** the same star for a team (and for each player in a singles league), from `tdc_team_star_counts`; see `docs/systems/leagues.md`, "Every team's star on its card".
+
 *Claude's reading of "FW" in 3 and 4, for UV to judge:* frames won within those lags (as Conversion counts), since all frames won over lags won would pass 100%.
 
 **Three lines (UV, 20 Nov).** **Grey pentagon:** UV's standards, the ones set on `/sandbox/star/` (67, 75, 40, 7 and 50 for Lags won, since 20 Nov), the same for every league, venue or not; the ring halfway out. **Yellow:** the league's own average for each spoke (below). **Green:** the player's current stats, **from their frames alone with no starting frames** (UV: you feel the heat in the league, while the player profile's starting frames keep it from hurting your profile too much). **No outer content card on the profile (UV, 20 Nov):** the page's `.tdc-card` has its raised shadow and background taken off (`.tdc-card.player-page`), so the player's name, buttons and the tabs sit directly on the page's background; its padding and width are unchanged. The sunken tab pill and the raised cards inside it are as before.

@@ -3255,3 +3255,15 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to correct:* the line is small, centred across the row, in the discrepancy's blue. Two people changing one frame read "Changed by A and B". The completed card's session tables carry no line, as nothing changes once the night is locked.
 *Example:* Thabo enters that he won frame 3; Sipho, the away captain, sets it to Sipho. Everybody sees "Changed by Sipho Dlamini" under frame 3; Thabo, his captain and the league director see "Changed by Sipho Dlamini · tap the blue tick to accept".
 *So:* no database change (`tdc_card_discrepancies` already names the changer). `src/scripts/league-card.js` (`changeNote`, `rosterName`), `src/stylesheets/league.css` (`.cs-change-note`); `docs/systems/leagues.md`, "Discrepancies".
+
+## 2026-11-25 — A star on every team's card
+
+*Decided by UV:* each team's card on the Season tab shows a star under its players, **the league star players already get, drawn from the team's frames**, and **every star has the league's average** (the yellow line). In a singles league **each player's card shows that player's star**.
+
+*Chosen by UV from Claude's options:* in singles the player's card **folds open as a team's does** to show the star (rejected: a tiny shape-only star in the closed card; a list of stars under the cards); the stars are **for people signed in only**, as the standards and the league's average (rejected: public, which would make a singles player's stats public); a team's star is **as solid as the team's matches played ÷ scheduled** (rejected: always solid).
+
+*Claude's, not asked:* the team star counts every frame the team's side played, whoever played it, reserves included; the win standard is 50 in a team league (as the player's league star there) and the player star's in singles; signed out, a singles card keeps its tap to the profile, since it has no star to open to.
+
+*Example:* Knights in 8-Ball Mainstream, after 6 of 22 nights: 99 of 150 frames won, so Win % reads `66% | 50%`; W | Own Brk `73% | 58%`; the star about a quarter solid (6 ÷ 22).
+
+*So:* migration `20261125145821_team_star_counts` (`tdc_team_star_counts`), test `107`; `league-season.js` (`teamStar`, `playerCard`), `league-join.css` (`.lj-team-star`), `leagues/season/index.html` (loads `player-star.js` and `.css`); `docs/systems/leagues.md`, "Every team's star on its card".
