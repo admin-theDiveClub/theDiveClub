@@ -105,6 +105,8 @@
 	let discrepancies = [];    // tdc_card_discrepancies: entries overruled by somebody else, not yet accepted (UV, 17 Nov)
 	let edited = new Map();    // frame no -> { lag, win }: an open discrepancy, the blue glow in the tables for everybody
 	let toAccept = new Set();  // 'frame|lag' / 'frame|win': one this reader may accept, the blue tick on the switch
+	let changedBy = new Map(); // frame no -> the player ids who made its open changes, named under the frame (UV, 25 Nov)
+	const changerNames = new Map(); // player id -> display name, for those not on either roster (a league director, a scorer)
 	const unsaved = new Map(); // frame no -> { fields, saves, failed }: L and W chosen, not yet read back
 	let drawnOnce = false;              // a re-read after the first draw fades what changed
 	const foldedSessions = new Set();   // the player's view: closed by the reader
@@ -332,6 +334,7 @@
 		// the person overruled, their captain and the league director.
 		edited = new Map();
 		toAccept = new Set();
+		changedBy = new Map();
 		for (const d of discrepancies) {
 			const key = d.thing === 'lag' ? 'lag' : 'win';
 			const e = edited.get(d.frame_no) || { lag: false, win: false };
@@ -340,6 +343,21 @@
 			if (lineupState.i_run_it
 				|| (myPlayerId && d.owner_player_id === myPlayerId)
 				|| (lineupState.my_side && d.owner_side === lineupState.my_side)) toAccept.add(d.frame_no + '|' + key);
+			if (d.changed_by_player_id) {
+				const who = changedBy.get(d.frame_no) || new Set();
+				who.add(d.changed_by_player_id);
+				changedBy.set(d.frame_no, who);
+			}
+		}
+		// Who made each change, said under the frame (UV, 25 Nov). Most are on
+		// one of the two rosters; anybody else (the league director, a scorer)
+		// is read once from the players, which everybody signed in may see.
+		const unknown = [...new Set([...changedBy.values()].flatMap((s) => [...s]))]
+			.filter((id) => !rosterName(id) && !changerNames.has(id));
+		if (unknown.length) {
+			const { data, error } = await supabaseClient.from('tbl_players').select('id, display_name').in('id', unknown);
+			if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
+			for (const p of data || []) changerNames.set(p.id, p.display_name);
 		}
 
 		// Every change made after either captain first signed (UV, 28 Oct),
@@ -1249,6 +1267,7 @@
 		if (f.break_side) top.append(node('span', 'qv-live', 'Under way'));
 		const row = node('div', 'cs-row cs-frame');
 		row.append(playerCell(f, 'home', lockedCard), toggles(f, mayEnter, 'home', 'quick'), playerCell(f, 'away', lockedCard));
+		changeNote(row, f, mayEnter);
 		return [top, row];
 	}
 
@@ -1472,7 +1491,27 @@
 			playerCell(f, 'home', lockedCard),
 			toggles(f, mayEnter),
 			playerCell(f, 'away', lockedCard));
+		changeNote(row, f, mayEnter);
 		return row;
+	}
+
+	// Under a frame with an open discrepancy (UV, 25 Nov), across the row:
+	// who changed it, for everybody, and, for whoever has the blue tick on
+	// it, how to accept. It replaces nothing: the glow and the tick stay.
+	function rosterName(id) {
+		for (const roster of rosters.values()) {
+			const r = roster.find((x) => x.player_id === id);
+			if (r) return r.display_name;
+		}
+		return null;
+	}
+	function changeNote(row, f, mayEnter) {
+		const who = changedBy.get(f.frame_no);
+		if (!who || !who.size) return;
+		const names = [...who].map((id) => rosterName(id) || changerNames.get(id) || 'somebody');
+		const tick = mayEnter && (toAccept.has(f.frame_no + '|lag') || toAccept.has(f.frame_no + '|win'));
+		row.append(node('p', 'cs-change-note',
+			'Changed by ' + names.join(' and ') + (tick ? ' · tap the blue tick to accept' : '')));
 	}
 
 	// A seat: the player's picture and name, a Reserve badge when somebody
@@ -1755,6 +1794,7 @@
 			row.append(mineCell(f, me, 'cs-home', 'Session ' + (f.session || 1) + ' · F' + f.frame_no),
 				toggles(f, mayEnter, me),
 				mineCell(f, them, 'cs-away', (them === 'home' ? 'H' : 'A') + (posOf(f, them) || '')));
+			changeNote(row, f, mayEnter);
 			grid.append(row);
 		}
 		block.append(grid);

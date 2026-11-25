@@ -3249,3 +3249,9 @@ These predate the log. They are recorded here because every one of them is a dec
 - The new rules are named in the league's `ls-` family in league.css, for the league Manage pages to use.
 *Example:* Kay, confirmed and paid yesterday. Her row reads "K · Kay / Kayleigh Abrahams · [Remove]", then "‹ 4 › · Confirmed ▾", then "✓ Paid Yesterday 15:28" on its own line on a phone, or on the same line on a PC.
 *So:* `docs/systems/tournaments.md`, "The Entrants and Who runs it lists in the league's look"; `docs/ui-list.md` item 16; `docs/STATUS.md` §1 4dw.
+
+## 2026-11-25 — The scorecard says who changed a frame
+*Decided by UV:* a frame with an open discrepancy (the blue on the league scorecard) gets **a line under it saying who made the change, for everybody**: "Changed by Sipho Dlamini". **Whoever has the blue tick** on that frame also reads "· tap the blue tick to accept". This replaces 17 Nov's "No special messages or text" for this one line; the glow, the tick and the changelog stay as they were. Rejected: showing the line only to those who can accept; a longer wording naming the lag or the result ("Sipho Dlamini changed the result. Tap the blue tick to accept.").
+*Claude's, for UV to correct:* the line is small, centred across the row, in the discrepancy's blue. Two people changing one frame read "Changed by A and B". The completed card's session tables carry no line, as nothing changes once the night is locked.
+*Example:* Thabo enters that he won frame 3; Sipho, the away captain, sets it to Sipho. Everybody sees "Changed by Sipho Dlamini" under frame 3; Thabo, his captain and the league director see "Changed by Sipho Dlamini · tap the blue tick to accept".
+*So:* no database change (`tdc_card_discrepancies` already names the changer). `src/scripts/league-card.js` (`changeNote`, `rosterName`), `src/stylesheets/league.css` (`.cs-change-note`); `docs/systems/leagues.md`, "Discrepancies".

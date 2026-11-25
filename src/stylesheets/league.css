@@ -1707,6 +1707,16 @@ body:is([data-card-state="agreed"], [data-card-state="approved"]) {
  * when the name does not fit it (the away box right to left, so its start
  * is the right; the name in it left to right). Once it runs, it runs from
  * the left as every running name does. */
+/* Under a frame with an open discrepancy (UV, 25 Nov; league-card.js,
+ * changeNote): who changed it and, for whoever has the tick, how to accept.
+ * Across the whole row, in the discrepancy's blue. */
+.cs-change-note {
+	grid-column: 1 / -1;
+	margin: 0;
+	text-align: center;
+	font-size: 0.8rem;
+	color: var(--color-edited);
+}
 .cs-row.cs-head { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .cs-head .cs-team { display: flex; justify-content: safe center; }
 .cs-head .cs-home { grid-column: 1; padding-right: calc((var(--cs-mid) + var(--cs-gap)) / 2); }
