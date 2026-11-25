@@ -342,6 +342,9 @@
   --shop-pic: 3.5rem;   /* a product's picture in the list */
   --shop-add: 2.75rem;  /* the + and the steppers: a finger's width */
   --shop-bar: 3.75rem;  /* the cart bar's height */
+  --shop-badge: 1.5rem; /* the green "in your cart" count */
+  --shop-lead-ratio: 16 / 9;  /* the leading category card's picture, full width on a phone */
+  --shop-hero-ratio: 4 / 3;   /* a product's picture on its card */
 }
 
 /* ─── The order card (scripts/shop-order.js, stylesheets/shop-order.css; 24 Nov) ─── */

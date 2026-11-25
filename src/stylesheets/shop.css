@@ -1,6 +1,7 @@
 /* The shop (/shop/; UV, 24 Nov; docs/design/shop.md, Stage 2; scripts/shop.js).
-   One sunken panel of rows with hairlines (docs/ui.md, "Long lists"); a + per row that
-   becomes the quantity; the cart bar following at the foot; the cart over the page in the
+   Restyled 25 Nov (UV): the categories as raised cards; the product sheet (.cc) with the
+   category's rows in one sunken panel with hairlines (docs/ui.md, "Long lists"), then a
+   product's card; the cart bar following at the foot; the cart over the page in the
    Add credits card's look (credits-card.css's .cc). The foot (policies, company block) keeps
    league.css's policy look (.lr-*). Tokens --shop-* in variables.css. */
 
@@ -14,7 +15,65 @@
 }
 .shop-pay-note strong { color: var(--color-warning); }
 
-/* ─── The list ─── */
+/* ─── The category cards (UV, 25 Nov): raised, the picture on top, the name under it.
+   Two across on a phone, three from 40rem; an odd count makes the first one full width,
+   the leading card. ─── */
+.shop-cats {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--space-4);
+}
+.shop-cats:empty { display: none; }
+@media (min-width: 40rem) {
+	.shop-cats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.tdc-card button.shop-cat {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: var(--space-3);
+	width: 100%;
+	min-height: 0;
+	margin: 0;
+	padding: var(--space-3);
+	border: 0;
+	border-radius: var(--radius-lg);
+	background: var(--bg-base);
+	color: var(--text-primary);
+	font: inherit;
+	text-align: left;
+	box-shadow: var(--nm-raised);
+	cursor: pointer;
+}
+.tdc-card button.shop-cat:active { box-shadow: var(--nm-sunken); }
+@media (max-width: 39.99rem) {
+	.tdc-card button.shop-cat:first-child:nth-last-child(odd) { grid-column: 1 / -1; }
+	.shop-cat:first-child:nth-last-child(odd) .shop-cat-pic { aspect-ratio: var(--shop-lead-ratio); }
+}
+.shop-pic.shop-cat-pic { width: 100%; height: auto; aspect-ratio: 1; }
+.shop-pic.shop-cat-pic .shop-pic-none { font-size: 2.5rem; }
+.shop-cat-words { display: flex; flex-direction: column; padding: 0 var(--space-1) var(--space-1); }
+.shop-cat-name { font-family: var(--font-display); font-size: 1.1rem; line-height: 1.32; overflow-wrap: anywhere; }
+.shop-cat-sub { color: var(--text-muted); font-size: 0.8rem; }
+
+/* How many are in the cart: a solid green pill, on a card's corner or at a row's end. */
+.shop-badge {
+	flex: none;
+	min-width: var(--shop-badge);
+	height: var(--shop-badge);
+	padding: 0 var(--space-2);
+	border-radius: var(--radius-pill);
+	background: var(--nm-light-colour);
+	color: var(--color-on-primary);
+	font-size: 0.8rem;
+	font-weight: 700;
+	line-height: var(--shop-badge);
+	text-align: center;
+}
+.shop-cat .shop-badge { position: absolute; top: var(--space-4); right: var(--space-4); }
+
+/* ─── The product sheet: the category's products as rows ─── */
 .shop-list {
 	list-style: none;
 	margin: 0;
@@ -22,14 +81,32 @@
 	border-radius: var(--radius-lg);
 	box-shadow: var(--nm-sunken);
 }
-.shop-list:empty { display: none; }
+.shop-list li + li { border-top: 1px solid var(--border-color); }
 .shop-item {
 	display: flex;
 	align-items: center;
 	gap: var(--space-3);
+	width: 100%;
 	padding: var(--space-3) 0;
+	border: 0;
+	background: transparent;
+	color: var(--text-primary);
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
 }
-.shop-item + .shop-item { border-top: 1px solid var(--border-color); }
+.shop-item .shop-words { display: flex; flex-direction: column; }
+.shop-chev { flex: none; color: var(--text-muted); font-size: 1.5rem; line-height: 1; }
+
+/* ─── A product's card, in the same sheet ─── */
+.shop-pic.shop-hero { width: 100%; height: auto; aspect-ratio: var(--shop-hero-ratio); box-shadow: var(--nm-sunken); }
+.shop-pic.shop-hero .shop-pic-none { font-size: 3rem; }
+.shop-prod-words { margin: var(--space-4) var(--space-1) var(--space-4); }
+.shop-prod-name { margin: 0; font-family: var(--font-display); font-size: 1.3rem; font-weight: 400; line-height: 1.32; }
+.shop-prod-price { color: var(--color-primary); font-weight: 600; }
+.shop-prod-qty { display: flex; align-items: center; gap: var(--space-3); margin: 0 var(--space-1) var(--space-4); }
+.shop-prod-sum { margin-left: auto; color: var(--text-muted); }
+.shop-step:disabled { opacity: 0.4; cursor: default; }
 .shop-pic {
 	position: relative;
 	display: inline-flex;
@@ -48,29 +125,6 @@
 .shop-name { font-weight: 600; overflow-wrap: anywhere; }
 .shop-price { color: var(--text-muted); font-size: 0.85rem; }
 .shop-collect { color: var(--text-muted); font-size: 0.75rem; }
-
-/* + in a green ring; once in the cart, the number in a solid green pill (tap: one more). */
-.tdc-card button.shop-add,
-.tdc-card button.shop-qty {
-	flex: none;
-	width: auto;   /* the card's buttons are full width; these sit at the row's end */
-	min-width: var(--shop-add);
-	height: var(--shop-add);
-	min-height: 0;
-	margin: 0;
-	padding: 0 var(--space-3);
-	border-radius: var(--radius-pill);
-	font-size: 1.1rem;
-	font-weight: 700;
-	line-height: 1;
-}
-.tdc-card button.shop-add {
-	border: 2px solid var(--color-primary);
-	background: transparent;
-	color: var(--color-primary);
-	box-shadow: var(--nm-raised-small);
-}
-.tdc-card button.shop-qty { background: var(--nm-light-colour); color: var(--color-on-primary); }
 
 .tdc-card .shop-empty { margin: var(--space-4) 0; text-align: center; }
 .tdc-card .shop-credits-line { margin: var(--space-5) 0 0; font-size: 0.85rem; line-height: 1.5; }

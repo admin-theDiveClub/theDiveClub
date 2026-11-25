@@ -1,10 +1,14 @@
-// The shop (/shop/; UV, 24 Nov; docs/design/shop.md, Stage 2; canvas artboard 1, no balance).
-// Products from tdc_shop (readable signed out), in the owner's categories as tabs; each row a
-// picture, the name, "30 credits · R30" (the rand at the venue's current price per credit; UV,
-// 24 Nov) and how it is collected, with a + that becomes the quantity in the cart. The cart is
-// on the account (tdc_my_cart, tdc_set_cart_qty; the same on every device); signed out, + asks
-// for a sign-in and comes back here. The cart bar follows at the foot and opens the cart over
-// the page: lines with − and +, a product switched off since marked No longer available and
+// The shop (/shop/; UV, 24 Nov; docs/design/shop.md, Stage 2; no balance).
+// Restyled 25 Nov (UV): each of the owner's categories is a card on the page (the first
+// product's picture, the name, "6 items · from 30 credits"), no tabs. A card opens the
+// product sheet over the page: the category's products as rows (one product: straight to it),
+// and a row opens that product's card in the same sheet: the picture large, "30 credits · R30"
+// (the rand at the venue's current price per credit), how it is collected, a quantity and Add
+// to cart. One product card for every category for now; a card of its own per category may
+// follow (UV, 25 Nov: "do less, we will review"). The cart is on the account (tdc_my_cart,
+// tdc_set_cart_qty; the same on every device); signed out, Add to cart asks for a sign-in and
+// comes back here. The cart bar follows at the foot and opens the cart over the page: lines
+// with their picture, − and +, a product switched off since marked No longer available and
 // left out of the total.
 // The cart is the checkout (Stage 3; canvas artboard 3; one tap from the shop): Pay with
 // credits (your balance shown here only, and what it leaves; short, it offers Add credits over
@@ -21,7 +25,7 @@ TDCLoader.hold((async () => {
 
 	const el = (id) => document.getElementById(id);
 	const els = {
-		tabs: el('shop-tabs'), track: el('shop-tab-track'), list: el('shop-list'), empty: el('shop-empty'),
+		cats: el('shop-cats'), empty: el('shop-empty'),
 		status: el('shop-status'), bar: el('shop-cartbar'), barCount: el('shop-cartbar-count'), barTotal: el('shop-cartbar-total')
 	};
 	// The dots wait on the page's card: the list has no size until it has rows.
@@ -42,7 +46,6 @@ TDCLoader.hold((async () => {
 	let shop = null;       // tdc_shop
 	let cart = null;       // tdc_my_cart, or null signed out
 	let signedIn = false;
-	let tab = null;        // the chosen category's id
 	const saving = new Set();   // products with a write in flight
 
 	function rand(credits) {
@@ -59,26 +62,51 @@ TDCLoader.hold((async () => {
 		return line ? line.qty : 0;
 	}
 
-	// ─── The tabs and the list ───
-	function drawTabs() {
+	const SVG_NS = 'http://www.w3.org/2000/svg';
+	// A stroke icon (decoration only; the button's label says what it is).
+	function icon(d) {
+		const s = document.createElementNS(SVG_NS, 'svg');
+		s.setAttribute('viewBox', '0 0 24 24');
+		s.setAttribute('fill', 'none');
+		s.setAttribute('stroke', 'currentColor');
+		s.setAttribute('stroke-width', '2');
+		s.setAttribute('stroke-linecap', 'round');
+		s.setAttribute('stroke-linejoin', 'round');
+		s.setAttribute('aria-hidden', 'true');
+		const p = document.createElementNS(SVG_NS, 'path');
+		p.setAttribute('d', d);
+		s.appendChild(p);
+		return s;
+	}
+
+	// ─── The category cards ───
+	function drawCats() {
 		const cats = shop.categories;
-		els.tabs.hidden = cats.length < 2;
-		els.track.replaceChildren(...cats.map((c) => {
-			const b = make('button', 'league-nav-item', c.name);
+		els.empty.hidden = cats.length > 0;
+		els.cats.replaceChildren(...cats.map((c) => {
+			const b = make('button', 'shop-cat');
 			b.type = 'button';
-			if (c.id === tab) b.setAttribute('aria-current', 'page');
-			b.addEventListener('click', () => {
-				tab = c.id;
-				for (const x of els.track.children) x.removeAttribute('aria-current');
-				b.setAttribute('aria-current', 'page');
-				drawList();
-			});
+			b.dataset.noDots = '';   // opens the sheet, no wait of its own (tdc-controls.js)
+			const withPic = c.products.find((p) => p.picture_path) || c.products[0];
+			const low = Math.min(...c.products.map((p) => p.price_credits));
+			const n = c.products.length;
+			const words = make('span', 'shop-cat-words');
+			words.append(make('span', 'shop-cat-name', c.name),
+				make('span', 'shop-cat-sub', n === 1 ? `${low} credits` : `${n} items · from ${low} credits`));
+			const inCart = c.products.reduce((t, p) => t + qtyOf(p.id), 0);
+			b.append(pic(withPic.picture_path, c.name, 'shop-cat-pic'), words);
+			if (inCart) {
+				const badge = make('span', 'shop-badge', String(inCart));
+				badge.setAttribute('aria-label', `${inCart} in your cart`);
+				b.append(badge);
+			}
+			b.addEventListener('click', () => openSheet(c));
 			return b;
 		}));
 	}
 
-	function pic(path, name) {
-		const box = make('span', 'shop-pic');
+	function pic(path, name, cls) {
+		const box = make('span', 'shop-pic' + (cls ? ' ' + cls : ''));
 		const url = TDC.pictureUrl(BUCKET, path);
 		if (url) {
 			const img = make('img');
@@ -93,22 +121,137 @@ TDCLoader.hold((async () => {
 		return box;
 	}
 
-	function drawList() {
-		const cat = shop.categories.find((c) => c.id === tab);
-		els.empty.hidden = !!cat;
-		els.list.replaceChildren(...(cat ? cat.products : []).map((p) => {
-			const li = make('li', 'shop-item');
-			const words = make('div', 'shop-words');
-			words.append(make('div', 'shop-name', p.name), make('div', 'shop-price', price(p.price_credits)), make('div', 'shop-collect', COLLECT[p.collect] || ''));
+	// ─── The product sheet, over the page: a category's products, then one product's card ───
+	let sheetDlg = null;
+	let sheetEls = null;
+	let sheetCat = null;    // the category open in the sheet
+	let sheetProd = null;   // the product whose card is showing, or null for the list
+	let pickQty = 1;        // the quantity chosen on the product card
+	const sheetOpen = () => !!(sheetDlg && sheetDlg.open);
+
+	function buildSheet() {
+		sheetDlg = make('dialog', 'cc shop-sheet');
+		sheetDlg.setAttribute('aria-labelledby', 'shop-sheet-title');
+		sheetDlg.dataset.pull = 'off';
+		const head = make('div', 'cc-head');
+		const back = make('button', 'cc-icon');
+		back.type = 'button';
+		back.setAttribute('aria-label', 'Back');
+		back.append(icon('M15 5l-7 7 7 7'));
+		const title = make('h2');
+		title.id = 'shop-sheet-title';
+		title.tabIndex = -1;
+		title.autofocus = true;
+		const close = make('button', 'cc-icon', '✕');
+		close.type = 'button';
+		close.setAttribute('aria-label', 'Close');
+		head.append(back, title, close);
+		const body = make('div', 'shop-sheet-body');
+		const status = make('div', 'status');
+		sheetDlg.append(head, body, status);
+		document.body.appendChild(sheetDlg);
+		sheetEls = { back, title, body, status };
+		back.addEventListener('click', () => { sheetProd = null; drawSheet(); });
+		close.addEventListener('click', () => sheetDlg.close());
+		sheetDlg.addEventListener('click', (e) => { if (e.target === sheetDlg) sheetDlg.close(); });
+	}
+
+	function openSheet(cat) {
+		if (!sheetDlg) buildSheet();
+		sheetCat = cat;
+		sheetProd = cat.products.length === 1 ? cat.products[0] : null;
+		pickQty = sheetProd ? (qtyOf(sheetProd.id) || 1) : 1;
+		TDC.status(sheetEls.status, '', '');
+		drawSheet();
+		sheetDlg.showModal();
+	}
+
+	function drawSheet() {
+		if (sheetProd) drawProduct(sheetProd);
+		else drawProducts(sheetCat);
+	}
+
+	// The category's products as rows; a row opens its card.
+	function drawProducts(cat) {
+		sheetEls.back.hidden = true;
+		sheetEls.title.textContent = cat.name;
+		const list = make('ul', 'shop-list');
+		list.append(...cat.products.map((p) => {
+			const li = make('li');
+			const b = make('button', 'shop-item');
+			b.type = 'button';
+			b.dataset.noDots = '';
+			const words = make('span', 'shop-words');
+			words.append(make('span', 'shop-name', p.name), make('span', 'shop-price', price(p.price_credits)));
+			b.append(pic(p.picture_path, p.name), words);
 			const n = qtyOf(p.id);
-			const btn = make('button', n ? 'shop-qty' : 'shop-add', n ? String(n) : '+');
-			btn.type = 'button';
-			btn.setAttribute('aria-label', n ? `${p.name}: ${n} in your cart. Add another` : `Add ${p.name} to your cart`);
-			btn.disabled = saving.has(p.id);
-			btn.addEventListener('click', () => setQty(p, qtyOf(p.id) + 1, btn));
-			li.append(pic(p.picture_path, p.name), words, btn);
+			if (n) {
+				const badge = make('span', 'shop-badge', String(n));
+				badge.setAttribute('aria-label', `${n} in your cart`);
+				b.append(badge);
+			}
+			b.append(make('span', 'shop-chev', '›'));
+			b.addEventListener('click', () => {
+				sheetProd = p;
+				pickQty = qtyOf(p.id) || 1;
+				TDC.status(sheetEls.status, '', '');
+				drawSheet();
+			});
+			li.append(b);
 			return li;
 		}));
+		sheetEls.body.replaceChildren(list);
+	}
+
+	// One product's card: the picture large, the price, how it is collected, a quantity and
+	// Add to cart (Update cart once in it; down to 0 it becomes Remove from cart).
+	function drawProduct(p) {
+		sheetEls.back.hidden = sheetCat.products.length === 1;
+		sheetEls.title.textContent = sheetCat.name;   // the product's own name is under its picture
+		const had = qtyOf(p.id);
+		const hero = pic(p.picture_path, p.name, 'shop-hero');
+		const name = make('h3', 'shop-prod-name', p.name);
+		const cost = make('div', 'shop-prod-price', price(p.price_credits));
+		const how = make('div', 'shop-collect', COLLECT[p.collect] || '');
+
+		const row = make('div', 'shop-prod-qty');
+		const minus = make('button', 'shop-step', '−');
+		minus.type = 'button';
+		minus.dataset.noDots = '';
+		minus.setAttribute('aria-label', 'One fewer');
+		const n = make('span', 'shop-step-n', String(pickQty));
+		n.setAttribute('aria-live', 'polite');
+		const plus = make('button', 'shop-step is-plus', '+');
+		plus.type = 'button';
+		plus.dataset.noDots = '';
+		plus.setAttribute('aria-label', 'One more');
+		const sum = make('span', 'shop-prod-sum');
+		row.append(minus, n, plus, sum);
+
+		const go = make('button', 'btn btn-primary shop-prod-go');
+		go.type = 'button';
+		const draw = () => {
+			n.textContent = String(pickQty);
+			minus.disabled = pickQty <= (had ? 0 : 1);
+			plus.disabled = pickQty >= 99;
+			sum.textContent = pickQty ? `${pickQty * p.price_credits} credits` : '';
+			go.textContent = !had ? 'Add to cart' : pickQty ? 'Update cart' : 'Remove from cart';
+			go.disabled = saving.has(p.id) || (had && pickQty === had);
+		};
+		minus.addEventListener('click', () => { pickQty = Math.max(0, pickQty - 1); draw(); });
+		plus.addEventListener('click', () => { pickQty = Math.min(99, pickQty + 1); draw(); });
+		go.addEventListener('click', async () => {
+			const ok = await setQty(p, pickQty, go, sheetEls.status);
+			if (!ok || !sheetOpen()) return;
+			// Back to the category's list, which shows what is now in the cart; a category of
+			// one has no list, so the sheet closes.
+			if (sheetCat.products.length === 1) sheetDlg.close();
+			else { sheetProd = null; drawSheet(); }
+		});
+		draw();
+		const words = make('div', 'shop-prod-words');
+		words.append(name, cost, how);
+		sheetEls.body.replaceChildren(hero, words, row, go);
 	}
 
 	function drawBar() {
@@ -120,30 +263,37 @@ TDCLoader.hold((async () => {
 	}
 
 	// ─── Writing the cart: the server's cart comes back and is drawn ───
-	async function setQty(p, qty, btn) {
+	// Answers true once the server's cart is back. statusEl: where a failure shows (the cart's
+	// own line when the cart is open, else the page's).
+	async function setQty(p, qty, btn, statusEl) {
 		if (!signedIn) {
 			window.location.href = '/accounts/?next=' + encodeURIComponent('/shop/');
-			return;
+			return false;
 		}
-		if (saving.has(p.id)) return;
+		if (saving.has(p.id)) return false;
+		const where = statusEl || (cartOpen() ? cartEls.status : els.status);
 		saving.add(p.id);
 		if (btn) btn.disabled = true;
-		TDC.status(els.status, '', '');
+		TDC.status(where, '', '');
+		let ok = false;
 		try {
-			const { data, error } = await TDC.busy(btn, supabaseClient.rpc('tdc_set_cart_qty', { p_product_id: p.id, p_qty: qty }), els.status);
+			const { data, error } = await TDC.busy(btn, supabaseClient.rpc('tdc_set_cart_qty', { p_product_id: p.id, p_qty: qty }), where);
 			if (error) {
-				TDC.showSupabaseError(AREA, error, cartOpen() ? cartEls.status : els.status);
-				return;
+				TDC.showSupabaseError(AREA, error, where);
+				return false;
 			}
 			cart = data;
+			ok = true;
 		} catch (err) {
-			TDC.error(AREA, 'could not change your cart.', err, els.status);
+			TDC.error(AREA, 'could not change your cart.', err, where);
 		} finally {
 			saving.delete(p.id);
-			drawList();
+			if (btn) btn.disabled = false;
+			drawCats();
 			drawBar();
 			if (cartOpen()) drawCart();
 		}
+		return ok;
 	}
 
 	// ─── The cart, over the page (the Add credits card's look, credits-card.css) ───
@@ -204,7 +354,8 @@ TDCLoader.hold((async () => {
 			const li = make('li', 'shop-cart-line' + (p.active ? '' : ' is-off'));
 			const words = make('div', 'shop-words');
 			words.append(make('div', 'shop-name', p.name),
-				make('div', 'shop-price', p.active ? `${p.qty} × ${p.price_credits} = ${p.qty * p.price_credits} credits` : 'No longer available'));
+				make('div', 'shop-price', p.active ? price(p.qty * p.price_credits) : 'No longer available'));
+			li.append(pic(p.picture_path, p.name));
 			const minus = make('button', 'shop-step', p.active ? '−' : 'Remove');
 			minus.type = 'button';
 			minus.setAttribute('aria-label', p.active ? `One fewer ${p.name}` : `Remove ${p.name}`);
@@ -288,7 +439,7 @@ TDCLoader.hold((async () => {
 		const got = await supabaseClient.rpc('tdc_my_cart', { p_venue_id: shop.venue_id });
 		if (got.error) TDC.showSupabaseError(AREA, got.error, els.status);
 		else cart = got.data;
-		drawList();
+		drawCats();
 		drawBar();
 		if (cartOpen()) drawCart();
 	}
@@ -351,8 +502,6 @@ TDCLoader.hold((async () => {
 		if (got.error) TDC.showSupabaseError(AREA, got.error, els.status);
 		else cart = got.data;
 	}
-	tab = shop.categories.length ? shop.categories[0].id : null;
-	drawTabs();
-	drawList();
+	drawCats();
 	drawBar();
 })(), 'Shop');

@@ -26,8 +26,10 @@ policies:
 	The shop (UV, 24 Nov; docs/design/shop.md, Stage 2; canvas artboard 1, without the
 	balance: UV, 24 Nov, a balance shows only in the profile menu and on the profile).
 	Products come from the database (tdc_shop, readable signed out), in the owner's
-	categories, priced in credits with the rand beside it. A + puts one in the cart,
-	which is on the account (tdc_set_cart_qty); signed out, it asks for a sign-in.
+	categories, priced in credits with the rand beside it. Each category is a card
+	(UV, 25 Nov); it opens the product sheet over the page, and a product's card there
+	puts it in the cart, which is on the account (tdc_set_cart_qty); signed out, it
+	asks for a sign-in.
 	The cart bar follows at the foot and opens the cart over the page, which is the
 	checkout too (Stage 3): Pay with, Collect, Place order, then the order card
 	(scripts/shop-order.js). Drawn by scripts/shop.js; styles in shop.css. Ends with the four policy
@@ -38,10 +40,7 @@ policies:
 	<h1>{{ title }}</h1>
 	<p class="shop-pay-note" role="note">Online payment is coming soon. <strong>Pay at the club</strong> for now.</p>
 
-	<nav class="league-nav shop-tabs" id="shop-tabs" aria-label="Categories" hidden>
-		<div class="league-nav-track" id="shop-tab-track"></div>
-	</nav>
-	<ul class="shop-list" id="shop-list"></ul>
+	<div class="shop-cats" id="shop-cats"></div>
 	<p class="shop-empty muted" id="shop-empty" hidden>Nothing in the shop yet.</p>
 	<div class="status" id="shop-status"></div>
 

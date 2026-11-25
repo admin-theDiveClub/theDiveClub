@@ -65,7 +65,7 @@ Each stage: read this file, `CLAUDE.md`, `docs/STATUS.md`, `docs/systems/foundat
 
 ### Stage 2 — Products and cart
 
-**The shop page** (canvas artboard 1): balance pill top right, a short "Online payment is coming soon. Pay at the club for now." note, category tabs (sunken pill, sliding thumb), a list with a + per item turning into a quantity, and a cart bar pinned to the foot ("3 items · 140 credits · View cart") that follows you.
+**The shop page** (canvas artboard 1): balance pill top right, a short "Online payment is coming soon. Pay at the club for now." note, category tabs (sunken pill, sliding thumb), a list with a + per item turning into a quantity, and a cart bar pinned to the foot ("3 items · 140 credits · View cart") that follows you. **Since 25 Nov the tabs and the + per row are gone** (DECISIONS 25 Nov, "The shop: categories as cards, a product's own card"): the categories are cards, each opening a product sheet and a product's own card.
 
 **Products**: owner-managed (name, category, price, picture, active, collect-type: made at the bar / collect within 30 days). The current `/shop/` listing becomes the real shop; its policy links stay.
 
