@@ -12,6 +12,16 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({
     "node_modules/qrcode-generator/qrcode.js": "scripts/vendor/qrcode.js"
   });
+  // 3D viewer (Google's <model-viewer>, Apache-2.0, three.js inside), pinned in package.json:
+  // a product's model on its shop card (scripts/shop.js loads it only when such a card opens).
+  // The Draco unpacker the models need comes from three (installed with it) and is served
+  // from here too, rather than the viewer's default fetch from Google's servers.
+  eleventyConfig.addPassthroughCopy({
+    "node_modules/@google/model-viewer/dist/model-viewer.min.js": "scripts/vendor/model-viewer.js",
+    "node_modules/three/examples/jsm/libs/draco/gltf/draco_decoder.wasm": "scripts/vendor/draco/draco_decoder.wasm",
+    "node_modules/three/examples/jsm/libs/draco/gltf/draco_wasm_wrapper.js": "scripts/vendor/draco/draco_wasm_wrapper.js",
+    "node_modules/three/examples/jsm/libs/draco/gltf/draco_decoder.js": "scripts/vendor/draco/draco_decoder.js"
+  });
   eleventyConfig.addPassthroughCopy("src/components");
 
   // Project board: its code lives outside src/ in tools/project-board/app/ and is published

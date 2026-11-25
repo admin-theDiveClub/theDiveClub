@@ -121,6 +121,194 @@ TDCLoader.hold((async () => {
 		return box;
 	}
 
+	// ─── A product's 3D model (UV, 25 Nov): on its card in place of the large picture ───
+	// Which product has one is listed here by its id for now (src/resources/models/); an
+	// owner-uploaded model per product is in the backlog. Drag turns it; pinch zooms; no panning.
+	// The viewer (node_modules/@google/model-viewer, copied at build) is loaded the first time
+	// such a card opens, so no other card or page pays for it; the models' Draco unpacker is
+	// served from here too. The viewer's own loading bar is left out: the dots show the wait.
+	const MODELS = {
+		'fef72a56-01e6-480a-924b-50e37af3dfba': '/resources/models/TAOM_3D_Chalk_V10.glb'   // Taom Chalk
+	};
+	const stamp = (() => {
+		const s = document.querySelector('script[src*="/scripts/tdc.js"]');
+		return s ? new URL(s.src).search : '';
+	})();
+	let viewerLib = null;
+	function loadViewer() {
+		if (customElements.get('model-viewer')) return Promise.resolve();
+		if (viewerLib) return viewerLib;
+		// Read by the viewer once, as it loads: so it is set before, never after. The module
+		// build, not the UMD one: the UMD wrapper overwrites this global with its own exports
+		// before reading it, so the unpacker came from Google's servers.
+		self.ModelViewerElement = Object.assign(self.ModelViewerElement || {}, { dracoDecoderLocation: '/scripts/vendor/draco/' });
+		viewerLib = new Promise((resolve, reject) => {
+			const s = document.createElement('script');
+			s.type = 'module';
+			s.src = '/scripts/vendor/model-viewer.js' + stamp;
+			s.onload = () => {
+				if (customElements.get('model-viewer')) { resolve(); return; }
+				viewerLib = null;
+				reject(new Error('model-viewer.js loaded but defined no <model-viewer>'));
+			};
+			s.onerror = () => { viewerLib = null; reject(new Error('model-viewer.js did not load')); };
+			document.head.appendChild(s);
+		});
+		return viewerLib;
+	}
+
+	// ─── The site's light on the model (UV, 25 Nov: "use our light source ... from the correct angle") ───
+	// The viewer has no light of its own, only a picture of a room round the model that lights
+	// it. So the room is drawn here: dim, with one bright soft light in it. page-light.js
+	// publishes where the site's light is on <html> as the shadow it casts (--page-shadow-x/y,
+	// pointing away from it), so the light is the other way, a little in front of the screen.
+	// Each time that changes, or the model is turned, the room is turned so its light sits
+	// there, as seen from where you are looking. Turning it is cheap (no new picture), and it
+	// is read only when the style on <html> changes, which page-light.js writes only on a change.
+	// The viewer's three.js scene is reached by its own symbol: the viewer is pinned in
+	// package.json, so a new version is checked before it is taken.
+	// Brighter room and stronger lamp cost the same: both are this one picture (UV, 25 Nov: the
+	// model looked dark). The exposure brightens the whole render on top.
+	const LIGHT = {
+		ambient: '#8a8a8a',   // the room: how much the side away from the light still shows
+		lamp: '#ffffff',      // the light
+		size: 0.2,            // its glow's radius, as a share of the picture's width
+		exposure: 1.5,        // the render's brightness overall
+		front: 1.6            // how far toward you it is, against 1 across the screen: mostly on the face you see, still leaning with the page's light (UV, 25 Nov)
+	};
+	// How big the model sits in its box: the camera's distance as a share of the viewer's own
+	// fit. UV, 25 Nov: 10% smaller than the fit. Measured, not worked out: the near face is
+	// close to the camera, so 111% made it only 5.5% smaller, 120% 11.6%.
+	const CAMERA_FAR = '118%';
+	let roomUrl = null;
+	function room() {
+		if (roomUrl) return Promise.resolve(roomUrl);
+		const c = document.createElement('canvas');
+		c.width = 1024;
+		c.height = 512;
+		const g = c.getContext('2d');
+		g.fillStyle = LIGHT.ambient;
+		g.fillRect(0, 0, c.width, c.height);
+		// The light at the middle of the picture: along +X in three's wrapping of it.
+		const r = c.width * LIGHT.size;
+		const glow = g.createRadialGradient(c.width / 2, c.height / 2, 0, c.width / 2, c.height / 2, r);
+		glow.addColorStop(0, LIGHT.lamp);
+		glow.addColorStop(0.35, LIGHT.lamp);
+		glow.addColorStop(1, LIGHT.ambient);
+		g.fillStyle = glow;
+		g.fillRect(c.width / 2 - r, c.height / 2 - r, 2 * r, 2 * r);
+		return new Promise((resolve, reject) => c.toBlob((b) => {
+			if (!b) { reject(new Error('the light could not be drawn')); return; }
+			resolve(roomUrl = URL.createObjectURL(b));
+		}, 'image/png'));
+	}
+
+	// Turns the room so its light (+X) is where the site's light is, until the card is left.
+	function followLight(mv) {
+		const sym = Object.getOwnPropertySymbols(mv).find((s) => s.description === 'scene');
+		const scene = sym && mv[sym];
+		if (!scene || !scene.environmentRotation || typeof scene.queueRender !== 'function') {
+			throw new Error('the viewer\'s scene was not where expected; check it after a model-viewer update');
+		}
+		const css = getComputedStyle(document.documentElement);
+		const aim = () => {
+			if (!mv.isConnected) { stop(); return; }   // the card was left: stop following
+			// On the screen: the light is opposite the shadow (screen y runs down, so up is -y).
+			let sx = -parseFloat(css.getPropertyValue('--page-shadow-x')) || 0;
+			let sy = parseFloat(css.getPropertyValue('--page-shadow-y')) || 0;
+			const flat = Math.hypot(sx, sy);
+			if (flat) { sx /= flat; sy /= flat; } else { sy = 1; }
+			// Where you are looking from: the viewer's orbit round the model.
+			const o = mv.getCameraOrbit();
+			const back = [Math.sin(o.phi) * Math.sin(o.theta), Math.cos(o.phi), Math.sin(o.phi) * Math.cos(o.theta)];
+			let right = [back[2], 0, -back[0]];
+			const rl = Math.hypot(right[0], right[2]) || 1;
+			right = [right[0] / rl, 0, right[2] / rl];
+			const up = [back[1] * right[2] - back[2] * right[1], back[2] * right[0] - back[0] * right[2], back[0] * right[1] - back[1] * right[0]];
+			const L = [0, 1, 2].map((i) => sx * right[i] + sy * up[i] + LIGHT.front * back[i]);
+			// The turn that takes the room's +X to L: about Y, then about Z.
+			const b = Math.atan2(L[2], L[0]);
+			const a = Math.atan2(-L[1], Math.hypot(L[0], L[2]));
+			scene.environmentRotation.set(0, -b, -a, 'ZYX');
+			scene.queueRender();
+		};
+		const watch = new MutationObserver(aim);
+		const stop = () => { watch.disconnect(); mv.removeEventListener('camera-change', aim); };
+		aim();
+		mv.addEventListener('camera-change', aim);
+		watch.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+	}
+
+	// ─── It turns, very slowly, about a direction picked at random, until touched; then it stays
+	// where it is (UV, 25 Nov). The model turns, not the camera, so the site's light stays where it
+	// is on the screen. Not with less motion (the profile menu's toggle or the device's setting).
+	const SPIN_DEG_PER_S = 12;   // a whole turn in 30 s
+	function spin(mv) {
+		if (TDCPrefs.lessMotion) return;
+		const sym = Object.getOwnPropertySymbols(mv).find((s) => s.description === 'scene');
+		const scene = sym && mv[sym];
+		const target = scene && scene.getObjectByName && scene.getObjectByName('Target');
+		const model = target && target.children[0];
+		if (!model || !model.quaternion || typeof scene.queueRender !== 'function') {
+			throw new Error('the viewer\'s model was not where expected; check it after a model-viewer update');
+		}
+		// A direction picked evenly over every way round.
+		const z = Math.random() * 2 - 1, t = Math.random() * 2 * Math.PI, s = Math.sqrt(1 - z * z);
+		const axis = { x: s * Math.cos(t), y: s * Math.sin(t), z };
+		let angle = 0, last = null, frame = 0;
+		const step = (now) => {
+			if (!mv.isConnected) return;   // the card was left
+			if (last !== null) angle += (now - last) / 1000 * SPIN_DEG_PER_S * Math.PI / 180;
+			last = now;
+			model.quaternion.setFromAxisAngle(axis, angle);
+			scene.queueRender();
+			frame = requestAnimationFrame(step);
+		};
+		const halt = () => cancelAnimationFrame(frame);
+		mv.addEventListener('pointerdown', halt, { once: true });
+		frame = requestAnimationFrame(step);
+	}
+
+	// The box is drawn at once (the hero's size and look); the viewer goes in once loaded.
+	// Call show() after the box is on the page, so the dots have somewhere to sit.
+	function modelHero(p) {
+		const box = make('span', 'shop-pic shop-hero shop-model');
+		const show = async () => {
+			try {
+				await TDC.busy(box, (async () => {
+					const [, env] = await Promise.all([loadViewer(), room()]);
+					const mv = document.createElement('model-viewer');
+					mv.setAttribute('environment-image', env);
+					mv.setAttribute('exposure', String(LIGHT.exposure));
+					mv.setAttribute('camera-orbit', `auto auto ${CAMERA_FAR}`);
+					mv.setAttribute('max-camera-orbit', `Infinity 157.5deg ${CAMERA_FAR}`);   // the viewer's default, but no further out than that
+					mv.setAttribute('src', MODELS[p.id] + stamp);
+					mv.setAttribute('alt', p.name);
+					// Drag turns it, any direction; it never pans (UV, 25 Nov).
+					mv.setAttribute('camera-controls', '');
+					mv.setAttribute('disable-pan', '');
+					mv.setAttribute('touch-action', 'none');
+					mv.append(make('span', null));
+					mv.lastChild.slot = 'progress-bar';
+					await new Promise((resolve, reject) => {
+						mv.addEventListener('load', resolve, { once: true });
+						mv.addEventListener('error', (e) => reject(new Error((e.detail && e.detail.type) || 'the model did not load')), { once: true });
+						box.append(mv);
+					});
+					// Without the site's light the model still shows, lit by the room alone.
+					try { followLight(mv); }
+					catch (err) { TDC.error(AREA, `the site's light could not be put on ${p.name}.`, err, sheetEls.status); }
+					try { spin(mv); }
+					catch (err) { TDC.error(AREA, `${p.name} could not be set turning.`, err, sheetEls.status); }
+				})(), sheetEls.status);
+			} catch (err) {
+				TDC.error(AREA, `the 3D view of ${p.name} could not be shown.`, err, sheetEls.status);
+				box.replaceWith(pic(p.picture_path, p.name, 'shop-hero'));
+			}
+		};
+		return { box, show };
+	}
+
 	// ─── The product sheet, over the page: a category's products, then one product's card ───
 	let sheetDlg = null;
 	let sheetEls = null;
@@ -209,7 +397,8 @@ TDCLoader.hold((async () => {
 		sheetEls.back.hidden = sheetCat.products.length === 1;
 		sheetEls.title.textContent = sheetCat.name;   // the product's own name is under its picture
 		const had = qtyOf(p.id);
-		const hero = pic(p.picture_path, p.name, 'shop-hero');
+		const model = MODELS[p.id] ? modelHero(p) : null;
+		const hero = model ? model.box : pic(p.picture_path, p.name, 'shop-hero');
 		const name = make('h3', 'shop-prod-name', p.name);
 		const cost = make('div', 'shop-prod-price', price(p.price_credits));
 		const how = make('div', 'shop-collect', COLLECT[p.collect] || '');
@@ -252,6 +441,7 @@ TDCLoader.hold((async () => {
 		const words = make('div', 'shop-prod-words');
 		words.append(name, cost, how);
 		sheetEls.body.replaceChildren(hero, words, row, go);
+		if (model) model.show();
 	}
 
 	function drawBar() {

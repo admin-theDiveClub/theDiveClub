@@ -345,6 +345,9 @@
   --shop-badge: 1.5rem; /* the green "in your cart" count */
   --shop-lead-ratio: 16 / 9;  /* the leading category card's picture, full width on a phone */
   --shop-hero-ratio: 4 / 3;   /* a product's picture on its card */
+  --shop-model-float: 2.5;        /* a 3D model's shadow on the card: how many times a card's offset it falls (how high it floats) */
+  --shop-model-shadow-blur: 14px; /* and how soft it is */
+  --shop-model-shadow-alpha: 0.6; /* and how dark */
 }
 
 /* ─── The order card (scripts/shop-order.js, stylesheets/shop-order.css; 24 Nov) ─── */

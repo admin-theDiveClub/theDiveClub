@@ -13,6 +13,7 @@
 - `.eleventy.js` handles passthrough copy (stylesheets, resources, scripts, components, sw.js, manifest, CNAME, robots, sitemap, favicon, Google verification file).
   - Any new top-level static file must be added there.
 - `404.html`, `privacypolicy.html`, `termsofservice.html` and `google07470aafc2664052.html` must keep their **exact flat URLs**. Use permalinks for these, not pretty URLs.
+- **3D models** live in `src/resources/models/` (25 Nov; published by the `resources` passthrough): `TAOM_3D_Chalk_V10.glb`, Taom Chalk's on its shop card. Shown by Google's `<model-viewer>` (`@google/model-viewer`, pinned in `package.json`; its ES-module build copied to `/scripts/vendor/model-viewer.js` and the Draco unpacker from `three` to `/scripts/vendor/draco/` by `.eleventy.js`). See `docs/systems/foundations.md`, "A product's 3D model".
 - **Supabase library:** `@supabase/supabase-js` is pinned to an exact version in `package.json` and served from our own site at `/scripts/vendor/supabase.js` (copied from `node_modules` by `.eleventy.js`). Upgrade deliberately: `npm install @supabase/supabase-js@<version> --save-exact`, test, commit.
 - `scripts/supabaseClient.js` creates the global `supabaseClient` (publishable key, custom domain).
 - `scripts/short-link.js` (on `404.html`) and `scripts/short-code-field.js` (`TDCShortCode`, a section of both Settings tabs) (9 Nov): short links. See `docs/systems/foundations.md`, "Short links". `TDC.shareButton` and `TDC.shortUrl` are in `tdc.js`.

@@ -3166,3 +3166,18 @@ These predate the log. They are recorded here because every one of them is a dec
 *Example:* Ann taps Pool accessories, sees Chalk (blue) and Chalk (green), taps the blue, sets 2 and taps Add to cart; the row shows 2, the card shows 2 and the cart bar reads "2 items · 40 credits".
 *Reverses:* the category tabs of `docs/design/shop.md`, Stage 2.
 *Touches:* `src/scripts/shop.js`, `src/stylesheets/shop.css`, `src/shop/index.html`, `src/stylesheets/variables.css`; `docs/systems/foundations.md`, "The shop: products and the cart"; `docs/ui.md`
+
+## 2026-11-25 — Taom Chalk's card shows its 3D model
+*Decided by UV:* Taom Chalk's product card shows UV's 3D model in place of its picture. Its textures are lowered to 512px to keep the file small (6.6 MB down to 716 KB), the geometry left as it is. A drag turns it and it never pans. It is lit by the site's own light, from where that light is, a little toward the camera so the front is lit, moving with it; and it floats above the card, casting its shadow down onto the page away from the light. Brighter overall, since it looked dark.
+*Why:* a product you can turn in your hand sells better than a flat picture, and the light and shadow make it part of the page rather than a window onto another scene.
+*Agreed by UV ("Go") on Claude's recommendation:* the model is linked to the product by its id in `scripts/shop.js`, with no database field for now (an owner upload is `docs/BACKLOG.md` §2 item 14); the viewer library is a pinned copy served from our own site, not a CDN.
+*Claude's, for UV to correct:* Google's `<model-viewer>` as the viewer; the light done by turning a drawn picture of a room (the viewer has no lamps); the lamp, room and exposure values; the shadow's distance (2.5 times a card's), blur and darkness; the viewer's hand prompt left on.
+*Example:* with the page's light drifting to the top left, the left of the TAOM logo and the lid are the bright parts and the shadow falls down and to the right on the card; turn the chalk round and the light stays top left on screen.
+*Touches:* `src/scripts/shop.js`, `src/stylesheets/shop.css`, `src/stylesheets/variables.css`, `.eleventy.js`, `package.json`, `src/resources/models/`; `docs/systems/foundations.md`, "A product's 3D model"
+
+## 2026-11-25 — Taom Chalk's model: smaller, and turning until touched
+*Decided by UV:* the model sits 10% smaller in its box than the viewer's own fit. By default it turns very slowly in a random direction until touched, then stays still.
+*Why:* the movement shows at a glance that it is a 3D model you can turn, and stopping at the first touch hands it over to the person.
+*Claude's, for UV to correct:* "very slowly" is 12° a second (a whole turn in 30 s); a new random direction each time the card opens; no turning with less motion, as with the site's other motion; the model turns rather than the camera, so the site's light stays where it is on the screen.
+*Example:* Ann opens Taom Chalk: it drifts round, tipping its lid toward her; she puts a finger on it and it stops there, and from then on it moves only when she drags.
+*Touches:* `src/scripts/shop.js`; `docs/systems/foundations.md`, "A product's 3D model"
