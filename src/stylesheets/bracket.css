@@ -952,3 +952,13 @@ html.bracket-full { overflow: hidden; }
 	:root:not([data-motion="full"]) :is(.bracket-link, .bracket-side, .bracket-pill, .bracket-bin, .cp-view)::after,
 	:root:not([data-motion="full"]) :is(.bracket-remove, .bracket-border-add) { transition: none; }
 }
+
+/* -- History (a recurring tournament's earlier ones, 25 Nov) --------- */
+/* Each is a .match-card, as on /tournaments/; under it the winner and the
+   runner-up as people, side by side, wrapping on a phone. */
+.th-podium {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2) var(--space-4);
+	margin-top: var(--space-3);
+}

@@ -56,6 +56,8 @@ The full list is `DATA` in the module, which the page will show. A test checks t
 
 **Receipt emails (24 Nov; migration `20261124170346_shop_receipt_emails`):** nothing added. The email switches and the queue say how a player likes to be told, not how they play or use the site; the orders behind the emails are already counted above (Claude's call).
 
+**Recurring tournaments (25 Nov; migration `20261125130921_recurring_tournaments`):** nothing added. Recurring and the series id belong to the tournament, not to a player; a player's tournaments and wins are already counted from entrants and finals, and points across a series' nights are a later feature that will read `series_id` (Claude's call).
+
 **A tournament's picture (24 Nov; migration `20261124150322_tournament_pictures`):** nothing added. It belongs to the tournament, not to a player, and says nothing about how anybody plays (Claude's call).
 
 **The staff queue (24 Nov; migration `20261124155021_shop_staff_orders`):** `me.profile.shop_collected` (orders they collected) is in `DATA` and `fillPerson`. It will be read from `tbl_shop_orders`, the rows whose status is `collected`. How an at-club order was paid (cash or card) and who handed it over are the club's, not the player's: nothing added for them (Claude's call). No formula uses it yet, and the real read is not built.

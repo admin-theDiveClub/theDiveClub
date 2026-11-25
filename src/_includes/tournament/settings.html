@@ -58,6 +58,18 @@
 	<div class="hint">Shown on the poster as soon as you choose it. Cropped to a square from the middle.</div>
 	<div class="status" id="ts-pic-status"></div>
 </div>
+
+{% comment %}
+	Recurring (UV, 25 Nov; migration recurring_tournaments): saved the moment
+	it is ticked, through tdc_set_tournament_recurring, not with the Save below,
+	as the picture is. On, the bar gains History and Manage gains Next tournament.
+{% endcomment %}
+<div class="field">
+	<label for="ts-recurring">Recurring</label>
+	<input type="checkbox" id="ts-recurring">
+	<div class="hint">A tournament played again and again, such as every Friday. Manage › Next tournament makes the next one with every setting carried over and nobody entered, and History shows the earlier ones.</div>
+	<div class="status" id="ts-recurring-status"></div>
+</div>
 </div>
 
 <div class="field" data-part="format">

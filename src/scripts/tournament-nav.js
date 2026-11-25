@@ -5,7 +5,7 @@
 // Since 24 Nov (UV) Manage's menu is nine pages in three headed groups (TABS);
 // see docs/systems/tournaments.md, "The admin pages, one job each".
 //
-// One page, /tournaments/bracket/?t=<tournament id>&tab=<rules|generate|run|entrants|officials|settings|format|entries|match-rules|poster-settings>:
+// One page, /tournaments/bracket/?t=<tournament id>&tab=<rules|history|generate|run|entrants|officials|settings|format|entries|match-rules|poster-settings|next>:
 // Draw and Rules (everybody, as a player sees them) in the first pill; Run the draw, Entrants
 // and Settings (the people running it) in a second pill under it (UV, 10 Nov).
 // Run the draw is the Draw panel with its director's controls on, and managing()
@@ -38,6 +38,12 @@
 // (loader.js); a tab opened later gets a screen over that tab alone. A tab
 // shown again is drawn already and reads again in place, with no screen.
 //
+// A recurring tournament (UV, 25 Nov; migration 20261125130921) also has
+// History in the bar, for anybody signed in, and Next tournament at the foot of
+// Manage's Settings group; neither shows on one that is not recurring, and
+// History not to a signed-out visitor. show() asks again when Recurring is
+// switched on Details.
+//
 // Needs: tdc.js, supabaseClient.js; dots.js for the switch; loader.js;
 // ring-status.js for the bar's icons; league.css for the bar's look.
 
@@ -53,6 +59,8 @@ const TDCTournamentNav = (() => {
 	const TABS = [
 		['draw', 'Draw', false],
 		['rules', 'Rules', false],
+		// A recurring tournament's earlier nights (UV, 25 Nov).
+		['history', 'History', false],
 		['generate', 'Generate the draw', true, 'draw', null, 'Draw'],
 		['run', 'Run the draw', true, 'draw', null, 'Draw'],
 		['entrants', 'Entrants', true, null, ['entrants'], 'People'],
@@ -62,11 +70,18 @@ const TDCTournamentNav = (() => {
 		['entries', 'Entries', true, 'settings', ['entries'], 'Settings'],
 		['match-rules', 'Match rules', true, 'settings', ['rules'], 'Settings'],
 		// Everything about the poster, and the text for a designer (UV, 24 Nov).
-		['poster-settings', 'Poster settings', true, null, null, 'Settings']
+		['poster-settings', 'Poster settings', true, null, null, 'Settings'],
+		// The next one of a recurring tournament, as a league's New season ends
+		// its Settings (UV, 25 Nov).
+		['next', 'Next tournament', true, null, null, 'Settings']
 	];
+	// Shown only on a recurring tournament.
+	const RECURRING_ONLY = new Set(['history', 'next']);
+	let recurring = false;
+	const offered = (key) => !RECURRING_ONLY.has(key) || recurring;
 	// The bottom bar's icon for each (UV, 24 Nov), and its order: the Poster first.
-	const ICON = { poster: 'megaphone', draw: 'bracket', rules: 'document' };
-	const BAR = [['poster', 'Poster'], ['draw', 'Draw'], ['rules', 'Rules']];
+	const ICON = { poster: 'megaphone', draw: 'bracket', rules: 'document', history: 'history' };
+	const BAR = [['poster', 'Poster'], ['draw', 'Draw'], ['rules', 'Rules'], ['history', 'History']];
 	const tabOf = (key) => TABS.find(([k]) => k === key);
 	const panelOf = (key) => (tabOf(key) && tabOf(key)[3]) || key;
 	const posterUrl = (t) => '/tournaments/poster/?t=' + t;
@@ -185,12 +200,17 @@ const TDCTournamentNav = (() => {
 		// disagree; nobody, signed out (the poster). The poster: offered to
 		// anybody else only once shared.
 		const signedIn = !!(await TDC.getSession(AREA));
-		const [run, poster] = await Promise.all([
+		// Whether it is recurring: signed out, never asked (History is not
+		// offered to a stranger).
+		const [run, poster, row] = await Promise.all([
 			signedIn ? supabaseClient.rpc('tdc_may_run_tournament', { p_tournament_id: tournamentId }) : { data: false },
-			supabaseClient.rpc('tdc_tournament_poster', { p_tournament_id: tournamentId })
+			supabaseClient.rpc('tdc_tournament_poster', { p_tournament_id: tournamentId }),
+			signedIn ? supabaseClient.from('tbl_tournaments').select('is_recurring').eq('id', tournamentId).maybeSingle() : { data: null }
 		]);
 		if (run.error) { TDC.showSupabaseError(AREA, run.error, document.getElementById('page-status')); return; }
 		if (poster.error) TDC.showSupabaseError(AREA, poster.error, document.getElementById('page-status'));
+		if (row.error) TDC.showSupabaseError(AREA, row.error, document.getElementById('page-status'));
+		recurring = !!(row.data && row.data.is_recurring);
 		const iRunIt = run.data === true;
 		const posterRow = Array.isArray(poster.data) ? poster.data[0] : poster.data;
 
@@ -203,7 +223,7 @@ const TDCTournamentNav = (() => {
 			const track = document.createElement('div');
 			track.className = 'league-nav-track scroll-x';
 			for (const [key, label, runners] of TABS) {
-				if (runners !== forRunners) continue;
+				if (runners !== forRunners || !offered(key)) continue;
 				const item = document.createElement('button');
 				item.type = 'button';
 				item.className = 'league-nav-item';
@@ -287,6 +307,7 @@ const TDCTournamentNav = (() => {
 		let count = 0;
 		for (const [key, label] of BAR) {
 			if (key === 'poster' && !posterShown) continue;
+			if (!offered(key)) continue;
 			const item = tabItem(t, key, label, 'league-nav-item league-tab');
 			const face = document.createElement('span');
 			face.className = 'tdc-ring league-tab-icon';
@@ -323,7 +344,7 @@ const TDCTournamentNav = (() => {
 			menu.id = 'tournament-tabmenu';
 			let group = null;
 			for (const [key, label, runners, , , heading] of TABS) {
-				if (!runners) continue;
+				if (!runners || !offered(key)) continue;
 				// A heading over each group (UV, 24 Nov).
 				if (heading && heading !== group) {
 					const head = document.createElement('div');

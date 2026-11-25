@@ -1,0 +1,36 @@
+{% comment %}
+	Manage › Next tournament (UV, 25 Nov; tournament-next.js): the next one of
+	a recurring tournament, every setting carried over and nobody entered
+	(tdc_next_tournament), as a league's New season starts from the league.
+	Whoever runs it only; offered in the menu only while it is recurring.
+{% endcomment %}
+
+	<h1>Next tournament</h1>
+	<p class="muted" id="tn-meta"></p>
+
+	<div id="tn-off" hidden>
+		<p>This tournament is not recurring. Turn on Recurring in Manage › Details to make the next one from it.</p>
+	</div>
+
+	<div id="tn-form" hidden>
+		<div class="field">
+			<label for="tn-name">Name</label>
+			<input type="text" id="tn-name" maxlength="120" autocomplete="off">
+			<div class="hint">The same name by default. Two characters or more.</div>
+		</div>
+
+		<div class="field">
+			<label for="tn-when">Starts</label>
+			<input type="datetime-local" id="tn-when">
+			<div class="hint">Leave blank if you have not set a date.</div>
+		</div>
+
+		<h2>Carried over</h2>
+		<ul id="tn-carried"></ul>
+		<p class="hint">Starts empty: nobody entered and no draw. Change anything afterwards on the new tournament's own pages.</p>
+
+		<div class="btn-row">
+			<button type="button" class="btn btn-primary" id="tn-create" disabled>Create the next tournament</button>
+		</div>
+	</div>
+	<div class="status" id="tn-status"></div>

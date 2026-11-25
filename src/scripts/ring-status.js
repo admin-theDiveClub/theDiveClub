@@ -81,6 +81,9 @@ const TDCRing = (() => {
 		// on to the final). Rules is the document, Manage the sliders, as a league's.
 		megaphone: { label: 'Poster', strokes: ['M30 45L30 57L40 57L62 68L62 34L40 45L30 45', 'M40 57L43 68L49 68L47 60', 'M68 51L74 51', 'M67 42L72 39M67 60L72 63'] },
 		bracket: { label: 'Draw', strokes: ['M28 32L42 32L42 46L28 46', 'M28 54L42 54L42 68L28 68', 'M42 39L56 39L56 61L42 61', 'M56 50L72 50'] },
+		// A recurring tournament's History (25 Nov): a clock face whose rim is an
+		// arrow turning back, and its two hands.
+		history: { label: 'History', strokes: ['M33 42A19 19 0 1 1 31 52', 'M27 36L33 42L39 37', 'M50 39L50 51L58 56'] },
 		minus: { label: 'Taken off', strokes: ['M30 50L70 50'] },
 		// Added 11 Nov for the fixtures' Open the card (UV): a scorecard, its
 		// outline, the header line and the line between the two sides' columns.

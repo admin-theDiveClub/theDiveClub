@@ -37,6 +37,7 @@ Where an item is a site-wide design rule, it also goes into `docs/ui.md` ("The d
 
 ---
 | 15 | **Pictures still receive the shadow from their frames** (UV, 25 Nov: "the images on the shop should still receive shadows from their frames"): a chosen picture never covers its frame's inset shadow | 25 Nov | Shop (the category cards, product rows and cart: a photo hid the sunken frame) | Same as item 12: the picture box is in design.css's "Pictures set into the page" lists (the larger ones in the `--nm-pic-sunken` list). **Built 25 Nov for the shop:** `.shop-pic`, with `.shop-hero` and `.shop-cat-pic` taking the deeper shadow. A 3D model's box needs nothing: the viewer is see-through, so the box's own shadow shows. On a page, find every `<img>` in a framed box and check its edge shows the shadow |
+| 16 | **A list of people is easy to read on a phone, never squashed** (UV, 25 Nov: "the table with players is squashed on mobile… improve the table so it can be read with ease"): no column so narrow that its words are cut ("C" for Confirmed), no name broken over lines to make room for controls, nothing pushed off the side so it has to be scrolled to | 25 Nov | Tournament Entrants (Manage): six columns at 390px, the status cut to "C" / "In" / "W", names wrapping, Remove off the right edge | At 360 and 390 emulated: every word in every row is whole, every control can be reached without scrolling sideways, a name stays on its line. The fix goes in the shared stylesheets so every list of people gets it |
 
 ## Pages put through the list
 

@@ -17,6 +17,8 @@ extraScripts:
   - /scripts/tournament-poster-settings.js
   - /scripts/rules-doc.js
   - /scripts/tournament-rules.js
+  - /scripts/tournament-history.js
+  - /scripts/tournament-next.js
 ---
 {% comment %}
 	A tournament's one page (UV, 5 Nov): Draw and Rules for everybody, and Run the draw,
@@ -53,5 +55,13 @@ extraScripts:
 
 	<div class="tournament-panel" data-tab="poster-settings" data-title="Poster Settings" hidden>
 {% include "tournament/poster.html" %}
+	</div>
+
+	<div class="tournament-panel" data-tab="history" data-title="History" hidden>
+{% include "tournament/history.html" %}
+	</div>
+
+	<div class="tournament-panel" data-tab="next" data-title="Next Tournament" hidden>
+{% include "tournament/next.html" %}
 	</div>
 </div>

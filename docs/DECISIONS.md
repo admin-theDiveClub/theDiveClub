@@ -3209,3 +3209,26 @@ These predate the log. They are recorded here because every one of them is a dec
 
 *Example:* Brandon v Luke on 23 Nov, Brandon won the lag: 8 frames, Brandon breaking 1, 3, 5, 7 and Luke 2, 4, 6, 8, Luke's frame 4 a break-and-finish. It ends 4–4 and both players' Standings show a draw.
 *So:* migration `20261125120918_summer_singles_23_nov`, test `105_import_singles_night`; `docs/systems/leagues.md`; `docs/STATUS.md` §1 4du and §4.
+
+## 2026-11-25 — Recurring tournaments
+
+*Decided by UV:*
+- **A tournament can be marked recurring, as a league runs season after season.** The next one carries every current setting and starts with a fresh set of players. Other features (anything counting across all of a series' tournaments) follow later; how the ids are managed is open, so long as those can be built.
+- **The director makes the next one** (Manage › Next tournament), as a league's New season. Rejected: made automatically when one finishes, or weekly.
+- **Its start is typed by the director**, blank each time. Rejected: a week on, filled in.
+- **Everybody who runs it is carried** (director, referees, scorers); whoever makes it is a director too.
+- **History is a button in the tournament's bottom bar**, on a recurring tournament only, for anybody who can see the Draw (signed in). It lists every other tournament of the series, unfinished ones too, newest first, with the winner and runner-up of a finished one.
+- Recurring is switched on Settings › Details only, for now (not on the create page).
+- Not carried: the director's notes and the short link (each tournament gets its own). The picture is copied as a new file into the new tournament's folder.
+- History is hidden from a signed-out visitor on the poster.
+
+*Why:* club nights repeat with the same settings and the same people running them; setting a tournament up again each week is work, and a series needs one place to look back on who won.
+*Claude's, for UV to correct:*
+- **The series is a shared id** (`tbl_tournaments.series_id`, the first tournament's own id), not a parent table, as `team_lineage_id` links a team's seasons. Anything across the series reads `where series_id = …`; the id can become a foreign key to a series row later without moving data.
+- Turning Recurring off keeps the series id, so turning it on again rejoins the same history.
+- `sanctioned` is not carried: a sanction is granted to one event by somebody else.
+- The venue a tournament belongs to is carried only for that venue's owner or admin, as on create (17 Nov).
+- The switch saves the moment it is ticked, as the picture does, so the one Save is untouched.
+- A History card opens the poster for one not started when its poster can be opened, the draw otherwise (the rule of 5 Nov). The History icon: a clock face whose rim is an arrow turning back.
+*Example:* Basil's Friday Super Comp on 27 Nov is marked recurring. On Saturday Basil opens Manage › Next tournament, types 4 Dec 19:00 and presses Create: a new Friday Comp opens on Entrants with nobody in it, the same race, fee, poster and referees. Its History shows 27 Nov: Ann won, Ben runner-up.
+*So:* migration `20261125130921_recurring_tournaments`, test `106_recurring_tournaments`; `docs/systems/tournaments.md`, "Recurring tournaments"; `docs/STATUS.md` §1 4dv.

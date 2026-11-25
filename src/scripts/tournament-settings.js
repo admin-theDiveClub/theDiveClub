@@ -62,6 +62,7 @@ TDCTournamentNav.panel('settings', () => {
 		shortCode: el('ts-short-code'),
 		picPreview: el('ts-pic-preview'), picChoose: el('ts-pic-choose'), picRemove: el('ts-pic-remove'),
 		picFile: el('ts-pic-file'), picStatus: el('ts-pic-status'),
+		recurring: el('ts-recurring'), recurringStatus: el('ts-recurring-status'),
 		save: el('ts-save'), status: el('ts-status')
 	};
 
@@ -307,11 +308,43 @@ TDCTournamentNav.panel('settings', () => {
 		}
 	})(), els.picStatus));
 
+	// ─── Recurring (UV, 25 Nov) ───
+	// Saved the moment it is ticked, as the picture is, so the one Save is
+	// untouched; then the bar is asked again, so History and Next tournament
+	// come and go with it.
+	els.recurring.addEventListener('change', () => TDC.busy(els.recurring, (async () => {
+		const on = els.recurring.checked;
+		els.recurring.disabled = true;
+		TDC.status(els.recurringStatus, '', '');
+		try {
+			const { error } = await supabaseClient.rpc('tdc_set_tournament_recurring', {
+				p_tournament_id: tournamentId, p_on: on
+			});
+			if (error) {
+				els.recurring.checked = !on;
+				TDC.showSupabaseError(AREA, error, els.recurringStatus);
+				return;
+			}
+			const { data, error: readErr } = await supabaseClient
+				.from('tbl_tournaments').select('is_recurring').eq('id', tournamentId).maybeSingle();
+			if (readErr) { TDC.showSupabaseError(AREA, readErr, els.recurringStatus); return; }
+			els.recurring.checked = !!(data && data.is_recurring);
+			TDC.status(els.recurringStatus, els.recurring.checked
+				? 'Recurring. Next tournament is under Manage, and History is in the bar.'
+				: 'No longer recurring. Its earlier tournaments stay linked if you turn it on again.', 'success');
+			await TDCTournamentNav.show(tournamentId);
+		} catch (err) {
+			TDC.error(AREA, 'unexpected problem saving Recurring.', err, els.recurringStatus);
+		} finally {
+			els.recurring.disabled = false;
+		}
+	})(), els.recurringStatus));
+
 	async function load() {
 		const [t, f, places] = await Promise.all([
 			supabaseClient
 				.from('tbl_tournaments')
-				.select('id, name, format, starts_at, max_entrants, entry_fee_credits, progression, create_matches, third_place, entry_mode, paid_confirms, is_listed, rules, picture_path')
+				.select('id, name, format, starts_at, max_entrants, entry_fee_credits, progression, create_matches, third_place, entry_mode, paid_confirms, is_listed, rules, picture_path, is_recurring')
 				.eq('id', tournamentId)
 				.maybeSingle(),
 			supabaseClient
@@ -346,6 +379,7 @@ TDCTournamentNav.panel('settings', () => {
 		els.listed.checked = !!saved.is_listed;
 		picturePath = saved.picture_path;
 		showPicture();
+		els.recurring.checked = !!saved.is_recurring;
 
 		if (!await venues.load('tournament', tournamentId)) return false;
 
