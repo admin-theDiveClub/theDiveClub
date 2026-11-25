@@ -3188,3 +3188,24 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to correct:* going on slides in from the right and going back from the left; 0.35 s for both the rise and the slide (`--cc-rise`, `--cc-turn`), in the site's usual easing; the dim behind fades with the card; the cart also grows or shrinks when a line or note changes, and the Add credits card when a code is paid; with less motion everything simply happens; the order card and the staff queue's sheet (the same card look) are not changed.
 *Example:* Ann taps Apparel: the sheet rises with its two products. She taps Versus Socks: the list slides off left as the socks' card slides in from the right and the sheet grows to fit. Back slides the list in from the left and the sheet shrinks; Back again and the sheet sinks away.
 *Touches:* `src/scripts/tdc.js` (`TDC.cardOpen`, `cardClose`, `cardTurn`, `cardResize`), `src/scripts/shop.js`, `src/scripts/credits-card.js`, `src/stylesheets/variables.css`; `docs/systems/foundations.md`, "The shop: products and the cart"; `docs/ui.md`
+
+## 2026-11-25 — Summer Singles' 23 Nov night from paper
+
+*Decided by UV:*
+- **The 15 matches played on paper on 23 Nov go into Summer Singles as that night's fixtures, and only those.** The rest of the season is generated later, by a way still to be built. Rejected for now: generating the season first.
+- **One import.** Rejected: the three matches whose players were ready first, the rest later.
+- **Players without an account go in as league placeholders and link on sign-up, as they did for 8-Ball Mainstream** (DECISIONS 11 and 16 Nov), so the import does not wait on anybody signing up. Shane Pillay and Brandon Reddy are their existing placeholder records, never new ones.
+- **A score stands as it was when the session ended**, so a match may finish under the race (3–4, 4–3) or level (4–4, a draw for both).
+- **The season starts on 23 Nov**, not 30 Nov.
+- **The players are notified as usual**: "Your scorecard was changed", once per match each, which leads them to agree their card. Rejected: removing those notifications after the import.
+- The sheets' readings, each settled by UV on 25 Nov: the names (the "K…" on Basil's sheet is Enver, "Prav…" is Pranesh, the night photo is Thai v Kat, "Juls" is Julian Narsamoolu, "Kat" is Katterpilla); Kat 5–1 Teegan and Teegan 5–2 MZ; Aldrin v Luke's order; every match's lag winner; "Apple" means a break-and-finish, and only three stand (Alonso f1 and Brandon f4 against each other, Luke f4 against Brandon).
+
+*Why:* the night was played before the season had fixtures, and the frames are the record (CLAUDE.md §5.1), so they go in frame by frame, not as a typed-in score.
+*Claude's, for UV to correct:*
+- The import calls the pages' own functions, acting as Yuvan as league director, rather than writing rows. Each card is submitted by the director: it counts at once and settles as any singles result does.
+- 19:00 as the night's time; the missing frame of Kat v Teegan and of MZ v Teegan put last; a tick in the shared Lag column read as the left-hand player (#9, #11, #12).
+- `private.tdc_import_singles_night` is kept, for the test and a later paper night.
+- The five new placeholders' names, taken from their emails: Luke Pillay, Sharm Chetty, Teegan Govindasamy, Enver Joel, and Pranesh with no surname.*Found:* Claude first planned to wait for every player to sign up, having missed the placeholder decisions of 11 and 16 Nov; UV caught it.
+
+*Example:* Brandon v Luke on 23 Nov, Brandon won the lag: 8 frames, Brandon breaking 1, 3, 5, 7 and Luke 2, 4, 6, 8, Luke's frame 4 a break-and-finish. It ends 4–4 and both players' Standings show a draw.
+*So:* migration `20261125120918_summer_singles_23_nov`, test `105_import_singles_night`; `docs/systems/leagues.md`; `docs/STATUS.md` §1 4du and §4.
