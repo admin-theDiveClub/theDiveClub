@@ -1258,6 +1258,42 @@ a.fx-team:focus-visible { outline: 2px solid var(--nm-light-colour); outline-off
  * under the name when the card is narrow. */
 .ls-ask { flex-wrap: wrap; row-gap: var(--space-2); }
 .ls-ask-actions { display: flex; gap: var(--space-2); margin-left: auto; }
+/* A person with controls of their own (UV, 25 Nov; docs/ui-list.md item 16;
+ * first on a tournament's Entrants page), on two lines: the person with a red
+ * Remove beside them, then the controls on the line under (.ls-controls).
+ * Nothing is squeezed into columns, so every word stays whole at 360px; what
+ * does not fit wraps whole to a line of its own.
+ * Compact, as the league's own small controls (UV, 25 Nov: "more compact…
+ * even the toggles and drop downs don't need to be that big"): every control
+ * at a filter pill's size (.drop-joined's 2.25rem), the tick at its table
+ * size, a drop-down as a filter's pill. */
+.ls-wait:has(> .ls-controls) > .person { flex: 1 1 0; min-width: 0; }
+.ls-wait:has(> .ls-controls) > .btn-danger { margin-left: auto; }
+.ls-controls {
+	--nm-field: 2.25rem;
+	--nm-field-radius: 1.125rem;
+	--nm-pad: var(--space-3);
+	flex: 1 0 100%;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-2) var(--space-3);
+	min-width: 0;
+}
+.ls-controls .tdc-stepper.is-across { padding: 0 var(--space-2); box-shadow: var(--nm-sunken-small); }
+.ls-controls .tdc-check { --rs: var(--ring-size-table); }
+.ls-controls > .field.drop-joined { margin: 0; }
+.ls-controls .tdc-drop-value { white-space: nowrap; }
+/* Wider columns on a big screen, as a match result's (above), so the controls
+ * keep their two lines; and each row's lines start at its top, so rows of
+ * different heights side by side still line up. */
+.ls-waiting:has(> .ls-wait > .ls-controls) { grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr)); }
+.ls-wait:has(> .ls-controls) { align-content: flex-start; }
+.ls-paid { display: inline-flex; align-items: center; gap: var(--space-2); }
+.ls-paid-when { font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; }
+/* A list's sections, each a heading over its panel, as Waiting for a team. */
+.en-group { margin-bottom: var(--space-5); }
+.en-group[hidden] { display: none; }
 /* Asking to join a team (UV, 5 Nov; scripts/team-ask.js), on the join page's
  * team cards and the season page's team headings: an icon standing alone, the
  * profile page's buttons' size; a person with a plus to ask, a tick once

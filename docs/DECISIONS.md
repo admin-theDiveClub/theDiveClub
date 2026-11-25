@@ -3232,3 +3232,20 @@ These predate the log. They are recorded here because every one of them is a dec
 - A History card opens the poster for one not started when its poster can be opened, the draw otherwise (the rule of 5 Nov). The History icon: a clock face whose rim is an arrow turning back.
 *Example:* Basil's Friday Super Comp on 27 Nov is marked recurring. On Saturday Basil opens Manage › Next tournament, types 4 Dec 19:00 and presses Create: a new Friday Comp opens on Entrants with nobody in it, the same race, fee, poster and referees. Its History shows 27 Nov: Ann won, Ben runner-up.
 *So:* migration `20261125130921_recurring_tournaments`, test `106_recurring_tournaments`; `docs/systems/tournaments.md`, "Recurring tournaments"; `docs/STATUS.md` §1 4dv.
+
+## 2026-11-25 — The Entrants list in the league's look
+*Decided by UV:*
+- A tournament's Entrants list is **split by status**: Confirmed, then Interested, then Withdrawn, each a league heading with its count (as the poster). Rejected: one list in seed order, as before.
+- **A row is the league's Asked to join row**: picture, name, full name and Walk-in under it. Rejected: a one-line row opening a card with the controls (a paid tick would take two taps at the bar).
+- **Two lines**: Remove beside the name, then the seed, the status and the paid tick with its time. **Compact, as the league's own small controls**: 36px pills, the status a filter pill. Rejected: the site's standard 52px controls on two lines of their own.
+- On a narrow phone **the paid tick and its time drop to a line of their own**. Rejected: moving the time into the line under the name.
+- The heading stays **the tournament's name**. Rejected: the page's name with the tournament under it, as Details.
+- **Who runs it** gets the same rows.
+
+*Why:* six columns in a phone's width cut the status to "C" and pushed Remove off the edge; the league's public pages are the site's settled look for lists of people.
+*Claude's, for UV to correct:*
+- The status pill shows the value alone ("Confirmed ▾"), no grey "Status" inside, as in the preview UV chose.
+- On a PC the panel's columns are at least 24rem (two at 1440), as the league's match results; the league's 16rem gave four squeezed columns.
+- The new rules are named in the league's `ls-` family in league.css, for the league Manage pages to use.
+*Example:* Kay, confirmed and paid yesterday. Her row reads "K · Kay / Kayleigh Abrahams · [Remove]", then "‹ 4 › · Confirmed ▾", then "✓ Paid Yesterday 15:28" on its own line on a phone, or on the same line on a PC.
+*So:* `docs/systems/tournaments.md`, "The Entrants and Who runs it lists in the league's look"; `docs/ui-list.md` item 16; `docs/STATUS.md` §1 4dw.

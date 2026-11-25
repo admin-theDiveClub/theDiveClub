@@ -46,22 +46,28 @@
 
 <div id="search-results"></div>
 
-<h2>In this tournament <span class="badge" id="entrant-count" hidden></span></h2>
-
-<div class="table-scroll">
-	<table class="tdc-table" id="entrant-table" hidden>
-		<thead>
-			<tr>
-				<th class="num">Seed</th>
-				<th>Player</th>
-				<th>Status</th>
-				<th>Paid</th>
-				<th>When</th>
-				<th></th>
-			</tr>
-		</thead>
-		<tbody id="entrant-rows"></tbody>
-	</table>
+{% comment %}
+	The list in the league's look (UV, 25 Nov; docs/ui-list.md item 16): a
+	section each for Confirmed, Interested and Withdrawn, as the poster splits
+	them, each a league heading with its count over one sunken panel of rows
+	(league.css's .ls-waiting, as the Season tab's Asked to join). A row is the
+	person, then their seed, status, paid tick and Remove on the line under.
+	All three sit in #entrant-rows so one listener hears every row. An empty
+	section is hidden.
+{% endcomment %}
+<div id="entrant-rows">
+	<section class="en-group" data-status="confirmed" hidden>
+		<h2 class="lj-heading">Confirmed <span class="badge"></span></h2>
+		<div class="ls-waiting en-list"></div>
+	</section>
+	<section class="en-group" data-status="interested" hidden>
+		<h2 class="lj-heading">Interested <span class="badge"></span></h2>
+		<div class="ls-waiting en-list"></div>
+	</section>
+	<section class="en-group" data-status="withdrawn" hidden>
+		<h2 class="lj-heading">Withdrawn <span class="badge"></span></h2>
+		<div class="ls-waiting en-list"></div>
+	</section>
 </div>
 
 <div class="empty" id="entrant-empty" hidden>Nobody has entered yet. Search above to add the first player.</div>
@@ -104,18 +110,11 @@
 	<div id="official-results"></div>
 </div>
 
-<div class="table-scroll">
-	<table class="tdc-table" id="official-table" hidden>
-		<thead>
-			<tr>
-				<th>Person</th>
-				<th>Role</th>
-				<th></th>
-			</tr>
-		</thead>
-		<tbody id="official-rows"></tbody>
-	</table>
-</div>
+{% comment %}
+	The same rows as the entrants (UV, 25 Nov): the person with their role
+	under the name, and Remove.
+{% endcomment %}
+<div class="ls-waiting en-list" id="official-rows" hidden></div>
 </div>
 
 <div class="status" id="en-status"></div>

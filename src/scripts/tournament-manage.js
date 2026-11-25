@@ -36,8 +36,7 @@ TDCTournamentNav.panel('entrants', () => {
 	const els = {
 		name: el('en-name'), meta: el('en-meta'),
 		search: el('entrant-search'), results: el('search-results'),
-		table: el('entrant-table'), rows: el('entrant-rows'),
-		count: el('entrant-count'), empty: el('entrant-empty'),
+		rows: el('entrant-rows'), empty: el('entrant-empty'),
 		seedActions: el('seed-actions'),
 		seedRandom: el('seed-random'), seedClear: el('seed-clear'),
 		entrySettings: el('entry-settings'),
@@ -45,7 +44,7 @@ TDCTournamentNav.panel('entrants', () => {
 		status: el('en-status'),
 		officialAdd: el('official-add'), officialSearch: el('official-search'),
 		officialRole: el('official-role'), officialResults: el('official-results'),
-		officialTable: el('official-table'), officialRows: el('official-rows')
+		officialRows: el('official-rows')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -171,7 +170,8 @@ TDCTournamentNav.panel('entrants', () => {
 		input.min = 1;
 		input.value = e.seed == null ? '' : e.seed;
 		input.placeholder = '–';
-		input.style.width = '3.5rem';
+		// No width of its own: the stepper sizes it to its number (25 Nov;
+		// 3.5rem made it 155px wide, crowding the status out of its line).
 		input.dataset.entrant = e.entrant_id;
 		input.dataset.action = 'seed';
 		input.disabled = readOnly || !inTheDraw(e);
@@ -179,51 +179,103 @@ TDCTournamentNav.panel('entrants', () => {
 		return input;
 	}
 
+	// A person as the league pages draw one (league-season.js's personLink,
+	// league.css's .person; UV, 25 Nov): their picture or initials, the display
+	// name, and a line under it (text, or a fragment holding a full name). A
+	// link to their profile when they have an account; a walk-in has no
+	// profile, so stays plain (docs/ui-list.md item 2).
+	function person(playerId, linked, name, avatarPath, sub) {
+		const box = node(linked ? 'a' : 'span', 'person');
+		if (linked) box.href = '/players/?p=' + encodeURIComponent(playerId);
+
+		const pic = node('span', 'person-pic');
+		const url = TDC.pictureUrl('player-avatars', avatarPath);
+		if (url) {
+			const img = document.createElement('img');
+			img.src = url;
+			img.alt = '';
+			img.loading = 'lazy';
+			pic.append(img);
+		} else {
+			pic.textContent = (name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+		}
+
+		const names = node('span', 'person-names');
+		names.append(node('span', 'person-name', name));
+		const hasSub = typeof sub === 'string' ? !!sub : !!(sub && sub.childNodes.length);
+		if (hasSub) {
+			const line = node('span', 'person-sub');
+			line.append(sub);
+			names.append(line);
+		}
+		box.append(pic, names);
+		return box;
+	}
+
+	// One entrant, on two lines (UV, 25 Nov): the person with Remove beside
+	// them, then the seed, the status and the paid tick with "Paid" and its
+	// time, compact as the league's own controls (league.css's .ls-controls).
+	// On a narrow phone the tick and its time drop to a line of their own.
 	function row(e) {
-		const tr = document.createElement('tr');
+		const card = node('div', 'ls-wait ls-ask en-row');
 
-		const seed = node('td', 'num');
-		seed.append(seedCell(e));
+		// Under the name: the full name when it says more than the display
+		// name (the surname lighter, TDC.fullNameOf), and Walk-in. A walk-in
+		// cannot be told anything — no account, no notification — and that is
+		// the thing a TD needs to know when the draw goes out.
+		const sub = document.createDocumentFragment();
+		const full = [e.first_name, e.last_name].map((x) => (x || '').trim()).filter(Boolean).join(' ');
+		if (full && full !== e.display_name) sub.append(TDC.fullNameOf(e.first_name, e.last_name));
+		if (!e.has_account) sub.append(sub.childNodes.length ? ' · Walk-in' : 'Walk-in');
 
-		const who = document.createElement('td');
-		who.append(node('span', null, e.display_name));
-		const sub = [];
-		// A walk-in cannot be told anything — no account, no notification — and
-		// that is the thing a TD needs to know when the draw goes out.
-		if (!e.has_account) sub.push('Walk-in');
-		if (e.full_name && e.full_name !== e.display_name) sub.unshift(e.full_name);
-		if (sub.length) who.append(node('span', 'sub', sub.join(' · ')));
+		const controls = node('div', 'ls-controls');
+		// Withdrawn entrants are never seeded, so they have no seed box.
+		if (inTheDraw(e)) controls.append(seedCell(e));
+		// The status as a league filter's pill (.drop-joined, UV, 25 Nov:
+		// "more compact… look at the league pages"), the value alone in it;
+		// the select's aria-label names it for a screen reader.
+		const statusField = node('div', 'field drop-joined');
+		statusField.append(statusCell(e));
+		controls.append(statusField);
 
-		const status = document.createElement('td');
-		status.append(statusCell(e));
+		const when = paidWhen(e);
+		const paid = node('span', 'ls-paid');
+		paid.append(paidCell(e), node('span', 'ls-paid-when', when ? 'Paid ' + when : 'Paid'));
 
-		const paid = document.createElement('td');
-		paid.append(paidCell(e));
-
-		const actions = document.createElement('td');
 		const remove = node('button', 'btn btn-danger btn-sm', 'Remove');
 		remove.type = 'button';
 		remove.dataset.entrant = e.entrant_id;
 		remove.dataset.action = 'remove';
 		remove.dataset.name = e.display_name;
 		remove.disabled = readOnly;
-		actions.append(remove);
 
-		tr.append(seed, who, status, paid, node('td', 'sub', paidWhen(e)), actions);
-		return tr;
+		controls.append(paid);
+		card.append(person(e.player_id, e.has_account, e.display_name, e.avatar_path, sub), remove, controls);
+		return card;
 	}
 
+	// A section each for Confirmed, Interested and Withdrawn (UV, 25 Nov),
+	// each with its count; an empty one hidden. Within a section the rows
+	// keep the server's order (seed, then name).
 	function renderEntrants() {
 		const playing = entrants.filter(inTheDraw).length;
 
-		els.table.hidden = !entrants.length;
 		els.empty.hidden = !!entrants.length;
 		els.seedActions.hidden = playing < 2 || readOnly;
 
-		els.count.hidden = !entrants.length;
-		els.count.textContent = playing === 1 ? '1 in the draw' : playing + ' in the draw';
+		for (const group of els.rows.querySelectorAll('.en-group')) {
+			const these = entrants.filter((e) => e.status === group.dataset.status);
+			group.hidden = !these.length;
+			group.querySelector('.badge').textContent = String(these.length);
+			group.querySelector('.en-list').replaceChildren(...these.map(row));
+		}
 
-		els.rows.replaceChildren(...entrants.map(row));
+		// A status with no section would leave somebody off the page.
+		const odd = entrants.filter((e) => !STATUS[e.status]);
+		if (odd.length) {
+			TDC.error(AREA, 'an entrant has a status this page has no section for, so they are not shown: '
+				+ odd.map((e) => e.display_name + ' (' + e.status + ')').join(', '), null, els.status);
+		}
 	}
 
 	// ─────────────────────────────────────────────────────────────────
@@ -303,26 +355,26 @@ TDCTournamentNav.panel('entrants', () => {
 		return true;
 	}
 
+	// The same row as an entrant's (UV, 25 Nov): the person with their role
+	// under the name, and Remove beside it. Officials always have an account,
+	// so the name always opens the profile. tdc_competition_officials sends
+	// no picture path, so it is initials for now.
 	function officialRow(o) {
-		const tr = document.createElement('tr');
-		tr.append(node('td', null, o.display_name));
-		tr.append(node('td', null, o.role_name));
-
-		const actions = document.createElement('td');
+		const card = node('div', 'ls-wait en-row');
+		card.append(person(o.player_id, true, o.display_name, null, o.role_name));
 		if (!readOnly) {
 			const remove = node('button', 'btn btn-danger btn-sm', 'Remove');
 			remove.type = 'button';
 			remove.dataset.role = o.role_id;
 			remove.dataset.name = o.display_name;
 			remove.dataset.what = o.role_name;
-			actions.append(remove);
+			card.append(remove);
 		}
-		tr.append(actions);
-		return tr;
+		return card;
 	}
 
 	function renderOfficials() {
-		els.officialTable.hidden = !officials.length;
+		els.officialRows.hidden = !officials.length;
 		els.officialRows.replaceChildren(...officials.map(officialRow));
 	}
 
