@@ -10,6 +10,10 @@
 // comes back here. The cart bar follows at the foot and opens the cart over the page: lines
 // with their picture, − and +, a product switched off since marked No longer available and
 // left out of the total.
+// Moving (UV, 25 Nov): the sheet and the cart rise from the foot and sink away (TDC.cardOpen,
+// cardClose); in the sheet each screen slides across, a product's card in from the right and
+// the list back from the left, the sheet growing or shrinking to it (TDC.cardTurn); the cart
+// grows or shrinks as its lines change (TDC.cardResize). Back is on every screen of the sheet.
 // The cart is the checkout (Stage 3; canvas artboard 3; one tap from the shop): Pay with
 // credits (your balance shown here only, and what it leaves; short, it offers Add credits over
 // the page) or at the club (paid at hand-over), where to collect, the total, Place order
@@ -338,10 +342,16 @@ TDCLoader.hold((async () => {
 		const status = make('div', 'status');
 		sheetDlg.append(head, body, status);
 		document.body.appendChild(sheetDlg);
-		sheetEls = { back, title, body, status };
-		back.addEventListener('click', () => { sheetProd = null; drawSheet(); });
-		close.addEventListener('click', () => sheetDlg.close());
-		sheetDlg.addEventListener('click', (e) => { if (e.target === sheetDlg) sheetDlg.close(); });
+		sheetEls = { back, title, body, status, page: null };
+		// Back on every screen (UV, 25 Nov): a product's card goes back to its category's list;
+		// the list, or the card of a category's only product, goes back to the category cards
+		// on the page, closing the sheet.
+		back.addEventListener('click', () => {
+			if (sheetProd && sheetCat.products.length > 1) { sheetProd = null; drawSheet(-1); }
+			else TDC.cardClose(sheetDlg);
+		});
+		close.addEventListener('click', () => TDC.cardClose(sheetDlg));
+		sheetDlg.addEventListener('click', (e) => { if (e.target === sheetDlg) TDC.cardClose(sheetDlg); });
 	}
 
 	function openSheet(cat) {
@@ -350,18 +360,28 @@ TDCLoader.hold((async () => {
 		sheetProd = cat.products.length === 1 ? cat.products[0] : null;
 		pickQty = sheetProd ? (qtyOf(sheetProd.id) || 1) : 1;
 		TDC.status(sheetEls.status, '', '');
-		drawSheet();
-		sheetDlg.showModal();
+		drawSheet(0);
+		TDC.cardOpen(sheetDlg);
 	}
 
-	function drawSheet() {
-		if (sheetProd) drawProduct(sheetProd);
-		else drawProducts(sheetCat);
+	// dir: 1 going on to a product, -1 back to the list, 0 opening (no slide).
+	function drawSheet(dir) {
+		if (sheetProd) drawProduct(sheetProd, dir);
+		else drawProducts(sheetCat, dir);
+	}
+
+	// Each screen is a page of its own in the sheet's body, so the old one can slide out as the
+	// new one slides in (UV, 25 Nov; TDC.cardTurn).
+	function showPage(page, dir) {
+		const old = sheetEls.page;
+		const turn = TDC.cardTurn(sheetDlg, old);
+		sheetEls.body.append(page);
+		sheetEls.page = page;
+		turn(page, dir, (gone) => gone.remove());
 	}
 
 	// The category's products as rows; a row opens its card.
-	function drawProducts(cat) {
-		sheetEls.back.hidden = true;
+	function drawProducts(cat, dir) {
 		sheetEls.title.textContent = cat.name;
 		const list = make('ul', 'shop-list');
 		list.append(...cat.products.map((p) => {
@@ -383,18 +403,19 @@ TDCLoader.hold((async () => {
 				sheetProd = p;
 				pickQty = qtyOf(p.id) || 1;
 				TDC.status(sheetEls.status, '', '');
-				drawSheet();
+				drawSheet(1);
 			});
 			li.append(b);
 			return li;
 		}));
-		sheetEls.body.replaceChildren(list);
+		const page = make('div', 'shop-sheet-page');
+		page.append(list);
+		showPage(page, dir);
 	}
 
 	// One product's card: the picture large, the price, how it is collected, a quantity and
 	// Add to cart (Update cart once in it; down to 0 it becomes Remove from cart).
-	function drawProduct(p) {
-		sheetEls.back.hidden = sheetCat.products.length === 1;
+	function drawProduct(p, dir) {
 		sheetEls.title.textContent = sheetCat.name;   // the product's own name is under its picture
 		const had = qtyOf(p.id);
 		const model = MODELS[p.id] ? modelHero(p) : null;
@@ -434,13 +455,15 @@ TDCLoader.hold((async () => {
 			if (!ok || !sheetOpen()) return;
 			// Back to the category's list, which shows what is now in the cart; a category of
 			// one has no list, so the sheet closes.
-			if (sheetCat.products.length === 1) sheetDlg.close();
-			else { sheetProd = null; drawSheet(); }
+			if (sheetCat.products.length === 1) TDC.cardClose(sheetDlg);
+			else { sheetProd = null; drawSheet(-1); }
 		});
 		draw();
 		const words = make('div', 'shop-prod-words');
 		words.append(name, cost, how);
-		sheetEls.body.replaceChildren(hero, words, row, go);
+		const page = make('div', 'shop-sheet-page');
+		page.append(hero, words, row, go);
+		showPage(page, dir);
 		if (model) model.show();
 	}
 
@@ -535,11 +558,15 @@ TDCLoader.hold((async () => {
 		cartDlg.append(head, lines, pay, total, go, status);
 		document.body.appendChild(cartDlg);
 		cartEls = { lines, pay, wayCredits, wayClub, payNote, addCredits, collect, total, go, status };
-		close.addEventListener('click', () => cartDlg.close());
-		cartDlg.addEventListener('click', (e) => { if (e.target === cartDlg) cartDlg.close(); });
+		close.addEventListener('click', () => TDC.cardClose(cartDlg));
+		cartDlg.addEventListener('click', (e) => { if (e.target === cartDlg) TDC.cardClose(cartDlg); });
 	}
 
-	function drawCart() {
+	// The cart grows or shrinks to what it now holds (UV, 25 Nov; TDC.cardResize).
+	function drawCart() { TDC.cardResize(cartDlg, drawCartNow); }
+	function drawPay() { TDC.cardResize(cartDlg, drawPayNow); }
+
+	function drawCartNow() {
 		const rows = (cart ? cart.items : []).map((p) => {
 			const li = make('li', 'shop-cart-line' + (p.active ? '' : ' is-off'));
 			const words = make('div', 'shop-words');
@@ -568,7 +595,7 @@ TDCLoader.hold((async () => {
 		const t = cart ? cart.total_credits : 0;
 		const r = rand(t);
 		cartEls.total.replaceChildren(make('span', null, 'Total'), make('span', 'shop-cart-sum', `${t} credits` + (r ? ` · ${r}` : '')));
-		drawPay();
+		drawPayNow();
 	}
 
 	// ─── Checkout: how to pay, where to collect, Place order ───
@@ -577,7 +604,7 @@ TDCLoader.hold((async () => {
 	let placeKey = null;    // one per attempt: a retry after a lost answer can't place twice
 	let placing = false;
 
-	function drawPay() {
+	function drawPayNow() {
 		const live = cart ? cart.items.filter((p) => p.active) : [];
 		const t = cart ? cart.total_credits : 0;
 		const known = balance != null;
@@ -653,7 +680,7 @@ TDCLoader.hold((async () => {
 			}
 			placeKey = null;
 			payWith = null;
-			cartDlg.close();
+			TDC.cardClose(cartDlg);
 			TDCOrder.open(data);
 			TDC.flushEmails();
 			if (data.pay_with === 'credits') window.dispatchEvent(new CustomEvent('tdc:credits-changed'));
@@ -674,7 +701,7 @@ TDCLoader.hold((async () => {
 		balance = null;
 		payWith = null;
 		drawCart();
-		cartDlg.showModal();
+		TDC.cardOpen(cartDlg);
 		loadBalance();
 	});
 

@@ -332,6 +332,8 @@
   --cc-code-size: 1.75rem;      /* the code under it */
   --cc-thumb: 1.75rem;          /* the slider's knob */
   --cc-track: 0.6rem;           /* the slider's groove */
+  --cc-rise: 0.35s;             /* the card rising from the foot as it opens, sinking as it closes (TDC.cardOpen) */
+  --cc-turn: 0.35s;             /* its screens sliding across, and it growing or shrinking to them (TDC.cardTurn) */
   /* The QR is dark on light in both themes: a camera reads an inverted one badly. */
   --qr-ink: #202020;
   --qr-paper: #f4e8d2;

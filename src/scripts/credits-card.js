@@ -226,7 +226,15 @@ const TDCCredits = (() => {
 		again.addEventListener('click', () => showStep('amount'));
 	}
 
+	// The new step slides in, from the right going on, from the left going back, and the card
+	// grows or shrinks to it (UV, 25 Nov; TDC.cardTurn). The slide is measured once whoever
+	// called this has filled the step in (showCode fills the code after), so a microtask on.
 	function showStep(step) {
+		const steps = [els.amountStep, els.payStep, els.codeStep];
+		const old = steps.find((s) => !s.hidden) || null;
+		const now = steps[['amount', 'pay', 'code'].indexOf(step)];
+		const turn = TDC.cardTurn(dlg, old);
+		const across = dlg.open ? Math.sign(steps.indexOf(now) - steps.indexOf(old)) : 0;   // opening: it rises, nothing slides
 		els.amountStep.hidden = step !== 'amount';
 		els.payStep.hidden = step !== 'pay';
 		els.codeStep.hidden = step !== 'code';
@@ -235,6 +243,7 @@ const TDCCredits = (() => {
 		els.title.textContent = step === 'amount' ? 'Add credits' : step === 'pay' ? 'Checkout' : 'Pay at the club';
 		TDC.status(els.status, '', '');
 		if (step !== 'code') stopPoll();
+		queueMicrotask(() => turn(now, across));
 	}
 
 	// ─── 1. The amount ───
@@ -454,7 +463,7 @@ const TDCCredits = (() => {
 		}
 		const wasWaiting = topUp.state === 'waiting';
 		topUp = now;
-		drawState(now);
+		TDC.cardResize(dlg, () => drawState(now));   // paid: the QR goes, and the card shrinks to it
 		if (wasWaiting && now.state === 'paid') window.dispatchEvent(new CustomEvent('tdc:credits-changed'));
 	}
 
@@ -487,7 +496,7 @@ const TDCCredits = (() => {
 		els.price.textContent = '';
 		els.save.textContent = '';
 		showStep(opts.topUp ? 'code' : 'amount');
-		if (!dlg.open) dlg.showModal();
+		TDC.cardOpen(dlg);
 
 		const session = await TDC.getSession(AREA);
 		if (mine !== opening) return;
@@ -531,7 +540,7 @@ const TDCCredits = (() => {
 
 	function shut() {
 		stopPoll();
-		if (dlg && dlg.open) dlg.close();
+		if (dlg) TDC.cardClose(dlg);
 	}
 
 	// loadQr is shared with the order card (scripts/shop-order.js), so the QR maker loads once.

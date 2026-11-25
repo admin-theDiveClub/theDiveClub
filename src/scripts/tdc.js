@@ -894,6 +894,143 @@ const TDC = (() => {
 		location.reload();
 	}
 
+	// ─── A card over the page (.cc, credits-card.css; UV, 25 Nov) ───
+	// It rises from the foot as it opens and sinks as it closes (Escape and a phone's back
+	// gesture too); between its screens the new one slides across, in from the right going on
+	// and from the left going back, while the card grows or shrinks to it; and when what is on
+	// it changes in place (a line taken out of the cart), it grows or shrinks to that.
+	// The product sheet, the cart and the Add credits card use these:
+	//   cardOpen(dlg)                    shows it, rising (or rising again if it was sinking)
+	//   cardClose(dlg)                   sinks and closes it; answers once closed
+	//   const turn = cardTurn(dlg, old)  before changing screens: where the card and the old
+	//   turn(now, dir, gone)             screen stand; after: slide old out and now in, dir 1
+	//                                    going on, -1 back, 0 not at all; gone(old) once old
+	//                                    has left (remove it), never if old is now
+	//   cardResize(dlg, change)          change() redraws the card; its height follows
+	// Times --cc-rise and --cc-turn (variables.css). With less motion, all of it simply happens.
+	const CARD_EASE = 'cubic-bezier(0.2, 0.7, 0.3, 1)';
+	function cardMs(dlg, token) {
+		const less = typeof TDCPrefs !== 'undefined' ? TDCPrefs.lessMotion : matchMedia('(prefers-reduced-motion: reduce)').matches;
+		if (less) return 0;
+		const v = getComputedStyle(dlg).getPropertyValue(token).trim();
+		const n = parseFloat(v);
+		return isNaN(n) ? 0 : v.endsWith('ms') ? n : n * 1000;
+	}
+	// The dim round the card fades with it, where the browser can animate it.
+	function cardDim(dlg, from, to, opts) {
+		try { return dlg.animate([{ opacity: from }, { opacity: to }], Object.assign({ pseudoElement: '::backdrop' }, opts)); }
+		catch (err) { return null; }
+	}
+	// How far down it starts and ends: just under the bottom of the screen.
+	const cardBelow = (dlg) => Math.max(0, window.innerHeight - dlg.getBoundingClientRect().top);
+
+	function cardOpen(dlg) {
+		if (!dlg.tdcCard) {
+			dlg.tdcCard = true;
+			dlg.addEventListener('cancel', (e) => { e.preventDefault(); cardClose(dlg); });
+		}
+		const sinking = dlg.tdcSink;
+		if (sinking) {
+			// Opened again while it sinks: it rises again.
+			dlg.tdcSink = null;
+			for (const a of sinking) if (a) a.cancel();
+		} else if (dlg.open) {
+			return;
+		} else {
+			dlg.showModal();
+		}
+		const ms = cardMs(dlg, '--cc-rise');
+		if (!ms) return;
+		dlg.animate([{ transform: `translateY(${cardBelow(dlg)}px)` }, { transform: 'none' }], { duration: ms, easing: CARD_EASE });
+		cardDim(dlg, 0, 1, { duration: ms, easing: 'ease-out' });
+	}
+
+	function cardClose(dlg) {
+		if (!dlg.open) return Promise.resolve();
+		if (dlg.tdcSink) return dlg.tdcSinkDone;
+		if (dlg.tdcTurn) dlg.tdcTurn();
+		const ms = cardMs(dlg, '--cc-rise');
+		if (!ms) { dlg.close(); return Promise.resolve(); }
+		const opts = { duration: ms, easing: 'cubic-bezier(0.4, 0, 1, 1)', fill: 'forwards' };
+		const sink = dlg.animate([{ transform: 'none' }, { transform: `translateY(${cardBelow(dlg)}px)` }], opts);
+		const anims = dlg.tdcSink = [sink, cardDim(dlg, 1, 0, opts)];
+		return dlg.tdcSinkDone = sink.finished.then(() => {
+			if (dlg.tdcSink !== anims) return;   // opened again meanwhile
+			dlg.tdcSink = null;
+			dlg.close();
+			for (const a of anims) if (a) a.cancel();
+		}, () => {});
+	}
+
+	function cardTurn(dlg, old) {
+		if (dlg.tdcTurn) dlg.tdcTurn();   // a turn still under way ends where it was going
+		const ms = cardMs(dlg, '--cc-turn');
+		const from = dlg.offsetHeight;
+		const dr = dlg.getBoundingClientRect();
+		const r = old ? old.getBoundingClientRect() : null;
+		return (now, dir, gone) => {
+			if (!old || old === now) return;
+			if (!ms || !dir || !dlg.open || dlg.tdcSink) { if (gone) gone(old); return; }
+			// The old screen stays where it stood, out of the flow, while it slides away.
+			const was = { hidden: old.hidden, style: old.getAttribute('style') };
+			old.hidden = false;
+			old.inert = true;
+			Object.assign(old.style, {
+				position: 'absolute', top: (r.top - dr.top) + 'px', left: (r.left - dr.left) + 'px',
+				width: r.width + 'px', margin: '0', pointerEvents: 'none'
+			});
+			dlg.scrollTop = 0;
+			dlg.style.boxSizing = 'border-box';
+			const to = dlg.offsetHeight;
+			const across = dlg.clientWidth;
+			dlg.style.overflow = 'hidden';   // both screens are cut off at the card's edge
+			const ease = { duration: ms, easing: CARD_EASE };
+			const anims = [
+				old.animate([{ transform: 'none' }, { transform: `translateX(${-dir * across}px)` }], ease),
+				now.animate([{ transform: `translateX(${dir * across}px)` }, { transform: 'none' }], ease)
+			];
+			if (to !== from) anims.push(dlg.animate([{ height: from + 'px' }, { height: to + 'px' }], ease));
+			let over = false;
+			const end = () => {
+				if (over) return;
+				over = true;
+				if (dlg.tdcTurn === end) dlg.tdcTurn = null;
+				for (const a of anims) a.cancel();
+				old.hidden = was.hidden;
+				old.inert = false;
+				if (was.style === null) old.removeAttribute('style');
+				else old.setAttribute('style', was.style);
+				dlg.style.overflow = '';
+				dlg.style.boxSizing = '';
+				if (gone) gone(old);
+			};
+			dlg.tdcTurn = end;
+			anims[0].finished.then(end, () => {});
+		};
+	}
+
+	function cardResize(dlg, change) {
+		if (!dlg || !dlg.open || dlg.tdcTurn || dlg.tdcSink) { change(); return; }
+		const ms = cardMs(dlg, '--cc-turn');
+		const from = dlg.offsetHeight;   // mid-way, if it was already growing
+		if (dlg.tdcResize) { dlg.tdcResize.cancel(); dlg.tdcResize = null; }
+		change();
+		if (!ms) return;
+		dlg.style.boxSizing = 'border-box';
+		const to = dlg.offsetHeight;
+		if (to === from) { dlg.style.boxSizing = ''; dlg.style.overflow = ''; return; }
+		dlg.style.overflow = 'hidden';
+		const a = dlg.tdcResize = dlg.animate([{ height: from + 'px' }, { height: to + 'px' }], { duration: ms, easing: CARD_EASE });
+		const end = () => {
+			if (dlg.tdcResize !== a) return;
+			dlg.tdcResize = null;
+			dlg.style.overflow = '';
+			dlg.style.boxSizing = '';
+		};
+		a.finished.then(end, end);
+	}
+
 	return { shortUrl, shareButton, error, status, freshReload, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, flushEmails, queued, writer, readEarly, read, shortKey, shortRead,
-		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, fullName, fullNameOf, leaguePic, tournamentPic, teamPic, playerTeamPic, SHAPES, venueNames, venueLink, venueTags, venueMark, venueHeading, venueFact, liveSnapshot, liveFade, runName, runWords, leagueLine };
+		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, fullName, fullNameOf, leaguePic, tournamentPic, teamPic, playerTeamPic, SHAPES, venueNames, venueLink, venueTags, venueMark, venueHeading, venueFact, liveSnapshot, liveFade, runName, runWords, leagueLine,
+		cardOpen, cardClose, cardTurn, cardResize };
 })();
