@@ -3372,3 +3372,9 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to correct:* only tournaments set Visible to public; no full names, surnames or override reasons signed out; signed out opens on Bracket unless the device chose Rounds; a tournament not public still asks the visitor to sign in.
 *So:* `docs/systems/tournaments.md`, "The draw open to the public".
 *Touches:* migration `20261127181750_public_draw.sql`, `supabase/tests/115_public_draw.test.sql`, `059_venues_shown`, `069_league_public_reads`, `src/scripts/tournament-bracket.js`
+
+## 2026-11-27 — The draw stops following once a match is started; it never grows by itself
+
+*Decided by UV* (during Basil's comp): "Matches that are started should not be changed now. I need to add a player in a specific spot and now it's force redrawing all players." **This reverses** two parts of "The draw follows the confirmed players" the same evening: a full draw no longer grows by itself (the player waits for the director), and following stops at the first started match rather than the first played one.
+*So:* `docs/systems/tournaments.md`, "The draw stops following once a match is started…".
+*Touches:* migration `20261127185136_draw_follow_stops_at_start.sql`, `supabase/tests/114_draw_follows_entrants.test.sql`, `src/_includes/tournament/draw.html`
