@@ -155,7 +155,6 @@ TDCTournamentNav.panel('draw', () => {
 	let roundsStale = false;         // a redraw held back while a score is being entered
 	let holding = false;             // a finger or the mouse down on a score's chevron
 	const scoreQueued = new Set();   // fixtures with a score save waiting its turn
-	const scoreTouched = new Map();  // fixture -> the sides whose score the director has changed on this visit
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -1335,13 +1334,12 @@ TDCTournamentNav.panel('draw', () => {
 	// not frames. A fixture with no match yet gets one first. Typing a number
 	// and pressing Enter moves to the other player's score in that match.
 	//
-	// A player goes through only once the director has entered both scores
-	// (UV, 27 Nov: "if he updates one score and then does nothing on the next
-	// input, then no auto push"). Until then each save is a draft, shown with
-	// "Not published" and its Publish button; once both sides have been
-	// changed on this visit, each save is final: published, the match ended,
-	// the winner moved on (20261127154848). A typed 3 then 5 for a 3–5 used
-	// to publish 3–0 first and send the wrong player through.
+	// A score saved here is always a draft (20261127154848): shown with "Not
+	// published", nobody moved. The winner goes through only when the director
+	// presses Publish or Lock it on the match (UV, 27 Nov, later: "only auto
+	// move when the TD locks the scorecard"; until then a save became final
+	// once both scores had been changed). A typed 3 then 5 for a 3–5 once
+	// published 3–0 first and sent the wrong player through.
 	// The rest of a match's buttons are the bracket's (controls), less Enter
 	// score, which the steppers replace; the round's Rules and + Match sit
 	// at its top.
@@ -1639,10 +1637,12 @@ TDCTournamentNav.panel('draw', () => {
 			if (!(home >= 0) || !(away >= 0)) return { error: new Error('A score needs two numbers, neither of them negative.') };
 			const m = await matchFor(fixtureId);
 			if (m.error) return m;
-			const both = (scoreTouched.get(fixtureId) || new Set()).size === 2;
+			// Always a draft (UV, 27 Nov: "only auto move when the TD locks the
+			// scorecard"): saved and shown, nobody moved, until Publish or Lock
+			// it on the match (tdc_approve_card publishes it).
 			return supabaseClient.rpc('tdc_set_match_override', {
 				p_match_id: m.data, p_home_score: home, p_away_score: away, p_reason: ROUNDS_REASON,
-				p_mode: both ? 'final' : 'draft'
+				p_mode: 'draft'
 			});
 		});
 	}
@@ -1685,10 +1685,7 @@ TDCTournamentNav.panel('draw', () => {
 	els.rounds.addEventListener('change', (e) => {
 		const input = e.target.closest('input[data-score]');
 		if (input) {
-			const fid = input.dataset.fixture;
-			if (!scoreTouched.has(fid)) scoreTouched.set(fid, new Set());
-			scoreTouched.get(fid).add(input.dataset.score);
-			saveRoundScore(fid);
+			saveRoundScore(input.dataset.fixture);
 			return;
 		}
 		const pick = e.target.closest('select[data-action="lag"]');

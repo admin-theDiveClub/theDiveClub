@@ -3399,3 +3399,9 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to correct:* Fit tries both flows and keeps the larger text, changing the flow toggle (until now Fit kept every toggle); leftover width no longer goes into the gaps between rounds; the card widens while the bracket shows rather than the bracket reaching out of it; a reader's column with nothing left after hiding byes is not drawn.
 *So:* `docs/systems/tournaments.md`, "Fit picks the layout with the largest text…".
 *Touches:* `src/scripts/tournament-bracket.js`, `src/stylesheets/bracket.css`
+
+## 2026-11-27 — A score entered in Rounds moves nobody until it is locked
+
+*Decided by UV:* "only auto move when TD locks the scorecard"; "changes should still be saved until lock". **Reverses** the same evening's "push a player through automatically when both scores are in": every change is saved as a draft, and only Publish / Lock it moves the winner on.
+*So:* `docs/systems/tournaments.md`, "A score entered in Rounds moves nobody until the director locks it".
+*Touches:* `src/scripts/tournament-bracket.js`

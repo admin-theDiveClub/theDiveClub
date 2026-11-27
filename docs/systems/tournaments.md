@@ -619,3 +619,9 @@ UV, 22 Oct: "progression arrows between each round … the arrows should be smar
 - **The layout:** **`fitAll` tries the draw in order and from the outside in and keeps the larger text** (in rows the flow is left as chosen; equal, in order is kept). On a wide, short screen the outside-in draw holds half the cards to a column. The flow toggle shows the choice.
 - **An empty column is not drawn** (`visibleOf` in `render()`): a reader's first round without its byes, where nothing is left in a half (outside in) or in the round (in order), has no column and no heading.
 - Measured (17 players, a draw of 32, signed out): 1450 × 740 outside in, text 87% (in order fitted 50–60%); 1920 × 1080, 128%; 2560 × 1440, 183%; each between the bars, 93–96% of the width, no overlaps, every arrow drawn.
+
+### A score entered in Rounds moves nobody until the director locks it (27 Nov, page only)
+
+- **UV:** "undo the autosave on matches when I change the score… only auto move when TD locks the scorecard", and "changes should still be saved until lock". **Where it differs from "Bracket · Rounds" above, this wins.**
+- Every stepper press still saves (`saveRoundScore`), but **always as a draft** (`p_mode: 'draft'`): the score shows with **Not published**, nobody goes through, the match is not ended. **Publish** (or **Lock it**) on the match publishes it (`tdc_approve_card`, which publishes a draft score, 20261127154848): the match ends and the winner moves on. The "both scores changed this visit" rule (`scoreTouched`) is gone. A change to a published match's score takes the result back until it is locked again. `final` stays in the database for any later use; nothing on the site sends it now.
+- Driven headless at 420 on the local copy: 3 then 5 saved 3–5, Not published, nobody moved; Publish made it complete and put the winner into the semi-final; no console errors.
