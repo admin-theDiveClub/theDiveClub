@@ -2321,7 +2321,6 @@ TDCTournamentNav.panel('draw', () => {
 
 				const from = els.bracket.querySelector(`[data-fixture="${feeder}"]`);
 				const card = els.bracket.querySelector(`[data-fixture="${f.fixture_id}"]`);
-				const slot = card && card.querySelector(`[data-side="${which}"]`);
 				if (!from || !card) continue;
 
 				// Where the arrow leaves and arrives follows the view (UV,
@@ -2332,41 +2331,64 @@ TDCTournamentNav.panel('draw', () => {
 				// by themselves.
 				const a = from.getBoundingClientRect();
 				const b = card.getBoundingClientRect();
-				const s = slot ? slot.getBoundingClientRect() : b;
 				const across = view.rounds !== 'rows';
-				// An arrow leaves on the side of the slot it feeds (UV, 5 Nov,
-				// for every view the card allows it in): a third of the way
-				// along the exit edge for a home slot, two thirds for an away
-				// one, as arrows arrive. So the winner and the loser of a
-				// semi-final, or two arrows out of one wide card, never start
-				// from one point and cross.
-				const out = which === 'home' ? 1 / 3 : 2 / 3;
+				const source0 = which === 'home' ? f.home_source : f.away_source;
+				const feederFx = fixtures.find((x) => x.fixture_id === feeder);
+				// Where it leaves and arrives (UV, 28 Nov): out of the feeder
+				// from the line between its two players, or from the winner's
+				// side once the match has one (the loser's for a loser_of
+				// arrow); into the card at the player it feeds (arrowIn).
+				const axis = across ? 'y' : 'x';
+				const goesFrom = arrowOut(from, feederFx, axis, source0);
+				let goesTo = arrowIn(card, which, axis);
 				let x1, y1, x2, y2, dir;
 				if (across) {
 					dir = (b.left + b.right) / 2 >= (a.left + a.right) / 2 ? 1 : -1;
 					x1 = (dir > 0 ? a.right : a.left) - host.left;
-					y1 = a.top + a.height * out - host.top;
+					y1 = goesFrom - host.top;
 					x2 = (dir > 0 ? b.left : b.right) - host.left;
-					// Arriving on a side edge: at its own player's row when the
-					// players are one above the other; side by side they share
-					// the edge, so home comes in at a third and away at two
-					// thirds (UV, 5 Nov).
-					y2 = (view.card === 'across' || !slot
-						? b.top + b.height * (which === 'home' ? 1 / 3 : 2 / 3)
-						: s.top + s.height / 2) - host.top;
+					y2 = goesTo - host.top;
 				} else {
 					dir = (b.top + b.bottom) / 2 >= (a.top + a.bottom) / 2 ? 1 : -1;
-					x1 = a.left + a.width * out - host.left;
+					x1 = goesFrom - host.left;
 					y1 = (dir > 0 ? a.bottom : a.top) - host.top;
 					y2 = (dir > 0 ? b.top : b.bottom) - host.top;
-					// Arriving on the top or bottom edge: above its own player
-					// when they sit side by side; stacked they share the edge,
-					// so home at a third and away at two thirds, the same rule
-					// turned on its side.
-					x2 = (view.card === 'across' && slot
-						? s.left + s.width / 2
-						: b.left + b.width * (which === 'home' ? 1 / 3 : 2 / 3)) - host.left;
+					x2 = goesTo - host.left;
 				}
+				// Into the top or bottom of a card where possible (UV, 28 Nov:
+				// "rather use top and bottom of cards where possible instead of
+				// forcing the arrows into this tight shape", and "same should
+				// apply to the outer cards"): where the arrow leaves clear above
+				// or below the card, by a head's length, it hooks round into the
+				// middle of the card's top or bottom edge rather than its side.
+				// And wherever the card's top (or bottom) falls within the row
+				// the arrow leaves from (UV, 28 Nov: "use top and bottom
+				// always"), too close to hook straight in, it goes over: out
+				// into the gap, round above (or below) the card, along, and
+				// down (or up) into the middle of that edge (overPath).
+				let hook = '';              // '', 'hook' or 'over'
+				let topEdge = true;         // entering the top (or left) edge, else the bottom (or right)
+				const clear = headLength();
+				{
+					const s1 = across ? y1 + host.top : x1 + host.left;
+					const lo = across ? b.top : b.left, hi = across ? b.bottom : b.right;
+					const rowEl = from.querySelector('.bracket-side');
+					const row = rowEl ? (across ? rowEl.getBoundingClientRect().height : rowEl.getBoundingClientRect().width) : 0;
+					let edge = null;
+					if (s1 <= lo - clear) { edge = lo; hook = 'hook'; }
+					else if (s1 >= hi + clear) { edge = hi; hook = 'hook'; }
+					else if (Math.abs(s1 - lo) <= row) { edge = lo; hook = 'over'; }
+					else if (Math.abs(s1 - hi) <= row) { edge = hi; hook = 'over'; }
+					if (edge !== null) {
+						topEdge = edge === lo;
+						// The middle of the card's top or bottom edge (UV, 28 Nov:
+						// "make sure they meet the center of the card").
+						goesTo = across ? (b.left + b.right) / 2 : (b.top + b.bottom) / 2;
+						if (across) { x2 = goesTo - host.left; y2 = edge - host.top; }
+						else { y2 = goesTo - host.top; x2 = edge - host.left; }
+					}
+				}
+				const gap = across ? (dir > 0 ? b.left - a.right : a.left - b.right) : (dir > 0 ? b.top - a.bottom : a.top - b.bottom);
 
 				// An arrow from a round at or above this one means the TD has
 				// wired a round to one above it. Legal, and the draw honours
@@ -2380,7 +2402,9 @@ TDCTournamentNav.panel('draw', () => {
 				const decided = !!(which === 'home' ? f.home_entrant_id : f.away_entrant_id);
 
 				const path = document.createElementNS(SVG_NS, 'path');
-				path.setAttribute('d', curve(x1, y1, x2, y2, across, dir));
+				path.setAttribute('d', hook === 'hook' ? hookPath(x1, y1, x2, y2, across, headLength())
+					: hook === 'over' ? overPath(x1, y1, x2, y2, across, topEdge, gap, headLength())
+					: curve(x1, y1, x2, y2, across, headLength()));
 				path.setAttribute('class', 'bracket-arrow'
 					+ (source === 'loser_of' ? ' loser' : '')
 					+ (decided ? ' decided' : ' pending')
@@ -2408,32 +2432,129 @@ TDCTournamentNav.panel('draw', () => {
 		if (drawn) els.bracket.append(svg);
 	}
 
-	// A flat-ended S. Control points pushed out along the rounds' direction by
-	// half the gap, so the line leaves a fixture square to its edge and
-	// arrives square to the next, which is what makes a bracket readable
-	// rather than a plate of spaghetti. across: the rounds run sideways;
-	// dir: 1 when the arrow heads right (or down), -1 left (or up).
-	function curve(x1, y1, x2, y2, across = true, dir = 1) {
-		if (across) {
-			const dx = Math.max(18, Math.abs(x2 - x1) / 2) * dir;
-			return `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
-		}
-		const dy = Math.max(18, Math.abs(y2 - y1) / 2) * dir;
-		return `M ${x1} ${y1} C ${x1} ${y1 + dy}, ${x2} ${y2 - dy}, ${x2} ${y2}`;
+	// Where an arrow meets a card, along the edge it crosses (axis 'y' on a
+	// side edge, the rounds running across; 'x' on a top or bottom edge, the
+	// rounds running down), from the card's two players (.bracket-side, by
+	// data-side). Two players at one place along that axis (side by side on a
+	// side edge, stacked on a top edge) share it: home a third along the pair,
+	// away two thirds, so two arrows never meet at one point.
+	function sidesOf(card, axis) {
+		const lo = axis === 'y' ? 'top' : 'left';
+		const size = axis === 'y' ? 'height' : 'width';
+		const box = (which) => {
+			const el = card.querySelector(`.bracket-side[data-side="${which}"]`);
+			return el ? el.getBoundingClientRect() : null;
+		};
+		const h = box('home'), w = box('away');
+		const mid = (q) => q[lo] + q[size] / 2;
+		const r = card.getBoundingClientRect();
+		const at = (which) => {
+			const q = which === 'home' ? h : w;
+			if (!q) return mid(r);
+			const other = which === 'home' ? w : h;
+			if (!other || Math.abs(mid(h) - mid(w)) > 1) return mid(q);
+			const from = Math.min(h[lo], w[lo]);
+			const to = Math.max(h[lo] + h[size], w[lo] + w[size]);
+			return from + (to - from) * (which === 'home' ? 1 / 3 : 2 / 3);
+		};
+		// The line between the two players (UV, 28 Nov: "where the separator
+		// line sits"); one player alone, its own middle.
+		const centre = h && w ? (mid(h) + mid(w)) / 2 : h ? mid(h) : w ? mid(w) : mid(r);
+		return { at, centre };
 	}
+	// Out of a feeder (UV, 28 Nov): from the separator by default; once the
+	// match has a winner (a result published, a walkover, an award), from the
+	// winner's side, or the loser's for a loser_of arrow.
+	function arrowOut(card, fx, axis, source) {
+		const s = sidesOf(card, axis);
+		const winner = fx && (fx.winner_entrant_id || fx.advanced_entrant_id);
+		if (!winner) return s.centre;
+		const won = winner === fx.home_entrant_id ? 'home' : 'away';
+		return s.at(source === 'loser_of' ? (won === 'home' ? 'away' : 'home') : won);
+	}
+	// Into a card (UV, 28 Nov): at the player it feeds.
+	function arrowIn(card, which, axis) {
+		return sidesOf(card, axis).at(which);
+	}
+
+	// The arrows are drawn in arcs (UV, 28 Nov: "try arc instead"; Bézier
+	// curves before, an S then a hook, and an elbow tried and dropped). Each
+	// arc is a quarter of an ellipse between two points where the line runs
+	// along one axis and then the other, so it leaves a card square and ends
+	// in a straight run of a head's length into the head (UV: "make sure the
+	// arrow meets the arrow head"), held to three quarters of the room.
+	// arcTo: from p, heading along u (a unit step on one axis), to q, arriving
+	// along the other axis. The sweep is the side q lies on from u.
+	function arcTo(p, u, q) {
+		const rx = Math.abs(q[0] - p[0]), ry = Math.abs(q[1] - p[1]);
+		const sweep = u[0] * (q[1] - p[1]) - u[1] * (q[0] - p[0]) > 0 ? 1 : 0;
+		return `A ${rx} ${ry} 0 0 ${sweep} ${q[0]} ${q[1]}`;
+	}
+	// Card to card along the rounds (across: sideways, else down): two
+	// quarter arcs meeting halfway, an S, then the straight run.
+	function curve(x1, y1, x2, y2, across = true, head = 0) {
+		const along = across ? x2 - x1 : y2 - y1;
+		const side = across ? y2 - y1 : x2 - x1;
+		const run = Math.min(head, Math.abs(along) * 0.75) * (Math.sign(along) || 1);
+		const end = across ? [x2 - run, y2] : [x2, y2 - run];
+		if (Math.abs(side) < 1) return `M ${x1} ${y1} L ${x2} ${y2}`;
+		const mid = [(x1 + end[0]) / 2, (y1 + end[1]) / 2];
+		const u1 = across ? [Math.sign(along) || 1, 0] : [0, Math.sign(along) || 1];
+		const u2 = across ? [0, Math.sign(side)] : [Math.sign(side), 0];
+		return `M ${x1} ${y1} ${arcTo([x1, y1], u1, mid)} ${arcTo(mid, u2, end)} L ${x2} ${y2}`;
+	}
+	// The hook (UV, 28 Nov, into a card's top or bottom): one quarter arc out
+	// of the feeder along the rounds' direction round into the straight run
+	// down (or up) into the middle of the card's edge.
+	function hookPath(x1, y1, x2, y2, across = true, head = 0) {
+		const down = across ? y2 - y1 : x2 - x1;
+		const run = Math.min(head, Math.abs(down) * 0.75) * (Math.sign(down) || 1);
+		const end = across ? [x2, y2 - run] : [x2 - run, y2];
+		const u = across ? [Math.sign(x2 - x1) || 1, 0] : [0, Math.sign(y2 - y1) || 1];
+		return `M ${x1} ${y1} ${arcTo([x1, y1], u, end)} L ${x2} ${y2}`;
+	}
+
+	// Over (UV, 28 Nov): the card's top (or bottom) is level with the row the
+	// arrow leaves from, too close to hook in. The same arcs as every other
+	// arrow (UV: "use one style everywhere"): an S of two quarter arcs rising
+	// (or falling) through the gap to three heads' lengths beyond the edge,
+	// then one quarter arc round to above the card's middle and the straight
+	// run into the edge. topEdge: into the top (or left) edge.
+	function overPath(x1, y1, x2, y2, across, topEdge, gap, head) {
+		const S = (a, s) => (across ? [a, s] : [s, a]);
+		const U = (da, ds) => (across ? [da, ds] : [ds, da]);
+		const [a1, s1, a2, s2] = across ? [x1, y1, x2, y2] : [y1, x1, y2, x2];
+		const da = Math.sign(a2 - a1) || 1;
+		const sIn = topEdge ? 1 : -1;            // the last run's way along s
+		const sL = s2 - sIn * 3 * head;          // the level beyond the edge
+		const sy = Math.sign(sL - s1) || -sIn;   // up (or down) to it
+		const m = a1 + da * Math.max(gap, 2);    // the card's near side, at that level
+		const mid = S((a1 + m) / 2, (s1 + sL) / 2);
+		const top = S(m, sL);
+		const end = S(a2, s2 - sIn * head);
+		return `M ${x1} ${y1} ${arcTo([x1, y1], U(da, 0), mid)} ${arcTo(mid, U(0, sy), top)}`
+			+ ` ${arcTo(top, U(da, 0), end)} L ${x2} ${y2}`;
+	}
+
+	// The head's length on the page: 6 line widths (arrowHead's marker), the
+	// line 2.25px times --arrow-scale (bracket.css, .bracket-arrow).
+	const headLength = () => 6 * 2.25 * (view.font / 100 * view.zoom / 100);
 
 	function arrowHead(id, cls) {
 		const marker = document.createElementNS(SVG_NS, 'marker');
 		marker.setAttribute('id', id);
 		marker.setAttribute('class', cls);
-		marker.setAttribute('viewBox', '0 0 8 8');
-		marker.setAttribute('refX', '7');
-		marker.setAttribute('refY', '4');
+		// A barbed head, its tip on the line's end at the card's edge (UV,
+		// 28 Nov: "they don't look like arrows"; a small blunt triangle until
+		// then). Sized in line widths, so it grows with the line.
+		marker.setAttribute('viewBox', '0 0 10 10');
+		marker.setAttribute('refX', '10');
+		marker.setAttribute('refY', '5');
 		marker.setAttribute('markerWidth', '6');
 		marker.setAttribute('markerHeight', '6');
 		marker.setAttribute('orient', 'auto-start-reverse');
 		const tip = document.createElementNS(SVG_NS, 'path');
-		tip.setAttribute('d', 'M 0 1 L 7 4 L 0 7 z');
+		tip.setAttribute('d', 'M 0 0.5 L 10 5 L 0 9.5 L 2.5 5 z');
 		marker.append(tip);
 		return marker;
 	}
