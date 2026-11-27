@@ -3298,3 +3298,19 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* walk-ins added from Entrants with a unique email are **dropped**: telling a director whether an email is registered breaks earlier decisions on data integrity. Walk-ins stay as they are. Instead, **tournament placeholders**, after how Basil and Rick run nights now (a WhatsApp list pasted into Challonge): a director enters a list of names; each is a placeholder with no account and no future connection, **unless the director connects it to an account**. The site shows accounts that may fit a placeholder's name and the director connects or not, so a player may also play anonymously. A placeholder is awarded nothing unless connected. Connecting is allowed **during play too**. A regular without an account is a new placeholder each time.
 *Decided by UV, later the same day:* **a placeholder is a walk-in**: "we are just updating the existing functionality". Connecting moves the frames to the account, as the walk-in merge does today; **the account's owner is asked and must accept**; the list box goes anywhere on Entrants for now (the settings pages are to be overhauled).
 *So:* `docs/STATUS.md` §2, "Tournament clean-up for Basil and Rick".
+
+## 2026-11-27 — Removing an entrant who has played
+
+*Decided by UV:* fix B6 ("fix it"): removing a player must not wipe their bracket history.
+*Claude's, for UV to correct:* "has played" means on a fixture with a match (started or played) or awarded a fixture; such an entrant is marked withdrawn and kept, anybody else is deleted as before, an unstarted round-1 slot included; the page says which happened.
+*Rejected:* refusing outright (B6's other option), which would leave the director with no way to take them out.
+*So:* `docs/systems/tournaments.md`, "Removing an entrant who has played"; `docs/STATUS.md` §1 4eb.
+*Touches:* migration `20261127135138_remove_entrant_who_played.sql`, `supabase/tests/109_remove_entrant_who_played.test.sql`, `src/scripts/tournament-manage.js`
+
+## 2026-11-27 — Private columns hidden from direct reads; full names stay readable
+
+*Decided by UV:* fix B2 ("I thought we accounted for this already?": the 21 Oct gate closed the function, not the table). **Players' full names stay readable to signed-in players (option A)**: the site shows them by design, so hiding them from direct reads would protect nothing.
+*Claude's, for UV to correct:* hidden column by column rather than closing the tables (no page needed changing); the private columns are paid and notes on tournament entrants, the notes on tournaments, tournament fixtures, leagues, league seasons and league fixtures, a dispute's note and an override's reason.
+*Rejected:* B (full names private to the player, staff and their directors), a redesign across many pages.
+*So:* `docs/systems/foundations.md`, "Private columns"; `docs/STATUS.md` §1 4ec.
+*Touches:* migration `20261127144020_hide_private_columns.sql`, `supabase/tests/110_hide_private_columns.test.sql`

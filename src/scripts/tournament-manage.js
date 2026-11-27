@@ -9,6 +9,11 @@
 // patched here: the server decides the order, and a page that believes its own
 // copy drifts from it the first time two people are adding entrants at once.
 //
+// Walk-ins (UV, 27 Nov): a pasted list through tdc_add_walk_in_entrants;
+// Connect on a walk-in's row asks a player's account (tdc_ask_to_connect,
+// tdc_cancel_connect; the waiting asks read with the list,
+// tdc_tournament_connect_requests). The player answers on their profile.
+//
 // Seeding is always sent as the whole order, never one seed at a time. That is
 // what tdc_set_seeds takes, and it is the only way the result cannot come out
 // with two number fours in it.
@@ -36,6 +41,7 @@ TDCTournamentNav.panel('entrants', () => {
 	const els = {
 		name: el('en-name'), meta: el('en-meta'),
 		search: el('entrant-search'), results: el('search-results'),
+		walkinNames: el('walkin-names'), walkinAdd: el('walkin-add'),
 		rows: el('entrant-rows'), empty: el('entrant-empty'),
 		seedActions: el('seed-actions'),
 		seedRandom: el('seed-random'), seedClear: el('seed-clear'),
@@ -58,6 +64,10 @@ TDCTournamentNav.panel('entrants', () => {
 	// ─── State ───
 	let entrants = [];
 	let officials = [];
+	// Each walk-in's waiting ask to an account (tdc_tournament_connect_requests),
+	// by the walk-in's player id; and the walk-in whose picker is open.
+	let requests = new Map();
+	let connecting = null;
 	// Only the people running the tournament get here at all now — see the
 	// redirect at the bottom. Kept because every control still asks it, so
 	// nothing is enabled by a re-read going wrong.
@@ -108,12 +118,15 @@ TDCTournamentNav.panel('entrants', () => {
 
 	// ─── The list ───
 	async function loadEntrants() {
-		const { data, error } = await supabaseClient.rpc('tdc_tournament_entrants', {
-			p_tournament_id: tournamentId
-		});
-		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
+		const [list, asks] = await Promise.all([
+			supabaseClient.rpc('tdc_tournament_entrants', { p_tournament_id: tournamentId }),
+			supabaseClient.rpc('tdc_tournament_connect_requests', { p_tournament_id: tournamentId })
+		]);
+		if (list.error) { TDC.showSupabaseError(AREA, list.error, els.status); return false; }
+		if (asks.error) { TDC.showSupabaseError(AREA, asks.error, els.status); return false; }
 
-		entrants = data || [];
+		entrants = list.data || [];
+		requests = new Map((asks.data || []).map((r) => [r.walk_in_player_id, r]));
 		renderEntrants();
 		return true;
 	}
@@ -250,9 +263,135 @@ TDCTournamentNav.panel('entrants', () => {
 		remove.disabled = readOnly;
 
 		controls.append(paid);
+
+		// A walk-in: Connect, to ask a player's account whether this is them
+		// (UV, 27 Nov), or the ask waiting with Cancel.
+		const ask = e.has_account ? null : requests.get(e.player_id);
+		if (!e.has_account) {
+			if (ask) {
+				controls.append(node('span', 'en-waiting', 'Waiting for ' + ask.account_name + ' to accept'));
+				const cancel = node('button', 'btn btn-secondary btn-sm', 'Cancel');
+				cancel.type = 'button';
+				cancel.dataset.action = 'connect-cancel';
+				cancel.dataset.request = ask.id;
+				cancel.disabled = readOnly;
+				controls.append(cancel);
+			} else {
+				const open = connecting === e.player_id;
+				const connect = node('button', 'btn btn-secondary btn-sm', open ? 'Close' : 'Connect');
+				connect.type = 'button';
+				connect.dataset.action = 'connect';
+				connect.dataset.player = e.player_id;
+				connect.disabled = readOnly;
+				controls.append(connect);
+			}
+		}
+
 		card.append(person(e.player_id, e.has_account, e.display_name, e.avatar_path, sub), remove, controls);
+		if (!e.has_account && !ask && connecting === e.player_id) card.append(connectPicker(e));
 		return card;
 	}
+
+	// ─── Connecting a walk-in ───
+	// Accounts whose names fit, from the entrant search with the walk-in's
+	// name to start with; another name can be typed. Choosing one asks that
+	// player (tdc_ask_to_connect); they accept or decline on their profile.
+	function connectPicker(e) {
+		const box = node('div', 'en-connect');
+		const field = node('div', 'field');
+		const id = 'connect-' + e.player_id;
+		const label = node('label', null, 'Which player is ' + e.display_name + '?');
+		label.htmlFor = id;
+		const input = document.createElement('input');
+		input.type = 'search';
+		input.id = id;
+		input.autocomplete = 'off';
+		input.value = e.display_name;
+		input.dataset.action = 'connect-search';
+		field.append(label, input, node('div', 'hint', 'Players with an account. They are asked, and connected once they accept.'));
+		const results = node('div', 'en-connect-results');
+		box.append(field, results);
+
+		let timer = null;
+		input.addEventListener('input', () => {
+			clearTimeout(timer);
+			timer = setTimeout(() => connectSearch(e, input.value, results), 250);
+		});
+		connectSearch(e, input.value, results);
+		return box;
+	}
+
+	let connectRun = 0;
+	async function connectSearch(e, term, results) {
+		const run = ++connectRun;
+		if (term.trim().length < 2) { results.replaceChildren(); return; }
+
+		const { data, error } = await supabaseClient.rpc('tdc_search_entrants', {
+			p_tournament_id: tournamentId,
+			p_query: term,
+			p_limit: 20
+		});
+		if (run !== connectRun) return;
+		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
+
+		const accounts = (data || []).filter((p) => p.has_account);
+		if (!accounts.length) {
+			results.replaceChildren(node('p', 'muted', 'No player with an account by that name. Try another spelling.'));
+			return;
+		}
+
+		results.replaceChildren(...accounts.map((p) => {
+			const b = node('button', 'result');
+			b.type = 'button';
+			b.append(node('span', 'result-name', p.display_name));
+			const sub = [];
+			if (p.full_name && p.full_name !== p.display_name) sub.push(TDC.fullName(p.full_name, p.surname));
+			if (p.already_in) sub.push('Already entered');
+			if (sub.length) {
+				const line = node('span', 'result-sub');
+				sub.forEach((bit, i) => line.append(...(i ? [' · ', bit] : [bit])));
+				b.append(line);
+			}
+			// Already entered: the server refuses it ("Remove one of the two
+			// first"), so it is shown but not offered.
+			b.disabled = !!p.already_in || readOnly;
+			if (!b.disabled) {
+				b.addEventListener('click', async () => {
+					connecting = null;
+					await write('Asking ' + p.display_name, () =>
+						supabaseClient.rpc('tdc_ask_to_connect', {
+							p_tournament_id: tournamentId,
+							p_walk_in_player_id: e.player_id,
+							p_account_player_id: p.id
+						}), () => p.display_name + ' has been asked whether they are the walk-in "' + e.display_name + '".');
+				});
+			}
+			return b;
+		}));
+	}
+
+	// ─── Walk-ins from a list ───
+	// One name per line, sent as they are: the server takes numbering off,
+	// joins a name given twice, and says which it skipped and why.
+	els.walkinAdd.addEventListener('click', async () => {
+		if (readOnly) return;
+		const names = els.walkinNames.value.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+		if (!names.length) { TDC.status(els.status, 'Type or paste at least one name, one per line.', 'error'); return; }
+
+		const done = await write('Adding walk-ins', () =>
+			supabaseClient.rpc('tdc_add_walk_in_entrants', {
+				p_tournament_id: tournamentId,
+				p_names: names
+			}), (rows) => {
+			const list = rows || [];
+			const added = list.filter((r) => r.player_id).length;
+			const skipped = list.filter((r) => !r.player_id);
+			let said = added === 1 ? 'Added 1 walk-in.' : 'Added ' + added + ' walk-ins.';
+			if (skipped.length) said += ' Skipped: ' + skipped.map((r) => r.name + ' (' + r.skipped + ')').join(', ') + '.';
+			return said;
+		});
+		if (done) els.walkinNames.value = '';
+	});
 
 	// A section each for Confirmed, Interested and Withdrawn (UV, 25 Nov),
 	// each with its count; an empty one hidden. Within a section the rows
@@ -568,6 +707,26 @@ TDCTournamentNav.panel('entrants', () => {
 	});
 
 	els.rows.addEventListener('click', (e) => {
+		// Connect opens (or closes) the picker under that walk-in's row.
+		const connect = e.target.closest('[data-action="connect"]');
+		if (connect) {
+			connecting = connecting === connect.dataset.player ? null : connect.dataset.player;
+			renderEntrants();
+			if (connecting) {
+				const input = document.getElementById('connect-' + connecting);
+				if (input) { input.focus(); input.select(); }
+			}
+			return;
+		}
+
+		const cancel = e.target.closest('[data-action="connect-cancel"]');
+		if (cancel) {
+			write('Cancelling', () => supabaseClient.rpc('tdc_cancel_connect', {
+				p_request_id: cancel.dataset.request
+			}));
+			return;
+		}
+
 		const button = e.target.closest('[data-action="remove"]');
 		if (!button) return;
 
@@ -575,9 +734,14 @@ TDCTournamentNav.panel('entrants', () => {
 		// entirely, so it is worth one question.
 		if (!confirm(`Take ${button.dataset.name} out of this tournament?\n\nTo keep them on the list but out of the draw, set their status to Withdrawn instead.`)) return;
 
+		// Someone who has played is withdrawn and kept rather than deleted
+		// (B6, 27 Nov): the server decides and says which.
+		const who = button.dataset.name;
 		write('Removing', () => supabaseClient.rpc('tdc_remove_entrant', {
 			p_entrant_id: button.dataset.entrant
-		}));
+		}), (res) => res === 'withdrawn'
+			? who + ' has played, so they are marked Withdrawn and kept in the draw\'s history.'
+			: '');
 	});
 
 	// ─── Search ───
@@ -596,7 +760,7 @@ TDCTournamentNav.panel('entrants', () => {
 
 		if (!data || !data.length) {
 			els.results.replaceChildren(node('p', 'muted',
-				'Nobody by that name. A player without an account has to be created by staff at a venue first, under Staff · Walk-in.'));
+				'Nobody by that name. Add them as a walk-in below.'));
 			return;
 		}
 

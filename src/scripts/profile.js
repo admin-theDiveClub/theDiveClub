@@ -44,6 +44,9 @@ TDCLoader.hold((async () => {
 		claimSection:   el('claim-section'),
 		claimList:      el('claim-list'),
 		claimStatus:    el('claim-status'),
+		connectSection: el('connect'),
+		connectList:    el('connect-list'),
+		connectStatus:  el('connect-status'),
 		creditsList:    el('credits-list'),
 		redeemForm:     el('redeem-form'),
 		redeemVenueField: el('redeem-venue-field'),
@@ -713,6 +716,12 @@ TDCLoader.hold((async () => {
 
 	await loadIdentity();
 
+	// ─── A director asking whether a tournament walk-in is me (27 Nov) ───
+	// tdc_my_connect_requests; Accept runs the walk-in merge on the server
+	// (tdc_answer_connect), so the page reloads afterwards: the account's
+	// player id is now the walk-in's.
+	await loadConnectRequests();
+
 	// ─── Earlier walk-in record with my confirmed email ───
 	const { data: walkIns, error: findErr } = await TDC.read('profile:walkin', () => supabaseClient.rpc('tdc_find_my_walk_in'));
 	if (findErr) {
@@ -754,5 +763,66 @@ TDCLoader.hold((async () => {
 
 		row.append(name, sub, btn);
 		els.claimList.appendChild(row);
+	}
+
+	async function loadConnectRequests() {
+		const { data, error } = await supabaseClient.rpc('tdc_my_connect_requests');
+		if (error) { TDC.showSupabaseError(AREA, error, els.connectStatus); els.connectSection.hidden = false; return; }
+
+		const asks = data || [];
+		els.connectSection.hidden = !asks.length;
+		els.connectList.replaceChildren(...asks.map((r) => {
+			const row = document.createElement('div');
+			row.className = 'id-row';
+
+			const name = document.createElement('div');
+			name.textContent = '"' + r.walk_in_name + '" in ' + r.tournament_name;
+			const sub = document.createElement('div');
+			sub.className = 'muted';
+			sub.textContent = 'Asked by ' + (r.asked_by_name || 'whoever runs it') + ' · ' + new Date(r.created_at).toLocaleDateString();
+
+			const buttons = document.createElement('div');
+			buttons.className = 'btn-row';
+			buttons.style.marginTop = '0.5rem';   // as the earlier-record button, clear of the line above
+			const accept = document.createElement('button');
+			accept.type = 'button';
+			accept.className = 'btn btn-primary btn-sm';
+			accept.textContent = 'Accept';
+			const decline = document.createElement('button');
+			decline.type = 'button';
+			decline.className = 'btn btn-secondary btn-sm';
+			decline.textContent = 'Decline';
+
+			const answer = async (yes, btn) => {
+				accept.disabled = decline.disabled = true;
+				TDC.status(els.connectStatus, '', '');
+				const { error: err } = await TDC.busy(btn,
+					supabaseClient.rpc('tdc_answer_connect', { p_request_id: r.id, p_accept: yes }), els.connectStatus);
+				TDC.flushPushes();
+				if (err) {
+					accept.disabled = decline.disabled = false;
+					TDC.showSupabaseError(AREA, err, els.connectStatus);
+					return;
+				}
+				// Accepted: the account is now the walk-in's record, so
+				// everything on the page is read again from the start.
+				if (yes) { location.reload(); return; }
+				await loadConnectRequests();
+				TDC.status(els.connectStatus, 'Declined. It stays a walk-in.', 'success');
+			};
+			accept.addEventListener('click', () => answer(true, accept));
+			decline.addEventListener('click', () => answer(false, decline));
+
+			buttons.append(accept, decline);
+			row.append(name, sub, buttons);
+			return row;
+		}));
+
+		// Opened from the notification: bring it into view, clear of the nav.
+		if (asks.length && location.hash === '#connect') {
+			const nav = document.querySelector('.site-nav');
+			const clear = (nav ? nav.getBoundingClientRect().bottom : 0) + 16;
+			window.scrollTo({ top: els.connectSection.getBoundingClientRect().top + window.scrollY - clear });
+		}
 	}
 })(), 'Profile');

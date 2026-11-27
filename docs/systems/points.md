@@ -54,6 +54,8 @@ The full list is `DATA` in the module, which the page will show. A test checks t
 
 **Using the app (13 Nov; migration `20261113164109_player_devices`):** `me.profile.uses_app` (has opened the installed app on any device) and `me.profile.app_days` (the days they did) are in `DATA` and `fillPerson`. They will be read from `tbl_player_devices`: any row with `installed` true, and the sum of those rows' `days_seen`. Recording started with that migration and nothing before it can be recovered. No formula uses them yet, and the real read is not built.
 
+**Tournament walk-ins and connecting them (27 Nov; migration `20261127134429_tournament_walk_ins`):** nothing added. A connection request is bookkeeping, gone once answered, and a connected walk-in's frames become the account's through the merge, where they are already counted (Claude's call).
+
 **Receipt emails (24 Nov; migration `20261124170346_shop_receipt_emails`):** nothing added. The email switches and the queue say how a player likes to be told, not how they play or use the site; the orders behind the emails are already counted above (Claude's call).
 
 **Team stars (25 Nov; migration `20261125145821_team_star_counts`):** nothing added. `tdc_team_star_counts` only counts frames already on the page (who won, who broke, B&F) per team; nothing new is stored.

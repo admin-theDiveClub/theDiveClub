@@ -45,6 +45,21 @@
 </div>
 
 <div id="search-results"></div>
+{% comment %}
+	Walk-ins from a list (UV, 27 Nov; docs/systems/tournaments.md, "Walk-ins
+	from Entrants, and connecting them"): the WhatsApp list pasted as it is,
+	each name entered as a walk-in, confirmed, by tdc_add_walk_in_entrants.
+	A walk-in's row then offers Connect, to ask the player's account. Placed
+	here for now; the settings pages are to be overhauled (UV).
+{% endcomment %}
+<div class="field" id="walkin-field">
+	<label for="walkin-names">Add walk-ins</label>
+	<textarea id="walkin-names" rows="4" autocomplete="off" placeholder="One name per line. Paste the list as it is."></textarea>
+	<div class="hint">Each name is entered as a walk-in, confirmed. Numbering is taken off. Connect one to a player's account at any time.</div>
+</div>
+<div class="btn-row">
+	<button type="button" class="btn btn-primary btn-sm" id="walkin-add">Add walk-ins</button>
+</div>
 
 {% comment %}
 	The list in the league's look (UV, 25 Nov; docs/ui-list.md item 16): a
@@ -70,7 +85,7 @@
 	</section>
 </div>
 
-<div class="empty" id="entrant-empty" hidden>Nobody has entered yet. Search above to add the first player.</div>
+<div class="empty" id="entrant-empty" hidden>Nobody has entered yet. Search above, or add walk-ins, to add the first player.</div>
 
 {% comment %}
 	Seeding is one call for the whole field, not one per player: half a

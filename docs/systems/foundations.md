@@ -47,6 +47,12 @@
   - **Cross-cutting:** Platform (audit log, roles).
 - Commerce and Ranking never share tables. `player_id` on a transaction is nullable (cash sales with no linked member are valid).
 
+## Private columns (27 Nov; migration `20261127144020_hide_private_columns`, STATUS 1a B2)
+
+- **What:** eight tables are readable by any signed-in user (their rule is `using (true)`), but their private columns are not: `tbl_tournament_entrants` paid_at and notes; notes on `tbl_tournaments`, `tbl_tournament_fixtures`, `tbl_leagues`, `tbl_league_seasons`, `tbl_league_fixtures`; `tbl_match_events.note` (a dispute's); `tbl_match_result_override.reason`. The table-wide SELECT was revoked from `authenticated` and granted again column by column, every column but those. They are read only through security-definer functions (`tdc_tournament_entrants`, `tdc_card_state`), which are unaffected; edge functions read with the service key, also unaffected. Realtime leaves the hidden columns out of what it sends.
+- **⚠ A new column on one of these eight tables is not readable until a migration grants it** (`grant select (new_column) on public.<table> to authenticated`). Test `110_hide_private_columns` fails the moment a column is hidden that should not be, naming it. Never `select('*')` from these tables in a page: it is refused.
+- **Players' full names stay readable** (UV, 27 Nov, B2's other half): they are shown to signed-in players by design (search, profile, draw, standings; "Full names: the surname lighter", below).
+
 ## Reading fast (16 Nov)
 Each trip to the database is about a quarter of a second from Johannesburg (eu-west-1), so **a page sends every read it can at once, and never waits for one it does not need the answer of** (UV, 16 Nov: "as fast loading as possible").
 - **`TDC.readEarly(key, make)` and `TDC.read(key, make)`** (`tdc.js`). A page starts the reads it will need together (`readEarly`); each loader takes its own (`read`) when it gets there, in the order it always ran, so what is drawn and when is unchanged: only the waiting overlaps. A read nobody started, or one older than 10 s, is made fresh, so a write's re-read never gets a stale answer. Keys are the page's own (`season:fixtures`). The usual shape, in each tab script: a `Q` object defining each read once, `take(key)`, and `startReads()` called at the start and at the top of `loadAll` (with `loadAll(true)` from the start, so they are not sent twice).
