@@ -1052,6 +1052,7 @@ TDCTournamentNav.panel('draw', () => {
 		roundLabels = names;
 		const third = fixtures.filter((f) => f.bracket === 'third_place');
 		if (roundsShown) { renderRounds(main, lastRound, names, third); return; }
+		const firstRound = Math.min(...main.map((f) => f.round));
 
 		// A round's column (a row when the rounds run downwards): its heading,
 		// then its cards in a box of their own, so the rows view can lay them
@@ -1070,7 +1071,13 @@ TDCTournamentNav.panel('draw', () => {
 			if (!readOnly) col.append(roundTools(roundRulesButton('main', r), addMatch && addMatchButton('main', r, list.length === 0)));
 
 			const cards = node('div', 'bracket-round-cards');
-			if (list.length) cards.append(...list.map(fixture));
+			// The first round's byes are hidden (UV, 27 Nov: a big draw showed
+			// a card per bye), except on Run the draw, where a bye's empty
+			// slot is where a late player is dropped. The player going
+			// through shows in the next round; an arrow from a hidden card is
+			// not drawn (drawArrows skips a card that is not there).
+			const shown = readOnly && r === firstRound ? list.filter((f) => f.advance_reason !== 'bye') : list;
+			if (shown.length) cards.append(...shown.map(fixture));
 			else if (empty) cards.append(node('div', 'bracket-round-empty', 'Empty round'));
 			col.append(cards, mirrorOf(head));
 			return col;
@@ -1368,9 +1375,13 @@ TDCTournamentNav.panel('draw', () => {
 			block.append(tools);
 		}
 
+		// The first round's byes are hidden (UV, 27 Nov): only the matches to
+		// play. The player going through shows in the next round. The bracket
+		// still draws them (its arrows, and a late player's drop, need them).
+		const shown = first ? list.filter((f) => f.advance_reason !== 'bye') : list;
 		const grid = node('div', 'cs-grid dr-grid');
-		if (list.length) grid.append(...list.map(matchRow));
-		else grid.append(node('p', 'dr-empty muted', 'No matches in this round yet.'));
+		if (shown.length) grid.append(...shown.map(matchRow));
+		else grid.append(node('p', 'dr-empty muted', list.length ? 'Byes only: everybody goes through.' : 'No matches in this round yet.'));
 		block.append(grid);
 		return block;
 	}

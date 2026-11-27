@@ -3378,3 +3378,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV* (during Basil's comp): "Matches that are started should not be changed now. I need to add a player in a specific spot and now it's force redrawing all players." **This reverses** two parts of "The draw follows the confirmed players" the same evening: a full draw no longer grows by itself (the player waits for the director), and following stops at the first started match rather than the first played one.
 *So:* `docs/systems/tournaments.md`, "The draw stops following once a match is started…".
 *Touches:* migration `20261127185136_draw_follow_stops_at_start.sql`, `supabase/tests/114_draw_follows_entrants.test.sql`, `src/_includes/tournament/draw.html`
+
+## 2026-11-27 — The first round's byes hidden
+
+*Decided by UV:* "In the first round, hide the byes" (a big draw showed a card per bye).
+*Claude's, for UV to correct:* hidden in Rounds for everybody and in the Bracket for readers (the Draw tab, the public); Run the draw's bracket keeps them, since a bye's empty slot is where a late player is dropped.
+*So:* `docs/systems/tournaments.md`, "The first round's byes hidden".
+*Touches:* `src/scripts/tournament-bracket.js`
