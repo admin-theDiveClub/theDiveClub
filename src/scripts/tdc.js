@@ -351,7 +351,8 @@ const TDC = (() => {
 	// likely failure). Shared by the profile page and league settings.
 	// whole: keep the whole picture, its longer side shrunk to size, rather
 	// than the middle square (a venue's, UV 17 Nov: shown in full).
-	async function preparePicture(file, size, area, statusEl, { whole = false } = {}) {
+	// quality: the encoder's, 0.85 unless asked (a wallpaper's, 0.9: shown on a TV).
+	async function preparePicture(file, size, area, statusEl, { whole = false, quality = 0.85 } = {}) {
 		let bitmap;
 		try {
 			// from-image so a photo taken sideways is not saved sideways.
@@ -384,7 +385,7 @@ const TDC = (() => {
 		// toBlob quietly falls back to PNG for a type it does not know, so the
 		// type is checked rather than trusted.
 		for (const type of ['image/webp', 'image/jpeg']) {
-			const blob = await new Promise((resolve) => canvas.toBlob(resolve, type, 0.85));
+			const blob = await new Promise((resolve) => canvas.toBlob(resolve, type, quality));
 			if (blob && blob.type === type) return blob;
 		}
 		error(area, 'the picture could not be prepared for upload.', null, statusEl);

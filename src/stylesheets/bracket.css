@@ -962,3 +962,85 @@ html.bracket-full { overflow: hidden; }
 	gap: var(--space-2) var(--space-4);
 	margin-top: var(--space-3);
 }
+
+/* -- Bracket · Rounds (UV, 27 Nov) ----------------------------------- */
+/* The pill at the top of Draw and Run the draw: the scorecard's
+   Scorecard · Stats size (.lu-views). */
+.draw-modes { height: 2.25rem; padding: 2px; margin: 0 auto var(--space-4); }
+.tdc-card .draw-modes button.cp-view { padding: 0 var(--space-4); font-size: 0.9rem; }
+
+/* The rounds, one under another on a phone; side by side wherever two
+   fit (each at least 26rem), each as tall as itself. */
+.draw-rounds {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+	align-items: start;
+	gap: var(--space-3) var(--space-5);
+	margin-bottom: var(--space-4);
+}
+.draw-rounds[hidden] { display: none; }
+
+/* A round is a scorecard session (league.css .cs-session): the name
+   centred, under it how many matches have a result, open or folded. */
+.dr-round > summary .dr-count {
+	flex: 0 0 100%;
+	padding-bottom: var(--space-2);
+	text-align: center;
+	font-family: var(--font-body);
+	font-size: 0.85rem;
+	color: var(--text-muted);
+}
+/* The round's Rules and + Match, at its top. */
+.dr-tools {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--space-2);
+	padding-bottom: var(--space-2);
+	border-bottom: 1px solid var(--border-color);
+}
+.dr-empty { margin: var(--space-3) 0; text-align: center; }
+
+/* A match: the two players either side of the middle, each score under
+   its player; the badges and the director's buttons across the foot. The
+   compact field size of the entrant rows (.ls-controls), so a stepper
+   fits under a name at 360 wide. */
+.dr-match {
+	--nm-field: 2.25rem;
+	--nm-field-radius: 1.125rem;
+	--nm-pad: var(--space-3);
+	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+	align-items: start;
+}
+.dr-grid > .dr-match:last-child { border-bottom: none; }
+.dr-match[data-match] { cursor: pointer; }
+.dr-match .tdc-stepper.is-across { padding: 0 var(--space-2); box-shadow: var(--nm-sunken-small); }
+.dr-match > .dr-tags,
+.dr-match > .dr-actions {
+	grid-column: 1 / -1;
+	justify-content: center;
+	margin: 0;
+}
+.dr-mid {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--space-1);
+	align-self: center;
+}
+.dr-no { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; }
+a.dr-no { color: var(--text-muted); text-decoration: underline dotted; text-underline-offset: 3px; }
+.dr-colon { font-size: 1.35rem; font-weight: 700; color: var(--text-muted); }
+.dr-bye { font-size: 0.85rem; color: var(--text-muted); }
+.dr-seat { gap: var(--space-2); }
+.dr-person {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--space-1);
+	min-width: 0;
+	max-width: 100%;
+}
+.dr-person .person-pic { width: 2rem; height: 2rem; font-size: 0.8rem; }
+.dr-seat .card-person-name { font-weight: 600; text-align: center; overflow-wrap: break-word; }
+.dr-seat .cs-empty { font-weight: 400; }

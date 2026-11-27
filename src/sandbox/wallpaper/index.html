@@ -1,0 +1,53 @@
+---
+layout: layout.html
+title: Wallpaper
+description: "A wallpaper of The Dive Club's table, for a TV."
+hideFooter: true
+extraStyles:
+  - /stylesheets/wallpaper.css
+extraScripts:
+  - /scripts/hero.js
+  - /scripts/wallpaper-show.js
+  - /scripts/wallpaper.js
+---
+{% comment %}
+	The wallpaper (UV, 27 Nov; docs/systems/foundations.md, "Wallpapers"): the home
+	page's table filling the screen, with the person's pictures looping in the middle
+	and their colours. Opened signed out by its short link (W-<code>), which lands
+	here as /sandbox/wallpaper/?w=<id>: aimed at TVs, where signing in is close to
+	impossible. A sandbox page until it goes on the main site (UV).
+
+	The table fills the screen with no adjustment; the bar lies over it and hides
+	itself after a few seconds of nothing, back on any mouse move, tap or key
+	(wallpaper.js). With pictures, the bar's icon stays where it sits in the bar,
+	under it, so it shows once the bar hides (UV); with none, the club's logo on the
+	cloth, as on the home page.
+{% endcomment %}
+<style>
+	/* Nothing scrolls */
+	html, body { overflow: hidden; }
+	/* The banners under the bar (Get the app, linked to your league record) would
+	   sit over the table for good: this page never scrolls them away */
+	.nav-linked,
+	.nav-get-app { display: none !important; }
+</style>
+
+<h1 class="visually-hidden">Wallpaper</h1>
+<div class="wp wp-full" id="wp">
+	<div class="wp-pics" id="wp-pics" data-transition="fade">
+		<div class="wp-logo" id="wp-logo">
+			<img class="for-dark" src="/resources/branding/logo-primary-dark.svg" alt="">
+			<img class="for-light" src="/resources/branding/logo-primary-light.svg" alt="">
+		</div>
+	</div>
+	<div class="hero-stage" id="hero-stage" data-logo="off" data-margin="0.5" data-light-ms="0" data-balls="wp-balls" aria-hidden="true"></div>
+	<div class="wp-balls" id="wp-balls" aria-hidden="true"></div>
+</div>
+<div class="wp-icon" id="wp-icon" hidden aria-hidden="true">
+	<img class="for-dark" src="/resources/branding/icon-primary.svg" alt="">
+	<img class="for-light" src="/resources/branding/logo-mark-light.svg" alt="">
+</div>
+<div class="wp-status">
+	<div class="status" id="hero-status" role="status"></div>
+	<div class="status" id="wp-status" role="status"></div>
+</div>

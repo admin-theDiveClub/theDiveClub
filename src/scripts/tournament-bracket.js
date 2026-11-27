@@ -44,7 +44,8 @@ TDCTournamentNav.panel('draw', () => {
 		roundRulesCancel: el('round-rules-cancel'), roundRulesStatus: el('round-rules-status'),
 		entrants: el('entrants'), entrantPills: el('entrant-pills'),
 		stage: el('stage'), fit: el('fit'), full: el('full'), resetView: el('reset-view'),
-		populate: el('populate'), shuffle: el('shuffle')
+		populate: el('populate'), shuffle: el('shuffle'),
+		modes: el('draw-modes'), rounds: el('rounds')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -143,6 +144,16 @@ TDCTournamentNav.panel('draw', () => {
 	// candidate list once it has been read. Same one-at-a-time rule.
 	let swapping = null;
 	let candidates = [];
+	// Bracket or Rounds (UV, 27 Nov), per device; Rounds is drawn by
+	// renderRounds. Generate the draw always shows the bracket.
+	const MODE_KEY = 'tdc.draw.mode';
+	let mode = 'bracket';
+	try { if (localStorage.getItem(MODE_KEY) === 'rounds') mode = 'rounds'; } catch (err) { /* private window: the bracket */ }
+	const roundChoice = new Map();   // round key -> open, where the reader went against the default
+	let roundsStale = false;         // a redraw held back while a score is being entered
+	let holding = false;             // a finger or the mouse down on a score's chevron
+	const scoreQueued = new Set();   // fixtures with a score save waiting its turn
+	const scoreTouched = new Map();  // fixture -> the sides whose score the director has changed on this visit
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -1006,6 +1017,13 @@ TDCTournamentNav.panel('draw', () => {
 		els.actions.hidden = !drawn || readOnly;
 		els.viewRow.hidden = !fixtures.length;
 		els.entrants.hidden = !fixtures.length || readOnly;
+		// Bracket · Rounds (UV, 27 Nov): on Draw and Run the draw once there
+		// is a draw. Rounds hides the stage (the view row, the pills, the
+		// bracket) and draws its own list below it.
+		const roundsShown = drawn && !generating && mode === 'rounds';
+		els.modes.hidden = !drawn || generating;
+		els.stage.hidden = roundsShown;
+		els.rounds.hidden = !roundsShown;
 		applyView();
 		// A read-only viewer's sides have no swap column (bracket.css).
 		els.bracket.classList.toggle('bracket-ro', readOnly);
@@ -1026,6 +1044,7 @@ TDCTournamentNav.panel('draw', () => {
 		// names are the headings' names.
 		roundLabels = names;
 		const third = fixtures.filter((f) => f.bracket === 'third_place');
+		if (roundsShown) { renderRounds(main, lastRound, names, third); return; }
 
 		// A round's column (a row when the rounds run downwards): its heading,
 		// then its cards in a box of their own, so the rows view can lay them
@@ -1214,6 +1233,378 @@ TDCTournamentNav.panel('draw', () => {
 		}
 		return half;
 	}
+
+	// ─────────────────────────────────────────────────────────────────
+	// Rounds (UV, 27 Nov)
+	//
+	// The second view of the draw, for everybody: each round laid out as a
+	// session of the league scorecard (a folding pill, league.css's
+	// .cs-session), a row per match: home player · the lag, when the match
+	// records who breaks · away player, each player's score under them.
+	//
+	// On Run the draw each score is a stepper, saved on every press as the
+	// director's score (tdc_set_match_override, the same record Enter score
+	// writes). UV: "TDs don't watch matches to enter scores. Players keep
+	// track themselves and report the score at the end", so it is the score,
+	// not frames. A fixture with no match yet gets one first. Typing a number
+	// and pressing Enter moves to the other player's score in that match.
+	//
+	// A player goes through only once the director has entered both scores
+	// (UV, 27 Nov: "if he updates one score and then does nothing on the next
+	// input, then no auto push"). Until then each save is a draft, shown with
+	// "Not published" and its Publish button; once both sides have been
+	// changed on this visit, each save is final: published, the match ended,
+	// the winner moved on (20261127154848). A typed 3 then 5 for a 3–5 used
+	// to publish 3–0 first and send the wrong player through.
+	// The rest of a match's buttons are the bracket's (controls), less Enter
+	// score, which the steppers replace; the round's Rules and + Match sit
+	// at its top.
+	//
+	// The list is not redrawn under the director's hands: while a score has
+	// focus, a chevron is held or a save is still going, a redraw (a re-read,
+	// a live update) waits and happens when they are done. A queued save
+	// reads the two numbers when its turn comes, so it sends what is in the
+	// boxes then, and never two saves of one match waiting at once.
+	// ─────────────────────────────────────────────────────────────────
+
+	// The reason kept on the record with a score entered here: the database
+	// asks for one (tdc_set_match_override), and a stepper cannot ask for a
+	// sentence on every press. As "Moved through on the draw" (tdc_move_through).
+	const ROUNDS_REASON = 'Entered on the draw';
+
+	const roundsBusy = () => holding || drawWriter.pending > 0
+		|| !!(document.activeElement && els.rounds.contains(document.activeElement)
+			&& document.activeElement.matches('input[data-score]'));
+	// A redraw held back is done once nothing holds it.
+	function roundsCatchUp() {
+		setTimeout(() => { if (roundsStale && !roundsBusy() && mode === 'rounds') render(); }, 0);
+	}
+
+	let roundsDrawn = false;
+	function renderRounds(main, lastRound, names, third) {
+		if (roundsBusy()) { roundsStale = true; return; }
+		roundsStale = false;
+
+		const blocks = [];
+		for (let r = 1; r <= lastRound; r++) {
+			const list = main.filter((f) => f.round === r);
+			// An empty round (one put in by hand) is the director's to fill.
+			if (!list.length && readOnly) continue;
+			blocks.push(roundBlock('main', r, names.has(r) ? names.get(r).long : 'Round ' + r, list, true));
+		}
+		if (third.length) blocks.push(roundBlock(third[0].bracket, third[0].round, 'Third place', third, false));
+
+		const snap = roundsDrawn ? TDC.liveSnapshot(els.rounds) : null;
+		els.rounds.replaceChildren(...blocks);
+		TDC.liveFade(els.rounds, snap);
+		roundsDrawn = true;
+	}
+
+	const decided = (f) => !!(f.winner_entrant_id || f.advanced_entrant_id);
+
+	// A round: open while it holds a match still to be played (both players
+	// known, no result), as a session is open while it holds a frame being
+	// played; a round the reader opened or closed against that stays so.
+	// Its heading counts the matches with a result; byes are not counted.
+	function roundBlock(bracket, round, title, list, addMatch) {
+		const key = roundKey(bracket, round);
+		const block = node('details', 'cs-session set-group dr-round');
+		const usual = list.some((f) => !decided(f) && f.home_entrant_id && f.away_entrant_id)
+			|| (!list.length && !readOnly);
+		block.open = roundChoice.has(key) ? roundChoice.get(key) : usual;
+		block.addEventListener('toggle', () => {
+			if (block.open === usual) roundChoice.delete(key); else roundChoice.set(key, block.open);
+		});
+		// The yellow glow inside, as a session with a frame under way.
+		block.classList.toggle('is-active', list.some((f) => stateOf(f) === 'in_progress'));
+
+		const played = list.filter((f) => f.advance_reason !== 'bye');
+		const done = played.filter(decided).length;
+		const head = node('summary', 'cs-title');
+		head.append(node('span', 'cs-title-text', title));
+		const count = node('span', 'dr-count', played.length
+			? done + ' of ' + played.length + ' finished'
+			: list.length ? 'Byes only' : 'No matches yet');
+		count.dataset.live = 'rc|' + key;
+		head.append(count);
+		block.append(head);
+
+		// The round's settings at its top (UV, 27 Nov): its rules (the
+		// matches' rules in this round, the bracket's panel) and + Match.
+		if (!readOnly) {
+			const tools = node('div', 'dr-tools');
+			tools.append(roundRulesButton(bracket, round));
+			if (addMatch) tools.append(addMatchButton(bracket, round, !list.length));
+			block.append(tools);
+		}
+
+		const grid = node('div', 'cs-grid dr-grid');
+		if (list.length) grid.append(...list.map(matchRow));
+		else grid.append(node('p', 'dr-empty muted', 'No matches in this round yet.'));
+		block.append(grid);
+		return block;
+	}
+
+	// The player a slot is waiting for, as the bracket's card says it.
+	function slotLabel(f, which) {
+		const source = which === 'home' ? f.home_source : f.away_source;
+		if (source === 'winner_of' || source === 'loser_of') {
+			const r = which === 'home' ? f.home_feeder_round : f.away_feeder_round;
+			const from = r != null ? fixtureShort(which === 'home' ? f.home_feeder_bracket : f.away_feeder_bracket,
+				r, which === 'home' ? f.home_feeder_position : f.away_feeder_position) : '?';
+			return (source === 'winner_of' ? 'Winner' : 'Loser') + ' of ' + from;
+		}
+		return 'Open';
+	}
+
+	// Whether a match shows its lag (UV, 27 Nov): only when it records who
+	// breaks. A match says so itself (its frozen rules); a fixture with no
+	// match yet goes by the rules it would start with, the round's or the
+	// tournament's, and only for the director, who can set it.
+	function lagShown(f, editable) {
+		if (f.match_id) return !!f.track_breaks;
+		if (!editable) return false;
+		const r = roundRules.get(roundKey(f.bracket, f.round)) || (tournament && tournament.rules) || {};
+		return !!r.track_breaks;
+	}
+
+	function matchRow(f) {
+		const row = node('div', 'cs-row dr-match');
+		row.dataset.fixture = f.fixture_id;
+		row.dataset.state = stateOf(f);
+		const bye = f.advance_reason === 'bye';
+		const editable = !readOnly && !!(f.home_entrant_id && f.away_entrant_id) && !f.advanced_entrant_id;
+
+		// The match's name in the middle, a link to the match once there is
+		// one. For a reader the whole row opens it too (els.rounds' click);
+		// for the director only this, so a missed chevron never leaves.
+		const mid = node('div', 'dr-mid');
+		const label = 'Match ' + f.position;
+		if (f.match_id) {
+			const a = node('a', 'dr-no', label);
+			a.href = '/match/?id=' + encodeURIComponent(f.match_id);
+			mid.append(a);
+			if (readOnly) row.dataset.match = f.match_id;
+		} else {
+			mid.append(node('span', 'dr-no', label));
+		}
+		if (bye) mid.append(node('span', 'dr-bye', 'Bye'));
+		// A published result is settled: its lag cannot change until it is
+		// sent back (tdc_update_match_settings), so the switch is greyed.
+		else if (lagShown(f, editable)) mid.append(lagSwitch(f, editable && !f.published));
+		else mid.append(node('span', 'cs-colon dr-colon', ':'));
+
+		row.append(seat(f, 'home', editable, bye), mid, seat(f, 'away', editable, bye));
+
+		const tags = tagsFor(f);
+		if (tags.childElementCount) row.append(tags);
+		if (!readOnly) {
+			const c = controls(f);
+			for (const b of c.querySelectorAll('[data-act="enter"]')) b.remove();
+			if (c.childElementCount) { c.classList.add('dr-actions'); row.append(c); }
+		}
+		return row;
+	}
+
+	// A player: the picture over the name, the score under them, a stepper
+	// for the director. The winner's name green, as on the scorecard.
+	function seat(f, which, editable, bye) {
+		const cell = node('div', 'cs-player dr-seat cs-' + which);
+		const id = which === 'home' ? f.home_entrant_id : f.away_entrant_id;
+		if (!id && bye) return cell;   // a bye shows only the player going through
+		const winner = f.winner_entrant_id || f.advanced_entrant_id;
+		if (id && winner === id) cell.classList.add('is-won');
+
+		const name = nameOf(f, which);
+		const person = node('span', 'dr-person');
+		person.append(TDC.profilePic(avatar(which === 'home' ? f.home_avatar : f.away_avatar, name),
+			name && (which === 'home' ? f.home_player_id : f.away_player_id)));
+		const shown = node('span', 'card-person-name' + (name ? '' : ' cs-empty'), name || slotLabel(f, which));
+		const full = which === 'home' ? f.home_full_name : f.away_full_name;
+		if (name && fullNames && full) shown.replaceChildren(TDC.fullName(full, which === 'home' ? f.home_surname : f.away_surname));
+		shown.dataset.live = 'rn|' + f.fixture_id + '|' + which;
+		person.append(shown);
+		cell.append(person);
+
+		const frames = which === 'home' ? f.home_frames : f.away_frames;
+		if (editable) {
+			cell.append(scoreInput(f, which, name, frames));
+		} else if (f.match_id) {
+			const v = node('span', 'cs-tot-value dr-score', String(frames ?? 0));
+			v.dataset.live = 'rs|' + f.fixture_id + '|' + which;
+			if (f.match_status === 'complete' && winner) v.classList.add(winner === id ? 'is-winner' : 'is-loser');
+			cell.append(v);
+		}
+		return cell;
+	}
+
+	function scoreInput(f, which, name, frames) {
+		const input = node('input');
+		input.type = 'number';
+		input.min = '0'; input.max = '99'; input.step = '1';
+		input.inputMode = 'numeric';
+		input.value = String(frames ?? 0);
+		input.id = 'score-' + f.fixture_id + '-' + which;
+		input.dataset.control = 'stepper';
+		input.dataset.score = which;
+		input.dataset.fixture = f.fixture_id;
+		// The phone's Enter key says where it goes: the other score, then done.
+		input.enterKeyHint = which === 'home' ? 'next' : 'done';
+		input.setAttribute('aria-label', 'Frames for ' + (name || which) + ', match ' + f.position);
+		return input;
+	}
+
+	// The lag, the scorecard's L switch (league-card.js, toggles): home at
+	// the left, nobody in the middle, away at the right, in the warning
+	// colour with the cue ball. It sets the match's lag winner, as the match
+	// page does; the database can change it but not clear it.
+	function lagSwitch(f, editable) {
+		const line = node('span', 'cs-tog cs-tog-lag');
+		const pick = document.createElement('select');
+		pick.dataset.control = 'tri';
+		pick.dataset.icon = 'cue';
+		pick.dataset.tone = 'warning';
+		pick.dataset.letter = 'L';
+		pick.dataset.action = 'lag';
+		pick.dataset.frame = f.fixture_id;
+		pick.dataset.fixture = f.fixture_id;
+		const v = f.first_break_side;
+		pick.append(
+			new Option((nameOf(f, 'home') || 'Home') + ' won the lag', 'home', false, v === 'home'),
+			new Option('Nobody yet', '', false, !v),
+			new Option((nameOf(f, 'away') || 'Away') + ' won the lag', 'away', false, v === 'away'));
+		pick.disabled = !editable;
+		pick.setAttribute('aria-label', 'Lag, match ' + f.position);
+		line.append(pick);
+		return line;
+	}
+
+	// The badges the bracket's card shows under its players (fixture).
+	function tagsFor(f) {
+		const tags = node('div', 'bracket-tags dr-tags');
+		if (f.advance_reason && f.advance_reason !== 'bye') {
+			tags.append(node('span', 'badge pending', AWARD[f.advance_reason] || f.advance_reason));
+		} else if (f.match_id) {
+			const card = CARD[f.card_state];
+			if (card && card.label) tags.append(node('span', 'badge ' + card.cls, card.label));
+			if (!f.published && f.card_state && f.card_state !== 'in_progress') {
+				tags.append(node('span', 'badge warn', 'Waiting on you'));
+			}
+			// A draft score (one side entered, 20261127154848): saved, not
+			// published, nobody through until both are in or it is published.
+			else if (f.overridden && !f.published) tags.append(node('span', 'badge warn', 'Not published'));
+			if (f.objection) tags.append(node('span', 'badge disputed', 'Disputed'));
+			if (f.match_status === 'complete' && !f.winner_entrant_id) {
+				tags.append(node('span', 'badge warn', 'Level, needs a tiebreak'));
+			}
+		}
+		return tags;
+	}
+
+	// A fixture's match, made first when it has none (idempotent, so two
+	// saves of one fixture cannot make two).
+	async function matchFor(fixtureId) {
+		const f = fixtures.find((x) => x.fixture_id === fixtureId);
+		if (f && f.match_id) return { data: f.match_id };
+		return supabaseClient.rpc('tdc_create_fixture_match', { p_fixture_id: fixtureId });
+	}
+
+	function saveRoundScore(fixtureId) {
+		if (scoreQueued.has(fixtureId)) return;   // the one waiting reads the boxes when it runs
+		scoreQueued.add(fixtureId);
+		write('Saving the score', async () => {
+			scoreQueued.delete(fixtureId);
+			const box = (side) => els.rounds.querySelector(`input[data-score="${side}"][data-fixture="${fixtureId}"]`);
+			const home = parseInt(box('home') && box('home').value, 10);
+			const away = parseInt(box('away') && box('away').value, 10);
+			if (!(home >= 0) || !(away >= 0)) return { error: new Error('A score needs two numbers, neither of them negative.') };
+			const m = await matchFor(fixtureId);
+			if (m.error) return m;
+			const both = (scoreTouched.get(fixtureId) || new Set()).size === 2;
+			return supabaseClient.rpc('tdc_set_match_override', {
+				p_match_id: m.data, p_home_score: home, p_away_score: away, p_reason: ROUNDS_REASON,
+				p_mode: both ? 'final' : 'draft'
+			});
+		});
+	}
+
+	function saveLag(pick) {
+		const side = pick.value;
+		const fixtureId = pick.dataset.fixture;
+		if (!side) {
+			TDC.status(els.status, 'The lag can be changed to the other player, not cleared.', '');
+			render();
+			return;
+		}
+		write('Saving the lag', async () => {
+			const m = await matchFor(fixtureId);
+			if (m.error) return m;
+			// The match's own rules, sent back unchanged: the lag travels with
+			// them, as on the match page (persistSettings).
+			const r = await supabaseClient.from('tbl_matches').select('rules').eq('id', m.data).single();
+			if (r.error) return r;
+			return supabaseClient.rpc('tdc_update_match_settings', {
+				p_match_id: m.data, p_rules: r.data.rules, p_first_break_side: side
+			});
+		});
+	}
+
+	els.rounds.addEventListener('change', (e) => {
+		const input = e.target.closest('input[data-score]');
+		if (input) {
+			const fid = input.dataset.fixture;
+			if (!scoreTouched.has(fid)) scoreTouched.set(fid, new Set());
+			scoreTouched.get(fid).add(input.dataset.score);
+			saveRoundScore(fid);
+			return;
+		}
+		const pick = e.target.closest('select[data-action="lag"]');
+		if (pick) saveLag(pick);
+	});
+	// Enter in the first score goes to the second, in the same match (UV,
+	// 27 Nov). The stepper has already committed the number (and saved it).
+	els.rounds.addEventListener('keydown', (e) => {
+		if (e.key !== 'Enter') return;
+		const input = e.target.closest('input[data-score="home"]');
+		if (!input) return;
+		const away = els.rounds.querySelector(`input[data-score="away"][data-fixture="${input.dataset.fixture}"]`);
+		if (away) requestAnimationFrame(() => away.focus());
+	});
+	els.rounds.addEventListener('focusout', roundsCatchUp);
+	els.rounds.addEventListener('pointerdown', (e) => { if (e.target.closest('.tdc-stepper')) holding = true; });
+	const letGo = () => { if (!holding) return; holding = false; roundsCatchUp(); };
+	window.addEventListener('pointerup', letGo);
+	window.addEventListener('pointercancel', letGo);
+	// A reader's row opens its match, anywhere but its links and controls.
+	// A tap on a score's pill but not its chevrons is a tap on its number:
+	// a one-figure number is about 9px wide, and the pill round it caught
+	// most taps (found driving it at 420), so typing went nowhere.
+	els.rounds.addEventListener('click', (e) => {
+		const pill = e.target.closest('.tdc-stepper');
+		if (pill && !e.target.closest('button')) {
+			const input = pill.querySelector('input[data-score]');
+			if (input && document.activeElement !== input) input.focus();
+			return;
+		}
+		if (e.target.closest('button, a, input, select, label, summary, .tdc-stepper, .tdc-tri')) return;
+		const row = e.target.closest('.dr-match[data-match]');
+		if (row) location.href = '/match/?id=' + encodeURIComponent(row.dataset.match);
+	});
+
+	function showModes() {
+		for (const b of els.modes.querySelectorAll('[data-draw-mode]')) {
+			b.setAttribute('aria-pressed', String(b.dataset.drawMode === mode));
+		}
+	}
+	els.modes.addEventListener('click', (e) => {
+		const b = e.target.closest('[data-draw-mode]');
+		if (!b || b.dataset.drawMode === mode) return;
+		mode = b.dataset.drawMode;
+		try { localStorage.setItem(MODE_KEY, mode); } catch (err) { /* kept for this visit only */ }
+		showModes();
+		render();
+	});
+	showModes();
 
 	// ─── Reading ───
 	async function loadTournament() {
@@ -2412,7 +2803,8 @@ TDCTournamentNav.panel('draw', () => {
 	});
 
 	// ─── Per-fixture actions ───
-	els.bracket.addEventListener('click', (e) => {
+	// The Rounds view's buttons too (UV, 27 Nov): the same handler on both.
+	function onAction(e) {
 		const button = e.target.closest('[data-act]');
 		if (!button) return;
 		const id = button.dataset.fixture;
@@ -2505,7 +2897,9 @@ TDCTournamentNav.panel('draw', () => {
 					p_clear_advance: true
 				}));
 		}
-	});
+	}
+	els.bracket.addEventListener('click', onAction);
+	els.rounds.addEventListener('click', onAction);
 
 	// ─────────────────────────────────────────────────────────────────
 	// Live updates

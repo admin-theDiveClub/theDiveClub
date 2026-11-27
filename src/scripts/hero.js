@@ -194,14 +194,17 @@
 		var probe = document.createElement('canvas');
 		probe.width = probe.height = 1;
 		var pctx = probe.getContext('2d', { willReadFrequently: true });
-		// Any CSS colour (color-mix too) as [r, g, b, a]: the browser resolves it, a pixel reads it
+		// Any CSS colour (color-mix too) as [r, g, b, a]: the browser resolves it, a pixel reads it.
+		// Resolved inside the stage, so a page can give the table colours of its own by setting
+		// the tokens on the stage or round it (the wallpaper, UV 27 Nov); elsewhere the stage
+		// inherits the page's, as before
 		function rgba(cssValue) {
 			var el = document.createElement('div');
 			el.style.color = cssValue;
 			el.style.display = 'none';
-			document.body.appendChild(el);
+			stage.appendChild(el);
 			var c = getComputedStyle(el).color;
-			document.body.removeChild(el);
+			stage.removeChild(el);
 			pctx.clearRect(0, 0, 1, 1);
 			pctx.fillStyle = '#000';
 			pctx.fillStyle = c;
@@ -1409,6 +1412,11 @@
 		var STEP = 1 / 480, acc = 0;
 		var last = performance.now(), failed = false;
 		var LIGHT_MS = 200, layerLight = '', layerAt = -1e9, drawnFade = -1;
+		// A page may follow the light more closely (data-light-ms; the wallpaper, UV 27 Nov:
+		// on a TV the table's shadows stepping five times a second read as flicker; 0 is
+		// every change page-light.js writes, about 15 a second)
+		var lightMs = parseFloat(stage.dataset.lightMs);
+		if (isFinite(lightMs) && lightMs >= 0) LIGHT_MS = lightMs;
 		var startedAt = performance.now(), usualMs = 1000 / 60, stutterSeen = false;
 		var DRAW_ORDER = ['drop', 'play', 'fall'];
 		// What the balls look like, as numbers: the canvas is drawn again only when one
@@ -1541,6 +1549,8 @@
 		new ResizeObserver(fit).observe(stage);
 		new MutationObserver(function () { readTokens(); loadLogo(); layerKey = ''; })
 			.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+		// A page that changed the table's colours says so (the wallpaper's preview, UV 27 Nov)
+		stage.addEventListener('tdc-hero-colours', function () { readTokens(); layerKey = ''; forceDraw = true; });
 		if (typeof IntersectionObserver !== 'undefined') {
 			new IntersectionObserver(function (es) {
 				seen = es[es.length - 1].isIntersecting;

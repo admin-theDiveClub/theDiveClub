@@ -1,0 +1,215 @@
+/* Wallpapers (UV, 27 Nov; docs/systems/foundations.md, "Wallpapers"): the wallpaper
+   itself (/sandbox/wallpaper/) and the upload page with its preview
+   (/sandbox/wallpaper/edit/). Drawn by scripts/wallpaper-show.js over the hero's
+   table (scripts/hero.js). */
+
+/* ─── The wallpaper, wherever it is drawn ─── */
+
+/* .wp holds the pictures, the table and the balls, one on the other, the same
+   size and place. The colours are set on it (wallpaper-show.js). */
+.wp { position: relative; overflow: hidden; }
+.wp > .wp-pics,
+.wp > .hero-stage,
+.wp > .wp-balls {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	pointer-events: none;
+}
+.wp > .wp-pics { z-index: 1; }
+.wp > .hero-stage { z-index: 2; }
+.wp > .wp-balls { z-index: 3; }
+.wp > .hero-stage canvas,
+.wp > .wp-balls canvas {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+/* The logo, when there are no pictures: as the home page's, centred on the cloth */
+.wp-logo {
+	position: absolute;
+	left: var(--wp-cx, 50%);
+	top: var(--wp-cy, 50%);
+	width: var(--wp-logo, 0px);
+	height: var(--wp-logo, 0px);
+	transform: translate(-50%, -50%);
+}
+.wp-logo img { display: block; width: 100%; height: 100%; }
+
+/* A picture: in the middle (fit, fill) or over the whole cloth (cloth) */
+.wp-slide {
+	position: absolute;
+	overflow: hidden;
+	left: var(--wp-mid-l);
+	top: var(--wp-mid-t);
+	width: var(--wp-mid-w);
+	height: var(--wp-mid-h);
+	opacity: 0;
+}
+.wp-slide.fit-cloth {
+	left: var(--wp-cloth-l);
+	top: var(--wp-cloth-t);
+	width: var(--wp-cloth-w);
+	height: var(--wp-cloth-h);
+}
+.wp-slide img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+.wp-slide.fit-fit img { object-fit: contain; }
+
+/* The change between pictures (data-transition on .wp-pics). A picture waiting
+   its turn jumps back to its start unseen (no transition); is-on is the one
+   showing, is-off the one leaving. */
+.wp-slide.is-on,
+.wp-slide.is-off { opacity: 1; }
+.wp-slide:not(.is-on):not(.is-off),
+.wp-slide:not(.is-on):not(.is-off) img { transition: none; }
+
+/* Fade: one fades out as the next fades in */
+[data-transition="fade"] > .wp-slide { transition: opacity 1s ease; }
+[data-transition="fade"] > .wp-slide.is-off { opacity: 0; }
+
+/* Slide: the next comes in from the right, pushing the last out to the left */
+[data-transition="slide"] > .wp-slide img { transform: translateX(100%); transition: transform 1s ease-in-out; }
+[data-transition="slide"] > .wp-slide.is-on img { transform: translateX(0); }
+[data-transition="slide"] > .wp-slide.is-off img { transform: translateX(-100%); }
+
+/* Zoom: the next settles from a little larger as it fades in */
+[data-transition="zoom"] > .wp-slide { transition: opacity 1s ease; }
+[data-transition="zoom"] > .wp-slide img { transform: scale(1.15); transition: transform 1.2s ease-out; }
+[data-transition="zoom"] > .wp-slide.is-on img { transform: scale(1); }
+[data-transition="zoom"] > .wp-slide.is-off { opacity: 0; }
+[data-transition="zoom"] > .wp-slide.is-off img { transform: scale(1); }
+
+/* Cut: no change at all */
+[data-transition="cut"] > .wp-slide.is-off { opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+	.wp-slide, .wp-slide img { transition: none !important; }
+}
+
+/* ─── The wallpaper page ─── */
+
+/* The table fills the screen, the bar laid over it and hiding by itself
+   (wallpaper.js). Nothing scrolls, and the banners under the bar are not
+   shown: both set in the page itself (sandbox/wallpaper/index.html) */
+.wp-full {
+	position: fixed;
+	inset: 0;
+}
+
+/* The nav's icon, the same size and centred across as in the bar, under the bar:
+   it shows once the bar hides (UV, 27 Nov; nav.css .nav-logo). Its top is set by
+   wallpaper-show.js, a little down on the cloth (UV, 27 Nov); this is until then */
+.wp-icon {
+	position: fixed;
+	left: 50%;
+	top: calc(var(--nav-top) + var(--nav-height) / 2);
+	transform: translate(-50%, -50%);
+	line-height: 0;
+	z-index: 50;
+	pointer-events: none;
+}
+.wp-icon img { height: var(--nav-logo-height); width: auto; }
+
+.wp-status {
+	position: fixed;
+	left: 50%;
+	bottom: var(--space-5);
+	transform: translateX(-50%);
+	z-index: 60;
+	max-width: calc(100% - 2 * var(--space-4));
+}
+.wp-status:empty { display: none; }
+
+/* ─── The upload page ─── */
+
+.wp-edit h2 { margin-top: var(--space-6); }
+
+/* The preview: a TV's shape, the table playing in it as on a banner */
+.wp-preview {
+	aspect-ratio: 16 / 9;
+	width: 100%;
+	border-radius: var(--radius-lg);
+	background: var(--bg-base);
+	box-shadow: var(--nm-sunken);
+}
+
+/* A picture's row: its outline, how it is shown, move and remove */
+.wp-list { list-style: none; margin: 0 0 var(--space-3); padding: 0; display: grid; gap: var(--space-3); }
+.wp-item {
+	display: grid;
+	grid-template-columns: 8rem 1fr;
+	gap: var(--space-3);
+	align-items: center;
+}
+.wp-item-controls { display: grid; gap: var(--space-2); min-width: 0; }
+.wp-item-controls select { width: 100%; }
+.wp-item-buttons { display: flex; gap: var(--space-2); }
+.tdc-card .wp-item-buttons button { width: auto; flex: 1 1 0; margin: 0; padding: 0.5rem 0.25rem; }
+
+/* The table outline: the bed, the cross and the baulk line, and the picture
+   where it would go (the middle, or the whole cloth). Shares of a TV's table */
+.wp-outline {
+	position: relative;
+	aspect-ratio: 16 / 9;
+	border: 2px solid var(--color-primary);
+	border-radius: var(--radius-sm);
+	background: var(--bg-base);
+	overflow: hidden;
+}
+.wp-outline-mid,
+.wp-outline-cloth {
+	position: absolute;
+	overflow: hidden;
+}
+.wp-outline-mid { left: 24%; width: 52%; top: 4%; height: 92%; outline: 1px dashed var(--text-muted); }
+.wp-outline-cloth { inset: 0; }
+.wp-outline img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.wp-outline .is-fit img { object-fit: contain; }
+.wp-outline-cross,
+.wp-outline-baulk {
+	position: absolute;
+	background: var(--text-muted);
+	z-index: 1;
+}
+.wp-outline-baulk { left: 80%; top: 0; bottom: 0; width: 1px; }
+.wp-outline-cross { left: calc(20% - 4px); top: 50%; width: 9px; height: 1px; }
+.wp-outline-cross::after {
+	content: "";
+	position: absolute;
+	left: 4px;
+	top: -3px;
+	width: 1px;
+	height: 7px;
+	background: inherit;
+}
+
+/* The colours, two to a row */
+.wp-colours { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.wp-colour { display: flex; align-items: center; gap: var(--space-2); }
+.tdc-card .wp-colour input[type="color"] {
+	width: 2.75rem;
+	height: 2.75rem;
+	padding: 0;
+	border: 1px solid var(--border-color);
+	border-radius: 50%;
+	background: none;
+	cursor: pointer;
+	flex: 0 0 auto;
+}
+.wp-colour input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.wp-colour input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
+.wp-colour input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
+
+/* The link */
+.wp-link {
+	font-size: 1.4rem;
+	font-weight: 700;
+	word-break: break-all;
+	margin: 0 0 var(--space-3);
+}

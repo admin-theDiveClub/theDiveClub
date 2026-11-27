@@ -3314,3 +3314,32 @@ These predate the log. They are recorded here because every one of them is a dec
 *Rejected:* B (full names private to the player, staff and their directors), a redesign across many pages.
 *So:* `docs/systems/foundations.md`, "Private columns"; `docs/STATUS.md` §1 4ec.
 *Touches:* migration `20261127144020_hide_private_columns.sql`, `supabase/tests/110_hide_private_columns.test.sql`
+
+## 2026-11-27 — Wallpapers: the table on a TV, opened by a short link
+
+*Decided by UV:* a wallpaper page that is the home page's table with the markings, the person's pictures looping in the middle (the logo when there are none; where pictures replace it, the nav icon stays where it sits in the bar, the same size, showing when the bar hides), an auto-hiding bar, filling the screen with no adjustment. The upload page and the wallpaper are separate pages; only somebody signed in may upload, anybody opens it by its short link with no sign-in (aimed at TVs). One wallpaper per person, at most 8 pictures. Each picture has a simple option for how it is shown, previewed on a table outline; people edit their pictures to suit. Animation options for the change between pictures. Colours: cloth, table markings, lines, white ball. A live preview of the wallpaper on the upload page, the table as the banners show it. Built as sandbox pages first, added to the main site afterwards.
+*Claude's, for UV to correct:* the fits are three (`fit`: the whole picture in the middle; `fill`: the middle filled, cropped; `cloth`: the whole cloth filled); the changes are fade, slide, zoom and cut, with seconds per picture (3 to 300, 10 by default); the code is random and cannot be chosen; the table references the account, not the player; the pictures shrink to 1920px; `W-` wins over a player whose first name is the single letter W.
+*So:* `docs/systems/foundations.md`, "Wallpapers"; `docs/STATUS.md` §2.
+*Touches:* migration `20261127154632_wallpapers.sql`, `supabase/tests/112_wallpapers.test.sql`, `supabase/tests/069_league_public_reads.test.sql` (the stranger's list)
+
+## 2026-11-27 — The draw's Rounds view
+
+*Decided by UV:* the draw page gets a toggle at the top, **Bracket · Rounds**, for directors, players and the public. **Rounds** shows each round like a session of the league scorecard, compact for a phone; every match carries a **score** (number steppers, not a win toggle; "TDs don't watch matches to enter scores. Players keep track themselves and report the score at the end"), **saved on every press**; typing a number and pressing Enter goes straight to the other score of that match. The **lag** appears only when the match setting for who breaks is on; deeper break detail stays on the scorecard. Controls at the top of each round for its match and round settings; a match's other buttons stay as they are for now. **A player goes through automatically only once the director has entered both scores**: one score changed and the other left alone pushes nobody.
+*Claude's, for UV to correct:* the score is the director's score (`tdc_set_match_override`) with the reason "Entered on the draw"; a score is a draft (published_at null) until both boxes have been changed on this visit, then final, which publishes and ends the match as Publish does; Enter score and moving a player through keep publishing at once; changing one score of a published match takes it back until the second is entered or Publish is pressed; after a reload both boxes count as untouched again; Publish publishes a draft even on a match approved before; a round is open while it holds a match still to play; the top of a round holds Rules (the round's match rules) and + Match; Generate the draw always shows the bracket; the list is not redrawn while a score is being entered; a tap on a score's pill focuses its number; the lag is greyed once the result is published (the database refuses it then) and cannot be cleared (as on the match page).
+*Rejected:* +/− buttons recording frames (UV: TDs report the score at the end, they do not count frames); saving only when the director leaves a match's boxes (Claude's alternative, before UV's rule).
+*So:* `docs/systems/tournaments.md`, "Bracket · Rounds"; `docs/STATUS.md` §1 4ed.
+*Touches:* migrations `20261127153139_draw_lag.sql`, `20261127154848_draft_scores.sql`, `supabase/tests/111_draw_lag.test.sql`, `supabase/tests/113_draft_scores.test.sql`, `src/_includes/tournament/draw.html`, `src/scripts/tournament-bracket.js`, `src/stylesheets/bracket.css`
+
+## 2026-11-27 — Wallpapers: the pages (steps 2 and 3)
+
+*Decided by UV:* pictures for a TV kept at high quality ("maybe only shrink to 720p"); built at 1920px on the longer side, above that.
+*Claude's, for UV to correct:* the bar hides after 4 seconds with nothing done; the Get the app and linked-record banners are not shown on the wallpaper (they would sit over the table for good); the preview is 16:9; pictures are uploaded only on Save, not when chosen; quality 0.9; the TV reads the wallpaper when it opens, not again; `hero.js` reads its colours inside its stage so a page can colour one table without the rest of the page.
+*So:* `docs/systems/foundations.md`, "Wallpapers"; `docs/STATUS.md` §1 4ee.
+*Touches:* `src/sandbox/wallpaper/`, `scripts/wallpaper.js`, `wallpaper-edit.js`, `wallpaper-show.js`, `stylesheets/wallpaper.css`, `scripts/hero.js`, `scripts/tdc.js`
+
+## 2026-11-27 — Wallpapers: smooth shadows, and the icon on the cloth
+
+*Decided by UV:* the shadows flickered as the light moved; worth spending a little on this page, "nothing crazy". The icon moves a bit down, onto the cloth rather than the table line.
+*Claude's, for UV to correct:* the table's shadows follow every change of the light on the wallpaper and its preview only (about 15 redraws a second instead of 5; other pages keep 200 ms); the icon's top sits one ball below the top cushion's line.
+*So:* `docs/systems/foundations.md`, "Wallpapers".
+*Touches:* `scripts/hero.js` (`data-light-ms`), `scripts/wallpaper-show.js`, `stylesheets/wallpaper.css`, both wallpaper pages

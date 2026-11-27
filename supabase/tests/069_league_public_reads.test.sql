@@ -171,6 +171,7 @@ function public.tdc_tournament_poster(p_tournament_id uuid)
 function public.tdc_venue_competitions(p_venue_id uuid)
 function public.tdc_venue(p_venue_id uuid)
 function public.tdc_venues()
+function public.tdc_wallpaper(p_id uuid)
 table public.tbl_tournament_posters', 'everything a stranger can reach, exactly');
 
 select * from finish();

@@ -1,0 +1,83 @@
+---
+layout: layout.html
+title: Your Wallpaper
+description: "Make a wallpaper of The Dive Club's table for a TV: your pictures and colours."
+extraStyles:
+  - /stylesheets/wallpaper.css
+extraScripts:
+  - /scripts/hero.js
+  - /scripts/wallpaper-show.js
+  - /scripts/wallpaper-edit.js
+---
+{% comment %}
+	The wallpaper's upload page (UV, 27 Nov; docs/systems/foundations.md,
+	"Wallpapers"): signed in only. Up to 8 pictures, each shown one of three ways
+	(on a table outline), the change between them, the four colours, and a live
+	preview: the real wallpaper, the table playing in a box as on a banner. Save
+	gives the short link to type into the TV. The wallpaper itself is a separate
+	page (/sandbox/wallpaper/), opened signed out. A sandbox page until it goes on
+	the main site (UV).
+{% endcomment %}
+
+<div class="tdc-card wide wp-edit">
+	<h1>Your wallpaper</h1>
+	<p class="muted">The club's table for a TV, with your pictures in the middle. Save, then open the link on the TV's browser. No sign-in needed there.</p>
+
+	<div class="status" id="wpe-status" role="status"></div>
+
+	<h2>Preview</h2>
+	<div class="wp wp-preview" id="wp">
+		<div class="wp-pics" id="wp-pics" data-transition="fade">
+			<div class="wp-logo" id="wp-logo">
+				<img class="for-dark" src="/resources/branding/logo-primary-dark.svg" alt="">
+				<img class="for-light" src="/resources/branding/logo-primary-light.svg" alt="">
+			</div>
+		</div>
+		<div class="hero-stage" id="hero-stage" data-logo="off" data-margin="0.5" data-light-ms="0" data-balls="wp-balls" aria-hidden="true"></div>
+		<div class="wp-balls" id="wp-balls" aria-hidden="true"></div>
+	</div>
+	<div class="status" id="hero-status" role="status"></div>
+
+	<h2>Pictures</h2>
+	<p class="muted" id="wpe-count"></p>
+	<ul class="wp-list" id="wpe-list"></ul>
+	<button type="button" class="btn btn-secondary" id="wpe-add">Add pictures</button>
+	<input type="file" id="wpe-file" accept="image/*" multiple hidden>
+	<p class="muted">Shown in the middle of the table, between the black's spot and the baulk line, or over the whole cloth. Edit a picture beforehand if it doesn't sit the way you want.</p>
+
+	<h2>Changing pictures</h2>
+	<div class="field-pair">
+		<div class="field">
+			<label for="wpe-transition">Change</label>
+			<select id="wpe-transition">
+				<option value="fade">Fade</option>
+				<option value="slide">Slide</option>
+				<option value="zoom">Zoom</option>
+				<option value="cut">Cut</option>
+			</select>
+		</div>
+		<div class="field">
+			<label for="wpe-seconds">Seconds on each</label>
+			<input type="number" id="wpe-seconds" min="3" max="300" step="1" inputmode="numeric">
+		</div>
+	</div>
+
+	<h2>Colours</h2>
+	<div class="wp-colours">
+		<label class="wp-colour"><input type="color" data-colour="cloth_colour"> Cloth colour</label>
+		<label class="wp-colour"><input type="color" data-colour="markings_colour"> Table markings colour</label>
+		<label class="wp-colour"><input type="color" data-colour="lines_colour"> Lines colour</label>
+		<label class="wp-colour"><input type="color" data-colour="cue_colour"> White-ball colour</label>
+	</div>
+	<button type="button" class="btn btn-secondary" id="wpe-reset">Use the club's colours</button>
+
+	<h2>Your link</h2>
+	<p class="wp-link" id="wpe-link">Save to get your link.</p>
+	<div class="btn-row">
+		<button type="button" class="btn btn-secondary" id="wpe-copy" hidden>Copy the link</button>
+		<button type="button" class="btn btn-secondary" id="wpe-open" hidden>Open the wallpaper</button>
+	</div>
+
+	<button type="button" class="btn btn-primary" id="wpe-save">Save</button>
+	<div class="status" id="wpe-save-status" role="status"></div>
+</div>
