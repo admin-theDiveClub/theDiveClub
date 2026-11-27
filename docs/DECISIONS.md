@@ -3412,3 +3412,11 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to correct:* any score changed after a lock re-opens that match (unlocked, not ended) until it is locked again; on push, Basil's scores set by hand all become drafts, every match re-opens, and the draw is brought into line.
 *So:* `docs/systems/tournaments.md`, "A draft score re-opens its match; Basil's opened again".
 *Touches:* migration `20261127195047_draft_score_reopens.sql`, `supabase/tests/113_draft_scores.test.sql`
+
+## 2026-11-27 — A match's buttons behind a ⋯; its status as its name's colour
+
+*Decided by UV:* on Run the draw, a match's buttons behind a **⋯ that opens a pop-up with the score inputs, the lag and the buttons**; **every** button goes in it; the Rounds row **keeps** its steppers and lag; the ⋯ shows **only where there is something to offer**; **Rounds and Bracket** alike; the pop-up's scores **save as drafts on every press in both views** (the Bracket's Enter score form with its reason goes); **Publish stays visible beside the ⋯**, in **green text**, the dots **white**. **No status badges:** the match's label takes **the badge's own colour** (amber, red, grey), **for everybody**, in both views.
+*Claude's, for UV to correct:* the pop-up is the site's card from the foot (the shop's and Add credits'); a button closes the card before it acts; Publish is in the card as well as beside the ⋯; on the Bracket a card that can be scored counts as having something to offer; where two statuses apply, red beats amber beats grey, and the words go in the label's tooltip and at the top of the card; the card is not redrawn while a score in it is being entered; Publish is green wherever it appears on the draw.
+*Rejected:* each view keeping its own way to enter a score (Claude's alternative); badges for players and the public only on Draw.
+*So:* `docs/systems/tournaments.md`, "A match's buttons behind a ⋯; its status as its name's colour"; `docs/ui-list.md` items 19 and 20; `docs/STATUS.md` §1 4eh.
+*Touches:* `src/scripts/tournament-bracket.js`, `src/stylesheets/bracket.css`

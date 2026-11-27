@@ -256,17 +256,6 @@
 	font-variant-numeric: tabular-nums;
 }
 
-.bracket-tags {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--space-1);
-	margin-top: var(--space-1);
-}
-.bracket-tags .badge { font-size: 0.85em; }
-/* Defined here rather than in forms.css: a disputed card is a bracket idea,
-   and forms.css already carries .badge.disputed for the match list. */
-.bracket-tags .badge.disputed { color: var(--color-error); }
-
 .bracket-actions {
 	display: flex;
 	flex-wrap: wrap;
@@ -378,20 +367,13 @@
 	.bracket-side.won .bracket-frames { color: #000; }
 }
 
-/* ── Entering a result by hand ─────────────────────────────────────
-   The TD's own input path, in place of the fixture's buttons while it is
-   open. Narrow enough to live inside a bracket column, which is why the
-   two score boxes sit on one line and the reason gets its own. */
+/* ── Changing who is in a slot ──────────────────────────────────────
+   The swap form (swapForm), in place of the fixture's ⋯ while it is open.
+   Narrow enough to live inside a bracket column. */
 .bracket-entry {
 	margin-top: var(--space-2);
 	padding-top: var(--space-2);
 	border-top: 1px solid var(--border-color);
-}
-.bracket-entry-score {
-	display: flex;
-	align-items: center;
-	gap: var(--space-1);
-	margin-bottom: var(--space-2);
 }
 .bracket-entry-name {
 	flex: 1 1 0;
@@ -402,25 +384,6 @@
 	font-size: 0.85rem;
 	color: var(--text-muted);
 }
-.bracket-entry-v {
-	flex: 0 0 auto;
-	color: var(--text-muted);
-}
-/* The two score boxes, kept native, each a small sunken well: a full field
-   would not leave the names any of the line. The ring and the size (16px stops
-   iPhone zooming the whole bracket on focus) are the shared input's. */
-.bracket-entry input[type="number"] {
-	flex: 0 0 auto;
-	width: 3.25rem;
-	min-height: 2.5rem;
-	padding: 0 var(--space-1);
-	border-radius: var(--radius-md);
-	text-align: center;
-	font-variant-numeric: tabular-nums;
-	color-scheme: dark;
-	box-shadow: var(--nm-sunken-small);
-}
-[data-theme="light"] .bracket-entry input[type="number"] { color-scheme: light; }
 /* The shared field, with less in from its edge: this is a card's width. */
 .bracket-entry input[type="text"],
 .bracket-entry select { margin-bottom: var(--space-2); padding-left: var(--space-3); }
@@ -1002,7 +965,7 @@ html.bracket-full { overflow: hidden; }
 .dr-empty { margin: var(--space-3) 0; text-align: center; }
 
 /* A match: the two players either side of the middle, each score under
-   its player; the badges and the director's buttons across the foot. The
+   its player; the director's ⋯ in the middle (matchPop). The
    compact field size of the entrant rows (.ls-controls), so a stepper
    fits under a name at 360 wide. */
 .dr-match {
@@ -1015,12 +978,6 @@ html.bracket-full { overflow: hidden; }
 .dr-grid > .dr-match:last-child { border-bottom: none; }
 .dr-match[data-match] { cursor: pointer; }
 .dr-match .tdc-stepper.is-across { padding: 0 var(--space-2); box-shadow: var(--nm-sunken-small); }
-.dr-match > .dr-tags,
-.dr-match > .dr-actions {
-	grid-column: 1 / -1;
-	justify-content: center;
-	margin: 0;
-}
 .dr-mid {
 	display: flex;
 	flex-direction: column;
@@ -1045,20 +1002,52 @@ a.dr-no { color: var(--text-muted); text-decoration: underline dotted; text-unde
 .dr-seat .card-person-name { font-weight: 600; text-align: center; overflow-wrap: break-word; }
 .dr-seat .cs-empty { font-weight: 400; }
 
-/* The director's buttons in a match's middle (UV, 27 Nov): small, above the
-   lag or the colon, between the names, wrapping inside the middle rather
-   than taking a row under the match. */
-.dr-mid > .dr-actions {
-	justify-content: center;
-	gap: 4px;
-	max-width: 7.5rem;
-	margin: 0;
-}
-.tdc-card .dr-mid > .dr-actions button.btn {
+/* A match's status, the colour of its name (UV, 27 Nov: no badges): amber,
+   red or grey as its badge was (tournament-bracket.js, statusOf). Grey is
+   the name's own muted colour. */
+:is(.bracket-no, .dr-no, .dr-pop h2, .dr-pop-status).is-st-warn  { color: var(--color-warning); }
+:is(.bracket-no, .dr-no, .dr-pop h2, .dr-pop-status).is-st-bad   { color: var(--color-error); }
+:is(.bracket-no, .dr-no, .dr-pop h2, .dr-pop-status).is-st-muted { color: var(--text-muted); }
+
+/* The director's ⋯ (UV, 27 Nov): the three-dots ring, in a match's middle
+   in Rounds and at the foot of a card in the bracket. */
+.tdc-card button.fx-icon.dr-more { width: 1.9rem; height: 1.9rem; }
+/* UV, 27 Nov: "publish in green text and dots in white". */
+.dr-more .tdc-ring .mark { stroke: white; }
+button.btn[data-act="publish"] { color: var(--color-primary); }
+.bracket-more-row { justify-content: center; align-items: center; }
+/* Publish (or Lock it) beside the ⋯ (UV, 27 Nov), small, as the buttons
+   in a match's middle were. */
+.dr-more-row { display: flex; align-items: center; justify-content: center; gap: 4px; }
+.tdc-card .dr-more-row button.btn {
+	min-height: 0;
 	padding: 0.2em 0.55em;
 	font-size: 0.7rem;
 	white-space: nowrap;
 }
+
+/* The ⋯ card (credits-card.css's .cc): the match's name and status, the two
+   scores either side of a colon, the lag, then the buttons, full size. */
+.dr-pop-status { margin: calc(-1 * var(--space-2)) 0 var(--space-3); font-size: 0.9rem; }
+.dr-pop-score {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+	align-items: end;
+	gap: var(--space-3);
+	margin-bottom: var(--space-4);
+}
+.dr-pop-seat {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--space-2);
+	min-width: 0;
+}
+.dr-pop-name { font-weight: 600; text-align: center; overflow-wrap: break-word; max-width: 100%; }
+.dr-pop-name.cs-empty { font-weight: 400; color: var(--text-muted); }
+.dr-pop-score .dr-colon { padding-bottom: 0.35rem; }
+.dr-pop-lag { display: flex; justify-content: center; margin-bottom: var(--space-4); }
+.dr-pop-actions { justify-content: center; gap: var(--space-2); margin-top: 0; }
 
 /* The view settings folded in a group (UV, 27 Nov), closed on opening. In
    full screen the group is opened for its bar (tournament-bracket.js) and
