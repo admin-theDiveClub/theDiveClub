@@ -112,6 +112,13 @@ UV: admin@thediveclub.org is to behave as director on every league and tournamen
 - **Tests:** `082_venues_list` (10).
 - **Seeded:** The Dive Club (address from the footer, the rest to come), Billiard Café (Rivonia) and Billiard Café (Randpark Ridge) from the Google Maps listings UV sent. Postcodes are not held.
 
+### Only owners see Create, for now (27 Nov; pages only, no migration)
+
+- **UV, 27 Nov:** for now only club owners and the owner account create tournaments and leagues; temporary, and in the pages only. DECISIONS 27 Nov, "Only owners create tournaments and leagues, for now".
+- **The test:** `TDC.canCreateCompetitions(area, userId, statusEl)` (`tdc.js`): does the person hold `role = 'owner'` at any venue in `tbl_venue_staff` (their own rows are readable to them). The owner account is The Dive Club's owner, so one test covers both. True or false; a failed read is shown as `TDC (Error)` and counts as false.
+- **Where:** Tournaments (`tournaments.js`; the button sits in `#new-tournament`, a plain wrapper, because `.btn-link` sets `display` and would beat `hidden`) and Leagues (`leagues.js`, the whole Run a league section, `#run-league`) show Create only when it is true, and the empty-list lines drop "Create one". `/tournaments/new/` and `/leagues/new/` say "Creating … is limited to club owners for now." and grey Create. A league's New season (`/leagues/new/?l=…`) is not touched: it stays with whoever runs the league.
+- **Not enforced:** `tdc_create_tournament` and `tdc_create_league` still accept anyone signed in. Taking it back out is the four checks above.
+
 ## Buying credits (24 Nov; the shop's Stage 1, `docs/design/shop.md`)
 
 **Built, both steps** (migration `20261124112328_credit_top_ups`, test `091_credit_top_ups`; the pages 24 Nov):

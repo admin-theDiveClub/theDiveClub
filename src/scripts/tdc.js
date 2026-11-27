@@ -82,6 +82,26 @@ const TDC = (() => {
 		return data;
 	}
 
+	// May this person create a tournament or a league? For now only the owner
+	// of a venue: the site owner (admin@, The Dive Club's owner) and club
+	// owners (UV, 27 Nov). Temporary, and the pages only: tdc_create_tournament
+	// and tdc_create_league still allow anyone signed in. A person reads their
+	// own tbl_venue_staff rows. Returns true or false; a failure to check is
+	// shown and counts as false.
+	async function canCreateCompetitions(area, userId, targetEl) {
+		const { data, error: err } = await supabaseClient
+			.from('tbl_venue_staff')
+			.select('venue_id')
+			.eq('user_id', userId)
+			.eq('role', 'owner')
+			.limit(1);
+		if (err) {
+			error(area, 'could not check whether you may create tournaments and leagues.', err, targetEl);
+			return false;
+		}
+		return !!(data && data.length);
+	}
+
 	// Send any notification pushes that are waiting.
 	//
 	// Notification rows are written inside the database — by the function or
@@ -1030,7 +1050,7 @@ const TDC = (() => {
 		a.finished.then(end, end);
 	}
 
-	return { shortUrl, shareButton, error, status, freshReload, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, flushPushes, flushEmails, queued, writer, readEarly, read, shortKey, shortRead,
+	return { shortUrl, shareButton, error, status, freshReload, showSupabaseError, getSession, requireSession, safeNext, getMyPlayer, canCreateCompetitions, flushPushes, flushEmails, queued, writer, readEarly, read, shortKey, shortRead,
 		get writes() { return writes; }, writeSince, busy, groupDots, preparePicture, pictureUrl, profilePic, fullName, fullNameOf, leaguePic, tournamentPic, teamPic, playerTeamPic, SHAPES, venueNames, venueLink, venueTags, venueMark, venueHeading, venueFact, liveSnapshot, liveFade, runName, runWords, leagueLine,
 		cardOpen, cardClose, cardTurn, cardResize };
 })();

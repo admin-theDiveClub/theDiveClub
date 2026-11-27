@@ -288,6 +288,14 @@
 		const session = await TDC.requireSession(AREA);
 		if (!session) return;
 
+		// Owners only for now (UV, 27 Nov; TDC.canCreateCompetitions). The
+		// list page hides Create; this stops a saved link.
+		if (!await TDC.canCreateCompetitions(AREA, session.user.id, els.status)) {
+			els.create.disabled = true;
+			if (!els.status.textContent) TDC.status(els.status, 'Creating tournaments is limited to club owners for now.', 'error');
+			return;
+		}
+
 		showFormatHint();
 		renderSettings();
 		if (!await venues.load()) { els.create.disabled = true; return; }

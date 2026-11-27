@@ -25,7 +25,8 @@
 		discipline: document.getElementById('filter-discipline'),
 		leagueStatus: document.getElementById('filter-status'),
 		kind: document.getElementById('filter-kind'),
-		intro: document.getElementById('intro')
+		intro: document.getElementById('intro'),
+		create: document.getElementById('run-league')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -515,13 +516,19 @@
 		const session = await TDC.requireSession(AREA);
 		if (!session) return;
 
+		// Create is for owners only for now (UV, 27 Nov; TDC.canCreateCompetitions).
+		const canCreate = await TDC.canCreateCompetitions(AREA, session.user.id, els.status);
+		els.create.hidden = !canCreate;
+
 		await searchOpen();
 
 		const { data, error } = await supabaseClient.rpc('tdc_my_leagues', { p_limit: 50 });
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
 
 		if (!data || !data.length) {
-			els.intro.textContent = 'You are not in a league yet. Create one below, or ask whoever runs yours to add you. You will be told when they do.';
+			els.intro.textContent = canCreate
+				? 'You are not in a league yet. Create one below, or ask whoever runs yours to add you. You will be told when they do.'
+				: 'You are not in a league yet. Ask whoever runs yours to add you. You will be told when they do.';
 			els.intro.hidden = false;
 			return;
 		}

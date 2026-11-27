@@ -23,7 +23,8 @@
 		status: document.getElementById('list-status'),
 		intro: document.getElementById('intro'),
 		openList: document.getElementById('open-list'),
-		openIntro: document.getElementById('open-intro')
+		openIntro: document.getElementById('open-intro'),
+		create: document.getElementById('new-tournament')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -172,17 +173,22 @@
 		const session = await TDC.requireSession(AREA);
 		if (!session) return;   // requireSession has already sent them to log in
 
-		const [mine, open] = await Promise.all([
+		const [mine, open, canCreate] = await Promise.all([
 			supabaseClient.rpc('tdc_my_tournaments', { p_limit: 50 }),
-			supabaseClient.rpc('tdc_open_tournaments', { p_limit: 50 })
+			supabaseClient.rpc('tdc_open_tournaments', { p_limit: 50 }),
+			// Create is for owners only for now (UV, 27 Nov; TDC.canCreateCompetitions).
+			TDC.canCreateCompetitions(AREA, session.user.id, els.status)
 		]);
+		els.create.hidden = !canCreate;
 
 		if (mine.error) { TDC.showSupabaseError(AREA, mine.error, els.status); return; }
 		if (open.error) { TDC.showSupabaseError(AREA, open.error, els.status); return; }
 
 		const data = mine.data || [];
 		if (!data.length) {
-			els.intro.textContent = 'You are not in a tournament yet. Create one above, or enter one below.';
+			els.intro.textContent = canCreate
+				? 'You are not in a tournament yet. Create one above, or enter one below.'
+				: 'You are not in a tournament yet. Enter one below.';
 		} else {
 			els.list.replaceChildren(...data.map(card));
 			els.intro.textContent = data.length === 1

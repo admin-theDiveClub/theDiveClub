@@ -284,6 +284,16 @@
 			return;
 		}
 
+		// A new league is for owners only for now (UV, 27 Nov;
+		// TDC.canCreateCompetitions). A new season of an existing league,
+		// above, stays with whoever runs it. The list page hides Create; this
+		// stops a saved link.
+		if (!await TDC.canCreateCompetitions(AREA, session.user.id, els.status)) {
+			els.create.disabled = true;
+			if (!els.status.textContent) TDC.status(els.status, 'Creating leagues is limited to club owners for now.', 'error');
+			return;
+		}
+
 		renderSettings();
 		if (!await venues.load()) { els.create.disabled = true; return; }
 		els.name.focus();

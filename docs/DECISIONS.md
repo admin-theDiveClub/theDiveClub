@@ -3284,3 +3284,17 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV, later the same day (RACK IT UP v Streetwise Combo):* Manoj Ramjith did not play; Jason Govender played in his place, as CueScore has it. **The night is reset and imported from CueScore**, Streetwise's seats as played (six players, 8 seats off the sheet). Match 11: Ntokozo broke (CueScore), not Nishay (the site). Match 14 has no L on CueScore: Shivhay broke, as the site had it. Match 19 has no L: it goes in with no lag.
 *Rejected:* keeping the 4 frames scored on the site and fixing the lineup by hand.
 *So:* `private-data/rivonia-8mtl-2026-27/` only: `source/cuescore-2026-11-25-rackitup.txt`, `build_2026_11_25_rackitup.py`, `import-2026-11-25-rackitup-template.sql`, `import-2026-11-25-rackitup.sql`, `local_test_2026_11_25_rackitup.py`; `docs/STATUS.md` §1 R1.
+
+## 2026-11-27 — Only owners create tournaments and leagues, for now
+
+*Decided by UV:* for now, block creating tournaments and leagues on the site; only club owners and UV (the owner account, admin@thediveclub.org) may create them. **Temporary, and in the pages only.** A league's New season stays with whoever runs the league (Claude's reading: it is not a new league).
+*Claude's, for UV to correct:* "club owner" means `owner` at any venue in `tbl_venue_staff`, which includes the owner account; a non-owner reaching a create page by its address sees "Creating … is limited to club owners for now." rather than being sent away.
+*Rejected:* refusing in `tdc_create_tournament` / `tdc_create_league` (UV: "just disable in the UI for now").
+*So:* `docs/systems/foundations.md`, "Only owners see Create, for now"; `docs/STATUS.md` §1 4ea, §5 "Who may create a league or a tournament".
+*Touches:* `src/scripts/tdc.js`, `tournaments.js`, `leagues.js`, `tournament-new.js`, `league-new.js`, `src/tournaments/index.html`, `src/leagues/index.html`
+
+## 2026-11-27 — Tournament entrants as placeholders, not walk-ins with an email
+
+*Decided by UV:* walk-ins added from Entrants with a unique email are **dropped**: telling a director whether an email is registered breaks earlier decisions on data integrity. Walk-ins stay as they are. Instead, **tournament placeholders**, after how Basil and Rick run nights now (a WhatsApp list pasted into Challonge): a director enters a list of names; each is a placeholder with no account and no future connection, **unless the director connects it to an account**. The site shows accounts that may fit a placeholder's name and the director connects or not, so a player may also play anonymously. A placeholder is awarded nothing unless connected. Connecting is allowed **during play too**. A regular without an account is a new placeholder each time.
+*Still open:* what connecting does to frames already played, whether the account's owner is asked, and where the list box sits on Entrants. Designed before it is built.
+*So:* `docs/STATUS.md` §2, "Tournament clean-up for Basil and Rick".
