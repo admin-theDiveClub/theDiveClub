@@ -3446,3 +3446,12 @@ These predate the log. They are recorded here because every one of them is a dec
 *So:* `docs/systems/tournaments.md`, "The arrows: out from the separator…".
 *Touches:* `src/scripts/tournament-bracket.js`, `src/stylesheets/bracket.css`
 *Then (UV, same day):* "try arc instead"; "wherever the top of one card overlaps the row of the previous card, use top and bottom always"; "use one style everywhere… I don't mind which you choose". Every arrow is quarter-ellipse arcs plus a straight run into the head: side to side as an arc S, a hook into the middle of a card's top or bottom edge where it leaves clear, and an over route (an arc S through the gap, then an arc in) where the edge is level with the leaving row. *Claude's:* arcs chosen as the one style; "level" is within one player row's height; the over route rises to three heads beyond the edge.
+*Then (UV, same day):* grid arrows, on the picture and then the bracket ("lets go with grid on the bracket view as well"), replacing the arcs: straight runs with small rounded corners on the same three routes. *Claude's:* the corner radius 6px; a hook needs a head and a half of room, else the over route.
+
+## 2026-11-28 — A picture of the bracket to share
+
+*Decided by UV:* a **share icon at the top right of the bracket** exporting a **clean, high-quality image of the whole bracket**; **title, rounds, cards and arrows**; **for everybody who can see the bracket**; **shared on a phone, downloaded with a mouse**, as the scorecard; **the site's icon at the top right** of the picture; **grid arrows**.
+*Claude's, for UV to correct:* drawn fresh on a canvas from the laid-out bracket (not a screenshot), so it follows the view settings; PNG at twice the screen's size or more, under 16 million pixels; the venue and date under the title; thediveclub.org small in the foot; the icon in a row of its own above the bracket, Bracket view only; a picture made too late for a phone waits for a second tap.
+*So:* `docs/systems/tournaments.md`, "A picture of the bracket".
+*Touches:* `src/scripts/tournament-bracket.js`, `src/stylesheets/bracket.css`, `src/_includes/tournament/draw.html`
+

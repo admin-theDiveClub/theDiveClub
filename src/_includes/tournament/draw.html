@@ -253,6 +253,16 @@
 	<div class="muted">Drag a player onto a slot to put them in it. Drag a player from one match onto a slot in another round to send that match's winner there, or onto the bin to take them out of their match. On a phone, hold a moment before dragging.</div>
 </div>
 
+{% comment %}
+	Share a picture of the bracket (UV, 28 Nov: "a share icon in top right
+	of bracket to export a clean image of the entire bracket view in high
+	quality"), for everybody who can see it. tournament-bracket.js draws the
+	ring and makes the picture (bracketPicture).
+{% endcomment %}
+<div class="bracket-share-row">
+	<button type="button" class="fx-icon bracket-share" id="bracket-share" title="Share a picture of the bracket" aria-label="Share a picture of the bracket" hidden></button>
+</div>
+
 <!-- The bracket itself, built by tournament-bracket.js -->
 <div class="bracket-scroll">
 	<div class="bracket" id="bracket"></div>

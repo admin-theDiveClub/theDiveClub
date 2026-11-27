@@ -12,6 +12,11 @@
  * Every value here is a token. If something needs a colour or a radius that
  * is not in variables.css, the token is missing, not this file. */
 
+/* Share a picture of the bracket (UV, 28 Nov): the site's Share ring at
+   the top right, above the bracket. */
+.bracket-share-row { display: flex; justify-content: flex-end; }
+.tdc-card button.fx-icon.bracket-share { width: 2.4rem; height: 2.4rem; }
+
 .bracket-scroll {
 	overflow-x: auto;
 	/* Room for the cards' shadows, which the scroller would cut off. Exactly

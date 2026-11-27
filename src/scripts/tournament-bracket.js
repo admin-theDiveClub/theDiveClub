@@ -45,7 +45,8 @@ TDCTournamentNav.panel('draw', () => {
 		entrants: el('entrants'), entrantPills: el('entrant-pills'),
 		stage: el('stage'), fit: el('fit'), full: el('full'), resetView: el('reset-view'),
 		populate: el('populate'), shuffle: el('shuffle'),
-		modes: el('draw-modes'), rounds: el('rounds'), viewGroup: el('view-group')
+		modes: el('draw-modes'), rounds: el('rounds'), viewGroup: el('view-group'),
+		share: el('bracket-share')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -156,6 +157,7 @@ TDCTournamentNav.panel('draw', () => {
 	// The match's ⋯ pop-up (UV, 27 Nov), when one is open: { dlg, fixtureId,
 	// stale } (matchPop).
 	let pop = null;
+	let venueNames = [];   // where it is played, for the bracket picture's title
 
 	const node = (tag, cls, text) => {
 		const n = document.createElement(tag);
@@ -1208,6 +1210,7 @@ TDCTournamentNav.panel('draw', () => {
 		els.shuffle.hidden = !drawn;
 		els.actions.hidden = !drawn || readOnly;
 		els.viewGroup.hidden = !fixtures.length;   // the view settings, folded (UV, 27 Nov)
+		els.share.hidden = !fixtures.length;        // a picture of the bracket, for everybody (UV, 28 Nov)
 		els.entrants.hidden = !fixtures.length || readOnly;
 		// Bracket · Rounds (UV, 27 Nov): on Draw and Run the draw once there
 		// is a draw. Rounds hides the stage (the view row, the pills, the
@@ -1881,6 +1884,7 @@ TDCTournamentNav.panel('draw', () => {
 		// Where it is played. A failure is said and the draw still shows.
 		const places = await supabaseClient.rpc('tdc_tournament_venue_list', { p_tournament_id: tournamentId });
 		if (places.error) TDC.showSupabaseError(AREA, places.error, els.status);
+		venueNames = (places.data || []).map((v) => v.name).filter(Boolean);   // the bracket picture's title (bracketPicture)
 		TDC.venueHeading(els.meta, bits.join(' · '), places.data);
 		return true;
 	}
@@ -2358,8 +2362,8 @@ TDCTournamentNav.panel('draw', () => {
 				// Into the top or bottom of a card where possible (UV, 28 Nov:
 				// "rather use top and bottom of cards where possible instead of
 				// forcing the arrows into this tight shape", and "same should
-				// apply to the outer cards"): where the arrow leaves clear above
-				// or below the card, by a head's length, it hooks round into the
+				// apply to the outer cards"): where the arrow leaves above or
+				// below the card with a head and a half to spare, it hooks round into the
 				// middle of the card's top or bottom edge rather than its side.
 				// And wherever the card's top (or bottom) falls within the row
 				// the arrow leaves from (UV, 28 Nov: "use top and bottom
@@ -2368,15 +2372,18 @@ TDCTournamentNav.panel('draw', () => {
 				// down (or up) into the middle of that edge (overPath).
 				let hook = '';              // '', 'hook' or 'over'
 				let topEdge = true;         // entering the top (or left) edge, else the bottom (or right)
-				const clear = headLength();
 				{
 					const s1 = across ? y1 + host.top : x1 + host.left;
 					const lo = across ? b.top : b.left, hi = across ? b.bottom : b.right;
 					const rowEl = from.querySelector('.bracket-side');
 					const row = rowEl ? (across ? rowEl.getBoundingClientRect().height : rowEl.getBoundingClientRect().width) : 0;
 					let edge = null;
-					if (s1 <= lo - clear) { edge = lo; hook = 'hook'; }
-					else if (s1 >= hi + clear) { edge = hi; hook = 'hook'; }
+					// Leaving above the top (or below the bottom) with room for the
+					// turn and the head, a head and a half: one arc straight in.
+					// Closer than that a hook is too flat to read, so it goes over.
+					const room = headLength() * 1.5;
+					if (s1 <= lo - room) { edge = lo; hook = 'hook'; }
+					else if (s1 >= hi + room) { edge = hi; hook = 'hook'; }
 					else if (Math.abs(s1 - lo) <= row) { edge = lo; hook = 'over'; }
 					else if (Math.abs(s1 - hi) <= row) { edge = hi; hook = 'over'; }
 					if (edge !== null) {
@@ -2402,7 +2409,7 @@ TDCTournamentNav.panel('draw', () => {
 				const decided = !!(which === 'home' ? f.home_entrant_id : f.away_entrant_id);
 
 				const path = document.createElementNS(SVG_NS, 'path');
-				path.setAttribute('d', hook === 'hook' ? hookPath(x1, y1, x2, y2, across, headLength())
+				path.setAttribute('d', hook === 'hook' ? hookPath(x1, y1, x2, y2, across)
 					: hook === 'over' ? overPath(x1, y1, x2, y2, across, topEdge, gap, headLength())
 					: curve(x1, y1, x2, y2, across, headLength()));
 				path.setAttribute('class', 'bracket-arrow'
@@ -2477,63 +2484,56 @@ TDCTournamentNav.panel('draw', () => {
 		return sidesOf(card, axis).at(which);
 	}
 
-	// The arrows are drawn in arcs (UV, 28 Nov: "try arc instead"; Bézier
-	// curves before, an S then a hook, and an elbow tried and dropped). Each
-	// arc is a quarter of an ellipse between two points where the line runs
-	// along one axis and then the other, so it leaves a card square and ends
-	// in a straight run of a head's length into the head (UV: "make sure the
-	// arrow meets the arrow head"), held to three quarters of the room.
-	// arcTo: from p, heading along u (a unit step on one axis), to q, arriving
-	// along the other axis. The sweep is the side q lies on from u.
-	function arcTo(p, u, q) {
-		const rx = Math.abs(q[0] - p[0]), ry = Math.abs(q[1] - p[1]);
-		const sweep = u[0] * (q[1] - p[1]) - u[1] * (q[0] - p[0]) > 0 ? 1 : 0;
-		return `A ${rx} ${ry} 0 0 ${sweep} ${q[0]} ${q[1]}`;
+	// The arrows are drawn on a grid (UV, 28 Nov: "lets go with grid on the
+	// bracket view as well", after the picture's grid arrows; arcs, an S, a
+	// hook and an elbow were tried before it the same day): straight runs at
+	// right angles with small rounded corners, the last run at least a head's
+	// length where there is room (UV: "make sure the arrow meets the arrow
+	// head"). gridPath draws a list of points so.
+	function gridPath(pts) {
+		let d = `M ${pts[0][0]} ${pts[0][1]}`;
+		for (let i = 1; i < pts.length - 1; i++) {
+			const [px, py] = pts[i - 1], [cx, cy] = pts[i], [nx, ny] = pts[i + 1];
+			const l1 = Math.hypot(cx - px, cy - py), l2 = Math.hypot(nx - cx, ny - cy);
+			const r = Math.min(6, l1 / 2, l2 / 2);
+			if (!l1 || !l2 || r < 0.5) { d += ` L ${cx} ${cy}`; continue; }
+			const ax = cx - (cx - px) / l1 * r, ay = cy - (cy - py) / l1 * r;
+			const bx = cx + (nx - cx) / l2 * r, by = cy + (ny - cy) / l2 * r;
+			d += ` L ${ax} ${ay} Q ${cx} ${cy} ${bx} ${by}`;
+		}
+		const last = pts[pts.length - 1];
+		return d + ` L ${last[0]} ${last[1]}`;
 	}
-	// Card to card along the rounds (across: sideways, else down): two
-	// quarter arcs meeting halfway, an S, then the straight run.
+	// Card to card along the rounds (across: sideways, else down): out, a turn
+	// halfway (or a head short of the card when the gap is narrow), in.
 	function curve(x1, y1, x2, y2, across = true, head = 0) {
-		const along = across ? x2 - x1 : y2 - y1;
-		const side = across ? y2 - y1 : x2 - x1;
-		const run = Math.min(head, Math.abs(along) * 0.75) * (Math.sign(along) || 1);
-		const end = across ? [x2 - run, y2] : [x2, y2 - run];
-		if (Math.abs(side) < 1) return `M ${x1} ${y1} L ${x2} ${y2}`;
-		const mid = [(x1 + end[0]) / 2, (y1 + end[1]) / 2];
-		const u1 = across ? [Math.sign(along) || 1, 0] : [0, Math.sign(along) || 1];
-		const u2 = across ? [0, Math.sign(side)] : [Math.sign(side), 0];
-		return `M ${x1} ${y1} ${arcTo([x1, y1], u1, mid)} ${arcTo(mid, u2, end)} L ${x2} ${y2}`;
+		const S = (a, s) => (across ? [a, s] : [s, a]);
+		const [a1, s1, a2, s2] = across ? [x1, y1, x2, y2] : [y1, x1, y2, x2];
+		if (Math.abs(s2 - s1) < 1) return `M ${x1} ${y1} L ${x2} ${y2}`;
+		const da = Math.sign(a2 - a1) || 1;
+		const run = Math.min(head, Math.abs(a2 - a1) * 0.75);
+		const m = Math.abs(a2 - a1) / 2 >= run ? (a1 + a2) / 2 : a2 - da * run;
+		return gridPath([S(a1, s1), S(m, s1), S(m, s2), S(a2, s2)]);
 	}
-	// The hook (UV, 28 Nov, into a card's top or bottom): one quarter arc out
-	// of the feeder along the rounds' direction round into the straight run
-	// down (or up) into the middle of the card's edge.
-	function hookPath(x1, y1, x2, y2, across = true, head = 0) {
-		const down = across ? y2 - y1 : x2 - x1;
-		const run = Math.min(head, Math.abs(down) * 0.75) * (Math.sign(down) || 1);
-		const end = across ? [x2, y2 - run] : [x2 - run, y2];
-		const u = across ? [Math.sign(x2 - x1) || 1, 0] : [0, Math.sign(y2 - y1) || 1];
-		return `M ${x1} ${y1} ${arcTo([x1, y1], u, end)} L ${x2} ${y2}`;
+	// The hook (into a card's top or bottom): out along the rounds' direction
+	// to above (or below) the middle of the card's edge, then in.
+	function hookPath(x1, y1, x2, y2, across = true) {
+		const S = (a, s) => (across ? [a, s] : [s, a]);
+		const [a1, s1, a2, s2] = across ? [x1, y1, x2, y2] : [y1, x1, y2, x2];
+		return gridPath([S(a1, s1), S(a2, s1), S(a2, s2)]);
 	}
 
 	// Over (UV, 28 Nov): the card's top (or bottom) is level with the row the
-	// arrow leaves from, too close to hook in. The same arcs as every other
-	// arrow (UV: "use one style everywhere"): an S of two quarter arcs rising
-	// (or falling) through the gap to three heads' lengths beyond the edge,
-	// then one quarter arc round to above the card's middle and the straight
-	// run into the edge. topEdge: into the top (or left) edge.
+	// arrow leaves from, too close to hook in: out to the middle of the gap,
+	// up (or down) to three heads' lengths beyond the edge, along to above the
+	// card's middle, and in. topEdge: into the top (or left) edge.
 	function overPath(x1, y1, x2, y2, across, topEdge, gap, head) {
 		const S = (a, s) => (across ? [a, s] : [s, a]);
-		const U = (da, ds) => (across ? [da, ds] : [ds, da]);
 		const [a1, s1, a2, s2] = across ? [x1, y1, x2, y2] : [y1, x1, y2, x2];
 		const da = Math.sign(a2 - a1) || 1;
-		const sIn = topEdge ? 1 : -1;            // the last run's way along s
-		const sL = s2 - sIn * 3 * head;          // the level beyond the edge
-		const sy = Math.sign(sL - s1) || -sIn;   // up (or down) to it
-		const m = a1 + da * Math.max(gap, 2);    // the card's near side, at that level
-		const mid = S((a1 + m) / 2, (s1 + sL) / 2);
-		const top = S(m, sL);
-		const end = S(a2, s2 - sIn * head);
-		return `M ${x1} ${y1} ${arcTo([x1, y1], U(da, 0), mid)} ${arcTo(mid, U(0, sy), top)}`
-			+ ` ${arcTo(top, U(da, 0), end)} L ${x2} ${y2}`;
+		const sL = s2 - (topEdge ? 1 : -1) * 3 * head;   // the level beyond the edge
+		const g = a1 + da * Math.max(gap, 2) / 2;        // the middle of the gap
+		return gridPath([S(a1, s1), S(g, s1), S(g, sL), S(a2, sL), S(a2, s2)]);
 	}
 
 	// The head's length on the page: 6 line widths (arrowHead's marker), the
@@ -2557,6 +2557,312 @@ TDCTournamentNav.panel('draw', () => {
 		tip.setAttribute('d', 'M 0 0.5 L 10 5 L 0 9.5 L 2.5 5 z');
 		marker.append(tip);
 		return marker;
+	}
+
+	// ─────────────────────────────────────────────────────────────────
+	// A picture of the bracket (UV, 28 Nov: "a share icon in top left of
+	// bracket to export a clean image of the entire bracket view in high
+	// quality"; "neat output please")
+	//
+	// Drawn fresh on a canvas, as the scorecard's Save picture is
+	// (league-card.js), not a screenshot: the tournament's name, venue and
+	// date across the top, each round's heading, each card (its state strip,
+	// its name in its status colour, the players' pictures, names and scores,
+	// the line between them) and the arrows, in the site's colours and fonts.
+	// Nothing for the director: no buttons, ⋯, red crosses or badges. Every
+	// place and colour is read from the bracket as it is laid out now, so the
+	// picture is the view on the screen, whatever its settings. At least
+	// twice the screen's size (more when the view is zoomed out), held under
+	// 16 million pixels, which an iPhone's canvas allows. On a touch screen
+	// the share sheet opens with it; with a mouse it downloads (UV, as the
+	// scorecard). A phone shares only soon after the tap, so a picture made
+	// too late waits for a second tap.
+	// ─────────────────────────────────────────────────────────────────
+	let pictureReady = null;   // a picture made too late to share: a File
+
+	function loadPicture(url) {
+		return new Promise((resolve) => {
+			const img = new Image();
+			img.crossOrigin = 'anonymous';   // the buckets are public; without it the canvas could not be saved
+			img.onload = () => resolve(img);
+			img.onerror = () => resolve(null);
+			img.src = url;
+		});
+	}
+
+	// The text of an element drawn where it sits, in its own font and colour,
+	// clipped to its box (a long name cut as on the screen).
+	function drawText(ctx, el, origin, z) {
+		if (!el) return;
+		const text = el.textContent.trim();
+		if (!text) return;
+		const cs = getComputedStyle(el);
+		const box = el.getBoundingClientRect();
+		const range = document.createRange();
+		range.selectNodeContents(el);
+		const r = range.getBoundingClientRect();
+		ctx.save();
+		ctx.beginPath();
+		ctx.rect(box.left - origin.left, box.top - origin.top, box.width, box.height);
+		ctx.clip();
+		ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${parseFloat(cs.fontSize) * z}px ${cs.fontFamily}`;
+		ctx.fillStyle = cs.color;
+		ctx.textBaseline = 'middle';
+		ctx.textAlign = 'left';
+		ctx.fillText(text, r.left - origin.left, r.top + r.height / 2 - origin.top);
+		ctx.restore();
+	}
+
+	function roundRect(ctx, x, y, w, h, r) {
+		ctx.beginPath();
+		ctx.moveTo(x + r, y);
+		ctx.arcTo(x + w, y, x + w, y + h, r);
+		ctx.arcTo(x + w, y + h, x, y + h, r);
+		ctx.arcTo(x, y + h, x, y, r);
+		ctx.arcTo(x, y, x + w, y, r);
+		ctx.closePath();
+	}
+
+	async function bracketPicture() {
+		const host = els.bracket.getBoundingClientRect();
+		if (!host.width || !host.height) throw new Error('the bracket is not on the screen to make a picture of');
+		const z = view.zoom / 100 || 1;
+		const root = getComputedStyle(document.documentElement);
+		const token = (name, fallback) => root.getPropertyValue(name).trim() || fallback;
+		const bg = token('--bg-base', '#1d1d1d');
+		const surface = token('--bg-surface', token('--bg-raised', '#2a2a2a'));
+		const line = token('--border-color', '#3a3a3a');
+		const muted = token('--text-muted', '#888');
+		const primary = token('--color-primary', '#61ffad');
+		const display = token('--font-display', 'sans-serif');
+		const body = getComputedStyle(document.body).fontFamily;
+
+		// Everything inside the bracket's box, plus a margin and the title.
+		const pad = 32;
+		const titleH = 96;
+		const W = Math.ceil(els.bracket.scrollWidth + pad * 2);
+		const H = Math.ceil(els.bracket.scrollHeight + pad * 2 + titleH);
+		const scale = Math.min(Math.max(2, 2.5 / z), 4, Math.sqrt(16e6 / (W * H)));
+		const canvas = document.createElement('canvas');
+		canvas.width = Math.round(W * scale);
+		canvas.height = Math.round(H * scale);
+		const ctx = canvas.getContext('2d');
+		if (!ctx) throw new Error('this browser would not give us a canvas to draw the bracket on');
+		if (document.fonts) await document.fonts.ready;
+		ctx.scale(scale, scale);
+		ctx.fillStyle = bg;
+		ctx.fillRect(0, 0, W, H);
+
+		// The title: the tournament, then where and when.
+		ctx.textBaseline = 'alphabetic';
+		ctx.fillStyle = primary;
+		ctx.font = `400 36px ${display}`;
+		ctx.fillText((tournament && tournament.name) || 'Tournament', pad, pad + 38);
+		const when = tournament && tournament.starts_at ? new Date(tournament.starts_at) : null;
+		const sub = [venueNames.join(', '), when && !isNaN(when)
+			? when.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '']
+			.filter(Boolean).join(' · ');
+		if (sub) {
+			ctx.fillStyle = muted;
+			ctx.font = `400 18px ${body}`;
+			ctx.fillText(sub, pad, pad + 68);
+		}
+		// The club's icon at the top right (UV, 28 Nov: "add my site icon in
+		// top right of export"), the nav's own, as tall as the title block.
+		const icon = await loadPicture('/resources/branding/icon-primary.svg');
+		if (icon && icon.naturalWidth) {
+			const ih = 72, iw = ih * icon.naturalWidth / (icon.naturalHeight || icon.naturalWidth);
+			ctx.drawImage(icon, W - pad - iw, pad, iw, ih);
+		}
+
+		// The bracket's own space from here: its top left at (pad, pad + titleH),
+		// from its start, so any part scrolled off the screen is drawn too.
+		const origin = { left: host.left - els.bracket.scrollLeft - pad, top: host.top - els.bracket.scrollTop - pad - titleH };
+
+		// Round headings.
+		for (const h of els.bracket.querySelectorAll('.bracket-round-name')) drawText(ctx, h, origin, z);
+
+		// The arrows, under the cards, as drawn on the page.
+		const svg = els.bracket.querySelector('.bracket-arrows');
+		if (svg) {
+			const at = svg.getBoundingClientRect();
+			ctx.save();
+			ctx.translate(at.left - origin.left, at.top - origin.top);
+			for (const p of svg.querySelectorAll('path.bracket-arrow')) {
+				const cs = getComputedStyle(p);
+				const width = parseFloat(cs.strokeWidth) || 2;
+				ctx.strokeStyle = cs.stroke;
+				ctx.lineWidth = width;
+				ctx.lineCap = 'round';
+				const dash = cs.strokeDasharray && cs.strokeDasharray !== 'none'
+					? cs.strokeDasharray.split(/[ ,]+/).map(parseFloat).filter((n) => !isNaN(n)) : [];
+				ctx.setLineDash(dash);
+				// The page's own arrows, on a grid since 28 Nov (UV: "use grid
+				// arrows on the export", then on the page too).
+				ctx.stroke(new Path2D(p.getAttribute('d')));
+				ctx.setLineDash([]);
+				// The head: arrowHead's barb, 6 line widths long, along the
+				// line's last direction.
+				const len = p.getTotalLength();
+				const tip = p.getPointAtLength(len);
+				const back = p.getPointAtLength(Math.max(0, len - 1));
+				const ang = Math.atan2(tip.y - back.y, tip.x - back.x);
+				const s = width * 6 / 10;
+				ctx.save();
+				ctx.translate(tip.x, tip.y);
+				ctx.rotate(ang);
+				ctx.beginPath();
+				ctx.moveTo(-10 * s, -4.5 * s);
+				ctx.lineTo(0, 0);
+				ctx.lineTo(-10 * s, 4.5 * s);
+				ctx.lineTo(-7.5 * s, 0);
+				ctx.closePath();
+				ctx.fillStyle = cs.stroke;
+				ctx.fill();
+				ctx.restore();
+			}
+			ctx.restore();
+		}
+
+		// The cards.
+		const pictures = [];
+		for (const card of els.bracket.querySelectorAll('.bracket-fixture')) {
+			const r = card.getBoundingClientRect();
+			if (!r.width) continue;
+			const x = r.left - origin.left, y = r.top - origin.top;
+			const radius = (parseFloat(getComputedStyle(card).borderTopLeftRadius) || 12) * z;
+			roundRect(ctx, x, y, r.width, r.height, radius);
+			ctx.fillStyle = surface;
+			ctx.fill();
+			ctx.strokeStyle = line;
+			ctx.lineWidth = 1;
+			ctx.stroke();
+			// The state strip down its left, in its colours.
+			for (const seg of card.querySelectorAll('.bracket-seg')) {
+				const sr = seg.getBoundingClientRect();
+				const sc = getComputedStyle(seg);
+				const c = sc.getPropertyValue('--strip-color').trim() || sc.backgroundColor;
+				if (!sr.height || !c || c === 'rgba(0, 0, 0, 0)') continue;
+				ctx.fillStyle = c;
+				roundRect(ctx, sr.left - origin.left, sr.top - origin.top, Math.max(sr.width, 3), sr.height, 1.5);
+				ctx.fill();
+			}
+			drawText(ctx, card.querySelector('.bracket-no'), origin, z);
+			const sides = [...card.querySelectorAll('.bracket-side[data-side]')];
+			sides.forEach((side, i) => {
+				const s = side.getBoundingClientRect();
+				// The line between the two players.
+				if (i > 0 && view.card !== 'across') {
+					ctx.strokeStyle = line;
+					ctx.lineWidth = 1;
+					ctx.beginPath();
+					ctx.moveTo(s.left - origin.left, s.top - origin.top);
+					ctx.lineTo(s.right - origin.left, s.top - origin.top);
+					ctx.stroke();
+				}
+				const pic = side.querySelector('.person-pic');
+				if (pic && view.pics !== 'hide') {
+					const pr = pic.getBoundingClientRect();
+					const img = pic.querySelector('img');
+					const spot = { x: pr.left - origin.left, y: pr.top - origin.top, d: Math.min(pr.width, pr.height) };
+					if (img && img.src) pictures.push(loadPicture(img.src).then((loaded) => ({ spot, loaded, pic })));
+					else if (pr.width) pictures.push(Promise.resolve({ spot, loaded: null, pic }));
+				}
+				for (const el of side.querySelectorAll('.bracket-name, .bracket-frames')) drawText(ctx, el, origin, z);
+			});
+		}
+		// The pictures, round, once loaded; initials where there is none.
+		for (const { spot, loaded, pic } of await Promise.all(pictures)) {
+			const cx = spot.x + spot.d / 2, cy = spot.y + spot.d / 2;
+			ctx.save();
+			ctx.beginPath();
+			ctx.arc(cx, cy, spot.d / 2, 0, Math.PI * 2);
+			ctx.fillStyle = bg;
+			ctx.fill();
+			ctx.clip();
+			if (loaded) ctx.drawImage(loaded, spot.x, spot.y, spot.d, spot.d);
+			else if (pic.textContent.trim()) {
+				const cs = getComputedStyle(pic);
+				ctx.fillStyle = cs.color || primary;
+				ctx.font = `${cs.fontWeight} ${parseFloat(cs.fontSize) * z}px ${cs.fontFamily}`;
+				ctx.textAlign = 'center';
+				ctx.textBaseline = 'middle';
+				ctx.fillText(pic.textContent.trim(), cx, cy);
+			}
+			ctx.restore();
+		}
+
+		// The club's address, small, in the foot.
+		ctx.fillStyle = muted;
+		ctx.font = `400 14px ${body}`;
+		ctx.textAlign = 'right';
+		ctx.textBaseline = 'alphabetic';
+		ctx.fillText('thediveclub.org', W - pad, H - 12);
+		return canvas;
+	}
+
+	function pictureName() {
+		const slug = (t) => String(t || '').normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
+		return (slug(tournament && tournament.name) || 'Tournament') + '-draw.png';
+	}
+
+	async function giveBracketPicture(file) {
+		const touch = matchMedia('(pointer: coarse)').matches;
+		if (touch && navigator.canShare && navigator.canShare({ files: [file] })) {
+			await navigator.share({ files: [file], title: (tournament && tournament.name) || 'The draw' });
+			return;
+		}
+		const url = URL.createObjectURL(file);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = file.name;
+		document.body.append(a);
+		a.click();
+		a.remove();
+		setTimeout(() => URL.revokeObjectURL(url), 10000);
+	}
+
+	async function shareBracket() {
+		try {
+			if (pictureReady) {
+				const file = pictureReady;
+				pictureReady = null;
+				await giveBracketPicture(file);
+				return;
+			}
+			const canvas = await bracketPicture();
+			const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+			if (!blob) throw new Error('the browser would not turn the canvas into a picture');
+			const file = new File([blob], pictureName(), { type: 'image/png' });
+			try {
+				await giveBracketPicture(file);
+			} catch (err) {
+				if (err && err.name === 'NotAllowedError') {
+					// Made too late after the tap for a phone to share it.
+					pictureReady = file;
+					TDC.status(els.status, 'The picture is ready. Tap Share again to send it.', '');
+					return;
+				}
+				throw err;
+			}
+		} catch (err) {
+			if (err && err.name === 'AbortError') return;   // the share sheet was closed
+			TDC.error(AREA, 'the picture of the bracket could not be made.', err, els.status);
+		}
+	}
+
+	// The share icon's ring (the site's Share icon), drawn once; a tap makes
+	// the picture with the dots on the icon while it is made.
+	{
+		const face = node('span', 'tdc-ring');
+		face.innerHTML = TDCRing.svg();
+		els.share.append(face);
+		try {
+			new TDCRing.RingStatus(face, { icons: ['share'], labels: { share: els.share.title, empty: els.share.title }, initial: 'share' });
+		} catch (err) {
+			TDC.error(AREA, 'the share icon could not be drawn', err, els.status);
+		}
+		els.share.addEventListener('click', () => TDC.busy(els.share, shareBracket(), els.status));
 	}
 
 	// Arrows are measured, so anything that changes the layout has to redraw
