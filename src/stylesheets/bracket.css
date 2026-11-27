@@ -112,7 +112,11 @@
 .bracket-fixture {
 	display: grid;
 	grid-template-columns: auto minmax(0, 1fr);
-	border-radius: var(--nm-field-radius);
+	/* Corners in proportion to the card's text (UV, 28 Nov: "they are round
+	   on mobile rather than cards with rounded corners"): a pill's radius
+	   (--nm-field-radius) until then, which on a phone's small cards took
+	   most of their height. */
+	border-radius: 0.8em;
 	background: var(--bg-base);
 	box-shadow: var(--nm-raised-small);
 	position: relative;
@@ -803,7 +807,13 @@ html.bracket-full { overflow: hidden; }
    is what a drawn bracket looks like. */
 .bracket-fixture,
 .bracket-round-empty,
-.bracket-round-name {
+.bracket-round-name,
+.bracket-round-tools,
+.bracket-round-new,
+.bracket-border {
+	/* The round's buttons and the + between rounds too (UV, 28 Nov: "arrows
+	   behind cards where they overlap"): an arrow going over a card's top
+	   crossed them. */
 	position: relative;
 	z-index: 1;
 }

@@ -2594,13 +2594,13 @@ TDCTournamentNav.panel('draw', () => {
 	// clipped to its box (a long name cut as on the screen).
 	function drawText(ctx, el, origin, z) {
 		if (!el) return;
-		const text = el.textContent.trim();
+		// The words shown, not the hidden words for a screen reader (a
+		// status after a match's name, statusLabel).
+		const shown = [...el.childNodes].filter((n) => !(n.classList && n.classList.contains('visually-hidden')));
+		const text = shown.map((n) => n.textContent).join('').trim();
 		if (!text) return;
 		const cs = getComputedStyle(el);
 		const box = el.getBoundingClientRect();
-		const range = document.createRange();
-		range.selectNodeContents(el);
-		const r = range.getBoundingClientRect();
 		ctx.save();
 		ctx.beginPath();
 		ctx.rect(box.left - origin.left, box.top - origin.top, box.width, box.height);
@@ -2608,6 +2608,23 @@ TDCTournamentNav.panel('draw', () => {
 		ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${parseFloat(cs.fontSize) * z}px ${cs.fontFamily}`;
 		ctx.fillStyle = cs.color;
 		ctx.textBaseline = 'middle';
+		if (box.height > box.width * 1.5) {
+			// A name running up or down the side (a round's name, the rounds
+			// one under another): turned, centred in its box, reading up on
+			// the left half and down on the right.
+			const host = els.bracket.getBoundingClientRect();
+			const up = box.left + box.width / 2 < host.left + host.width / 2;
+			ctx.translate(box.left + box.width / 2 - origin.left, box.top + box.height / 2 - origin.top);
+			ctx.rotate(up ? -Math.PI / 2 : Math.PI / 2);
+			ctx.textAlign = 'center';
+			ctx.fillText(text, 0, 0);
+			ctx.restore();
+			return;
+		}
+		const range = document.createRange();
+		const first = shown.find((n) => n.textContent.trim());
+		range.selectNodeContents(first || el);
+		const r = range.getBoundingClientRect();
 		ctx.textAlign = 'left';
 		ctx.fillText(text, r.left - origin.left, r.top + r.height / 2 - origin.top);
 		ctx.restore();
@@ -2623,32 +2640,45 @@ TDCTournamentNav.panel('draw', () => {
 		ctx.closePath();
 	}
 
-	async function bracketPicture() {
+	// Measures and paints everything but the players' pictures, at once,
+	// while the picture's layout is on the page (bracketPicture).
+	function paintBracket(icon) {
 		const host = els.bracket.getBoundingClientRect();
 		if (!host.width || !host.height) throw new Error('the bracket is not on the screen to make a picture of');
 		const z = view.zoom / 100 || 1;
 		const root = getComputedStyle(document.documentElement);
 		const token = (name, fallback) => root.getPropertyValue(name).trim() || fallback;
 		const bg = token('--bg-base', '#1d1d1d');
-		const surface = token('--bg-surface', token('--bg-raised', '#2a2a2a'));
 		const line = token('--border-color', '#3a3a3a');
 		const muted = token('--text-muted', '#888');
 		const primary = token('--color-primary', '#61ffad');
 		const display = token('--font-display', 'sans-serif');
 		const body = getComputedStyle(document.body).fontFamily;
 
-		// Everything inside the bracket's box, plus a margin and the title.
-		const pad = 32;
-		const titleH = 96;
-		const W = Math.ceil(els.bracket.scrollWidth + pad * 2);
-		const H = Math.ceil(els.bracket.scrollHeight + pad * 2 + titleH);
+		// The title, margins and foot in proportion to the round headings
+		// (UV, 28 Nov: "fix the output so that it shows well on portrait"),
+		// rather than fixed sizes that dwarfed a small bracket.
+		const heading = els.bracket.querySelector('.bracket-round-name');
+		const u = heading ? parseFloat(getComputedStyle(heading).fontSize) * z : 24;
+		const pad = Math.round(u * 1.4);
+		const titleSize = Math.round(u * 1.7), subSize = Math.round(u * 0.75);
+		const iconH = Math.round(titleSize * 2);
+		const titleH = Math.max(iconH, titleSize * 1.3 + subSize * 1.8) + pad;
+		// Cropped to the bracket itself: its cards, round names and arrows,
+		// not the width of the page around it.
+		const box = { l: Infinity, t: Infinity, r: -Infinity, b: -Infinity };
+		const grow = (q) => { if (!q.width && !q.height) return; box.l = Math.min(box.l, q.left); box.t = Math.min(box.t, q.top); box.r = Math.max(box.r, q.right); box.b = Math.max(box.b, q.bottom); };
+		for (const e of els.bracket.querySelectorAll('.bracket-fixture, .bracket-round-name')) grow(e.getBoundingClientRect());
+		for (const e of els.bracket.querySelectorAll('path.bracket-arrow')) grow(e.getBoundingClientRect());
+		if (!isFinite(box.l)) { box.l = host.left; box.t = host.top; box.r = host.right; box.b = host.bottom; }
+		const W = Math.ceil(box.r - box.l + pad * 2);
+		const H = Math.ceil(box.b - box.t + pad * 2 + titleH);
 		const scale = Math.min(Math.max(2, 2.5 / z), 4, Math.sqrt(16e6 / (W * H)));
 		const canvas = document.createElement('canvas');
 		canvas.width = Math.round(W * scale);
 		canvas.height = Math.round(H * scale);
 		const ctx = canvas.getContext('2d');
 		if (!ctx) throw new Error('this browser would not give us a canvas to draw the bracket on');
-		if (document.fonts) await document.fonts.ready;
 		ctx.scale(scale, scale);
 		ctx.fillStyle = bg;
 		ctx.fillRect(0, 0, W, H);
@@ -2656,28 +2686,27 @@ TDCTournamentNav.panel('draw', () => {
 		// The title: the tournament, then where and when.
 		ctx.textBaseline = 'alphabetic';
 		ctx.fillStyle = primary;
-		ctx.font = `400 36px ${display}`;
-		ctx.fillText((tournament && tournament.name) || 'Tournament', pad, pad + 38);
+		ctx.font = `400 ${titleSize}px ${display}`;
+		ctx.fillText((tournament && tournament.name) || 'Tournament', pad, pad + titleSize);
 		const when = tournament && tournament.starts_at ? new Date(tournament.starts_at) : null;
 		const sub = [venueNames.join(', '), when && !isNaN(when)
 			? when.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '']
 			.filter(Boolean).join(' · ');
 		if (sub) {
 			ctx.fillStyle = muted;
-			ctx.font = `400 18px ${body}`;
-			ctx.fillText(sub, pad, pad + 68);
+			ctx.font = `400 ${subSize}px ${body}`;
+			ctx.fillText(sub, pad, pad + titleSize * 1.3 + subSize * 1.2);
 		}
 		// The club's icon at the top right (UV, 28 Nov: "add my site icon in
 		// top right of export"), the nav's own, as tall as the title block.
-		const icon = await loadPicture('/resources/branding/icon-primary.svg');
 		if (icon && icon.naturalWidth) {
-			const ih = 72, iw = ih * icon.naturalWidth / (icon.naturalHeight || icon.naturalWidth);
+			const ih = iconH, iw = ih * icon.naturalWidth / (icon.naturalHeight || icon.naturalWidth);
 			ctx.drawImage(icon, W - pad - iw, pad, iw, ih);
 		}
 
 		// The bracket's own space from here: its top left at (pad, pad + titleH),
 		// from its start, so any part scrolled off the screen is drawn too.
-		const origin = { left: host.left - els.bracket.scrollLeft - pad, top: host.top - els.bracket.scrollTop - pad - titleH };
+		const origin = { left: box.l - pad, top: box.t - pad - titleH };
 
 		// Round headings.
 		for (const h of els.bracket.querySelectorAll('.bracket-round-name')) drawText(ctx, h, origin, z);
@@ -2732,7 +2761,13 @@ TDCTournamentNav.panel('draw', () => {
 			const x = r.left - origin.left, y = r.top - origin.top;
 			const radius = (parseFloat(getComputedStyle(card).borderTopLeftRadius) || 12) * z;
 			roundRect(ctx, x, y, r.width, r.height, radius);
-			ctx.fillStyle = surface;
+			// Solid, the card's own colour on the page (UV, 28 Nov: "card
+			// backgrounds should be solid"); --bg-surface is all but clear.
+			// A step lighter than the background (the page's raised shadow,
+			// which a flat picture has not got, is what sets a card apart).
+			const fill = getComputedStyle(card).backgroundColor;
+			const rgb = (fill && fill !== 'rgba(0, 0, 0, 0)' ? fill : getComputedStyle(document.body).backgroundColor).match(/\d+/g) || [32, 32, 32];
+			ctx.fillStyle = `rgb(${rgb.slice(0, 3).map((n) => Math.min(255, Number(n) + 14)).join(', ')})`;
 			ctx.fill();
 			ctx.strokeStyle = line;
 			ctx.lineWidth = 1;
@@ -2765,14 +2800,65 @@ TDCTournamentNav.panel('draw', () => {
 					const pr = pic.getBoundingClientRect();
 					const img = pic.querySelector('img');
 					const spot = { x: pr.left - origin.left, y: pr.top - origin.top, d: Math.min(pr.width, pr.height) };
-					if (img && img.src) pictures.push(loadPicture(img.src).then((loaded) => ({ spot, loaded, pic })));
-					else if (pr.width) pictures.push(Promise.resolve({ spot, loaded: null, pic }));
+					// Read now: the page is drawn again before they are painted.
+					const cs = getComputedStyle(pic);
+					if (pr.width && ((img && img.src) || pic.textContent.trim())) pictures.push({ spot, src: img && img.src, initials: pic.textContent.trim(),
+						color: cs.color || primary, font: `${cs.fontWeight} ${parseFloat(cs.fontSize) * z}px ${cs.fontFamily}` });
 				}
 				for (const el of side.querySelectorAll('.bracket-name, .bracket-frames')) drawText(ctx, el, origin, z);
 			});
 		}
-		// The pictures, round, once loaded; initials where there is none.
-		for (const { spot, loaded, pic } of await Promise.all(pictures)) {
+		// The club's address, small, in the foot.
+		ctx.fillStyle = muted;
+		ctx.font = `400 ${Math.round(u * 0.55)}px ${body}`;
+		ctx.textAlign = 'right';
+		ctx.textBaseline = 'alphabetic';
+		ctx.fillText('thediveclub.org', W - pad, H - Math.round(pad * 0.4));
+		return { canvas, ctx, scale, pictures, bg };
+	}
+
+	// The picture is always drawn from one layout, made for a phone held
+	// upright (UV, 28 Nov: "you do not have to export the view that is being
+	// used. It must look good on mobile"): the rounds from the outside in, across, the players
+	// one above the other, pictures on, the text and zoom at 100%, the gaps
+	// as they first are (VIEW_DEFAULT), and as a player sees it (no buttons,
+	// no first-round byes), so the cards are compact and the arrows fit them.
+	// It is put on the page out of sight only while it is measured and
+	// painted, at once, then the page is put back as it was.
+	async function bracketPicture() {
+		if (document.fonts) await document.fonts.ready;
+		const icon = await loadPicture('/resources/branding/icon-primary.svg');
+		const keepView = view, keepRead = readOnly, keepVis = els.bracket.style.visibility;
+		let made;
+		els.bracket.style.visibility = 'hidden';
+		try {
+			// From the outside in (UV, 28 Nov: "the outside in view is better
+			// than the linear for output").
+			// Held upright, the rounds one under another, so the picture is
+			// upright too; held sideways, side by side (UV, 28 Nov: "if in
+			// portrait, then export portrait and if landscape, export
+			// landscape").
+			const upright = window.innerHeight > window.innerWidth;
+			view = Object.assign({}, VIEW_DEFAULT, { flow: 'outside', rounds: upright ? 'rows' : 'columns' });
+			readOnly = true;
+			applyView();
+			renderDraw();
+			drawArrows();
+			made = paintBracket(icon);
+		} finally {
+			view = keepView;
+			readOnly = keepRead;
+			applyView();
+			renderDraw();
+			drawArrows();
+			els.bracket.style.visibility = keepVis;
+		}
+		// The players' pictures, round, once loaded; initials where there is none.
+		const { canvas, ctx, scale, pictures, bg } = made;
+		const loaded = await Promise.all(pictures.map((p) => (p.src ? loadPicture(p.src) : Promise.resolve(null))));
+		ctx.setTransform(scale, 0, 0, scale, 0, 0);
+		pictures.forEach((p, i) => {
+			const { spot } = p;
 			const cx = spot.x + spot.d / 2, cy = spot.y + spot.d / 2;
 			ctx.save();
 			ctx.beginPath();
@@ -2780,24 +2866,16 @@ TDCTournamentNav.panel('draw', () => {
 			ctx.fillStyle = bg;
 			ctx.fill();
 			ctx.clip();
-			if (loaded) ctx.drawImage(loaded, spot.x, spot.y, spot.d, spot.d);
-			else if (pic.textContent.trim()) {
-				const cs = getComputedStyle(pic);
-				ctx.fillStyle = cs.color || primary;
-				ctx.font = `${cs.fontWeight} ${parseFloat(cs.fontSize) * z}px ${cs.fontFamily}`;
+			if (loaded[i]) ctx.drawImage(loaded[i], spot.x, spot.y, spot.d, spot.d);
+			else if (p.initials) {
+				ctx.fillStyle = p.color;
+				ctx.font = p.font;
 				ctx.textAlign = 'center';
 				ctx.textBaseline = 'middle';
-				ctx.fillText(pic.textContent.trim(), cx, cy);
+				ctx.fillText(p.initials, cx, cy);
 			}
 			ctx.restore();
-		}
-
-		// The club's address, small, in the foot.
-		ctx.fillStyle = muted;
-		ctx.font = `400 14px ${body}`;
-		ctx.textAlign = 'right';
-		ctx.textBaseline = 'alphabetic';
-		ctx.fillText('thediveclub.org', W - pad, H - 12);
+		});
 		return canvas;
 	}
 
