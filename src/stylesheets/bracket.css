@@ -1044,3 +1044,31 @@ a.dr-no { color: var(--text-muted); text-decoration: underline dotted; text-unde
 .dr-person .person-pic { width: 2rem; height: 2rem; font-size: 0.8rem; }
 .dr-seat .card-person-name { font-weight: 600; text-align: center; overflow-wrap: break-word; }
 .dr-seat .cs-empty { font-weight: 400; }
+
+/* The director's buttons in a match's middle (UV, 27 Nov): small, above the
+   lag or the colon, between the names, wrapping inside the middle rather
+   than taking a row under the match. */
+.dr-mid > .dr-actions {
+	justify-content: center;
+	gap: 4px;
+	max-width: 7.5rem;
+	margin: 0;
+}
+.tdc-card .dr-mid > .dr-actions button.btn {
+	padding: 0.2em 0.55em;
+	font-size: 0.7rem;
+	white-space: nowrap;
+}
+
+/* The view settings folded in a group (UV, 27 Nov), closed on opening. In
+   full screen the group is opened for its bar (tournament-bracket.js) and
+   shows nothing of its own: no heading, no pill round the bar. */
+.bracket-view-group > .bracket-view { margin-top: var(--space-3); }
+.bracket-stage:fullscreen .bracket-view-group > summary,
+.bracket-stage.is-full .bracket-view-group > summary { display: none; }
+.bracket-stage:fullscreen .bracket-view-group,
+.bracket-stage.is-full .bracket-view-group {
+	margin: 0;
+	padding: 0;
+	box-shadow: none;
+}

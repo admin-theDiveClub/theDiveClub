@@ -3358,3 +3358,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Open:* players cannot enter themselves once a draw exists (`docs/STATUS.md` §5).
 *So:* `docs/systems/tournaments.md`, "The draw follows the confirmed players"; `docs/STATUS.md` §1 4ee.
 *Touches:* migration `20261127175438_draw_follows_entrants.sql`, `supabase/tests/114_draw_follows_entrants.test.sql`, `supabase/tests/109_remove_entrant_who_played.test.sql`, `supabase/tests/051_populate_shuffle_draw.test.sql`, `src/_includes/tournament/draw.html`
+
+## 2026-11-27 — Start round; the match buttons in the middle; the bracket's view settings folded and fitted
+
+*Decided by UV:* a **Start round** button at the top of the first round to start all its matches at once; each match's buttons **smaller, above the toggles, between the names**, not a row of their own; the bracket's view controls a **folding group, closed by default**; the bracket **fitted to the screen when it opens**.
+*Claude's, for UV to correct:* Start round asks first (each start messages both players) and shows only while a match is ready; a walkover button reads ← W/O / W/O → with the name in its title; the badges keep their row; "View settings" is closed on every visit, not remembered; full screen opens the group for its bar and puts it back after; the bracket fits on the page's first bracket and on choosing Bracket, not on live updates, and scrolls to the draw as the Fit button does.
+*So:* `docs/systems/tournaments.md`, "Start round, the match buttons in the middle, the bracket's view settings folded and fitted".
+*Touches:* `src/scripts/tournament-bracket.js`, `src/_includes/tournament/draw.html`, `src/stylesheets/bracket.css`

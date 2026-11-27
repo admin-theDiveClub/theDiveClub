@@ -137,7 +137,14 @@
 	what the full-screen button puts on the whole screen (UV, 5 Nov).
 {% endcomment %}
 <div class="bracket-stage" id="stage">
-<div class="bracket-view" id="view-row" hidden>
+{% comment %}
+	The view settings fold away, closed every time the page opens (UV,
+	27 Nov: they took the screen on a phone). Full screen opens the group
+	for its bar and puts it back as it was after (tournament-bracket.js).
+{% endcomment %}
+<details class="set-group bracket-view-group" id="view-group" hidden>
+<summary>View settings</summary>
+<div class="bracket-view" id="view-row">
 	{% comment %}
 		Three buttons (UV, 5 Nov): fit makes the text as big as it can be
 		with every card on the screen, leaving the toggles as they are;
@@ -223,6 +230,7 @@
 		<div class="hint">Off shows each player's display name.</div>
 	</div>
 </div>
+</details>
 
 {% comment %}
 	Every entrant as a pill, for the director to drag onto a slot (UV,

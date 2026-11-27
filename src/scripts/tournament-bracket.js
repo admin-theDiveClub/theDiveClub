@@ -45,7 +45,7 @@ TDCTournamentNav.panel('draw', () => {
 		entrants: el('entrants'), entrantPills: el('entrant-pills'),
 		stage: el('stage'), fit: el('fit'), full: el('full'), resetView: el('reset-view'),
 		populate: el('populate'), shuffle: el('shuffle'),
-		modes: el('draw-modes'), rounds: el('rounds')
+		modes: el('draw-modes'), rounds: el('rounds'), viewGroup: el('view-group')
 	};
 
 	const missing = Object.entries(els).filter(([, v]) => !v).map(([k]) => k);
@@ -596,6 +596,10 @@ TDCTournamentNav.panel('draw', () => {
 		els.full.title = on ? 'Leave full screen' : 'Full screen';
 		els.full.setAttribute('aria-label', els.full.title);
 		document.documentElement.classList.toggle('bracket-full', els.stage.classList.contains('is-full'));
+		// The view settings are folded (UV, 27 Nov); full screen's bar is
+		// their row, so the group opens for it and goes back as it was.
+		if (on && viewGroupWas === null) { viewGroupWas = els.viewGroup.open; els.viewGroup.open = true; }
+		if (!on && viewGroupWas !== null) { els.viewGroup.open = viewGroupWas; viewGroupWas = null; }
 		if (on) showBar();
 		else { clearTimeout(barTimer); els.viewRow.classList.remove('is-hidden'); }
 		redrawArrowsSoon();
@@ -608,6 +612,7 @@ TDCTournamentNav.panel('draw', () => {
 	// after 3 seconds with nobody over it, since a fitted draw never
 	// scrolls.
 	const BAR_NEAR = 64, BAR_MS = 3000, BAR_SCROLL = 200;
+	let viewGroupWas = null;   // the view group's fold before full screen
 	let barTimer = 0;
 	function showBar() {
 		els.viewRow.classList.remove('is-hidden');
@@ -1016,7 +1021,7 @@ TDCTournamentNav.panel('draw', () => {
 		els.populate.hidden = !drawn;
 		els.shuffle.hidden = !drawn;
 		els.actions.hidden = !drawn || readOnly;
-		els.viewRow.hidden = !fixtures.length;
+		els.viewGroup.hidden = !fixtures.length;   // the view settings, folded (UV, 27 Nov)
 		els.entrants.hidden = !fixtures.length || readOnly;
 		// Bracket · Rounds (UV, 27 Nov): on Draw and Run the draw once there
 		// is a draw. Rounds hides the stage (the view row, the pills, the
@@ -1174,8 +1179,16 @@ TDCTournamentNav.panel('draw', () => {
 		bracketDrawn = true;
 		wakeCrosses();
 		drawArrows();
+		// Fitted to the screen when it opens (UV, 27 Nov): the page's first
+		// bracket, and Bracket chosen from Rounds; as Fit does. Not on a
+		// re-read, so a live update never moves the draw.
+		if (fitOnOpen) {
+			fitOnOpen = false;
+			requestAnimationFrame(() => requestAnimationFrame(fitAll));
+		}
 	}
 	let bracketDrawn = false;
+	let fitOnOpen = true;
 
 	// The red crosses' rings, made once each card is on the page. Shown at
 	// once rather than drawn in: the page is drawn again after every write,
@@ -1287,11 +1300,12 @@ TDCTournamentNav.panel('draw', () => {
 		roundsStale = false;
 
 		const blocks = [];
+		const firstRound = Math.min(...main.map((f) => f.round));
 		for (let r = 1; r <= lastRound; r++) {
 			const list = main.filter((f) => f.round === r);
 			// An empty round (one put in by hand) is the director's to fill.
 			if (!list.length && readOnly) continue;
-			blocks.push(roundBlock('main', r, names.has(r) ? names.get(r).long : 'Round ' + r, list, true));
+			blocks.push(roundBlock('main', r, names.has(r) ? names.get(r).long : 'Round ' + r, list, true, r === firstRound));
 		}
 		if (third.length) blocks.push(roundBlock(third[0].bracket, third[0].round, 'Third place', third, false));
 
@@ -1307,7 +1321,11 @@ TDCTournamentNav.panel('draw', () => {
 	// known, no result), as a session is open while it holds a frame being
 	// played; a round the reader opened or closed against that stays so.
 	// Its heading counts the matches with a result; byes are not counted.
-	function roundBlock(bracket, round, title, list, addMatch) {
+	// A match the director could start now: both players known, no match yet,
+	// nothing awarded (the bracket's Start match, controls()).
+	const startable = (f) => !!(f.home_entrant_id && f.away_entrant_id) && !f.match_id && !f.advanced_entrant_id;
+
+	function roundBlock(bracket, round, title, list, addMatch, first = false) {
 		const key = roundKey(bracket, round);
 		const block = node('details', 'cs-session set-group dr-round');
 		const usual = list.some((f) => !decided(f) && f.home_entrant_id && f.away_entrant_id)
@@ -1334,6 +1352,16 @@ TDCTournamentNav.panel('draw', () => {
 		// matches' rules in this round, the bracket's panel) and + Match.
 		if (!readOnly) {
 			const tools = node('div', 'dr-tools');
+			// Start round (UV, 27 Nov), on the first round: every match ready to
+			// play started at once, as Start match on each would.
+			const ready = first ? list.filter(startable).length : 0;
+			if (ready) {
+				const b = node('button', 'btn btn-primary btn-sm bracket-tool dr-start-round', 'Start round');
+				b.type = 'button';
+				b.dataset.startRound = key;
+				b.title = 'Start all ' + ready + (ready === 1 ? ' match' : ' matches') + ' ready in ' + title;
+				tools.append(b);
+			}
 			tools.append(roundRulesButton(bracket, round));
 			if (addMatch) tools.append(addMatchButton(bracket, round, !list.length));
 			block.append(tools);
@@ -1389,6 +1417,25 @@ TDCTournamentNav.panel('draw', () => {
 		} else {
 			mid.append(node('span', 'dr-no', label));
 		}
+		// The director's buttons in the middle, small, above the lag or the
+		// colon, between the names (UV, 27 Nov: a row of their own under the
+		// match took too much room on a phone). The bracket's buttons
+		// (controls) less Enter score, which the steppers replace; a walkover
+		// says W/O with an arrow to the player it goes to, the name in its
+		// title and in the question it asks.
+		if (!readOnly) {
+			const c = controls(f);
+			for (const b of c.querySelectorAll('[data-act="enter"]')) b.remove();
+			for (const b of c.querySelectorAll('[data-act="walkover"]')) {
+				const home = b.dataset.entrant === f.home_entrant_id;
+				const who = home ? f.home_name : f.away_name;
+				b.dataset.who = who || '';
+				b.title = 'Walkover to ' + (who || (home ? 'home' : 'away'));
+				b.setAttribute('aria-label', b.title);
+				b.textContent = home ? '← W/O' : 'W/O →';
+			}
+			if (c.childElementCount) { c.classList.add('dr-actions'); mid.append(c); }
+		}
 		if (bye) mid.append(node('span', 'dr-bye', 'Bye'));
 		// A published result is settled: its lag cannot change until it is
 		// sent back (tdc_update_match_settings), so the switch is greyed.
@@ -1399,11 +1446,6 @@ TDCTournamentNav.panel('draw', () => {
 
 		const tags = tagsFor(f);
 		if (tags.childElementCount) row.append(tags);
-		if (!readOnly) {
-			const c = controls(f);
-			for (const b of c.querySelectorAll('[data-act="enter"]')) b.remove();
-			if (c.childElementCount) { c.classList.add('dr-actions'); row.append(c); }
-		}
 		return row;
 	}
 
@@ -1529,6 +1571,20 @@ TDCTournamentNav.panel('draw', () => {
 		});
 	}
 
+	// Start round (UV, 27 Nov): Start match on every match of the round ready
+	// to play, one save each, the page read again once they are all in. It
+	// asks first: each start tells both players their match is on (Claude's).
+	function startRound(key) {
+		const ready = fixtures.filter((f) => roundKey(f.bracket, f.round) === key && startable(f));
+		if (!ready.length) return;
+		if (!confirm('Start ' + ready.length + (ready.length === 1 ? ' match' : ' matches')
+			+ ' now? Each player is told their match is on.')) return;
+		for (const f of ready) {
+			write('Starting the round', () =>
+				supabaseClient.rpc('tdc_create_fixture_match', { p_fixture_id: f.fixture_id }));
+		}
+	}
+
 	function saveLag(pick) {
 		const side = pick.value;
 		const fixtureId = pick.dataset.fixture;
@@ -1581,6 +1637,8 @@ TDCTournamentNav.panel('draw', () => {
 	// a one-figure number is about 9px wide, and the pill round it caught
 	// most taps (found driving it at 420), so typing went nowhere.
 	els.rounds.addEventListener('click', (e) => {
+		const go = e.target.closest('button[data-start-round]');
+		if (go) { startRound(go.dataset.startRound); return; }
 		const pill = e.target.closest('.tdc-stepper');
 		if (pill && !e.target.closest('button')) {
 			const input = pill.querySelector('input[data-score]');
@@ -1601,6 +1659,7 @@ TDCTournamentNav.panel('draw', () => {
 		const b = e.target.closest('[data-draw-mode]');
 		if (!b || b.dataset.drawMode === mode) return;
 		mode = b.dataset.drawMode;
+		if (mode === 'bracket') fitOnOpen = true;
 		try { localStorage.setItem(MODE_KEY, mode); } catch (err) { /* kept for this visit only */ }
 		showModes();
 		render();
@@ -2817,7 +2876,9 @@ TDCTournamentNav.panel('draw', () => {
 		}
 
 		if (button.dataset.act === 'walkover') {
-			if (!confirm(`${button.textContent.replace('W/O to ', '')} goes through without playing. Carry on?`)) return;
+			// The Rounds view's buttons say "W/O" and carry the name (UV, 27 Nov).
+			const who = button.dataset.who || button.textContent.replace('W/O to ', '');
+			if (!confirm(`${who} goes through without playing. Carry on?`)) return;
 			write('Recording the walkover', () =>
 				supabaseClient.rpc('tdc_set_fixture', {
 					p_fixture_id: id,
