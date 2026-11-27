@@ -3267,3 +3267,16 @@ These predate the log. They are recorded here because every one of them is a dec
 *Example:* Knights in 8-Ball Mainstream, after 6 of 22 nights: 99 of 150 frames won, so Win % reads `66% | 50%`; W | Own Brk `73% | 58%`; the star about a quarter solid (6 ÷ 22).
 
 *So:* migration `20261125145821_team_star_counts` (`tdc_team_star_counts`), test `107`; `league-season.js` (`teamStar`, `playerCard`), `league-join.css` (`.lj-team-star`), `leagues/season/index.html` (loads `player-star.js` and `.css`); `docs/systems/leagues.md`, "Every team's star on its card".
+
+## 2026-11-27 — 8-Ball Mainstream's round 7 (25 Nov) from CueScore
+
+*Decided by UV:*
+- **Trust CueScore.** The four nights not finished on the site go in from UV's CueScore screenshots, frame by frame: The Ultimates v Cheeky Tiger, Team Optimus v The Apprentices, Wu Tang Clan v Foul Play Syndicate, BSC Travelers v The Underdogs.
+- **RACK IT UP v Streetwise Combo is left out;** UV gives its updates by hand. It was started on the site with a lineup that is not CueScore's.
+
+*Claude's, for UV to correct:*
+- Team Optimus v The Apprentices, started on the site, is filled where it stands rather than reset: its lineups and its 9 scored frames are CueScore's exactly, so the import keeps them and records the other 16, and stops if any of them differs.
+- The import acts as the admin@ account, as on 19 Nov; it still runs the season, though its directors are now Rick Schoenlank and Nadeem Khan.
+
+*Example:* Team Optimus v The Apprentices: frame 1 (Eric Hsueh broke, Annan Naidoo won) is on the site and on CueScore alike, so it is left; frame 10 (Eric Hsueh won the lag and the frame against Jay Pillay) is recorded from CueScore. The night ends 12 – 13.
+*So:* `private-data/rivonia-8mtl-2026-27/` only (gitignored): `source/cuescore-2026-11-25.txt`, `build_2026_11_25.py`, `import-2026-11-25-template.sql`, `import-2026-11-25.sql`, `local_test_2026_11_25.py`; `docs/STATUS.md` §1 R1.
