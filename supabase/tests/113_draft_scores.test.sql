@@ -5,7 +5,7 @@
 -- draft: saved, shown, not published, nobody moves.
 begin;
 \ir _helpers.psql
-select plan(14);
+select plan(16);
 
 select tests.create_user('Dft Dee') as dee \gset
 select tests.create_user('Dft Ann') as ann \gset
@@ -52,6 +52,9 @@ select is((select status from public.tbl_matches where id = :'m2'), 'scheduled',
 select public.tdc_approve_card(:'m2');
 select public.tdc_set_match_override(:'m2', 4, 2, 'Entered on the draw', 'draft');
 select ok(not private.tdc_is_published(:'m2'), 'a draft after approving takes the result back');
+-- And re-opens the match (20261127195047): no longer locked or ended.
+select is(private.tdc_card_state(:'m2')->>'state', 'in_progress', 'a draft after approving unlocks the card');
+select isnt((select status from public.tbl_matches where id = :'m2'), 'complete', 'and the match is no longer ended');
 select lives_ok(format($$ select public.tdc_approve_card(%L) $$, :'m2'), 'Publish publishes a draft on a match approved before');
 select ok(private.tdc_is_published(:'m2'), 'and it is published');
 

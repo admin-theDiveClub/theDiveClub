@@ -3405,3 +3405,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* "only auto move when TD locks the scorecard"; "changes should still be saved until lock". **Reverses** the same evening's "push a player through automatically when both scores are in": every change is saved as a draft, and only Publish / Lock it moves the winner on.
 *So:* `docs/systems/tournaments.md`, "A score entered in Rounds moves nobody until the director locks it".
 *Touches:* `src/scripts/tournament-bracket.js`
+
+## 2026-11-27 — A draft score re-opens its match; Basil's matches all opened again
+
+*Decided by UV:* "none of the matches are settled… no matches are complete. Open all again", keeping the current scores.
+*Claude's, for UV to correct:* any score changed after a lock re-opens that match (unlocked, not ended) until it is locked again; on push, Basil's scores set by hand all become drafts, every match re-opens, and the draw is brought into line.
+*So:* `docs/systems/tournaments.md`, "A draft score re-opens its match; Basil's opened again".
+*Touches:* migration `20261127195047_draft_score_reopens.sql`, `supabase/tests/113_draft_scores.test.sql`

@@ -412,6 +412,7 @@ Real, small, and none of them blocking.
 
 | | Area |
 |---|---|
+| **`tdc_cascade_draw` leaves an away place filled when it should empty** (27 Nov) | Its away update has `and home_entrant_id is distinct from should_be`, false when both are null, so an away player moved on from a result taken back stays when the home place is empty. `20261127195047` set Basil's places itself; the function needs the same fix (a patch, with a test). |
 | League pages not built yet | Per-season rule overrides, continuing a team from an earlier season, a venue picker. None blocks lineups. **When per-season overrides get a form, `tdc_update_league_season` must call `private.tdc_refreeze_league_matches`** as `tdc_update_league` does (23 Oct), or a season's change will not reach its unstarted matches |
 | **The Settings tab is 570px wide on a 420px phone** | Found 29 Oct while rendering the standings: the ruleset's dropdown pills (a `.tdc-select` option inside a folded group reaches 794px) widen the page from the moment it opens, so the dots and loading screen are drawn that wide too. Not the standings section (it is hidden then, and its table scrolls in its own box). Not fixed |
 | `strict_frame_order` is obeyed by the card only | The scorecard offers only the next unplayed frame when it is on. `/match/` does not know about it, which does not matter while `/match/` refuses team matches |
