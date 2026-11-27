@@ -145,10 +145,11 @@ TDCTournamentNav.panel('draw', () => {
 	let swapping = null;
 	let candidates = [];
 	// Bracket or Rounds (UV, 27 Nov), per device; Rounds is drawn by
-	// renderRounds. Generate the draw always shows the bracket.
+	// renderRounds. Rounds is the default (UV, 27 Nov): the bracket only where
+	// it was chosen on this device. Generate the draw always shows the bracket.
 	const MODE_KEY = 'tdc.draw.mode';
-	let mode = 'bracket';
-	try { if (localStorage.getItem(MODE_KEY) === 'rounds') mode = 'rounds'; } catch (err) { /* private window: the bracket */ }
+	let mode = 'rounds';
+	try { if (localStorage.getItem(MODE_KEY) === 'bracket') mode = 'bracket'; } catch (err) { /* private window: Rounds */ }
 	const roundChoice = new Map();   // round key -> open, where the reader went against the default
 	let roundsStale = false;         // a redraw held back while a score is being entered
 	let holding = false;             // a finger or the mouse down on a score's chevron

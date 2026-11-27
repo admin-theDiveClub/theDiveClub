@@ -3343,3 +3343,9 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to correct:* the table's shadows follow every change of the light on the wallpaper and its preview only (about 15 redraws a second instead of 5; other pages keep 200 ms); the icon's top sits one ball below the top cushion's line.
 *So:* `docs/systems/foundations.md`, "Wallpapers".
 *Touches:* `scripts/hero.js` (`data-light-ms`), `scripts/wallpaper-show.js`, `stylesheets/wallpaper.css`, both wallpaper pages
+
+## 2026-11-27 — Rounds is the draw's default view
+
+*Decided by UV:* "Let the rounds be the default view for tournaments." The draw opens on Rounds for everybody (director, player, public) on Draw and Run the draw; Bracket is a tap away and is remembered on a device where it was chosen. Generate the draw still shows the bracket.
+*So:* `docs/systems/tournaments.md`, "Bracket · Rounds".
+*Touches:* `src/scripts/tournament-bracket.js`, `src/_includes/tournament/draw.html`
