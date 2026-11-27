@@ -724,8 +724,13 @@ TDCTournamentNav.panel('draw', () => {
 			// involvement in one that published itself on submission.
 			// Offered wherever there is a result that nobody has approved.
 			const hasResult = f.overridden || (f.card_state && f.card_state !== 'in_progress');
+			// Publish only where the score has a winner (UV, 27 Nov: "publish
+			// should only be shown when we actually make an edit that can be
+			// saved. Otherwise, we rely on the walk-over functionality"): a
+			// 0-0 or a level score offers none.
+			const decides = (f.home_frames ?? 0) !== (f.away_frames ?? 0);
 			if (hasResult && f.card_state !== 'approved') {
-				row.append(action('publish', f.fixture_id,
+				if (decides) row.append(action('publish', f.fixture_id,
 					f.published ? 'Lock it' : 'Publish', 'btn-secondary'));
 				row.append(action('send-back', f.fixture_id, 'Send back', 'btn-danger'));
 			}
@@ -739,8 +744,11 @@ TDCTournamentNav.panel('draw', () => {
 		// come from is changed by dragging (UV, 5 Nov).
 
 		// A walkover is the common one at a club night: somebody did not turn
-		// up and the other player goes through without playing.
-		if (!f.match_id && !f.advanced_entrant_id && (f.home_entrant_id || f.away_entrant_id)) {
+		// up and the other player goes through without playing. Also on a
+		// match started but not played (UV, 27 Nov): no score set by hand and
+		// no frames; the database deletes the empty match (20261127214214).
+		const unplayed = !f.match_id || (!f.overridden && !f.home_frames && !f.away_frames);
+		if (unplayed && !f.advanced_entrant_id && (f.home_entrant_id || f.away_entrant_id)) {
 			if (f.home_entrant_id) {
 				row.append(action('walkover', f.fixture_id, 'W/O to ' + f.home_name, 'btn-secondary', f.home_entrant_id));
 			}
@@ -3255,7 +3263,19 @@ TDCTournamentNav.panel('draw', () => {
 		onLiveChange(null);
 	}
 
+	// A signed-out visitor (UV, 27 Nov: "Apply live updates for public on the
+	// bracket"): the live feed only sends rows the reader may read, and the
+	// public reads the draw through tdc_public_draw, so it would bring them
+	// nothing. Their draw re-reads every 10 seconds instead while it is on
+	// screen (UV's choice over a database broadcast); stopLiveUpdates ends it.
+	const PUBLIC_EVERY = 10000;
+	let publicTimer = null;
+
 	function startLiveUpdates() {
+		if (signedOut) {
+			if (!publicTimer) publicTimer = setInterval(() => onLiveChange(null), PUBLIC_EVERY);
+			return;
+		}
 		const ids = liveMatchIds();
 		const key = ids.slice().sort().join(',');
 		if (liveChannel && key === liveKey) return;      // nothing has changed about who to watch
@@ -3319,6 +3339,8 @@ TDCTournamentNav.panel('draw', () => {
 
 	function stopLiveUpdates() {
 		clearTimeout(liveTimer);
+		clearInterval(publicTimer);
+		publicTimer = null;
 		if (!liveChannel) return;
 		supabaseClient.removeChannel(liveChannel);
 		liveChannel = null;

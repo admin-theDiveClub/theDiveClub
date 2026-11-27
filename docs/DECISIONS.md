@@ -3427,3 +3427,11 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to correct:* the loser greyed in both views and for everybody, the picture greyscale at 55%; "unpublished" is any match made and not published, a match being played at 0–0 included; on the bracket's side-by-side cards the colon's gap is kept, the ":" gone.
 *So:* `docs/systems/tournaments.md`, "A published match settled on the draw…"; `docs/ui-list.md` items 21–23; `docs/STATUS.md` §1 4eh.
 *Touches:* `src/scripts/tournament-bracket.js`, `src/stylesheets/bracket.css`
+
+## 2026-11-27 — Publish only for a winning score; W/O on a started match; the public draw re-reads
+
+*Decided by UV:* **Publish shows only when the score has a winner**; otherwise the walkover is used, so **a started match with no score offers W/O**; signed-out visitors' draws **re-read every 10 seconds** rather than a database broadcast.
+*Claude's, for UV to correct:* Send back still shows on a 0-0 or level result; "no score" is no frames and no score set by hand; the empty match is deleted and recorded as the draw records an unplayed match, and the database does it in the same call as the walkover; no live feed is opened for a signed-out visitor.
+*Rejected:* Publish on any non-0-0 score; W/O only before a match is started; a database broadcast to the public (Claude's alternative).
+*So:* `docs/systems/tournaments.md`, "Publish only for a winning score…"; `docs/STATUS.md` §1 4ei.
+*Touches:* migration `20261127214214_walkover_started_match.sql`, `supabase/tests/116_walkover_started_match.test.sql`, `src/scripts/tournament-bracket.js`
