@@ -3280,3 +3280,7 @@ These predate the log. They are recorded here because every one of them is a dec
 
 *Example:* Team Optimus v The Apprentices: frame 1 (Eric Hsueh broke, Annan Naidoo won) is on the site and on CueScore alike, so it is left; frame 10 (Eric Hsueh won the lag and the frame against Jay Pillay) is recorded from CueScore. The night ends 12 – 13.
 *So:* `private-data/rivonia-8mtl-2026-27/` only (gitignored): `source/cuescore-2026-11-25.txt`, `build_2026_11_25.py`, `import-2026-11-25-template.sql`, `import-2026-11-25.sql`, `local_test_2026_11_25.py`; `docs/STATUS.md` §1 R1.
+
+*Decided by UV, later the same day (RACK IT UP v Streetwise Combo):* Manoj Ramjith did not play; Jason Govender played in his place, as CueScore has it. **The night is reset and imported from CueScore**, Streetwise's seats as played (six players, 8 seats off the sheet). Match 11: Ntokozo broke (CueScore), not Nishay (the site). Match 14 has no L on CueScore: Shivhay broke, as the site had it. Match 19 has no L: it goes in with no lag.
+*Rejected:* keeping the 4 frames scored on the site and fixing the lineup by hand.
+*So:* `private-data/rivonia-8mtl-2026-27/` only: `source/cuescore-2026-11-25-rackitup.txt`, `build_2026_11_25_rackitup.py`, `import-2026-11-25-rackitup-template.sql`, `import-2026-11-25-rackitup.sql`, `local_test_2026_11_25_rackitup.py`; `docs/STATUS.md` §1 R1.
