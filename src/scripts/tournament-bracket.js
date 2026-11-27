@@ -254,6 +254,8 @@ TDCTournamentNav.panel('draw', () => {
 
 		const row = node('div', 'bracket-side');
 		if (f.winner_entrant_id && id && f.winner_entrant_id === id) row.classList.add('won');
+		// A published match's loser greyed (UV, 27 Nov), as in Rounds (lost).
+		else if (lost(f, id)) row.classList.add('lost');
 
 		// The row is a grid of fixed tracks — the player, the score — rather
 		// than a flex line. 21 Oct: as a flex line the name was a shrinkable
@@ -332,6 +334,7 @@ TDCTournamentNav.panel('draw', () => {
 	function fixture(f) {
 		const box = node('div', 'bracket-fixture');
 		box.dataset.fixture = f.fixture_id;
+		if (unpublished(f)) box.classList.add('is-unpublished');   // its scores yellow (UV, 27 Nov)
 
 		// The state as a strip (UV, 5 Nov), as on the league fixtures and the
 		// profile: down the left of a stacked card, along the top or bottom of
@@ -389,7 +392,8 @@ TDCTournamentNav.panel('draw', () => {
 		for (const which of ['home', 'away']) {
 			const empty = !(which === 'home' ? f.home_entrant_id : f.away_entrant_id);
 			if (bye && empty && readOnly) continue;
-			if (which === 'away' && sides.childElementCount) sides.append(node('span', 'bracket-colon', ':'));
+			// No colon between the players (UV, 27 Nov); the span keeps its gap.
+			if (which === 'away' && sides.childElementCount) sides.append(node('span', 'bracket-colon'));
 			sides.append(side(f, which));
 		}
 		body.append(sides);
@@ -817,15 +821,25 @@ TDCTournamentNav.panel('draw', () => {
 	// is being entered (as the Rounds list, roundsBusy); a match gone from
 	// the draw closes it. The Rounds row keeps its own steppers and lag.
 
+	// A score not published yet, shown yellow (UV, 27 Nov): a match that
+	// exists and is not published (a draft, a card waiting, one being played).
+	const unpublished = (f) => !!f.match_id && !f.published;
+
+	// The loser of a published match (UV, 27 Nov: greyed in both views).
+	const lost = (f, id) => !!(f.published && id && f.winner_entrant_id && f.winner_entrant_id !== id);
+
 	// A match the director can score: both players known, nothing awarded.
 	const scorable = (f) => !!(f.home_entrant_id && f.away_entrant_id) && !f.advanced_entrant_id;
 
 	// Whether a match has a ⋯ (UV, 27 Nov: only where there is something to
 	// offer): a button of its own, or on the bracket its score, which has no
 	// other way in there (the Rounds row has its steppers).
+	// In Rounds a published match's row has no steppers (UV, 27 Nov), so its
+	// card is the way to correct it: a locked match with no buttons left
+	// (found on Darien vs Kat, locked at 0-0) still has its ⋯.
 	function offers(f, view) {
 		if (controls(f).childElementCount) return true;
-		return view === 'bracket' && scorable(f);
+		return scorable(f) && (view === 'bracket' || !!f.published);
 	}
 
 	// Publish (or Lock it) stays on the match beside the ⋯ (UV, 27 Nov:
@@ -896,13 +910,16 @@ TDCTournamentNav.panel('draw', () => {
 		const editable = scorable(f);
 		if (editable) {
 			const score = node('div', 'dr-pop-score');
-			score.append(popSeat(f, 'home'), node('span', 'cs-colon dr-colon', ':'), popSeat(f, 'away'));
+			// No colon between the players (UV, 27 Nov). Unpublished scores yellow.
+			if (unpublished(f)) score.classList.add('is-unpublished');
+			score.append(popSeat(f, 'home'), popSeat(f, 'away'));
 			parts.push(score);
 		}
-		// A published result's lag is greyed, as on the row (matchRow).
-		if (lagShown(f, editable)) {
+		// A published result's lag is hidden, as on the row (matchRow; UV,
+		// 27 Nov); its scores stay steppers here, the way to correct it (UV).
+		if (!f.published && lagShown(f, editable)) {
 			const lag = node('div', 'dr-pop-lag');
-			lag.append(lagSwitch(f, editable && !f.published));
+			lag.append(lagSwitch(f, editable));
 			parts.push(lag);
 		}
 		const c = controls(f);
@@ -915,7 +932,7 @@ TDCTournamentNav.panel('draw', () => {
 	// A player in the card: the name over the score's stepper.
 	function popSeat(f, which) {
 		const name = nameOf(f, which);
-		const cell = node('div', 'dr-pop-seat');
+		const cell = node('div', 'dr-pop-seat' + (lost(f, which === 'home' ? f.home_entrant_id : f.away_entrant_id) ? ' is-lost' : ''));
 		cell.append(node('span', 'dr-pop-name' + (name ? '' : ' cs-empty'), name || slotLabel(f, which)));
 		const input = scoreInput(f, which, name, which === 'home' ? f.home_frames : f.away_frames);
 		input.id = 'pop-' + input.id;
@@ -1607,13 +1624,18 @@ TDCTournamentNav.panel('draw', () => {
 		// lag or the colon (UV, 27 Nov), where they sat small until then; it
 		// shows only where the match has a button (offers). Publish beside it.
 		if (!readOnly && offers(f, 'rounds')) mid.append(moreRow(node('div', 'dr-more-row'), f));
+		// A published match is settled (UV, 27 Nov: "hide the lag toggle and
+		// grey out the loser and hide the numeric inputs"): the colon in
+		// place of the lag, the scores as numbers, the loser grey (seat). Its
+		// score can still be corrected in the ⋯ card, which keeps its steppers.
+		const settled = !!f.published;
 		if (bye) mid.append(node('span', 'dr-bye', 'Bye'));
-		// A published result is settled: its lag cannot change until it is
-		// sent back (tdc_update_match_settings), so the switch is greyed.
-		else if (lagShown(f, editable)) mid.append(lagSwitch(f, editable && !f.published));
-		else mid.append(node('span', 'cs-colon dr-colon', ':'));
+		else if (!settled && lagShown(f, editable)) mid.append(lagSwitch(f, editable));
+		// No colon between the players (UV, 27 Nov): nothing in its place.
+		// Unpublished scores yellow (UV, 27 Nov; unpublished).
+		row.classList.toggle('is-unpublished', unpublished(f));
 
-		row.append(seat(f, 'home', editable, bye), mid, seat(f, 'away', editable, bye));
+		row.append(seat(f, 'home', editable && !settled, bye), mid, seat(f, 'away', editable && !settled, bye));
 		return row;
 	}
 
@@ -1625,6 +1647,7 @@ TDCTournamentNav.panel('draw', () => {
 		if (!id && bye) return cell;   // a bye shows only the player going through
 		const winner = f.winner_entrant_id || f.advanced_entrant_id;
 		if (id && winner === id) cell.classList.add('is-won');
+		else if (lost(f, id)) cell.classList.add('is-lost');
 
 		const name = nameOf(f, which);
 		const person = node('span', 'dr-person');
@@ -1643,7 +1666,7 @@ TDCTournamentNav.panel('draw', () => {
 		} else if (f.match_id) {
 			const v = node('span', 'cs-tot-value dr-score', String(frames ?? 0));
 			v.dataset.live = 'rs|' + f.fixture_id + '|' + which;
-			if (f.match_status === 'complete' && winner) v.classList.add(winner === id ? 'is-winner' : 'is-loser');
+			if ((f.match_status === 'complete' || f.published) && winner) v.classList.add(winner === id ? 'is-winner' : 'is-loser');
 			cell.append(v);
 		}
 		return cell;

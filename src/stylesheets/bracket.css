@@ -226,6 +226,9 @@
    for, so it carries weight and the brand colour rather than a tick. */
 .bracket-side.won .bracket-name { font-weight: 700; color: var(--color-primary); }
 .bracket-side.won .bracket-frames { font-weight: 700; color: var(--color-primary); }
+/* A published match's loser greyed (UV, 27 Nov), as in Rounds (.dr-seat.is-lost). */
+.bracket-side.lost :is(.bracket-name, .bracket-frames) { color: var(--text-muted); }
+.bracket-side.lost .person-pic { filter: grayscale(1); opacity: 0.55; }
 
 /* As a league fixture's name: weighted, and wrapping between words rather
    than cut off, since a full name is longer than a display name. */
@@ -987,7 +990,6 @@ html.bracket-full { overflow: hidden; }
 }
 .dr-no { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; }
 a.dr-no { color: var(--text-muted); text-decoration: underline dotted; text-underline-offset: 3px; }
-.dr-colon { font-size: 1.35rem; font-weight: 700; color: var(--text-muted); }
 .dr-bye { font-size: 0.85rem; color: var(--text-muted); }
 .dr-seat { gap: var(--space-2); }
 .dr-person {
@@ -1001,6 +1003,10 @@ a.dr-no { color: var(--text-muted); text-decoration: underline dotted; text-unde
 .dr-person .person-pic { width: 2rem; height: 2rem; font-size: 0.8rem; }
 .dr-seat .card-person-name { font-weight: 600; text-align: center; overflow-wrap: break-word; }
 .dr-seat .cs-empty { font-weight: 400; }
+/* A published match's loser greyed (UV, 27 Nov): name, picture and score
+   (league.css's .cs-tot-value.is-loser), and in the ⋯ card the name. */
+:is(.dr-seat, .dr-pop-seat).is-lost :is(.card-person-name, .dr-pop-name) { color: var(--text-muted); }
+:is(.dr-seat, .dr-pop-seat).is-lost .person-pic { filter: grayscale(1); opacity: 0.55; }
 
 /* A match's status, the colour of its name (UV, 27 Nov: no badges): amber,
    red or grey as its badge was (tournament-bracket.js, statusOf). Grey is
@@ -1031,7 +1037,7 @@ button.btn[data-act="publish"] { color: var(--color-primary); }
 .dr-pop-status { margin: calc(-1 * var(--space-2)) 0 var(--space-3); font-size: 0.9rem; }
 .dr-pop-score {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 	align-items: end;
 	gap: var(--space-3);
 	margin-bottom: var(--space-4);
@@ -1045,7 +1051,6 @@ button.btn[data-act="publish"] { color: var(--color-primary); }
 }
 .dr-pop-name { font-weight: 600; text-align: center; overflow-wrap: break-word; max-width: 100%; }
 .dr-pop-name.cs-empty { font-weight: 400; color: var(--text-muted); }
-.dr-pop-score .dr-colon { padding-bottom: 0.35rem; }
 .dr-pop-lag { display: flex; justify-content: center; margin-bottom: var(--space-4); }
 .dr-pop-actions { justify-content: center; gap: var(--space-2); margin-top: 0; }
 
@@ -1072,4 +1077,12 @@ button.btn[data-act="publish"] { color: var(--color-primary); }
 	.tdc-card.wide:has(> .tournament-panel[data-tab="draw"]:not([hidden]) .bracket-stage:not([hidden])) {
 		width: calc(100% - 2rem);
 	}
+}
+
+/* Scores not published yet are yellow (UV, 27 Nov): a match that exists and
+   is not published (tournament-bracket.js, unpublished), in Rounds, the ⋯
+   card and the bracket, steppers and plain numbers alike. Last in the file,
+   so it outranks a winner's green. */
+:is(.dr-match, .dr-pop-score, .bracket-fixture).is-unpublished :is(.dr-score, .bracket-frames, .tdc-stepper .tdc-stepper-window > input[type="number"], .tdc-stepper-ghost) {
+	color: var(--color-warning);
 }

@@ -3420,3 +3420,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Rejected:* each view keeping its own way to enter a score (Claude's alternative); badges for players and the public only on Draw.
 *So:* `docs/systems/tournaments.md`, "A match's buttons behind a ⋯; its status as its name's colour"; `docs/ui-list.md` items 19 and 20; `docs/STATUS.md` §1 4eh.
 *Touches:* `src/scripts/tournament-bracket.js`, `src/stylesheets/bracket.css`
+
+## 2026-11-27 — A published match settled on the draw; no colon; unpublished scores yellow
+
+*Decided by UV:* where a match is published, **hide the lag, hide the score steppers and grey out the loser**; the ⋯ card **keeps its steppers** for correcting (UV's choice) and hides the lag; **no colon between the players**; **unpublished scores in yellow**.
+*Claude's, for UV to correct:* the loser greyed in both views and for everybody, the picture greyscale at 55%; "unpublished" is any match made and not published, a match being played at 0–0 included; on the bracket's side-by-side cards the colon's gap is kept, the ":" gone.
+*So:* `docs/systems/tournaments.md`, "A published match settled on the draw…"; `docs/ui-list.md` items 21–23; `docs/STATUS.md` §1 4eh.
+*Touches:* `src/scripts/tournament-bracket.js`, `src/stylesheets/bracket.css`
