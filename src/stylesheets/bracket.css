@@ -1072,3 +1072,16 @@ a.dr-no { color: var(--text-muted); text-decoration: underline dotted; text-unde
 	padding: 0;
 	box-shadow: none;
 }
+
+/* The bracket uses the window's whole width (UV, 27 Nov: "use all the width
+   and height available"), not only the card's: its scroller reaches out of
+   the card to 16px from each edge of the screen (the page's side gutter),
+   the view settings and the rest staying in the card. Within 16px also
+   leaves room for a desktop scrollbar, so the page never scrolls sideways.
+   Full screen has its own rules above. */
+.tdc-card .bracket-stage:not(.is-full):not(:fullscreen) .bracket-scroll {
+	width: calc(100vw - 2rem);
+	max-width: none;
+	margin-left: calc(50% - 50vw + 1rem);
+	box-sizing: border-box;
+}

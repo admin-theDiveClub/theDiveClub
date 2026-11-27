@@ -107,10 +107,10 @@ TDCTournamentNav.panel('draw', () => {
 	// the draw's text (50–300%), and zoom, the size of the whole draw
 	// (25–300%), any whole number (UV, 5 Nov: so a view can be made to fit
 	// any screen); gapV and gapH, the space between cards down and across
-	// the page (0–64px; UV, 5 Nov).
+	// the page (0–64px down, 0–240px across; UV, 5 Nov, and 27 Nov: Fit spreads the rounds across a wide screen).
 	const VIEW_KEY = 'tdc.draw.view';
 	const VIEW_DEFAULT = { flow: 'linear', rounds: 'columns', card: 'stacked', pics: 'show', font: 100, zoom: 100, gapV: 8, gapH: 16 };
-	const RANGE = { font: [50, 300, 1], zoom: [25, 300, 1], gapV: [0, 64, 1], gapH: [0, 64, 1] };
+	const RANGE = { font: [50, 300, 1], zoom: [25, 300, 1], gapV: [0, 64, 1], gapH: [0, 240, 1] };
 	let view = Object.assign({}, VIEW_DEFAULT);
 	try { Object.assign(view, JSON.parse(localStorage.getItem(VIEW_KEY) || '{}')); } catch (err) { /* private window or unreadable: the defaults */ }
 	for (const k of ['flow', 'rounds', 'card', 'pics']) {
@@ -525,11 +525,25 @@ TDCTournamentNav.panel('draw', () => {
 		if (!lanes) return;
 		const sc = els.bracket.parentElement;
 		const full = isFull();
+		// The site's bar along the top and the tournament's bar along the
+		// foot cover the page (UV, 27 Nov: the last card sat under the foot
+		// bar on a wide screen), so the draw fits between them.
+		// Both slide away on a scroll down and back on a scroll up, so the
+		// room is left for each at its full size whether it shows now or not
+		// (its height and its offset from the edge, which a slide does not
+		// change): the whole draw stays in view with the bars back.
+		const barRoom = (sel, edge) => {
+			const e = document.querySelector(sel);
+			if (!e || getComputedStyle(e).display === 'none') return 0;
+			return e.offsetHeight + Math.max(0, parseFloat(getComputedStyle(e)[edge]) || 0);
+		};
+		const topBar = full ? 0 : barRoom('.site-nav', 'top');
+		const footBar = full ? 0 : barRoom('#tournament-tabbar', 'bottom');
 		const room = {
 			w: (full ? els.stage.clientWidth - 32 : sc.clientWidth) - 8,
 			// The screen's height, less the stage's own padding when full
 			// (the bar there hides itself, so it takes no room).
-			h: (full ? els.stage.clientHeight - 32 : innerHeight) - 24
+			h: (full ? els.stage.clientHeight - 32 : innerHeight - topBar - footBar) - 24
 		};
 		const measure = () => {
 			const z = view.zoom / 100;
@@ -548,6 +562,7 @@ TDCTournamentNav.panel('draw', () => {
 			view.gapV = clampGap('gapV', 6 * font / 100);
 			view.gapH = clampGap('gapH', 14 * font / 100);
 			applySizes();
+			alignFirstRound();
 			return measure();
 		};
 		const fits = (n) => n.w > 0 && n.h > 0 && n.w <= room.w && n.h <= room.h;
@@ -562,6 +577,21 @@ TDCTournamentNav.panel('draw', () => {
 				if (fits(at(mid))) lo = mid; else hi = mid;
 			}
 			at(lo);
+			// The room the text leaves in either direction goes to the space
+			// between cards (UV, 27 Nov: "use all the width and height
+			// available"), up to each spacing's limit.
+			for (const k of ['gapV', 'gapH']) {
+				let glo = view[k], ghi = RANGE[k][1] + 1;
+				while (ghi - glo > 1) {
+					const mid = Math.floor((glo + ghi) / 2);
+					view[k] = mid;
+					applySizes();
+					alignFirstRound();
+					if (fits(measure())) glo = mid; else ghi = mid;
+				}
+				view[k] = glo;
+				applySizes();
+			}
 		} else {
 			// The smallest text still too big: the zoom takes the rest.
 			const z = Math.min(room.w / small.w, room.h / small.h);
@@ -572,7 +602,7 @@ TDCTournamentNav.panel('draw', () => {
 		drawArrows();
 		// What was fitted is what is seen: in full screen the draw is centred
 		// in the stage already; otherwise its top goes to the top of the page.
-		if (!full) window.scrollTo({ top: sc.getBoundingClientRect().top + scrollY - 8 });
+		if (!full) window.scrollTo({ top: sc.getBoundingClientRect().top + scrollY - topBar - 8 });
 	}
 	els.fit.addEventListener('click', fitAll);
 
@@ -1077,7 +1107,11 @@ TDCTournamentNav.panel('draw', () => {
 			// through shows in the next round; an arrow from a hidden card is
 			// not drawn (drawArrows skips a card that is not there).
 			const shown = readOnly && r === firstRound ? list.filter((f) => f.advance_reason !== 'bye') : list;
-			if (shown.length) cards.append(...shown.map(fixture));
+			const drawnCards = shown.map(fixture);
+			// Moved beside the slot each feeds (alignFirstRound), the byes'
+			// places being gone from the column.
+			if (shown.length < list.length) for (const c of drawnCards) c.classList.add('is-aligned');
+			if (drawnCards.length) cards.append(...drawnCards);
 			else if (empty) cards.append(node('div', 'bracket-round-empty', 'Empty round'));
 			col.append(cards, mirrorOf(head));
 			return col;
@@ -2071,6 +2105,60 @@ TDCTournamentNav.panel('draw', () => {
 		arrowFrame = requestAnimationFrame(() => { arrowFrame = 0; drawArrows(); });
 	}
 
+	// The first round with its byes hidden (UV, 27 Nov): the column spreads
+	// what is left evenly, far from where each match leads, and the arrows
+	// ran long and crossed. Each card is moved down its column to sit beside
+	// the slot it feeds in the next round; two feeding one match sit either
+	// side of it; none overlaps the one above. In columns only (rows keep
+	// the column's spread). A move in screen pixels is divided by the zoom,
+	// the cards being inside the zoomed lane.
+	function alignFirstRound() {
+		const shown = [...els.bracket.querySelectorAll('.bracket-fixture.is-aligned')];
+		for (const c of shown) c.style.translate = '';
+		if (!shown.length || view.rounds === 'rows') return;
+		const z = view.zoom / 100 || 1;
+		const gap = (view.gapV || 0) * z;
+		const target = new Map();   // first-round fixture -> { card, side }
+		for (const f of fixtures) {
+			for (const which of ['home', 'away']) {
+				const from = which === 'home' ? f.home_feeder_id : f.away_feeder_id;
+				if (from) target.set(from, { id: f.fixture_id, side: which });
+			}
+		}
+		const groups = new Map();   // next-round fixture -> its first-round cards here
+		for (const c of shown) {
+			const t = target.get(c.dataset.fixture);
+			if (!t) continue;
+			if (!groups.has(t.id)) groups.set(t.id, []);
+			groups.get(t.id).push({ c, side: t.side });
+		}
+		const placed = [];
+		for (const [id, list] of groups) {
+			const card = els.bracket.querySelector(`[data-fixture="${id}"]`);
+			if (!card) continue;
+			const tb = card.getBoundingClientRect();
+			if (list.length === 1) {
+				const slot = card.querySelector(`[data-side="${list[0].side}"]`);
+				const s = (slot || card).getBoundingClientRect();
+				const r = list[0].c.getBoundingClientRect();
+				placed.push({ c: list[0].c, top: r.top, want: s.top + s.height / 2 - r.height / 2, h: r.height });
+			} else {
+				list.sort((x, y) => (x.side === 'home' ? 0 : 1) - (y.side === 'home' ? 0 : 1));
+				const rs = list.map((x) => x.c.getBoundingClientRect());
+				const total = rs[0].height + gap + rs[1].height;
+				let at = tb.top + tb.height / 2 - total / 2;
+				list.forEach((x, i) => { placed.push({ c: x.c, top: rs[i].top, want: at, h: rs[i].height }); at += rs[i].height + gap; });
+			}
+		}
+		placed.sort((a, b) => a.want - b.want);
+		let floor = -Infinity;
+		for (const p of placed) {
+			const top = Math.max(p.want, floor);
+			p.c.style.translate = `0 ${(top - p.top) / z}px`;
+			floor = top + p.h + gap;
+		}
+	}
+
 	function drawArrows() {
 		const old = els.bracket.querySelector('.bracket-arrows');
 		if (old) old.remove();
@@ -2080,6 +2168,7 @@ TDCTournamentNav.panel('draw', () => {
 		// Zero while the page is hidden or mid-layout. Measuring then puts
 		// every arrow at the origin, so the draw is skipped and retried.
 		if (!host.width || !host.height) return;
+		alignFirstRound();
 
 		const svg = document.createElementNS(SVG_NS, 'svg');
 		svg.setAttribute('class', 'bracket-arrows'

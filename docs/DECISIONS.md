@@ -3385,3 +3385,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to correct:* hidden in Rounds for everybody and in the Bracket for readers (the Draw tab, the public); Run the draw's bracket keeps them, since a bye's empty slot is where a late player is dropped.
 *So:* `docs/systems/tournaments.md`, "The first round's byes hidden".
 *Touches:* `src/scripts/tournament-bracket.js`
+
+## 2026-11-27 — The bracket fills the screen; the first round lines up with where it leads
+
+*Decided by UV:* on a wide screen the entire bracket readable with text as large as possible, using all the width and height, the arrows leading point to point.
+*Claude's, for UV to correct:* Fit leaves room for the top and foot bars even when they have slid away; the room left after the text goes to the spacing; Space across up to 240px; the bracket's scroller uses the window's width less a 16px gutter; with first-round byes hidden, each first-round card sits beside the slot it feeds.
+*So:* `docs/systems/tournaments.md`, "The bracket fits the whole screen, the arrows point to point".
+*Touches:* `src/scripts/tournament-bracket.js`, `src/stylesheets/bracket.css`, `src/_includes/tournament/draw.html`
