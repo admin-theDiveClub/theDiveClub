@@ -114,8 +114,10 @@ select public.tdc_create_tournament('Fill Bye', tests.rules()) as b \gset
 select public.tdc_add_entrant(:'b', tests.player_of(u), 'confirmed')
 	from unnest(array[:'p1', :'p2', :'p3']::uuid[]) u;
 select public.tdc_generate_draw(:'b');
-select public.tdc_add_entrant(:'b', tests.player_of(:'late'), 'confirmed');
-select public.tdc_populate_draw(:'b', true, true) as r \gset
+-- Interested, filled with everyone not withdrawn: a confirmed late arrival is
+-- now placed by the draw itself (20261127175438), so Fill would find nobody.
+select public.tdc_add_entrant(:'b', tests.player_of(:'late'), 'interested');
+select public.tdc_populate_draw(:'b', false, true) as r \gset
 select tests.sign_out();
 select is((:'r'::jsonb ->> 'byes_cleared')::integer, 1, 'the late arrival fills the bye''s slot');
 select is((select count(*)::integer from public.tbl_tournament_fixtures

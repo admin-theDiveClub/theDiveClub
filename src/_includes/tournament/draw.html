@@ -119,6 +119,11 @@
 		<button type="button" class="btn btn-secondary btn-sm" id="populate" hidden>Fill the first round</button>
 		<button type="button" class="btn btn-secondary btn-sm" id="shuffle" hidden>Shuffle the first round</button>
 	</div>
+	{% comment %}
+		The draw follows the confirmed players by itself until play starts
+		(UV, 27 Nov; private.tdc_follow_entrants, 20261127175438).
+	{% endcomment %}
+	<div class="hint">Once made, the draw follows the confirmed players until play starts: a player confirmed takes the first open place, one no longer confirmed comes out, and a full draw grows to the next size.</div>
 </details>
 
 {% comment %}

@@ -26,6 +26,10 @@ select id as f1 from public.tbl_tournament_fixtures
 select tests.sign_in(:'dee');
 select public.tdc_create_fixture_match(:'f1')
 	where (select match_id from public.tbl_tournament_fixtures where id = :'f1') is null;
+-- Play has started (a score on that match), so the draw no longer follows the
+-- entrants by itself (20261127175438): Di stays out of it, as this test means.
+select public.tdc_set_match_override((select match_id from public.tbl_tournament_fixtures where id = :'f1'),
+	1, 0, 'Entered on the draw', 'draft');
 select public.tdc_add_entrant(:'t', tests.player_of(:'di'), 'confirmed') as e_di \gset
 select tests.sign_out();
 

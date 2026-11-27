@@ -3349,3 +3349,12 @@ These predate the log. They are recorded here because every one of them is a dec
 *Decided by UV:* "Let the rounds be the default view for tournaments." The draw opens on Rounds for everybody (director, player, public) on Draw and Run the draw; Bracket is a tap away and is remembered on a device where it was chosen. Generate the draw still shows the bracket.
 *So:* `docs/systems/tournaments.md`, "Bracket · Rounds".
 *Touches:* `src/scripts/tournament-bracket.js`, `src/_includes/tournament/draw.html`
+
+## 2026-11-27 — The draw follows the confirmed players
+
+*Decided by UV:* "I need the draw to update automatically, as confirmed players come in", only confirmed players, and applied to the tournament already drawn (Basil's Friday Super Comp). A newly confirmed player takes **the first open place**; a full draw **grows by itself** to the next size (UV chose this over flagging it for a Redraw, knowing a shuffle or hand changes are lost); a player who withdraws or goes back to Interested **comes out**, their opponent getting a bye again; all of it **until play starts**.
+*Claude's, for UV to correct:* "play has started" is a frame, a director's score, a finished or abandoned match, or a walkover, withdrawal or decision (a match made but not played is not play); an unplayed match whose players change is deleted and recorded, as the shuffle does; the earliest entered goes first when several arrive at once; the draw never shrinks; a failure fails the change that caused it; the one place deciding who runs a competition also says yes while the database itself is following that tournament (a transaction-local marker nothing in the API can set), rather than copying five draw functions; two older tests changed their setup, not their checks.
+*Rejected:* leaving a full draw for the director to Redraw (Claude's recommendation); a random open place (as Fill does); stopping at the shuffle.
+*Open:* players cannot enter themselves once a draw exists (`docs/STATUS.md` §5).
+*So:* `docs/systems/tournaments.md`, "The draw follows the confirmed players"; `docs/STATUS.md` §1 4ee.
+*Touches:* migration `20261127175438_draw_follows_entrants.sql`, `supabase/tests/114_draw_follows_entrants.test.sql`, `supabase/tests/109_remove_entrant_who_played.test.sql`, `supabase/tests/051_populate_shuffle_draw.test.sql`, `src/_includes/tournament/draw.html`
