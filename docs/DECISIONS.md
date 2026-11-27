@@ -3392,3 +3392,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to correct:* Fit leaves room for the top and foot bars even when they have slid away; the room left after the text goes to the spacing; Space across up to 240px; the bracket's scroller uses the window's width less a 16px gutter; with first-round byes hidden, each first-round card sits beside the slot it feeds.
 *So:* `docs/systems/tournaments.md`, "The bracket fits the whole screen, the arrows point to point".
 *Touches:* `src/scripts/tournament-bracket.js`, `src/stylesheets/bracket.css`, `src/_includes/tournament/draw.html`
+
+## 2026-11-27 — Fit picks in order or outside in, whichever gives the larger text
+
+*Decided by UV:* "see spacing and text size" (the fitted draw had small text and wide gaps between rounds, and a seam down each side).
+*Claude's, for UV to correct:* Fit tries both flows and keeps the larger text, changing the flow toggle (until now Fit kept every toggle); leftover width no longer goes into the gaps between rounds; the card widens while the bracket shows rather than the bracket reaching out of it; a reader's column with nothing left after hiding byes is not drawn.
+*So:* `docs/systems/tournaments.md`, "Fit picks the layout with the largest text…".
+*Touches:* `src/scripts/tournament-bracket.js`, `src/stylesheets/bracket.css`

@@ -520,7 +520,7 @@ TDCTournamentNav.panel('draw', () => {
 	// draw keeps its proportions. Only if even 50% text is too big does the
 	// zoom come down. It measures the draw itself: the cards, headings and
 	// buttons, not the lane, which is as wide as the page.
-	function fitAll() {
+	function fitOne(scroll) {
 		const lanes = els.bracket.querySelector('.bracket-lanes');
 		if (!lanes) return;
 		const sc = els.bracket.parentElement;
@@ -577,10 +577,12 @@ TDCTournamentNav.panel('draw', () => {
 				if (fits(at(mid))) lo = mid; else hi = mid;
 			}
 			at(lo);
-			// The room the text leaves in either direction goes to the space
-			// between cards (UV, 27 Nov: "use all the width and height
-			// available"), up to each spacing's limit.
-			for (const k of ['gapV', 'gapH']) {
+			// The room the text leaves down the page goes to the space between
+			// cards (UV, 27 Nov: "use all the width and height available"), up
+			// to its limit. Not across: wide gaps between rounds with small
+			// text was not it (UV, 27 Nov: "see spacing and text size"); the
+			// width goes to the layout instead (fitAll).
+			for (const k of ['gapV']) {
 				let glo = view[k], ghi = RANGE[k][1] + 1;
 				while (ghi - glo > 1) {
 					const mid = Math.floor((glo + ghi) / 2);
@@ -602,7 +604,28 @@ TDCTournamentNav.panel('draw', () => {
 		drawArrows();
 		// What was fitted is what is seen: in full screen the draw is centred
 		// in the stage already; otherwise its top goes to the top of the page.
-		if (!full) window.scrollTo({ top: sc.getBoundingClientRect().top + scrollY - topBar - 8 });
+		if (scroll && !full) window.scrollTo({ top: sc.getBoundingClientRect().top + scrollY - topBar - 8 });
+	}
+
+	// Fit tries the draw in order and from the outside in, and keeps whichever
+	// gives the larger text (UV, 27 Nov: "see spacing and text size"). On a
+	// wide, short screen the outside-in draw holds half the cards to a column,
+	// so its text is about twice the size; on a tall one, in order may win.
+	// The flow toggle shows the choice. In rows the flow is left as chosen.
+	// Equal, in order is kept.
+	function fitAll() {
+		if (!els.bracket.querySelector('.bracket-lanes')) return;
+		if (view.rounds !== 'rows') {
+			let best = null;
+			for (const flow of ['linear', 'outside']) {
+				if (view.flow !== flow) { view.flow = flow; render(); }
+				fitOne(false);
+				const size = view.font * view.zoom;
+				if (!best || size > best.size) best = { flow, size };
+			}
+			if (view.flow !== best.flow) { view.flow = best.flow; render(); }
+		}
+		fitOne(true);
 	}
 	els.fit.addEventListener('click', fitAll);
 
@@ -1083,6 +1106,11 @@ TDCTournamentNav.panel('draw', () => {
 		const third = fixtures.filter((f) => f.bracket === 'third_place');
 		if (roundsShown) { renderRounds(main, lastRound, names, third); return; }
 		const firstRound = Math.min(...main.map((f) => f.round));
+		// What of a round a reader sees: the first round without its byes
+		// (roundColumn). A column with nothing left to show is not drawn
+		// (UV's screenshot, 27 Nov: an empty Last 32 heading in the right
+		// half, its fixtures all byes).
+		const visibleOf = (list, r) => (readOnly && r === firstRound ? list.filter((f) => f.advance_reason !== 'bye') : list);
 
 		// A round's column (a row when the rounds run downwards): its heading,
 		// then its cards in a box of their own, so the rows view can lay them
@@ -1168,7 +1196,7 @@ TDCTournamentNav.panel('draw', () => {
 				const left = on(r, 'L');
 				const inRound = main.some((f) => f.round === r);
 				if (!readOnly) columns.push(roundBorder(r));
-				if (left.length || !inRound) columns.push(roundColumn(r, left, { addMatch: true, empty: true }));
+				if (visibleOf(left, r).length || !inRound) columns.push(roundColumn(r, left, { addMatch: true, empty: true }));
 			}
 			if (!readOnly) columns.push(roundBorder(lastRound));
 			// The final and, under it (beside it in rows), the playoff, each a
@@ -1179,7 +1207,7 @@ TDCTournamentNav.panel('draw', () => {
 			columns.push(mid);
 			for (let r = lastRound - 1; r >= 1; r--) {
 				const right = on(r, 'R');
-				if (!right.length) continue;
+				if (!visibleOf(right, r).length) continue;
 				const col = roundColumn(r, right);
 				// The right half's arrows come in from the far side, so a side
 				// by side card's strip there sits on the other edge (bracket.css).
@@ -1196,7 +1224,9 @@ TDCTournamentNav.panel('draw', () => {
 			for (let r = 1; r <= lastRound; r++) {
 				// The border before this round, where a new one goes in.
 				if (!readOnly) columns.push(roundBorder(r));
-				columns.push(roundColumn(r, main.filter((f) => f.round === r), { addMatch: true, empty: true }));
+				const inRound = main.filter((f) => f.round === r);
+				if (inRound.length && !visibleOf(inRound, r).length) continue;
+				columns.push(roundColumn(r, inRound, { addMatch: true, empty: true }));
 			}
 
 			// A round on the end moves nothing, so it is offered as a plain

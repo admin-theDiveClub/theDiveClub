@@ -1074,14 +1074,13 @@ a.dr-no { color: var(--text-muted); text-decoration: underline dotted; text-unde
 }
 
 /* The bracket uses the window's whole width (UV, 27 Nov: "use all the width
-   and height available"), not only the card's: its scroller reaches out of
-   the card to 16px from each edge of the screen (the page's side gutter),
-   the view settings and the rest staying in the card. Within 16px also
-   leaves room for a desktop scrollbar, so the page never scrolls sideways.
-   Full screen has its own rules above. */
-.tdc-card .bracket-stage:not(.is-full):not(:fullscreen) .bracket-scroll {
-	width: calc(100vw - 2rem);
-	max-width: none;
-	margin-left: calc(50% - 50vw + 1rem);
-	box-sizing: border-box;
+   and height available"). The page's card widens to 16px from each edge of
+   the screen while the bracket shows, rather than the bracket reaching out
+   of it: reaching out left the card's lighter surface ending part-way across
+   the draw, a seam down each side (UV's screenshot, the same evening). The
+   other tabs, and Rounds, keep the card's width. */
+@media (min-width: 992px) {
+	.tdc-card.wide:has(> .tournament-panel[data-tab="draw"]:not([hidden]) .bracket-stage:not([hidden])) {
+		width: calc(100% - 2rem);
+	}
 }
