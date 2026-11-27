@@ -120,8 +120,9 @@ select is((select venue_id::text from public.tbl_matches where id = :'night'), n
 -- ─── Signed out ───
 
 select tests.sign_in_anon();
-select throws_ok(format($$ select public.tdc_tournament_venue_list(%L) $$, :'cup'),
-	'42501', null, 'signed out, a list is not read this way');
+-- Open signed out since 20261127181750 (the public draw's heading), as the poster shows them.
+select lives_ok(format($$ select public.tdc_tournament_venue_list(%L) $$, :'cup'),
+	'signed out, the list is read for the public draw');
 select throws_ok(format($$ select public.tdc_match_venue_list(%L) $$, :'night'),
 	'42501', null, 'nor a match''s');
 

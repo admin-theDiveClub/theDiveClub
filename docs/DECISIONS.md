@@ -3365,3 +3365,10 @@ These predate the log. They are recorded here because every one of them is a dec
 *Claude's, for UV to correct:* Start round asks first (each start messages both players) and shows only while a match is ready; a walkover button reads ← W/O / W/O → with the name in its title; the badges keep their row; "View settings" is closed on every visit, not remembered; full screen opens the group for its bar and puts it back after; the bracket fits on the page's first bracket and on choosing Bracket, not on live updates, and scrolls to the draw as the Fit button does.
 *So:* `docs/systems/tournaments.md`, "Start round, the match buttons in the middle, the bracket's view settings folded and fitted".
 *Touches:* `src/scripts/tournament-bracket.js`, `src/_includes/tournament/draw.html`, `src/stylesheets/bracket.css`
+
+## 2026-11-27 — The draw open to the public
+
+*Decided by UV:* "the bracket view opened to the public, autosized to fit."
+*Claude's, for UV to correct:* only tournaments set Visible to public; no full names, surnames or override reasons signed out; signed out opens on Bracket unless the device chose Rounds; a tournament not public still asks the visitor to sign in.
+*So:* `docs/systems/tournaments.md`, "The draw open to the public".
+*Touches:* migration `20261127181750_public_draw.sql`, `supabase/tests/115_public_draw.test.sql`, `059_venues_shown`, `069_league_public_reads`, `src/scripts/tournament-bracket.js`

@@ -137,6 +137,7 @@ TDCTournamentNav.panel('draw', () => {
 	let readOnly = true;
 	let generating = false;   // on Generate the draw (applyMode)
 	let mayRun = false;
+	let signedOut = false;   // a public visitor (UV, 27 Nov)
 	// The fixture whose score the TD is typing, if any. One at a time: two
 	// half-filled score forms on one bracket is a mis-tap waiting to happen.
 	let entering = null;
@@ -1668,13 +1669,18 @@ TDCTournamentNav.panel('draw', () => {
 
 	// ─── Reading ───
 	async function loadTournament() {
-		const { data, error } = await supabaseClient
+		// Signed out, the public read (no rules: they are the director's panel's).
+		const { data, error } = signedOut
+			? await supabaseClient.rpc('tdc_tournament_public', { p_tournament_id: tournamentId }).maybeSingle()
+			: await supabaseClient
 			.from('tbl_tournaments')
 			.select('id, name, format, status, starts_at, third_place, progression, create_matches, rules, max_entrants')   // rules: the round panel starts from the tournament's own ruleset; max_entrants: where an empty draw's size starts
 			.eq('id', tournamentId)
 			.maybeSingle();
 
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
+		// Signed out and not public: signing in may show it, as before.
+		if (!data && signedOut) { await TDC.requireSession(AREA); return false; }
 		if (!data) {
 			TDC.error(AREA, 'no tournament with that id. Check the link.', { tournamentId }, els.status);
 			return false;
@@ -1702,7 +1708,8 @@ TDCTournamentNav.panel('draw', () => {
 	}
 
 	async function loadDraw() {
-		const { data, error } = await supabaseClient.rpc('tdc_tournament_draw', {
+		// Signed out, the public draw (UV, 27 Nov): the same rows, no private columns.
+		const { data, error } = await supabaseClient.rpc(signedOut ? 'tdc_public_draw' : 'tdc_tournament_draw', {
 			p_tournament_id: tournamentId
 		});
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
@@ -3108,8 +3115,15 @@ TDCTournamentNav.panel('draw', () => {
 
 	// ─── Start ───
 	TDCLoader.hold((async () => {
-		const session = await TDC.requireSession(AREA);
-		if (!session) return;
+		// Signed out (UV, 27 Nov): the draw of a tournament set Visible to
+		// public, read-only, on Bracket unless this device chose otherwise,
+		// fitted as it opens. No sign-in asked for.
+		const session = await TDC.getSession(AREA);
+		signedOut = !session;
+		if (signedOut) {
+			try { if (!localStorage.getItem(MODE_KEY)) mode = 'bracket'; } catch (err) { mode = 'bracket'; }
+			showModes();
+		}
 
 		if (!tournamentId) {
 			TDC.error(AREA, 'no tournament in the address. Open this page from the tournament list.', null, els.status);
@@ -3120,7 +3134,8 @@ TDCTournamentNav.panel('draw', () => {
 
 		// Settled before the first render, so the controls are never offered
 		// and then taken away. The database refuses the writes either way.
-		const { data: mine, error } = await supabaseClient.rpc('tdc_my_tournaments', { p_limit: 200 });
+		const { data: mine, error } = signedOut ? { data: [] }
+			: await supabaseClient.rpc('tdc_my_tournaments', { p_limit: 200 });
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
 
 		const row = (mine || []).find((t) => t.id === tournamentId);
