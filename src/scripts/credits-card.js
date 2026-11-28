@@ -454,7 +454,8 @@ const TDCCredits = (() => {
 			+ `v${f(-(h - 2 * r))}a${f(r)} ${f(r)} 0 0 1 ${f(r)} ${f(-r)}z`;
 	}
 
-	// The QR for link as an SVG element, in the site's look. Needs loadQr() first.
+	// The QR for link, in the site's look: a .tdc-qr box holding the code's SVG and
+	// the icon over it (credits-card.css). Needs loadQr() first.
 	function qrSvg(link) {
 		const L = QR_LOOK;
 		const q = qrcode(0, L.level);
@@ -491,15 +492,25 @@ const TDCCredits = (() => {
 		};
 		ink(dots);
 		ink(corners, 'evenodd');
+		// The icon is an <img> laid over the code, not an <image> inside the SVG
+		// (UV's iPhone, 28 Nov): WebKit drew the diver's blurred shadow (the file's
+		// filter59) as a pale box round her inside an SVG <image>; as an <img>, as
+		// the nav shows it, it draws cleanly. Checked in Playwright's WebKit. UV's
+		// files are used as they are.
+		const wrap = document.createElement('div');
+		wrap.className = 'tdc-qr';
+		wrap.append(svg);
+		const pct = (v) => (100 * v / total).toFixed(3) + '%';
 		for (const theme of ['dark', 'light']) {
-			const img = document.createElementNS(SVG_NS, 'image');
-			img.setAttribute('class', 'for-' + theme);
-			img.setAttribute('href', L.logo[theme]);
-			for (const [k, v] of [['x', at + qz], ['y', at + qz], ['width', side], ['height', side]]) img.setAttribute(k, +v.toFixed(3));
-			img.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-			svg.appendChild(img);
+			const img = document.createElement('img');
+			img.className = 'tdc-qr-logo for-' + theme;
+			img.src = L.logo[theme];
+			img.alt = '';
+			img.style.left = img.style.top = pct(at + qz);
+			img.style.width = img.style.height = pct(side);
+			wrap.append(img);
 		}
-		return svg;
+		return wrap;
 	}
 
 	// While the code is waiting and the card is open, ask every few seconds

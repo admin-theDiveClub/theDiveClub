@@ -238,6 +238,12 @@
 	box-shadow: var(--nm-raised-small);
 }
 .cc-qr svg { display: block; width: 100%; height: 100%; }
+/* The site's QR (TDCCredits.qrSvg; the cards and the home page): the code's SVG
+   filling the box, the theme's icon laid over its middle as an <img> (an SVG
+   <image> drew a pale box round the diver on iPhones). */
+.tdc-qr { position: relative; width: 100%; height: 100%; }
+.tdc-qr > svg { display: block; width: 100%; height: 100%; }
+.tdc-qr-logo { position: absolute; display: block; object-fit: contain; pointer-events: none; }
 .cc-code {
 	margin-top: var(--space-4);
 	font-family: var(--font-mono);
