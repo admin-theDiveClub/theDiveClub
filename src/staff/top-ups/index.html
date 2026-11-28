@@ -10,7 +10,7 @@ extraStyles:
 ---
 <!-- Buying credits, the staff side (24 Nov; docs/design/shop.md, Stage 1). Any staff.
      A player's QR is a link here with ?code=, so the phone's own camera opens the
-     request; the code can also be typed. -->
+     request; Scan reads it from inside the app (28 Nov); the code can also be typed. -->
 <div class="tdc-card">
 	<h1>Top-ups</h1>
 	<p class="muted" id="venue-line"></p>
@@ -27,6 +27,7 @@ extraStyles:
 				<input type="text" id="find-code" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="7K4Q">
 			</div>
 			<button type="submit" class="btn-primary" id="find-btn">Find</button>
+			<button type="button" class="btn-secondary" id="scan-btn">Scan</button>
 		</form>
 
 		<!-- One request, ready to confirm -->

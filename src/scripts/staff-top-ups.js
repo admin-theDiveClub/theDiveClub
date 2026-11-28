@@ -17,6 +17,7 @@ TDCLoader.hold((async () => {
 		findForm:   el('find-form'),
 		findCode:   el('find-code'),
 		findBtn:    el('find-btn'),
+		scanBtn:    el('scan-btn'),
 		request:    el('request'),
 		reqPic:     el('req-pic'),
 		reqName:    el('req-name'),
@@ -178,6 +179,9 @@ TDCLoader.hold((async () => {
 		e.preventDefault();
 		find(els.findCode.value);
 	});
+	// Scan: the player's QR read from inside the app (scripts/qr-scan.js); it opens
+	// this page's ?code= link, or an order's on the Orders page.
+	els.scanBtn.addEventListener('click', () => TDCScan.open());
 
 	els.confirmBtn.addEventListener('click', async () => {
 		if (!current || !method) return;

@@ -11,7 +11,7 @@ extraStyles:
 <!-- The shop, the staff side (24 Nov; docs/design/shop.md, Stage 4; canvas artboards 5 and 6).
      Any staff. New · Preparing · Ready to collect: three columns on a wide screen, three tabs on a
      phone. A player's order QR is a link here with ?order=, so the phone's own camera opens its
-     hand-over; the number (B27) can also be typed. The hand-over is a card over this page. -->
+     hand-over; Scan reads it from inside the app (28 Nov); the number (B27) can also be typed. The hand-over is a card over this page. -->
 <div class="tdc-card orders-page">
 	<h1>Orders</h1>
 	<p class="muted" id="venue-line"></p>
@@ -29,6 +29,7 @@ extraStyles:
 					<input type="text" id="find-code" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="B27 or 7K4Q">
 				</div>
 				<button type="submit" class="btn-primary" id="find-btn">Find</button>
+				<button type="button" class="btn-secondary" id="scan-btn">Scan</button>
 			</form>
 			<div class="oq-extras">
 				<a class="oq-topups" id="topups-link" href="/staff/top-ups/" hidden></a>

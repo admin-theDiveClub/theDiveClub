@@ -100,6 +100,8 @@ const TDCRing = (() => {
 		menu: { label: 'Menu', strokes: ['M32 35L68 35', 'M32 50L68 50', 'M32 65L68 65'] },
 		reload: { label: 'Reload', strokes: ['M66 56A17 17 0 1 1 62 38', 'M52 38L62 38L62 28'] },
 		// A phone with an arrow down into it: the nav's "Get the app" (13 Nov).
+		// Four corners round a square: the nav's "Scan a code" (28 Nov).
+		scan: { label: 'Scan a code', strokes: ['M32 44L32 32L44 32', 'M56 32L68 32L68 44', 'M68 56L68 68L56 68', 'M44 68L32 68L32 56'] },
 		install: { label: 'Get the app', strokes: ['M38 28L62 28L62 72L38 72L38 28', 'M50 37L50 57', 'M43 50L50 57L57 50', 'M47 65L53 65'] },
 		// Added 26 Oct for the match page's slide to undo: an arrow pointing
 		// left along the top, its tail curling down and back underneath.

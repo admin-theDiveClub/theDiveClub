@@ -90,6 +90,14 @@
 		{% endfor %}
 	</ul>
 
+	<!-- Scan a code (28 Nov, UV): everyone, signed in or not. The QR scanner
+	     (scripts/qr-scan.js) over the page; a Dive Club link it reads opens here,
+	     in the app: a player's QR, a top-up or an order. -->
+	<button type="button" class="nav-menu-row nav-scan" id="nav-scan">
+		<span class="nav-menu-icon"><span class="tdc-ring nav-ring" id="nav-scan-ring"></span></span>
+		<span>Scan a code</span>
+	</button>
+
 	<!-- Shown by nav.js on a phone in a browser (13 Nov): always there, for
 	     whoever closed the strip. Gone in the installed app. -->
 	<a class="nav-menu-row nav-get-app-row" id="nav-get-app-row" href="/install/" hidden>

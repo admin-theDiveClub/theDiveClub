@@ -156,11 +156,28 @@
 			setAccount(false);
 			if (rings.bell) rings.bell.drawIn();
 			if (rings.reload) rings.reload.drawIn();
+			if (rings.scan) rings.scan.drawIn();
 		} else {
 			closeNotifications();
 		}
 	}
 	menuToggle.addEventListener('click', () => setMenu(!menu.classList.contains('open')));
+
+	// --- Scan a code (28 Nov, UV) ---
+	// Everyone. The menu shuts and the QR scanner (scripts/qr-scan.js) opens over
+	// the page; a Dive Club link it reads opens in the app.
+	const scanBtn = document.getElementById('nav-scan');
+	if (scanBtn) {
+		makeRing('scan', 'nav-scan-ring', ['scan'], { scan: 'Scan a code' });
+		scanBtn.addEventListener('click', () => {
+			setMenu(false);
+			if (typeof TDCScan === 'undefined') {
+				TDC.error(AREA, 'qr-scan.js is not loaded, so the scanner cannot open.');
+				return;
+			}
+			TDCScan.open();
+		});
+	}
 
 	// --- The profile menu (UV, 31 Oct) ---
 	// Slides in from the right, as the menu does from the left; one of the

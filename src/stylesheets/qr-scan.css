@@ -1,0 +1,41 @@
+/* The shared QR scanner (UV, 28 Nov; DECISIONS 28 Nov, "A Scan button inside the app").
+   The Add credits card's sheet (.cc, credits-card.css), holding the camera's picture
+   with its middle square framed: that square is the part that is read.
+   Built by scripts/qr-scan.js. */
+
+.qs-view {
+	position: relative;
+	width: 100%;
+	aspect-ratio: 1;
+	border-radius: var(--radius-lg);
+	overflow: hidden;
+	background: var(--bg-base);
+	box-shadow: var(--nm-sunken);
+}
+.qs-view video {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+/* Four corner marks, inset from the edge, in the site's green. */
+.qs-frame {
+	position: absolute;
+	inset: 12%;
+	pointer-events: none;
+	--qs-len: 22%;
+	--qs-w: 0.25rem;
+	background:
+		linear-gradient(var(--color-primary), var(--color-primary)) top left / var(--qs-len) var(--qs-w),
+		linear-gradient(var(--color-primary), var(--color-primary)) top left / var(--qs-w) var(--qs-len),
+		linear-gradient(var(--color-primary), var(--color-primary)) top right / var(--qs-len) var(--qs-w),
+		linear-gradient(var(--color-primary), var(--color-primary)) top right / var(--qs-w) var(--qs-len),
+		linear-gradient(var(--color-primary), var(--color-primary)) bottom left / var(--qs-len) var(--qs-w),
+		linear-gradient(var(--color-primary), var(--color-primary)) bottom left / var(--qs-w) var(--qs-len),
+		linear-gradient(var(--color-primary), var(--color-primary)) bottom right / var(--qs-len) var(--qs-w),
+		linear-gradient(var(--color-primary), var(--color-primary)) bottom right / var(--qs-w) var(--qs-len);
+	background-repeat: no-repeat;
+	border-radius: var(--radius-md);
+}
+.qs-hint { margin: var(--space-3) 0 0; text-align: center; }

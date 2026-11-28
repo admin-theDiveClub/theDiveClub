@@ -52,6 +52,8 @@
 	<link rel="stylesheet" href="/stylesheets/design.css?v={{ build.version }}">
 	<!-- The Add credits card, opened over any page (24 Nov; scripts/credits-card.js). -->
 	<link rel="stylesheet" href="/stylesheets/credits-card.css?v={{ build.version }}">
+	<!-- The QR scanner, opened from the menu and the staff pages (28 Nov; scripts/qr-scan.js). -->
+	<link rel="stylesheet" href="/stylesheets/qr-scan.css?v={{ build.version }}">
 	{% if extraStyles %}
 		{% for style in extraStyles %}
 			<link rel="stylesheet" href="{{ style }}?v={{ build.version }}">
@@ -119,6 +121,8 @@
 	<script src="/scripts/tdc-controls.js?v={{ build.version }}"></script>
 	<!-- The Add credits card (24 Nov): opened by the profile menu's balance and the profile's Credits. -->
 	<script src="/scripts/credits-card.js?v={{ build.version }}"></script>
+	<!-- The QR scanner (28 Nov): the menu's Scan a code and the staff pages' Scan. -->
+	<script src="/scripts/qr-scan.js?v={{ build.version }}"></script>
 
 	{% if extraScripts %}
 		{% for script in extraScripts %}
@@ -138,4 +142,4 @@
         }
     </script>
 </body>
-</html>
+</html>

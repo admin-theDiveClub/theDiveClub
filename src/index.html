@@ -125,7 +125,9 @@ extraScripts:
 	/* Your QR in the logo's place (UV, 28 Nov): signed in with a player short link,
 	   the logo's square on the QR's paper (--qr-paper), the code drawn by TDCCredits.qrSvg
 	   (the site's QR look). home-cards.js sets .has-qr; signed out the logo stays. */
-	.home-logo.has-qr img { display: none; }
+	/* Only the logo's own pictures (its children): the QR's icon is an <img> inside
+	   .home-qr and must stay (a plain "img" here hid it, 28 Nov). */
+	.home-logo.has-qr > img { display: none; }
 	.home-qr {
 		width: var(--home-logo-size, 0px);
 		height: var(--home-logo-size, 0px);

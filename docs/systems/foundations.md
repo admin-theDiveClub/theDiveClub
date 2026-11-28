@@ -294,6 +294,35 @@ Driven headless at 420 against the local copy (24 Nov): Ann (120 credits) ordere
 
 Driven headless at 420 and 1280 against the local copy (24 Nov): Sipho started Ann's B1 (coffee and socks, credits) from its card; Ann ordered B3 while the page was open and it flashed in New within 5 s; Sipho opened B1, Ready (Ann's "B1 is ready to collect" written under Shop), Mark collected; Bob's B2 at the club: Mark collected · R40 stayed disabled until Card, then "✓ B2 handed over to Bob. R40 by card."; typing b2 showed "Handed over. Nothing to do."; B3 cancelled: 30 credits back, Ann told; the QR link opened B1's card; 7K4Q went to Top-ups. No page errors. **Not on a phone; the chime not heard; the job not seen running on a real night** (tested by calling it).
 
+## The QR scanner (28 Nov; DECISIONS 28 Nov, "A Scan button inside the app")
+
+**Built** (no migration; `scripts/qr-scan.js`, `stylesheets/qr-scan.css`, both on every page through `layout.html`). `TDCScan.open()` opens a scanner over any page.
+
+| Where | What |
+|---|---|
+| **The menu's Scan a code** (`nav.html` `#nav-scan`, `nav.js`, `nav.css` `.nav-scan`, the ring icon `scan` in `ring-status.js`) | Everyone, signed in or not, on every page. Under the page links, above Get the app or Reload; it carries the line those two had (one line over the icon rows, not two). A tap closes the menu and opens the scanner |
+| **The staff pages' Scan** (`/staff/top-ups/`, `/staff/orders/`) | Beside Find. Kept because staff are already working on those pages; the menu has it too |
+| **The scanner** (`.cc .qs`: the Add credits card's sheet and its rise and sink, `TDC.cardOpen` / `cardClose`) | "Scan a code", Close, the camera's picture in a sunken square with four green corner marks (the middle square is what is read), "Point the camera at a Dive Club QR." Dots on the picture while the camera and the reader start |
+
+**What it does with what it reads:**
+
+| Read | Then |
+|---|---|
+| A link on `thediveclub.org` (or `www.`, or the page's own host, so it works on localhost) | A short buzz, the camera stops and the link's path opens **in the app** (`location.assign`). The page it opens does what it does from the phone's camera: `?code=` opens a top-up, `?order=` an order, a short link a player page |
+| Anything else | `TDC (Error): That QR isn't a Dive Club link.` in the sheet, said once per different code (and once in the console, `[Scan]`); scanning goes on |
+| The camera refused, missing, in use or not available (not HTTPS) | `TDC (Error): The camera wasn't allowed. Allow it in the browser's settings and try again.` (or the matching sentence) **in the sheet**, which stays open until Close. In the sheet, not on the page, because the menu opens it on pages with no status line |
+| The reader fails to load | `TDC (Error): the QR reader could not be loaded. Check the connection and try again.` in the sheet |
+
+**Reading:** the phone's built-in reader (`BarcodeDetector`, Chrome on Android) when it has a QR one; otherwise **ZXing** (`@zxing/library`, pinned in `package.json`, copied at build to `/scripts/vendor/zxing.js` by `.eleventy.js`, 336 KB, about 90 KB over the wire), loaded the first time Scan is tapped and never before: iPhones, and desktops. A frame's middle square, at most 720 px, is read every 150 ms with `TRY_HARDER`. The back camera (`facingMode: environment`, ideally 1280 × 720).
+
+**The camera is never left on:** Close, Esc or Back, the dialog closing for any reason, a link being opened, or the app going to the background (the sheet closes) all stop every track. If the camera starts but the reader fails, the camera is stopped too.
+
+**Why it exists:** on an iPhone the camera app opens a scanned link in **Safari**, which keeps its own sign-in apart from the installed app; scanning from inside keeps you where you are signed in. On Android Chrome usually opens the link in the installed app anyway. The phone's own camera and typing the code still work.
+
+**iPhone note:** in the installed app iOS may ask for the camera again after the app is reopened. That is Apple's, not ours.
+
+Driven headless at 420 (28 Nov) with a stand-in camera filming the site's own QR (`TDCCredits.qrSvg`, the dark theme's look, icon included) and the built-in reader removed, so ZXing read it as on an iPhone: from the menu, a top-up link opened `/staff/top-ups/?code=TXZ5`; a `https://thediveclub.org/staff/orders/?order=…` link opened that path here; a foreign link showed the error once with the sheet open; Close stopped the camera; a refused camera showed its error in the sheet; both staff rows fit at 420. The database was blocked in the test (signed out, so the staff pages' own Scan wiring was not reached). **Not tried on a real phone.**
+
 ## The shop: receipt emails (24 Nov; the shop's Stage 5, `docs/design/shop.md`)
 
 **Built** (migration `20261124170346_shop_receipt_emails`, test `098_shop_receipt_emails`, edge function `send-shop-emails`; 24 Nov). **Nothing is sent until** UV sets the `RESEND_API_KEY` secret and deploys the function (STATUS §1 4dn).

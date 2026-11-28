@@ -12,6 +12,11 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({
     "node_modules/qrcode-generator/qrcode.js": "scripts/vendor/qrcode.js"
   });
+  // QR reader (ZXing, Apache-2.0), pinned in package.json: the staff Scan button
+  // (scripts/qr-scan.js loads it only when Scan is tapped on a phone with no built-in reader)
+  eleventyConfig.addPassthroughCopy({
+    "node_modules/@zxing/library/umd/index.min.js": "scripts/vendor/zxing.js"
+  });
   // 3D viewer (Google's <model-viewer>, Apache-2.0, three.js inside), pinned in package.json:
   // a product's model on its shop card (scripts/shop.js loads it only when such a card opens).
   // The Draco unpacker the models need comes from three (installed with it) and is served

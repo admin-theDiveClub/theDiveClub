@@ -26,6 +26,7 @@
   "dependencies": {
     "@google/model-viewer": "4.4.0",
     "@supabase/supabase-js": "2.117.1",
+    "@zxing/library": "0.21.3",
     "qrcode-generator": "1.4.4"
   }
 }

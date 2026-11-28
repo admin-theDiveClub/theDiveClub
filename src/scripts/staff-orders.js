@@ -30,6 +30,7 @@ TDCLoader.hold((async () => {
 		findForm:  el('find-form'),
 		findCode:  el('find-code'),
 		findBtn:   el('find-btn'),
+		scanBtn:   el('scan-btn'),
 		topups:    el('topups-link'),
 		sound:     el('sound-on'),
 		tabTrack:  el('oq-tab-track'),
@@ -517,6 +518,9 @@ TDCLoader.hold((async () => {
 		e.preventDefault();
 		find(els.findCode.value);
 	});
+	// Scan: the player's QR read from inside the app (scripts/qr-scan.js); it opens
+	// this page's ?order= link, or a top-up's on the Top-ups page.
+	els.scanBtn.addEventListener('click', () => TDCScan.open());
 
 	// ─── Checking by itself ───
 	function schedule() {

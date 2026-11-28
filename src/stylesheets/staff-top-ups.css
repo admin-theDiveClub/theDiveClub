@@ -2,7 +2,7 @@
 
 .tu-find { display: flex; align-items: flex-end; gap: var(--space-3); }
 .tu-find .field { flex: 1; margin-bottom: 0; }
-.tdc-card .tu-find button { flex: none; margin-bottom: 0; }
+.tdc-card .tu-find button { flex: none; width: auto; margin-bottom: 0; }
 .tu-find input { font-family: var(--font-mono); letter-spacing: 0.15em; text-transform: uppercase; }
 
 /* One request: who, what to charge, then Cash or Card and Confirm. */

@@ -201,10 +201,15 @@
 .nav-notify[aria-expanded="true"] { background: var(--hover-wash); outline: none; }
 .nav-menu-row:disabled { opacity: 0.4; cursor: default; }
 .nav-notify { margin-top: 1rem; }
-.nav-reload { margin-bottom: 1rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem; }
+/* Scan a code (28 Nov) is always there, so the line under the page links is its
+   own; Get the app or Reload, when shown, follow it under the same line. The
+   last row shown keeps the gap at the foot. */
+.nav-scan { margin-bottom: 1rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem; }
+.nav-scan:has(~ .nav-menu-row:not([hidden])) { margin-bottom: 0; }
+.nav-reload { margin-bottom: 1rem; }
 /* "Get the app" is a link, so it drops a link's underline (13 Nov). */
 a.nav-menu-row { text-decoration: none; }
-.nav-get-app-row { margin-bottom: 1rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem; }
+.nav-get-app-row { margin-bottom: 1rem; }
 
 /* ── Getting the app: the strip under the bar (13 Nov) ───────────────
  * In the page's flow, so it pushes the page down rather than covering it,
