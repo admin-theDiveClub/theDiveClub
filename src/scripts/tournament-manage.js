@@ -371,8 +371,10 @@ TDCTournamentNav.panel('entrants', () => {
 	}
 
 	// ─── Walk-ins from a list ───
-	// One name per line, sent as they are: the server takes numbering off,
-	// joins a name given twice, and says which it skipped and why.
+	// One name per line, sent as they are: the server keeps letters only
+	// (numbers, emoji and symbols off; "4 UV420" is UV), makes each word
+	// start with a capital, joins a name given twice, and says which it
+	// skipped and why (migration 20261128125413).
 	els.walkinAdd.addEventListener('click', async () => {
 		if (readOnly) return;
 		const names = els.walkinNames.value.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);

@@ -543,6 +543,18 @@ UV, 22 Oct: "progression arrows between each round … the arrows should be smar
 - **The profile** (`accounts/profile/index.html`, `profile.js`): **Is this you?** (`#connect`, hidden when nothing waits), above the details: *"Jane Walker" in Friday Super Comp*, asked by whom and when, **Accept** and **Decline**. Accept reloads the page (the account's player id is now the walk-in's); Decline re-reads and says "Declined. It stays a walk-in." Opened from the notification it scrolls there, clear of the nav.
 - **Driven headless at 420** against the local copy (27 Nov): a pasted list with numbering, a doubled space, a repeat and a blank gave "Added 3 walk-ins. Skipped: Kim Lee (already entered)."; Connect found the account, the ask showed as waiting; as the asked player the profile showed the request and Accept made the walk-in her account, entered, with the director told. No sideways scroll. Push could not be sent locally (no edge functions), as expected.
 
+#### Names from the list: letters only, made neat (migration `20261128125413_walk_in_names_letters_only`, 28 Nov)
+
+UV: a pasted line keeps only its text, made neat; "4) UV", "4. UV", "4 UV420" and "420UV" are all UV.
+
+- **Kept:** letters in any language, the spaces between words, and an apostrophe or hyphen *inside* a word (O'Brien, Jean-Luc; UV). A phone's curly apostrophe is made straight first, so O’Brien and O'Brien are one name.
+- **Taken off, wherever they are:** digits, dots, brackets, emoji, symbols. Each leaves a space, so "Jo.Smith" is Jo Smith; an apostrophe or hyphen at a word's edge goes too.
+- **Neat:** one space between words; each word's first letter is made a capital and **the rest stays as typed** (UV's choice), so UV stays UV and "jo smith" is Jo Smith.
+- A line with no letters left ("123") is dropped, as a blank line is. Done in `tdc_add_walk_in_entrants` alone (patched, one block); the page sends the lines as they are.
+- **The warning:** the field's hint starts *Letters only: numbers, emoji and symbols are taken off*, with an example.
+- Production and the local copy share `en_US.UTF-8`, so accented letters behave alike on both (checked 28 Nov).
+- **Tests:** `119_walk_in_names` (14).
+
 ### Removing an entrant who has played (migration `20261127135138_remove_entrant_who_played`, 27 Nov)
 
 - **STATUS 1a B6, UV: "fix it".** `tdc_remove_entrant` deleted the entrant whatever the draw held, and the fixtures' entrant columns are "on delete set null", so a player removed after losing in round 1 vanished from that fixture.
