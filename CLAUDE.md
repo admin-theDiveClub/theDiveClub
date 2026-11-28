@@ -10,7 +10,7 @@ This file is read at the start of every session, so it is kept short. **The deta
 
 - **Claude writes files. UV reviews, runs and commits. Claude never commits or pushes** (`.claude/settings.json` blocks both). At each milestone give a **commit subject**, plus a body of three or four lines when the change is not self-evident.
 - **Explain what you are about to do before you do it**, especially before running a command that changes anything or asking for access.
-- **Ask when you don't know, and say so when in doubt.** Never guess at a design question. Before asking, check `docs/design/`, `docs/DECISIONS.md` and the system file for that area — re-asking something already answered wastes UV's time.
+- **State the assumption and carry on; ask only when a wrong guess is costly to undo** (UV, 28 Nov: too many questions, and the wrong assumptions). Before assuming or asking, check `docs/design/`, `docs/DECISIONS.md`, the system file for that area and the context UV has already given. Ask everything needed in one go, never a stream of questions. Never invent a problem or a rule UV hasn't raised and present it as his (e.g. a TD entering their own scores at a non-sanctioned event is fine).
 - **Build only what UV asked for.** No extra features, refactors or "while I'm here" changes. If something else looks worth doing, propose it and wait.
 - **Decisions in `docs/DECISIONS.md` and `docs/design/` are settled.** Follow them; don't reopen them. If the work seems to conflict with one, stop and say so. **DECISIONS.md records UV's decisions.** A choice Claude made on its own is asked first, or marked as Claude's; it is never written as *Decided by UV* and never quoted back to UV as settled (30 Oct: a Claude-chosen broadcast was cited to UV as "the decision you'd be reversing").
 - **Plan first, then wait.** For anything beyond a small fix, say which files will change and how, and wait for UV's go-ahead before writing.
@@ -19,7 +19,7 @@ This file is read at the start of every session, so it is kept short. **The deta
 - **Tell UV when to start a fresh conversation** (at each milestone, or when a session has grown long) and **which model suits the next job**, by the rules in `docs/MODELS.md`. UV aims to use his Max 5x allowance fully.
 - **Never fall back silently.** On a failure show `TDC (Error): …` on the page and `console.error` with an `[Area]` prefix, using the helpers in `scripts/tdc.js`.
 - **Never put secrets in client code or the repo** (VAPID private key, service-role key).
-- Files use **LF and tabs** (`.gitattributes` enforces LF; until the move to a Mac on 12 Nov the working copies were CRLF).
+- Files use **LF and tabs**, enforced three ways (UV, 28 Nov): `.gitattributes`, `.editorconfig`, and a Claude Code hook (`tools/eol/hook.mjs`, wired in `.claude/settings.json`) that converts every file Claude writes to LF at once. **Never fix line endings by hand**; if `npm run check` reports CRLF, run `npm run eol`.
 - **Dashboard settings** (Supabase, Google, Resend, Squarespace) are done by UV. Test locally with `npx eleventy --serve` before pushing, then check the live site after a deploy.
 - **UV will not remember implementation details.** These files, migration comments and commit messages are the memory.
 
@@ -34,7 +34,7 @@ Before replying with anything else, read this file, `docs/STATUS.md`, and the sy
 3. Update `docs/STATUS.md` — remove what is done, add what was uncovered.
 4. Add to `docs/DECISIONS.md` if a real decision was made.
 5. **If new data was defined, update the points page too** (UV, 6 Nov; `docs/systems/points.md`, "When new data is defined").
-6. Run the tests: `npx supabase db reset`, then `npx supabase test db` (local only — see `docs/systems/tests.md`).
+6. Run `npm run check` (line endings and the site build), then the database tests: `npx supabase db reset`, then `npx supabase test db` (local only — see `docs/systems/tests.md`). **Not done until they pass.** If one fails, fix it before replying; report the result, never the intent. Keep the hand-back short: what changed, test result, commit subject.
 7. Give UV the commit subject. **Never batch the documentation to the end of a session.**
 
 ---

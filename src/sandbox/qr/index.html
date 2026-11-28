@@ -1,0 +1,143 @@
+---
+layout: layout.html
+title: QR Sandbox
+description: "A scratch page for the look of the site's QR codes. Not part of the product."
+extraStyles:
+  - /stylesheets/sandbox.css
+extraScripts:
+  - /scripts/sandbox-qr.js
+---
+{% comment %}
+	The QR sandbox (28 Nov, UV): where the look of the site's QR codes is tuned.
+	Today the Add credits card (credits-card.js) and the order card
+	(shop-order.js) draw plain square dots, dark on cream (--qr-ink,
+	--qr-paper), error level M. Nothing here is saved and no real page reads it;
+	a look UV settles on is applied to those two cards by hand, in a later step.
+	The QR maker is the site's own (qrcode-generator, loaded by
+	TDCCredits.loadQr). The script is scripts/sandbox-qr.js; styles at the end
+	of sandbox.css.
+{% endcomment %}
+
+<div class="tdc-card wide sandbox qr-sandbox">
+	<h1>QR codes</h1>
+	<p class="muted">Try a look for the site's QR codes. It starts as the Add credits card and the order card draw theirs today. Nothing is saved, and no real page changes. Not linked from the nav.</p>
+
+	<div class="qr-layout">
+		<div class="qr-preview-col">
+			<div class="qr-preview" id="qr-preview" role="img" aria-label="QR code preview"></div>
+			<p class="qr-check" id="qr-check"></p>
+			<div class="btn-row">
+				<button type="button" class="btn btn-primary" id="qr-png">Download PNG</button>
+				<button type="button" class="btn btn-secondary" id="qr-svg">Download SVG</button>
+			</div>
+			<div class="status" id="qr-status" role="status"></div>
+		</div>
+
+		<form class="qr-controls" id="qr-form" autocomplete="off">
+			<h2>Content</h2>
+			<div class="field">
+				<label for="qr-text">Link or text</label>
+				<input type="text" id="qr-text" value="https://thediveclub.org/staff/top-ups/?code=7K4Q">
+				<p class="hint">The top-up QR's real form. A longer text makes a denser code.</p>
+			</div>
+			<div class="field">
+				<label for="qr-level">Error correction</label>
+				<select id="qr-level">
+					<option value="L">L · 7%</option>
+					<option value="M" selected>M · 15%</option>
+					<option value="Q">Q · 25%</option>
+					<option value="H">H · 30%</option>
+				</select>
+				<p class="hint">How much of the code can be covered or damaged and still scan. Higher makes it denser. The site uses M.</p>
+			</div>
+
+			<h2>Colours and size</h2>
+			<div class="field-pair">
+				<div class="field">
+					<label for="qr-ink">Ink</label>
+					<input type="color" id="qr-ink" data-control="none">
+				</div>
+				<div class="field">
+					<label for="qr-paper">Paper</label>
+					<input type="color" id="qr-paper" data-control="none">
+				</div>
+			</div>
+			<button type="button" class="btn btn-sm btn-secondary" id="qr-site-colours">Back to the site's colours</button>
+			<div class="field">
+				<label for="qr-quiet">Quiet zone</label>
+				<input type="number" id="qr-quiet" min="0" max="8" value="2">
+				<p class="hint">The empty border round the code, in dots. Scanners want about 2 or more.</p>
+			</div>
+			<div class="field">
+				<label for="qr-size">Size (px)</label>
+				<input type="range" id="qr-size" min="120" max="480" step="8" value="176">
+				<p class="hint"><span id="qr-size-out"></span> on screen. The PNG is drawn at 4 times this.</p>
+			</div>
+
+			<h2>Shapes</h2>
+			<div class="field">
+				<label for="qr-dot">Dots</label>
+				<select id="qr-dot">
+					<option value="square" selected>Square</option>
+					<option value="rounded">Rounded</option>
+					<option value="round">Round</option>
+				</select>
+			</div>
+			<div class="field">
+				<label for="qr-dot-size">Dot size</label>
+				<input type="range" id="qr-dot-size" min="50" max="100" step="5" value="100">
+				<p class="hint"><span id="qr-dot-size-out"></span> of each square. Below 100% the dots stand apart.</p>
+			</div>
+			<div class="field">
+				<label for="qr-frame">Corner frames</label>
+				<select id="qr-frame">
+					<option value="square" selected>Square</option>
+					<option value="rounded">Rounded</option>
+					<option value="round">Round</option>
+				</select>
+				<p class="hint">The three big squares in the corners.</p>
+			</div>
+			<div class="field">
+				<label for="qr-eye">Corner centres</label>
+				<select id="qr-eye">
+					<option value="square" selected>Square</option>
+					<option value="rounded">Rounded</option>
+					<option value="round">Round</option>
+				</select>
+			</div>
+			<div class="field">
+				<label for="qr-corner-own">Corners in their own colour</label>
+				<input type="checkbox" id="qr-corner-own">
+			</div>
+			<div class="field" id="qr-corner-field" hidden>
+				<label for="qr-corner">Corner colour</label>
+				<input type="color" id="qr-corner" data-control="none" value="#2a9d8f">
+			</div>
+
+			<h2>Logo</h2>
+			<div class="field">
+				<label for="qr-logo">Logo in the middle</label>
+				<select id="qr-logo">
+					<option value="" selected>None</option>
+					<option value="/resources/branding/logo-mark-light.svg">Mark (for light paper)</option>
+					<option value="/resources/branding/logo-mark-dark.svg">Mark (for dark paper)</option>
+					<option value="/resources/branding/icon-primary.svg">App icon</option>
+				</select>
+			</div>
+			<div class="field">
+				<label for="qr-logo-size">Logo size</label>
+				<input type="range" id="qr-logo-size" min="10" max="35" step="1" value="22">
+				<p class="hint"><span id="qr-logo-size-out"></span> of the code's width. Raise the error correction to match: the line under the code says whether it fits.</p>
+			</div>
+			<div class="field">
+				<label for="qr-logo-clear">Clear the dots behind the logo</label>
+				<input type="checkbox" id="qr-logo-clear" checked>
+			</div>
+
+			<h2>Your settings</h2>
+			<p class="muted">Once you like a look, copy this and paste it to Claude to put it on the site's QR codes.</p>
+			<pre class="qr-settings" id="qr-settings"></pre>
+			<button type="button" class="btn btn-sm btn-secondary" id="qr-copy">Copy settings</button>
+		</form>
+	</div>
+</div>

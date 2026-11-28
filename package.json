@@ -4,7 +4,8 @@
   "description": "",
   "main": "sw.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "eol": "node tools/eol/fix-eol.mjs",
+    "check": "node tools/eol/fix-eol.mjs --check && npx @11ty/eleventy --dryrun --quiet"
   },
   "repository": {
     "type": "git",
