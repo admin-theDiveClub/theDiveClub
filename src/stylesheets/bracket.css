@@ -1096,6 +1096,34 @@ button.btn[data-act="publish"] { color: var(--color-primary); }
 	}
 }
 
+/* The follow page's bracket (UV, 28 Nov; tournament-follow.js): this page in a
+   frame with &tv=1 (tournament-bracket.js, html.draw-tv). The bracket alone,
+   see-through onto the follow page's panel: no bars, heading, view settings,
+   share, pill or footer, no page light, and the card the frame's full size. */
+html.draw-tv, html.draw-tv body { background: transparent; }
+html.draw-tv body { padding: 0; min-height: 0; }
+html.draw-tv body::before,
+html.draw-tv body::after,
+html.draw-tv .site-nav,
+html.draw-tv .nav-get-app,
+html.draw-tv footer,
+html.draw-tv .site-partners,
+html.draw-tv #tournament-nav,
+html.draw-tv #tournament-nav-admin,
+html.draw-tv #tournament-tabbar,
+html.draw-tv #t-name,
+html.draw-tv #t-meta,
+html.draw-tv #draw-modes,
+html.draw-tv #view-group,
+html.draw-tv .bracket-share-row { display: none !important; }
+html.draw-tv main { min-height: 0; }
+html.draw-tv .tdc-card.wide,
+html.draw-tv body.has-league-tabbar .tdc-card {
+	width: 100%;
+	max-width: none;
+	padding: var(--space-2);
+}
+
 /* Scores not published yet are yellow (UV, 27 Nov): a match that exists and
    is not published (tournament-bracket.js, unpublished), in Rounds, the ⋯
    card and the bracket, steppers and plain numbers alike. Last in the file,

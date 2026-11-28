@@ -1,0 +1,176 @@
+/* The tournament follow page (UV, 28 Nov; /tournaments/follow/,
+   scripts/tournament-follow.js; docs/systems/tournaments.md, "The follow page").
+   A TV at the venue, left for the night; any screen. The whole screen, never
+   scrolling: the side (name, a square QR, the details) on the left of a wide
+   screen and on top of a tall one, the main part (entrants, then the bracket)
+   taking the rest. The site's bar lies over it and hides itself. Every size
+   follows the screen's smaller side (vmin), so a TV across the room and a
+   phone in the hand both read it. */
+
+html, body { overflow: hidden; }
+html body { padding-top: 0; padding-bottom: 0; }
+main { min-height: 0; }
+
+.fw {
+	position: fixed;
+	inset: 0;
+	display: grid;
+	gap: clamp(0.75rem, 2.5vmin, 2.5rem);
+	padding:
+		max(clamp(0.75rem, 2.5vmin, 2.5rem), env(safe-area-inset-top, 0px))
+		max(clamp(0.75rem, 2.5vmin, 2.5rem), env(safe-area-inset-right, 0px))
+		max(clamp(0.75rem, 2.5vmin, 2.5rem), env(safe-area-inset-bottom, 0px))
+		max(clamp(0.75rem, 2.5vmin, 2.5rem), env(safe-area-inset-left, 0px));
+	/* Tall (portrait): the side on top, the main part under it. */
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-rows: auto minmax(0, 1fr) auto;
+}
+/* Wide (landscape): the side on the left, a third of the width. */
+@media (orientation: landscape) {
+	.fw {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr);
+		grid-template-rows: minmax(0, 1fr) auto;
+	}
+	.fw-status { grid-column: 1 / -1; }
+}
+
+/* ─── The side ─── */
+.fw-side {
+	min-width: 0;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: clamp(0.4rem, 1.4vmin, 1.2rem);
+	text-align: center;
+}
+.fw-name {
+	margin: 0;
+	font-family: var(--font-display);
+	font-size: calc(clamp(1.4rem, 5.5vmin, 5rem) * var(--fw-side, 1));
+	line-height: 1.32;
+	color: var(--color-primary);
+	overflow-wrap: anywhere;
+}
+/* The QR: square, as large as the side allows. No padding: the code's quiet
+   zone is part of its drawing (TDCCredits.qrSvg). */
+.fw-qr {
+	flex: 0 0 auto;
+	width: min(100%, 48vh);
+	aspect-ratio: 1;
+	border-radius: var(--radius-lg);
+	background: var(--qr-paper);
+	box-shadow: var(--nm-raised-small);
+	overflow: hidden;
+}
+@media (orientation: portrait) {
+	.fw-qr { width: min(56vw, 30vh); }
+}
+/* Wide: as large as the side's height leaves once the name, words and details
+   are in (--fw-qr-size, measured by tournament-follow.js, fitSide). */
+@media (orientation: landscape) {
+	.fw-qr { width: var(--fw-qr-size, min(100%, 48vh)); }
+}
+.fw-scan {
+	margin: 0;
+	font-family: var(--font-display);
+	font-size: calc(clamp(1rem, 3.4vmin, 2.8rem) * var(--fw-side, 1));
+	line-height: 1.32;
+}
+.fw-link {
+	margin: 0;
+	font-size: calc(clamp(0.85rem, 2.4vmin, 1.8rem) * var(--fw-side, 1));
+	color: var(--text-muted);
+	overflow-wrap: anywhere;
+}
+.fw-link[hidden] { display: none; }
+
+.fw-facts {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.2em;
+	font-size: calc(clamp(0.8rem, 2.2vmin, 1.6rem) * var(--fw-side, 1));
+}
+.fw-facts li { display: flex; justify-content: center; gap: 0.5em; flex-wrap: wrap; }
+.fw-fact-label { color: var(--text-muted); }
+/* Tall: the details run on in a line that wraps, to keep the main part tall.
+   A short screen (a phone on its side) the same, to leave the QR room. */
+@media (orientation: portrait), (max-height: 600px) {
+	.fw-facts { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 0.2em 1.2em; }
+}
+
+/* ─── The main part ─── */
+.fw-main {
+	position: relative;
+	min-width: 0;
+	min-height: 0;
+	border-radius: var(--radius-lg);
+	box-shadow: var(--nm-sunken);
+	overflow: hidden;
+}
+.fw-entrants {
+	position: absolute;
+	inset: 0;
+	padding: clamp(0.75rem, 2.5vmin, 2.5rem);
+	overflow: hidden;
+	font-size: var(--fw-list-size, 1.2rem);
+}
+.fw-entrants[hidden] { display: none; }
+.fw-group + .fw-group { margin-top: 1em; }
+.fw-group-head {
+	margin: 0 0 0.5em;
+	font-family: var(--font-display);
+	font-size: 1.3em;
+	line-height: 1.32;
+}
+.fw-count { color: var(--text-muted); }
+.fw-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(11em, 1fr));
+	gap: 0.45em 1em;
+}
+.fw-person { display: flex; align-items: center; gap: 0.5em; min-width: 0; }
+.fw-pic {
+	flex: 0 0 auto;
+	width: 1.9em;
+	height: 1.9em;
+	border-radius: 50%;
+	object-fit: cover;
+	box-shadow: var(--nm-pic-sunken-small);
+}
+.fw-initials {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.75em;
+	width: 2.5em;
+	height: 2.5em;
+	background: var(--bg-surface);
+	color: var(--text-muted);
+}
+.fw-person-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fw-empty { margin: 0; color: var(--text-muted); }
+
+/* The bracket: the draw page in a frame (&tv=1), see-through onto this panel.
+   Nothing on it is for tapping on a TV, and a stray mouse must not take the
+   frame off to a match page. */
+.fw-bracket {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	border: 0;
+	background: transparent;
+	pointer-events: none;
+}
+.fw-bracket[hidden] { display: none; }
+
+.fw-status:empty { display: none; }
+.fw-status { margin: 0; }

@@ -356,6 +356,15 @@ const TDCTournamentNav = (() => {
 				const item = tabItem(t, key, label, 'league-tabmenu-item');
 				item.textContent = label;
 				menu.append(item);
+				// The follow page for a TV (UV, 28 Nov; tournament-follow.js), a
+				// page of its own: a link, last in the Draw group.
+				if (key === 'run') {
+					const follow = document.createElement('a');
+					follow.className = 'league-tabmenu-item';
+					follow.href = '/tournaments/follow/?t=' + t;
+					follow.textContent = 'Follow page (TV)';
+					menu.append(follow);
+				}
 			}
 			parts.push(menu);
 		}

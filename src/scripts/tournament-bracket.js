@@ -56,6 +56,14 @@ TDCTournamentNav.panel('draw', () => {
 	}
 
 	const tournamentId = new URLSearchParams(location.search).get('t');
+	// The follow page's bracket (UV, 28 Nov; tournament-follow.js), &tv=1: this
+	// page in a frame on a TV for the night. The bracket only, read-only even for
+	// the director, none of the page's bars or settings (bracket.css,
+	// html.draw-tv), fitted again whenever the screen or the draw changes, read
+	// again every 30 s as well as live, and nothing kept on the device.
+	const tv = new URLSearchParams(location.search).get('tv') === '1';
+	if (tv) document.documentElement.classList.add('draw-tv');
+	const TV_EVERY = 30000;
 
 	const FORMAT = {
 		single_elimination: 'Single elimination',
@@ -113,7 +121,7 @@ TDCTournamentNav.panel('draw', () => {
 	const VIEW_DEFAULT = { flow: 'linear', rounds: 'columns', card: 'stacked', pics: 'show', font: 100, zoom: 100, gapV: 8, gapH: 16 };
 	const RANGE = { font: [50, 300, 1], zoom: [25, 300, 1], gapV: [0, 64, 1], gapH: [0, 240, 1] };
 	let view = Object.assign({}, VIEW_DEFAULT);
-	try { Object.assign(view, JSON.parse(localStorage.getItem(VIEW_KEY) || '{}')); } catch (err) { /* private window or unreadable: the defaults */ }
+	try { if (!tv) Object.assign(view, JSON.parse(localStorage.getItem(VIEW_KEY) || '{}')); } catch (err) { /* private window or unreadable: the defaults */ }
 	for (const k of ['flow', 'rounds', 'card', 'pics']) {
 		if (!els.viewRow.querySelector(`[data-view-key="${k}"][data-view="${view[k]}"]`)) view[k] = VIEW_DEFAULT[k];
 	}
@@ -150,6 +158,7 @@ TDCTournamentNav.panel('draw', () => {
 	const MODE_KEY = 'tdc.draw.mode';
 	let mode = 'rounds';
 	try { if (localStorage.getItem(MODE_KEY) === 'bracket') mode = 'bracket'; } catch (err) { /* private window: Rounds */ }
+	if (tv) mode = 'bracket';
 	const roundChoice = new Map();   // round key -> open, where the reader went against the default
 	let roundsStale = false;         // a redraw held back while a score is being entered
 	let holding = false;             // a finger or the mouse down on a score's chevron
@@ -475,6 +484,7 @@ TDCTournamentNav.panel('draw', () => {
 		}
 	}
 	const keepView = () => {
+		if (tv) return;   // a TV's fitting is never kept as this device's view
 		try { localStorage.setItem(VIEW_KEY, JSON.stringify(view)); } catch (err) { /* kept for this visit only */ }
 	};
 	els.viewRow.addEventListener('click', (e) => {
@@ -1897,6 +1907,7 @@ TDCTournamentNav.panel('draw', () => {
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return false; }
 		fixtures = data || [];
 		await loadRoundRules();
+		if (tv) fitOnOpen = true;   // a TV fits every read: a round filled in, a draw grown
 		render();
 		// The set of live matches changes as rounds resolve, so the
 		// subscription is re-pointed after every read rather than fixed at
@@ -3863,6 +3874,18 @@ TDCTournamentNav.panel('draw', () => {
 	window.addEventListener('online', onLiveChange);
 	window.addEventListener('pagehide', stopLiveUpdates);
 
+	// A TV (&tv=1): read again every 30 s while shown, live feed or not, so a
+	// socket that dropped in the night cannot leave a stale draw on the wall;
+	// fitted again when the screen changes size (a frame resized, a TV turned).
+	if (tv) {
+		setInterval(() => { if (document.visibilityState === 'visible') onLiveChange(null); }, TV_EVERY);
+		let tvResize = 0;
+		window.addEventListener('resize', () => {
+			clearTimeout(tvResize);
+			tvResize = setTimeout(() => { if (fixtures.length) fitAll(); }, 300);
+		});
+	}
+
 	// ─── Start ───
 	TDCLoader.hold((async () => {
 		// Signed out (UV, 27 Nov): the draw of a tournament set Visible to
@@ -3889,7 +3912,7 @@ TDCTournamentNav.panel('draw', () => {
 		if (error) { TDC.showSupabaseError(AREA, error, els.status); return; }
 
 		const row = (mine || []).find((t) => t.id === tournamentId);
-		mayRun = !!row && !!row.i_run_it;
+		mayRun = !tv && !!row && !!row.i_run_it;
 		applyMode();
 
 		if (!await loadDraw()) return;

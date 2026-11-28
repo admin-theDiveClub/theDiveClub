@@ -1,0 +1,20 @@
+---
+layout: layout.html
+title: Your match
+description: "Your match in a tournament at The Dive Club."
+hideFooter: true
+extraScripts:
+  - /scripts/tournament-my-match.js
+---
+{% comment %}
+	Where the follow page's QR sends a player once play has started (UV, 28 Nov;
+	docs/systems/tournaments.md, "The follow page"): /tournaments/my-match/?t=<id>.
+	Signed out, sign in first and come back. Then the match being played or
+	waiting for this player on the draw, the latest round first; if there is none
+	(not in it, knocked out, waiting for a match to be made), the draw.
+	Nothing to show of its own: the dots, then a redirect, or an error.
+{% endcomment %}
+<div class="tdc-card">
+	<h1>Your match</h1>
+	<div class="status" id="page-status"></div>
+</div>

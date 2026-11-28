@@ -1,0 +1,39 @@
+---
+layout: layout.html
+title: Follow
+description: "A tournament at The Dive Club, for the screen at the venue."
+hideFooter: true
+extraStyles:
+  - /stylesheets/follow.css
+extraScripts:
+  - /scripts/match-settings.js
+  - /scripts/poster-words.js
+  - /scripts/tournament-follow.js
+---
+{% comment %}
+	The tournament follow page (UV, 28 Nov; docs/systems/tournaments.md, "The
+	follow page"): /tournaments/follow/?t=<id>. The TD puts it on a TV at the
+	venue and leaves it for the night. Signed in only; any signed-in account.
+
+	The side (left when the screen is wide, on top when it is tall): the
+	tournament's name, a square QR and the details under it. The main part
+	(right, or below): the entrants until the draw is made, then the bracket,
+	which is the draw page itself in a frame (&tv=1). The QR opens the
+	tournament's short link (entering) until play starts, then each player's
+	own match (/tournaments/my-match/). It all changes by itself
+	(tournament-follow.js).
+{% endcomment %}
+<div class="fw" id="follow">
+	<section class="fw-side">
+		<h1 class="fw-name" id="fw-name"></h1>
+		<div class="fw-qr" id="fw-qr" aria-hidden="true"></div>
+		<p class="fw-scan" id="fw-scan"></p>
+		<p class="fw-link" id="fw-link"></p>
+		<ul class="fw-facts" id="fw-facts"></ul>
+	</section>
+	<section class="fw-main" id="fw-main">
+		<div class="fw-entrants" id="fw-entrants"></div>
+		<iframe class="fw-bracket" id="fw-bracket" title="The draw" hidden></iframe>
+	</section>
+	<div class="status fw-status" id="page-status"></div>
+</div>
