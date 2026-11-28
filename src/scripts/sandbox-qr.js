@@ -1,8 +1,8 @@
 // The QR sandbox (/sandbox/qr/, 28 Nov, UV): try a look for the site's QR
 // codes. It starts as the Add credits card and the order card draw theirs
-// (square dots, --qr-ink on --qr-paper, error level M). Nothing is saved and
-// no real page reads this; a look UV settles on is applied to those cards by
-// hand later. "Your settings" is the hand-over.
+// (UV's look of 28 Nov, QR_LOOK in credits-card.js). Nothing is saved and no
+// real page reads this; a look UV settles on is copied into QR_LOOK by hand.
+// "Your settings" is the hand-over.
 //
 // The QR maker is the site's own (qrcode-generator), loaded through
 // TDCCredits.loadQr so it is the same file the cards use. The code is drawn
@@ -44,7 +44,30 @@
 			logo: $('qr-logo').value || null,
 			logoSize: parseInt($('qr-logo-size').value, 10) / 100,
 			logoClear: $('qr-logo-clear').checked,
+			logoPad: parseInt($('qr-logo-pad').value, 10) / 100,
+			version: parseInt($('qr-version').value, 10),   // 0 = auto
+			shape: $('qr-shape').value,
+			rectW: parseInt($('qr-rect-w').value, 10),
+			rectH: parseInt($('qr-rect-h').value, 10),
+			codeShare: parseInt($('qr-code-share').value, 10) / 100,
+			place: $('qr-place').value,
 		};
+	}
+
+	// A QR at the asked version, or the smallest that holds the text when the
+	// asked one is too small (said under the code, never silently).
+	function makeQr(s) {
+		const auto = qrcode(0, s.level);
+		auto.addData(s.text);
+		auto.make();
+		const autoVersion = (auto.getModuleCount() - 17) / 4;
+		if (!s.version || s.version <= autoVersion) {
+			return { q: auto, version: autoVersion, autoVersion, tooSmall: s.version > 0 && s.version < autoVersion };
+		}
+		const q = qrcode(s.version, s.level);
+		q.addData(s.text);
+		q.make();
+		return { q, version: s.version, autoVersion, tooSmall: false };
 	}
 
 	function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
@@ -78,17 +101,40 @@
 	function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
 
 	// ─── Drawing ───
-	// Returns { svg, n, covered } or throws (too much text for any QR).
+	// Returns { svg, n, covered, version, autoVersion, tooSmall, pxW } or
+	// throws (too much text for any QR). Everything is measured in dots; the
+	// SVG's width and height set its size on screen.
 	function build(s, logoHref) {
 		if (qrcode.stringToBytesFuncs && qrcode.stringToBytesFuncs['UTF-8']) {
 			qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
 		}
-		const q = qrcode(0, s.level);
-		q.addData(s.text);
-		q.make();
+		const made = makeQr(s);
+		const q = made.q;
 		const n = q.getModuleCount();
 		const qz = s.quiet;
-		const total = n + 2 * qz;
+
+		// Where the code sits. Square: the code and its quiet zone fill the box.
+		// Rectangle: the code and quiet zone take codeShare of the shorter side,
+		// placed in the middle or at either end of the longer side, with the same
+		// margin at that end as along the short side.
+		let Wm, Hm, ox, oy, pxW, pxH;
+		if (s.shape === 'rect') {
+			pxW = s.rectW;
+			pxH = s.rectH;
+			const unit = s.codeShare * Math.min(pxW, pxH) / (n + 2 * qz);   // px per dot
+			Wm = pxW / unit;
+			Hm = pxH / unit;
+			const wide = Wm >= Hm;
+			const long = wide ? Wm : Hm, short = wide ? Hm : Wm;
+			const across = (short - n) / 2;
+			const along = s.place === 'start' ? across : s.place === 'end' ? long - n - across : (long - n) / 2;
+			ox = wide ? along : across;
+			oy = wide ? across : along;
+		} else {
+			pxW = pxH = s.size;
+			Wm = Hm = n + 2 * qz;
+			ox = oy = qz;
+		}
 
 		const inFinder = (r, c) => (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
 
@@ -109,27 +155,28 @@
 			for (let c = 0; c < n; c++) {
 				if (inFinder(r, c)) continue;
 				if (underLogo(r, c)) { covered++; if (s.logoClear) continue; }
-				if (q.isDark(r, c)) dots += rr(c + qz + off, r + qz + off, ds, ds, dr);
+				if (q.isDark(r, c)) dots += rr(c + ox + off, r + oy + off, ds, ds, dr);
 			}
 		}
 
 		let corners = '';
 		const [ro, ri] = FRAME_R[s.frame];
 		for (const [r, c] of [[0, 0], [0, n - 7], [n - 7, 0]]) {
-			const x = c + qz, y = r + qz;
+			const x = c + ox, y = r + oy;
 			corners += rr(x, y, 7, 7, ro) + rr(x + 1, y + 1, 5, 5, ri) + rr(x + 2, y + 2, 3, 3, EYE_R[s.eye]);
 		}
 
 		const cornerFill = s.corner || s.ink;
-		let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}" width="${s.size}" height="${s.size}">`
-			+ `<rect width="${total}" height="${total}" fill="${s.paper}"/>`
-			+ `<path d="${dots}" fill="${s.ink}"/>`
+		let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${fmt(Wm)} ${fmt(Hm)}" width="${pxW}" height="${pxH}">`
+			+ `<rect width="${fmt(Wm)}" height="${fmt(Hm)}" fill="${s.paper}"/>`;
+		svg += `<path d="${dots}" fill="${s.ink}"/>`
 			+ `<path d="${corners}" fill="${cornerFill}" fill-rule="evenodd"/>`;
 		if (logo) {
-			svg += `<image href="${esc(logoHref)}" x="${fmt(logo.at + qz)}" y="${fmt(logo.at + qz)}" width="${fmt(logo.side)}" height="${fmt(logo.side)}" preserveAspectRatio="xMidYMid meet"/>`;
+			const drawn = logo.side * (1 - s.logoPad), inset = (logo.side - drawn) / 2;   // the margin inside the cleared space
+			svg += `<image href="${esc(logoHref)}" x="${fmt(logo.at + inset + ox)}" y="${fmt(logo.at + inset + oy)}" width="${fmt(drawn)}" height="${fmt(drawn)}" preserveAspectRatio="xMidYMid meet"/>`;
 		}
 		svg += '</svg>';
-		return { svg, n, covered };
+		return { svg, n, covered, version: made.version, autoVersion: made.autoVersion, tooSmall: made.tooSmall, pxW };
 	}
 
 	async function logoHref(url) {
@@ -155,8 +202,16 @@
 	}
 
 	function say(s, out) {
-		const lines = [`${out.n} × ${out.n} dots, error level ${s.level}.`];
+		const lines = [`${out.n} × ${out.n} dots (version ${out.version}${s.version ? '' : ', auto'}), error level ${s.level}.`];
 		let warn = false;
+		if (out.tooSmall) {
+			warn = true;
+			lines.push(`Version ${s.version} cannot hold this text at level ${s.level}; drawn at ${out.autoVersion}, the smallest that can.`);
+		}
+		if (s.dotSize < 0.35) {
+			warn = true;
+			lines.push('Dots this small can fail in a dim bar or from far away.');
+		}
 		if (s.logo) {
 			const share = out.covered / (out.n * out.n);
 			const can = RECOVERS[s.level];
@@ -192,12 +247,21 @@
 		$('qr-size-out').textContent = `${s.size}px`;
 		$('qr-dot-size-out').textContent = `${Math.round(s.dotSize * 100)}%`;
 		$('qr-logo-size-out').textContent = `${Math.round(s.logoSize * 100)}%`;
+		$('qr-logo-pad-out').textContent = `${Math.round(s.logoPad * 100)}%`;
 		$('qr-corner-field').hidden = !s.corner;
+		$('qr-version-out').textContent = s.version ? `Version ${s.version}: ${17 + 4 * s.version} × ${17 + 4 * s.version} dots` : 'Auto';
+		$('qr-rect-w-out').textContent = `${s.rectW}px`;
+		$('qr-rect-h-out').textContent = `${s.rectH}px`;
+		$('qr-code-share-out').textContent = `${Math.round(s.codeShare * 100)}%`;
+		$('qr-rect-fields').hidden = s.shape !== 'rect';
 		const keep = { ...s };
 		delete keep.text;
 		delete keep.size;
 		if (keep.logo) keep.logo = keep.logo.split('/').pop();
-		else { delete keep.logoSize; delete keep.logoClear; }
+		else { delete keep.logoSize; delete keep.logoClear; delete keep.logoPad; }
+		if (keep.shape !== 'rect') {
+			for (const k of ['rectW', 'rectH', 'codeShare', 'place']) delete keep[k];
+		}
 		$('qr-settings').textContent = JSON.stringify(keep, null, 2);
 	}
 
@@ -232,7 +296,7 @@
 		stat.className = 'status';
 		lastSvg = out.svg;
 		preview.innerHTML = out.svg;
-		preview.style.setProperty('--qr-sandbox-size', `${s.size}px`);
+		preview.style.setProperty('--qr-sandbox-size', `${out.pxW}px`);
 		say(s, out);
 	}
 
@@ -261,7 +325,8 @@
 
 	$('qr-png').addEventListener('click', (e) => {
 		if (!lastSvg) return TDC.error(AREA, 'there is no code to download yet.', null, stat);
-		const px = settings().size * 4;
+		const s = settings();
+		const w = (s.shape === 'rect' ? s.rectW : s.size) * 4, h = (s.shape === 'rect' ? s.rectH : s.size) * 4;
 		const work = (async () => {
 			const url = URL.createObjectURL(new Blob([lastSvg], { type: 'image/svg+xml' }));
 			try {
@@ -269,8 +334,9 @@
 				img.src = url;
 				await img.decode();
 				const canvas = document.createElement('canvas');
-				canvas.width = canvas.height = px;
-				canvas.getContext('2d').drawImage(img, 0, 0, px, px);
+				canvas.width = w;
+				canvas.height = h;
+				canvas.getContext('2d').drawImage(img, 0, 0, w, h);
 				const blob = await new Promise((ok) => canvas.toBlob(ok, 'image/png'));
 				if (!blob) throw new Error('the canvas gave no picture');
 				save(blob, 'tdc-qr.png');

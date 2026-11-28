@@ -231,7 +231,8 @@
 .cc-qr {
 	width: var(--cc-qr-size);
 	height: var(--cc-qr-size);
-	padding: var(--space-3);
+	/* No padding: the code's 4-dot quiet zone is part of the drawing (qrSvg). */
+	padding: 0;
 	border-radius: var(--radius-md);
 	background: var(--qr-paper);
 	box-shadow: var(--nm-raised-small);

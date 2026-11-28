@@ -90,9 +90,42 @@
 		TDC.busy(body, work);
 	}
 
+	// Your QR in the logo's place (UV, 28 Nov): signed in, the first screen's logo
+	// becomes a QR of your player short link (thediveclub.org/First-Last-2), which
+	// opens your player page (signed in only: a stranger scanning it signs in first).
+	// Drawn in the site's QR look (TDCCredits.qrSvg). Signed out, the logo stays.
+	// With no short link (a first or last name not saved: foundations.md, "Short
+	// links", Players) the logo stays too, and the console says why.
+	function drawQr() {
+		var logo = document.getElementById('home-logo');
+		var box = document.getElementById('home-qr');
+		if (!logo || !box) return;
+		var work = (async function () {
+			var session = await TDC.getSession(AREA);
+			if (!session) return;
+			var me = await TDC.getMyPlayer(AREA, session.user.id, statusEl);
+			if (!me) return;
+			var r = await supabaseClient.rpc('tdc_short_link', { p_kind: 'player', p_id: me.id });
+			if (r.error) { TDC.showSupabaseError(AREA, r.error, statusEl); return; }
+			if (!r.data || !r.data.code) {
+				console.info('[' + AREA + '] no QR in the logo\'s place: this player has no short link until both names are saved on the profile.');
+				return;
+			}
+			logo.classList.add('has-qr');
+			box.hidden = false;
+			await TDC.busy(box, TDCCredits.loadQr(), statusEl);
+			box.replaceChildren(TDCCredits.qrSvg(location.origin + '/' + r.data.code));
+		})();
+		work.catch(function (e) {
+			logo.classList.remove('has-qr');
+			box.hidden = true;
+			TDC.error(AREA, 'your QR code could not be drawn.', e, statusEl);
+		});
+	}
+
 	function draw(d) {
 		drawLive(d);
-		if (d.signed_in) drawStar();
+		if (d.signed_in) { drawStar(); drawQr(); }
 	}
 
 	try {

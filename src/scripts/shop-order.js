@@ -19,7 +19,6 @@ const TDCOrder = (() => {
 	const AREA = 'Orders';
 	const POLL_MS = 4000;
 	const STEPS = [['placed', 'Placed'], ['preparing', 'Preparing'], ['ready', 'Ready'], ['collected', 'Collected']];
-	const SVG_NS = 'http://www.w3.org/2000/svg';
 
 	let dlg = null;
 	let els = null;
@@ -144,21 +143,8 @@ const TDCOrder = (() => {
 			return;
 		}
 		if (!order || order.id !== o.id) return;
-		const q = qrcode(0, 'M');
-		q.addData(location.origin + '/staff/orders/?order=' + encodeURIComponent(o.id));
-		q.make();
-		const n = q.getModuleCount();
-		const svg = document.createElementNS(SVG_NS, 'svg');
-		svg.setAttribute('viewBox', `0 0 ${n} ${n}`);
-		svg.setAttribute('shape-rendering', 'crispEdges');
-		svg.setAttribute('aria-hidden', 'true');
-		let d = '';
-		for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c} ${r}h1v1h-1z`;
-		const path = document.createElementNS(SVG_NS, 'path');
-		path.setAttribute('d', d);
-		path.setAttribute('fill', 'var(--qr-ink)');
-		svg.appendChild(path);
-		els.qr.replaceChildren(svg);
+		// The site's QR look, drawn once for both cards (credits-card.js, qrSvg).
+		els.qr.replaceChildren(TDCCredits.qrSvg(location.origin + '/staff/orders/?order=' + encodeURIComponent(o.id)));
 	}
 
 	async function cancelOrder() {

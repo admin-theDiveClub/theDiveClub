@@ -9,10 +9,10 @@ extraScripts:
 ---
 {% comment %}
 	The QR sandbox (28 Nov, UV): where the look of the site's QR codes is tuned.
-	Today the Add credits card (credits-card.js) and the order card
-	(shop-order.js) draw plain square dots, dark on cream (--qr-ink,
-	--qr-paper), error level M. Nothing here is saved and no real page reads it;
-	a look UV settles on is applied to those two cards by hand, in a later step.
+	It starts as the Add credits card and the order card draw theirs
+	(UV's look of 28 Nov: credits-card.js, qrSvg). Nothing here is saved and
+	no real page reads it; a look UV settles on is applied to qrSvg's QR_LOOK
+	by hand.
 	The QR maker is the site's own (qrcode-generator, loaded by
 	TDCCredits.loadQr). The script is scripts/sandbox-qr.js; styles at the end
 	of sandbox.css.
@@ -20,7 +20,7 @@ extraScripts:
 
 <div class="tdc-card wide sandbox qr-sandbox">
 	<h1>QR codes</h1>
-	<p class="muted">Try a look for the site's QR codes. It starts as the Add credits card and the order card draw theirs today. Nothing is saved, and no real page changes. Not linked from the nav.</p>
+	<p class="muted">Try a look for the site's QR codes. It starts as the Add credits card and the order card draw theirs today (your look of 28 Nov). Nothing is saved, and no real page changes. Not linked from the nav.</p>
 
 	<div class="qr-layout">
 		<div class="qr-preview-col">
@@ -44,11 +44,16 @@ extraScripts:
 				<label for="qr-level">Error correction</label>
 				<select id="qr-level">
 					<option value="L">L · 7%</option>
-					<option value="M" selected>M · 15%</option>
+					<option value="M">M · 15%</option>
 					<option value="Q">Q · 25%</option>
-					<option value="H">H · 30%</option>
+					<option value="H" selected>H · 30%</option>
 				</select>
-				<p class="hint">How much of the code can be covered or damaged and still scan. Higher makes it denser. The site uses M.</p>
+				<p class="hint">How much of the code can be covered or damaged and still scan. Higher makes it denser. H is the highest the QR standard has; the site uses H.</p>
+			</div>
+			<div class="field">
+				<label for="qr-version">Density</label>
+				<input type="range" id="qr-version" min="0" max="40" step="1" value="0">
+				<p class="hint"><span id="qr-version-out"></span>. More dots across at the same size: smaller dots, the same error correction. Auto is the fewest that hold the text.</p>
 			</div>
 
 			<h2>Colours and size</h2>
@@ -71,28 +76,28 @@ extraScripts:
 			<div class="field">
 				<label for="qr-size">Size (px)</label>
 				<input type="range" id="qr-size" min="120" max="480" step="8" value="176">
-				<p class="hint"><span id="qr-size-out"></span> on screen. The PNG is drawn at 4 times this.</p>
+				<p class="hint"><span id="qr-size-out"></span> on screen. The PNG is drawn at 4 times this. In a rectangle, the code's size is set below.</p>
 			</div>
 
 			<h2>Shapes</h2>
 			<div class="field">
 				<label for="qr-dot">Dots</label>
 				<select id="qr-dot">
-					<option value="square" selected>Square</option>
+					<option value="square">Square</option>
 					<option value="rounded">Rounded</option>
-					<option value="round">Round</option>
+					<option value="round" selected>Round</option>
 				</select>
 			</div>
 			<div class="field">
 				<label for="qr-dot-size">Dot size</label>
-				<input type="range" id="qr-dot-size" min="50" max="100" step="5" value="100">
-				<p class="hint"><span id="qr-dot-size-out"></span> of each square. Below 100% the dots stand apart.</p>
+				<input type="range" id="qr-dot-size" min="25" max="100" step="5" value="100">
+				<p class="hint"><span id="qr-dot-size-out"></span> of each square. Below 100% the dots stand apart, like particles.</p>
 			</div>
 			<div class="field">
 				<label for="qr-frame">Corner frames</label>
 				<select id="qr-frame">
-					<option value="square" selected>Square</option>
-					<option value="rounded">Rounded</option>
+					<option value="square">Square</option>
+					<option value="rounded" selected>Rounded</option>
 					<option value="round">Round</option>
 				</select>
 				<p class="hint">The three big squares in the corners.</p>
@@ -100,9 +105,9 @@ extraScripts:
 			<div class="field">
 				<label for="qr-eye">Corner centres</label>
 				<select id="qr-eye">
-					<option value="square" selected>Square</option>
+					<option value="square">Square</option>
 					<option value="rounded">Rounded</option>
-					<option value="round">Round</option>
+					<option value="round" selected>Round</option>
 				</select>
 			</div>
 			<div class="field">
@@ -118,20 +123,62 @@ extraScripts:
 			<div class="field">
 				<label for="qr-logo">Logo in the middle</label>
 				<select id="qr-logo">
-					<option value="" selected>None</option>
+					<option value="">None</option>
 					<option value="/resources/branding/logo-mark-light.svg">Mark (for light paper)</option>
 					<option value="/resources/branding/logo-mark-dark.svg">Mark (for dark paper)</option>
 					<option value="/resources/branding/icon-primary.svg">App icon</option>
+					<option value="/resources/branding/logo-primary-light.svg" selected>Icon with wordmark (light version)</option>
+					<option value="/resources/branding/logo-primary-dark.svg">Icon with wordmark (dark version)</option>
 				</select>
 			</div>
 			<div class="field">
 				<label for="qr-logo-size">Logo size</label>
-				<input type="range" id="qr-logo-size" min="10" max="35" step="1" value="22">
+				<input type="range" id="qr-logo-size" min="10" max="35" step="1" value="35">
 				<p class="hint"><span id="qr-logo-size-out"></span> of the code's width. Raise the error correction to match: the line under the code says whether it fits.</p>
 			</div>
 			<div class="field">
 				<label for="qr-logo-clear">Clear the dots behind the logo</label>
 				<input type="checkbox" id="qr-logo-clear" checked>
+			</div>
+			<div class="field">
+				<label for="qr-logo-pad">Logo margin</label>
+				<input type="range" id="qr-logo-pad" min="0" max="40" step="5" value="0">
+				<p class="hint"><span id="qr-logo-pad-out"></span> of the cleared space left empty round the logo. A gap between a dark logo and the dots helps a camera tell them apart.</p>
+			</div>
+
+			<h2>Rectangle</h2>
+			<p class="muted">A phone camera reads only a square code, so in a rectangle the code stays square and the rest is plain paper: for the hero table, the cloth.</p>
+			<div class="field">
+				<label for="qr-shape">Shape</label>
+				<select id="qr-shape">
+					<option value="square">Square</option>
+					<option value="rect" selected>Rectangle</option>
+				</select>
+			</div>
+			<div id="qr-rect-fields" hidden>
+				<div class="field">
+					<label for="qr-rect-w">Width (px)</label>
+					<input type="range" id="qr-rect-w" min="120" max="960" step="8" value="480">
+					<p class="hint"><span id="qr-rect-w-out"></span></p>
+				</div>
+				<div class="field">
+					<label for="qr-rect-h">Height (px)</label>
+					<input type="range" id="qr-rect-h" min="120" max="960" step="8" value="264">
+					<p class="hint"><span id="qr-rect-h-out"></span>. Try 480 × 264 for the hero's 16:9 table at a wide screen, 264 × 480 for a phone's upright one.</p>
+				</div>
+				<div class="field">
+					<label for="qr-code-share">Code size</label>
+					<input type="range" id="qr-code-share" min="30" max="100" step="5" value="100">
+					<p class="hint"><span id="qr-code-share-out"></span> of the rectangle's shorter side, quiet zone included.</p>
+				</div>
+				<div class="field">
+					<label for="qr-place">Code placed</label>
+					<select id="qr-place">
+						<option value="centre" selected>Centre</option>
+						<option value="start">Left or top</option>
+						<option value="end">Right or bottom</option>
+					</select>
+				</div>
 			</div>
 
 			<h2>Your settings</h2>

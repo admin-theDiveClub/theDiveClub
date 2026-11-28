@@ -334,8 +334,18 @@
   --cc-track: 0.6rem;           /* the slider's groove */
   --cc-rise: 0.35s;             /* the card rising from the foot as it opens, sinking as it closes (TDC.cardOpen) */
   --cc-turn: 0.35s;             /* its screens sliding across, and it growing or shrinking to them (TDC.cardTurn) */
-  /* The QR is dark on light in both themes: a camera reads an inverted one badly. */
+  /* The QR (UV, 28 Nov; /sandbox/qr/): in the dark theme dark dots on the table
+     markings' grey (--text-muted, the colour hero.js draws them in), so it follows
+     them; grey dots on the cream in the light (below). Never light ink on dark
+     paper: some cameras cannot read an inverted code. */
   --qr-ink: #202020;
+  --qr-paper: var(--text-muted);
+}
+[data-theme="light"] {
+  /* The light theme's QR (UV, 28 Nov): the page's cream with grey dots. The grey is
+     Claude's: #5c5c5c, about 5.5:1 on the cream; the theme's own muted grey
+     (--text-muted, #a3a3a3) is about 2:1, too faint for a camera in a dim bar. */
+  --qr-ink: #5c5c5c;
   --qr-paper: #f4e8d2;
 }
 

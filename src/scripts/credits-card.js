@@ -418,21 +418,88 @@ const TDCCredits = (() => {
 			return;
 		}
 		if (!topUp || topUp.code !== code) return;
-		const q = qrcode(0, 'M');
-		q.addData(location.origin + '/staff/top-ups/?code=' + encodeURIComponent(code));
+		els.qr.replaceChildren(qrSvg(location.origin + '/staff/top-ups/?code=' + encodeURIComponent(code)));
+	}
+
+	// ─── The site's QR look (UV, 28 Nov; chosen on /sandbox/qr/) ───
+	// Round dots, rounded corner frames, round centres, a 2-dot quiet zone, the site
+	// icon at 35% of the width with the dots behind it cleared, error level H
+	// (Claude raised UV's M: the icon covers about 14% of a code and M recovers
+	// about 15%; H about 30%). --qr-ink on --qr-paper: dark on the table markings'
+	// grey in the dark theme, grey on the cream in the light (variables.css; UV
+	// swapped his inverted pick, green on dark, as some cameras cannot read that).
+	// The logo is each theme's own version. Shared: the order card (shop-order.js) draws with qrSvg too. The
+	// drawing is the sandbox's (scripts/sandbox-qr.js, build), with these
+	// settings fixed; the box's paper is the CSS background (.cc-qr).
+	// UV's final settings of 28 Nov, later: a 2-dot quiet zone and round centres.
+	const QR_LOOK = {
+		level: 'H',
+		quiet: 2,
+		dotR: 0.5,                // × a dot: round
+		frameR: [2, 1.2],         // the 7-dot frame's outer and inner corners: rounded
+		eyeR: 1.5,                // the 3-dot centre: round
+		// The site icon, without the wordmark (UV, 28 Nov), each theme its own file:
+		// drawn twice, .for-dark and .for-light (global.css shows the theme's).
+		logo: { dark: '/resources/branding/logo-mark-dark.svg', light: '/resources/branding/logo-mark-light.svg' },
+		logoSize: 0.35,           // of the code's width
+	};
+
+	function rr(x, y, w, h, r) {
+		r = Math.min(r, w / 2, h / 2);
+		const f = (v) => +v.toFixed(3);
+		if (r <= 0) return `M${f(x)} ${f(y)}h${f(w)}v${f(h)}h${f(-w)}z`;
+		return `M${f(x + r)} ${f(y)}h${f(w - 2 * r)}a${f(r)} ${f(r)} 0 0 1 ${f(r)} ${f(r)}`
+			+ `v${f(h - 2 * r)}a${f(r)} ${f(r)} 0 0 1 ${f(-r)} ${f(r)}`
+			+ `h${f(-(w - 2 * r))}a${f(r)} ${f(r)} 0 0 1 ${f(-r)} ${f(-r)}`
+			+ `v${f(-(h - 2 * r))}a${f(r)} ${f(r)} 0 0 1 ${f(r)} ${f(-r)}z`;
+	}
+
+	// The QR for link as an SVG element, in the site's look. Needs loadQr() first.
+	function qrSvg(link) {
+		const L = QR_LOOK;
+		const q = qrcode(0, L.level);
+		q.addData(link);
 		q.make();
 		const n = q.getModuleCount();
+		const qz = L.quiet, total = n + 2 * qz;
+		const inFinder = (r, c) => (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
+		const side = L.logoSize * n, at = (n - side) / 2, lo = at - 0.5, hi = at + side + 0.5;
+		const underLogo = (r, c) => r + 0.5 > lo && r + 0.5 < hi && c + 0.5 > lo && c + 0.5 < hi;
+
+		let dots = '';
+		for (let r = 0; r < n; r++) {
+			for (let c = 0; c < n; c++) {
+				if (inFinder(r, c) || underLogo(r, c)) continue;
+				if (q.isDark(r, c)) dots += rr(c + qz, r + qz, 1, 1, L.dotR);
+			}
+		}
+		let corners = '';
+		for (const [r, c] of [[0, 0], [0, n - 7], [n - 7, 0]]) {
+			const x = c + qz, y = r + qz;
+			corners += rr(x, y, 7, 7, L.frameR[0]) + rr(x + 1, y + 1, 5, 5, L.frameR[1]) + rr(x + 2, y + 2, 3, 3, L.eyeR);
+		}
+
 		const svg = document.createElementNS(SVG_NS, 'svg');
-		svg.setAttribute('viewBox', `0 0 ${n} ${n}`);
-		svg.setAttribute('shape-rendering', 'crispEdges');
+		svg.setAttribute('viewBox', `0 0 ${total} ${total}`);
 		svg.setAttribute('aria-hidden', 'true');
-		let d = '';
-		for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c} ${r}h1v1h-1z`;
-		const path = document.createElementNS(SVG_NS, 'path');
-		path.setAttribute('d', d);
-		path.setAttribute('fill', 'var(--qr-ink)');
-		svg.appendChild(path);
-		els.qr.replaceChildren(svg);
+		const ink = (d, rule) => {
+			const p = document.createElementNS(SVG_NS, 'path');
+			p.setAttribute('d', d);
+			p.style.fill = 'var(--qr-ink)';
+			if (rule) p.setAttribute('fill-rule', rule);
+			svg.appendChild(p);
+		};
+		ink(dots);
+		ink(corners, 'evenodd');
+		for (const theme of ['dark', 'light']) {
+			const img = document.createElementNS(SVG_NS, 'image');
+			img.setAttribute('class', 'for-' + theme);
+			img.setAttribute('href', L.logo[theme]);
+			for (const [k, v] of [['x', at + qz], ['y', at + qz], ['width', side], ['height', side]]) img.setAttribute(k, +v.toFixed(3));
+			img.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+			svg.appendChild(img);
+		}
+		return svg;
 	}
 
 	// While the code is waiting and the card is open, ask every few seconds
@@ -543,6 +610,7 @@ const TDCCredits = (() => {
 		if (dlg) TDC.cardClose(dlg);
 	}
 
-	// loadQr is shared with the order card (scripts/shop-order.js), so the QR maker loads once.
-	return { open, close: shut, loadQr };
+	// loadQr and qrSvg are shared with the order card (scripts/shop-order.js), so the
+	// QR maker loads once and both cards draw the one look.
+	return { open, close: shut, loadQr, qrSvg };
 })();

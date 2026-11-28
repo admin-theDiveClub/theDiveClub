@@ -122,6 +122,19 @@ extraScripts:
 		width: var(--home-logo-size, 0px);
 		height: var(--home-logo-size, 0px);
 	}
+	/* Your QR in the logo's place (UV, 28 Nov): signed in with a player short link,
+	   the logo's square on the QR's paper (--qr-paper), the code drawn by TDCCredits.qrSvg
+	   (the site's QR look). home-cards.js sets .has-qr; signed out the logo stays. */
+	.home-logo.has-qr img { display: none; }
+	.home-qr {
+		width: var(--home-logo-size, 0px);
+		height: var(--home-logo-size, 0px);
+		border-radius: var(--radius-md);
+		overflow: hidden;
+		background: var(--qr-paper);
+	}
+	.home-qr[hidden] { display: none; }
+	.home-qr svg { display: block; width: 100%; height: 100%; }
 
 	/* Get the app (UV, 16 Nov): a raised glass card on any device not running the
 	   installed app, on the first screen with the logo and the markings, scrolling
@@ -212,6 +225,7 @@ extraScripts:
 		<div class="home-logo" id="home-logo">
 			<img class="for-dark" src="/resources/branding/logo-primary-dark.svg" alt="">
 			<img class="for-light" src="/resources/branding/logo-primary-light.svg" alt="">
+			<div class="home-qr" id="home-qr" role="img" aria-label="QR code to your player page" hidden></div>
 		</div>
 		<div class="home-install home-raised" id="home-install" role="region" aria-label="Get the app" hidden>
 			<a class="home-install-link" href="/install/">
