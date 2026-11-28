@@ -111,7 +111,17 @@ const TDCDeviceLogin = (() => {
 								return;
 							}
 							els.code.textContent = 'Signed in';
-							(onSignedIn || (() => location.reload()))();
+							// The device manager: this session is labelled the TV, with the phone that allowed it
+							// (tdc_device_login_link, migration 20261128132115). Only the label is lost if it fails,
+							// so the sign-in goes on, the error shown for a moment first.
+							const { error: linkError } = await supabaseClient.rpc('tdc_device_login_link', { p_secret: l.secret });
+							const go = onSignedIn || (() => location.reload());
+							if (linkError) {
+								TDC.error(AREA, 'signed in, but this screen could not be marked as signed in by QR: ' + linkError.message, linkError, els.status);
+								setTimeout(go, 4000);
+								return;
+							}
+							go();
 							return;
 						}
 						if (data.state === 'refused') {

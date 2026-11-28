@@ -54,6 +54,8 @@ The full list is `DATA` in the module, which the page will show. A test checks t
 
 **Using the app (13 Nov; migration `20261113164109_player_devices`):** `me.profile.uses_app` (has opened the installed app on any device) and `me.profile.app_days` (the days they did) are in `DATA` and `fillPerson`. They will be read from `tbl_player_devices`: any row with `installed` true, and the sum of those rows' `days_seen`. Recording started with that migration and nothing before it can be recovered. No formula uses them yet, and the real read is not built.
 
+**The device manager (28 Nov; migration `20261128132115_device_manager`):** nothing added. Which sessions an account has, and which TV a phone allowed, is sign-in bookkeeping about devices, not how anybody plays or uses the club; whether people use the app is already `uses_app` (Claude's call).
+
 **Signing in a TV with a phone (28 Nov; migration `20261128123827_device_login`):** nothing added. A sign-in request is bookkeeping, gone within a day, and says nothing about how anybody plays or uses the club (Claude's call).
 
 **Draft scores and the draw's lag (27 Nov; migrations `20261127153139_draw_lag`, `20261127154848_draft_scores`):** nothing added. `tbl_match_result_override.published_at` says when a director's score starts to count, not how anybody played; the draw's `track_breaks` and `first_break_side` are the match's own rules and lag, already on the match (Claude's call).

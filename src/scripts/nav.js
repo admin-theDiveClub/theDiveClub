@@ -1163,6 +1163,26 @@
 		}
 	})();
 
+	// ─── Signed out from another device ───────────────────────────────
+	// The device manager (docs/systems/foundations.md) ends a session in the
+	// database, but the browser keeps its access token, which works until it
+	// runs out (up to an hour). So once per page load, signed in, the session
+	// is checked with the server (getUser). One the server no longer has is
+	// cleared here by supabase-js, and the page reloads signed out. A failed
+	// check (offline, say) only goes to the console: it says nothing about
+	// the sign-in.
+	TDC.getSession(AREA).then(async (session) => {
+		if (!session) return;
+		const { error } = await supabaseClient.auth.getUser();
+		if (!error) return;
+		if (error.name === 'AuthSessionMissingError') {
+			console.error('[' + AREA + '] this device was signed out from another device; reloading signed out.');
+			location.reload();
+			return;
+		}
+		console.error('[' + AREA + '] could not check this sign-in with the server.', error);
+	});
+
 	// ─── Reload ───────────────────────────────────────────────────────
 	// An installed app has no address bar and no reload button, so there is
 	// no way out of a page that has gone stale — a live page whose socket

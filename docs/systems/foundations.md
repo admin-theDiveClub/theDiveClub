@@ -365,7 +365,43 @@ Driven headless at 420 (28 Nov) with a stand-in camera filming the site's own QR
 
 **Checked (28 Nov):** test `118` (23 checks: only the service role starts and collects; a signed-in or signed-out caller cannot, nor read the table; the secret is never kept; a loosely typed code; once only; cancel; a code past its 60 s). End to end on the local copy, the function served locally: a start, the view naming the TV, Allow, the collect with its token, `verify` signing in as the same account with a refresh token, the same token refused a second time, Cancel reaching the TV. **Not checked:** the login page and `/tv/` in a browser (the site reads production, where the function and migration are not yet), a real TV.
 
-**Still to build:** **the device manager** (UV, 28 Nov: "we do need the device manager functionality but we can build it after this"): a list of where you are signed in, with sign-out for each (STATUS §3).
+**Signing out on the TV leaves the phone signed in** only since the device manager (below): until then the profile's Log out was supabase-js's default `signOut()`, which signs out **every** device.
+
+**The device manager** (below) names a TV's session: after `verifyOtp` the page calls `tdc_device_login_link` with its secret.
+
+## The device manager (28 Nov; migration `20261128132115_device_manager`, test `120_device_manager`)
+
+**What (UV, 28 Nov; DECISIONS 28 Nov, "The device manager"):** "Where you're signed in" in the profile page's Account section, above Log Out: every sign-in of the account (phones, computers, TVs signed in by QR), each with **Sign out**, and **Sign out everywhere else**. **Log Out signs out this device only** (`signOut({ scope: 'local' })`, which also ends its session on the server).
+
+**Each row (UV's answers, 28 Nov):**
+
+| Line | Example | From |
+|---|---|---|
+| The device | Safari on iPhone | `auth.sessions.user_agent`, named in the page by `deviceOf` (a copy of the edge function's; change both). A TV signed in by QR shows the name the phone was shown |
+| This device, or Sign out | | The JWT's `session_id`. This device has no Sign out: Log Out does that |
+| Signed in by QR from … | Signed in by QR from Safari on iPhone | `tbl_device_sessions`, TVs only |
+| When, and the IP | Signed in 25 Nov 2026 · last used 5 hours ago · 196.21.4.7 | `created_at`; last used is the latest of `created_at`, `updated_at`, `refreshed_at`; `ip`. **Only the IP**, not a place: a place needs an outside lookup service |
+
+**"Last used" is only good to the hour:** Supabase stamps a session when the device gets a new access token, about hourly while it is in use, so anything under an hour reads "in the last hour"; this device reads "in use now".
+
+**What signing out does, plainly:** the session is deleted from `auth.sessions` (as Supabase's own logout does; its refresh tokens go with it), so that device can never get a new access token. **The access token it already holds still works for up to an hour** (the JWT expiry): the database does not check sessions. So **every page load, signed in, asks Supabase's `/user` once** (`nav.js`, "Signed out from another device"; `supabaseClient.auth.getUser()`), which does check: a session that has gone is cleared from the browser and the page reloads signed out. A device left on one page (a TV on the follow page) keeps reading until its token runs out, at most an hour, and is then signed out when it tries to renew. The sign-out messages say so: "It may keep working until it next loads a page, and within the hour at most." A failed check (offline) only goes to the console as `[Nav]`.
+
+**Unused for 30 days (UV):** a pg_cron job, `tdc-clear-unused-sessions`, at 02:30 UTC each night (`private.tdc_clear_unused_sessions`), deletes every session not used for 30 days, and any TV label whose session has gone. The list leaves such sessions out meanwhile, and any past Supabase's own `not_after`.
+
+**The database:**
+
+| | |
+|---|---|
+| `tdc_my_sessions()` | The caller's sessions as jsonb, this device first, then the most recently used |
+| `tdc_sign_out_session(id)` | One of the caller's other sessions. Refuses this device ("Use Log out") and anyone else's ("not found") |
+| `tdc_sign_out_other_sessions()` | All but this one; returns how many |
+| `tdc_device_login_link(secret)` | The TV, just signed in, labels its own session. Only with the secret, for the account that allowed it, within 10 minutes of collecting, and only a session made since then, so no other sign-in can be labelled a TV. A failure shows `TDC (Error)` on the TV for 4 s and the sign-in goes on (Claude's: only the label is lost) |
+| `tbl_device_logins.approved_session_id` | The phone's session at Allow (`tdc_device_login_answer`, patched) |
+| `tbl_device_sessions` | session id, user, device, the phone's user agent (copied at link, so it survives the phone signing out), allowed at. RLS on, no grants. **No foreign key to `auth.sessions`**, so Supabase's own sign-out never depends on our table; orphans are cleared by the sign-out functions and the nightly job. Names the auth user, so not in `private.tdc_merge_players` |
+
+`auth` is Supabase's schema: it is read, and the caller's own rows deleted, only inside these security-definer functions; nothing is granted on it. Checked on production (28 Nov, reading only) that the functions' owner may delete there.
+
+**Checked (28 Nov):** test `120` (29 checks: signed out nothing; the TV label only with the secret, the right account and a new session; the list's order, TV line, IP, last used, and 30-day cut; this device and another account's refused; one and all signed out, the others untouched; the nightly job). WebKit at 420 (iPhone), both themes, against the local copy: four rows (this device, a Mac, a Samsung TV "Signed in by QR from Safari on iPhone", Chrome on Windows 5 hours ago); Sign out on the TV; Sign out everywhere else; the laptop, still signed in in its browser, signed out on its next page load; Log Out on the phone left a re-signed laptop signed in. **Not checked:** a real TV signing in through QR and showing its line (needs the deployed site; the label was put in by hand for the check), a real iPhone.
 
 ## The shop: receipt emails (24 Nov; the shop's Stage 5, `docs/design/shop.md`)
 

@@ -72,8 +72,10 @@ TDCLoader.hold((async () => {
 	const user = session.user;
 
 	// ─── Log out ───
+	// This device only (28 Nov, the device manager): supabase-js's default signs out every
+	// device. The others are signed out from "Where you're signed in" (profile-devices.js).
 	els.logoutBtn.addEventListener('click', async () => {
-		const { error } = await supabaseClient.auth.signOut();
+		const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
 		if (error) {
 			TDC.showSupabaseError(AREA, error, els.passwordStatus);
 			return;

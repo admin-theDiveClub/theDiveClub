@@ -7,6 +7,7 @@ extraStyles:
 extraScripts:
   - /scripts/shop-order.js
   - /scripts/profile.js
+  - /scripts/profile-devices.js
   - /scripts/push.js
 ---
 <style>
@@ -31,6 +32,10 @@ extraScripts:
 		font-size: 1.6rem; font-weight: 600; letter-spacing: 0.03em;
 	}
 	.avatar-actions { flex: 1 1 auto; min-width: 0; }
+	.devices-list:empty { min-height: 3rem; }   /* room for the dots while it loads */
+	.device-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+	.device-name { min-width: 0; overflow-wrap: anywhere; }
+	.device-head .btn, .device-head .badge { flex: 0 0 auto; }
 </style>
 
 <div class="tdc-card">
@@ -230,6 +235,13 @@ extraScripts:
 			<button type="submit" class="btn-primary" id="email-btn">Change Email</button>
 		</form>
 		<div class="status" id="email-status"></div>
+
+		<!-- The device manager (28 Nov; scripts/profile-devices.js, tdc_my_sessions): everywhere
+		     this account is signed in, with Sign out for each other device. -->
+		<h2 style="margin-top: 1.5rem;">Where you're signed in</h2>
+		<div class="devices-list" id="devices-list"></div>
+		<button type="button" class="btn-secondary" id="devices-others" style="margin-top: 0.5rem;" hidden>Sign out everywhere else</button>
+		<div class="status" id="devices-status"></div>
 
 		<button type="button" class="btn-secondary" id="logout-btn" style="margin-top: 1rem;">Log Out</button>
 	</div>
