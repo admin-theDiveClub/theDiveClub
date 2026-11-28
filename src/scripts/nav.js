@@ -480,15 +480,12 @@
 		drawActive(active.data || {}, people.data || {});
 	}
 
-	// --- Profile icon: the profile menu when logged in, login page when not ---
+	// --- Profile icon: the profile menu when logged in, the sign-in card when not (28 Nov) ---
 	profileBtn.addEventListener('click', () => {
 		if (loggedIn) {
 			setAccount(!account.classList.contains('open'));
 		} else {
-			// The dots stay until the sign-in page takes over.
-			serveUntil(profileBtn, rings.user, pageGoes(), { timeout: LEAVE_MS });
-			const back = encodeURIComponent(location.pathname + location.search);
-			window.location.href = '/accounts/?next=' + back;
+			TDCSignIn.open();
 		}
 	});
 

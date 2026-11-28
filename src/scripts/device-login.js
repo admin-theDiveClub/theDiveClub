@@ -47,7 +47,7 @@ const TDCDeviceLogin = (() => {
 			<div class="dl-qr" aria-label="QR code to sign in with your phone"></div>
 			<div class="dl-code" aria-live="polite"></div>
 			<p class="dl-hint">Scan it with your phone, or go to <strong>thediveclub.org/tv</strong> and enter the code.</p>
-			<button type="button" class="btn-secondary dl-again" hidden>Show a new code</button>
+			<button type="button" class="btn btn-secondary dl-again" hidden>Show a new code</button>
 			<div class="status dl-status"></div>`;
 		const els = {
 			qr: box.querySelector('.dl-qr'),

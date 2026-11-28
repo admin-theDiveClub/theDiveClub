@@ -40,18 +40,45 @@ const TDC = (() => {
 		return data.session;
 	}
 
-	// For pages that need a login: send logged-out visitors to the login page,
-	// which brings them back here afterwards.
+	// For pages (and taps) that need a login: the sign-in card over this page
+	// (UV, 28 Nov; sign-in.js), which reloads it once signed in. Until 28 Nov
+	// this sent the visitor to /accounts/ and back.
 	async function requireSession(area) {
 		const session = await getSession(area);
 		if (!session) {
-			const back = encodeURIComponent(location.pathname + location.search);
-			// The loading screen stays up until the browser has gone (loader.js).
-			if (typeof TDCLoader !== 'undefined') TDCLoader.leaving();
-			location.replace('/accounts/?next=' + back);
+			signInHere();
 			return null;
 		}
 		return session;
+	}
+
+	// The card, and if it is closed without signing in, one line at the top of
+	// the page to open it again. Nothing on the page is hidden: a public league
+	// tab asks for a sign-in only on a tap.
+	function signInHere() {
+		if (typeof TDCSignIn === 'undefined') {
+			error('SignIn', 'the sign-in card is missing (sign-in.js); going to the login page.');
+			location.replace('/accounts/?next=' + encodeURIComponent(location.pathname + location.search));
+			return;
+		}
+		TDCSignIn.open({
+			onClose() {
+				if (document.getElementById('tdc-signed-out')) return;
+				const host = document.querySelector('main') || document.body;
+				const note = document.createElement('div');
+				note.id = 'tdc-signed-out';
+				note.className = 'tdc-signed-out';
+				const text = document.createElement('span');
+				text.textContent = "You're not signed in.";
+				const btn = document.createElement('button');
+				btn.type = 'button';
+				btn.className = 'btn btn-primary btn-sm';
+				btn.textContent = 'Log In';
+				btn.addEventListener('click', () => TDCSignIn.open());
+				note.append(text, btn);
+				host.prepend(note);
+			}
+		});
 	}
 
 	// Only allow redirects to pages on this site (stops "?next=https://evil.site" tricks).

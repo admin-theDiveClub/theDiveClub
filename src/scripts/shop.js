@@ -480,7 +480,7 @@ TDCLoader.hold((async () => {
 	// own line when the cart is open, else the page's).
 	async function setQty(p, qty, btn, statusEl) {
 		if (!signedIn) {
-			window.location.href = '/accounts/?next=' + encodeURIComponent('/shop/');
+			TDCSignIn.open();   // the sign-in card over the shop (28 Nov); signed in, it reloads
 			return false;
 		}
 		if (saving.has(p.id)) return false;

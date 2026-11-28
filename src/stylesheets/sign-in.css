@@ -1,0 +1,27 @@
+/* The sign-in card (UV, 28 Nov): the Add credits card's sheet (credits-card.css: .cc, .cc-head,
+   .cc-icon), rising from the foot on a phone and centred, no wider than --cc-width, above that.
+   scripts/sign-in.js. Fields take the design layer's look (design.css); buttons are .btn. */
+
+.si-or { margin: var(--space-3) 0; text-align: center; color: var(--text-muted); }
+.si .btn-google { margin: 0; }
+.si .btn-primary { margin: var(--space-2) 0 0; }
+.si-forgot-text { margin: 0 0 var(--space-4); color: var(--text-muted); }
+.si .status:empty { display: none; }
+.si .status { margin-top: var(--space-3); }
+.si .link-row { margin-top: var(--space-3); }
+.si .dl { margin-top: var(--space-4); }
+.si .dl-again { width: auto; margin: var(--space-3) auto 0; }
+/* Outside .tdc-card a <button> keeps the browser's own font (a serif in Safari). */
+.si button.link { font-family: inherit; cursor: pointer; }
+
+/* Closed without signing in, where the page needs it (TDC.requireSession): one line at the top. */
+.tdc-signed-out {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-3);
+	flex-wrap: wrap;
+	margin: var(--space-4) auto;
+	color: var(--text-muted);
+}
+.tdc-signed-out .btn { margin: 0; }
