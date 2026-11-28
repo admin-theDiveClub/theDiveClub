@@ -323,6 +323,31 @@ Driven headless at 420 and 1280 against the local copy (24 Nov): Sipho started A
 
 Driven headless at 420 (28 Nov) with a stand-in camera filming the site's own QR (`TDCCredits.qrSvg`, the dark theme's look, icon included) and the built-in reader removed, so ZXing read it as on an iPhone: from the menu, a top-up link opened `/staff/top-ups/?code=TXZ5`; a `https://thediveclub.org/staff/orders/?order=…` link opened that path here; a foreign link showed the error once with the sheet open; Close stopped the camera; a refused camera showed its error in the sheet; both staff rows fit at 420. The database was blocked in the test (signed out, so the staff pages' own Scan wiring was not reached). **Not tried on a real phone.**
 
+## Signing in a TV with a phone (28 Nov; migration `20261128123827_device_login`, test `118_device_login`, edge function `device-login`)
+
+**What (UV, 28 Nov; DECISIONS 28 Nov, "Signing in a TV with a phone"):** like Netflix or Prime. The login page shows a QR and a code under Log In; a phone scans it (or types the code at **thediveclub.org/tv**), signs in if it needs to, and is asked **"Allow this device?"**. On Allow the TV signs in as that account with a session of its own: **everything the account can do** (UV). It works for any browser, not only a TV: a laptop at a friend's, a tablet. Signing out on the TV leaves the phone signed in.
+
+**How:**
+
+| Step | TV (login page, signed out) | Phone (`/tv/`, signed in) |
+|---|---|---|
+| 1 | Makes a random secret (32 bytes, base64url) and sends it to the edge function `device-login` (`action: 'start'`). `tdc_device_login_start` stores its SHA-256 and returns an 8-letter code (no 0, O, 1 or I) | — |
+| 2 | Draws the QR (`/tv/?code=<code>`, `TDCCredits.qrSvg`) and the code (`K7QM-4XPD`) | Scans it; signed out, `requireSession` sends them to sign in and back |
+| 3 | Asks every 3 s (`action: 'collect'`) | `tdc_device_login_view` names the device ("Samsung Internet on Samsung TV", worked out by the function from the TV's own browser, so a page cannot name itself); **Allow** or **Cancel** (`tdc_device_login_answer`) |
+| 4 | Allowed: `tdc_device_login_collect` marks the request used and gives the function the account's email; the function makes a one-time token with `auth.admin.generateLink({ type: 'magiclink' })` (nothing is emailed) and returns its `hashed_token`; the page signs in with `supabase.auth.verifyOtp({ token_hash, type: 'magiclink' })` and goes on as after any sign-in | "Done. … is signing in now." |
+
+**Why it is safe:** the code on the screen can only be *answered*, by a signed-in phone; only the secret, which never leaves the TV's page, collects the sign-in, and the database keeps only its hash. So a photo of the screen steals nothing. The risk is the other way round: somebody shows *their* code (a screenshot, a printed "scan for free credits" poster) and whoever taps Allow signs that person in as themselves. Against that: **a new code every 30 s** (UV, 28 Nov: "a real security risk"), **each allowed for 60 s** (Claude's: a code scanned in its last second still has 30 s), an approval collected within 2 minutes or never, a token used once, and the Allow screen naming the device and saying "Only allow a screen you are in front of."
+
+**When codes are made (UV, 28 Nov):** only while the QR shows: "only generate when the log-in card is opened and stop when the card is closed". `TDCDeviceLogin.mount(box, { onSignedIn })` returns `{ open, close }`; nothing is asked for before `open()`. Today the login page opens it in Log In mode once it knows nobody is signed in, and closes it for Sign Up; **the sign-in card (STATUS §2) will open and close it with the card.** Also stopped while the tab is hidden, and after 30 minutes with nobody scanning (a "Show a new code" button then; Claude's, so a forgotten page does not ask all night: each ask is an edge-function call). The previous code is still asked about until it runs out.
+
+**The edge function** has `verify_jwt = false` (`supabase/config.toml`): its caller is signed out and the site's publishable key is not a JWT. It trusts only the secret, accepts calls only from the site's origins (CORS, not a security check), and uses the service role, which alone may run `tdc_device_login_start` and `_collect`. No secrets to set. Deploy: `npx supabase functions deploy device-login --use-api` (it reads `verify_jwt` from `config.toml`; add `--no-verify-jwt` if a deploy ever refuses signed-out calls).
+
+**The table** `tbl_device_logins`: code, secret hash, device, created, expires (created + 60 s), approved by (the auth user) and when, refused when, used when. RLS on, no grants. Rows over a day old are deleted whenever a code is made. It names the auth user, not a player, so it is not in `private.tdc_merge_players` (an account is never merged away).
+
+**Checked (28 Nov):** test `118` (23 checks: only the service role starts and collects; a signed-in or signed-out caller cannot, nor read the table; the secret is never kept; a loosely typed code; once only; cancel; a code past its 60 s). End to end on the local copy, the function served locally: a start, the view naming the TV, Allow, the collect with its token, `verify` signing in as the same account with a refresh token, the same token refused a second time, Cancel reaching the TV. **Not checked:** the login page and `/tv/` in a browser (the site reads production, where the function and migration are not yet), a real TV.
+
+**Still to build:** **the device manager** (UV, 28 Nov: "we do need the device manager functionality but we can build it after this"): a list of where you are signed in, with sign-out for each (STATUS §3).
+
 ## The shop: receipt emails (24 Nov; the shop's Stage 5, `docs/design/shop.md`)
 
 **Built** (migration `20261124170346_shop_receipt_emails`, test `098_shop_receipt_emails`, edge function `send-shop-emails`; 24 Nov). **Nothing is sent until** UV sets the `RESEND_API_KEY` secret and deploys the function (STATUS §1 4dn).

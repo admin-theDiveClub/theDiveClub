@@ -423,3 +423,7 @@ verify_jwt = true
 
 [functions.send-shop-emails]
 verify_jwt = true
+
+# Signed-out callers (the login page): the function trusts only the page's secret.
+[functions.device-login]
+verify_jwt = false

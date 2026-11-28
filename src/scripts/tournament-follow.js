@@ -249,6 +249,19 @@
 		return drawQr(link);
 	}
 
+	// ─── The clock (UV, 28 Nov) ───
+	// Bottom right: once round between one read and the next, started again
+	// each time the next read is set; still (empty) when no read is coming.
+	const clock = el('fw-clock');
+	clock.style.setProperty('--fw-every', EVERY / 1000 + 's');
+	clock.title = 'Updates every ' + EVERY / 1000 + ' seconds';
+	function tick(on) {
+		clock.classList.remove('is-running');
+		if (!on) return;
+		void clock.getBoundingClientRect();   // a fresh start for the animation
+		clock.classList.add('is-running');
+	}
+
 	// ─── Reading ───
 	let venues = null;    // where it is played: read once
 	let timer = 0;
@@ -270,6 +283,7 @@
 			if (!data) {
 				TDC.error(AREA, 'no tournament with that id. Check the link.', { tournamentId }, els.status);
 				reading = false;
+				tick(false);
 				return;   // nothing to follow: no more reads
 			}
 			await draw(data, venues);
@@ -280,12 +294,14 @@
 			TDC.showSupabaseError(AREA, err, els.status);
 		}
 		reading = false;
-		if (document.visibilityState === 'visible') timer = setTimeout(read, EVERY);
+		const again = document.visibilityState === 'visible';
+		if (again) timer = setTimeout(read, EVERY);
+		tick(again);
 	}
 
 	// Shown again, or back online: read now and take the wake lock again.
 	document.addEventListener('visibilitychange', () => {
-		if (document.visibilityState !== 'visible') { clearTimeout(timer); return; }
+		if (document.visibilityState !== 'visible') { clearTimeout(timer); tick(false); return; }
 		keepAwake();
 		read();
 	});

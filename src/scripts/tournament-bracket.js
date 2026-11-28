@@ -521,7 +521,8 @@ TDCTournamentNav.panel('draw', () => {
 		const lanes = els.bracket.querySelector('.bracket-lanes');
 		if (!lanes) return;
 		const sc = els.bracket.parentElement;
-		const full = isFull();
+		// A TV (&tv=1) fits as full screen does: inside the stage, which fills the frame (bracket.css).
+		const full = isFull() || tv;
 		// The site's bar along the top and the tournament's bar along the
 		// foot cover the page (UV, 27 Nov: the last card sat under the foot
 		// bar on a wide screen), so the draw fits between them.

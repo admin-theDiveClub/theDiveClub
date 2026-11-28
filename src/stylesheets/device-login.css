@@ -1,0 +1,25 @@
+/* The login page's QR: sign this screen in with a phone (UV, 28 Nov).
+   scripts/device-login.js; the QR is drawn by TDCCredits.qrSvg in the site's look. */
+
+.dl { display: flex; flex-direction: column; align-items: center; text-align: center; margin-top: var(--space-5); }
+.dl-or { color: var(--text-muted); margin-bottom: var(--space-4); }
+.dl-qr {
+	width: var(--cc-qr-size);
+	height: var(--cc-qr-size);
+	/* No padding: the quiet zone is part of the drawing. */
+	border-radius: var(--radius-md);
+	background: var(--qr-paper);
+	box-shadow: var(--nm-raised-small);
+}
+.dl-code {
+	margin-top: var(--space-3);
+	font-family: var(--font-mono);
+	font-size: 1.5rem;
+	letter-spacing: 0.12em;
+	min-height: 1.5em;
+}
+.dl-hint { margin: var(--space-2) 0 0; color: var(--text-muted); max-width: 22rem; }
+.dl-again { margin-top: var(--space-3); }
+
+/* /tv/, the phone's side: the device asking, large. */
+.tv-device { font-size: 1.25rem; font-weight: 600; margin: 0 0 var(--space-2); }

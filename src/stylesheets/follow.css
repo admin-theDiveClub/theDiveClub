@@ -174,3 +174,41 @@ main { min-height: 0; }
 
 .fw-status:empty { display: none; }
 .fw-status { margin: 0; }
+
+/* The clock (UV, 28 Nov: "a small clock animation to the bottom right corner
+   of the screen to show when the next update is going to happen"): a small
+   ring in the corner's margin, its green arc and hand going once round
+   between one read and the next (tournament-follow.js, tick; --fw-every is
+   the time between reads). Takes no taps. */
+.fw-clock {
+	--fw-clock: clamp(12px, 2.2vmin, 28px);
+	--fw-edge: clamp(0.75rem, 2.5vmin, 2.5rem);
+	position: fixed;
+	right: max(4px, calc((var(--fw-edge) - var(--fw-clock)) / 2), env(safe-area-inset-right, 0px));
+	bottom: max(4px, calc((var(--fw-edge) - var(--fw-clock)) / 2), env(safe-area-inset-bottom, 0px));
+	width: var(--fw-clock);
+	height: var(--fw-clock);
+	pointer-events: none;
+}
+.fw-clock svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.fw-clock-face { fill: none; stroke: var(--text-muted); stroke-width: 2; opacity: 0.4; }
+.fw-clock-sweep {
+	fill: none;
+	stroke: var(--color-primary);
+	stroke-width: 2.5;
+	stroke-linecap: round;
+	stroke-dasharray: 100;
+	stroke-dashoffset: 100;
+	transform: rotate(-90deg);
+	transform-origin: 12px 12px;
+}
+.fw-clock-hand {
+	stroke: var(--color-primary);
+	stroke-width: 2;
+	stroke-linecap: round;
+	transform-origin: 12px 12px;
+}
+.fw-clock.is-running .fw-clock-sweep { animation: fw-clock-sweep var(--fw-every, 10s) linear forwards; }
+.fw-clock.is-running .fw-clock-hand { animation: fw-clock-hand var(--fw-every, 10s) linear forwards; }
+@keyframes fw-clock-sweep { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+@keyframes fw-clock-hand { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

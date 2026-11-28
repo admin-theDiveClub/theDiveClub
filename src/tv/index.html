@@ -1,0 +1,39 @@
+---
+layout: layout.html
+title: Sign in a TV
+description: "Sign a TV or another screen in to your Dive Club account with your phone."
+extraStyles:
+  - /stylesheets/device-login.css
+extraScripts:
+  - /scripts/tv.js
+---
+{% comment %}
+	Signing in a TV with a phone (UV, 28 Nov; docs/systems/foundations.md,
+	"Signing in a TV with a phone"). The login page's QR opens /tv/?code=<code>;
+	without a code, the code is typed here (thediveclub.org/tv). Signed out, sign
+	in first and come back. Then "Allow this device?" with Allow and Cancel.
+{% endcomment %}
+<div class="tdc-card">
+	<h1 id="tv-title">Sign in a TV</h1>
+
+	<form id="tv-enter" hidden novalidate>
+		<p>Enter the code shown on the screen you want to sign in.</p>
+		<div class="field">
+			<label for="tv-code">Code</label>
+			<input type="text" id="tv-code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="K7QM-4XPD">
+		</div>
+		<button type="submit" class="btn-primary" id="tv-go">Continue</button>
+	</form>
+
+	<div id="tv-ask" hidden>
+		<p class="tv-device" id="tv-device"></p>
+		<p id="tv-as"></p>
+		<p class="hint">Only allow a screen you are in front of. It stays signed in to your account until somebody signs out on it.</p>
+		<div class="btn-row">
+			<button type="button" class="btn-primary" id="tv-allow">Allow</button>
+			<button type="button" class="btn-secondary" id="tv-cancel">Cancel</button>
+		</div>
+	</div>
+
+	<div class="status" id="tv-status"></div>
+</div>

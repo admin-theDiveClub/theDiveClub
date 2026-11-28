@@ -1123,6 +1123,35 @@ html.draw-tv body.has-league-tabbar .tdc-card {
 	max-width: none;
 	padding: var(--space-2);
 }
+/* Nothing scrolls (UV, 28 Nov: "I can see a scrollbar as well but I can't
+   scroll… everything is supposed to adjust to fit"). The stage fills the
+   frame as full screen fills the screen, the draw centred in it and fitted to
+   it (fitOne measures the stage when tv), on the follow page's panel with no
+   card or surface of its own between them (UV: "check spacing inside the
+   draw pill"). */
+html.draw-tv, html.draw-tv body { overflow: hidden; }
+html.draw-tv .tdc-card.wide {
+	background: none;
+	box-shadow: none;
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+}
+html.draw-tv .bracket-stage {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: safe center;
+	align-items: safe center;
+	overflow: hidden;
+	padding: var(--space-4);
+	background: transparent;
+}
+html.draw-tv .bracket-scroll {
+	max-width: 100%;
+	margin: 0;
+	overflow: hidden;
+}
 
 /* Scores not published yet are yellow (UV, 27 Nov): a match that exists and
    is not published (tournament-bracket.js, unpublished), in Rounds, the ⋯

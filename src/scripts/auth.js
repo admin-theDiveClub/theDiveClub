@@ -52,6 +52,21 @@
 		forgotRow.hidden             = signup;
 		passwordInput.autocomplete   = signup ? 'new-password' : 'current-password';
 		TDC.status(statusEl, '', '');
+		showDeviceLogin();
+	}
+
+	// The QR for signing this screen in with a phone (device-login.js; UV, 28 Nov). Codes are made
+	// only while it shows: in Log In mode, once we know nobody is signed in.
+	const deviceBox = document.getElementById('device-login');
+	const deviceLogin = deviceBox && typeof TDCDeviceLogin !== 'undefined' ? TDCDeviceLogin.mount(deviceBox, { onSignedIn: goOn }) : null;
+	if (!deviceLogin) TDC.error(AREA, 'the QR for signing in with a phone is missing.');
+	let signedOutKnown = false;
+	function showDeviceLogin() {
+		if (!deviceLogin) return;
+		const on = mode === 'login' && signedOutKnown && !goingOn;
+		deviceBox.hidden = !on;
+		if (on) deviceLogin.open();
+		else deviceLogin.close();
 	}
 
 	toggleBtn.addEventListener('click', () => {
@@ -162,7 +177,13 @@
 
 	// Already logged in (including coming back from Google or an email link): go on to the next page.
 	supabaseClient.auth.onAuthStateChange((event, session) => {
-		if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) goOn();
+		if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
+			goOn();
+			showDeviceLogin();
+		} else if (!session && event === 'INITIAL_SESSION') {
+			signedOutKnown = true;
+			showDeviceLogin();
+		}
 	});
 
 	updateModeUI();

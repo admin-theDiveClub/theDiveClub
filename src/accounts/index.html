@@ -2,7 +2,10 @@
 layout: layout.html
 title: Sign In
 description: Log in to The Dive Club.
+extraStyles:
+  - /stylesheets/device-login.css
 extraScripts:
+  - /scripts/device-login.js
   - /scripts/auth.js
 ---
 <div class="tdc-card">
@@ -47,6 +50,8 @@ extraScripts:
 
 		<button type="submit" class="btn-primary" id="submit-btn">Log In</button>
 	</form>
+
+	<div id="device-login" hidden></div>
 
 	<div class="link-row">
 		<button type="button" class="link" id="toggle-mode">Don't have an account? Sign up</button>
